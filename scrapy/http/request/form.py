@@ -8,21 +8,16 @@ See documentation in docs/topics/request-response.rst
 from typing import Iterable, List, Optional, Tuple, Type, TypeVar, Union, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 
-from lxml.html import (
-    FormElement,
-    HTMLParser,
-    InputElement,
-    MultipleSelectOptions,
-    SelectElement,
-    TextareaElement,
-)
-from parsel.selector import create_root_node
+from lxml.html import FormElement  # nosec
+from lxml.html import InputElement  # nosec
+from lxml.html import MultipleSelectOptions  # nosec
+from lxml.html import SelectElement  # nosec
+from lxml.html import TextareaElement  # nosec
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.request import Request
 from scrapy.http.response.text import TextResponse
 from scrapy.utils.python import is_listlike, to_bytes
-from scrapy.utils.response import get_base_url
 
 FormRequestTypeVar = TypeVar("FormRequestTypeVar", bound="FormRequest")
 
@@ -113,7 +108,7 @@ def _get_form(
     formxpath: Optional[str],
 ) -> FormElement:
     """Find the wanted form element within the given response."""
-    root = create_root_node(response.text, HTMLParser, base_url=get_base_url(response))
+    root = response.selector.root
     forms = root.xpath("//form")
     if not forms:
         raise ValueError(f"No <form> element found in {response}")

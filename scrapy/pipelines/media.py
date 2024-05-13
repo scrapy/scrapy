@@ -118,13 +118,13 @@ class MediaPipeline:
         info.downloading.add(fp)
         dfd = mustbe_deferred(self.media_to_download, request, info, item=item)
         dfd.addCallback(self._check_media_to_download, request, info, item=item)
+        dfd.addErrback(self._log_exception)
         dfd.addBoth(self._cache_result_and_execute_waiters, fp, info)
-        dfd.addErrback(
-            lambda f: logger.error(
-                f.value, exc_info=failure_to_exc_info(f), extra={"spider": info.spider}
-            )
-        )
         return dfd.addBoth(lambda _: wad)  # it must return wad at last
+
+    def _log_exception(self, result):
+        logger.exception(result)
+        return result
 
     def _make_compatible(self):
         """Make overridable methods of MediaPipeline and subclasses backwards compatible"""

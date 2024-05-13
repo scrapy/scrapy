@@ -6,7 +6,7 @@ import operator
 from functools import partial
 from urllib.parse import urljoin, urlparse
 
-from lxml import etree
+from lxml import etree  # nosec
 from parsel.csstranslator import HTMLTranslator
 from w3lib.html import strip_html5_whitespace
 from w3lib.url import canonicalize_url, safe_url_string
@@ -153,7 +153,7 @@ class LxmlLinkExtractor:
             unique=unique,
             process=process_value,
             strip=strip,
-            canonicalized=canonicalize,
+            canonicalized=not canonicalize,
         )
         self.allow_res = [
             x if isinstance(x, _re_type) else re.compile(x) for x in arg_to_iter(allow)
@@ -248,5 +248,5 @@ class LxmlLinkExtractor:
             links = self._extract_links(doc, response.url, response.encoding, base_url)
             all_links.extend(self._process_links(links))
         if self.link_extractor.unique:
-            return unique_list(all_links)
+            return unique_list(all_links, key=self.link_extractor.link_key)
         return all_links

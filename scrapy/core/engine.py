@@ -27,7 +27,7 @@ from twisted.python.failure import Failure
 from scrapy import signals
 from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
-from scrapy.exceptions import CloseSpider, DontCloseSpider
+from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.logformatter import LogFormatter
 from scrapy.settings import BaseSettings, Settings
@@ -35,6 +35,7 @@ from scrapy.signalmanager import SignalManager
 from scrapy.spiders import Spider
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
@@ -291,9 +292,19 @@ class ExecutionEngine:
         self.slot.nextcall.schedule()  # type: ignore[union-attr]
 
     def _schedule_request(self, request: Request, spider: Spider) -> None:
-        self.signals.send_catch_log(
-            signals.request_scheduled, request=request, spider=spider
+        request_scheduled_result = self.signals.send_catch_log(
+            signals.request_scheduled,
+            request=request,
+            spider=spider,
+            dont_log=IgnoreRequest,
         )
+        for handler, result in request_scheduled_result:
+            if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
+                logger.debug(
+                    f"Signal handler {global_object_name(handler)} dropped "
+                    f"request {request} before it reached the scheduler."
+                )
+                return
         if not self.slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
             self.signals.send_catch_log(
                 signals.request_dropped, request=request, spider=spider

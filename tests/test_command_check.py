@@ -16,11 +16,11 @@ import scrapy
 
 class CheckSpider(scrapy.Spider):
     name = '{self.spider_name}'
-    start_urls = ['http://toscrape.com']
+    start_urls = ['data:,']
 
     def parse(self, response, **cb_kwargs):
         \"\"\"
-        @url http://toscrape.com
+        @url data:,
         {contracts}
         \"\"\"
         {parse_def}

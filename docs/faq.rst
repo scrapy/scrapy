@@ -138,39 +138,37 @@ See previous question.
 How can I prevent memory errors due to many allowed domains?
 ------------------------------------------------------------
 
-If you have a spider with a long list of
-:attr:`~scrapy.Spider.allowed_domains` (e.g. 50,000+), consider
-replacing the default
-:class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware` spider middleware
-with a :ref:`custom spider middleware <custom-spider-middleware>` that requires
-less memory. For example:
+If you have a spider with a long list of :attr:`~scrapy.Spider.allowed_domains`
+(e.g. 50,000+), consider replacing the default
+:class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` downloader
+middleware with a :ref:`custom downloader middleware
+<topics-downloader-middleware-custom>` that requires less memory. For example:
 
 -   If your domain names are similar enough, use your own regular expression
-    instead joining the strings in
-    :attr:`~scrapy.Spider.allowed_domains` into a complex regular
-    expression.
+    instead joining the strings in :attr:`~scrapy.Spider.allowed_domains` into
+    a complex regular expression.
 
 -   If you can `meet the installation requirements`_, use pyre2_ instead of
     Python’s re_ to compile your URL-filtering regular expression. See
     :issue:`1908`.
 
-See also other suggestions at `StackOverflow`_.
+See also `other suggestions at StackOverflow
+<https://stackoverflow.com/q/36440681>`__.
 
 .. note:: Remember to disable
-   :class:`scrapy.spidermiddlewares.offsite.OffsiteMiddleware` when you enable
-   your custom implementation:
+   :class:`scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` when you
+   enable your custom implementation:
 
    .. code-block:: python
 
-       SPIDER_MIDDLEWARES = {
-           "scrapy.spidermiddlewares.offsite.OffsiteMiddleware": None,
-           "myproject.middlewares.CustomOffsiteMiddleware": 500,
+       DOWNLOADER_MIDDLEWARES = {
+           "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": None,
+           "myproject.middlewares.CustomOffsiteMiddleware": 50,
        }
 
 .. _meet the installation requirements: https://github.com/andreasvc/pyre2#installation
 .. _pyre2: https://github.com/andreasvc/pyre2
 .. _re: https://docs.python.org/library/re.html
-.. _StackOverflow: https://stackoverflow.com/q/36440681/939364
 
 Can I use Basic HTTP Authentication in my spiders?
 --------------------------------------------------
@@ -206,12 +204,10 @@ I get "Filtered offsite request" messages. How can I fix them?
 Those messages (logged with ``DEBUG`` level) don't necessarily mean there is a
 problem, so you may not need to fix them.
 
-Those messages are thrown by the Offsite Spider Middleware, which is a spider
-middleware (enabled by default) whose purpose is to filter out requests to
-domains outside the ones covered by the spider.
-
-For more info see:
-:class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware`.
+Those messages are thrown by
+:class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware`, which is a
+downloader middleware (enabled by default) whose purpose is to filter out
+requests to domains outside the ones covered by the spider.
 
 What is the recommended way to deploy a Scrapy crawler in production?
 ---------------------------------------------------------------------
@@ -407,6 +403,23 @@ you could save resources by attaching a handler to the :class:`~scrapy.signals.b
 or :class:`~scrapy.signals.headers_received` signals and raising a
 :exc:`~scrapy.exceptions.StopDownload` exception. Please refer to the
 :ref:`topics-stop-response-download` topic for additional information and examples.
+
+
+.. _faq-blank-request:
+
+How can I make a blank request?
+-------------------------------
+
+.. code-block:: python
+    
+    from scrapy import Request
+
+
+    blank_request = Request("data:,")
+
+In this case, the URL is set to a data URI scheme. Data URLs allow you to include data 
+in-line in web pages as if they were external resources. The "data:" scheme with an empty 
+content (",") essentially creates a request to a data URL without any specific content.
 
 
 Running ``runspider`` I get ``error: No spider found in file: <filename>``

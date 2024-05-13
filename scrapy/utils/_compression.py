@@ -12,7 +12,6 @@ else:
     try:
         brotli.Decompressor.process
     except AttributeError:
-
         warn(
             (
                 "You have brotlipy installed, and Scrapy will use it, but "

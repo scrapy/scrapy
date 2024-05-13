@@ -674,6 +674,7 @@ Default:
 .. code-block:: python
 
     {
+        "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
         "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 100,
         "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
         "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware": 350,
@@ -1122,7 +1123,7 @@ modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
 JOBDIR
 ------
 
-Default: ``''``
+Default: ``None``
 
 A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.
@@ -1605,7 +1606,6 @@ Default:
 
     {
         "scrapy.spidermiddlewares.httperror.HttpErrorMiddleware": 50,
-        "scrapy.spidermiddlewares.offsite.OffsiteMiddleware": 500,
         "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
         "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
         "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,

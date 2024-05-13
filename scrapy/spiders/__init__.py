@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
+    from scrapy.utils.log import SpiderLoggerAdapter
 
 
 class Spider(object_ref):
@@ -41,9 +42,11 @@ class Spider(object_ref):
             self.start_urls: List[str] = []
 
     @property
-    def logger(self) -> logging.LoggerAdapter:
+    def logger(self) -> SpiderLoggerAdapter:
+        from scrapy.utils.log import SpiderLoggerAdapter
+
         logger = logging.getLogger(self.name)
-        return logging.LoggerAdapter(logger, {"spider": self})
+        return SpiderLoggerAdapter(logger, {"spider": self})
 
     def log(self, message: Any, level: int = logging.DEBUG, **kw: Any) -> None:
         """Log the given message at the given log level

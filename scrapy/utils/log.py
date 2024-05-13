@@ -5,7 +5,17 @@ import sys
 import warnings
 from logging.config import dictConfig
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    List,
+    MutableMapping,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
@@ -249,3 +259,16 @@ def logformatter_adapter(logkws: dict) -> Tuple[int, str, dict]:
     args = logkws if not logkws.get("args") else logkws["args"]
 
     return (level, message, args)
+
+
+class SpiderLoggerAdapter(logging.LoggerAdapter):
+    def process(
+        self, msg: str, kwargs: MutableMapping[str, Any]
+    ) -> Tuple[str, MutableMapping[str, Any]]:
+        """Method that augments logging with additional 'extra' data"""
+        if isinstance(kwargs.get("extra"), MutableMapping):
+            kwargs["extra"].update(self.extra)
+        else:
+            kwargs["extra"] = self.extra
+
+        return msg, kwargs
