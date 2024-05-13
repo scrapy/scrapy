@@ -303,10 +303,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
         dfd = mustbe_deferred(
             self._process_spider_input, scrape_func, response, request, spider
         )
-        dfd.addCallbacks(
-            callback=deferred_f_from_coro_f(process_callback_output),
-            errback=process_spider_exception,
-        )
+        dfd.addCallback(deferred_f_from_coro_f(process_callback_output))
+        dfd.addErrback(process_spider_exception)
         return dfd
 
     def process_start_requests(

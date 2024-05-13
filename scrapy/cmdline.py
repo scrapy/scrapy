@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import argparse
 import cProfile
 import inspect
 import os
 import sys
 from importlib.metadata import entry_points
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Optional, Tuple, Type
 
 import scrapy
 from scrapy.commands import BaseRunSpiderCommand, ScrapyCommand, ScrapyHelpFormatter
@@ -14,6 +16,12 @@ from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import get_project_settings, inside_project
 from scrapy.utils.python import garbage_collect
+
+if TYPE_CHECKING:
+    # typing.ParamSpec requires Python 3.10
+    from typing_extensions import ParamSpec
+
+    _P = ParamSpec("_P")
 
 
 class ScrapyArgumentParser(argparse.ArgumentParser):
@@ -121,7 +129,10 @@ def _print_unknown_command(
 
 
 def _run_print_help(
-    parser: argparse.ArgumentParser, func: Callable, *a: Any, **kw: Any
+    parser: argparse.ArgumentParser,
+    func: Callable[_P, None],
+    *a: _P.args,
+    **kw: _P.kwargs,
 ) -> None:
     try:
         func(*a, **kw)

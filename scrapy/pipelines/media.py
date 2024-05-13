@@ -106,10 +106,17 @@ class MediaPipeline:
 
         # Return cached result if request was already seen
         if fp in info.downloaded:
-            return defer_result(info.downloaded[fp]).addCallbacks(cb, eb)
+            d = defer_result(info.downloaded[fp])
+            d.addCallback(cb)
+            if eb:
+                d.addErrback(eb)
+            return d
 
         # Otherwise, wait for result
-        wad = Deferred().addCallbacks(cb, eb)
+        wad = Deferred()
+        wad.addCallback(cb)
+        if eb:
+            wad.addErrback(eb)
         info.waiting[fp].append(wad)
 
         # Check if request is downloading right now to avoid doing it twice
@@ -140,23 +147,11 @@ class MediaPipeline:
         if self.download_func:
             # this ugly code was left only to support tests. TODO: remove
             dfd = mustbe_deferred(self.download_func, request, info.spider)
-            dfd.addCallbacks(
-                callback=self.media_downloaded,
-                callbackArgs=(request, info),
-                callbackKeywords={"item": item},
-                errback=self.media_failed,
-                errbackArgs=(request, info),
-            )
         else:
             self._modify_media_request(request)
             dfd = self.crawler.engine.download(request)
-            dfd.addCallbacks(
-                callback=self.media_downloaded,
-                callbackArgs=(request, info),
-                callbackKeywords={"item": item},
-                errback=self.media_failed,
-                errbackArgs=(request, info),
-            )
+        dfd.addCallback(self.media_downloaded, request, info, item=item)
+        dfd.addErrback(self.media_failed, request, info)
         return dfd
 
     def _cache_result_and_execute_waiters(self, result, fp, info):

@@ -8,7 +8,6 @@ from collections import deque
 from typing import (
     TYPE_CHECKING,
     Any,
-    AsyncGenerator,
     AsyncIterable,
     Deque,
     Generator,
@@ -18,6 +17,7 @@ from typing import (
     Tuple,
     Type,
     Union,
+    cast,
 )
 
 from itemadapter import is_item
@@ -184,7 +184,9 @@ class Scraper:
             result, request, spider
         )  # returns spider's processed output
         dfd.addErrback(self.handle_spider_error, request, result, spider)
-        dfd.addCallback(self.handle_spider_output, request, result, spider)
+        dfd.addCallback(
+            self.handle_spider_output, request, cast(Response, result), spider
+        )
         return dfd
 
     def _scrape2(
@@ -256,12 +258,12 @@ class Scraper:
         self,
         result: Union[Iterable, AsyncIterable],
         request: Request,
-        response: Union[Response, Failure],
+        response: Response,
         spider: Spider,
     ) -> Deferred:
         if not result:
             return defer_succeed(None)
-        it: Union[Generator, AsyncGenerator]
+        it: Union[Iterable, AsyncIterable]
         if isinstance(result, AsyncIterable):
             it = aiter_errback(
                 result, self.handle_spider_error, request, response, spider

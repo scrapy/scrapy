@@ -347,7 +347,7 @@ class ExecutionEngine:
 
         assert self.spider is not None
         dwld = self.downloader.fetch(request, self.spider)
-        dwld.addCallbacks(_on_success)
+        dwld.addCallback(_on_success)
         dwld.addBoth(_on_complete)
         return dwld
 
