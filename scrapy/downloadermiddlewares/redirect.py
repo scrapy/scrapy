@@ -17,6 +17,14 @@ def _build_redirect_request(source_request, *, url, **kwargs):
         **kwargs,
         cookies=None,
     )
+    if "_scheme_proxy" in redirect_request.meta:
+        source_request_scheme = urlparse_cached(source_request).scheme
+        redirect_request_scheme = urlparse_cached(redirect_request).scheme
+        if source_request_scheme != redirect_request_scheme:
+            redirect_request.meta.pop("_scheme_proxy")
+            redirect_request.meta.pop("proxy", None)
+            redirect_request.meta.pop("_auth_proxy", None)
+            redirect_request.headers.pop(b"Proxy-Authorization", None)
     has_cookie_header = "Cookie" in redirect_request.headers
     has_authorization_header = "Authorization" in redirect_request.headers
     if has_cookie_header or has_authorization_header:
