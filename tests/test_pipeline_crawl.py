@@ -217,6 +217,25 @@ class FileDownloadCrawlTestCase(TestCase):
             )
         self.assertIn("ZeroDivisionError", str(log))
 
+        class ExceptionRaisingMediaPipeline(cls):
+            def file_path(self, request, response=None, info=None, *, item=None):
+                return 1 / 0
+
+        settings = {
+            **self.settings,
+            "ITEM_PIPELINES": {ExceptionRaisingMediaPipeline: 1},
+        }
+        runner = CrawlerRunner(settings)
+        crawler = self._create_crawler(MediaDownloadSpider, runner=runner)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                self.mockserver.url("/files/images/"),
+                media_key=self.media_key,
+                media_urls_key=self.media_urls_key,
+                mockserver=self.mockserver,
+            )
+        self.assertIn("ZeroDivisionError", str(log))
+
 
 skip_pillow: Optional[str]
 try:
