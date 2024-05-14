@@ -59,7 +59,7 @@ def _build_redirect_request(
         )
 
         if has_cookie_header and (
-            (source_scheme != redirect_scheme and redirect_scheme != "https")
+            redirect_scheme not in {source_scheme, "https"}
             or source_host != redirect_host
         ):
             del redirect_request.headers["Cookie"]
