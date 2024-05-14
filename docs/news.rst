@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.11.2:
 
-Scrapy 2.11.2 (2024-05-DD)
+Scrapy 2.11.2 (2024-05-14)
 --------------------------
 
 Security bug fixes
