@@ -94,13 +94,14 @@ Request objects
         .. code-block:: python
 
             request_with_cookies = Request(
-                url="http://www.example.com",
+                url="https://www.example.com",
                 cookies=[
                     {
                         "name": "currency",
                         "value": "USD",
                         "domain": "example.com",
                         "path": "/currency",
+                        "secure": True,
                     },
                 ],
             )
