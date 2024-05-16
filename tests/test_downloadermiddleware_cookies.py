@@ -784,7 +784,7 @@ class CookiesMiddlewareTest(TestCase):
             from_scheme="https",
             to_scheme="http",
             cookies1=True,
-            cookies2=True,  # xfail, due to a bug in the redirect middleware fixed elsewhere
+            cookies2=False,
             cookies3=False,
         )
 
@@ -804,7 +804,7 @@ class CookiesMiddlewareTest(TestCase):
             from_scheme="https",
             to_scheme="http",
             cookies1=True,
-            cookies2=True,  # xfail, due to a bug in the redirect middleware fixed elsewhere
+            cookies2=False,
             cookies3=True,
         )
 
@@ -824,7 +824,7 @@ class CookiesMiddlewareTest(TestCase):
             from_scheme="https",
             to_scheme="http",
             cookies1=True,
-            cookies2=True,  # xfail, due to a bug in the redirect middleware fixed elsewhere
+            cookies2=False,
             cookies3=False,
         )
 
