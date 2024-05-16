@@ -3,6 +3,229 @@
 Release notes
 =============
 
+.. _release-VERSION:
+
+Scrapy VERSION (YYYY-MM-DD)
+---------------------------
+
+Deprecations
+~~~~~~~~~~~~
+
+-   :meth:`scrapy.core.downloader.Downloader._get_slot_key` is deprecated, use
+    :meth:`scrapy.core.downloader.Downloader.get_slot_key` instead.
+    (:issue:`6340`)
+
+
+.. _release-2.11.2:
+
+Scrapy 2.11.2 (2024-05-14)
+--------------------------
+
+Security bug fixes
+~~~~~~~~~~~~~~~~~~
+
+-   Redirects to non-HTTP protocols are no longer followed. Please, see the
+    `23j4-mw76-5v7h security advisory`_ for more information. (:issue:`457`)
+
+    .. _23j4-mw76-5v7h security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-23j4-mw76-5v7h
+
+-   The ``Authorization`` header is now dropped on redirects to a different
+    scheme (``http://`` or ``https://``) or port, even if the domain is the
+    same. Please, see the `4qqq-9vqf-3h3f security advisory`_ for more
+    information.
+
+    .. _4qqq-9vqf-3h3f security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-4qqq-9vqf-3h3f
+
+-   When using system proxy settings that are different for ``http://`` and
+    ``https://``, redirects to a different URL scheme will now also trigger the
+    corresponding change in proxy settings for the redirected request. Please,
+    see the `jm3v-qxmh-hxwv security advisory`_ for more information.
+    (:issue:`767`)
+
+    .. _jm3v-qxmh-hxwv security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-jm3v-qxmh-hxwv
+
+-   :attr:`Spider.allowed_domains <scrapy.Spider.allowed_domains>` is now
+    enforced for all requests, and not only requests from spider callbacks.
+    (:issue:`1042`, :issue:`2241`, :issue:`6358`)
+
+-   :func:`~scrapy.utils.iterators.xmliter_lxml` no longer resolves XML
+    entities. (:issue:`6265`)
+
+-   defusedxml_ is now used to make
+    :class:`scrapy.http.request.rpc.XmlRpcRequest` more secure.
+    (:issue:`6250`, :issue:`6251`)
+
+    .. _defusedxml: https://github.com/tiran/defusedxml
+
+Bug fixes
+~~~~~~~~~
+
+-   Restored support for brotlipy_, which had been dropped in Scrapy 2.11.1 in
+    favor of brotli_. (:issue:`6261`)
+
+    .. _brotli: https://github.com/google/brotli
+
+    .. note:: brotlipy is deprecated, both in Scrapy and upstream. Use brotli
+        instead if you can.
+
+-   Make :setting:`METAREFRESH_IGNORE_TAGS` ``["noscript"]`` by default. This
+    prevents
+    :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware` from
+    following redirects that would not be followed by web browsers with
+    JavaScript enabled. (:issue:`6342`, :issue:`6347`)
+
+-   During :ref:`feed export <topics-feed-exports>`, do not close the
+    underlying file from :ref:`built-in post-processing plugins
+    <builtin-plugins>`.
+    (:issue:`5932`, :issue:`6178`, :issue:`6239`)
+
+-   :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
+    now properly applies the ``unique`` and ``canonicalize`` parameters.
+    (:issue:`3273`, :issue:`6221`)
+
+-   Do not initialize the scheduler disk queue if :setting:`JOBDIR` is an empty
+    string. (:issue:`6121`, :issue:`6124`)
+
+-   Fix :attr:`Spider.logger <scrapy.Spider.logger>` not logging custom extra
+    information. (:issue:`6323`, :issue:`6324`)
+
+-   ``robots.txt`` files with a non-UTF-8 encoding no longer prevent parsing
+    the UTF-8-compatible (e.g. ASCII) parts of the document.
+    (:issue:`6292`, :issue:`6298`)
+
+-   :meth:`scrapy.http.cookies.WrappedRequest.get_header` no longer raises an
+    exception if ``default`` is ``None``.
+    (:issue:`6308`, :issue:`6310`)
+
+-   :class:`~scrapy.selector.Selector` now uses
+    :func:`scrapy.utils.response.get_base_url` to determine the base URL of a
+    given :class:`~scrapy.http.Response`. (:issue:`6265`)
+
+-   The :meth:`media_to_download` method of :ref:`media pipelines
+    <topics-media-pipeline>` now logs exceptions before stripping them.
+    (:issue:`5067`, :issue:`5068`)
+
+-   When passing a callback to the :command:`parse` command, build the callback
+    callable with the right signature.
+    (:issue:`6182`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Add a FAQ entry about :ref:`creating blank requests <faq-blank-request>`.
+    (:issue:`6203`, :issue:`6208`)
+
+-   Document that :attr:`scrapy.selector.Selector.type` can be ``"json"``.
+    (:issue:`6328`, :issue:`6334`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Make builds reproducible. (:issue:`5019`, :issue:`6322`)
+
+-   Packaging and test fixes.
+    (:issue:`6286`, :issue:`6290`, :issue:`6312`, :issue:`6316`, :issue:`6344`)
+
+
+.. _release-2.11.1:
+
+Scrapy 2.11.1 (2024-02-14)
+--------------------------
+
+Highlights:
+
+-   Security bug fixes.
+
+-   Support for Twisted >= 23.8.0.
+
+-   Documentation improvements.
+
+Security bug fixes
+~~~~~~~~~~~~~~~~~~
+
+-   Addressed `ReDoS vulnerabilities`_:
+
+    -   ``scrapy.utils.iterators.xmliter`` is now deprecated in favor of
+        :func:`~scrapy.utils.iterators.xmliter_lxml`, which
+        :class:`~scrapy.spiders.XMLFeedSpider` now uses.
+
+        To minimize the impact of this change on existing code,
+        :func:`~scrapy.utils.iterators.xmliter_lxml` now supports indicating
+        the node namespace with a prefix in the node name, and big files with
+        highly nested trees when using libxml2 2.7+.
+
+    -   Fixed regular expressions in the implementation of the
+        :func:`~scrapy.utils.response.open_in_browser` function.
+
+    Please, see the `cc65-xxvf-f7r9 security advisory`_ for more information.
+
+    .. _ReDoS vulnerabilities: https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+    .. _cc65-xxvf-f7r9 security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-cc65-xxvf-f7r9
+
+-   :setting:`DOWNLOAD_MAXSIZE` and :setting:`DOWNLOAD_WARNSIZE` now also apply
+    to the decompressed response body. Please, see the `7j7m-v7m3-jqm7 security
+    advisory`_ for more information.
+
+    .. _7j7m-v7m3-jqm7 security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-7j7m-v7m3-jqm7
+
+-   Also in relation with the `7j7m-v7m3-jqm7 security advisory`_, the
+    deprecated ``scrapy.downloadermiddlewares.decompression`` module has been
+    removed.
+
+-   The ``Authorization`` header is now dropped on redirects to a different
+    domain. Please, see the `cw9j-q3vf-hrrv security advisory`_ for more
+    information.
+
+    .. _cw9j-q3vf-hrrv security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-cw9j-q3vf-hrrv
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   The Twisted dependency is no longer restricted to < 23.8.0. (:issue:`6024`,
+    :issue:`6064`, :issue:`6142`)
+
+Bug fixes
+~~~~~~~~~
+
+-   The OS signal handling code was refactored to no longer use private Twisted
+    functions. (:issue:`6024`, :issue:`6064`, :issue:`6112`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Improved documentation for :class:`~scrapy.crawler.Crawler` initialization
+    changes made in the 2.11.0 release. (:issue:`6057`, :issue:`6147`)
+
+-   Extended documentation for :attr:`Request.meta <scrapy.http.Request.meta>`.
+    (:issue:`5565`)
+
+-   Fixed the :reqmeta:`dont_merge_cookies` documentation. (:issue:`5936`,
+    :issue:`6077`)
+
+-   Added a link to Zyte's export guides to the :ref:`feed exports
+    <topics-feed-exports>` documentation. (:issue:`6183`)
+
+-   Added a missing note about backward-incompatible changes in
+    :class:`~scrapy.exporters.PythonItemExporter` to the 2.11.0 release notes.
+    (:issue:`6060`, :issue:`6081`)
+
+-   Added a missing note about removing the deprecated
+    ``scrapy.utils.boto.is_botocore()`` function to the 2.8.0 release notes.
+    (:issue:`6056`, :issue:`6061`)
+
+-   Other documentation improvements. (:issue:`6128`, :issue:`6144`,
+    :issue:`6163`, :issue:`6190`, :issue:`6192`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Added Python 3.12 to the CI configuration, re-enabled tests that were
+    disabled when the pre-release support was added. (:issue:`5985`,
+    :issue:`6083`, :issue:`6098`)
+
+-   Fixed a test issue on PyPy 7.3.14. (:issue:`6204`, :issue:`6205`)
+
+
 .. _release-2.11.0:
 
 Scrapy 2.11.0 (2023-09-18)
@@ -61,6 +284,9 @@ Deprecation removals
 -   Removed the ``CrawlerRunner.spiders`` attribute, deprecated in Scrapy
     1.0.0, use :attr:`CrawlerRunner.spider_loader
     <scrapy.crawler.CrawlerRunner.spider_loader>` instead. (:issue:`6010`)
+
+-   The :func:`scrapy.utils.response.response_httprepr` function, deprecated in
+    Scrapy 2.6.0, has now been removed. (:issue:`6111`)
 
 Deprecations
 ~~~~~~~~~~~~
@@ -1156,6 +1382,9 @@ Deprecations
 
         Instead, call :meth:`~scrapy.core.engine.ExecutionEngine.open_spider`
         first to set the :class:`~scrapy.Spider` object.
+
+-   :func:`scrapy.utils.response.response_httprepr` is now deprecated.
+    (:issue:`4972`)
 
 
 New features
@@ -2870,6 +3099,38 @@ affect subclasses:
     :attr:`~scrapy.core.scheduler.DownloaderAwarePriorityQueue.downstream_queue_cls`.
 
 (:issue:`3884`)
+
+.. _release-1.8.4:
+
+Scrapy 1.8.4 (2024-02-14)
+-------------------------
+
+**Security bug fixes:**
+
+-   Due to its `ReDoS vulnerabilities`_, ``scrapy.utils.iterators.xmliter`` is
+    now deprecated in favor of :func:`~scrapy.utils.iterators.xmliter_lxml`,
+    which :class:`~scrapy.spiders.XMLFeedSpider` now uses.
+
+    To minimize the impact of this change on existing code,
+    :func:`~scrapy.utils.iterators.xmliter_lxml` now supports indicating
+    the node namespace as a prefix in the node name, and big files with highly
+    nested trees when using libxml2 2.7+.
+
+    Please, see the `cc65-xxvf-f7r9 security advisory`_ for more information.
+
+-   :setting:`DOWNLOAD_MAXSIZE` and :setting:`DOWNLOAD_WARNSIZE` now also apply
+    to the decompressed response body. Please, see the `7j7m-v7m3-jqm7 security
+    advisory`_ for more information.
+
+-   Also in relation with the `7j7m-v7m3-jqm7 security advisory`_, use of the
+    ``scrapy.downloadermiddlewares.decompression`` module is discouraged and
+    will trigger a warning.
+
+-   The ``Authorization`` header is now dropped on redirects to a different
+    domain. Please, see the `cw9j-q3vf-hrrv security advisory`_ for more
+    information.
+
+    .. _cw9j-q3vf-hrrv security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-cw9j-q3vf-hrrv
 
 
 .. _release-1.8.3:

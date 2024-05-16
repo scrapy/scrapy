@@ -16,10 +16,10 @@ class TestOffsiteMiddleware(TestCase):
         self.mw.spider_opened(self.spider)
 
     def _get_spiderargs(self):
-        return dict(
-            name="foo",
-            allowed_domains=["scrapytest.org", "scrapy.org", "scrapy.test.org"],
-        )
+        return {
+            "name": "foo",
+            "allowed_domains": ["scrapytest.org", "scrapy.org", "scrapy.test.org"],
+        }
 
     def test_process_spider_output(self):
         res = Response("http://scrapytest.org")
@@ -51,7 +51,7 @@ class TestOffsiteMiddleware(TestCase):
 
 class TestOffsiteMiddleware2(TestOffsiteMiddleware):
     def _get_spiderargs(self):
-        return dict(name="foo", allowed_domains=None)
+        return {"name": "foo", "allowed_domains": None}
 
     def test_process_spider_output(self):
         res = Response("http://scrapytest.org")
@@ -62,13 +62,16 @@ class TestOffsiteMiddleware2(TestOffsiteMiddleware):
 
 class TestOffsiteMiddleware3(TestOffsiteMiddleware2):
     def _get_spiderargs(self):
-        return dict(name="foo")
+        return {"name": "foo"}
 
 
 class TestOffsiteMiddleware4(TestOffsiteMiddleware3):
     def _get_spiderargs(self):
         bad_hostname = urlparse("http:////scrapytest.org").hostname
-        return dict(name="foo", allowed_domains=["scrapytest.org", None, bad_hostname])
+        return {
+            "name": "foo",
+            "allowed_domains": ["scrapytest.org", None, bad_hostname],
+        }
 
     def test_process_spider_output(self):
         res = Response("http://scrapytest.org")

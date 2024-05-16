@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import functools
 import logging
 from collections import defaultdict
+from typing import TYPE_CHECKING
 
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
@@ -11,6 +14,11 @@ from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import defer_result, mustbe_deferred
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +75,9 @@ class MediaPipeline:
         return formatted_key
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler) -> Self:
         try:
-            pipe = cls.from_settings(crawler.settings)
+            pipe = cls.from_settings(crawler.settings)  # type: ignore[attr-defined]
         except AttributeError:
             pipe = cls()
         pipe.crawler = crawler
@@ -98,10 +106,17 @@ class MediaPipeline:
 
         # Return cached result if request was already seen
         if fp in info.downloaded:
-            return defer_result(info.downloaded[fp]).addCallbacks(cb, eb)
+            d = defer_result(info.downloaded[fp])
+            d.addCallback(cb)
+            if eb:
+                d.addErrback(eb)
+            return d
 
         # Otherwise, wait for result
-        wad = Deferred().addCallbacks(cb, eb)
+        wad = Deferred()
+        wad.addCallback(cb)
+        if eb:
+            wad.addErrback(eb)
         info.waiting[fp].append(wad)
 
         # Check if request is downloading right now to avoid doing it twice
@@ -112,13 +127,13 @@ class MediaPipeline:
         info.downloading.add(fp)
         dfd = mustbe_deferred(self.media_to_download, request, info, item=item)
         dfd.addCallback(self._check_media_to_download, request, info, item=item)
+        dfd.addErrback(self._log_exception)
         dfd.addBoth(self._cache_result_and_execute_waiters, fp, info)
-        dfd.addErrback(
-            lambda f: logger.error(
-                f.value, exc_info=failure_to_exc_info(f), extra={"spider": info.spider}
-            )
-        )
         return dfd.addBoth(lambda _: wad)  # it must return wad at last
+
+    def _log_exception(self, result):
+        logger.exception(result)
+        return result
 
     def _modify_media_request(self, request):
         if self.handle_httpstatus_list:
@@ -132,23 +147,11 @@ class MediaPipeline:
         if self.download_func:
             # this ugly code was left only to support tests. TODO: remove
             dfd = mustbe_deferred(self.download_func, request, info.spider)
-            dfd.addCallbacks(
-                callback=self.media_downloaded,
-                callbackArgs=(request, info),
-                callbackKeywords={"item": item},
-                errback=self.media_failed,
-                errbackArgs=(request, info),
-            )
         else:
             self._modify_media_request(request)
             dfd = self.crawler.engine.download(request)
-            dfd.addCallbacks(
-                callback=self.media_downloaded,
-                callbackArgs=(request, info),
-                callbackKeywords={"item": item},
-                errback=self.media_failed,
-                errbackArgs=(request, info),
-            )
+        dfd.addCallback(self.media_downloaded, request, info, item=item)
+        dfd.addErrback(self.media_failed, request, info)
         return dfd
 
     def _cache_result_and_execute_waiters(self, result, fp, info):

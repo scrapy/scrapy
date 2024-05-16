@@ -150,8 +150,7 @@ Access the crawler instance:
         def from_crawler(cls, crawler):
             return cls(crawler)
 
-        def update_settings(self, settings):
-            ...
+        def update_settings(self, settings): ...
 
 Use a fallback component:
 

@@ -3,6 +3,7 @@ Downloader Middleware manager
 
 See documentation in docs/topics/downloader-middleware.rst
 """
+
 from typing import Any, Callable, Generator, List, Union, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
