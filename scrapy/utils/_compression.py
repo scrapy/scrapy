@@ -1,10 +1,41 @@
 import zlib
 from io import BytesIO
+from warnings import warn
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 try:
-    import brotli
+    try:
+        import brotli
+    except ImportError:
+        import brotlicffi as brotli
 except ImportError:
     pass
+else:
+    try:
+        brotli.Decompressor.process
+    except AttributeError:
+        warn(
+            (
+                "You have brotlipy installed, and Scrapy will use it, but "
+                "Scrapy support for brotlipy is deprecated and will stop "
+                "working in a future version of Scrapy. brotlipy itself is "
+                "deprecated, it has been superseded by brotlicffi. Please, "
+                "uninstall brotlipy and install brotli or brotlicffi instead. "
+                "brotlipy has the same import name as brotli, so keeping both "
+                "installed is strongly discouraged."
+            ),
+            ScrapyDeprecationWarning,
+        )
+
+        def _brotli_decompress(decompressor, data):
+            return decompressor.decompress(data)
+
+    else:
+
+        def _brotli_decompress(decompressor, data):
+            return decompressor.process(data)
+
 
 try:
     import zstandard
@@ -61,7 +92,7 @@ def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
     decompressed_size = 0
     while output_chunk:
         input_chunk = input_stream.read(_CHUNK_SIZE)
-        output_chunk = decompressor.process(input_chunk)
+        output_chunk = _brotli_decompress(decompressor, input_chunk)
         decompressed_size += len(output_chunk)
         if max_size and decompressed_size > max_size:
             raise _DecompressionMaxSizeExceeded(

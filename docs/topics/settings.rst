@@ -674,6 +674,7 @@ Default:
 .. code-block:: python
 
     {
+        "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
         "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 100,
         "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
         "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware": 350,
@@ -835,7 +836,7 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
 .. setting:: DOWNLOAD_SLOTS
 
 DOWNLOAD_SLOTS
-----------------
+--------------
 
 Default: ``{}``
 
@@ -844,7 +845,12 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
     .. code-block:: python
 
         DOWNLOAD_SLOTS = {
-            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "randomize_delay": False},
+            "quotes.toscrape.com": {
+                "concurrency": 1,
+                "delay": 2,
+                "randomize_delay": False,
+                "throttle": False,
+            },
             "books.toscrape.com": {"delay": 3, "randomize_delay": False},
         }
 
@@ -855,6 +861,9 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
     -   :setting:`DOWNLOAD_DELAY`: ``delay``
     -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
     -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
+
+    There is no global setting for ``throttle``, whose default value is
+    ``None``.
 
 
 .. setting:: DOWNLOAD_TIMEOUT
@@ -1605,7 +1614,6 @@ Default:
 
     {
         "scrapy.spidermiddlewares.httperror.HttpErrorMiddleware": 50,
-        "scrapy.spidermiddlewares.offsite.OffsiteMiddleware": 500,
         "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
         "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
         "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,

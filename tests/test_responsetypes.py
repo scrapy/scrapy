@@ -33,7 +33,10 @@ class ResponseTypesTest(unittest.TestCase):
             ("attachment;filename=dataµ.tar.gz".encode("latin-1"), Response),
             ("attachment;filename=data高.doc".encode("gbk"), Response),
             ("attachment;filename=دورهdata.html".encode("cp720"), HtmlResponse),
-            ("attachment;filename=日本語版Wikipedia.xml".encode("iso2022_jp"), XmlResponse),
+            (
+                "attachment;filename=日本語版Wikipedia.xml".encode("iso2022_jp"),
+                XmlResponse,
+            ),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_content_disposition(source)

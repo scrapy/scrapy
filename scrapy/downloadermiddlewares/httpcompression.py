@@ -29,7 +29,10 @@ logger = getLogger(__name__)
 ACCEPTED_ENCODINGS: List[bytes] = [b"gzip", b"deflate"]
 
 try:
-    import brotli  # noqa: F401
+    try:
+        import brotli  # noqa: F401
+    except ImportError:
+        import brotlicffi  # noqa: F401
 except ImportError:
     pass
 else:
@@ -135,7 +138,7 @@ class HttpCompressionMiddleware:
                 respcls = responsetypes.from_args(
                     headers=response.headers, url=response.url, body=decoded_body
                 )
-                kwargs = dict(cls=respcls, body=decoded_body)
+                kwargs = {"cls": respcls, "body": decoded_body}
                 if issubclass(respcls, TextResponse):
                     # force recalculating the encoding until we make sure the
                     # responsetypes guessing is reliable
@@ -169,7 +172,7 @@ class HttpCompressionMiddleware:
         return to_decode, to_keep
 
     def _decode(self, body: bytes, encoding: bytes, max_size: int) -> bytes:
-        if encoding == b"gzip" or encoding == b"x-gzip":
+        if encoding in {b"gzip", b"x-gzip"}:
             return gunzip(body, max_size=max_size)
         if encoding == b"deflate":
             return _inflate(body, max_size=max_size)

@@ -1,8 +1,22 @@
+from __future__ import annotations
+
 import logging
 import re
-from typing import TYPE_CHECKING, Any
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    cast,
+)
 
-from scrapy.http import Request, XmlResponse
+from scrapy.http import Request, Response, XmlResponse
 from scrapy.spiders import Spider
 from scrapy.utils._compression import _DecompressionMaxSizeExceeded
 from scrapy.utils.gz import gunzip, gzip_magic_number
@@ -18,15 +32,17 @@ logger = logging.getLogger(__name__)
 
 
 class SitemapSpider(Spider):
-    sitemap_urls = ()
-    sitemap_rules = [("", "parse")]
-    sitemap_follow = [""]
-    sitemap_alternate_links = False
+    sitemap_urls: Sequence[str] = ()
+    sitemap_rules: Sequence[
+        Tuple[Union[re.Pattern[str], str], Union[str, Callable]]
+    ] = [("", "parse")]
+    sitemap_follow: Sequence[Union[re.Pattern[str], str]] = [""]
+    sitemap_alternate_links: bool = False
     _max_size: int
     _warn_size: int
 
     @classmethod
-    def from_crawler(cls, crawler: "Crawler", *args: Any, **kwargs: Any) -> "Self":
+    def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
         spider = super().from_crawler(crawler, *args, **kwargs)
         spider._max_size = getattr(
             spider, "download_maxsize", spider.settings.getint("DOWNLOAD_MAXSIZE")
@@ -36,27 +52,29 @@ class SitemapSpider(Spider):
         )
         return spider
 
-    def __init__(self, *a, **kw):
+    def __init__(self, *a: Any, **kw: Any):
         super().__init__(*a, **kw)
-        self._cbs = []
+        self._cbs: List[Tuple[re.Pattern[str], Callable]] = []
         for r, c in self.sitemap_rules:
             if isinstance(c, str):
-                c = getattr(self, c)
+                c = cast(Callable, getattr(self, c))
             self._cbs.append((regex(r), c))
-        self._follow = [regex(x) for x in self.sitemap_follow]
+        self._follow: List[re.Pattern[str]] = [regex(x) for x in self.sitemap_follow]
 
-    def start_requests(self):
+    def start_requests(self) -> Iterable[Request]:
         for url in self.sitemap_urls:
             yield Request(url, self._parse_sitemap)
 
-    def sitemap_filter(self, entries):
+    def sitemap_filter(
+        self, entries: Iterable[Dict[str, Any]]
+    ) -> Iterable[Dict[str, Any]]:
         """This method can be used to filter sitemap entries by their
         attributes, for example, you can filter locs with lastmod greater
         than a given date (see docs).
         """
         yield from entries
 
-    def _parse_sitemap(self, response):
+    def _parse_sitemap(self, response: Response) -> Iterable[Request]:
         if response.url.endswith("/robots.txt"):
             for url in sitemap_urls_from_robots(response.text, base_url=response.url):
                 yield Request(url, callback=self._parse_sitemap)
@@ -84,7 +102,7 @@ class SitemapSpider(Spider):
                             yield Request(loc, callback=c)
                             break
 
-    def _get_sitemap_body(self, response):
+    def _get_sitemap_body(self, response: Response) -> Optional[bytes]:
         """Return the sitemap body contained in the given response,
         or None if the response is not a sitemap.
         """
@@ -115,15 +133,16 @@ class SitemapSpider(Spider):
         # in other word, here, we have plain XML
         if response.url.endswith(".xml") or response.url.endswith(".xml.gz"):
             return response.body
+        return None
 
 
-def regex(x):
+def regex(x: Union[re.Pattern[str], str]) -> re.Pattern[str]:
     if isinstance(x, str):
         return re.compile(x)
     return x
 
 
-def iterloc(it, alt=False):
+def iterloc(it: Iterable[Dict[str, Any]], alt: bool = False) -> Iterable[str]:
     for d in it:
         yield d["loc"]
 

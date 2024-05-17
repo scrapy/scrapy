@@ -3,6 +3,8 @@ This module provides some useful functions for working with
 scrapy.http.Request objects
 """
 
+from __future__ import annotations
+
 import hashlib
 import json
 import warnings
@@ -32,6 +34,9 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
     from scrapy.crawler import Crawler
 
 
@@ -44,7 +49,9 @@ def _serialize_headers(
             yield from request.headers.getlist(header)
 
 
-_fingerprint_cache: "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]]"
+_fingerprint_cache: (
+    "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]]"
+)
 _fingerprint_cache = WeakKeyDictionary()
 
 
@@ -109,13 +116,12 @@ def fingerprint(
             "headers": headers,
         }
         fingerprint_json = json.dumps(fingerprint_data, sort_keys=True)
-        cache[cache_key] = hashlib.sha1(fingerprint_json.encode()).digest()
+        cache[cache_key] = hashlib.sha1(fingerprint_json.encode()).digest()  # nosec
     return cache[cache_key]
 
 
 class RequestFingerprinterProtocol(Protocol):
-    def fingerprint(self, request: Request) -> bytes:
-        ...
+    def fingerprint(self, request: Request) -> bytes: ...
 
 
 class RequestFingerprinter:
@@ -132,10 +138,10 @@ class RequestFingerprinter:
     """
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler) -> Self:
         return cls(crawler)
 
-    def __init__(self, crawler: Optional["Crawler"] = None):
+    def __init__(self, crawler: Optional[Crawler] = None):
         if crawler:
             implementation = crawler.settings.get(
                 "REQUEST_FINGERPRINTER_IMPLEMENTATION"
