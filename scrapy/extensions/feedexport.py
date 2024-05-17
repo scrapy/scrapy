@@ -482,11 +482,11 @@ class FeedExporter:
 
         if slot.itemcount:
             # Normal case
-            finish_exporting_maybe_deferred = defer.maybeDeferred(slot.finish_exporting)
+            finish_exporting_deferred = defer.maybeDeferred(slot.finish_exporting)
         elif slot.store_empty and slot.batch_id == 1:
             # Need to store the empty file
             slot.start_exporting()
-            finish_exporting_maybe_deferred = defer.maybeDeferred(slot.finish_exporting)
+            finish_exporting_deferred = defer.maybeDeferred(slot.finish_exporting)
         else:
             # In this case, the file is not stored, so no processing is required.
             return None
@@ -508,9 +508,9 @@ class FeedExporter:
         )
         d.addBoth(lambda _: self._pending_deferreds.remove(d))
 
-        self._pending_deferreds.append(finish_exporting_maybe_deferred)
-        finish_exporting_maybe_deferred.addBoth(
-            lambda _: self._pending_deferreds.remove(finish_exporting_maybe_deferred)
+        self._pending_deferreds.append(finish_exporting_deferred)
+        finish_exporting_deferred.addBoth(
+            lambda _: self._pending_deferreds.remove(finish_exporting_deferred)
         )
 
         return d
