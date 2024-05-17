@@ -466,7 +466,7 @@ class FeedSlot:
     def finish_exporting(self) -> None:
         if self._exporting:
             assert self.exporter
-            result_or_coro = self.exporter.finish_exporting()
+            result_or_coro = self.exporter.finish_exporting()  # type: ignore
             self._exporting = False
             return result_or_coro
 
@@ -575,11 +575,11 @@ class FeedExporter:
 
         if slot.itemcount:
             # Normal case
-            finish_exporting_deferred = defer.maybeDeferred(slot.finish_exporting)
+            finish_exporting_deferred = maybeDeferred(slot.finish_exporting)
         elif slot.store_empty and slot.batch_id == 1:
             # Need to store the empty file
             slot.start_exporting()
-            finish_exporting_deferred = defer.maybeDeferred(slot.finish_exporting)
+            finish_exporting_deferred = maybeDeferred(slot.finish_exporting)
         else:
             # In this case, the file is not stored, so no processing is required.
             return None
