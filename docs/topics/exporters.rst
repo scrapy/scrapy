@@ -443,3 +443,66 @@ MarshalItemExporter
 -------------------
 
 .. autoclass:: MarshalItemExporter
+
+Custom Item Exporters
+=====================
+
+You can also inherit from :class:`BaseItemExporter` and implement your own exporter. 
+
+Usage:
+
+.. code-block:: python
+
+   custom_settings = {
+       "FEEDS": {"stdout://": {"format": "CustomAPI"}},
+       "FEED_EXPORTERS": {"CustomAPI": "project.exporters.CustomExporter"},
+   }
+
+Here you can override the :meth:`~BaseItemExporter.export_item`, :meth:`~BaseItemExporter.start_exporting`,
+:meth:`~BaseItemExporter.finish_exporting`, :meth:`~BaseItemExporter.serialize_field` and :meth:`~BaseItemExporter.__init__` methods to customize the
+behavior of your exporter.
+
+.. tip:: In order to send non-blocking requests to external services, it is recommended
+   to use ``twisted.internet.threads.deferToThread``
+
+.. warning:: The storage **file object** is passed to the custom exporter ``__init__`` method and
+    will behave like usual, according to the scheme in your FEEDS setting. It will also be closed
+    when a batch is completed or the spider is closed.
+
+Example:
+
+.. tip:: :meth:`~BaseItemExporter.finish_exporting` can be an async method.
+
+.. code-block:: python
+
+   from scrapy.exporters import BaseItemExporter
+
+
+   class CustomExporter(BaseItemExporter):
+       def __init__(self, file, *args, dont_fail=False, **kwargs):
+           self._kwargs = kwargs
+           self.file = file
+           self._configure(kwargs, dont_fail=dont_fail)
+           self._pending_deferreds: List[defer.Deferred] = []
+
+       def start_exporting(self):
+           pass
+
+       def send_request(self, item):
+           response = requests.post("https://httpbin.org/anything", json={"item": item})
+
+       def export_item(self, item):
+           dfd = threads.deferToThread(self.send_request, item)
+           dfd.addCallbacks(
+               callback=lambda result: logger.info(f"Successful response: {result}"),
+               errback=lambda failure: logger.info(
+                   f"Error exporting item {item}: {failure.getTraceback()}"
+               ),
+           )
+           # optionally collect them to ensure that they are awaited
+           dfd.addBoth(lambda _: self._pending_deferreds.remove(dfd))
+           self._pending_deferreds.append(dfd)
+           return dfd
+
+       async def finish_exporting(self):
+           await DeferredList(self._pending_deferreds)

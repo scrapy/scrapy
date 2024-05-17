@@ -595,6 +595,11 @@ class FromCrawlerCsvItemExporter(CsvItemExporter, FromCrawlerMixin):
     pass
 
 
+class AsyncFinishExportingExporter(CsvItemExporter, FromCrawlerMixin):
+    async def finish_exporting(self):
+        self.stream.detach()
+
+
 class FromCrawlerFileFeedStorage(FileFeedStorage, FromCrawlerMixin):
     @classmethod
     def from_crawler(cls, crawler, *args, feed_options=None, **kwargs):
@@ -1009,6 +1014,23 @@ class FeedExportTest(FeedExportTestBase):
             "FEED_EXPORT_INDENT": None,
         }
 
+        listener = IsExportingListener()
+        InstrumentedFeedSlot.subscribe__listener(listener)
+
+        with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
+            _ = yield self.exported_data(items, settings)
+            self.assertFalse(listener.start_without_finish)
+            self.assertFalse(listener.finish_without_start)
+
+    @defer.inlineCallbacks
+    def test_async_finish_exporting(self):
+        items = [
+            self.MyItem({"foo": "bar1", "egg": "spam1"}),
+        ]
+        settings = {
+            "FEEDS": {self._random_temp_filename(): {"format": "csv"}},
+            "FEED_EXPORTERS": {"csv": AsyncFinishExportingExporter},
+        }
         listener = IsExportingListener()
         InstrumentedFeedSlot.subscribe__listener(listener)
 
