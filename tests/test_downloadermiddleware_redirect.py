@@ -395,9 +395,8 @@ class MetaRefreshMiddlewareTest(unittest.TestCase):
             """content="0;URL='http://example.org/newpage'"></noscript>"""
         )
         rsp = HtmlResponse(req.url, body=body.encode())
-        req2 = self.mw.process_response(req, rsp, self.spider)
-        assert isinstance(req2, Request)
-        self.assertEqual(req2.url, "http://example.org/newpage")
+        response = self.mw.process_response(req, rsp, self.spider)
+        assert isinstance(response, Response)
 
     def test_ignore_tags_1_x_list(self):
         """Test that Scrapy 1.x behavior remains possible"""
