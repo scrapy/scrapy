@@ -20,8 +20,9 @@ from pytest import mark
 from twisted.trial import unittest
 
 import scrapy
-from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
+from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, crawl, runspider, view
 from scrapy.commands.startproject import IGNORE
+from scrapy.crawler import CrawlerProcess
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_testenv
@@ -986,6 +987,29 @@ class MySpider(scrapy.Spider):
         self.assertIn("Spider closed (finished)", log)
         self.assertIn("The value of FOO is 42", log)
 
+    def test_exporter_disabled(self):
+        with self.assertLogs() as cm:
+            command = runspider.Command()
+            settings = Settings()
+            settings.setdict(
+                {"EXTENSIONS": {"scrapy.extensions.feedexport.FeedExporter": None}},
+                priority="project",
+            )
+            command.settings = settings
+            parser = argparse.ArgumentParser(
+                formatter_class=ScrapyHelpFormatter, conflict_handler="resolve"
+            )
+            command.add_options(parser)
+            opts, _ = parser.parse_known_args(args=[])
+
+            opts.output = ["example.json"]
+
+            command.validate_feed_exporter(opts)
+            expected = (
+                "'FeedExporter' extension must be enabled for Feed Exports to work."
+            )
+            self.assertTrue(any(expected in str for str in cm.output))
+
 
 class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
     spider_filename = "myspider.pyw"
@@ -1054,6 +1078,30 @@ class MySpider(scrapy.Spider):
 """
         log = self.get_log(spider_code)
         self.assertIn("[myspider] DEBUG: It works!", log)
+
+    def test_exporter_disabled(self):
+        with self.assertLogs() as cm:
+            command = crawl.Command()
+            settings = Settings()
+            settings.setdict(
+                {"EXTENSIONS": {"scrapy.extensions.feedexport.FeedExporter": None}},
+                priority="project",
+            )
+            command.settings = settings
+            parser = argparse.ArgumentParser(
+                formatter_class=ScrapyHelpFormatter, conflict_handler="resolve"
+            )
+            command.add_options(parser)
+            opts, _ = parser.parse_known_args(args=[])
+            command.crawler_process = CrawlerProcess(settings)
+
+            opts.output = ["example.json"]
+
+            command.validate_feed_exporter(opts)
+            expected = (
+                "'FeedExporter' extension must be enabled for Feed Exports to work."
+            )
+            self.assertTrue(any(expected in str for str in cm.output))
 
     def test_output(self):
         spider_code = """

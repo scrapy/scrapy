@@ -40,6 +40,7 @@ class Command(BaseRunSpiderCommand):
     def run(self, args: List[str], opts: argparse.Namespace) -> None:
         if len(args) != 1:
             raise UsageError()
+        self.validate_feed_exporter(opts)
         filename = Path(args[0])
         if not filename.exists():
             raise UsageError(f"File not found: {filename}\n")

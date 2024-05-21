@@ -405,6 +405,7 @@ class Command(BaseRunSpiderCommand):
             raise UsageError()
         else:
             url = args[0]
+        self.validate_feed_exporter(opts)
 
         # prepare spidercls
         self.set_spidercls(url, opts)

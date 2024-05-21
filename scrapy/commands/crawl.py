@@ -23,6 +23,7 @@ class Command(BaseRunSpiderCommand):
             raise UsageError(
                 "running 'scrapy crawl' with more than one spider is not supported"
             )
+        self.validate_feed_exporter(opts)
         spname = args[0]
 
         assert self.crawler_process

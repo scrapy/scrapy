@@ -4,6 +4,7 @@ Base class for Scrapy commands
 
 import argparse
 import builtins
+import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
@@ -12,7 +13,13 @@ from twisted.python import failure
 
 from scrapy.crawler import Crawler, CrawlerProcess
 from scrapy.exceptions import UsageError
-from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
+from scrapy.utils.conf import (
+    arglist_to_dict,
+    build_component_list,
+    feed_process_params_from_cli,
+)
+
+logger = logging.getLogger(__name__)
 
 
 class ScrapyCommand:
@@ -177,6 +184,16 @@ class BaseRunSpiderCommand(ScrapyCommand):
                 opts.overwrite_output,
             )
             self.settings.set("FEEDS", feeds, priority="cmdline")
+
+    def validate_feed_exporter(self, opts):
+        feed_eport_key = "scrapy.extensions.feedexport.FeedExporter"
+
+        if opts.output:
+            extensions = build_component_list(self.settings.getwithbase("EXTENSIONS"))
+            if feed_eport_key not in extensions:
+                logger.warning(
+                    "'FeedExporter' extension must be enabled for Feed Exports to work."
+                )
 
 
 class ScrapyHelpFormatter(argparse.HelpFormatter):
