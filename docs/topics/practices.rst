@@ -106,6 +106,7 @@ reactor after ``MySpider`` has finished running.
     runner = CrawlerRunner()
 
     d = runner.crawl(MySpider)
+
     from twisted.internet import reactor
 
     d.addBoth(lambda _: reactor.stop())
