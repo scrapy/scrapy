@@ -111,7 +111,9 @@ reactor after ``MySpider`` has finished running.
     d.addBoth(lambda _: reactor.stop())
     reactor.run()  # the script will block here until the crawling is finished
 
-Same example but using a non-default reactor, is only necessary call ``install_reactor`` if you are using ``CrawlerRunner`` since ``CrawlerProcess`` already does this automatically.
+Same example but using a non-default reactor, it's only necessary call
+``install_reactor`` if you are using ``CrawlerRunner`` since ``CrawlerProcess``
+ already does this automatically.
 
 .. code-block:: python
 
