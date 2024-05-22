@@ -70,7 +70,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install system libraries
-      if: contains(matrix.python-version, 'pypy') || contains(matrix.env.TOXENV, 'pinned')
+      if: contains(matrix.python-version, 'pypy') || contains(matrix.python-version, 'beta') || contains(matrix.env.TOXENV, 'pinned')
       run: |
         sudo apt-get update
         sudo apt-get install libxml2-dev libxslt-dev
