@@ -3,7 +3,6 @@ import logging
 import re
 from io import StringIO
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -16,13 +15,14 @@ from typing import (
     cast,
     overload,
 )
+from warnings import warn
 
+from lxml import etree  # nosec
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
 from scrapy.selector import Selector
 from scrapy.utils.python import re_rsearch, to_unicode
-
-if TYPE_CHECKING:
-    from lxml._types import SupportsReadClose
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,16 @@ def xmliter(
     - a unicode string
     - a string encoded as utf-8
     """
+    warn(
+        (
+            "xmliter is deprecated and its use strongly discouraged because "
+            "it is vulnerable to ReDoS attacks. Use xmliter_lxml instead. See "
+            "https://github.com/scrapy/scrapy/security/advisories/GHSA-cc65-xxvf-f7r9"
+        ),
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+
     nodename_patt = re.escape(nodename)
 
     DOCUMENT_HEADER_RE = re.compile(r"<\?xml[^>]+>\s*", re.S)
@@ -81,15 +91,35 @@ def xmliter_lxml(
     namespace: Optional[str] = None,
     prefix: str = "x",
 ) -> Generator[Selector, Any, None]:
-    from lxml import etree
-
     reader = _StreamReader(obj)
     tag = f"{{{namespace}}}{nodename}" if namespace else nodename
     iterable = etree.iterparse(
-        cast("SupportsReadClose[bytes]", reader), tag=tag, encoding=reader.encoding
+        reader,
+        encoding=reader.encoding,
+        events=("end", "start-ns"),
+        resolve_entities=False,
+        huge_tree=True,
     )
     selxpath = "//" + (f"{prefix}:{nodename}" if namespace else nodename)
-    for _, node in iterable:
+    needs_namespace_resolution = not namespace and ":" in nodename
+    if needs_namespace_resolution:
+        prefix, nodename = nodename.split(":", maxsplit=1)
+    for event, data in iterable:
+        if event == "start-ns":
+            assert isinstance(data, tuple)
+            if needs_namespace_resolution:
+                _prefix, _namespace = data
+                if _prefix != prefix:
+                    continue
+                namespace = _namespace
+                needs_namespace_resolution = False
+                selxpath = f"//{prefix}:{nodename}"
+                tag = f"{{{namespace}}}{nodename}"
+            continue
+        assert isinstance(data, etree._Element)
+        node = data
+        if node.tag != tag:
+            continue
         nodetext = etree.tostring(node, encoding="unicode")
         node.clear()
         xs = Selector(text=nodetext, type="xml")
@@ -192,18 +222,17 @@ def csviter(
 
 
 @overload
-def _body_or_str(obj: Union[Response, str, bytes]) -> str:
-    ...
+def _body_or_str(obj: Union[Response, str, bytes]) -> str: ...
 
 
 @overload
-def _body_or_str(obj: Union[Response, str, bytes], unicode: Literal[True]) -> str:
-    ...
+def _body_or_str(obj: Union[Response, str, bytes], unicode: Literal[True]) -> str: ...
 
 
 @overload
-def _body_or_str(obj: Union[Response, str, bytes], unicode: Literal[False]) -> bytes:
-    ...
+def _body_or_str(
+    obj: Union[Response, str, bytes], unicode: Literal[False]
+) -> bytes: ...
 
 
 def _body_or_str(

@@ -3,6 +3,7 @@ DefaultHeaders downloader middleware
 
 See documentation in docs/topics/downloader-middleware.rst
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterable, Tuple, Union

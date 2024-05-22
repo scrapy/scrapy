@@ -76,11 +76,11 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def _test_delay(self, total, delay, randomize=False):
-        crawl_kwargs = dict(
-            maxlatency=delay * 2,
-            mockserver=self.mockserver,
-            total=total,
-        )
+        crawl_kwargs = {
+            "maxlatency": delay * 2,
+            "mockserver": self.mockserver,
+            "total": total,
+        }
         tolerance = 1 - (0.6 if randomize else 0.2)
 
         settings = {"DOWNLOAD_DELAY": delay, "RANDOMIZE_DOWNLOAD_DELAY": randomize}

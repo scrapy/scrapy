@@ -532,14 +532,14 @@ See here the methods that you can override in your custom Files Pipeline:
       .. code-block:: python
 
         from pathlib import PurePosixPath
-        from urllib.parse import urlparse
+        from scrapy.utils.httpobj import urlparse_cached
 
         from scrapy.pipelines.files import FilesPipeline
 
 
         class MyFilesPipeline(FilesPipeline):
             def file_path(self, request, response=None, info=None, *, item=None):
-                return "files/" + PurePosixPath(urlparse(request.url).path).name
+                return "files/" + PurePosixPath(urlparse_cached(request).path).name
 
       Similarly, you can use the ``item`` to determine the file path based on some item 
       property.
@@ -690,14 +690,14 @@ See here the methods that you can override in your custom Images Pipeline:
       .. code-block:: python
 
         from pathlib import PurePosixPath
-        from urllib.parse import urlparse
+        from scrapy.utils.httpobj import urlparse_cached
 
         from scrapy.pipelines.images import ImagesPipeline
 
 
         class MyImagesPipeline(ImagesPipeline):
             def file_path(self, request, response=None, info=None, *, item=None):
-                return "files/" + PurePosixPath(urlparse(request.url).path).name
+                return "files/" + PurePosixPath(urlparse_cached(request).path).name
 
       Similarly, you can use the ``item`` to determine the file path based on some item 
       property.

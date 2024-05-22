@@ -2,6 +2,7 @@
 This module implements a class which returns the appropriate Response class
 based on different criteria.
 """
+
 from io import StringIO
 from mimetypes import MimeTypes
 from pkgutil import get_data
@@ -21,9 +22,9 @@ class ResponseTypes:
         "application/xhtml+xml": "scrapy.http.HtmlResponse",
         "application/vnd.wap.xhtml+xml": "scrapy.http.HtmlResponse",
         "application/xml": "scrapy.http.XmlResponse",
-        "application/json": "scrapy.http.TextResponse",
-        "application/x-json": "scrapy.http.TextResponse",
-        "application/json-amazonui-streaming": "scrapy.http.TextResponse",
+        "application/json": "scrapy.http.JsonResponse",
+        "application/x-json": "scrapy.http.JsonResponse",
+        "application/json-amazonui-streaming": "scrapy.http.JsonResponse",
         "application/javascript": "scrapy.http.TextResponse",
         "application/x-javascript": "scrapy.http.TextResponse",
         "text/xml": "scrapy.http.XmlResponse",

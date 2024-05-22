@@ -1,31 +1,41 @@
 import struct
 from gzip import GzipFile
 from io import BytesIO
-from typing import List
 
 from scrapy.http import Response
 
+from ._compression import _CHUNK_SIZE, _DecompressionMaxSizeExceeded
 
-def gunzip(data: bytes) -> bytes:
+
+def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
     """Gunzip the given data and return as much data as possible.
 
     This is resilient to CRC checksum errors.
     """
     f = GzipFile(fileobj=BytesIO(data))
-    output_list: List[bytes] = []
+    output_stream = BytesIO()
     chunk = b"."
+    decompressed_size = 0
     while chunk:
         try:
-            chunk = f.read1(8196)
-            output_list.append(chunk)
+            chunk = f.read1(_CHUNK_SIZE)
         except (OSError, EOFError, struct.error):
             # complete only if there is some data, otherwise re-raise
             # see issue 87 about catching struct.error
-            # some pages are quite small so output_list is empty
-            if output_list:
+            # some pages are quite small so output_stream is empty
+            if output_stream.getbuffer().nbytes > 0:
                 break
             raise
-    return b"".join(output_list)
+        decompressed_size += len(chunk)
+        if max_size and decompressed_size > max_size:
+            raise _DecompressionMaxSizeExceeded(
+                f"The number of bytes decompressed so far "
+                f"({decompressed_size} B) exceed the specified maximum "
+                f"({max_size} B)."
+            )
+        output_stream.write(chunk)
+    output_stream.seek(0)
+    return output_stream.read()
 
 
 def gzip_magic_number(response: Response) -> bool:

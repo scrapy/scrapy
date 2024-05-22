@@ -58,7 +58,6 @@ def get_settings_priority(priority: Union[int, str]) -> int:
 
 
 class SettingsAttribute:
-
     """Class for storing data related to settings attributes.
 
     This class is intended for internal usage, you should try Settings class

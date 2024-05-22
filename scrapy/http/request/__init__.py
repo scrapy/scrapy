@@ -4,8 +4,12 @@ requests in Scrapy.
 
 See documentation in docs/topics/request-response.rst
 """
+
+from __future__ import annotations
+
 import inspect
 from typing import (
+    TYPE_CHECKING,
     Any,
     AnyStr,
     Callable,
@@ -16,8 +20,6 @@ from typing import (
     NoReturn,
     Optional,
     Tuple,
-    Type,
-    TypeVar,
     Union,
     cast,
 )
@@ -31,7 +33,9 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
 
-RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
 
 
 def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
@@ -185,11 +189,11 @@ class Request(object_ref):
 
     @classmethod
     def from_curl(
-        cls: Type[RequestTypeVar],
+        cls,
         curl_command: str,
         ignore_unknown_options: bool = True,
         **kwargs: Any,
-    ) -> RequestTypeVar:
+    ) -> Self:
         """Create a Request object from a string containing a `cURL
         <https://curl.haxx.se/>`_ command. It populates the HTTP method, the
         URL, the headers, the cookies and the body. It accepts the same
@@ -231,12 +235,16 @@ class Request(object_ref):
         """
         d = {
             "url": self.url,  # urls are safe (safe_string_url)
-            "callback": _find_method(spider, self.callback)
-            if callable(self.callback)
-            else self.callback,
-            "errback": _find_method(spider, self.errback)
-            if callable(self.errback)
-            else self.errback,
+            "callback": (
+                _find_method(spider, self.callback)
+                if callable(self.callback)
+                else self.callback
+            ),
+            "errback": (
+                _find_method(spider, self.errback)
+                if callable(self.errback)
+                else self.errback
+            ),
             "headers": dict(self.headers),
         }
         for attr in self.attributes:

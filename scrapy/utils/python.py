@@ -1,6 +1,9 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
+
+from __future__ import annotations
+
 import collections.abc
 import gc
 import inspect
@@ -10,6 +13,7 @@ import weakref
 from functools import partial, wraps
 from itertools import chain
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncGenerator,
     AsyncIterable,
@@ -24,11 +28,20 @@ from typing import (
     Optional,
     Pattern,
     Tuple,
+    TypeVar,
     Union,
     overload,
 )
 
 from scrapy.utils.asyncgen import as_async_generator
+
+if TYPE_CHECKING:
+    # typing.Concatenate and typing.ParamSpec require Python 3.10
+    from typing_extensions import Concatenate, ParamSpec
+
+    _P = ParamSpec("_P")
+
+_T = TypeVar("_T")
 
 
 def flatten(x: Iterable) -> list:
@@ -57,8 +70,7 @@ def iflatten(x: Iterable) -> Iterable:
     Similar to ``.flatten()``, but returns iterator instead"""
     for el in x:
         if is_listlike(el):
-            for el_ in iflatten(el):
-                yield el_
+            yield from iflatten(el)
         else:
             yield el
 
@@ -162,21 +174,26 @@ def re_rsearch(
         pattern = re.compile(pattern)
 
     for chunk, offset in _chunk_iter():
-        matches = [match for match in pattern.finditer(chunk)]
+        matches = list(pattern.finditer(chunk))
         if matches:
             start, end = matches[-1].span()
             return offset + start, offset + end
     return None
 
 
-def memoizemethod_noargs(method: Callable) -> Callable:
+_SelfT = TypeVar("_SelfT")
+
+
+def memoizemethod_noargs(
+    method: Callable[Concatenate[_SelfT, _P], _T]
+) -> Callable[Concatenate[_SelfT, _P], _T]:
     """Decorator to cache the result of a method (without arguments) using a
     weak reference to its object
     """
-    cache: weakref.WeakKeyDictionary[Any, Any] = weakref.WeakKeyDictionary()
+    cache: weakref.WeakKeyDictionary[_SelfT, _T] = weakref.WeakKeyDictionary()
 
     @wraps(method)
-    def new_method(self: Any, *args: Any, **kwargs: Any) -> Any:
+    def new_method(self: _SelfT, *args: _P.args, **kwargs: _P.kwargs) -> _T:
         if self not in cache:
             cache[self] = method(self, *args, **kwargs)
         return cache[self]
@@ -286,13 +303,11 @@ def equal_attributes(
 
 
 @overload
-def without_none_values(iterable: Mapping) -> dict:
-    ...
+def without_none_values(iterable: Mapping) -> dict: ...
 
 
 @overload
-def without_none_values(iterable: Iterable) -> Iterable:
-    ...
+def without_none_values(iterable: Iterable) -> Iterable: ...
 
 
 def without_none_values(iterable: Union[Mapping, Iterable]) -> Union[dict, Iterable]:
@@ -316,7 +331,7 @@ def global_object_name(obj: Any) -> str:
     >>> global_object_name(Request)
     'scrapy.http.request.Request'
     """
-    return f"{obj.__module__}.{obj.__name__}"
+    return f"{obj.__module__}.{obj.__qualname__}"
 
 
 if hasattr(sys, "pypy_version_info"):

@@ -1,4 +1,5 @@
 """DBM-like dummy module"""
+
 import collections
 from typing import Any, DefaultDict
 

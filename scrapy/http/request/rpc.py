@@ -4,11 +4,16 @@ This module implements the XmlRpcRequest class which is a more convenient class
 
 See documentation in docs/topics/request-response.rst
 """
+
 import xmlrpc.client as xmlrpclib
 from typing import Any, Optional
 
+import defusedxml.xmlrpc
+
 from scrapy.http.request import Request
 from scrapy.utils.python import get_func_args
+
+defusedxml.xmlrpc.monkey_patch()
 
 DUMPS_ARGS = get_func_args(xmlrpclib.dumps)
 

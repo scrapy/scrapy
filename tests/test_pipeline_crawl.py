@@ -1,5 +1,6 @@
 import shutil
 from pathlib import Path
+from tempfile import mkdtemp
 from typing import Optional, Set
 
 from testfixtures import LogCapture
@@ -9,6 +10,7 @@ from w3lib.url import add_or_replace_parameter
 
 from scrapy import signals
 from scrapy.crawler import CrawlerRunner
+from scrapy.utils.misc import load_object
 from tests.mockserver import MockServer
 from tests.spiders import SimpleSpider
 
@@ -66,8 +68,7 @@ class FileDownloadCrawlTestCase(TestCase):
         self.mockserver.__enter__()
 
         # prepare a directory for storing files
-        self.tmpmediastore = Path(self.mktemp())
-        self.tmpmediastore.mkdir()
+        self.tmpmediastore = Path(mkdtemp())
         self.settings = {
             "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             "ITEM_PIPELINES": {self.pipeline_class: 1},
@@ -139,7 +140,7 @@ class FileDownloadCrawlTestCase(TestCase):
         self.assertEqual(logs.count(file_dl_failure), 3)
 
         # check that no files were written to the media store
-        self.assertEqual([x for x in self.tmpmediastore.iterdir()], [])
+        self.assertEqual(list(self.tmpmediastore.iterdir()), [])
 
     @defer.inlineCallbacks
     def test_download_media(self):
@@ -192,6 +193,29 @@ class FileDownloadCrawlTestCase(TestCase):
         self.assertEqual(
             crawler.stats.get_value("downloader/response_status_count/302"), 3
         )
+
+    @defer.inlineCallbacks
+    def test_download_media_file_path_error(self):
+        cls = load_object(self.pipeline_class)
+
+        class ExceptionRaisingMediaPipeline(cls):
+            def file_path(self, request, response=None, info=None, *, item=None):
+                return 1 / 0
+
+        settings = {
+            **self.settings,
+            "ITEM_PIPELINES": {ExceptionRaisingMediaPipeline: 1},
+        }
+        runner = CrawlerRunner(settings)
+        crawler = self._create_crawler(MediaDownloadSpider, runner=runner)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                self.mockserver.url("/files/images/"),
+                media_key=self.media_key,
+                media_urls_key=self.media_urls_key,
+                mockserver=self.mockserver,
+            )
+        self.assertIn("ZeroDivisionError", str(log))
 
 
 skip_pillow: Optional[str]
