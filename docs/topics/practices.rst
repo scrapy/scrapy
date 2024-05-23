@@ -134,6 +134,7 @@ Same example but using a non-default reactor, it's only necessary call
     install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
     runner = CrawlerRunner()
     d = runner.crawl(MySpider)
+
     from twisted.internet import reactor
 
     d.addBoth(lambda _: reactor.stop())
