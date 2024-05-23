@@ -202,6 +202,7 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
     runner.crawl(MySpider1)
     runner.crawl(MySpider2)
     d = runner.join()
+
     from twisted.internet import reactor
 
     d.addBoth(lambda _: reactor.stop())
