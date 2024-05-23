@@ -128,6 +128,7 @@ Same example but using a non-default reactor, it's only necessary call
 
 
     configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+
     from scrapy.utils.reactor import install_reactor
 
     install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
