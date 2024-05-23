@@ -1,4 +1,4 @@
-name: macOS
+name: macOS.
 on: [push, pull_request]
 
 concurrency:
