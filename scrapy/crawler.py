@@ -4,6 +4,7 @@ import logging
 import pprint
 import signal
 import warnings
+import traceback
 from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Set, Type, Union, cast
 
 from twisted.internet.defer import (
@@ -155,7 +156,17 @@ class Crawler:
             self._update_root_log_handler()
             self.engine = self._create_engine()
             start_requests = iter(self.spider.start_requests())
-            yield self.engine.open_spider(self.spider, start_requests)
+            try:
+                yield self.engine.open_spider(self.spider, start_requests)
+            except Exception as e:
+                tb_str = traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)
+                self.stats.set_value('log/traceback', tb_str)
+                self.signals.send_catch_log(
+                    signal=signals.spider_error,
+                    failure=e,
+                    spider=self.spider
+                )
+                raise
             yield maybeDeferred(self.engine.start)
         except Exception:
             self.crawling = False
