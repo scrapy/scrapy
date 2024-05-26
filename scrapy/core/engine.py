@@ -389,7 +389,7 @@ class ExecutionEngine:
             self.slot.heartbeat.start(5)
         except Exception as e:
             # Capture detailed traceback
-            tb_str = traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)
+            tb_str = traceback.format_exception(type(e), e, e.__traceback__)
             self.crawler.stats.set_value('log/traceback', tb_str)
             self.crawler.signals.send_catch_log(
                 signal=signals.spider_error,
