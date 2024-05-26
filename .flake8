@@ -9,6 +9,7 @@ exclude =
 per-file-ignores =
 # Exclude files that are meant to provide top-level imports
 # E402: Module level import not at top of file
+    tests/CrawlerRunner/change_reactor.py:E402
 # F401: Module imported but unused
     scrapy/__init__.py:E402
     scrapy/core/downloader/handlers/http.py:F401
