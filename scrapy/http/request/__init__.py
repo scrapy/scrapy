@@ -8,6 +8,8 @@ See documentation in docs/topics/request-response.rst
 from __future__ import annotations
 
 import inspect
+import warnings
+from collections.abc import MutableMapping, MutableSequence
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -61,6 +63,8 @@ def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
         "called."
     )
 
+def _is_mutable(obj):
+    return isinstance(obj, (MutableMapping, MutableSequence))
 
 class Request(object_ref):
     """Represents an HTTP request, which is usually generated in a Spider and
@@ -132,6 +136,15 @@ class Request(object_ref):
             dict(cb_kwargs) if cb_kwargs else None
         )
         self.flags: List[str] = [] if flags is None else list(flags)
+        # Check for mutable objects in cb_kwargs if JOBDIR is set
+        if settings and 'JOBDIR' in settings:
+            for key, value in self.cb_kwargs.items():
+                if _is_mutable(value):
+                    warnings.warn(
+                        f"Mutable object detected in cb_kwargs for key '{key}'. "
+                        f"Mutations to this object will not be persisted when JOBDIR is set.",
+                        UserWarning
+                    )
 
     @property
     def cb_kwargs(self) -> Dict[str, Any]:
