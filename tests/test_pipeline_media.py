@@ -67,6 +67,13 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
         response = Response("http://url", body=b"")
         assert self.pipe.media_downloaded(response, request, self.info) is response
 
+    def test_media_downloaded_201(self):
+        request = Request("http://url")
+        # Create a response object with status code 201
+        response = Response("http://url", status=201)
+        # Call the media_downloaded method and assert that it returns the response object
+        assert self.pipe.media_downloaded(response, request, self.info) is response
+
     def test_default_media_failed(self):
         request = Request("http://url")
         fail = Failure(Exception())
