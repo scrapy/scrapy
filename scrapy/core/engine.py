@@ -6,8 +6,8 @@ For more information see docs/topics/architecture.rst
 """
 
 import logging
-from time import time
 import traceback
+from time import time
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -384,17 +384,17 @@ class ExecutionEngine:
             yield self.scraper.open_spider(spider)
             assert self.crawler.stats
             self.crawler.stats.open_spider(spider)
-            yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
+            yield self.signals.send_catch_log_deferred(
+                signals.spider_opened, spider=spider
+            )
             self.slot.nextcall.schedule()
             self.slot.heartbeat.start(5)
         except Exception as e:
             # Capture detailed traceback
             tb_str = traceback.format_exception(type(e), e, e.__traceback__)
-            self.crawler.stats.set_value('log/traceback', tb_str)
+            self.crawler.stats.set_value("log/traceback", tb_str)
             self.crawler.signals.send_catch_log(
-                signal=signals.spider_error,
-                failure=e,
-                spider=spider
+                signal=signals.spider_error, failure=e, spider=spider
             )
             raise
 
