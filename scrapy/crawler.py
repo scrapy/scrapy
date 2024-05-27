@@ -129,6 +129,8 @@ class Crawler:
             if is_asyncio_reactor_installed() and event_loop:
                 verify_installed_asyncio_event_loop(event_loop)
 
+            log_reactor_info()
+
         self.extensions = ExtensionManager.from_crawler(self)
         self.settings.freeze()
 
