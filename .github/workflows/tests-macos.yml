@@ -3,7 +3,7 @@ on: [push, pull_request]
 
 jobs:
   tests:
-    runs-on: macos-11
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
