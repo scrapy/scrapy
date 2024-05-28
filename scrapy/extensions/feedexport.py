@@ -238,13 +238,16 @@ class S3FeedStorage(BlockingFeedStorage):
         self.acl: Optional[str] = acl
         self.endpoint_url: Optional[str] = endpoint_url
         self.region_name: Optional[str] = region_name
+        # It can be either botocore.client.BaseClient or mypy_boto3_s3.S3Client,
+        # there seems to be no good way to infer it statically.
+        self.s3_client: Any
 
         if IS_BOTO3_AVAILABLE:
             import boto3.session
 
-            session = boto3.session.Session()
+            boto3_session = boto3.session.Session()
 
-            self.s3_client = session.client(
+            self.s3_client = boto3_session.client(
                 "s3",
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_key,
@@ -261,9 +264,9 @@ class S3FeedStorage(BlockingFeedStorage):
 
             import botocore.session
 
-            session = botocore.session.get_session()
+            botocore_session = botocore.session.get_session()
 
-            self.s3_client = session.create_client(
+            self.s3_client = botocore_session.create_client(
                 "s3",
                 aws_access_key_id=self.access_key,
                 aws_secret_access_key=self.secret_key,
