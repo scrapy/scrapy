@@ -323,15 +323,18 @@ def _load_policy_class(
     try:
         return cast(Type[ReferrerPolicy], load_object(policy))
     except ValueError:
-        try:
-            return _policy_classes[policy.lower()]
-        except KeyError:
-            msg = f"Could not load referrer policy {policy!r}"
-            if not warning_only:
-                raise RuntimeError(msg)
-            else:
-                warnings.warn(msg, RuntimeWarning)
-                return None
+        tokens = [token.strip() for token in policy.lower().split(",")]
+        # https://www.w3.org/TR/referrer-policy/#parse-referrer-policy-from-header
+        for token in tokens[::-1]:
+            if token in _policy_classes:
+                return _policy_classes[token]
+
+        msg = f"Could not load referrer policy {policy!r}"
+        if not warning_only:
+            raise RuntimeError(msg)
+        else:
+            warnings.warn(msg, RuntimeWarning)
+            return None
 
 
 class RefererMiddleware:
