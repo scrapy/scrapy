@@ -884,6 +884,53 @@ class TestSettingsPolicyByName(TestCase):
         with self.assertRaises(RuntimeError):
             RefererMiddleware(settings)
 
+    def test_multiple_policy_tokens(self):
+        # test parsing without space(s) after the comma
+        settings1 = Settings(
+            {
+                "REFERRER_POLICY": ",".join(
+                    [
+                        "some-custom-unknown-policy",
+                        POLICY_SAME_ORIGIN,
+                        POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+                        "another-custom-unknown-policy",
+                    ]
+                )
+            }
+        )
+        mw1 = RefererMiddleware(settings1)
+        self.assertEqual(mw1.default_policy, StrictOriginWhenCrossOriginPolicy)
+
+        # test parsing with space(s) after the comma
+        settings2 = Settings(
+            {
+                "REFERRER_POLICY": ",    ".join(
+                    [
+                        POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+                        "another-custom-unknown-policy",
+                        POLICY_UNSAFE_URL,
+                    ]
+                )
+            }
+        )
+        mw2 = RefererMiddleware(settings2)
+        self.assertEqual(mw2.default_policy, UnsafeUrlPolicy)
+
+    def test_multiple_policy_tokens_all_invalid(self):
+        settings = Settings(
+            {
+                "REFERRER_POLICY": ",".join(
+                    [
+                        "some-custom-unknown-policy",
+                        "another-custom-unknown-policy",
+                        "yet-another-custom-unknown-policy",
+                    ]
+                )
+            }
+        )
+        with self.assertRaises(RuntimeError):
+            RefererMiddleware(settings)
+
 
 class TestPolicyHeaderPrecedence001(MixinUnsafeUrl, TestRefererMiddleware):
     settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.SameOriginPolicy"}
