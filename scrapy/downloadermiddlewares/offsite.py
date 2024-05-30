@@ -28,7 +28,11 @@ class OffsiteMiddleware:
         self.process_request(request, spider)
 
     def process_request(self, request, spider):
-        if request.dont_filter or self.should_follow(request, spider):
+        if (
+            request.dont_filter
+            or request.meta.get("allow_offsite")
+            or self.should_follow(request, spider)
+        ):
             return None
         domain = urlparse_cached(request).hostname
         if domain and domain not in self.domains_seen:
