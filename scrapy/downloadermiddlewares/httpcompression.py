@@ -46,6 +46,12 @@ else:
     ACCEPTED_ENCODINGS.append(b"zstd")
 
 
+class UnsupportedCompressionWarning(Warning):
+    """Warning category for unsupported compression algorithms"""
+
+    pass
+
+
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from web sites"""
@@ -178,6 +184,14 @@ class HttpCompressionMiddleware:
             return _inflate(body, max_size=max_size)
         if encoding == b"br" and b"br" in ACCEPTED_ENCODINGS:
             return _unbrotli(body, max_size=max_size)
-        if encoding == b"zstd" and b"zstd" in ACCEPTED_ENCODINGS:
+        if encoding == b"zstd" and  b"zstd" in ACCEPTED_ENCODINGS:
             return _unzstd(body, max_size=max_size)
+        warnings.warn(
+            f"Got unsupported compression format: {encoding}."
+            f"Consider changing your headers, excluding {encoding} from 'Accept-Encoding'"
+            "or install brotli (brotlicffi) or zstandard, "
+            "depending on what compression algorithm are being used."
+            "Now returning response body as is.",
+            UnsupportedCompressionWarning,
+        )
         return body
