@@ -29,7 +29,7 @@ from twisted.internet.ssl import Certificate
 
 from scrapy.exceptions import NotSupported
 from scrapy.http.headers import Headers
-from scrapy.http.request import Request
+from scrapy.http.request import CookiesT, Request
 from scrapy.link import Link
 from scrapy.utils.trackref import object_ref
 
@@ -181,7 +181,7 @@ class Response(object_ref):
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
-        cookies: Optional[Union[Dict[str, str], List[Dict[str, str]]]] = None,
+        cookies: Optional[CookiesT] = None,
         meta: Optional[Dict[str, Any]] = None,
         encoding: Optional[str] = "utf-8",
         priority: int = 0,
@@ -234,7 +234,7 @@ class Response(object_ref):
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
-        cookies: Optional[Union[Dict[str, str], List[Dict[str, str]]]] = None,
+        cookies: Optional[CookiesT] = None,
         meta: Optional[Dict[str, Any]] = None,
         encoding: Optional[str] = "utf-8",
         priority: int = 0,

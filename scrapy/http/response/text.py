@@ -36,7 +36,7 @@ from w3lib.encoding import (
 )
 from w3lib.html import strip_html5_whitespace
 
-from scrapy.http import Request
+from scrapy.http.request import CookiesT, Request
 from scrapy.http.response import Response
 from scrapy.link import Link
 from scrapy.utils.python import memoizemethod_noargs, to_unicode
@@ -183,7 +183,7 @@ class TextResponse(Response):
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
-        cookies: Optional[Union[Dict[str, str], List[Dict[str, str]]]] = None,
+        cookies: Optional[CookiesT] = None,
         meta: Optional[Dict[str, Any]] = None,
         encoding: Optional[str] = None,
         priority: int = 0,
@@ -236,7 +236,7 @@ class TextResponse(Response):
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
-        cookies: Optional[Union[Dict[str, str], List[Dict[str, str]]]] = None,
+        cookies: Optional[CookiesT] = None,
         meta: Optional[Dict[str, Any]] = None,
         encoding: Optional[str] = None,
         priority: int = 0,
