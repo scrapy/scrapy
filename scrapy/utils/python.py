@@ -46,7 +46,7 @@ _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
 
 
-def flatten(x: Iterable) -> list:
+def flatten(x: Iterable[Any]) -> List[Any]:
     """flatten(sequence) -> list
 
     Returns a single, flat list which contains all elements retrieved
@@ -66,7 +66,7 @@ def flatten(x: Iterable) -> list:
     return list(iflatten(x))
 
 
-def iflatten(x: Iterable) -> Iterable:
+def iflatten(x: Iterable[Any]) -> Iterable[Any]:
     """iflatten(sequence) -> iterator
 
     Similar to ``.flatten()``, but returns iterator instead"""
@@ -101,10 +101,10 @@ def is_listlike(x: Any) -> bool:
     return hasattr(x, "__iter__") and not isinstance(x, (str, bytes))
 
 
-def unique(list_: Iterable, key: Callable[[Any], Any] = lambda x: x) -> list:
+def unique(list_: Iterable[_T], key: Callable[[_T], Any] = lambda x: x) -> List[_T]:
     """efficient function to uniquify a list preserving item order"""
     seen = set()
-    result = []
+    result: List[_T] = []
     for item in list_:
         seenkey = key(item)
         if seenkey in seen:
