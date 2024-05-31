@@ -148,7 +148,7 @@ def to_bytes(
 
 
 def re_rsearch(
-    pattern: Union[str, Pattern], text: str, chunk_size: int = 1024
+    pattern: Union[str, Pattern[str]], text: str, chunk_size: int = 1024
 ) -> Optional[Tuple[int, int]]:
     """
     This function does a reverse search in a text using a regular expression
