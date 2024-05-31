@@ -110,7 +110,7 @@ class CaseInsensitiveDict(collections.UserDict):
     as keys and allows case-insensitive lookups.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._keys: dict = {}
         super().__init__(*args, **kwargs)
 

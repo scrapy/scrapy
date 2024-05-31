@@ -119,7 +119,7 @@ class H2Agent:
             self._reactor, self._context_factory, connect_timeout, bind_address
         )
 
-    def get_endpoint(self, uri: URI):
+    def get_endpoint(self, uri: URI) -> HostnameEndpoint:
         return self.endpoint_factory.endpointForURI(uri)
 
     def get_key(self, uri: URI) -> Tuple:
@@ -161,7 +161,7 @@ class ScrapyProxyH2Agent(H2Agent):
         )
         self._proxy_uri = proxy_uri
 
-    def get_endpoint(self, uri: URI):
+    def get_endpoint(self, uri: URI) -> HostnameEndpoint:
         return self.endpoint_factory.endpointForURI(self._proxy_uri)
 
     def get_key(self, uri: URI) -> Tuple:

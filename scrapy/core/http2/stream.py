@@ -1,7 +1,7 @@
 import logging
 from enum import Enum
 from io import BytesIO
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from h2.errors import ErrorCodes
 from h2.exceptions import H2Error, ProtocolError, StreamClosedError
@@ -142,7 +142,7 @@ class Stream:
             "headers": Headers({}),
         }
 
-        def _cancel(_) -> None:
+        def _cancel(_: Any) -> None:
             # Close this stream as gracefully as possible
             # If the associated request is initiated we reset this stream
             # else we directly call close() method
