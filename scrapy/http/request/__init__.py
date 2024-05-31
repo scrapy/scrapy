@@ -97,7 +97,7 @@ class Request(object_ref):
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
-        cookies: Optional[Union[dict, List[dict]]] = None,
+        cookies: Optional[Union[Dict[str, str], List[Dict[str, str]]]] = None,
         meta: Optional[Dict[str, Any]] = None,
         encoding: str = "utf-8",
         priority: int = 0,
@@ -123,7 +123,7 @@ class Request(object_ref):
         self.callback: Optional[Callable] = callback
         self.errback: Optional[Callable] = errback
 
-        self.cookies: Union[dict, List[dict]] = cookies or {}
+        self.cookies: Union[Dict[str, str], List[Dict[str, str]]] = cookies or {}
         self.headers: Headers = Headers(headers or {}, encoding=encoding)
         self.dont_filter: bool = dont_filter
 

@@ -3,7 +3,7 @@ import itertools
 import logging
 from collections import deque
 from ipaddress import IPv4Address, IPv6Address
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
@@ -115,7 +115,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
         # Some meta data of this connection
         # initialized when connection is successfully made
-        self.metadata: Dict = {
+        self.metadata: Dict[str, Any] = {
             # Peer certificate instance
             "certificate": None,
             # Address of the server we are connected to which

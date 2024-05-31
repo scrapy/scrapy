@@ -27,7 +27,10 @@ class DownloadHandlers:
         self._handlers: Dict[str, Any] = {}  # stores instanced handlers for schemes
         self._notconfigured: Dict[str, str] = {}  # remembers failed handlers
         handlers: Dict[str, Union[str, Callable]] = without_none_values(
-            crawler.settings.getwithbase("DOWNLOAD_HANDLERS")
+            cast(
+                Dict[str, Union[str, Callable]],
+                crawler.settings.getwithbase("DOWNLOAD_HANDLERS"),
+            )
         )
         for scheme, clspath in handlers.items():
             self._schemes[scheme] = clspath

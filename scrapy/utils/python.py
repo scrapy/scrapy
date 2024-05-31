@@ -42,6 +42,8 @@ if TYPE_CHECKING:
     _P = ParamSpec("_P")
 
 _T = TypeVar("_T")
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
 
 
 def flatten(x: Iterable) -> list:
@@ -303,14 +305,16 @@ def equal_attributes(
 
 
 @overload
-def without_none_values(iterable: Mapping) -> dict: ...
+def without_none_values(iterable: Mapping[_KT, _VT]) -> Dict[_KT, _VT]: ...
 
 
 @overload
-def without_none_values(iterable: Iterable) -> Iterable: ...
+def without_none_values(iterable: Iterable[_KT]) -> Iterable[_KT]: ...
 
 
-def without_none_values(iterable: Union[Mapping, Iterable]) -> Union[dict, Iterable]:
+def without_none_values(
+    iterable: Union[Mapping[_KT, _VT], Iterable[_KT]]
+) -> Union[Dict[_KT, _VT], Iterable[_KT]]:
     """Return a copy of ``iterable`` with all ``None`` entries removed.
 
     If ``iterable`` is a mapping, return a dictionary where all pairs that have

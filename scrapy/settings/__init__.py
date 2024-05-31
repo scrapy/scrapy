@@ -411,7 +411,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """
         self._assert_mutability()
         if isinstance(values, str):
-            values = cast(dict, json.loads(values))
+            values = cast(Dict[_SettingsKeyT, Any], json.loads(values))
         if values is not None:
             if isinstance(values, BaseSettings):
                 for name, value in values.items():

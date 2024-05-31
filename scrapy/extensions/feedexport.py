@@ -694,7 +694,9 @@ class FeedExporter:
         self.slots = slots
 
     def _load_components(self, setting_prefix: str) -> Dict[str, Any]:
-        conf = without_none_values(self.settings.getwithbase(setting_prefix))
+        conf = without_none_values(
+            cast(Dict[str, str], self.settings.getwithbase(setting_prefix))
+        )
         d = {}
         for k, v in conf.items():
             try:

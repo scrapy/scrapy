@@ -16,6 +16,7 @@ from typing import (
     MutableMapping,
     Optional,
     Union,
+    cast,
 )
 
 from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
@@ -173,7 +174,7 @@ def feed_process_params_from_cli(
     suitable to be used as the FEEDS setting.
     """
     valid_output_formats: Iterable[str] = without_none_values(
-        settings.getwithbase("FEED_EXPORTERS")
+        cast(Dict[str, str], settings.getwithbase("FEED_EXPORTERS"))
     ).keys()
 
     def check_valid_format(output_format: str) -> None:
