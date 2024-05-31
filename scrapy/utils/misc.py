@@ -111,7 +111,7 @@ def walk_modules(path: str) -> List[ModuleType]:
     return mods
 
 
-def md5sum(file: IO) -> str:
+def md5sum(file: IO[bytes]) -> str:
     """Calculate the md5 checksum of a file-like object without reading its
     whole content in memory.
 

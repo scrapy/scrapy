@@ -47,7 +47,7 @@ def _to_string(path: Union[str, PathLike]) -> str:
     return str(path)  # convert a Path object to string
 
 
-def _md5sum(file: IO) -> str:
+def _md5sum(file: IO[bytes]) -> str:
     """Calculate the md5 checksum of a file-like object without reading its
     whole content in memory.
 
