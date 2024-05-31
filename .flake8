@@ -16,6 +16,7 @@ per-file-ignores =
     scrapy/linkextractors/__init__.py:E402,F401
     scrapy/selector/__init__.py:F401
     scrapy/spiders/__init__.py:E402,F401
+    tests/CrawlerRunner/change_reactor.py:E402
 
     # Issues pending a review:
     scrapy/utils/url.py:F403,F405

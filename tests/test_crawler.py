@@ -926,3 +926,11 @@ class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
         self.assertIn("INFO: Host: not.a.real.domain", log)
         self.assertIn("INFO: Type: <class 'ipaddress.IPv4Address'>", log)
         self.assertIn("INFO: IP address: 127.0.0.1", log)
+
+    def test_change_default_reactor(self):
+        log = self.run_script("change_reactor.py")
+        self.assertIn(
+            "DEBUG: Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+            log,
+        )
+        self.assertIn("DEBUG: Using asyncio event loop", log)

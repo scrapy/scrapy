@@ -22,7 +22,11 @@ from h2.events import (
 from h2.exceptions import FrameTooLargeError, H2Error
 from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
-from twisted.internet.interfaces import IHandshakeListener, IProtocolNegotiationFactory
+from twisted.internet.interfaces import (
+    IAddress,
+    IHandshakeListener,
+    IProtocolNegotiationFactory,
+)
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.internet.ssl import Certificate
 from twisted.protocols.policies import TimeoutMixin
@@ -431,7 +435,7 @@ class H2ClientFactory(Factory):
         self.settings = settings
         self.conn_lost_deferred = conn_lost_deferred
 
-    def buildProtocol(self, addr) -> H2ClientProtocol:
+    def buildProtocol(self, addr: IAddress) -> H2ClientProtocol:
         return H2ClientProtocol(self.uri, self.settings, self.conn_lost_deferred)
 
     def acceptableProtocols(self) -> List[bytes]:

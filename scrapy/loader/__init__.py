@@ -4,8 +4,11 @@ Item Loader
 See documentation in docs/topics/loaders.rst
 """
 
+from typing import Any, Optional
+
 import itemloaders
 
+from scrapy.http import TextResponse
 from scrapy.item import Item
 from scrapy.selector import Selector
 
@@ -82,7 +85,14 @@ class ItemLoader(itemloaders.ItemLoader):
     default_item_class: type = Item
     default_selector_class = Selector
 
-    def __init__(self, item=None, selector=None, response=None, parent=None, **context):
+    def __init__(
+        self,
+        item: Any = None,
+        selector: Optional[Selector] = None,
+        response: Optional[TextResponse] = None,
+        parent: Optional[itemloaders.ItemLoader] = None,
+        **context: Any
+    ):
         if selector is None and response is not None:
             try:
                 selector = self.default_selector_class(response)

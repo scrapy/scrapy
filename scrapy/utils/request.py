@@ -138,7 +138,7 @@ class RequestFingerprinter:
     """
 
     @classmethod
-    def from_crawler(cls, crawler) -> Self:
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler)
 
     def __init__(self, crawler: Optional[Crawler] = None):

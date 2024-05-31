@@ -15,12 +15,12 @@ class SiteTest:
         super().tearDown()
         self.site.stopListening()
 
-    def url(self, path):
+    def url(self, path: str) -> str:
         return urljoin(self.baseurl, path)
 
 
 class NoMetaRefreshRedirect(util.Redirect):
-    def render(self, request):
+    def render(self, request: server.Request) -> bytes:
         content = util.Redirect.render(self, request)
         return content.replace(
             b'http-equiv="refresh"', b'http-no-equiv="do-not-refresh-me"'

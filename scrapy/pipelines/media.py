@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import logging
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
@@ -27,7 +28,7 @@ def _DUMMY_CALLBACK(response):
     return response
 
 
-class MediaPipeline:
+class MediaPipeline(ABC):
     LOG_FAILED_RESULTS = True
 
     class SpiderInfo:
@@ -55,14 +56,6 @@ class MediaPipeline:
             self.handle_httpstatus_list = SequenceExclude(range(300, 400))
 
     def _key_for_pipe(self, key, base_class_name=None, settings=None):
-        """
-        >>> MediaPipeline()._key_for_pipe("IMAGES")
-        'IMAGES'
-        >>> class MyPipe(MediaPipeline):
-        ...     pass
-        >>> MyPipe()._key_for_pipe("IMAGES", base_class_name="MediaPipeline")
-        'MYPIPE_IMAGES'
-        """
         class_name = self.__class__.__name__
         formatted_key = f"{class_name.upper()}_{key}"
         if (
@@ -192,21 +185,25 @@ class MediaPipeline:
             defer_result(result).chainDeferred(wad)
 
     # Overridable Interface
+    @abstractmethod
     def media_to_download(self, request, info, *, item=None):
         """Check request before starting download"""
-        pass
+        raise NotImplementedError()
 
+    @abstractmethod
     def get_media_requests(self, item, info):
         """Returns the media requests to download"""
-        pass
+        raise NotImplementedError()
 
+    @abstractmethod
     def media_downloaded(self, response, request, info, *, item=None):
         """Handler for success downloads"""
-        return response
+        raise NotImplementedError()
 
+    @abstractmethod
     def media_failed(self, failure, request, info):
         """Handler for failed downloads"""
-        return failure
+        raise NotImplementedError()
 
     def item_completed(self, results, item, info):
         """Called per item when all media requests has been processed"""
@@ -221,6 +218,7 @@ class MediaPipeline:
                     )
         return item
 
+    @abstractmethod
     def file_path(self, request, response=None, info=None, *, item=None):
         """Returns the path where downloaded media should be stored"""
-        pass
+        raise NotImplementedError()
