@@ -12,7 +12,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    Generator,
     Iterable,
     List,
     Optional,
@@ -40,9 +39,7 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
 
 
-def _serialize_headers(
-    headers: Iterable[bytes], request: Request
-) -> Generator[bytes, Any, None]:
+def _serialize_headers(headers: Iterable[bytes], request: Request) -> Iterable[bytes]:
     for header in headers:
         if header in request.headers:
             yield header

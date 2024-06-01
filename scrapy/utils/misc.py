@@ -20,8 +20,8 @@ from typing import (
     Any,
     Callable,
     Deque,
-    Generator,
     Iterable,
+    Iterator,
     List,
     Optional,
     Type,
@@ -227,7 +227,7 @@ def build_from_settings(
 
 
 @contextmanager
-def set_environ(**kwargs: str) -> Generator[None, Any, None]:
+def set_environ(**kwargs: str) -> Iterator[None]:
     """Temporarily set environment variables inside the context manager and
     fully restore previous environment afterwards
     """
@@ -244,7 +244,7 @@ def set_environ(**kwargs: str) -> Generator[None, Any, None]:
                 os.environ[k] = v
 
 
-def walk_callable(node: ast.AST) -> Generator[ast.AST, Any, None]:
+def walk_callable(node: ast.AST) -> Iterable[ast.AST]:
     """Similar to ``ast.walk``, but walks only function body and skips nested
     functions defined within the node.
     """

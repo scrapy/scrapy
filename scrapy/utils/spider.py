@@ -7,7 +7,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     AsyncGenerator,
-    Generator,
     Iterable,
     Literal,
     Optional,
@@ -34,18 +33,20 @@ _T = TypeVar("_T")
 
 # https://stackoverflow.com/questions/60222982
 @overload
-def iterate_spider_output(result: AsyncGenerator) -> AsyncGenerator: ...  # type: ignore[overload-overlap]
+def iterate_spider_output(result: AsyncGenerator[_T, None]) -> AsyncGenerator[_T, None]: ...  # type: ignore[overload-overlap]
 
 
 @overload
-def iterate_spider_output(result: CoroutineType) -> Deferred: ...
+def iterate_spider_output(result: CoroutineType[Any, Any, _T]) -> Deferred[_T]: ...
 
 
 @overload
-def iterate_spider_output(result: _T) -> Iterable: ...
+def iterate_spider_output(result: _T) -> Iterable[Any]: ...
 
 
-def iterate_spider_output(result: Any) -> Union[Iterable, AsyncGenerator, Deferred]:
+def iterate_spider_output(
+    result: Any,
+) -> Union[Iterable[Any], AsyncGenerator[_T, None], Deferred[_T]]:
     if inspect.isasyncgen(result):
         return result
     if inspect.iscoroutine(result):
@@ -55,7 +56,7 @@ def iterate_spider_output(result: Any) -> Union[Iterable, AsyncGenerator, Deferr
     return arg_to_iter(deferred_from_coro(result))
 
 
-def iter_spider_classes(module: ModuleType) -> Generator[Type[Spider], Any, None]:
+def iter_spider_classes(module: ModuleType) -> Iterable[Type[Spider]]:
     """Return an iterator over all spider classes defined in the given module
     that can be instantiated (i.e. which have name)
     """
