@@ -24,10 +24,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _DUMMY_CALLBACK(response):
-    return response
-
-
 class MediaPipeline(ABC):
     LOG_FAILED_RESULTS = True
 
@@ -89,10 +85,6 @@ class MediaPipeline(ABC):
 
     def _process_request(self, request, info, item):
         fp = self._fingerprinter.fingerprint(request)
-        if not request.callback or request.callback is NO_CALLBACK:
-            cb = _DUMMY_CALLBACK
-        else:
-            cb = request.callback
         eb = request.errback
         request.callback = NO_CALLBACK
         request.errback = None
@@ -100,14 +92,12 @@ class MediaPipeline(ABC):
         # Return cached result if request was already seen
         if fp in info.downloaded:
             d = defer_result(info.downloaded[fp])
-            d.addCallback(cb)
             if eb:
                 d.addErrback(eb)
             return d
 
         # Otherwise, wait for result
         wad = Deferred()
-        wad.addCallback(cb)
         if eb:
             wad.addErrback(eb)
         info.waiting[fp].append(wad)
