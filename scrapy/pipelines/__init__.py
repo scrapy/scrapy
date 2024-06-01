@@ -10,6 +10,7 @@ from twisted.internet.defer import Deferred
 
 from scrapy import Spider
 from scrapy.middleware import MiddlewareManager
+from scrapy.settings import Settings
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import deferred_f_from_coro_f
 
@@ -18,7 +19,7 @@ class ItemPipelineManager(MiddlewareManager):
     component_name = "item pipeline"
 
     @classmethod
-    def _get_mwlist_from_settings(cls, settings) -> List[Any]:
+    def _get_mwlist_from_settings(cls, settings: Settings) -> List[Any]:
         return build_component_list(settings.getwithbase("ITEM_PIPELINES"))
 
     def _add_middleware(self, pipe: Any) -> None:
