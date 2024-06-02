@@ -217,7 +217,7 @@ def binary_is_text(data: bytes) -> bool:
     return all(c not in _BINARYCHARS for c in data)
 
 
-def get_func_args(func: Callable, stripself: bool = False) -> List[str]:
+def get_func_args(func: Callable[..., Any], stripself: bool = False) -> List[str]:
     """Return the argument name list of a callable object"""
     if not callable(func):
         raise TypeError(f"func must be callable, got '{type(func).__name__}'")
@@ -247,7 +247,7 @@ def get_func_args(func: Callable, stripself: bool = False) -> List[str]:
     return args
 
 
-def get_spec(func: Callable) -> Tuple[List[str], Dict[str, Any]]:
+def get_spec(func: Callable[..., Any]) -> Tuple[List[str], Dict[str, Any]]:
     """Returns (args, kwargs) tuple for a function
     >>> import re
     >>> get_spec(re.match)
@@ -285,7 +285,7 @@ def get_spec(func: Callable) -> Tuple[List[str], Dict[str, Any]]:
 
 
 def equal_attributes(
-    obj1: Any, obj2: Any, attributes: Optional[List[Union[str, Callable]]]
+    obj1: Any, obj2: Any, attributes: Optional[List[Union[str, Callable[[Any], Any]]]]
 ) -> bool:
     """Compare two objects attributes"""
     # not attributes given return False by default

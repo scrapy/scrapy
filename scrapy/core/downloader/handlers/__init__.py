@@ -1,5 +1,7 @@
 """Download handlers for different schemes"""
 
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Any, Callable, Dict, Generator, Union, cast
 
@@ -19,16 +21,16 @@ logger = logging.getLogger(__name__)
 
 
 class DownloadHandlers:
-    def __init__(self, crawler: "Crawler"):
-        self._crawler: "Crawler" = crawler
-        self._schemes: Dict[str, Union[str, Callable]] = (
+    def __init__(self, crawler: Crawler):
+        self._crawler: Crawler = crawler
+        self._schemes: Dict[str, Union[str, Callable[..., Any]]] = (
             {}
         )  # stores acceptable schemes on instancing
         self._handlers: Dict[str, Any] = {}  # stores instanced handlers for schemes
         self._notconfigured: Dict[str, str] = {}  # remembers failed handlers
-        handlers: Dict[str, Union[str, Callable]] = without_none_values(
+        handlers: Dict[str, Union[str, Callable[..., Any]]] = without_none_values(
             cast(
-                Dict[str, Union[str, Callable]],
+                Dict[str, Union[str, Callable[..., Any]]],
                 crawler.settings.getwithbase("DOWNLOAD_HANDLERS"),
             )
         )

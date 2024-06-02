@@ -266,7 +266,7 @@ class Request(object_ref):
         return d
 
 
-def _find_method(obj: Any, func: Callable) -> str:
+def _find_method(obj: Any, func: Callable[..., Any]) -> str:
     """Helper function for Request.to_dict"""
     # Only instance methods contain ``__func__``
     if obj and hasattr(func, "__func__"):

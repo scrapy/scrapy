@@ -56,7 +56,7 @@ def arg_to_iter(arg: Any) -> Iterable[Any]:
     return [arg]
 
 
-def load_object(path: Union[str, Callable]) -> Any:
+def load_object(path: Union[str, Callable[..., Any]]) -> Any:
     """Load an object given its absolute object path, and return it.
 
     The object can be the import path of a class, function, variable or an
@@ -263,7 +263,7 @@ def walk_callable(node: ast.AST) -> Generator[ast.AST, Any, None]:
 _generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
 
 
-def is_generator_with_return_value(callable: Callable) -> bool:
+def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:
     """
     Returns True if a callable is a generator function which includes a
     'return' statement with a value different than None, False otherwise
@@ -300,7 +300,9 @@ def is_generator_with_return_value(callable: Callable) -> bool:
     return bool(_generator_callbacks_cache[callable])
 
 
-def warn_on_generator_with_return_value(spider: Spider, callable: Callable) -> None:
+def warn_on_generator_with_return_value(
+    spider: Spider, callable: Callable[..., Any]
+) -> None:
     """
     Logs a warning if a callable is a generator function and includes
     a 'return' statement with a value different than None

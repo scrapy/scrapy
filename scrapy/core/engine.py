@@ -86,7 +86,11 @@ class Slot:
 
 
 class ExecutionEngine:
-    def __init__(self, crawler: Crawler, spider_closed_callback: Callable) -> None:
+    def __init__(
+        self,
+        crawler: Crawler,
+        spider_closed_callback: Callable[[Spider], Optional[Deferred[None]]],
+    ) -> None:
         self.crawler: Crawler = crawler
         self.settings: Settings = crawler.settings
         self.signals: SignalManager = crawler.signals
@@ -102,7 +106,9 @@ class ExecutionEngine:
         downloader_cls: Type[Downloader] = load_object(self.settings["DOWNLOADER"])
         self.downloader: Downloader = downloader_cls(crawler)
         self.scraper = Scraper(crawler)
-        self._spider_closed_callback: Callable = spider_closed_callback
+        self._spider_closed_callback: Callable[[Spider], Optional[Deferred[None]]] = (
+            spider_closed_callback
+        )
         self.start_time: Optional[float] = None
 
     def _get_scheduler_class(self, settings: BaseSettings) -> Type[BaseScheduler]:
@@ -427,7 +433,7 @@ class ExecutionEngine:
 
         dfd = self.slot.close()
 
-        def log_failure(msg: str) -> Callable:
+        def log_failure(msg: str) -> Callable[[Failure], None]:
             def errback(failure: Failure) -> None:
                 logger.error(
                     msg, exc_info=failure_to_exc_info(failure), extra={"spider": spider}
