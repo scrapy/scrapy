@@ -120,7 +120,6 @@ class ContractsManager:
 
             if line.startswith("@"):
                 m = re.match(r"@(\w+)\s*(.*)", line)
-                assert m is not None
                 if m is None:
                     continue
                 name, args = m.groups()
