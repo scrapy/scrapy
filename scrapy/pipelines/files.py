@@ -209,7 +209,7 @@ class S3FilesStore:
     def _get_boto_key(self, path: str) -> Deferred[Dict[str, Any]]:
         key_name = f"{self.prefix}{path}"
         return cast(
-            Deferred[Dict[str, Any]],
+            "Deferred[Dict[str, Any]]",
             threads.deferToThread(
                 self.s3_client.head_object, Bucket=self.bucket, Key=key_name  # type: ignore[attr-defined]
             ),
