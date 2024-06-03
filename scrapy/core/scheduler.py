@@ -4,7 +4,7 @@ import json
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Type, cast
 
 from twisted.internet.defer import Deferred
 
@@ -362,13 +362,13 @@ class Scheduler(BaseScheduler):
             return str(dqdir)
         return None
 
-    def _read_dqs_state(self, dqdir: str) -> list:
+    def _read_dqs_state(self, dqdir: str) -> List[int]:
         path = Path(dqdir, "active.json")
         if not path.exists():
             return []
         with path.open(encoding="utf-8") as f:
-            return cast(list, json.load(f))
+            return cast(List[int], json.load(f))
 
-    def _write_dqs_state(self, dqdir: str, state: list) -> None:
+    def _write_dqs_state(self, dqdir: str, state: List[int]) -> None:
         with Path(dqdir, "active.json").open("w", encoding="utf-8") as f:
             json.dump(state, f)

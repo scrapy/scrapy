@@ -7,7 +7,7 @@ import os
 from importlib import import_module
 from pathlib import Path
 from posixpath import split
-from typing import Any, Coroutine, Dict, List, Optional, Tuple, Type
+from typing import Any, Awaitable, Dict, List, Optional, Tuple, Type, TypeVar
 from unittest import TestCase, mock
 
 from twisted.internet.defer import Deferred
@@ -16,6 +16,8 @@ from twisted.trial.unittest import SkipTest
 from scrapy import Spider
 from scrapy.crawler import Crawler
 from scrapy.utils.boto import is_botocore_available
+
+_T = TypeVar("_T")
 
 
 def assert_gcs_environ() -> None:
@@ -118,8 +120,8 @@ def assert_samelines(
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
 
 
-def get_from_asyncio_queue(value: Any) -> Coroutine:
-    q: asyncio.Queue = asyncio.Queue()
+def get_from_asyncio_queue(value: _T) -> Awaitable[_T]:
+    q: asyncio.Queue[_T] = asyncio.Queue()
     getter = q.get()
     q.put_nowait(value)
     return getter

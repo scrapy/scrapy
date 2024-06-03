@@ -20,6 +20,8 @@ from scrapy.http.request import Request
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 
+ConnectionKeyT = Tuple[bytes, bytes, int]
+
 
 class H2ConnectionPool:
     def __init__(self, reactor: ReactorBase, settings: Settings) -> None:
@@ -28,13 +30,13 @@ class H2ConnectionPool:
 
         # Store a dictionary which is used to get the respective
         # H2ClientProtocolInstance using the  key as Tuple(scheme, hostname, port)
-        self._connections: Dict[Tuple, H2ClientProtocol] = {}
+        self._connections: Dict[ConnectionKeyT, H2ClientProtocol] = {}
 
         # Save all requests that arrive before the connection is established
-        self._pending_requests: Dict[Tuple, Deque[Deferred]] = {}
+        self._pending_requests: Dict[ConnectionKeyT, Deque[Deferred]] = {}
 
     def get_connection(
-        self, key: Tuple, uri: URI, endpoint: HostnameEndpoint
+        self, key: ConnectionKeyT, uri: URI, endpoint: HostnameEndpoint
     ) -> Deferred:
         if key in self._pending_requests:
             # Received a request while connecting to remote
@@ -54,7 +56,7 @@ class H2ConnectionPool:
         return self._new_connection(key, uri, endpoint)
 
     def _new_connection(
-        self, key: Tuple, uri: URI, endpoint: HostnameEndpoint
+        self, key: ConnectionKeyT, uri: URI, endpoint: HostnameEndpoint
     ) -> Deferred:
         self._pending_requests[key] = deque()
 
@@ -69,7 +71,9 @@ class H2ConnectionPool:
         self._pending_requests[key].append(d)
         return d
 
-    def put_connection(self, conn: H2ClientProtocol, key: Tuple) -> H2ClientProtocol:
+    def put_connection(
+        self, conn: H2ClientProtocol, key: ConnectionKeyT
+    ) -> H2ClientProtocol:
         self._connections[key] = conn
 
         # Now as we have established a proper HTTP/2 connection
@@ -81,7 +85,9 @@ class H2ConnectionPool:
 
         return conn
 
-    def _remove_connection(self, errors: List[BaseException], key: Tuple) -> None:
+    def _remove_connection(
+        self, errors: List[BaseException], key: ConnectionKeyT
+    ) -> None:
         self._connections.pop(key)
 
         # Call the errback of all the pending requests for this connection
@@ -122,7 +128,7 @@ class H2Agent:
     def get_endpoint(self, uri: URI) -> HostnameEndpoint:
         return self.endpoint_factory.endpointForURI(uri)
 
-    def get_key(self, uri: URI) -> Tuple:
+    def get_key(self, uri: URI) -> ConnectionKeyT:
         """
         Arguments:
             uri - URI obtained directly from request URL
@@ -164,6 +170,6 @@ class ScrapyProxyH2Agent(H2Agent):
     def get_endpoint(self, uri: URI) -> HostnameEndpoint:
         return self.endpoint_factory.endpointForURI(self._proxy_uri)
 
-    def get_key(self, uri: URI) -> Tuple:
+    def get_key(self, uri: URI) -> ConnectionKeyT:
         """We use the proxy uri instead of uri obtained from request url"""
-        return "http-proxy", self._proxy_uri.host, self._proxy_uri.port
+        return b"http-proxy", self._proxy_uri.host, self._proxy_uri.port

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Union
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union
 
 from twisted.web import http
 
@@ -17,7 +17,9 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-def get_header_size(headers: Dict[str, Union[list, tuple]]) -> int:
+def get_header_size(
+    headers: Dict[str, Union[List[Union[str, bytes]], Tuple[Union[str, bytes], ...]]]
+) -> int:
     size = 0
     for key, value in headers.items():
         if isinstance(value, (list, tuple)):

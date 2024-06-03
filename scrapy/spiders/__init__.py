@@ -7,7 +7,7 @@ See documentation in docs/topics/spiders.rst
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Iterable, List, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Union, cast
 
 from twisted.internet.defer import Deferred
 
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from typing_extensions import Concatenate, Self
 
     from scrapy.crawler import Crawler
-    from scrapy.settings import BaseSettings
+    from scrapy.settings import BaseSettings, _SettingsKeyT
     from scrapy.utils.log import SpiderLoggerAdapter
 
     CallbackT = Callable[Concatenate[Response, ...], Any]
@@ -36,7 +36,7 @@ class Spider(object_ref):
     """
 
     name: str
-    custom_settings: Optional[dict] = None
+    custom_settings: Optional[Dict[_SettingsKeyT, Any]] = None
 
     def __init__(self, name: Optional[str] = None, **kwargs: Any):
         if name is not None:

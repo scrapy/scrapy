@@ -315,7 +315,9 @@ class FilesystemCacheStorage:
         self.expiration_secs: int = settings.getint("HTTPCACHE_EXPIRATION_SECS")
         self.use_gzip: bool = settings.getbool("HTTPCACHE_GZIP")
         # https://github.com/python/mypy/issues/10740
-        self._open: Callable[Concatenate[Union[str, os.PathLike], str, ...], IO] = (
+        self._open: Callable[
+            Concatenate[Union[str, os.PathLike], str, ...], IO[bytes]
+        ] = (
             gzip.open if self.use_gzip else open  # type: ignore[assignment]
         )
 
@@ -368,11 +370,12 @@ class FilesystemCacheStorage:
         with self._open(rpath / "pickled_meta", "wb") as f:
             pickle.dump(metadata, f, protocol=4)
         with self._open(rpath / "response_headers", "wb") as f:
-            f.write(headers_dict_to_raw(response.headers))
+            # headers_dict_to_raw() needs a better type hint
+            f.write(cast(bytes, headers_dict_to_raw(response.headers)))
         with self._open(rpath / "response_body", "wb") as f:
             f.write(response.body)
         with self._open(rpath / "request_headers", "wb") as f:
-            f.write(headers_dict_to_raw(request.headers))
+            f.write(cast(bytes, headers_dict_to_raw(request.headers)))
         with self._open(rpath / "request_body", "wb") as f:
             f.write(request.body)
 

@@ -20,6 +20,7 @@ from typing import (
     NoReturn,
     Optional,
     Tuple,
+    TypedDict,
     Union,
     cast,
 )
@@ -34,8 +35,19 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
+    # typing.NotRequired and typing.Self require Python 3.11
+    from typing_extensions import NotRequired, Self
+
+
+class VerboseCookie(TypedDict):
+    name: str
+    value: str
+    domain: NotRequired[str]
+    path: NotRequired[str]
+    secure: NotRequired[bool]
+
+
+CookiesT = Union[Dict[str, str], List[VerboseCookie]]
 
 
 def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
@@ -97,7 +109,7 @@ class Request(object_ref):
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
-        cookies: Optional[Union[dict, List[dict]]] = None,
+        cookies: Optional[CookiesT] = None,
         meta: Optional[Dict[str, Any]] = None,
         encoding: str = "utf-8",
         priority: int = 0,
@@ -123,7 +135,7 @@ class Request(object_ref):
         self.callback: Optional[Callable] = callback
         self.errback: Optional[Callable] = errback
 
-        self.cookies: Union[dict, List[dict]] = cookies or {}
+        self.cookies: CookiesT = cookies or {}
         self.headers: Headers = Headers(headers or {}, encoding=encoding)
         self.dont_filter: bool = dont_filter
 
@@ -254,7 +266,7 @@ class Request(object_ref):
         return d
 
 
-def _find_method(obj: Any, func: Callable) -> str:
+def _find_method(obj: Any, func: Callable[..., Any]) -> str:
     """Helper function for Request.to_dict"""
     # Only instance methods contain ``__func__``
     if obj and hasattr(func, "__func__"):
