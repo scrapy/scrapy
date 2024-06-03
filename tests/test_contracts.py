@@ -195,6 +195,7 @@ class TestSpider(Spider):
         """
         pass
 
+
 class CustomContractSuccessSpider(Spider):
     name = "custom_contract_success_spider"
 
@@ -406,7 +407,9 @@ class ContractsManagerTest(unittest.TestCase):
         self.should_succeed()
 
         # invalid regex with valid contract
-        request = self.conman.from_method(spider.invalid_regex_with_valid_contract, self.results)
+        request = self.conman.from_method(
+            spider.invalid_regex_with_valid_contract, self.results
+        )
         self.should_succeed()
         request.callback(response)
 
