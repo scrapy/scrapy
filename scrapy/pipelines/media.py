@@ -132,7 +132,7 @@ class MediaPipeline(ABC):
         requests = arg_to_iter(self.get_media_requests(item, info))
         dlist = [self._process_request(r, info, item) for r in requests]
         dfd = cast(
-            Deferred[List[FileInfoOrError]], DeferredList(dlist, consumeErrors=True)
+            "Deferred[List[FileInfoOrError]]", DeferredList(dlist, consumeErrors=True)
         )
         return dfd.addCallback(self.item_completed, item, info)
 

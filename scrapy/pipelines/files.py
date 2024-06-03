@@ -418,7 +418,7 @@ class FTPFilesStore:
             except Exception:
                 return {}
 
-        return cast(Deferred[StatInfo], threads.deferToThread(_stat_file, path))
+        return cast("Deferred[StatInfo]", threads.deferToThread(_stat_file, path))
 
 
 class FilesPipeline(MediaPipeline):
