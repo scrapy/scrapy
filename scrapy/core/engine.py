@@ -84,6 +84,15 @@ class Slot:
 
 
 class ExecutionEngine:
+    """The execution engine manages all the core :ref:`components
+    <topics-components>`, such as the :ref:`scheduler <topics-scheduler>`, the
+    downloader, or the :ref:`spider <topics-spiders>`, at run time.
+
+    Some components access the engine through :attr:`Crawler.engine
+    <scrapy.crawler.Crawler.engine>` to access or modify other components, or
+    use core functionality such as closing the running spider.
+    """
+
     def __init__(self, crawler: "Crawler", spider_closed_callback: Callable) -> None:
         self.crawler: "Crawler" = crawler
         self.settings: Settings = crawler.settings
@@ -183,6 +192,7 @@ class ExecutionEngine:
                 request = next(self.slot.start_requests)
             except StopIteration:
                 self.slot.start_requests = None
+                self.signals.send_catch_log(signal=signals.start_requests_exhausted)
             except Exception:
                 self.slot.start_requests = None
                 logger.error(
@@ -190,7 +200,11 @@ class ExecutionEngine:
                     exc_info=True,
                     extra={"spider": self.spider},
                 )
+                self.signals.send_catch_log(signal=signals.start_requests_exhausted)
             else:
+                self.signals.send_catch_log(
+                    signal=signals.start_request_returned, request=request
+                )
                 self.crawl(request)
 
         if self.spider_is_idle() and self.slot.close_if_idle:
@@ -412,7 +426,30 @@ class ExecutionEngine:
             self.close_spider(self.spider, reason=ex.reason)
 
     def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred:
-        """Close (cancel) spider and clear all its outstanding requests"""
+        """Stop the crawl with the specified *reason* and clear all its
+        outstanding requests.
+
+        *reason* is an arbitrary string. Built-in Scrapy :ref:`components
+        <topics-components>` use the following reasons:
+
+        -   ``finished``: When the crawl finishes normally.
+
+        -   ``shutdown``: When stopping the crawl is requested, usually by the
+            user through a system signal.
+
+        -   ``cancelled``: When :exc:`~scrapy.exceptions.CloseSpider` is
+            raised, e.g. from a spider callback, without a custom *reason*.
+
+        -   ``closespider_errorcount``, ``closespider_pagecount``,
+            ``closespider_itemcount``, ``closespider_timeout_no_item``: See
+            :class:`~scrapy.extensions.closespider.CloseSpider`.
+
+        -   ``memusage_exceeded``: See
+            :class:`~scrapy.extensions.memusage.MemoryUsage`.
+
+        -   ``robotstxt_denied``: See
+            :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`.
+        """
         if self.slot is None:
             raise RuntimeError("Engine slot not assigned")
 
