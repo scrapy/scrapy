@@ -3,11 +3,11 @@ import functools
 import inspect
 import json
 import logging
-from types import CoroutineType
 from typing import (
     Any,
     AsyncGenerator,
     Callable,
+    Coroutine,
     Dict,
     Iterable,
     List,
@@ -140,7 +140,7 @@ class Command(BaseRunSpiderCommand):
 
     @overload
     def iterate_spider_output(
-        self, result: Union[AsyncGenerator[_T, None], CoroutineType[Any, Any, _T]]
+        self, result: Union[AsyncGenerator[_T, None], Coroutine[Any, Any, _T]]
     ) -> Deferred[_T]: ...
 
     @overload
