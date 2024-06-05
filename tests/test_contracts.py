@@ -182,6 +182,19 @@ class TestSpider(Spider):
         """
         pass
 
+    def invalid_regex(self, response):
+        """method with invalid regex
+        @ Scrapy is awsome
+        """
+        pass
+
+    def invalid_regex_with_valid_contract(self, response):
+        """method with invalid regex
+        @ scrapy is awsome
+        @url http://scrapy.org
+        """
+        pass
+
 
 class CustomContractSuccessSpider(Spider):
     name = "custom_contract_success_spider"
@@ -384,6 +397,21 @@ class ContractsManagerTest(unittest.TestCase):
         self.should_fail()
         message = "ContractFail: Missing fields: name, url"
         assert message in self.results.failures[-1][-1]
+
+    def test_regex(self):
+        spider = TestSpider()
+        response = ResponseMock()
+
+        # invalid regex
+        request = self.conman.from_method(spider.invalid_regex, self.results)
+        self.should_succeed()
+
+        # invalid regex with valid contract
+        request = self.conman.from_method(
+            spider.invalid_regex_with_valid_contract, self.results
+        )
+        self.should_succeed()
+        request.callback(response)
 
     def test_custom_contracts(self):
         self.conman.from_spider(CustomContractSuccessSpider(), self.results)
