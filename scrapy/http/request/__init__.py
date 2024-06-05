@@ -189,10 +189,10 @@ class Request(object_ref):
     def __repr__(self) -> str:
         return f"<{self.method} {self.url}>"
 
-    def copy(self) -> "Request":
+    def copy(self) -> Request:
         return self.replace()
 
-    def replace(self, *args: Any, **kwargs: Any) -> "Request":
+    def replace(self, *args: Any, **kwargs: Any) -> Request:
         """Create a new Request with the same attributes except for those given new values"""
         for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
@@ -237,7 +237,7 @@ class Request(object_ref):
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
 
-    def to_dict(self, *, spider: Optional["scrapy.Spider"] = None) -> Dict[str, Any]:
+    def to_dict(self, *, spider: Optional[scrapy.Spider] = None) -> Dict[str, Any]:
         """Return a dictionary containing the Request's data.
 
         Use :func:`~scrapy.utils.request.request_from_dict` to convert back into a :class:`~scrapy.Request` object.

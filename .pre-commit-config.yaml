@@ -22,3 +22,9 @@ repos:
   - id: blacken-docs
     additional_dependencies:
     - black==24.2.0
+- repo: https://github.com/asottile/pyupgrade
+  rev: v3.15.2
+  hooks:
+  - id: pyupgrade
+    args: [--py38-plus, --keep-runtime-typing]
+    exclude: scrapy/__init__.py

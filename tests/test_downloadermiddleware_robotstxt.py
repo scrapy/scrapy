@@ -40,9 +40,7 @@ Disallow: /wiki/K%C3%A4ytt%C3%A4j%C3%A4:
 Disallow: /wiki/Käyttäjä:
 User-Agent: UnicödeBöt
 Disallow: /some/randome/page.html
-""".encode(
-            "utf-8"
-        )
+""".encode()
         response = TextResponse("http://site.local/robots.txt", body=ROBOTS)
 
         def return_response(request):
