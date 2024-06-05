@@ -4,6 +4,8 @@ Spider Middleware manager
 See documentation in docs/topics/spider-middleware.rst
 """
 
+from __future__ import annotations
+
 import logging
 from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice
