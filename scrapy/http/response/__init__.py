@@ -14,7 +14,6 @@ from typing import (
     AnyStr,
     Callable,
     Dict,
-    Generator,
     Iterable,
     List,
     Mapping,
@@ -242,7 +241,7 @@ class Response(object_ref):
         errback: Optional[Callable] = None,
         cb_kwargs: Optional[Dict[str, Any]] = None,
         flags: Optional[List[str]] = None,
-    ) -> Generator[Request, None, None]:
+    ) -> Iterable[Request]:
         """
         .. versionadded:: 2.0
 

@@ -372,7 +372,10 @@ class ExecutionEngine:
 
     @inlineCallbacks
     def open_spider(
-        self, spider: Spider, start_requests: Iterable = (), close_if_idle: bool = True
+        self,
+        spider: Spider,
+        start_requests: Iterable[Request] = (),
+        close_if_idle: bool = True,
     ) -> Generator[Deferred, Any, None]:
         if self.slot is not None:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")

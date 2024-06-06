@@ -15,12 +15,10 @@ from itertools import chain
 from typing import (
     TYPE_CHECKING,
     Any,
-    AsyncGenerator,
     AsyncIterable,
     AsyncIterator,
     Callable,
     Dict,
-    Generator,
     Iterable,
     Iterator,
     List,
@@ -163,7 +161,7 @@ def re_rsearch(
     the start position of the match, and the ending (regarding the entire text).
     """
 
-    def _chunk_iter() -> Generator[Tuple[str, int], Any, None]:
+    def _chunk_iter() -> Iterable[Tuple[str, int]]:
         offset = len(text)
         while True:
             offset -= chunk_size * 1024
@@ -351,43 +349,45 @@ else:
         gc.collect()
 
 
-class MutableChain(Iterable):
+class MutableChain(Iterable[_T]):
     """
     Thin wrapper around itertools.chain, allowing to add iterables "in-place"
     """
 
-    def __init__(self, *args: Iterable):
-        self.data = chain.from_iterable(args)
+    def __init__(self, *args: Iterable[_T]):
+        self.data: Iterator[_T] = chain.from_iterable(args)
 
-    def extend(self, *iterables: Iterable) -> None:
+    def extend(self, *iterables: Iterable[_T]) -> None:
         self.data = chain(self.data, chain.from_iterable(iterables))
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator[_T]:
         return self
 
-    def __next__(self) -> Any:
+    def __next__(self) -> _T:
         return next(self.data)
 
 
-async def _async_chain(*iterables: Union[Iterable, AsyncIterable]) -> AsyncGenerator:
+async def _async_chain(
+    *iterables: Union[Iterable[_T], AsyncIterable[_T]]
+) -> AsyncIterator[_T]:
     for it in iterables:
         async for o in as_async_generator(it):
             yield o
 
 
-class MutableAsyncChain(AsyncIterable):
+class MutableAsyncChain(AsyncIterable[_T]):
     """
     Similar to MutableChain but for async iterables
     """
 
-    def __init__(self, *args: Union[Iterable, AsyncIterable]):
-        self.data = _async_chain(*args)
+    def __init__(self, *args: Union[Iterable[_T], AsyncIterable[_T]]):
+        self.data: AsyncIterator[_T] = _async_chain(*args)
 
-    def extend(self, *iterables: Union[Iterable, AsyncIterable]) -> None:
+    def extend(self, *iterables: Union[Iterable[_T], AsyncIterable[_T]]) -> None:
         self.data = _async_chain(self.data, _async_chain(*iterables))
 
-    def __aiter__(self) -> AsyncIterator:
+    def __aiter__(self) -> AsyncIterator[_T]:
         return self
 
-    async def __anext__(self) -> Any:
+    async def __anext__(self) -> _T:
         return await self.data.__anext__()

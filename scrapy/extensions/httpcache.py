@@ -370,12 +370,11 @@ class FilesystemCacheStorage:
         with self._open(rpath / "pickled_meta", "wb") as f:
             pickle.dump(metadata, f, protocol=4)
         with self._open(rpath / "response_headers", "wb") as f:
-            # headers_dict_to_raw() needs a better type hint
-            f.write(cast(bytes, headers_dict_to_raw(response.headers)))
+            f.write(headers_dict_to_raw(response.headers))
         with self._open(rpath / "response_body", "wb") as f:
             f.write(response.body)
         with self._open(rpath / "request_headers", "wb") as f:
-            f.write(cast(bytes, headers_dict_to_raw(request.headers)))
+            f.write(headers_dict_to_raw(request.headers))
         with self._open(rpath / "request_body", "wb") as f:
             f.write(request.body)
 

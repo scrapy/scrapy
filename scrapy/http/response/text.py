@@ -15,7 +15,6 @@ from typing import (
     AnyStr,
     Callable,
     Dict,
-    Generator,
     Iterable,
     List,
     Mapping,
@@ -246,7 +245,7 @@ class TextResponse(Response):
         flags: Optional[List[str]] = None,
         css: Optional[str] = None,
         xpath: Optional[str] = None,
-    ) -> Generator[Request, None, None]:
+    ) -> Iterable[Request]:
         """
         A generator that produces :class:`~.Request` instances to follow all
         links in ``urls``. It accepts the same arguments as the :class:`~.Request`'s
