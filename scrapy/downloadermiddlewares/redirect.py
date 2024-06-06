@@ -27,6 +27,7 @@ def _build_redirect_request(
     redirect_request = source_request.replace(
         url=url,
         **kwargs,
+        cls=None,
         cookies=None,
     )
     if "_scheme_proxy" in redirect_request.meta:
