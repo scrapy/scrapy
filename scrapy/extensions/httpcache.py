@@ -315,7 +315,9 @@ class FilesystemCacheStorage:
         self.expiration_secs: int = settings.getint("HTTPCACHE_EXPIRATION_SECS")
         self.use_gzip: bool = settings.getbool("HTTPCACHE_GZIP")
         # https://github.com/python/mypy/issues/10740
-        self._open: Callable[Concatenate[Union[str, os.PathLike], str, ...], IO] = (
+        self._open: Callable[
+            Concatenate[Union[str, os.PathLike], str, ...], IO[bytes]
+        ] = (
             gzip.open if self.use_gzip else open  # type: ignore[assignment]
         )
 

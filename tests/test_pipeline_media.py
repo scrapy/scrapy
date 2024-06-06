@@ -211,10 +211,6 @@ class MockedMediaPipeline(UserDefinedPipeline):
 class MediaPipelineTestCase(BaseMediaPipelineTestCase):
     pipeline_class = MockedMediaPipeline
 
-    def _callback(self, result):
-        self.pipe._mockcalled.append("request_callback")
-        return result
-
     def _errback(self, result):
         self.pipe._mockcalled.append("request_errback")
         return result
@@ -225,7 +221,6 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         req = Request(
             "http://url1",
             meta={"response": rsp},
-            callback=self._callback,
             errback=self._errback,
         )
         item = {"requests": req}
@@ -237,7 +232,6 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
                 "get_media_requests",
                 "media_to_download",
                 "media_downloaded",
-                "request_callback",
                 "item_completed",
             ],
         )
@@ -249,7 +243,6 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
         req = Request(
             "http://url1",
             meta={"response": fail},
-            callback=self._callback,
             errback=self._errback,
         )
         item = {"requests": req}

@@ -5,7 +5,7 @@ Note: The main purpose of this module is to provide support for the
 SitemapSpider, its API is subject to change without notice.
 """
 
-from typing import Any, Dict, Generator, Iterator, Optional, Union
+from typing import Any, Dict, Iterable, Iterator, Optional, Union
 from urllib.parse import urljoin
 
 import lxml.etree  # nosec
@@ -42,7 +42,7 @@ class Sitemap:
 
 def sitemap_urls_from_robots(
     robots_text: str, base_url: Optional[str] = None
-) -> Generator[str, Any, None]:
+) -> Iterable[str]:
     """Return an iterator over all sitemap urls contained in the given
     robots.txt file
     """

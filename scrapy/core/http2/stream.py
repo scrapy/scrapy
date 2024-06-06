@@ -110,7 +110,7 @@ class Stream:
 
         # Metadata of an HTTP/2 connection stream
         # initialized when stream is instantiated
-        self.metadata: Dict = {
+        self.metadata: Dict[str, Any] = {
             "request_content_length": (
                 0 if self._request.body is None else len(self._request.body)
             ),
@@ -131,7 +131,7 @@ class Stream:
         # Private variable used to build the response
         # this response is then converted to appropriate Response class
         # passed to the response deferred callback
-        self._response: Dict = {
+        self._response: Dict[str, Any] = {
             # Data received frame by frame from the server is appended
             # and passed to the response Deferred when completely received.
             "body": BytesIO(),

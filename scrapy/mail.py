@@ -97,7 +97,7 @@ class MailSender:
         subject: str,
         body: str,
         cc: Union[str, List[str], None] = None,
-        attachs: Sequence[Tuple[str, str, IO]] = (),
+        attachs: Sequence[Tuple[str, str, IO[Any]]] = (),
         mimetype: str = "text/plain",
         charset: Optional[str] = None,
         _callback: Optional[Callable[..., None]] = None,
@@ -214,7 +214,7 @@ class MailSender:
         return d
 
     def _create_sender_factory(
-        self, to_addrs: List[str], msg: IO, d: Deferred
+        self, to_addrs: List[str], msg: IO[bytes], d: Deferred
     ) -> ESMTPSenderFactory:
         from twisted.mail.smtp import ESMTPSenderFactory
 

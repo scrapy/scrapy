@@ -10,7 +10,7 @@ from __future__ import annotations
 import copy
 import json
 import warnings
-from typing import TYPE_CHECKING, Any, Optional, Tuple, Type, overload
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, overload
 
 from scrapy.http.request import Request, RequestTypeVar
 
@@ -23,15 +23,15 @@ class JsonRequest(Request):
     attributes: Tuple[str, ...] = Request.attributes + ("dumps_kwargs",)
 
     def __init__(
-        self, *args: Any, dumps_kwargs: Optional[dict] = None, **kwargs: Any
+        self, *args: Any, dumps_kwargs: Optional[Dict[str, Any]] = None, **kwargs: Any
     ) -> None:
         dumps_kwargs = copy.deepcopy(dumps_kwargs) if dumps_kwargs is not None else {}
         dumps_kwargs.setdefault("sort_keys", True)
-        self._dumps_kwargs = dumps_kwargs
+        self._dumps_kwargs: Dict[str, Any] = dumps_kwargs
 
         body_passed = kwargs.get("body", None) is not None
-        data = kwargs.pop("data", None)
-        data_passed = data is not None
+        data: Any = kwargs.pop("data", None)
+        data_passed: bool = data is not None
 
         if body_passed and data_passed:
             warnings.warn("Both body and data passed. data will be ignored")
@@ -47,7 +47,7 @@ class JsonRequest(Request):
         )
 
     @property
-    def dumps_kwargs(self) -> dict:
+    def dumps_kwargs(self) -> Dict[str, Any]:
         return self._dumps_kwargs
 
     @overload
@@ -62,8 +62,8 @@ class JsonRequest(Request):
         self, *args: Any, cls: Optional[Type[Request]] = None, **kwargs: Any
     ) -> Request:
         body_passed = kwargs.get("body", None) is not None
-        data = kwargs.pop("data", None)
-        data_passed = data is not None
+        data: Any = kwargs.pop("data", None)
+        data_passed: bool = data is not None
 
         if body_passed and data_passed:
             warnings.warn("Both body and data passed. data will be ignored")
@@ -72,6 +72,6 @@ class JsonRequest(Request):
 
         return super().replace(*args, cls=cls, **kwargs)
 
-    def _dumps(self, data: dict) -> str:
+    def _dumps(self, data: Any) -> str:
         """Convert to JSON"""
         return json.dumps(data, **self._dumps_kwargs)

@@ -14,7 +14,6 @@ from typing import (
     AnyStr,
     Callable,
     Dict,
-    Generator,
     Iterable,
     List,
     Mapping,
@@ -31,7 +30,7 @@ from twisted.internet.ssl import Certificate
 
 from scrapy.exceptions import NotSupported
 from scrapy.http.headers import Headers
-from scrapy.http.request import Request
+from scrapy.http.request import CookiesT, Request
 from scrapy.link import Link
 from scrapy.utils.trackref import object_ref
 
@@ -200,7 +199,7 @@ class Response(object_ref):
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
-        cookies: Optional[Union[dict, List[dict]]] = None,
+        cookies: Optional[CookiesT] = None,
         meta: Optional[Dict[str, Any]] = None,
         encoding: Optional[str] = "utf-8",
         priority: int = 0,
@@ -253,7 +252,7 @@ class Response(object_ref):
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
-        cookies: Optional[Union[dict, List[dict]]] = None,
+        cookies: Optional[CookiesT] = None,
         meta: Optional[Dict[str, Any]] = None,
         encoding: Optional[str] = "utf-8",
         priority: int = 0,
@@ -261,7 +260,7 @@ class Response(object_ref):
         errback: Optional[Callable] = None,
         cb_kwargs: Optional[Dict[str, Any]] = None,
         flags: Optional[List[str]] = None,
-    ) -> Generator[Request, None, None]:
+    ) -> Iterable[Request]:
         """
         .. versionadded:: 2.0
 

@@ -12,12 +12,25 @@ import warnings
 from contextlib import suppress
 from io import BytesIO
 from os import PathLike
-from typing import TYPE_CHECKING, Dict, Tuple, Type, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 from itemadapter import ItemAdapter
 
+from scrapy import Spider
 from scrapy.exceptions import DropItem, NotConfigured, ScrapyDeprecationWarning
-from scrapy.http import Request
+from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import (
     FileException,
@@ -27,20 +40,20 @@ from scrapy.pipelines.files import (
     S3FilesStore,
     _md5sum,
 )
-
-# TODO: from scrapy.pipelines.media import MediaPipeline
+from scrapy.pipelines.media import FileInfoOrError, MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.python import get_func_args, to_bytes
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
+    from PIL import Image
     from typing_extensions import Self
 
 
 class NoimagesDrop(DropItem):
     """Product with no images exception"""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         warnings.warn(
             "The NoimagesDrop class is deprecated",
             category=ScrapyDeprecationWarning,
@@ -56,19 +69,22 @@ class ImageException(FileException):
 class ImagesPipeline(FilesPipeline):
     """Abstract pipeline that implement the image thumbnail generation logic"""
 
-    MEDIA_NAME = "image"
+    MEDIA_NAME: str = "image"
 
     # Uppercase attributes kept for backward compatibility with code that subclasses
     # ImagesPipeline. They may be overridden by settings.
-    MIN_WIDTH = 0
-    MIN_HEIGHT = 0
-    EXPIRES = 90
+    MIN_WIDTH: int = 0
+    MIN_HEIGHT: int = 0
+    EXPIRES: int = 90
     THUMBS: Dict[str, Tuple[int, int]] = {}
     DEFAULT_IMAGES_URLS_FIELD = "image_urls"
     DEFAULT_IMAGES_RESULT_FIELD = "images"
 
     def __init__(
-        self, store_uri: Union[str, PathLike], download_func=None, settings=None
+        self,
+        store_uri: Union[str, PathLike[str]],
+        download_func: Optional[Callable[[Request, Spider], Response]] = None,
+        settings: Union[Settings, Dict[str, Any], None] = None,
     ):
         try:
             from PIL import Image
@@ -89,27 +105,33 @@ class ImagesPipeline(FilesPipeline):
             base_class_name="ImagesPipeline",
             settings=settings,
         )
-        self.expires = settings.getint(resolve("IMAGES_EXPIRES"), self.EXPIRES)
+        self.expires: int = settings.getint(resolve("IMAGES_EXPIRES"), self.EXPIRES)
 
         if not hasattr(self, "IMAGES_RESULT_FIELD"):
-            self.IMAGES_RESULT_FIELD = self.DEFAULT_IMAGES_RESULT_FIELD
+            self.IMAGES_RESULT_FIELD: str = self.DEFAULT_IMAGES_RESULT_FIELD
         if not hasattr(self, "IMAGES_URLS_FIELD"):
-            self.IMAGES_URLS_FIELD = self.DEFAULT_IMAGES_URLS_FIELD
+            self.IMAGES_URLS_FIELD: str = self.DEFAULT_IMAGES_URLS_FIELD
 
-        self.images_urls_field = settings.get(
+        self.images_urls_field: str = settings.get(
             resolve("IMAGES_URLS_FIELD"), self.IMAGES_URLS_FIELD
         )
-        self.images_result_field = settings.get(
+        self.images_result_field: str = settings.get(
             resolve("IMAGES_RESULT_FIELD"), self.IMAGES_RESULT_FIELD
         )
-        self.min_width = settings.getint(resolve("IMAGES_MIN_WIDTH"), self.MIN_WIDTH)
-        self.min_height = settings.getint(resolve("IMAGES_MIN_HEIGHT"), self.MIN_HEIGHT)
-        self.thumbs = settings.get(resolve("IMAGES_THUMBS"), self.THUMBS)
+        self.min_width: int = settings.getint(
+            resolve("IMAGES_MIN_WIDTH"), self.MIN_WIDTH
+        )
+        self.min_height: int = settings.getint(
+            resolve("IMAGES_MIN_HEIGHT"), self.MIN_HEIGHT
+        )
+        self.thumbs: Dict[str, Tuple[int, int]] = settings.get(
+            resolve("IMAGES_THUMBS"), self.THUMBS
+        )
 
-        self._deprecated_convert_image = None
+        self._deprecated_convert_image: Optional[bool] = None
 
     @classmethod
-    def from_settings(cls, settings) -> Self:
+    def from_settings(cls, settings: Settings) -> Self:
         s3store: Type[S3FilesStore] = cast(Type[S3FilesStore], cls.STORE_SCHEMES["s3"])
         s3store.AWS_ACCESS_KEY_ID = settings["AWS_ACCESS_KEY_ID"]
         s3store.AWS_SECRET_ACCESS_KEY = settings["AWS_SECRET_ACCESS_KEY"]
@@ -136,11 +158,25 @@ class ImagesPipeline(FilesPipeline):
         store_uri = settings["IMAGES_STORE"]
         return cls(store_uri, settings=settings)
 
-    def file_downloaded(self, response, request, info, *, item=None):
+    def file_downloaded(
+        self,
+        response: Response,
+        request: Request,
+        info: MediaPipeline.SpiderInfo,
+        *,
+        item: Any = None,
+    ) -> str:
         return self.image_downloaded(response, request, info, item=item)
 
-    def image_downloaded(self, response, request, info, *, item=None):
-        checksum = None
+    def image_downloaded(
+        self,
+        response: Response,
+        request: Request,
+        info: MediaPipeline.SpiderInfo,
+        *,
+        item: Any = None,
+    ) -> str:
+        checksum: Optional[str] = None
         for path, image, buf in self.get_images(response, request, info, item=item):
             if checksum is None:
                 buf.seek(0)
@@ -153,9 +189,17 @@ class ImagesPipeline(FilesPipeline):
                 meta={"width": width, "height": height},
                 headers={"Content-Type": "image/jpeg"},
             )
+        assert checksum is not None
         return checksum
 
-    def get_images(self, response, request, info, *, item=None):
+    def get_images(
+        self,
+        response: Response,
+        request: Request,
+        info: MediaPipeline.SpiderInfo,
+        *,
+        item: Any = None,
+    ) -> Iterable[Tuple[str, Image.Image, BytesIO]]:
         path = self.file_path(request, response=response, info=info, item=item)
         orig_image = self._Image.open(BytesIO(response.body))
 
@@ -196,7 +240,12 @@ class ImagesPipeline(FilesPipeline):
                 thumb_image, thumb_buf = self.convert_image(image, size, buf)
             yield thumb_path, thumb_image, thumb_buf
 
-    def convert_image(self, image, size=None, response_body=None):
+    def convert_image(
+        self,
+        image: Image.Image,
+        size: Optional[Tuple[int, int]] = None,
+        response_body: Optional[BytesIO] = None,
+    ) -> Tuple[Image.Image, BytesIO]:
         if response_body is None:
             warnings.warn(
                 f"{self.__class__.__name__}.convert_image() method called in a deprecated way, "
@@ -225,7 +274,7 @@ class ImagesPipeline(FilesPipeline):
                 # when updating the minimum requirements for Pillow.
                 resampling_filter = self._Image.Resampling.LANCZOS
             except AttributeError:
-                resampling_filter = self._Image.ANTIALIAS
+                resampling_filter = self._Image.ANTIALIAS  # type: ignore[attr-defined]
             image.thumbnail(size, resampling_filter)
         elif response_body is not None and image.format == "JPEG":
             return image, response_body
@@ -234,19 +283,38 @@ class ImagesPipeline(FilesPipeline):
         image.save(buf, "JPEG")
         return image, buf
 
-    def get_media_requests(self, item, info):
+    def get_media_requests(
+        self, item: Any, info: MediaPipeline.SpiderInfo
+    ) -> List[Request]:
         urls = ItemAdapter(item).get(self.images_urls_field, [])
         return [Request(u, callback=NO_CALLBACK) for u in urls]
 
-    def item_completed(self, results, item, info):
+    def item_completed(
+        self, results: List[FileInfoOrError], item: Any, info: MediaPipeline.SpiderInfo
+    ) -> Any:
         with suppress(KeyError):
             ItemAdapter(item)[self.images_result_field] = [x for ok, x in results if ok]
         return item
 
-    def file_path(self, request, response=None, info=None, *, item=None):
+    def file_path(
+        self,
+        request: Request,
+        response: Optional[Response] = None,
+        info: Optional[MediaPipeline.SpiderInfo] = None,
+        *,
+        item: Any = None,
+    ) -> str:
         image_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # nosec
         return f"full/{image_guid}.jpg"
 
-    def thumb_path(self, request, thumb_id, response=None, info=None, *, item=None):
+    def thumb_path(
+        self,
+        request: Request,
+        thumb_id: str,
+        response: Optional[Response] = None,
+        info: Optional[MediaPipeline.SpiderInfo] = None,
+        *,
+        item: Any = None,
+    ) -> str:
         thumb_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # nosec
         return f"thumbs/{thumb_id}/{thumb_guid}.jpg"

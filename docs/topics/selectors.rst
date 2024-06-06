@@ -1060,6 +1060,12 @@ Selector objects
 
           For convenience, this method can be called as ``response.css()``
 
+  .. automethod:: jmespath
+
+      .. note::
+
+          For convenience, this method can be called as ``response.jmespath()``
+
   .. automethod:: get
 
      See also: :ref:`old-extraction-api`
@@ -1091,6 +1097,8 @@ SelectorList objects
    .. automethod:: xpath
 
    .. automethod:: css
+
+   .. automethod:: jmespath
 
    .. automethod:: getall
 
