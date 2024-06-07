@@ -293,6 +293,52 @@ Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
     [...]
 
 
+.. _cookiejars:
+
+Direct access to cookiejars from spider
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+On some cases it is required to directly set specific values to existing cookiejar
+
+.. code-block:: python
+
+    import scrapy
+    from scrapy.crawler import CrawlerProcess
+
+
+    class Quotes(scrapy.Spider):
+        name = "quotes"
+        custom_settings = {"DOWNLOAD_DELAY": 1}
+
+        def start_requests(self):
+            yield scrapy.Request(
+                url="https://quotes.toscrape.com/login", callback=self.login
+            )
+
+        def login(self, response):
+            self.logger.info(self.cookie_jars[None])  # scrapy.http.cookies.CookieJar object
+            self.logger.info(self.cookie_jars[None].jar)  # http.cookiejar object
+
+            locale_cookie = (
+                self.cookie_jars[None]._cookies["quotes.toscrape.com"]["/"].get("session")
+            )
+            locale_cookie.value = locale_cookie.value.upper()
+            self.logger.info(self.cookie_jars[None].jar)
+
+
+    if __name__ == "__main__":
+        p = CrawlerProcess()
+        p.crawl(Quotes)
+        p.start()
+
+Log output::
+
+    2024-02-23 10:51:27 [scrapy.core.engine] DEBUG: Crawled (200) <GET https://quotes.toscrape.com/login> (referer: None)
+    2024-02-23 10:51:27 [quotes] INFO: <scrapy.http.cookies.CookieJar object at 0x00000217DB719B40>
+    2024-02-23 10:51:27 [quotes] INFO: <CookieJar[<Cookie session=eyJjc3JmX3Rva2VuIjoiSnFQQU9GTGt1amZzZ3J3UVdHeGV6WFR2UnBpY0Job1NWS3liWmxhblVISXROREVtQ2RZTSJ9.Zdhqng.8uQzjuvDfOcNJHV7luY5Na6C1N0 for quotes.toscrape.com/>]>
+    2024-02-23 10:51:27 [quotes] INFO: <CookieJar[<Cookie session=EYJJC3JMX3RVA2VUIJOISNFQQU9GTGT1AMZZZ3J3UVDHEGV6WFR2UNBPY0JOB1NWS3LIWMXHBLVISXROREVTQ2RZTSJ9.ZDHQNG.8UQZJUVDFOCNJHV7LUY5NA6C1N0 for quotes.toscrape.com/>]>
+    2024-02-23 10:51:27 [scrapy.core.engine] INFO: Closing spider (finished)
+
+
 DefaultHeadersMiddleware
 ------------------------
 
