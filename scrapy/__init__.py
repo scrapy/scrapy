@@ -33,12 +33,6 @@ version_info = tuple(int(v) if v.isdigit() else v for v in __version__.split("."
 twisted_version = (_txv.major, _txv.minor, _txv.micro)
 
 
-# Check minimum required Python version
-if sys.version_info < (3, 8):
-    print(f"Scrapy {__version__} requires Python 3.8+")
-    sys.exit(1)
-
-
 # Ignore noisy twisted deprecation warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="twisted")
 

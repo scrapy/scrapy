@@ -27,5 +27,3 @@ repos:
   hooks:
   - id: pyupgrade
     args: [--py38-plus, --keep-runtime-typing]
-    # scrapy/__init__.py has a sys.version_info check we want to keep
-    exclude: scrapy/__init__.py
