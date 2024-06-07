@@ -20,9 +20,11 @@ from typing import (
     NoReturn,
     Optional,
     Tuple,
+    Type,
     TypedDict,
+    TypeVar,
     Union,
-    cast,
+    overload,
 )
 
 from w3lib.url import safe_url_string
@@ -48,6 +50,9 @@ class VerboseCookie(TypedDict):
 
 
 CookiesT = Union[Dict[str, str], List[VerboseCookie]]
+
+
+RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 
 
 def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
@@ -189,15 +194,26 @@ class Request(object_ref):
     def __repr__(self) -> str:
         return f"<{self.method} {self.url}>"
 
-    def copy(self) -> Request:
+    def copy(self) -> Self:
         return self.replace()
 
-    def replace(self, *args: Any, **kwargs: Any) -> Request:
+    @overload
+    def replace(
+        self, *args: Any, cls: Type[RequestTypeVar], **kwargs: Any
+    ) -> RequestTypeVar: ...
+
+    @overload
+    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self: ...
+
+    def replace(
+        self, *args: Any, cls: Optional[Type[Request]] = None, **kwargs: Any
+    ) -> Request:
         """Create a new Request with the same attributes except for those given new values"""
         for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
-        cls = kwargs.pop("cls", self.__class__)
-        return cast(Request, cls(*args, **kwargs))
+        if cls is None:
+            cls = self.__class__
+        return cls(*args, **kwargs)
 
     @classmethod
     def from_curl(

@@ -16,6 +16,7 @@ from typing import (
     Set,
     Tuple,
     Type,
+    TypeVar,
     Union,
     cast,
 )
@@ -47,6 +48,7 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
 
 
+_T = TypeVar("_T")
 QueueTuple = Tuple[Union[Response, Failure], Request, Deferred]
 
 
@@ -256,14 +258,14 @@ class Scraper:
 
     def handle_spider_output(
         self,
-        result: Union[Iterable, AsyncIterable],
+        result: Union[Iterable[_T], AsyncIterable[_T]],
         request: Request,
         response: Response,
         spider: Spider,
     ) -> Deferred:
         if not result:
             return defer_succeed(None)
-        it: Union[Iterable, AsyncIterable]
+        it: Union[Iterable[_T], AsyncIterable[_T]]
         if isinstance(result, AsyncIterable):
             it = aiter_errback(
                 result, self.handle_spider_error, request, response, spider

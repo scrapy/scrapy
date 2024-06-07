@@ -118,8 +118,7 @@ class Headers(CaselessDict):
         ]
 
     def to_string(self) -> bytes:
-        # cast() can be removed if the headers_dict_to_raw() hint is improved
-        return cast(bytes, headers_dict_to_raw(self))
+        return headers_dict_to_raw(self)
 
     def to_unicode_dict(self) -> CaseInsensitiveDict:
         """Return headers as a CaseInsensitiveDict with str keys

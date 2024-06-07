@@ -1,13 +1,15 @@
+from __future__ import annotations
+
 import argparse
 import functools
 import inspect
 import json
 import logging
-from types import CoroutineType
 from typing import (
     Any,
     AsyncGenerator,
     Callable,
+    Coroutine,
     Dict,
     Iterable,
     List,
@@ -140,13 +142,13 @@ class Command(BaseRunSpiderCommand):
 
     @overload
     def iterate_spider_output(
-        self, result: Union[AsyncGenerator, CoroutineType]
-    ) -> Deferred: ...
+        self, result: Union[AsyncGenerator[_T, None], Coroutine[Any, Any, _T]]
+    ) -> Deferred[_T]: ...
 
     @overload
-    def iterate_spider_output(self, result: _T) -> Iterable: ...
+    def iterate_spider_output(self, result: _T) -> Iterable[Any]: ...
 
-    def iterate_spider_output(self, result: Any) -> Union[Iterable, Deferred]:
+    def iterate_spider_output(self, result: Any) -> Union[Iterable[Any], Deferred]:
         if inspect.isasyncgen(result):
             d = deferred_from_coro(
                 collect_asyncgen(aiter_errback(result, self.handle_exception))
