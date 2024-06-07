@@ -46,9 +46,9 @@ def _serialize_headers(headers: Iterable[bytes], request: Request) -> Iterable[b
             yield from request.headers.getlist(header)
 
 
-_fingerprint_cache: (
-    "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]]"
-)
+_fingerprint_cache: WeakKeyDictionary[
+    Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]
+]
 _fingerprint_cache = WeakKeyDictionary()
 
 

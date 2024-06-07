@@ -22,9 +22,7 @@ class Root(Resource):
         for nl in nlist:
             args["n"] = nl
             argstr = urlencode(args, doseq=True)
-            request.write(
-                f"<a href='/follow?{argstr}'>follow {nl}</a><br>".encode("utf8")
-            )
+            request.write(f"<a href='/follow?{argstr}'>follow {nl}</a><br>".encode())
         request.write(b"</body></html>")
         return b""
 

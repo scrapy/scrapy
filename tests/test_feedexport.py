@@ -1359,13 +1359,13 @@ class FeedExportTest(FeedExportTestBase):
         items = [dict({"foo": "Test\xd6"})]
 
         formats = {
-            "json": '[{"foo": "Test\\u00d6"}]'.encode("utf-8"),
-            "jsonlines": '{"foo": "Test\\u00d6"}\n'.encode("utf-8"),
+            "json": b'[{"foo": "Test\\u00d6"}]',
+            "jsonlines": b'{"foo": "Test\\u00d6"}\n',
             "xml": (
                 '<?xml version="1.0" encoding="utf-8"?>\n'
                 "<items><item><foo>Test\xd6</foo></item></items>"
-            ).encode("utf-8"),
-            "csv": "foo\r\nTest\xd6\r\n".encode("utf-8"),
+            ).encode(),
+            "csv": "foo\r\nTest\xd6\r\n".encode(),
         }
 
         for fmt, expected in formats.items():
@@ -1379,13 +1379,13 @@ class FeedExportTest(FeedExportTestBase):
             self.assertEqual(expected, data[fmt])
 
         formats = {
-            "json": '[{"foo": "Test\xd6"}]'.encode("latin-1"),
-            "jsonlines": '{"foo": "Test\xd6"}\n'.encode("latin-1"),
+            "json": b'[{"foo": "Test\xd6"}]',
+            "jsonlines": b'{"foo": "Test\xd6"}\n',
             "xml": (
-                '<?xml version="1.0" encoding="latin-1"?>\n'
-                "<items><item><foo>Test\xd6</foo></item></items>"
-            ).encode("latin-1"),
-            "csv": "foo\r\nTest\xd6\r\n".encode("latin-1"),
+                b'<?xml version="1.0" encoding="latin-1"?>\n'
+                b"<items><item><foo>Test\xd6</foo></item></items>"
+            ),
+            "csv": b"foo\r\nTest\xd6\r\n",
         }
 
         for fmt, expected in formats.items():
@@ -1404,12 +1404,12 @@ class FeedExportTest(FeedExportTestBase):
         items = [dict({"foo": "FOO", "bar": "BAR"})]
 
         formats = {
-            "json": '[\n{"bar": "BAR"}\n]'.encode("utf-8"),
+            "json": b'[\n{"bar": "BAR"}\n]',
             "xml": (
-                '<?xml version="1.0" encoding="latin-1"?>\n'
-                "<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>"
-            ).encode("latin-1"),
-            "csv": "bar,foo\r\nBAR,FOO\r\n".encode("utf-8"),
+                b'<?xml version="1.0" encoding="latin-1"?>\n'
+                b"<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>"
+            ),
+            "csv": b"bar,foo\r\nBAR,FOO\r\n",
         }
 
         settings = {
@@ -1663,8 +1663,8 @@ class FeedExportTest(FeedExportTestBase):
     def test_extend_kwargs(self):
         items = [{"foo": "FOO", "bar": "BAR"}]
 
-        expected_with_title_csv = "foo,bar\r\nFOO,BAR\r\n".encode("utf-8")
-        expected_without_title_csv = "FOO,BAR\r\n".encode("utf-8")
+        expected_with_title_csv = b"foo,bar\r\nFOO,BAR\r\n"
+        expected_without_title_csv = b"FOO,BAR\r\n"
         test_cases = [
             # with title
             {
@@ -2519,22 +2519,22 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
         formats = {
             "json": [
-                '[\n{"bar": "BAR"}\n]'.encode("utf-8"),
-                '[\n{"bar": "BAR1"}\n]'.encode("utf-8"),
+                b'[\n{"bar": "BAR"}\n]',
+                b'[\n{"bar": "BAR1"}\n]',
             ],
             "xml": [
                 (
-                    '<?xml version="1.0" encoding="latin-1"?>\n'
-                    "<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>"
-                ).encode("latin-1"),
+                    b'<?xml version="1.0" encoding="latin-1"?>\n'
+                    b"<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>"
+                ),
                 (
-                    '<?xml version="1.0" encoding="latin-1"?>\n'
-                    "<items>\n  <item>\n    <foo>FOO1</foo>\n  </item>\n</items>"
-                ).encode("latin-1"),
+                    b'<?xml version="1.0" encoding="latin-1"?>\n'
+                    b"<items>\n  <item>\n    <foo>FOO1</foo>\n  </item>\n</items>"
+                ),
             ],
             "csv": [
-                "foo,bar\r\nFOO,BAR\r\n".encode("utf-8"),
-                "foo,bar\r\nFOO1,BAR1\r\n".encode("utf-8"),
+                b"foo,bar\r\nFOO,BAR\r\n",
+                b"foo,bar\r\nFOO1,BAR1\r\n",
             ],
         }
 
@@ -2577,8 +2577,8 @@ class BatchDeliveriesTest(FeedExportTestBase):
         items = [dict({"foo": "FOO"}), dict({"foo": "FOO1"})]
         formats = {
             "json": [
-                '[{"foo": "FOO"}]'.encode("utf-8"),
-                '[{"foo": "FOO1"}]'.encode("utf-8"),
+                b'[{"foo": "FOO"}]',
+                b'[{"foo": "FOO1"}]',
             ],
         }
         settings = {

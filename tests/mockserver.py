@@ -189,10 +189,10 @@ class Raw(LeafResource):
 class Echo(LeafResource):
     def render_GET(self, request):
         output = {
-            "headers": dict(
-                (to_unicode(k), [to_unicode(v) for v in vs])
+            "headers": {
+                to_unicode(k): [to_unicode(v) for v in vs]
                 for k, vs in request.requestHeaders.getAllRawHeaders()
-            ),
+            },
             "body": to_unicode(request.content.read()),
         }
         return to_bytes(json.dumps(output))

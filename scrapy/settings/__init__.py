@@ -275,7 +275,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         assert isinstance(value, (dict, list))
         return copy.deepcopy(value)
 
-    def getwithbase(self, name: _SettingsKeyT) -> "BaseSettings":
+    def getwithbase(self, name: _SettingsKeyT) -> BaseSettings:
         """Get a composition of a dictionary-like setting and its `_BASE`
         counterpart.
 
@@ -438,7 +438,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         if self.frozen:
             raise TypeError("Trying to modify an immutable Settings object")
 
-    def copy(self) -> "Self":
+    def copy(self) -> Self:
         """
         Make a deep copy of current settings.
 
@@ -460,7 +460,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """
         self.frozen = True
 
-    def frozencopy(self) -> "Self":
+    def frozencopy(self) -> Self:
         """
         Return an immutable copy of the current settings.
 

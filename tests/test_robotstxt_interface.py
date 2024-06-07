@@ -36,10 +36,10 @@ class BaseRobotParserTest:
 
     def test_allowed(self):
         robotstxt_robotstxt_body = (
-            "User-agent: * \n"
-            "Disallow: /disallowed \n"
-            "Allow: /allowed \n"
-            "Crawl-delay: 10".encode("utf-8")
+            b"User-agent: * \n"
+            b"Disallow: /disallowed \n"
+            b"Allow: /allowed \n"
+            b"Crawl-delay: 10"
         )
         rp = self.parser_cls.from_crawler(
             crawler=None, robotstxt_body=robotstxt_robotstxt_body
@@ -48,15 +48,13 @@ class BaseRobotParserTest:
         self.assertFalse(rp.allowed("https://www.site.local/disallowed", "*"))
 
     def test_allowed_wildcards(self):
-        robotstxt_robotstxt_body = """User-agent: first
+        robotstxt_robotstxt_body = b"""User-agent: first
                                 Disallow: /disallowed/*/end$
 
                                 User-agent: second
                                 Allow: /*allowed
                                 Disallow: /
-                                """.encode(
-            "utf-8"
-        )
+                                """
         rp = self.parser_cls.from_crawler(
             crawler=None, robotstxt_body=robotstxt_robotstxt_body
         )
@@ -77,18 +75,14 @@ class BaseRobotParserTest:
         self.assertTrue(rp.allowed("https://www.site.local/is_allowed_too", "second"))
 
     def test_length_based_precedence(self):
-        robotstxt_robotstxt_body = (
-            "User-agent: * \n" "Disallow: / \n" "Allow: /page".encode("utf-8")
-        )
+        robotstxt_robotstxt_body = b"User-agent: * \n" b"Disallow: / \n" b"Allow: /page"
         rp = self.parser_cls.from_crawler(
             crawler=None, robotstxt_body=robotstxt_robotstxt_body
         )
         self.assertTrue(rp.allowed("https://www.site.local/page", "*"))
 
     def test_order_based_precedence(self):
-        robotstxt_robotstxt_body = (
-            "User-agent: * \n" "Disallow: / \n" "Allow: /page".encode("utf-8")
-        )
+        robotstxt_robotstxt_body = b"User-agent: * \n" b"Disallow: / \n" b"Allow: /page"
         rp = self.parser_cls.from_crawler(
             crawler=None, robotstxt_body=robotstxt_robotstxt_body
         )
@@ -123,9 +117,7 @@ class BaseRobotParserTest:
         Disallow: /wiki/Käyttäjä:
 
         User-Agent: UnicödeBöt
-        Disallow: /some/randome/page.html""".encode(
-            "utf-8"
-        )
+        Disallow: /some/randome/page.html""".encode()
         rp = self.parser_cls.from_crawler(
             crawler=None, robotstxt_body=robotstxt_robotstxt_body
         )
@@ -145,14 +137,14 @@ class BaseRobotParserTest:
 
 class DecodeRobotsTxtTest(unittest.TestCase):
     def test_native_string_conversion(self):
-        robotstxt_body = "User-agent: *\nDisallow: /\n".encode("utf-8")
+        robotstxt_body = b"User-agent: *\nDisallow: /\n"
         decoded_content = decode_robotstxt(
             robotstxt_body, spider=None, to_native_str_type=True
         )
         self.assertEqual(decoded_content, "User-agent: *\nDisallow: /\n")
 
     def test_decode_utf8(self):
-        robotstxt_body = "User-agent: *\nDisallow: /\n".encode("utf-8")
+        robotstxt_body = b"User-agent: *\nDisallow: /\n"
         decoded_content = decode_robotstxt(robotstxt_body, spider=None)
         self.assertEqual(decoded_content, "User-agent: *\nDisallow: /\n")
 

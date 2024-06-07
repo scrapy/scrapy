@@ -628,7 +628,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
 
 class NoimagesDropTestCase(unittest.TestCase):
     def test_deprecation_warning(self):
-        arg = str()
+        arg = ""
         with warnings.catch_warnings(record=True) as w:
             NoimagesDrop(arg)
             self.assertEqual(len(w), 1)
