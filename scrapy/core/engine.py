@@ -19,6 +19,7 @@ from typing import (
     Optional,
     Set,
     Type,
+    TypeVar,
     Union,
     cast,
 )
@@ -29,7 +30,7 @@ from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.core.downloader import Downloader
-from scrapy.core.scraper import Scraper
+from scrapy.core.scraper import Scraper, _HandleOutputDeferred
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.logformatter import LogFormatter
@@ -47,6 +48,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_T = TypeVar("_T")
+
 
 class Slot:
     def __init__(
@@ -56,7 +59,7 @@ class Slot:
         nextcall: CallLaterOnce[None],
         scheduler: BaseScheduler,
     ) -> None:
-        self.closing: Optional[Deferred] = None
+        self.closing: Optional[Deferred[None]] = None
         self.inprogress: Set[Request] = set()
         self.start_requests: Optional[Iterator[Request]] = iter(start_requests)
         self.close_if_idle: bool = close_if_idle
@@ -71,7 +74,7 @@ class Slot:
         self.inprogress.remove(request)
         self._maybe_fire_closing()
 
-    def close(self) -> Deferred:
+    def close(self) -> Deferred[None]:
         self.closing = Deferred()
         self._maybe_fire_closing()
         return self.closing
@@ -123,20 +126,20 @@ class ExecutionEngine:
         return scheduler_cls
 
     @inlineCallbacks
-    def start(self) -> Generator[Deferred, Any, None]:
+    def start(self) -> Generator[Deferred[Any], Any, None]:
         if self.running:
             raise RuntimeError("Engine already running")
         self.start_time = time()
         yield self.signals.send_catch_log_deferred(signal=signals.engine_started)
         self.running = True
-        self._closewait: Deferred = Deferred()
+        self._closewait: Deferred[None] = Deferred()
         yield self._closewait
 
-    def stop(self) -> Deferred:
+    def stop(self) -> Deferred[None]:
         """Gracefully stop the execution engine"""
 
         @inlineCallbacks
-        def _finish_stopping_engine(_: Any) -> Generator[Deferred, Any, None]:
+        def _finish_stopping_engine(_: Any) -> Generator[Deferred[Any], Any, None]:
             yield self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
             self._closewait.callback(None)
 
@@ -151,7 +154,7 @@ class ExecutionEngine:
         )
         return dfd.addBoth(_finish_stopping_engine)
 
-    def close(self) -> Deferred:
+    def close(self) -> Deferred[None]:
         """
         Gracefully close the execution engine.
         If it has already been started, stop it. In all cases, close the spider and the downloader.
@@ -214,7 +217,7 @@ class ExecutionEngine:
             or self.scraper.slot.needs_backout()
         )
 
-    def _next_request_from_scheduler(self) -> Optional[Deferred]:
+    def _next_request_from_scheduler(self) -> Optional[Deferred[None]]:
         assert self.slot is not None  # typing
         assert self.spider is not None  # typing
 
@@ -222,7 +225,7 @@ class ExecutionEngine:
         if request is None:
             return None
 
-        d = self._download(request)
+        d: Deferred[Union[Response, Request]] = self._download(request)
         d.addBoth(self._handle_downloader_output, request)
         d.addErrback(
             lambda f: logger.info(
@@ -236,8 +239,8 @@ class ExecutionEngine:
             assert self.slot
             self.slot.remove_request(request)
 
-        d.addBoth(_remove_request)
-        d.addErrback(
+        d2: Deferred[None] = d.addBoth(_remove_request)
+        d2.addErrback(
             lambda f: logger.info(
                 "Error while removing request from slot",
                 exc_info=failure_to_exc_info(f),
@@ -245,19 +248,19 @@ class ExecutionEngine:
             )
         )
         slot = self.slot
-        d.addBoth(lambda _: slot.nextcall.schedule())
-        d.addErrback(
+        d2.addBoth(lambda _: slot.nextcall.schedule())
+        d2.addErrback(
             lambda f: logger.info(
                 "Error while scheduling new request",
                 exc_info=failure_to_exc_info(f),
                 extra={"spider": self.spider},
             )
         )
-        return d
+        return d2
 
     def _handle_downloader_output(
         self, result: Union[Request, Response, Failure], request: Request
-    ) -> Optional[Deferred]:
+    ) -> Optional[_HandleOutputDeferred]:
         assert self.spider is not None  # typing
 
         if not isinstance(result, (Request, Response, Failure)):
@@ -319,20 +322,23 @@ class ExecutionEngine:
                 signals.request_dropped, request=request, spider=spider
             )
 
-    def download(self, request: Request) -> Deferred:
+    def download(self, request: Request) -> Deferred[Response]:
         """Return a Deferred which fires with a Response as result, only downloader middlewares are applied"""
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
-        return self._download(request).addBoth(self._downloaded, request)
+        d: Deferred[Union[Response, Request]] = self._download(request)
+        # Deferred.addBoth() overloads don't seem to support a Union[_T, Deferred[_T]] return type
+        d2: Deferred[Response] = d.addBoth(self._downloaded, request)  # type: ignore[arg-type]
+        return d2
 
     def _downloaded(
         self, result: Union[Response, Request, Failure], request: Request
-    ) -> Union[Deferred, Response, Failure]:
+    ) -> Union[Deferred[Response], Response, Failure]:
         assert self.slot is not None  # typing
         self.slot.remove_request(request)
         return self.download(result) if isinstance(result, Request) else result
 
-    def _download(self, request: Request) -> Deferred:
+    def _download(self, request: Request) -> Deferred[Union[Response, Request]]:
         assert self.slot is not None  # typing
 
         self.slot.add_request(request)
@@ -359,13 +365,15 @@ class ExecutionEngine:
                 )
             return result
 
-        def _on_complete(_: Any) -> Any:
+        def _on_complete(_: _T) -> _T:
             assert self.slot is not None
             self.slot.nextcall.schedule()
             return _
 
         assert self.spider is not None
-        dwld = self.downloader.fetch(request, self.spider)
+        dwld: Deferred[Union[Response, Request]] = self.downloader.fetch(
+            request, self.spider
+        )
         dwld.addCallback(_on_success)
         dwld.addBoth(_on_complete)
         return dwld
@@ -376,7 +384,7 @@ class ExecutionEngine:
         spider: Spider,
         start_requests: Iterable[Request] = (),
         close_if_idle: bool = True,
-    ) -> Generator[Deferred, Any, None]:
+    ) -> Generator[Deferred[Any], Any, None]:
         if self.slot is not None:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={"spider": spider})
@@ -422,7 +430,7 @@ class ExecutionEngine:
             assert isinstance(ex, CloseSpider)  # typing
             self.close_spider(self.spider, reason=ex.reason)
 
-    def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred:
+    def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred[None]:
         """Close (cancel) spider and clear all its outstanding requests"""
         if self.slot is None:
             raise RuntimeError("Engine slot not assigned")

@@ -8,7 +8,7 @@ from twisted.internet.protocol import ClientFactory
 from twisted.web.http import HTTPClient
 
 from scrapy import Request
-from scrapy.http import Headers
+from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
@@ -145,7 +145,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         self.response_headers: Optional[Headers] = None
         self.timeout: float = request.meta.get("download_timeout") or timeout
         self.start_time: float = time()
-        self.deferred: defer.Deferred = defer.Deferred().addCallback(
+        self.deferred: defer.Deferred[Response] = defer.Deferred().addCallback(
             self._build_response, request
         )
 
@@ -155,7 +155,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         # needed to add the callback _waitForDisconnect.
         # Specifically this avoids the AttributeError exception when
         # clientConnectionFailed method is called.
-        self._disconnectedDeferred: defer.Deferred = defer.Deferred()
+        self._disconnectedDeferred: defer.Deferred[None] = defer.Deferred()
 
         self._set_connection_attributes(request)
 

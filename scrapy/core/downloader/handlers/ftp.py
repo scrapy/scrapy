@@ -91,7 +91,7 @@ class FTPDownloadHandler:
     def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings)
 
-    def download_request(self, request: Request, spider: Spider) -> Deferred:
+    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         from twisted.internet import reactor
 
         parsed_url = urlparse_cached(request)
@@ -103,10 +103,14 @@ class FTPDownloadHandler:
         creator = ClientCreator(
             reactor, FTPClient, user, password, passive=passive_mode
         )
-        dfd: Deferred = creator.connectTCP(parsed_url.hostname, parsed_url.port or 21)
+        dfd: Deferred[FTPClient] = creator.connectTCP(
+            parsed_url.hostname, parsed_url.port or 21
+        )
         return dfd.addCallback(self.gotClient, request, unquote(parsed_url.path))
 
-    def gotClient(self, client: FTPClient, request: Request, filepath: str) -> Deferred:
+    def gotClient(
+        self, client: FTPClient, request: Request, filepath: str
+    ) -> Deferred[Response]:
         self.client = client
         protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
         d = client.retrieveFile(filepath, protocol)

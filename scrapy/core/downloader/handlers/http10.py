@@ -9,6 +9,7 @@ from twisted.internet.defer import Deferred
 
 from scrapy import Request, Spider
 from scrapy.crawler import Crawler
+from scrapy.http import Response
 from scrapy.settings import BaseSettings
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import to_unicode
@@ -38,7 +39,7 @@ class HTTP10DownloadHandler:
     def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings, crawler)
 
-    def download_request(self, request: Request, spider: Spider) -> Deferred:
+    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         """Return a deferred for the HTTP download"""
         factory = self.HTTPClientFactory(request)
         self._connect(factory)

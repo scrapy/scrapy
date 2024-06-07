@@ -37,7 +37,7 @@ class H2DownloadHandler:
     def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings, crawler)
 
-    def download_request(self, request: Request, spider: Spider) -> Deferred:
+    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         agent = ScrapyH2Agent(
             context_factory=self._context_factory,
             pool=self._pool,
@@ -98,7 +98,7 @@ class ScrapyH2Agent:
             pool=self._pool,
         )
 
-    def download_request(self, request: Request, spider: Spider) -> Deferred:
+    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         from twisted.internet import reactor
 
         timeout = request.meta.get("download_timeout") or self._connect_timeout

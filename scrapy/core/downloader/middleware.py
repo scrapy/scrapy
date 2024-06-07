@@ -34,10 +34,15 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             self.methods["process_exception"].appendleft(mw.process_exception)
 
     def download(
-        self, download_func: Callable, request: Request, spider: Spider
-    ) -> Deferred:
+        self,
+        download_func: Callable[[Request, Spider], Deferred[Response]],
+        request: Request,
+        spider: Spider,
+    ) -> Deferred[Union[Response, Request]]:
         @inlineCallbacks
-        def process_request(request: Request) -> Generator[Deferred, Any, Any]:
+        def process_request(
+            request: Request,
+        ) -> Generator[Deferred[Any], Any, Union[Response, Request]]:
             for method in self.methods["process_request"]:
                 method = cast(Callable, method)
                 response = yield deferred_from_coro(
@@ -52,12 +57,12 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     )
                 if response:
                     return response
-            return (yield download_func(request=request, spider=spider))
+            return (yield download_func(request, spider))
 
         @inlineCallbacks
         def process_response(
             response: Union[Response, Request]
-        ) -> Generator[Deferred, Any, Union[Response, Request]]:
+        ) -> Generator[Deferred[Any], Any, Union[Response, Request]]:
             if response is None:
                 raise TypeError("Received None in process_response")
             elif isinstance(response, Request):
@@ -80,7 +85,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         @inlineCallbacks
         def process_exception(
             failure: Failure,
-        ) -> Generator[Deferred, Any, Union[Failure, Response, Request]]:
+        ) -> Generator[Deferred[Any], Any, Union[Failure, Response, Request]]:
             exception = failure.value
             for method in self.methods["process_exception"]:
                 method = cast(Callable, method)
@@ -98,7 +103,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     return response
             return failure
 
-        deferred = mustbe_deferred(process_request, request)
+        deferred: Deferred[Union[Response, Request]] = mustbe_deferred(
+            process_request, request
+        )
         deferred.addErrback(process_exception)
         deferred.addCallback(process_response)
         return deferred

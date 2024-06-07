@@ -3,7 +3,18 @@ import warnings
 from collections import deque
 from datetime import datetime
 from time import time
-from typing import TYPE_CHECKING, Any, Deque, Dict, Optional, Set, Tuple, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Deque,
+    Dict,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from twisted.internet import task
 from twisted.internet.defer import Deferred
@@ -21,6 +32,8 @@ from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
+
+_T = TypeVar("_T")
 
 
 class Slot:
@@ -40,7 +53,7 @@ class Slot:
         self.throttle = throttle
 
         self.active: Set[Request] = set()
-        self.queue: Deque[Tuple[Request, Deferred]] = deque()
+        self.queue: Deque[Tuple[Request, Deferred[Response]]] = deque()
         self.transferring: Set[Request] = set()
         self.lastseen: float = 0
         self.latercall = None
@@ -114,13 +127,17 @@ class Downloader:
             "DOWNLOAD_SLOTS", {}
         )
 
-    def fetch(self, request: Request, spider: Spider) -> Deferred:
-        def _deactivate(response: Response) -> Response:
+    def fetch(
+        self, request: Request, spider: Spider
+    ) -> Deferred[Union[Response, Request]]:
+        def _deactivate(response: _T) -> _T:
             self.active.remove(request)
             return response
 
         self.active.add(request)
-        dfd = self.middleware.download(self._enqueue_request, request, spider)
+        dfd: Deferred[Union[Response, Request]] = self.middleware.download(
+            self._enqueue_request, request, spider
+        )
         return dfd.addBoth(_deactivate)
 
     def needs_backout(self) -> bool:
@@ -163,7 +180,7 @@ class Downloader:
         )
         return self.get_slot_key(request)
 
-    def _enqueue_request(self, request: Request, spider: Spider) -> Deferred:
+    def _enqueue_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         key, slot = self._get_slot(request, spider)
         request.meta[self.DOWNLOAD_SLOT] = key
 
@@ -175,7 +192,7 @@ class Downloader:
         self.signals.send_catch_log(
             signal=signals.request_reached_downloader, request=request, spider=spider
         )
-        deferred: Deferred = Deferred().addBoth(_deactivate)
+        deferred: Deferred[Response] = Deferred().addBoth(_deactivate)
         slot.queue.append((request, deferred))
         self._process_queue(spider, slot)
         return deferred
@@ -208,11 +225,15 @@ class Downloader:
                 self._process_queue(spider, slot)
                 break
 
-    def _download(self, slot: Slot, request: Request, spider: Spider) -> Deferred:
+    def _download(
+        self, slot: Slot, request: Request, spider: Spider
+    ) -> Deferred[Response]:
         # The order is very important for the following deferreds. Do not change!
 
         # 1. Create the download deferred
-        dfd = mustbe_deferred(self.handlers.download_request, request, spider)
+        dfd: Deferred[Response] = mustbe_deferred(
+            self.handlers.download_request, request, spider
+        )
 
         # 2. Notify response_downloaded listeners about the recent download
         # before querying queue for next request
@@ -233,7 +254,7 @@ class Downloader:
         # middleware itself)
         slot.transferring.add(request)
 
-        def finish_transferring(_: Any) -> Any:
+        def finish_transferring(_: _T) -> _T:
             slot.transferring.remove(request)
             self._process_queue(spider, slot)
             self.signals.send_catch_log(

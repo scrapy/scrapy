@@ -71,7 +71,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         """
         return cls()
 
-    def open(self, spider: Spider) -> Optional[Deferred]:
+    def open(self, spider: Spider) -> Optional[Deferred[None]]:
         """
         Called when the spider is opened by the engine. It receives the spider
         instance as argument and it's useful to execute initialization code.
@@ -81,7 +81,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         """
         pass
 
-    def close(self, reason: str) -> Optional[Deferred]:
+    def close(self, reason: str) -> Optional[Deferred[None]]:
         """
         Called when the spider is closed by the engine. It receives the reason why the crawl
         finished as argument and it's useful to execute cleaning code.
@@ -216,7 +216,7 @@ class Scheduler(BaseScheduler):
     def has_pending_requests(self) -> bool:
         return len(self) > 0
 
-    def open(self, spider: Spider) -> Optional[Deferred]:
+    def open(self, spider: Spider) -> Optional[Deferred[None]]:
         """
         (1) initialize the memory queue
         (2) initialize the disk queue if the ``jobdir`` attribute is a valid directory
@@ -227,7 +227,7 @@ class Scheduler(BaseScheduler):
         self.dqs: Optional[ScrapyPriorityQueue] = self._dq() if self.dqdir else None
         return self.df.open()
 
-    def close(self, reason: str) -> Optional[Deferred]:
+    def close(self, reason: str) -> Optional[Deferred[None]]:
         """
         (1) dump pending requests to disk if there is a disk queue
         (2) return the result of the dupefilter's ``close`` method
