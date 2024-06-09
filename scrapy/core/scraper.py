@@ -55,8 +55,11 @@ logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 _ParallelResult = DeferredListResultListT[Iterator[Any]]
-_HandleOutputDeferred = Deferred[Union[_ParallelResult, None]]
-QueueTuple = Tuple[Union[Response, Failure], Request, _HandleOutputDeferred]
+
+if TYPE_CHECKING:
+    # parameterized Deferreds require Twisted 21.7.0
+    _HandleOutputDeferred = Deferred[Union[_ParallelResult, None]]
+    QueueTuple = Tuple[Union[Response, Failure], Request, _HandleOutputDeferred]
 
 
 class Slot:

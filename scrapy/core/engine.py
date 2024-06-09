@@ -30,7 +30,7 @@ from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.core.downloader import Downloader
-from scrapy.core.scraper import Scraper, _HandleOutputDeferred
+from scrapy.core.scraper import Scraper
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.logformatter import LogFormatter
@@ -44,6 +44,7 @@ from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
     from scrapy.core.scheduler import BaseScheduler
+    from scrapy.core.scraper import _HandleOutputDeferred
     from scrapy.crawler import Crawler
 
 logger = logging.getLogger(__name__)

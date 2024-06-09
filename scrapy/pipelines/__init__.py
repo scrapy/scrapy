@@ -4,6 +4,8 @@ Item pipeline
 See documentation in docs/item-pipeline.rst
 """
 
+from __future__ import annotations
+
 from typing import Any, List
 
 from twisted.internet.defer import Deferred
