@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import warnings
 from asyncio import Future
 from functools import wraps
 from types import CoroutineType
@@ -35,7 +36,7 @@ from twisted.internet.task import Cooperator
 from twisted.python import failure
 from twisted.python.failure import Failure
 
-from scrapy.exceptions import IgnoreRequest
+from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.utils.reactor import _get_asyncio_event_loop, is_asyncio_reactor_installed
 
 if TYPE_CHECKING:
@@ -281,6 +282,12 @@ def process_chain_both(
     **kw: _P.kwargs,
 ) -> Deferred:
     """Return a Deferred built by chaining the given callbacks and errbacks"""
+    warnings.warn(
+        "process_chain_both() is deprecated and will be removed in a future"
+        " Scrapy version.",
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     d: Deferred = Deferred()
     for cb, eb in zip(callbacks, errbacks):
         d.addCallback(cb, *a, **kw)
