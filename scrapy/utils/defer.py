@@ -49,7 +49,6 @@ _T2 = TypeVar("_T2")
 
 # copied from twisted.internet.defer
 _SelfResultT = TypeVar("_SelfResultT")
-_DeferredListSingleResultT = Tuple[_SelfResultT, int]
 _DeferredListResultItemT = Tuple[bool, _SelfResultT]
 DeferredListResultListT = List[_DeferredListResultItemT[_SelfResultT]]
 
