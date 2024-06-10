@@ -12,6 +12,7 @@ from typing import (
     Deque,
     Generator,
     Iterable,
+    Iterator,
     Optional,
     Set,
     Tuple,
@@ -33,6 +34,7 @@ from scrapy.logformatter import LogFormatter
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.signalmanager import SignalManager
 from scrapy.utils.defer import (
+    DeferredListResultListT,
     aiter_errback,
     defer_fail,
     defer_succeed,
@@ -48,11 +50,16 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
 
 
-_T = TypeVar("_T")
-QueueTuple = Tuple[Union[Response, Failure], Request, Deferred]
-
-
 logger = logging.getLogger(__name__)
+
+
+_T = TypeVar("_T")
+_ParallelResult = DeferredListResultListT[Iterator[Any]]
+
+if TYPE_CHECKING:
+    # parameterized Deferreds require Twisted 21.7.0
+    _HandleOutputDeferred = Deferred[Union[_ParallelResult, None]]
+    QueueTuple = Tuple[Union[Response, Failure], Request, _HandleOutputDeferred]
 
 
 class Slot:
@@ -66,12 +73,12 @@ class Slot:
         self.active: Set[Request] = set()
         self.active_size: int = 0
         self.itemproc_size: int = 0
-        self.closing: Optional[Deferred] = None
+        self.closing: Optional[Deferred[Spider]] = None
 
     def add_response_request(
         self, result: Union[Response, Failure], request: Request
-    ) -> Deferred:
-        deferred: Deferred = Deferred()
+    ) -> _HandleOutputDeferred:
+        deferred: _HandleOutputDeferred = Deferred()
         self.queue.append((result, request, deferred))
         if isinstance(result, Response):
             self.active_size += max(len(result.body), self.MIN_RESPONSE_SIZE)
@@ -117,12 +124,12 @@ class Scraper:
         self.logformatter: LogFormatter = crawler.logformatter
 
     @inlineCallbacks
-    def open_spider(self, spider: Spider) -> Generator[Deferred, Any, None]:
+    def open_spider(self, spider: Spider) -> Generator[Deferred[Any], Any, None]:
         """Open the given spider for scraping and allocate resources for it"""
         self.slot = Slot(self.crawler.settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE"))
         yield self.itemproc.open_spider(spider)
 
-    def close_spider(self, spider: Spider) -> Deferred:
+    def close_spider(self, spider: Spider) -> Deferred[Spider]:
         """Close a spider being scraped and release its resources"""
         if self.slot is None:
             raise RuntimeError("Scraper slot not assigned")
@@ -142,12 +149,12 @@ class Scraper:
 
     def enqueue_scrape(
         self, result: Union[Response, Failure], request: Request, spider: Spider
-    ) -> Deferred:
+    ) -> _HandleOutputDeferred:
         if self.slot is None:
             raise RuntimeError("Scraper slot not assigned")
         dfd = self.slot.add_response_request(result, request)
 
-        def finish_scraping(_: Any) -> Any:
+        def finish_scraping(_: _T) -> _T:
             assert self.slot is not None
             self.slot.finish_response(result, request)
             self._check_if_closing(spider)
@@ -174,7 +181,7 @@ class Scraper:
 
     def _scrape(
         self, result: Union[Response, Failure], request: Request, spider: Spider
-    ) -> Deferred:
+    ) -> _HandleOutputDeferred:
         """
         Handle the downloaded response or failure through the spider callback/errback
         """
@@ -182,32 +189,35 @@ class Scraper:
             raise TypeError(
                 f"Incorrect type: expected Response or Failure, got {type(result)}: {result!r}"
             )
-        dfd = self._scrape2(
+        dfd: Deferred[Union[Iterable[Any], AsyncIterable[Any]]] = self._scrape2(
             result, request, spider
         )  # returns spider's processed output
         dfd.addErrback(self.handle_spider_error, request, result, spider)
-        dfd.addCallback(
+        dfd2: _HandleOutputDeferred = dfd.addCallback(
             self.handle_spider_output, request, cast(Response, result), spider
         )
-        return dfd
+        return dfd2
 
     def _scrape2(
         self, result: Union[Response, Failure], request: Request, spider: Spider
-    ) -> Deferred:
+    ) -> Deferred[Union[Iterable[Any], AsyncIterable[Any]]]:
         """
         Handle the different cases of request's result been a Response or a Failure
         """
         if isinstance(result, Response):
-            return self.spidermw.scrape_response(
+            # Deferreds are invariant so Mutable*Chain isn't matched to *Iterable
+            return self.spidermw.scrape_response(  # type: ignore[return-value]
                 self.call_spider, result, request, spider
             )
         # else result is a Failure
         dfd = self.call_spider(result, request, spider)
-        return dfd.addErrback(self._log_download_errors, result, request, spider)
+        dfd.addErrback(self._log_download_errors, result, request, spider)
+        return dfd
 
     def call_spider(
         self, result: Union[Response, Failure], request: Request, spider: Spider
-    ) -> Deferred:
+    ) -> Deferred[Union[Iterable[Any], AsyncIterable[Any]]]:
+        dfd: Deferred[Any]
         if isinstance(result, Response):
             if getattr(result, "request", None) is None:
                 result.request = request
@@ -225,7 +235,10 @@ class Scraper:
             if request.errback:
                 warn_on_generator_with_return_value(spider, request.errback)
                 dfd.addErrback(request.errback)
-        return dfd.addCallback(iterate_spider_output)
+        dfd2: Deferred[Union[Iterable[Any], AsyncIterable[Any]]] = dfd.addCallback(
+            iterate_spider_output
+        )
+        return dfd2
 
     def handle_spider_error(
         self,
@@ -262,10 +275,11 @@ class Scraper:
         request: Request,
         response: Response,
         spider: Spider,
-    ) -> Deferred:
+    ) -> _HandleOutputDeferred:
         if not result:
             return defer_succeed(None)
         it: Union[Iterable[_T], AsyncIterable[_T]]
+        dfd: Deferred[_ParallelResult]
         if isinstance(result, AsyncIterable):
             it = aiter_errback(
                 result, self.handle_spider_error, request, response, spider
@@ -290,11 +304,12 @@ class Scraper:
                 response,
                 spider,
             )
-        return dfd
+        # returning Deferred[_ParallelResult] instead of Deferred[Union[_ParallelResult, None]]
+        return dfd  # type: ignore[return-value]
 
     def _process_spidermw_output(
         self, output: Any, request: Request, response: Response, spider: Spider
-    ) -> Optional[Deferred]:
+    ) -> Optional[Deferred[Any]]:
         """Process each Request/Item (given in the output parameter) returned
         from the given spider
         """

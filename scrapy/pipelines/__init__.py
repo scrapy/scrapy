@@ -4,6 +4,8 @@ Item pipeline
 See documentation in docs/item-pipeline.rst
 """
 
+from __future__ import annotations
+
 from typing import Any, List
 
 from twisted.internet.defer import Deferred
@@ -29,5 +31,5 @@ class ItemPipelineManager(MiddlewareManager):
                 deferred_f_from_coro_f(pipe.process_item)
             )
 
-    def process_item(self, item: Any, spider: Spider) -> Deferred:
+    def process_item(self, item: Any, spider: Spider) -> Deferred[Any]:
         return self._process_chain("process_item", item, spider)

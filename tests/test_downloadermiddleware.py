@@ -36,7 +36,7 @@ class ManagerTestCase(TestCase):
         if not response:
             response = Response(request.url)
 
-        def download_func(**kwargs):
+        def download_func(request, spider):
             return response
 
         dfd = self.mwman.download(download_func, request, self.spider)

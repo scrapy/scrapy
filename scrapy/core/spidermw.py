@@ -45,7 +45,9 @@ logger = logging.getLogger(__name__)
 
 
 _T = TypeVar("_T")
-ScrapeFunc = Callable[[Union[Response, Failure], Request, Spider], Any]
+ScrapeFunc = Callable[
+    [Union[Response, Failure], Request, Spider], Union[Iterable[_T], AsyncIterable[_T]]
+]
 
 
 def _isiterable(o: Any) -> bool:
@@ -80,7 +82,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         response: Response,
         request: Request,
         spider: Spider,
-    ) -> Any:
+    ) -> Union[Iterable[_T], AsyncIterable[_T]]:
         for method in self.methods["process_spider_input"]:
             method = cast(Callable, method)
             try:
@@ -311,7 +313,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         response: Response,
         request: Request,
         spider: Spider,
-    ) -> Deferred:
+    ) -> Deferred[Union[MutableChain[_T], MutableAsyncChain[_T]]]:
         async def process_callback_output(
             result: Union[Iterable[_T], AsyncIterable[_T]]
         ) -> Union[MutableChain[_T], MutableAsyncChain[_T]]:
@@ -322,12 +324,14 @@ class SpiderMiddlewareManager(MiddlewareManager):
         ) -> Union[Failure, MutableChain[_T], MutableAsyncChain[_T]]:
             return self._process_spider_exception(response, spider, _failure)
 
-        dfd: Deferred = mustbe_deferred(
+        dfd: Deferred[Union[Iterable[_T], AsyncIterable[_T]]] = mustbe_deferred(
             self._process_spider_input, scrape_func, response, request, spider
         )
-        dfd.addCallback(deferred_f_from_coro_f(process_callback_output))
-        dfd.addErrback(process_spider_exception)
-        return dfd
+        dfd2: Deferred[Union[MutableChain[_T], MutableAsyncChain[_T]]] = (
+            dfd.addCallback(deferred_f_from_coro_f(process_callback_output))
+        )
+        dfd2.addErrback(process_spider_exception)
+        return dfd2
 
     def process_start_requests(
         self, start_requests: Iterable[Request], spider: Spider

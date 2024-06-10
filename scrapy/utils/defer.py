@@ -46,6 +46,12 @@ if TYPE_CHECKING:
     _P = ParamSpec("_P")
 
 _T = TypeVar("_T")
+_T2 = TypeVar("_T2")
+
+# copied from twisted.internet.defer
+_SelfResultT = TypeVar("_SelfResultT")
+_DeferredListResultItemT = Tuple[bool, _SelfResultT]
+DeferredListResultListT = List[_DeferredListResultItemT[_SelfResultT]]
 
 
 def defer_fail(_failure: Failure) -> Deferred:
@@ -62,7 +68,7 @@ def defer_fail(_failure: Failure) -> Deferred:
     return d
 
 
-def defer_succeed(result: Any) -> Deferred:
+def defer_succeed(result: _T) -> Deferred[_T]:
     """Same as twisted.internet.defer.succeed but delay calling callback until
     next reactor loop
 
@@ -128,10 +134,10 @@ def mustbe_deferred(
 def parallel(
     iterable: Iterable[_T],
     count: int,
-    callable: Callable[Concatenate[_T, _P], Any],
+    callable: Callable[Concatenate[_T, _P], _T2],
     *args: _P.args,
     **named: _P.kwargs,
-) -> Deferred:
+) -> Deferred[DeferredListResultListT[Iterator[_T2]]]:
     """Execute a callable over the objects in the given iterable, in parallel,
     using no more than ``count`` concurrent calls.
 
@@ -191,12 +197,12 @@ class _AsyncCooperatorAdapter(Iterator[Deferred]):
     def __init__(
         self,
         aiterable: AsyncIterable[_T],
-        callable: Callable[Concatenate[_T, _P], Any],
+        callable: Callable[Concatenate[_T, _P], _T2],
         *callable_args: _P.args,
         **callable_kwargs: _P.kwargs,
     ):
         self.aiterator: AsyncIterator[_T] = aiterable.__aiter__()
-        self.callable: Callable[Concatenate[_T, _P], Any] = callable
+        self.callable: Callable[Concatenate[_T, _P], _T2] = callable
         self.callable_args: Tuple[Any, ...] = callable_args
         self.callable_kwargs: Dict[str, Any] = callable_kwargs
         self.finished: bool = False
@@ -249,10 +255,10 @@ class _AsyncCooperatorAdapter(Iterator[Deferred]):
 def parallel_async(
     async_iterable: AsyncIterable[_T],
     count: int,
-    callable: Callable[Concatenate[_T, _P], Any],
+    callable: Callable[Concatenate[_T, _P], _T2],
     *args: _P.args,
     **named: _P.kwargs,
-) -> Deferred:
+) -> Deferred[DeferredListResultListT[Iterator[_T2]]]:
     """Like parallel but for async iterators"""
     coop = Cooperator()
     work = _AsyncCooperatorAdapter(async_iterable, callable, *args, **named)
