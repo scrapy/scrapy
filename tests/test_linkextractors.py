@@ -186,7 +186,7 @@ class Base:
             )
 
         def test_nofollow(self):
-            '''Test the extractor's behaviour for links with rel="nofollow"'''
+            """Test the extractor's behaviour for links with rel='nofollow'"""
 
             html = b"""<html><head><title>Page title<title>
             <body>
