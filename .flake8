@@ -4,6 +4,7 @@ max-line-length = 119
 ignore =
     # black disagrees with flake8 about these
     E203, E501, E701, E704, W503
+
     # Assigning to `os.environ` doesn't clear the environment.
     B003
     # Do not use mutable data structures for argument defaults.
@@ -19,10 +20,12 @@ ignore =
     B026
     # No explicit stacklevel argument found.
     B028
+
     # docstring does contain unindexed parameters
     P102
     # other string does contain unindexed parameters
     P103
+
     # Missing docstring in public module
     D100
     # Missing docstring in public class
