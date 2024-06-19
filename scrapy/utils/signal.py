@@ -100,7 +100,10 @@ def send_catch_log_deferred(
         d.addErrback(logerror, receiver)
         # TODO https://pylint.readthedocs.io/en/latest/user_guide/messages/warning/cell-var-from-loop.html
         d.addBoth(
-            lambda result: (receiver, result)  # pylint: disable=cell-var-from-loop
+            lambda result: (
+                receiver,  # pylint: disable=cell-var-from-loop  # noqa: B023
+                result,
+            )
         )
         dfds.append(d)
     d = DeferredList(dfds)

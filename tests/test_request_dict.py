@@ -147,7 +147,7 @@ class RequestSerializationTest(unittest.TestCase):
 
         spider = MySpider()
         r = Request("http://www.example.com", callback=spider.parse)
-        setattr(spider, "parse", None)
+        spider.parse = None
         self.assertRaises(ValueError, r.to_dict, spider=spider)
 
     def test_callback_not_available(self):
