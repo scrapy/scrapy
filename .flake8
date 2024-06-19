@@ -1,8 +1,12 @@
 [flake8]
 
 max-line-length = 119
-ignore = E203, E501, E701, E704, W503
-
+ignore =
+    E203, E501, E701, E704, W503
+    # docstring does contain unindexed parameters
+    P102
+    # other string does contain unindexed parameters
+    P103
 exclude =
     docs/conf.py
 

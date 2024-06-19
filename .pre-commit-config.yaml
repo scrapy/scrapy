@@ -10,6 +10,7 @@ repos:
   - id: flake8
     additional_dependencies:
     - flake8-debugger
+    - flake8-string-format
 - repo: https://github.com/psf/black.git
   rev: 24.2.0
   hooks:
