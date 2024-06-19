@@ -200,7 +200,7 @@ def get_permissions_dict(
 
     path_obj = Path(path)
 
-    renamings = renamings or tuple()
+    renamings = renamings or ()
     permissions_dict = {
         ".": get_permissions(path_obj),
     }
