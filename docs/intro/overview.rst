@@ -44,13 +44,13 @@ https://quotes.toscrape.com, following the pagination:
             if next_page is not None:
                 yield response.follow(next_page, self.parse)
 
-Put this in a text file, name it to something like ``quotes_spider.py``
+Put this in a text file, name it something like ``quotes_spider.py``
 and run the spider using the :command:`runspider` command::
 
     scrapy runspider quotes_spider.py -o quotes.jsonl
 
 When this finishes you will have in the ``quotes.jsonl`` file a list of the
-quotes in JSON Lines format, containing text and author, looking like this::
+quotes in JSON Lines format, containing the text and author, which will look like this::
 
     {"author": "Jane Austen", "text": "\u201cThe person, be it gentleman or lady, who has not pleasure in a good novel, must be intolerably stupid.\u201d"}
     {"author": "Steve Martin", "text": "\u201cA day without sunshine is like, you know, night.\u201d"}
@@ -72,11 +72,11 @@ using a CSS Selector, yield a Python dict with the extracted quote text and auth
 look for a link to the next page and schedule another request using the same
 ``parse`` method as callback.
 
-Here you notice one of the main advantages about Scrapy: requests are
+Here you will notice one of the main advantages of Scrapy: requests are
 :ref:`scheduled and processed asynchronously <topics-architecture>`.  This
 means that Scrapy doesn't need to wait for a request to be finished and
 processed, it can send another request or do other things in the meantime. This
-also means that other requests can keep going even if some request fails or an
+also means that other requests can keep going even if a request fails or an
 error happens while handling it.
 
 While this enables you to do very fast crawls (sending multiple concurrent
