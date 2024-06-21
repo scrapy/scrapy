@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, DefaultDict, Iterable, Optional, Sequence
 
 from tldextract import TLDExtract
 
-from scrapy import Request, Spider
+from scrapy import Request, Spider, signals
 from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
@@ -44,7 +44,12 @@ class CookiesMiddleware:
     def from_crawler(cls, crawler: Crawler) -> Self:
         if not crawler.settings.getbool("COOKIES_ENABLED"):
             raise NotConfigured
-        return cls(crawler.settings.getbool("COOKIES_DEBUG"))
+        o = cls(crawler.settings.getbool("COOKIES_DEBUG"))
+        crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
+        return o
+
+    def spider_opened(self, spider: Spider) -> None:
+        spider.cookie_jars = self.jars
 
     def _process_cookies(
         self, cookies: Iterable[Cookie], *, jar: CookieJar, request: Request
