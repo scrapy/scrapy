@@ -8,7 +8,11 @@ import unittest
 from io import StringIO
 from pathlib import Path
 from subprocess import PIPE, Popen
+from unittest.mock import patch
 
+import scrapy
+from scrapy.cmdline import _print_header
+from scrapy.settings import Settings
 from scrapy.utils.test import get_testenv
 
 
@@ -34,6 +38,20 @@ class CmdlineTest(unittest.TestCase):
             self._execute("settings", "--get", "TEST1", "-s", "TEST1=override"),
             "override",
         )
+
+    def test_print_header(self):
+        settings = Settings()
+        settings.set("SCRAPY_TEST", "TEST1")
+        with patch("builtins.print") as mock_print:
+            _print_header(settings, True)
+            mock_print.assert_called_with(
+                f"Scrapy {scrapy.__version__} - active project: {settings['BOT_NAME']}\n"
+            )
+        with patch("builtins.print") as mock_print:
+            _print_header(settings, False)
+            mock_print.assert_called_with(
+                f"Scrapy {scrapy.__version__} - no active project\n"
+            )
 
     def test_profiling(self):
         path = Path(tempfile.mkdtemp())
