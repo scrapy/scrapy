@@ -125,9 +125,6 @@ def _print_header(settings: BaseSettings, inproject: bool) -> None:
     write_coverage_print_header_to_file()
 
 
-write_coverage_print_header_to_file()
-
-
 def _print_commands(settings: BaseSettings, inproject: bool) -> None:
     _print_header(settings, inproject)
     print("Usage:")
