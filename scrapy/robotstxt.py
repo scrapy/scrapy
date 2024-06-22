@@ -6,7 +6,6 @@ from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING, Optional, Union
 from warnings import warn
 
-from scrapy import Spider
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.python import to_unicode
 
@@ -14,7 +13,9 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    from scrapy import Spider
     from scrapy.crawler import Crawler
+
 
 logger = logging.getLogger(__name__)
 

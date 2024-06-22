@@ -2,10 +2,13 @@
 Link extractor based on lxml.html
 """
 
+from __future__ import annotations
+
 import logging
 import operator
 from functools import partial
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Iterable,
@@ -20,19 +23,23 @@ from typing import (
 from urllib.parse import urljoin, urlparse
 
 from lxml import etree  # nosec
-from lxml.html import HtmlElement  # nosec
 from parsel.csstranslator import HTMLTranslator
 from w3lib.html import strip_html5_whitespace
 from w3lib.url import canonicalize_url, safe_url_string
 
-from scrapy import Selector
-from scrapy.http import TextResponse
 from scrapy.link import Link
 from scrapy.linkextractors import IGNORED_EXTENSIONS, _is_valid_url, _matches, re
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list
 from scrapy.utils.response import get_base_url
 from scrapy.utils.url import url_has_any_extension, url_is_from_any_domain
+
+if TYPE_CHECKING:
+    from lxml.html import HtmlElement  # nosec
+
+    from scrapy import Selector
+    from scrapy.http import TextResponse
+
 
 logger = logging.getLogger(__name__)
 

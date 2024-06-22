@@ -6,17 +6,19 @@ from urllib.parse import urljoin
 
 from w3lib.url import safe_url_string
 
-from scrapy import Request, Spider
-from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import HtmlResponse, Response
-from scrapy.settings import BaseSettings
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.response import get_meta_refresh
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Request, Spider
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
+
 
 logger = logging.getLogger(__name__)
 

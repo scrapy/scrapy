@@ -13,7 +13,6 @@ from contextlib import contextmanager
 from functools import partial
 from importlib import import_module
 from pkgutil import iter_modules
-from types import ModuleType
 from typing import (
     IO,
     TYPE_CHECKING,
@@ -35,9 +34,12 @@ from scrapy.item import Item
 from scrapy.utils.datatypes import LocalWeakReferencedCache
 
 if TYPE_CHECKING:
+    from types import ModuleType
+
     from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
+
 
 _ITERABLE_SINGLE_VALUES = dict, Item, str, bytes
 T = TypeVar("T")

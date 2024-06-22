@@ -10,21 +10,23 @@ import logging
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from twisted.internet.defer import Deferred, maybeDeferred
-from twisted.python.failure import Failure
 
-from scrapy import Spider
-from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.robotstxt import RobotParser
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
+    from twisted.python.failure import Failure
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Spider
+    from scrapy.crawler import Crawler
+    from scrapy.robotstxt import RobotParser
 
 
 logger = logging.getLogger(__name__)

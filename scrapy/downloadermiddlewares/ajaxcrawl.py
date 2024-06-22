@@ -6,15 +6,17 @@ from typing import TYPE_CHECKING, Union
 
 from w3lib import html
 
-from scrapy import Request, Spider
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse, Response
-from scrapy.settings import BaseSettings
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Request, Spider
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
+
 
 logger = logging.getLogger(__name__)
 

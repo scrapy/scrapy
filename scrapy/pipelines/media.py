@@ -25,20 +25,22 @@ from typing import (
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
 
-from scrapy import Spider
-from scrapy.crawler import Crawler
-from scrapy.http import Response
 from scrapy.http.request import NO_CALLBACK, Request
 from scrapy.settings import Settings
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import defer_result, mustbe_deferred
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.request import RequestFingerprinter
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Spider
+    from scrapy.crawler import Crawler
+    from scrapy.http import Response
+    from scrapy.utils.request import RequestFingerprinter
+
 
 _T = TypeVar("_T")
 

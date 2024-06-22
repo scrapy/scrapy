@@ -6,15 +6,17 @@ See documentation in docs/item-pipeline.rst
 
 from __future__ import annotations
 
-from typing import Any, List
+from typing import TYPE_CHECKING, Any, List
 
-from twisted.internet.defer import Deferred
-
-from scrapy import Spider
 from scrapy.middleware import MiddlewareManager
-from scrapy.settings import Settings
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import deferred_f_from_coro_f
+
+if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+
+    from scrapy import Spider
+    from scrapy.settings import Settings
 
 
 class ItemPipelineManager(MiddlewareManager):

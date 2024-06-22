@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Iterable, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, cast
 
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ProcessTerminated
 from twisted.internet.protocol import ProcessProtocol
-from twisted.python.failure import Failure
+
+if TYPE_CHECKING:
+    from twisted.python.failure import Failure
 
 
 class ProcessTest:

@@ -30,19 +30,21 @@ from typing import (
 from twisted import version as twisted_version
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred
-from twisted.python.failure import Failure
 from twisted.python.versions import Version
 
-from scrapy.settings import BaseSettings
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
     # imports twisted.internet.reactor
     from twisted.mail.smtp import ESMTPSenderFactory
+    from twisted.python.failure import Failure
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.settings import BaseSettings
+
 
 logger = logging.getLogger(__name__)
 

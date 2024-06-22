@@ -16,12 +16,8 @@ import warnings
 from logging import Logger, getLogger
 from typing import TYPE_CHECKING, Any, Optional, Tuple, Type, Union
 
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.http import Response
-from scrapy.http.request import Request
 from scrapy.settings import BaseSettings, Settings
-from scrapy.spiders import Spider
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import global_object_name
 from scrapy.utils.response import response_status_message
@@ -29,6 +25,12 @@ from scrapy.utils.response import response_status_message
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.http import Response
+    from scrapy.http.request import Request
+    from scrapy.spiders import Spider
+
 
 retry_logger = getLogger(__name__)
 

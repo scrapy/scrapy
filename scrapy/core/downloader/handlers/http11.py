@@ -12,11 +12,9 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple, TypedDict, TypeVar
 from urllib.parse import urldefrag, urlunparse
 
 from twisted.internet import ssl
-from twisted.internet.base import ReactorBase
 from twisted.internet.defer import CancelledError, Deferred, succeed
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
-from twisted.internet.interfaces import IConsumer
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
 from twisted.web.client import URI, Agent, HTTPConnectionPool
@@ -30,16 +28,21 @@ from zope.interface import implementer
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.webclient import _parse
-from scrapy.crawler import Crawler
 from scrapy.exceptions import StopDownload
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
-from scrapy.settings import BaseSettings
 from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
+    from twisted.internet.base import ReactorBase
+    from twisted.internet.interfaces import IConsumer
+
     # typing.NotRequired and typing.Self require Python 3.11
     from typing_extensions import NotRequired, Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
+
 
 logger = logging.getLogger(__name__)
 

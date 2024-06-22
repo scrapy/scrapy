@@ -10,16 +10,18 @@ import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, DefaultDict, Dict
 
-from twisted.python.failure import Failure
-
 from scrapy import Request, Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Response
 
 if TYPE_CHECKING:
+    from twisted.python.failure import Failure
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.http import Response
+
 
 logger = logging.getLogger(__name__)
 

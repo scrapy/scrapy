@@ -1,9 +1,13 @@
-from typing import Any, List, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, List, Tuple
 
 from pydispatch import dispatcher
-from twisted.internet.defer import Deferred
 
 from scrapy.utils import signal as _signal
+
+if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
 
 
 class SignalManager:

@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 import struct
 from gzip import GzipFile
 from io import BytesIO
-
-from scrapy.http import Response
+from typing import TYPE_CHECKING
 
 from ._compression import _CHUNK_SIZE, _DecompressionMaxSizeExceeded
+
+if TYPE_CHECKING:
+    from scrapy.http import Response
 
 
 def gunzip(data: bytes, *, max_size: int = 0) -> bytes:

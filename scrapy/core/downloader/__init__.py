@@ -25,15 +25,16 @@ from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.http import Response
 from scrapy.resolver import dnscache
-from scrapy.settings import BaseSettings
 from scrapy.signalmanager import SignalManager
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
+    from scrapy.http import Response
+    from scrapy.settings import BaseSettings
+
 
 _T = TypeVar("_T")
 

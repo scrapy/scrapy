@@ -23,10 +23,8 @@ from urllib.parse import urlparse
 from w3lib.url import safe_url_string
 
 from scrapy import Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
-from scrapy.settings import BaseSettings
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_unicode
 from scrapy.utils.url import strip_url
@@ -34,6 +32,10 @@ from scrapy.utils.url import strip_url
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
+
 
 LOCAL_SCHEMES: Tuple[str, ...] = (
     "about",

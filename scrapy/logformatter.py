@@ -6,15 +6,15 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, TypedDict, Union
 
 from twisted.python.failure import Failure
 
-from scrapy import Request, Spider
-from scrapy.http import Response
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    from scrapy import Request, Spider
     from scrapy.crawler import Crawler
+    from scrapy.http import Response
 
 
 SCRAPEDMSG = "Scraped from %(src)s" + os.linesep + "%(item)s"

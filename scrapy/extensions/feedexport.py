@@ -31,18 +31,15 @@ from typing import (
 )
 from urllib.parse import unquote, urlparse
 
-from twisted.internet import threads
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
-from twisted.python.failure import Failure
+from twisted.internet.threads import deferToThread
 from w3lib.url import file_uri_to_path
 from zope.interface import Interface, implementer
 
 from scrapy import Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.exporters import BaseItemExporter
 from scrapy.extensions.postprocessing import PostProcessingManager
-from scrapy.settings import BaseSettings, Settings
+from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -54,11 +51,14 @@ from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
     from _typeshed import OpenBinaryMode
+    from twisted.python.failure import Failure
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-logger = logging.getLogger(__name__)
+    from scrapy.crawler import Crawler
+    from scrapy.exporters import BaseItemExporter
+    from scrapy.settings import BaseSettings
 
 try:
     import boto3  # noqa: F401
@@ -66,6 +66,9 @@ try:
     IS_BOTO3_AVAILABLE = True
 except ImportError:
     IS_BOTO3_AVAILABLE = False
+
+
+logger = logging.getLogger(__name__)
 
 UriParamsCallableT = Callable[[Dict[str, Any], Spider], Optional[Dict[str, Any]]]
 
@@ -160,7 +163,7 @@ class BlockingFeedStorage:
         return NamedTemporaryFile(prefix="feed-", dir=path)
 
     def store(self, file: IO[bytes]) -> Optional[Deferred]:
-        return threads.deferToThread(self._store_in_thread, file)
+        return deferToThread(self._store_in_thread, file)
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
         raise NotImplementedError

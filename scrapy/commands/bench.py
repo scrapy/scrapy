@@ -1,15 +1,19 @@
+from __future__ import annotations
+
 import argparse
 import subprocess  # nosec
 import sys
 import time
-from typing import Any, Iterable, List
+from typing import TYPE_CHECKING, Any, Iterable, List
 from urllib.parse import urlencode
 
 import scrapy
-from scrapy import Request
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Response, TextResponse
 from scrapy.linkextractors import LinkExtractor
+
+if TYPE_CHECKING:
+    from scrapy import Request
 
 
 class Command(ScrapyCommand):

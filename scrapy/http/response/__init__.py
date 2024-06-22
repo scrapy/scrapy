@@ -7,7 +7,6 @@ See documentation in docs/topics/request-response.rst
 
 from __future__ import annotations
 
-from ipaddress import IPv4Address, IPv6Address
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -26,8 +25,6 @@ from typing import (
 )
 from urllib.parse import urljoin
 
-from twisted.internet.ssl import Certificate
-
 from scrapy.exceptions import NotSupported
 from scrapy.http.headers import Headers
 from scrapy.http.request import CookiesT, Request
@@ -35,6 +32,10 @@ from scrapy.link import Link
 from scrapy.utils.trackref import object_ref
 
 if TYPE_CHECKING:
+    from ipaddress import IPv4Address, IPv6Address
+
+    from twisted.internet.ssl import Certificate
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 

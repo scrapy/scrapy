@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import ipaddress
 import itertools
 import logging
 from collections import deque
-from ipaddress import IPv4Address, IPv6Address
-from typing import Any, Deque, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Deque, Dict, List, Optional, Union
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
@@ -20,7 +21,6 @@ from h2.events import (
     WindowUpdated,
 )
 from h2.exceptions import FrameTooLargeError, H2Error
-from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
 from twisted.internet.interfaces import (
     IAddress,
@@ -30,14 +30,21 @@ from twisted.internet.interfaces import (
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.internet.ssl import Certificate
 from twisted.protocols.policies import TimeoutMixin
-from twisted.python.failure import Failure
-from twisted.web.client import URI
 from zope.interface import implementer
 
 from scrapy.core.http2.stream import Stream, StreamCloseReason
 from scrapy.http import Request
-from scrapy.settings import Settings
-from scrapy.spiders import Spider
+
+if TYPE_CHECKING:
+    from ipaddress import IPv4Address, IPv6Address
+
+    from twisted.internet.defer import Deferred
+    from twisted.python.failure import Failure
+    from twisted.web.client import URI
+
+    from scrapy.settings import Settings
+    from scrapy.spiders import Spider
+
 
 logger = logging.getLogger(__name__)
 
