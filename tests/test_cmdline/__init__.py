@@ -11,7 +11,7 @@ from subprocess import PIPE, Popen
 from unittest.mock import patch
 
 import scrapy
-from scrapy.cmdline import _print_header
+from scrapy.cmdline import _print_header, write_coverage_print_header_to_file
 from scrapy.settings import Settings
 from scrapy.utils.test import get_testenv
 
@@ -22,6 +22,7 @@ class CmdlineTest(unittest.TestCase):
         tests_path = Path(__file__).parent.parent
         self.env["PYTHONPATH"] += os.pathsep + str(tests_path.parent)
         self.env["SCRAPY_SETTINGS_MODULE"] = "tests.test_cmdline.settings"
+        write_coverage_print_header_to_file()
 
     def _execute(self, *new_args, **kwargs):
         encoding = getattr(sys.stdout, "encoding") or "utf-8"
