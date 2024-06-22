@@ -1356,7 +1356,7 @@ class FeedExportTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_export_encoding(self):
-        items = [{"foo": "Test\xd6"}]
+        items = [dict({"foo": "Test\xd6"})]
 
         formats = {
             "json": b'[{"foo": "Test\\u00d6"}]',
@@ -1401,7 +1401,7 @@ class FeedExportTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_export_multiple_configs(self):
-        items = [{"foo": "FOO", "bar": "BAR"}]
+        items = [dict({"foo": "FOO", "bar": "BAR"})]
 
         formats = {
             "json": b'[\n{"bar": "BAR"}\n]',
@@ -2513,8 +2513,8 @@ class BatchDeliveriesTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_export_multiple_configs(self):
         items = [
-            {"foo": "FOO", "bar": "BAR"},
-            {"foo": "FOO1", "bar": "BAR1"},
+            dict({"foo": "FOO", "bar": "BAR"}),
+            dict({"foo": "FOO1", "bar": "BAR1"}),
         ]
 
         formats = {
@@ -2574,7 +2574,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_batch_item_count_feeds_setting(self):
-        items = [{"foo": "FOO"}, {"foo": "FOO1"}]
+        items = [dict({"foo": "FOO"}), dict({"foo": "FOO1"})]
         formats = {
             "json": [
                 b'[{"foo": "FOO"}]',

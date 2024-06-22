@@ -234,7 +234,7 @@ class MediaPipeline(ABC):
             # Exception Chaining (https://www.python.org/dev/peps/pep-3134/).
             context = getattr(result.value, "__context__", None)
             if isinstance(context, StopIteration):
-                result.value.__context__ = None
+                setattr(result.value, "__context__", None)
 
         info.downloading.remove(fp)
         info.downloaded[fp] = result  # cache result

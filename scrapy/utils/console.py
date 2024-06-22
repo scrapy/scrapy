@@ -10,10 +10,10 @@ def _embed_ipython_shell(
 ) -> EmbedFuncT:
     """Start an IPython Shell"""
     try:
-        from IPython.terminal.embed import InteractiveShellEmbed  # noqa: T100
+        from IPython.terminal.embed import InteractiveShellEmbed
         from IPython.terminal.ipapp import load_default_config
     except ImportError:
-        from IPython.frontend.terminal.embed import (  # type: ignore[no-redef]  # noqa: T100
+        from IPython.frontend.terminal.embed import (  # type: ignore[no-redef]
             InteractiveShellEmbed,
         )
         from IPython.frontend.terminal.ipapp import (  # type: ignore[no-redef]

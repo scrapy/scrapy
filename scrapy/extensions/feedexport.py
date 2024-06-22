@@ -104,7 +104,7 @@ class ItemFilter:
                 for item_class in feed_options.get("item_classes") or ()
             )
         else:
-            self.item_classes = ()
+            self.item_classes = tuple()
 
     def accepts(self, item: Any) -> bool:
         """

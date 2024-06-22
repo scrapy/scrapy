@@ -101,7 +101,7 @@ class ProjectTest(unittest.TestCase):
         def kill_proc():
             p.kill()
             p.communicate()
-            raise AssertionError("Command took too much time to complete")
+            assert False, "Command took too much time to complete"
 
         timer = Timer(15, kill_proc)
         try:
@@ -200,7 +200,7 @@ def get_permissions_dict(
 
     path_obj = Path(path)
 
-    renamings = renamings or ()
+    renamings = renamings or tuple()
     permissions_dict = {
         ".": get_permissions(path_obj),
     }
