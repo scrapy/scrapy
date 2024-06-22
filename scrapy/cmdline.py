@@ -31,7 +31,7 @@ branch_coverage_print_header = {
 
 
 def write_coverage_print_header_to_file():
-    project_dir = Path(__file__).resolve().parent.parent.parent
+    project_dir = Path(__file__).resolve().parent.parent
     output_file = os.path.join(project_dir, "branch_coverage_print_header.txt")
     coverage_percentage = (
         sum(branch_coverage_print_header.values()) / len(branch_coverage_print_header)
@@ -123,6 +123,9 @@ def _print_header(settings: BaseSettings, inproject: bool) -> None:
         branch_coverage_print_header["_print_header_2"] = True
         print(f"Scrapy {version} - no active project\n")
     write_coverage_print_header_to_file()
+
+
+write_coverage_print_header_to_file()
 
 
 def _print_commands(settings: BaseSettings, inproject: bool) -> None:
