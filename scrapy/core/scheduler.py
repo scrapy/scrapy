@@ -6,13 +6,16 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Optional, Type, cast
 
+# working around https://github.com/sphinx-doc/sphinx/issues/10400
+from twisted.internet.defer import Deferred  # noqa: TC002
+
+from scrapy.spiders import Spider  # noqa: TC001
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
     # requires queuelib >= 1.6.2
     from queuelib.queue import BaseQueue
-    from twisted.internet.defer import Deferred
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -21,7 +24,6 @@ if TYPE_CHECKING:
     from scrapy.dupefilters import BaseDupeFilter
     from scrapy.http.request import Request
     from scrapy.pqueues import ScrapyPriorityQueue
-    from scrapy.spiders import Spider
     from scrapy.statscollectors import StatsCollector
 
 
