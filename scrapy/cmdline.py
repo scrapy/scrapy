@@ -6,6 +6,7 @@ import inspect
 import os
 import sys
 from importlib.metadata import entry_points
+from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Optional, Tuple, Type
 
 import scrapy
@@ -22,6 +23,23 @@ if TYPE_CHECKING:
     from typing_extensions import ParamSpec
 
     _P = ParamSpec("_P")
+
+branch_coverage_print_header = {
+    "_print_header_1": False,
+    "_print_header_2": False,
+}
+
+
+def write_coverage_print_header_to_file():
+    project_dir = Path(__file__).resolve().parent.parent
+    output_file = os.path.join(project_dir, "branch_coverage_print_header.txt")
+    coverage_percentage = (
+        sum(branch_coverage_print_header.values()) / len(branch_coverage_print_header)
+    ) * 100
+    with open(output_file, "w", encoding="utf-8") as f:
+        for branch, executed in branch_coverage_print_header.items():
+            f.write(f"{branch} has been {'executed' if executed else 'missed'}\n")
+        f.write(f"Branch coverage: {coverage_percentage:.2f}%\n")
 
 
 class ScrapyArgumentParser(argparse.ArgumentParser):
@@ -99,10 +117,12 @@ def _pop_command_name(argv: List[str]) -> Optional[str]:
 def _print_header(settings: BaseSettings, inproject: bool) -> None:
     version = scrapy.__version__
     if inproject:
+        branch_coverage_print_header["_print_header_1"] = True
         print(f"Scrapy {version} - active project: {settings['BOT_NAME']}\n")
-
     else:
+        branch_coverage_print_header["_print_header_2"] = True
         print(f"Scrapy {version} - no active project\n")
+    write_coverage_print_header_to_file()
 
 
 def _print_commands(settings: BaseSettings, inproject: bool) -> None:
