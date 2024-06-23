@@ -39,7 +39,7 @@ class StatsMailer:
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
 
-    def spider_closed(self, spider: Spider) -> Optional[Deferred]:
+    def spider_closed(self, spider: Spider) -> Optional[Deferred[None]]:
         spider_stats = self.stats.get_stats(spider)
         body = "Global stats\n\n"
         body += "\n".join(f"{k:<50} : {v}" for k, v in self.stats.get_stats().items())

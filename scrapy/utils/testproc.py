@@ -22,7 +22,7 @@ class ProcessTest:
         args: Iterable[str],
         check_code: bool = True,
         settings: Optional[str] = None,
-    ) -> Deferred:
+    ) -> Deferred[TestProcessProtocol]:
         from twisted.internet import reactor
 
         env = os.environ.copy()
@@ -49,7 +49,7 @@ class ProcessTest:
 
 class TestProcessProtocol(ProcessProtocol):
     def __init__(self) -> None:
-        self.deferred: Deferred = Deferred()
+        self.deferred: Deferred[TestProcessProtocol] = Deferred()
         self.out: bytes = b""
         self.err: bytes = b""
         self.exitcode: Optional[int] = None

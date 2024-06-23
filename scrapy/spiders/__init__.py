@@ -7,9 +7,7 @@ See documentation in docs/topics/spiders.rst
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Union, cast
-
-from twisted.internet.defer import Deferred
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, cast
 
 from scrapy import signals
 from scrapy.http import Request, Response
@@ -18,6 +16,8 @@ from scrapy.utils.url import url_is_from_spider
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from twisted.internet.defer import Deferred
 
     # typing.Concatenate requires Python 3.10
     # typing.Self requires Python 3.11
@@ -105,10 +105,10 @@ class Spider(object_ref):
         return url_is_from_spider(request.url, cls)
 
     @staticmethod
-    def close(spider: Spider, reason: str) -> Union[Deferred, None]:
+    def close(spider: Spider, reason: str) -> Optional[Deferred[None]]:
         closed = getattr(spider, "closed", None)
         if callable(closed):
-            return cast(Union[Deferred, None], closed(reason))
+            return cast("Optional[Deferred[None]]", closed(reason))
         return None
 
     def __repr__(self) -> str:

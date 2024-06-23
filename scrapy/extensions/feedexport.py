@@ -149,7 +149,7 @@ class FeedStorageProtocol(Protocol):
         """Open the storage for the given spider. It must return a file-like
         object that will be used for the exporters"""
 
-    def store(self, file: IO[bytes]) -> Optional[Deferred]:
+    def store(self, file: IO[bytes]) -> Optional[Deferred[None]]:
         """Store the given file stream"""
 
 
@@ -162,7 +162,7 @@ class BlockingFeedStorage:
 
         return NamedTemporaryFile(prefix="feed-", dir=path)
 
-    def store(self, file: IO[bytes]) -> Optional[Deferred]:
+    def store(self, file: IO[bytes]) -> Optional[Deferred[None]]:
         return deferToThread(self._store_in_thread, file)
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
@@ -192,7 +192,7 @@ class StdoutFeedStorage:
     def open(self, spider: Spider) -> IO[bytes]:
         return self._stdout
 
-    def store(self, file: IO[bytes]) -> Optional[Deferred]:
+    def store(self, file: IO[bytes]) -> Optional[Deferred[None]]:
         pass
 
 
@@ -211,7 +211,7 @@ class FileFeedStorage:
             dirname.mkdir(parents=True)
         return Path(self.path).open(self.write_mode)
 
-    def store(self, file: IO[bytes]) -> Optional[Deferred]:
+    def store(self, file: IO[bytes]) -> Optional[Deferred[None]]:
         file.close()
         return None
 
@@ -483,7 +483,7 @@ _FeedSlot = create_deprecated_class(
 
 
 class FeedExporter:
-    _pending_deferreds: List[Deferred] = []
+    _pending_deferreds: List[Deferred[None]] = []
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -570,7 +570,7 @@ class FeedExporter:
             self.crawler.signals.send_catch_log_deferred(signals.feed_exporter_closed)
         )
 
-    def _close_slot(self, slot: FeedSlot, spider: Spider) -> Optional[Deferred]:
+    def _close_slot(self, slot: FeedSlot, spider: Spider) -> Optional[Deferred[None]]:
         def get_file(slot_: FeedSlot) -> IO[bytes]:
             assert slot_.file
             if isinstance(slot_.file, PostProcessingManager):
@@ -590,7 +590,7 @@ class FeedExporter:
             return None
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
-        d: Deferred = maybeDeferred(slot.storage.store, get_file(slot))
+        d: Deferred[None] = maybeDeferred(slot.storage.store, get_file(slot))  # type: ignore[arg-type]
 
         d.addCallback(
             self._handle_store_success, logmsg, spider, type(slot.storage).__name__
@@ -621,7 +621,7 @@ class FeedExporter:
         self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
 
     def _handle_store_success(
-        self, f: Failure, logmsg: str, spider: Spider, slot_type: str
+        self, result: Any, logmsg: str, spider: Spider, slot_type: str
     ) -> None:
         logger.info("Stored %s", logmsg, extra={"spider": spider})
         assert self.crawler.stats

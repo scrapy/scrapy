@@ -31,10 +31,10 @@ class BaseDupeFilter:
     def request_seen(self, request: Request) -> bool:
         return False
 
-    def open(self) -> Optional[Deferred]:
+    def open(self) -> Optional[Deferred[None]]:
         pass
 
-    def close(self, reason: str) -> Optional[Deferred]:
+    def close(self, reason: str) -> Optional[Deferred[None]]:
         pass
 
     def log(self, request: Request, spider: Spider) -> None:

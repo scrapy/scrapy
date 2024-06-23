@@ -50,7 +50,9 @@ class SignalManager:
         kwargs.setdefault("sender", self.sender)
         return _signal.send_catch_log(signal, **kwargs)
 
-    def send_catch_log_deferred(self, signal: Any, **kwargs: Any) -> Deferred:
+    def send_catch_log_deferred(
+        self, signal: Any, **kwargs: Any
+    ) -> Deferred[List[Tuple[Any, Any]]]:
         """
         Like :meth:`send_catch_log` but supports returning
         :class:`~twisted.internet.defer.Deferred` objects from signal handlers.

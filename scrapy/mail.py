@@ -103,7 +103,7 @@ class MailSender:
         mimetype: str = "text/plain",
         charset: Optional[str] = None,
         _callback: Optional[Callable[..., None]] = None,
-    ) -> Optional[Deferred]:
+    ) -> Optional[Deferred[None]]:
         from twisted.internet import reactor
 
         msg: MIMEBase
@@ -155,7 +155,9 @@ class MailSender:
             )
             return None
 
-        dfd = self._sendmail(rcpts, msg.as_string().encode(charset or "utf-8"))
+        dfd: Deferred[Any] = self._sendmail(
+            rcpts, msg.as_string().encode(charset or "utf-8")
+        )
         dfd.addCallback(self._sent_ok, to, cc, subject, len(attachs))
         dfd.addErrback(self._sent_failed, to, cc, subject, len(attachs))
         reactor.addSystemEventTrigger("before", "shutdown", lambda: dfd)
@@ -198,11 +200,11 @@ class MailSender:
         )
         return failure
 
-    def _sendmail(self, to_addrs: List[str], msg: bytes) -> Deferred:
+    def _sendmail(self, to_addrs: List[str], msg: bytes) -> Deferred[Any]:
         from twisted.internet import reactor
 
         msg_io = BytesIO(msg)
-        d: Deferred = Deferred()
+        d: Deferred[Any] = Deferred()
 
         factory = self._create_sender_factory(to_addrs, msg_io, d)
 
@@ -216,7 +218,7 @@ class MailSender:
         return d
 
     def _create_sender_factory(
-        self, to_addrs: List[str], msg: IO[bytes], d: Deferred
+        self, to_addrs: List[str], msg: IO[bytes], d: Deferred[Any]
     ) -> ESMTPSenderFactory:
         from twisted.mail.smtp import ESMTPSenderFactory
 

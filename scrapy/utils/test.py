@@ -30,6 +30,7 @@ from scrapy.utils.boto import is_botocore_available
 
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
+    from twisted.web.client import Response as TxResponse
 
 
 _T = TypeVar("_T")
@@ -159,7 +160,7 @@ def mock_google_cloud_storage() -> Tuple[Any, Any, Any]:
     return (client_mock, bucket_mock, blob_mock)
 
 
-def get_web_client_agent_req(url: str) -> Deferred:
+def get_web_client_agent_req(url: str) -> Deferred[TxResponse]:
     from twisted.internet import reactor
     from twisted.web.client import Agent  # imports twisted.internet.reactor
 

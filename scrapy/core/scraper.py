@@ -13,6 +13,7 @@ from typing import (
     Generator,
     Iterable,
     Iterator,
+    List,
     Optional,
     Set,
     Tuple,
@@ -34,7 +35,6 @@ from scrapy.logformatter import LogFormatter
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.signalmanager import SignalManager
 from scrapy.utils.defer import (
-    DeferredListResultListT,
     aiter_errback,
     defer_fail,
     defer_succeed,
@@ -54,7 +54,7 @@ logger = logging.getLogger(__name__)
 
 
 _T = TypeVar("_T")
-_ParallelResult = DeferredListResultListT[Iterator[Any]]
+_ParallelResult = List[Tuple[bool, Iterator[Any]]]
 
 if TYPE_CHECKING:
     # parameterized Deferreds require Twisted 21.7.0
@@ -374,7 +374,7 @@ class Scraper:
 
     def _itemproc_finished(
         self, output: Any, item: Any, response: Response, spider: Spider
-    ) -> Deferred:
+    ) -> Deferred[Any]:
         """ItemProcessor finished for the given ``item`` and returned ``output``"""
         assert self.slot is not None  # typing
         self.slot.itemproc_size -= 1
