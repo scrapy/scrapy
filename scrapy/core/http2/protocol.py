@@ -4,6 +4,7 @@ import logging
 from collections import deque
 from ipaddress import IPv4Address, IPv6Address
 from typing import Any, Deque, Dict, List, Optional, Union
+from scrapy.custom_coverage import *
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
@@ -419,9 +420,13 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
     def window_updated(self, event: WindowUpdated) -> None:
         if event.stream_id != 0:
+            coverage.track_branch("window_updated", "if")
+            coverage.save_coverage_to_file()
             self.streams[event.stream_id].receive_window_update()
         else:
             # Send leftover data for all the streams
+            coverage.track_branch("window_updated", "else")
+            coverage.save_coverage_to_file()
             for stream in self.streams.values():
                 stream.receive_window_update()
 
