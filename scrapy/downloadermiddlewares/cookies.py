@@ -2,23 +2,25 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from http.cookiejar import Cookie
 from typing import TYPE_CHECKING, Any, DefaultDict, Iterable, Optional, Sequence, Union
 
 from tldextract import TLDExtract
 
-from scrapy import Request, Spider
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
-from scrapy.http.request import VerboseCookie
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
+    from http.cookiejar import Cookie
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Request, Spider
+    from scrapy.crawler import Crawler
+    from scrapy.http.request import VerboseCookie
 
 
 logger = logging.getLogger(__name__)

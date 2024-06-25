@@ -17,19 +17,19 @@ from typing import (
     cast,
 )
 
-from twisted.internet.defer import Deferred
-
-from scrapy import Spider
 from scrapy.exceptions import NotConfigured
-from scrapy.settings import Settings
 from scrapy.utils.defer import process_chain, process_parallel
 from scrapy.utils.misc import build_from_crawler, build_from_settings, load_object
 
 if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    from scrapy import Spider
     from scrapy.crawler import Crawler
+    from scrapy.settings import Settings
 
 
 logger = logging.getLogger(__name__)

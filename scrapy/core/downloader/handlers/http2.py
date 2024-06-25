@@ -4,24 +4,26 @@ from time import time
 from typing import TYPE_CHECKING, Optional
 from urllib.parse import urldefrag
 
-from twisted.internet.base import DelayedCall
-from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
 from twisted.web.client import URI
-from twisted.web.iweb import IPolicyForHTTPS
 
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.webclient import _parse
 from scrapy.core.http2.agent import H2Agent, H2ConnectionPool, ScrapyProxyH2Agent
-from scrapy.crawler import Crawler
-from scrapy.http import Request, Response
-from scrapy.settings import Settings
-from scrapy.spiders import Spider
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
+    from twisted.internet.base import DelayedCall
+    from twisted.internet.defer import Deferred
+    from twisted.web.iweb import IPolicyForHTTPS
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.http import Request, Response
+    from scrapy.settings import Settings
+    from scrapy.spiders import Spider
 
 
 class H2DownloadHandler:

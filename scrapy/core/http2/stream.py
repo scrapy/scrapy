@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from enum import Enum
 from io import BytesIO
@@ -5,19 +7,20 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from h2.errors import ErrorCodes
 from h2.exceptions import H2Error, ProtocolError, StreamClosedError
-from hpack import HeaderTuple
 from twisted.internet.defer import CancelledError, Deferred
 from twisted.internet.error import ConnectionClosed
 from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
 
-from scrapy.http import Request
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
+    from hpack import HeaderTuple
+
     from scrapy.core.http2.protocol import H2ClientProtocol
+    from scrapy.http import Request
 
 
 logger = logging.getLogger(__name__)
@@ -87,7 +90,7 @@ class Stream:
         self,
         stream_id: int,
         request: Request,
-        protocol: "H2ClientProtocol",
+        protocol: H2ClientProtocol,
         download_maxsize: int = 0,
         download_warnsize: int = 0,
     ) -> None:
@@ -99,7 +102,7 @@ class Stream:
         """
         self.stream_id: int = stream_id
         self._request: Request = request
-        self._protocol: "H2ClientProtocol" = protocol
+        self._protocol: H2ClientProtocol = protocol
 
         self._download_maxsize = self._request.meta.get(
             "download_maxsize", download_maxsize

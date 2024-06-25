@@ -14,6 +14,7 @@ repos:
     - flake8-debugger
     - flake8-docstrings
     - flake8-string-format
+    - flake8-type-checking
 - repo: https://github.com/psf/black.git
   rev: 24.2.0
   hooks:

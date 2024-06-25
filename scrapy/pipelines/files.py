@@ -16,7 +16,6 @@ from collections import defaultdict
 from contextlib import suppress
 from ftplib import FTP
 from io import BytesIO
-from os import PathLike
 from pathlib import Path
 from typing import (
     IO,
@@ -38,11 +37,9 @@ from typing import (
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
-from twisted.internet import defer, threads
-from twisted.internet.defer import Deferred
-from twisted.python.failure import Failure
+from twisted.internet.defer import Deferred, maybeDeferred
+from twisted.internet.threads import deferToThread
 
-from scrapy import Spider
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
@@ -56,8 +53,14 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:
+    from os import PathLike
+
+    from twisted.python.failure import Failure
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Spider
 
 
 logger = logging.getLogger(__name__)
@@ -210,7 +213,7 @@ class S3FilesStore:
         key_name = f"{self.prefix}{path}"
         return cast(
             "Deferred[Dict[str, Any]]",
-            threads.deferToThread(
+            deferToThread(
                 self.s3_client.head_object, Bucket=self.bucket, Key=key_name  # type: ignore[attr-defined]
             ),
         )
@@ -229,7 +232,7 @@ class S3FilesStore:
         extra = self._headers_to_botocore_kwargs(self.HEADERS)
         if headers:
             extra.update(self._headers_to_botocore_kwargs(headers))
-        return threads.deferToThread(
+        return deferToThread(
             self.s3_client.put_object,  # type: ignore[attr-defined]
             Bucket=self.bucket,
             Key=key_name,
@@ -326,9 +329,7 @@ class GCSFilesStore:
         blob_path = self._get_blob_path(path)
         return cast(
             Deferred[StatInfo],
-            threads.deferToThread(self.bucket.get_blob, blob_path).addCallback(
-                _onsuccess
-            ),
+            deferToThread(self.bucket.get_blob, blob_path).addCallback(_onsuccess),
         )
 
     def _get_content_type(self, headers: Optional[Dict[str, str]]) -> str:
@@ -351,7 +352,7 @@ class GCSFilesStore:
         blob = self.bucket.blob(blob_path)
         blob.cache_control = self.CACHE_CONTROL
         blob.metadata = {k: str(v) for k, v in (meta or {}).items()}
-        return threads.deferToThread(
+        return deferToThread(
             blob.upload_from_string,
             data=buf.getvalue(),
             content_type=self._get_content_type(headers),
@@ -388,7 +389,7 @@ class FTPFilesStore:
         headers: Optional[Dict[str, str]] = None,
     ) -> Deferred[Any]:
         path = f"{self.basedir}/{path}"
-        return threads.deferToThread(
+        return deferToThread(
             ftp_store_file,
             path=path,
             file=buf,
@@ -418,7 +419,7 @@ class FTPFilesStore:
             except Exception:
                 return {}
 
-        return cast("Deferred[StatInfo]", threads.deferToThread(_stat_file, path))
+        return cast("Deferred[StatInfo]", deferToThread(_stat_file, path))
 
 
 class FilesPipeline(MediaPipeline):
@@ -553,8 +554,8 @@ class FilesPipeline(MediaPipeline):
             }
 
         path = self.file_path(request, info=info, item=item)
-        # defer.maybeDeferred() overloads don't seem to support a Union[_T, Deferred[_T]] return type
-        dfd: Deferred[StatInfo] = defer.maybeDeferred(self.store.stat_file, path, info)  # type: ignore[arg-type]
+        # maybeDeferred() overloads don't seem to support a Union[_T, Deferred[_T]] return type
+        dfd: Deferred[StatInfo] = maybeDeferred(self.store.stat_file, path, info)  # type: ignore[arg-type]
         dfd2: Deferred[Optional[FileInfo]] = dfd.addCallback(_onsuccess)
         dfd2.addErrback(lambda _: None)
         dfd2.addErrback(

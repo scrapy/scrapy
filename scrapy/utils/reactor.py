@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import sys
-from asyncio import AbstractEventLoop, AbstractEventLoopPolicy
 from contextlib import suppress
 from typing import (
     TYPE_CHECKING,
@@ -20,13 +19,16 @@ from warnings import catch_warnings, filterwarnings, warn
 
 from twisted.internet import asyncioreactor, error
 from twisted.internet.base import DelayedCall
-from twisted.internet.protocol import ServerFactory
-from twisted.internet.tcp import Port
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
+    from asyncio import AbstractEventLoop, AbstractEventLoopPolicy
+
+    from twisted.internet.protocol import ServerFactory
+    from twisted.internet.tcp import Port
+
     # typing.ParamSpec requires Python 3.10
     from typing_extensions import ParamSpec
 

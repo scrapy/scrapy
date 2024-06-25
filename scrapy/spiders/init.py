@@ -1,9 +1,13 @@
-from typing import Any, Iterable, Optional, cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Iterable, Optional, cast
 
 from scrapy import Request
-from scrapy.http import Response
 from scrapy.spiders import Spider
 from scrapy.utils.spider import iterate_spider_output
+
+if TYPE_CHECKING:
+    from scrapy.http import Response
 
 
 class InitSpider(Spider):

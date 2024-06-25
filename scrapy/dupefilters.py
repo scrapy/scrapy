@@ -4,11 +4,6 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Set
 
-from twisted.internet.defer import Deferred
-
-from scrapy.http.request import Request
-from scrapy.settings import BaseSettings
-from scrapy.spiders import Spider
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import (
     RequestFingerprinter,
@@ -17,10 +12,15 @@ from scrapy.utils.request import (
 )
 
 if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
+    from scrapy.http.request import Request
+    from scrapy.settings import BaseSettings
+    from scrapy.spiders import Spider
 
 
 class BaseDupeFilter:

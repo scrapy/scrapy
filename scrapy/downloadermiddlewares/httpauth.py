@@ -11,13 +11,14 @@ from typing import TYPE_CHECKING, Union
 from w3lib.http import basic_auth_header
 
 from scrapy import Request, Spider, signals
-from scrapy.crawler import Crawler
-from scrapy.http import Response
 from scrapy.utils.url import url_is_from_any_domain
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.http import Response
 
 
 class HttpAuthMiddleware:

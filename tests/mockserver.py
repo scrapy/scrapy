@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import json
 import os
@@ -7,12 +9,11 @@ from pathlib import Path
 from shutil import rmtree
 from subprocess import PIPE, Popen
 from tempfile import mkdtemp
-from typing import Dict
+from typing import TYPE_CHECKING, Dict
 from urllib.parse import urlencode
 
 from OpenSSL import SSL
 from twisted.internet import defer, reactor, ssl
-from twisted.internet.protocol import ServerFactory
 from twisted.internet.task import deferLater
 from twisted.names import dns, error
 from twisted.names.server import DNSServerFactory
@@ -22,6 +23,9 @@ from twisted.web.static import File
 from twisted.web.util import redirectTo
 
 from scrapy.utils.python import to_bytes, to_unicode
+
+if TYPE_CHECKING:
+    from twisted.internet.protocol import ServerFactory
 
 
 def getarg(request, name, default=None, type=None):

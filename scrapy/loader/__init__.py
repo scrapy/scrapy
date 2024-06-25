@@ -4,13 +4,17 @@ Item Loader
 See documentation in docs/topics/loaders.rst
 """
 
-from typing import Any, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional
 
 import itemloaders
 
-from scrapy.http import TextResponse
 from scrapy.item import Item
 from scrapy.selector import Selector
+
+if TYPE_CHECKING:
+    from scrapy.http import TextResponse
 
 
 class ItemLoader(itemloaders.ItemLoader):
@@ -91,7 +95,7 @@ class ItemLoader(itemloaders.ItemLoader):
         selector: Optional[Selector] = None,
         response: Optional[TextResponse] = None,
         parent: Optional[itemloaders.ItemLoader] = None,
-        **context: Any
+        **context: Any,
     ):
         if selector is None and response is not None:
             try:

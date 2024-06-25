@@ -6,8 +6,9 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, TypedDict, Union
 
 from twisted.python.failure import Failure
 
-from scrapy import Request, Spider
-from scrapy.http import Response
+# working around https://github.com/sphinx-doc/sphinx/issues/10400
+from scrapy import Request, Spider  # noqa: TC001
+from scrapy.http import Response  # noqa: TC001
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:

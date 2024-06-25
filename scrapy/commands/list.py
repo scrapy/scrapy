@@ -1,7 +1,11 @@
-import argparse
-from typing import List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List
 
 from scrapy.commands import ScrapyCommand
+
+if TYPE_CHECKING:
+    import argparse
 
 
 class Command(ScrapyCommand):

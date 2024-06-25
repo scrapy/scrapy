@@ -8,17 +8,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Optional
 
-from twisted.internet.defer import Deferred
-
 from scrapy import Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.mail import MailSender
-from scrapy.statscollectors import StatsCollector
 
 if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
 
 
 class StatsMailer:

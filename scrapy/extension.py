@@ -4,11 +4,15 @@ The Extension Manager
 See documentation in docs/topics/extensions.rst
 """
 
-from typing import Any, List
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, List
 
 from scrapy.middleware import MiddlewareManager
-from scrapy.settings import Settings
 from scrapy.utils.conf import build_component_list
+
+if TYPE_CHECKING:
+    from scrapy.settings import Settings
 
 
 class ExtensionManager(MiddlewareManager):

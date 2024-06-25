@@ -34,12 +34,13 @@ from twisted.internet import defer
 from twisted.internet.defer import Deferred, DeferredList, ensureDeferred
 from twisted.internet.task import Cooperator
 from twisted.python import failure
-from twisted.python.failure import Failure
 
 from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.utils.reactor import _get_asyncio_event_loop, is_asyncio_reactor_installed
 
 if TYPE_CHECKING:
+    from twisted.python.failure import Failure
+
     # typing.Concatenate and typing.ParamSpec require Python 3.10
     from typing_extensions import Concatenate, ParamSpec
 

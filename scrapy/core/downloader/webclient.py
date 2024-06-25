@@ -1,17 +1,21 @@
+from __future__ import annotations
+
 import re
 from time import time
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
 from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
 from twisted.web.http import HTTPClient
 
-from scrapy import Request
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
+
+if TYPE_CHECKING:
+    from scrapy import Request
 
 
 def _parsed_url_args(parsed: ParseResult) -> Tuple[bytes, bytes, bytes, int, bytes]:

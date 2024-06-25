@@ -1,17 +1,21 @@
+from __future__ import annotations
+
 import argparse
 import sys
 from importlib import import_module
-from os import PathLike
 from pathlib import Path
-from types import ModuleType
-from typing import List, Union
+from typing import TYPE_CHECKING, List, Union
 
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.spider import iter_spider_classes
 
+if TYPE_CHECKING:
+    from os import PathLike
+    from types import ModuleType
 
-def _import_file(filepath: Union[str, PathLike]) -> ModuleType:
+
+def _import_file(filepath: Union[str, PathLike[str]]) -> ModuleType:
     abspath = Path(filepath).resolve()
     if abspath.suffix not in (".py", ".pyw"):
         raise ValueError(f"Not a Python source file: {abspath}")

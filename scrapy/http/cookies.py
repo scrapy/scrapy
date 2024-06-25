@@ -17,14 +17,16 @@ from typing import (
     cast,
 )
 
-from scrapy import Request
-from scrapy.http import Response
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Request
+    from scrapy.http import Response
+
 
 # Defined in the http.cookiejar module, but undocumented:
 # https://github.com/python/cpython/blob/v3.9.0/Lib/http/cookiejar.py#L527
