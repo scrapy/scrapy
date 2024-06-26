@@ -10,6 +10,7 @@ from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
+    from twisted.internet.interfaces import IConnector
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -45,7 +46,7 @@ class HTTP10DownloadHandler:
         self._connect(factory)
         return factory.deferred
 
-    def _connect(self, factory: ScrapyHTTPClientFactory) -> Deferred:
+    def _connect(self, factory: ScrapyHTTPClientFactory) -> IConnector:
         from twisted.internet import reactor
 
         host, port = to_unicode(factory.host), factory.port

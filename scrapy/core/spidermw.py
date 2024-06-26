@@ -302,7 +302,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
             recovered = MutableChain()
         result = self._evaluate_iterable(response, spider, result, 0, recovered)
         result = await maybe_deferred_to_future(
-            self._process_spider_output(response, spider, result)
+            cast(
+                "Deferred[Union[Iterable[_T], AsyncIterable[_T]]]",
+                self._process_spider_output(response, spider, result),
+            )
         )
         if isinstance(result, AsyncIterable):
             return MutableAsyncChain(result, recovered)
@@ -339,7 +342,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     def process_start_requests(
         self, start_requests: Iterable[Request], spider: Spider
-    ) -> Deferred:
+    ) -> Deferred[Iterable[Request]]:
         return self._process_chain("process_start_requests", start_requests, spider)
 
     # This method is only needed until _async compatibility methods are removed.

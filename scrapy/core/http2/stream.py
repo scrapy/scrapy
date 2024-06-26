@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from hpack import HeaderTuple
 
     from scrapy.core.http2.protocol import H2ClientProtocol
-    from scrapy.http import Request
+    from scrapy.http import Request, Response
 
 
 logger = logging.getLogger(__name__)
@@ -154,7 +154,7 @@ class Stream:
             else:
                 self.close(StreamCloseReason.CANCELLED)
 
-        self._deferred_response: Deferred = Deferred(_cancel)
+        self._deferred_response: Deferred[Response] = Deferred(_cancel)
 
     def __repr__(self) -> str:
         return f"Stream(id={self.stream_id!r})"
@@ -180,7 +180,7 @@ class Stream:
             and not self.metadata["reached_warnsize"]
         )
 
-    def get_response(self) -> Deferred:
+    def get_response(self) -> Deferred[Response]:
         """Simply return a Deferred which fires when response
         from the asynchronous request is available
         """
