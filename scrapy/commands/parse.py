@@ -41,6 +41,21 @@ logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 
+print_requests_coverage = {
+    "run_1": "miss",
+    "run_1.1": "miss",
+    "run_1.2": "miss",
+    "run_2": "miss",
+}
+
+max_level_coverage = {
+    "run_1": "miss",
+    "run_2": "miss",
+    "run_3": "miss",
+    "run_4": "miss",
+}
+
+
 class Command(BaseRunSpiderCommand):
     requires_project = True
 
@@ -129,9 +144,15 @@ class Command(BaseRunSpiderCommand):
     def max_level(self) -> int:
         max_items, max_requests = 0, 0
         if self.items:
+            max_level_coverage["run_1"] = "hit"
             max_items = max(self.items)
+        else:
+            max_level_coverage["run_2"] = "hit"
         if self.requests:
+            max_level_coverage["run_3"] = "hit"
             max_requests = max(self.requests)
+        else:
+            max_level_coverage["run_4"] = "hit"
         return max(max_items, max_requests)
 
     def handle_exception(self, _failure: Failure) -> None:
@@ -180,11 +201,15 @@ class Command(BaseRunSpiderCommand):
 
     def print_requests(self, lvl: Optional[int] = None, colour: bool = True) -> None:
         if lvl is None:
+            print_requests_coverage["run_1"] = "hit"
             if self.requests:
+                print_requests_coverage["run_1.1"] = "hit"
                 requests = self.requests[max(self.requests)]
             else:
+                print_requests_coverage["run_1.2"] = "hit"
                 requests = []
         else:
+            print_requests_coverage["run_2"] = "hit"
             requests = self.requests.get(lvl, [])
 
         print("# Requests ", "-" * 65)
