@@ -13,7 +13,7 @@ class TestPrintRequests(unittest.TestCase):
 
     def test_print_requests_no_level_no_request(self):
         self.command.requests = {}
-        self.command.print_requests(None, colour=False)
+        self.command.print_requests(None, colour=False) #runs the function with a unique case
         self.assertEqual(parse.print_requests_coverage["run_1"], "hit")
         self.assertEqual(parse.print_requests_coverage["run_1.2"], "hit")
     
