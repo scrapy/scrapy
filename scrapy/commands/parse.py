@@ -5,6 +5,8 @@ import functools
 import inspect
 import json
 import logging
+import os
+from pathlib import Path
 from typing import (
     Any,
     AsyncGenerator,
@@ -155,6 +157,22 @@ class Command(BaseRunSpiderCommand):
             max_level_coverage["run_4"] = "hit"
         return max(max_items, max_requests)
 
+    def write_max_level_coverage_to_file(self) -> None:
+        num_hits = list(max_level_coverage.values()).count("hit")
+        num_branches = len(max_level_coverage)
+        coverage_percentage = num_hits / num_branches * 100
+
+        project_dir = Path(__file__).resolve().parent
+        output_file = os.path.join(project_dir, "coverage_max_level.txt")
+
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(
+                "The following are the branches that have been covered by the test cases for max_level():\n"
+            )
+            for run, hit_or_miss in max_level_coverage.items():
+                f.write(f" - {run} was {hit_or_miss}\n")
+            f.write(f"The branch coverage is: {coverage_percentage:.2f}%\n")
+
     def handle_exception(self, _failure: Failure) -> None:
         logger.error(
             "An error is caught while iterating the async iterable",
@@ -214,6 +232,22 @@ class Command(BaseRunSpiderCommand):
 
         print("# Requests ", "-" * 65)
         display.pprint(requests, colorize=colour)
+
+    def write_print_request_coverage_to_file(self) -> None:
+        num_hits = list(print_requests_coverage.values()).count("hit")
+        num_branches = len(print_requests_coverage)
+        coverage_percentage = num_hits / num_branches * 100
+
+        project_dir = Path(__file__).resolve().parent
+        output_file = os.path.join(project_dir, "coverage_print_requests.txt")
+
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(
+                "The following are the branches that have been covered by the test cases of print_request():\n"
+            )
+            for run, hit_or_miss in print_requests_coverage.items():
+                f.write(f" - {run} was {hit_or_miss}\n")
+            f.write(f"The branch coverage is: {coverage_percentage:.2f}%\n")
 
     def print_results(self, opts: argparse.Namespace) -> None:
         colour = not opts.nocolour
