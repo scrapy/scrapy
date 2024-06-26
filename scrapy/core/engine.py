@@ -24,6 +24,7 @@ from typing import (
     cast,
 )
 
+from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
 from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
@@ -205,7 +206,19 @@ class ExecutionEngine:
                     extra={"spider": self.spider},
                 )
             else:
-                self.crawl(request)
+                if isinstance(request, Request):
+                    self.crawl(request)
+                elif is_item(request):
+                    self.scraper.slot.itemproc_size += 1
+                    dfd = self.scraper.itemproc.process_item(
+                        request, self.crawler.spider
+                    )
+                    dfd.addBoth(
+                        self.scraper._itemproc_finished,
+                        request,
+                        f"{self.crawler.spider.__class__.__name__}.start_requests",
+                        self.crawler.spider,
+                    )
 
         if self.spider_is_idle() and self.slot.close_if_idle:
             self._spider_idle()
