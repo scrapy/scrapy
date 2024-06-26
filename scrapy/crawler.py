@@ -23,13 +23,6 @@ from twisted.internet.defer import (
     inlineCallbacks,
     maybeDeferred,
 )
-
-try:
-    # zope >= 5.0 only supports MultipleInvalid
-    from zope.interface.exceptions import MultipleInvalid
-except ImportError:
-    MultipleInvalid = None
-
 from zope.interface.verify import verifyClass
 
 from scrapy import Spider, signals
