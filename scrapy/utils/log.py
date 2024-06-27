@@ -21,12 +21,13 @@ from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.logformatter import LogFormatterResult
 from scrapy.settings import Settings, _SettingsKeyT
 from scrapy.utils.versions import scrapy_components_versions
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
+    from scrapy.logformatter import LogFormatterResult
+
 
 logger = logging.getLogger(__name__)
 

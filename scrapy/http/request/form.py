@@ -28,12 +28,13 @@ from lxml.html import TextareaElement  # nosec
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.request import Request
-from scrapy.http.response.text import TextResponse
 from scrapy.utils.python import is_listlike, to_bytes
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.http.response.text import TextResponse
 
 
 FormdataVType = Union[str, Iterable[str]]

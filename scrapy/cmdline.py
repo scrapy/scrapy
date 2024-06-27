@@ -13,7 +13,6 @@ import scrapy
 from scrapy.commands import BaseRunSpiderCommand, ScrapyCommand, ScrapyHelpFormatter
 from scrapy.crawler import CrawlerProcess
 from scrapy.exceptions import UsageError
-from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import get_project_settings, inside_project
 from scrapy.utils.python import garbage_collect
@@ -21,6 +20,8 @@ from scrapy.utils.python import garbage_collect
 if TYPE_CHECKING:
     # typing.ParamSpec requires Python 3.10
     from typing_extensions import ParamSpec
+
+    from scrapy.settings import BaseSettings, Settings
 
     _P = ParamSpec("_P")
 

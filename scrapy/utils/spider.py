@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import inspect
 import logging
-from types import CoroutineType, ModuleType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -16,15 +15,18 @@ from typing import (
     overload,
 )
 
-from twisted.internet.defer import Deferred
-
-from scrapy import Request
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.misc import arg_to_iter
 
 if TYPE_CHECKING:
+    from types import CoroutineType, ModuleType
+
+    from twisted.internet.defer import Deferred
+
+    from scrapy import Request
     from scrapy.spiderloader import SpiderLoader
+
 
 logger = logging.getLogger(__name__)
 

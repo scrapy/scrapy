@@ -2,21 +2,22 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, Type
 
-from twisted.internet.defer import Deferred
-
-from scrapy import Request, Spider
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Response
-from scrapy.settings import BaseSettings
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Request, Spider
+    from scrapy.crawler import Crawler
+    from scrapy.http import Response
+    from scrapy.settings import BaseSettings
 
 
 class S3DownloadHandler:

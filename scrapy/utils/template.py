@@ -1,10 +1,14 @@
 """Helper functions for working with templates"""
 
+from __future__ import annotations
+
 import re
 import string
-from os import PathLike
 from pathlib import Path
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any, Union
+
+if TYPE_CHECKING:
+    from os import PathLike
 
 
 def render_templatefile(path: Union[str, PathLike], **kwargs: Any) -> None:

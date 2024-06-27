@@ -12,10 +12,8 @@ import warnings
 from typing import TYPE_CHECKING, Any, AsyncIterable, Iterable, Set
 
 from scrapy import Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
-from scrapy.statscollectors import StatsCollector
 from scrapy.utils.httpobj import urlparse_cached
 
 warnings.warn(
@@ -27,6 +25,10 @@ warnings.warn(
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
+
 
 logger = logging.getLogger(__name__)
 

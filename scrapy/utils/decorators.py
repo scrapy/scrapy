@@ -4,8 +4,8 @@ import warnings
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
-from twisted.internet import defer, threads
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, maybeDeferred
+from twisted.internet.threads import deferToThread
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
@@ -48,7 +48,7 @@ def defers(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:
 
     @wraps(func)
     def wrapped(*a: _P.args, **kw: _P.kwargs) -> Deferred[_T]:
-        return defer.maybeDeferred(func, *a, **kw)
+        return maybeDeferred(func, *a, **kw)
 
     return wrapped
 
@@ -60,6 +60,6 @@ def inthread(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:
 
     @wraps(func)
     def wrapped(*a: _P.args, **kw: _P.kwargs) -> Deferred[_T]:
-        return threads.deferToThread(func, *a, **kw)
+        return deferToThread(func, *a, **kw)
 
     return wrapped

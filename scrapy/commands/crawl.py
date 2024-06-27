@@ -1,10 +1,14 @@
-import argparse
-from typing import List, cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, List, cast
 
 from twisted.python.failure import Failure
 
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
+
+if TYPE_CHECKING:
+    import argparse
 
 
 class Command(BaseRunSpiderCommand):

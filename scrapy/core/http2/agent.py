@@ -1,10 +1,10 @@
+from __future__ import annotations
+
 from collections import deque
-from typing import Deque, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Deque, Dict, List, Optional, Tuple
 
 from twisted.internet import defer
-from twisted.internet.base import ReactorBase
 from twisted.internet.defer import Deferred
-from twisted.internet.endpoints import HostnameEndpoint
 from twisted.python.failure import Failure
 from twisted.web.client import (
     URI,
@@ -16,9 +16,15 @@ from twisted.web.error import SchemeNotSupported
 
 from scrapy.core.downloader.contextfactory import AcceptableProtocolsContextFactory
 from scrapy.core.http2.protocol import H2ClientFactory, H2ClientProtocol
-from scrapy.http.request import Request
-from scrapy.settings import Settings
-from scrapy.spiders import Spider
+
+if TYPE_CHECKING:
+    from twisted.internet.base import ReactorBase
+    from twisted.internet.endpoints import HostnameEndpoint
+
+    from scrapy.http import Request, Response
+    from scrapy.settings import Settings
+    from scrapy.spiders import Spider
+
 
 ConnectionKeyT = Tuple[bytes, bytes, int]
 
@@ -33,16 +39,18 @@ class H2ConnectionPool:
         self._connections: Dict[ConnectionKeyT, H2ClientProtocol] = {}
 
         # Save all requests that arrive before the connection is established
-        self._pending_requests: Dict[ConnectionKeyT, Deque[Deferred]] = {}
+        self._pending_requests: Dict[
+            ConnectionKeyT, Deque[Deferred[H2ClientProtocol]]
+        ] = {}
 
     def get_connection(
         self, key: ConnectionKeyT, uri: URI, endpoint: HostnameEndpoint
-    ) -> Deferred:
+    ) -> Deferred[H2ClientProtocol]:
         if key in self._pending_requests:
             # Received a request while connecting to remote
             # Create a deferred which will fire with the H2ClientProtocol
             # instance
-            d: Deferred = Deferred()
+            d: Deferred[H2ClientProtocol] = Deferred()
             self._pending_requests[key].append(d)
             return d
 
@@ -57,17 +65,17 @@ class H2ConnectionPool:
 
     def _new_connection(
         self, key: ConnectionKeyT, uri: URI, endpoint: HostnameEndpoint
-    ) -> Deferred:
+    ) -> Deferred[H2ClientProtocol]:
         self._pending_requests[key] = deque()
 
-        conn_lost_deferred: Deferred = Deferred()
+        conn_lost_deferred: Deferred[List[BaseException]] = Deferred()
         conn_lost_deferred.addCallback(self._remove_connection, key)
 
         factory = H2ClientFactory(uri, self.settings, conn_lost_deferred)
         conn_d = endpoint.connect(factory)
         conn_d.addCallback(self.put_connection, key)
 
-        d: Deferred = Deferred()
+        d: Deferred[H2ClientProtocol] = Deferred()
         self._pending_requests[key].append(d)
         return d
 
@@ -135,7 +143,7 @@ class H2Agent:
         """
         return uri.scheme, uri.host, uri.port
 
-    def request(self, request: Request, spider: Spider) -> Deferred:
+    def request(self, request: Request, spider: Spider) -> Deferred[Response]:
         uri = URI.fromBytes(bytes(request.url, encoding="utf-8"))
         try:
             endpoint = self.get_endpoint(uri)
@@ -143,9 +151,11 @@ class H2Agent:
             return defer.fail(Failure())
 
         key = self.get_key(uri)
-        d = self._pool.get_connection(key, uri, endpoint)
-        d.addCallback(lambda conn: conn.request(request, spider))
-        return d
+        d: Deferred[H2ClientProtocol] = self._pool.get_connection(key, uri, endpoint)
+        d2: Deferred[Response] = d.addCallback(
+            lambda conn: conn.request(request, spider)
+        )
+        return d2
 
 
 class ScrapyProxyH2Agent(H2Agent):

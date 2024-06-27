@@ -4,7 +4,6 @@ import copy
 import json
 from importlib import import_module
 from pprint import pformat
-from types import ModuleType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -27,6 +26,8 @@ from scrapy.settings import default_settings
 _SettingsKeyT = Union[bool, float, int, str, None]
 
 if TYPE_CHECKING:
+    from types import ModuleType
+
     # https://github.com/python/typing/issues/445#issuecomment-1131458824
     from _typeshed import SupportsItems
 

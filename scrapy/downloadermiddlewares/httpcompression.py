@@ -6,11 +6,9 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from scrapy import Request, Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.statscollectors import StatsCollector
 from scrapy.utils._compression import (
     _DecompressionMaxSizeExceeded,
     _inflate,
@@ -23,6 +21,10 @@ from scrapy.utils.gz import gunzip
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
+
 
 logger = getLogger(__name__)
 

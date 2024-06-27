@@ -17,17 +17,19 @@ from typing import (
 )
 
 from twisted.internet import defer
-from twisted.internet.defer import Deferred
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured, NotSupported
-from scrapy.http import Response
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+
     from scrapy.crawler import Crawler
+    from scrapy.http import Response
+
 
 logger = logging.getLogger(__name__)
 

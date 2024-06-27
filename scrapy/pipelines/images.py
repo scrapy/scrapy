@@ -11,7 +11,6 @@ import hashlib
 import warnings
 from contextlib import suppress
 from io import BytesIO
-from os import PathLike
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -28,7 +27,6 @@ from typing import (
 
 from itemadapter import ItemAdapter
 
-from scrapy import Spider
 from scrapy.exceptions import DropItem, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
@@ -40,14 +38,19 @@ from scrapy.pipelines.files import (
     S3FilesStore,
     _md5sum,
 )
-from scrapy.pipelines.media import FileInfoOrError, MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.python import get_func_args, to_bytes
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
+    from os import PathLike
+
     from PIL import Image
+
+    # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Spider
+    from scrapy.pipelines.media import FileInfoOrError, MediaPipeline
 
 
 class NoimagesDrop(DropItem):

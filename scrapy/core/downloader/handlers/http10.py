@@ -5,21 +5,22 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Type
 
-from twisted.internet.defer import Deferred
-
-from scrapy import Request, Spider
-from scrapy.crawler import Crawler
-from scrapy.http import Response
-from scrapy.settings import BaseSettings
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+    from twisted.internet.interfaces import IConnector
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    from scrapy import Request, Spider
     from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
     from scrapy.core.downloader.webclient import ScrapyHTTPClientFactory
+    from scrapy.crawler import Crawler
+    from scrapy.http import Response
+    from scrapy.settings import BaseSettings
 
 
 class HTTP10DownloadHandler:
@@ -45,7 +46,7 @@ class HTTP10DownloadHandler:
         self._connect(factory)
         return factory.deferred
 
-    def _connect(self, factory: ScrapyHTTPClientFactory) -> Deferred:
+    def _connect(self, factory: ScrapyHTTPClientFactory) -> IConnector:
         from twisted.internet import reactor
 
         host, port = to_unicode(factory.host), factory.port

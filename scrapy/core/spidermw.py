@@ -10,6 +10,7 @@ import logging
 from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncIterable,
     Callable,
@@ -30,7 +31,6 @@ from scrapy import Request, Spider
 from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Response
 from scrapy.middleware import MiddlewareManager
-from scrapy.settings import BaseSettings
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
@@ -40,6 +40,10 @@ from scrapy.utils.defer import (
     mustbe_deferred,
 )
 from scrapy.utils.python import MutableAsyncChain, MutableChain
+
+if TYPE_CHECKING:
+    from scrapy.settings import BaseSettings
+
 
 logger = logging.getLogger(__name__)
 
@@ -298,7 +302,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
             recovered = MutableChain()
         result = self._evaluate_iterable(response, spider, result, 0, recovered)
         result = await maybe_deferred_to_future(
-            self._process_spider_output(response, spider, result)
+            cast(
+                "Deferred[Union[Iterable[_T], AsyncIterable[_T]]]",
+                self._process_spider_output(response, spider, result),
+            )
         )
         if isinstance(result, AsyncIterable):
             return MutableAsyncChain(result, recovered)
@@ -335,7 +342,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     def process_start_requests(
         self, start_requests: Iterable[Request], spider: Spider
-    ) -> Deferred:
+    ) -> Deferred[Iterable[Request]]:
         return self._process_chain("process_start_requests", start_requests, spider)
 
     # This method is only needed until _async compatibility methods are removed.

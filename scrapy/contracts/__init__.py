@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import re
 import sys
 from functools import wraps
 from inspect import getmembers
 from types import CoroutineType
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncGenerator,
     Callable,
@@ -16,12 +19,14 @@ from typing import (
 )
 from unittest import TestCase, TestResult
 
-from twisted.python.failure import Failure
-
-from scrapy import Spider
 from scrapy.http import Request, Response
 from scrapy.utils.python import get_spec
 from scrapy.utils.spider import iterate_spider_output
+
+if TYPE_CHECKING:
+    from twisted.python.failure import Failure
+
+    from scrapy import Spider
 
 
 class Contract:

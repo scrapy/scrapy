@@ -1,5 +1,7 @@
 """Helper functions for working with signals"""
 
+from __future__ import annotations
+
 import collections.abc
 import logging
 from typing import Any as TypingAny
@@ -27,7 +29,7 @@ def send_catch_log(
     signal: TypingAny = Any,
     sender: TypingAny = Anonymous,
     *arguments: TypingAny,
-    **named: TypingAny
+    **named: TypingAny,
 ) -> List[Tuple[TypingAny, TypingAny]]:
     """Like pydispatcher.robust.sendRobust but it also logs errors and returns
     Failures instead of exceptions.
@@ -73,8 +75,8 @@ def send_catch_log_deferred(
     signal: TypingAny = Any,
     sender: TypingAny = Anonymous,
     *arguments: TypingAny,
-    **named: TypingAny
-) -> Deferred:
+    **named: TypingAny,
+) -> Deferred[List[Tuple[TypingAny, TypingAny]]]:
     """Like send_catch_log but supports returning deferreds on signal handlers.
     Returns a deferred that gets fired once all signal handlers deferreds were
     fired.
@@ -92,9 +94,9 @@ def send_catch_log_deferred(
 
     dont_log = named.pop("dont_log", None)
     spider = named.get("spider", None)
-    dfds = []
+    dfds: List[Deferred[Tuple[TypingAny, TypingAny]]] = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
-        d = maybeDeferred_coro(
+        d: Deferred[TypingAny] = maybeDeferred_coro(
             robustApply, receiver, signal=signal, sender=sender, *arguments, **named
         )
         d.addErrback(logerror, receiver)
@@ -102,10 +104,12 @@ def send_catch_log_deferred(
         d.addBoth(
             lambda result: (receiver, result)  # pylint: disable=cell-var-from-loop
         )
-        dfds.append(d)
-    d = DeferredList(dfds)
-    d.addCallback(lambda out: [x[1] for x in out])
-    return d
+        dfds.append(d2)
+    dl = DeferredList(dfds)
+    d3: Deferred[List[Tuple[TypingAny, TypingAny]]] = dl.addCallback(
+        lambda out: [x[1] for x in out]
+    )
+    return d3
 
 
 def disconnect_all(signal: TypingAny = Any, sender: TypingAny = Any) -> None:

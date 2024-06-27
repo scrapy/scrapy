@@ -4,9 +4,10 @@ Scrapy Shell
 See documentation in docs/topics/shell.rst
 """
 
-from argparse import ArgumentParser, Namespace
+from __future__ import annotations
+
 from threading import Thread
-from typing import Any, Dict, List, Type
+from typing import TYPE_CHECKING, Any, Dict, List, Type
 
 from scrapy import Spider
 from scrapy.commands import ScrapyCommand
@@ -14,6 +15,9 @@ from scrapy.http import Request
 from scrapy.shell import Shell
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 from scrapy.utils.url import guess_scheme
+
+if TYPE_CHECKING:
+    from argparse import ArgumentParser, Namespace
 
 
 class Command(ScrapyCommand):

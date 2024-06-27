@@ -31,18 +31,15 @@ from typing import (
 )
 from urllib.parse import unquote, urlparse
 
-from twisted.internet import threads
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
-from twisted.python.failure import Failure
+from twisted.internet.threads import deferToThread
 from w3lib.url import file_uri_to_path
 from zope.interface import Interface, implementer
 
 from scrapy import Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.exporters import BaseItemExporter
 from scrapy.extensions.postprocessing import PostProcessingManager
-from scrapy.settings import BaseSettings, Settings
+from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -54,11 +51,14 @@ from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
     from _typeshed import OpenBinaryMode
+    from twisted.python.failure import Failure
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-logger = logging.getLogger(__name__)
+    from scrapy.crawler import Crawler
+    from scrapy.exporters import BaseItemExporter
+    from scrapy.settings import BaseSettings
 
 try:
     import boto3  # noqa: F401
@@ -66,6 +66,9 @@ try:
     IS_BOTO3_AVAILABLE = True
 except ImportError:
     IS_BOTO3_AVAILABLE = False
+
+
+logger = logging.getLogger(__name__)
 
 UriParamsCallableT = Callable[[Dict[str, Any], Spider], Optional[Dict[str, Any]]]
 
@@ -146,7 +149,7 @@ class FeedStorageProtocol(Protocol):
         """Open the storage for the given spider. It must return a file-like
         object that will be used for the exporters"""
 
-    def store(self, file: IO[bytes]) -> Optional[Deferred]:
+    def store(self, file: IO[bytes]) -> Optional[Deferred[None]]:
         """Store the given file stream"""
 
 
@@ -159,8 +162,8 @@ class BlockingFeedStorage:
 
         return NamedTemporaryFile(prefix="feed-", dir=path)
 
-    def store(self, file: IO[bytes]) -> Optional[Deferred]:
-        return threads.deferToThread(self._store_in_thread, file)
+    def store(self, file: IO[bytes]) -> Optional[Deferred[None]]:
+        return deferToThread(self._store_in_thread, file)
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
         raise NotImplementedError
@@ -189,7 +192,7 @@ class StdoutFeedStorage:
     def open(self, spider: Spider) -> IO[bytes]:
         return self._stdout
 
-    def store(self, file: IO[bytes]) -> Optional[Deferred]:
+    def store(self, file: IO[bytes]) -> Optional[Deferred[None]]:
         pass
 
 
@@ -208,7 +211,7 @@ class FileFeedStorage:
             dirname.mkdir(parents=True)
         return Path(self.path).open(self.write_mode)
 
-    def store(self, file: IO[bytes]) -> Optional[Deferred]:
+    def store(self, file: IO[bytes]) -> Optional[Deferred[None]]:
         file.close()
         return None
 
@@ -480,7 +483,7 @@ _FeedSlot = create_deprecated_class(
 
 
 class FeedExporter:
-    _pending_deferreds: List[Deferred] = []
+    _pending_deferreds: List[Deferred[None]] = []
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -567,7 +570,7 @@ class FeedExporter:
             self.crawler.signals.send_catch_log_deferred(signals.feed_exporter_closed)
         )
 
-    def _close_slot(self, slot: FeedSlot, spider: Spider) -> Optional[Deferred]:
+    def _close_slot(self, slot: FeedSlot, spider: Spider) -> Optional[Deferred[None]]:
         def get_file(slot_: FeedSlot) -> IO[bytes]:
             assert slot_.file
             if isinstance(slot_.file, PostProcessingManager):
@@ -587,7 +590,7 @@ class FeedExporter:
             return None
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
-        d: Deferred = maybeDeferred(slot.storage.store, get_file(slot))
+        d: Deferred[None] = maybeDeferred(slot.storage.store, get_file(slot))  # type: ignore[arg-type]
 
         d.addCallback(
             self._handle_store_success, logmsg, spider, type(slot.storage).__name__
@@ -618,7 +621,7 @@ class FeedExporter:
         self.crawler.stats.inc_value(f"feedexport/failed_count/{slot_type}")
 
     def _handle_store_success(
-        self, f: Failure, logmsg: str, spider: Spider, slot_type: str
+        self, result: Any, logmsg: str, spider: Spider, slot_type: str
     ) -> None:
         logger.info("Stored %s", logmsg, extra={"spider": spider})
         assert self.crawler.stats

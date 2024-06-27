@@ -4,7 +4,18 @@ import logging
 import pprint
 import signal
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Set, Type, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Generator,
+    Optional,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from twisted.internet.defer import (
     Deferred,
@@ -12,13 +23,6 @@ from twisted.internet.defer import (
     inlineCallbacks,
     maybeDeferred,
 )
-
-try:
-    # zope >= 5.0 only supports MultipleInvalid
-    from zope.interface.exceptions import MultipleInvalid
-except ImportError:
-    MultipleInvalid = None
-
 from zope.interface.verify import verifyClass
 
 from scrapy import Spider, signals
@@ -53,6 +57,8 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+_T = TypeVar("_T")
 
 
 class Crawler:
@@ -140,7 +146,7 @@ class Crawler:
         )
 
     @inlineCallbacks
-    def crawl(self, *args: Any, **kwargs: Any) -> Generator[Deferred, Any, None]:
+    def crawl(self, *args: Any, **kwargs: Any) -> Generator[Deferred[Any], Any, None]:
         if self.crawling:
             raise RuntimeError("Crawling already taking place")
         if self._started:
@@ -172,7 +178,7 @@ class Crawler:
         return ExecutionEngine(self, lambda _: self.stop())
 
     @inlineCallbacks
-    def stop(self) -> Generator[Deferred, Any, None]:
+    def stop(self) -> Generator[Deferred[Any], Any, None]:
         """Starts a graceful stop of the crawler and returns a deferred that is
         fired when the crawler is stopped."""
         if self.crawling:
@@ -256,7 +262,7 @@ class CrawlerRunner:
         self.settings = settings
         self.spider_loader = self._get_spider_loader(settings)
         self._crawlers: Set[Crawler] = set()
-        self._active: Set[Deferred] = set()
+        self._active: Set[Deferred[None]] = set()
         self.bootstrap_failed = False
 
     def crawl(
@@ -264,7 +270,7 @@ class CrawlerRunner:
         crawler_or_spidercls: Union[Type[Spider], str, Crawler],
         *args: Any,
         **kwargs: Any,
-    ) -> Deferred:
+    ) -> Deferred[None]:
         """
         Run a crawler with the provided arguments.
 
@@ -294,12 +300,12 @@ class CrawlerRunner:
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
 
-    def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> Deferred:
+    def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> Deferred[None]:
         self.crawlers.add(crawler)
         d = crawler.crawl(*args, **kwargs)
         self._active.add(d)
 
-        def _done(result: Any) -> Any:
+        def _done(result: _T) -> _T:
             self.crawlers.discard(crawler)
             self._active.discard(d)
             self.bootstrap_failed |= not getattr(crawler, "spider", None)
@@ -335,7 +341,7 @@ class CrawlerRunner:
         # temporary cast until self.spider_loader is typed
         return Crawler(cast(Type[Spider], spidercls), self.settings)
 
-    def stop(self) -> Deferred:
+    def stop(self) -> Deferred[Any]:
         """
         Stops simultaneously all the crawling jobs taking place.
 
@@ -344,7 +350,7 @@ class CrawlerRunner:
         return DeferredList([c.stop() for c in list(self.crawlers)])
 
     @inlineCallbacks
-    def join(self) -> Generator[Deferred, Any, None]:
+    def join(self) -> Generator[Deferred[Any], Any, None]:
         """
         join()
 
@@ -460,7 +466,7 @@ class CrawlerProcess(CrawlerRunner):
             )
         reactor.run(installSignalHandlers=install_signal_handlers)  # blocking call
 
-    def _graceful_stop_reactor(self) -> Deferred:
+    def _graceful_stop_reactor(self) -> Deferred[Any]:
         d = self.stop()
         d.addBoth(self._stop_reactor)
         return d

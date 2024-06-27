@@ -26,7 +26,6 @@ except (ImportError, SyntaxError):
     TWISTED_CONCH_AVAILABLE = False
 
 from scrapy import signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.decorators import defers
 from scrapy.utils.engine import print_engine_status
@@ -36,6 +35,10 @@ from scrapy.utils.trackref import print_live_refs
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+
+
 logger = logging.getLogger(__name__)
 
 # signal to update telnet variables

@@ -34,9 +34,8 @@ from scrapy.core.scraper import Scraper
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.logformatter import LogFormatter
-from scrapy.settings import BaseSettings, Settings
+from scrapy.settings import Settings
 from scrapy.signalmanager import SignalManager
-from scrapy.spiders import Spider
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import global_object_name
@@ -46,6 +45,9 @@ if TYPE_CHECKING:
     from scrapy.core.scheduler import BaseScheduler
     from scrapy.core.scraper import _HandleOutputDeferred
     from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
+    from scrapy.spiders import Spider
+
 
 logger = logging.getLogger(__name__)
 
