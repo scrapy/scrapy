@@ -123,7 +123,9 @@ class CrawlSpider(Spider):
     def parse_start_url(self, response: Response, **kwargs: Any) -> Any:
         return []
 
-    def process_results(self, response: Response, results: Any) -> Any:
+    def process_results(
+        self, response: Response, results: Iterable[Any]
+    ) -> Iterable[Any]:
         return results
 
     def _build_request(self, rule_index: int, link: Link) -> Request:
