@@ -12,6 +12,13 @@ from scrapy.utils.misc import (
 def _indentation_error(*args, **kwargs):
     raise IndentationError()
 
+def create_ast_return(value=None):
+    return (
+        unittest.mock.MagicMock(name='ast.Return', value=None)
+        if value is None
+        else unittest.mock.MagicMock(name='ast.Return',
+                                     value=unittest.mock.MagicMock(name='ast.Constant', value=value))
+    )
 
 def top_level_return_something():
     """
@@ -70,11 +77,16 @@ https://example.org
             yield url
             return 1
 
+        def j1():
+            yield 1
+            return create_ast_return(value=42)
+
         assert is_generator_with_return_value(top_level_return_something)
         assert is_generator_with_return_value(f1)
         assert is_generator_with_return_value(g1)
         assert is_generator_with_return_value(h1)
         assert is_generator_with_return_value(i1)
+        assert is_generator_with_return_value(j1)
 
         with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(None, top_level_return_something)
@@ -137,6 +149,9 @@ https://example.org
         def l2():
             return
 
+        def m2():
+            return create_ast_return()
+
         assert not is_generator_with_return_value(top_level_return_none)
         assert not is_generator_with_return_value(f2)
         assert not is_generator_with_return_value(g2)
@@ -145,6 +160,7 @@ https://example.org
         assert not is_generator_with_return_value(j2)  # not recursive
         assert not is_generator_with_return_value(k2)  # not recursive
         assert not is_generator_with_return_value(l2)
+        assert not is_generator_with_return_value(m2)
 
         with warnings.catch_warnings(record=True) as w:
             warn_on_generator_with_return_value(None, top_level_return_none)
