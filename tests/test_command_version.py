@@ -12,7 +12,7 @@ class VersionTest(ProcessTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_output(self):
-        encoding = sys.stdout.encoding or "utf-8"
+        encoding = getattr(sys.stdout, "encoding") or "utf-8"
         _, out, _ = yield self.execute([])
         self.assertEqual(
             out.strip().decode(encoding),
@@ -21,7 +21,7 @@ class VersionTest(ProcessTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_verbose_output(self):
-        encoding = sys.stdout.encoding or "utf-8"
+        encoding = getattr(sys.stdout, "encoding") or "utf-8"
         _, out, _ = yield self.execute(["-v"])
         headers = [
             line.partition(":")[0].strip()

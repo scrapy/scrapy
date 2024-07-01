@@ -244,7 +244,7 @@ class CrawlSpiderTest(SpiderTest):
         spider = _CrawlSpider()
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 3)
-        self.assertTrue(all(isinstance(r, Request) for r in output))
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual(
             [r.url for r in output],
             [
@@ -270,7 +270,7 @@ class CrawlSpiderTest(SpiderTest):
         spider = _CrawlSpider()
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 3)
-        self.assertTrue(all(isinstance(r, Request) for r in output))
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual(
             [r.url for r in output],
             [
@@ -299,7 +299,7 @@ class CrawlSpiderTest(SpiderTest):
         spider = _CrawlSpider()
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 2)
-        self.assertTrue(all(isinstance(r, Request) for r in output))
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual(
             [r.url for r in output],
             [
@@ -324,7 +324,7 @@ class CrawlSpiderTest(SpiderTest):
         spider = _CrawlSpider()
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 3)
-        self.assertTrue(all(isinstance(r, Request) for r in output))
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual(
             [r.url for r in output],
             [
@@ -352,7 +352,7 @@ class CrawlSpiderTest(SpiderTest):
         spider = _CrawlSpider()
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 3)
-        self.assertTrue(all(isinstance(r, Request) for r in output))
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual(
             [r.url for r in output],
             [
@@ -383,7 +383,7 @@ class CrawlSpiderTest(SpiderTest):
         spider = _CrawlSpider()
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 3)
-        self.assertTrue(all(isinstance(r, Request) for r in output))
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual(
             [r.url for r in output],
             [
@@ -413,7 +413,7 @@ class CrawlSpiderTest(SpiderTest):
         spider = _CrawlSpider()
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 3)
-        self.assertTrue(all(isinstance(r, Request) for r in output))
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual(
             [r.url for r in output],
             [
@@ -445,7 +445,7 @@ class CrawlSpiderTest(SpiderTest):
         spider = _CrawlSpider()
         output = list(spider._requests_to_follow(response))
         self.assertEqual(len(output), 3)
-        self.assertTrue(all(isinstance(r, Request) for r in output))
+        self.assertTrue(all(map(lambda r: isinstance(r, Request), output)))
         self.assertEqual(
             [r.url for r in output],
             [
@@ -637,7 +637,7 @@ Sitemap: /sitemap-relative-url.xml
         class FilteredSitemapSpider(self.spider_class):
             def sitemap_filter(self, entries):
                 for entry in entries:
-                    alternate_links = entry.get("alternate", ())
+                    alternate_links = entry.get("alternate", tuple())
                     for link in alternate_links:
                         if "/deutsch/" in link:
                             entry["loc"] = link

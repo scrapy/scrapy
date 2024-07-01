@@ -15,6 +15,8 @@ from twisted.web.client import ResponseFailed
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
+from scrapy.custom_coverage import *
+
 
 if TYPE_CHECKING:
     from hpack import HeaderTuple
@@ -249,13 +251,15 @@ class Stream:
 
     def initiate_request(self) -> None:
         if self.check_request_url():
+            coverage.track_branch("initiate_request", "if")
+            coverage.save_coverage_to_file()
             headers = self._get_request_headers()
             self._protocol.conn.send_headers(self.stream_id, headers, end_stream=False)
             self.metadata["request_sent"] = True
             self.send_data()
         else:
-            # Close this stream calling the response errback
-            # Note that we have not sent any headers
+            coverage.track_branch("initiate_request", "else")
+            coverage.save_coverage_to_file()
             self.close(StreamCloseReason.INVALID_HOSTNAME)
 
     def send_data(self) -> None:

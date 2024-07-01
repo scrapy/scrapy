@@ -146,7 +146,7 @@ class RFPDupeFilterTest(unittest.TestCase):
         case_insensitive_dupefilter.close("finished")
 
     def test_seenreq_newlines(self):
-        r"""Checks against adding duplicate \r to
+        """Checks against adding duplicate \r to
         line endings on Windows platforms."""
 
         r1 = Request("http://scrapytest.org/1")

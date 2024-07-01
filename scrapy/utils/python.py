@@ -269,7 +269,7 @@ def get_spec(func: Callable[..., Any]) -> Tuple[List[str], Dict[str, Any]]:
 
     if inspect.isfunction(func) or inspect.ismethod(func):
         spec = inspect.getfullargspec(func)
-    elif hasattr(func, "__call__"):  # noqa: B004
+    elif hasattr(func, "__call__"):
         spec = inspect.getfullargspec(func.__call__)
     else:
         raise TypeError(f"{type(func)} is not callable")
