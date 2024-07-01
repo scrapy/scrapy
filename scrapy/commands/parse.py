@@ -9,7 +9,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     AsyncGenerator,
-    Callable,
     Coroutine,
     Dict,
     Iterable,
@@ -38,6 +37,7 @@ from scrapy.utils.spider import spidercls_for_request
 if TYPE_CHECKING:
     from twisted.python.failure import Failure
 
+    from scrapy.http.request import CallbackT
     from scrapy.spiders import Spider
 
 
@@ -218,8 +218,8 @@ class Command(BaseRunSpiderCommand):
         opts: argparse.Namespace,
         depth: int,
         spider: Spider,
-        callback: Callable,
-    ) -> Tuple[List[Any], List[Request], argparse.Namespace, int, Spider, Callable]:
+        callback: CallbackT,
+    ) -> Tuple[List[Any], List[Request], argparse.Namespace, int, Spider, CallbackT]:
         items, requests = [], []
         for x in spider_output:
             if is_item(x):
@@ -231,7 +231,7 @@ class Command(BaseRunSpiderCommand):
     def run_callback(
         self,
         response: Response,
-        callback: Callable,
+        callback: CallbackT,
         cb_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Deferred[Any]:
         cb_kwargs = cb_kwargs or {}
@@ -240,7 +240,7 @@ class Command(BaseRunSpiderCommand):
 
     def get_callback_from_rules(
         self, spider: Spider, response: Response
-    ) -> Union[Callable, str, None]:
+    ) -> Union[CallbackT, str, None]:
         if getattr(spider, "rules", None):
             for rule in spider.rules:  # type: ignore[attr-defined]
                 if rule.link_extractor.matches(response.url):
@@ -286,7 +286,7 @@ class Command(BaseRunSpiderCommand):
     def scraped_data(
         self,
         args: Tuple[
-            List[Any], List[Request], argparse.Namespace, int, Spider, Callable
+            List[Any], List[Request], argparse.Namespace, int, Spider, CallbackT
         ],
     ) -> List[Any]:
         items, requests, opts, depth, spider, callback = args
@@ -313,8 +313,8 @@ class Command(BaseRunSpiderCommand):
         spider: Spider,
         opts: argparse.Namespace,
         response: Optional[Response] = None,
-    ) -> Callable:
-        cb: Union[str, Callable, None] = None
+    ) -> CallbackT:
+        cb: Union[str, CallbackT, None] = None
         if response:
             cb = response.meta["_callback"]
         if not cb:

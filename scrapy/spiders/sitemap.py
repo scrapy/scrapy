@@ -5,7 +5,6 @@ import re
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     Iterable,
     List,
@@ -27,6 +26,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
+    from scrapy.http.request import CallbackT
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 class SitemapSpider(Spider):
     sitemap_urls: Sequence[str] = ()
     sitemap_rules: Sequence[
-        Tuple[Union[re.Pattern[str], str], Union[str, Callable]]
+        Tuple[Union[re.Pattern[str], str], Union[str, CallbackT]]
     ] = [("", "parse")]
     sitemap_follow: Sequence[Union[re.Pattern[str], str]] = [""]
     sitemap_alternate_links: bool = False
@@ -54,10 +54,10 @@ class SitemapSpider(Spider):
 
     def __init__(self, *a: Any, **kw: Any):
         super().__init__(*a, **kw)
-        self._cbs: List[Tuple[re.Pattern[str], Callable]] = []
+        self._cbs: List[Tuple[re.Pattern[str], CallbackT]] = []
         for r, c in self.sitemap_rules:
             if isinstance(c, str):
-                c = cast(Callable, getattr(self, c))
+                c = cast("CallbackT", getattr(self, c))
             self._cbs.append((regex(r), c))
         self._follow: List[re.Pattern[str]] = [regex(x) for x in self.sitemap_follow]
 
