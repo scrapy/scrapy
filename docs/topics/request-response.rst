@@ -1169,6 +1169,9 @@ Response objects
 
     .. automethod:: Response.follow_all
 
+    .. caution:: Be careful when passing a mutable object (e.g. list) to :attr:`cb_kwargs`
+        while using ``follow_all``, as this might lead to mutation of the object in the
+        subsequent request generations.
 
 .. _topics-request-response-ref-response-subclasses:
 
