@@ -2,6 +2,7 @@ import unittest
 import warnings
 from functools import partial
 from unittest import mock
+from typing import Callable
 
 from scrapy.utils.misc import (
     is_generator_with_return_value,
@@ -11,6 +12,7 @@ from scrapy.utils.misc import (
 
 def _indentation_error(*args, **kwargs):
     raise IndentationError()
+
 
 
 def top_level_return_something():
@@ -100,6 +102,18 @@ https://example.org
             self.assertEqual(len(w), 1)
             self.assertIn('The "NoneType.i1" method is a generator', str(w[0].message))
 
+    
+    def test_ast_generation(self):
+
+        expected_ast = {
+            'type': 'Assign',
+            'targets': [{'type': 'Name', 'id': 'value', 'ctx': {'type': 'Store'}}],
+            'value': {'type': 'Num', 'n': 35}
+        }
+        generated_ast = is_generator_with_return_value(Callable)
+        self.assertNotEqual(generated_ast, expected_ast)
+    
+    
     def test_generators_return_none(self):
         def f2():
             yield 1
