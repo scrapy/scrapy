@@ -44,7 +44,7 @@ class HttpAuthMiddlewareTest(unittest.TestCase):
         del self.mw
 
     def test_no_auth(self):
-        req = Request("http://example-noauth.com/")
+        req = Request("http://noauth.example/")
         assert self.mw.process_request(req, self.spider) is None
         self.assertNotIn("Authorization", req.headers)
 
@@ -82,3 +82,25 @@ class HttpAuthAnyMiddlewareTest(unittest.TestCase):
         req = Request("http://example.com/", headers={"Authorization": "Digest 123"})
         assert self.mw.process_request(req, self.spider) is None
         self.assertEqual(req.headers["Authorization"], b"Digest 123")
+
+    def test_auth_already_set_with_meta(self):
+        meta = {"http_user": "bar", "http_pass": "foo"}
+        req = Request(
+            "http://example.com/",
+            headers=dict(Authorization="Digest 123"),
+            meta=meta,
+        )
+        assert self.mw.process_request(req, self.spider) is None
+        self.assertEqual(req.headers["Authorization"], b"Digest 123")
+
+    def test_auth_meta(self):
+        meta = {"http_user": "bar", "http_pass": "foo"}
+        req = Request("http://example.com/", meta=meta)
+        assert self.mw.process_request(req, Spider("bar")) is None
+        self.assertEqual(req.headers["Authorization"], b"Basic YmFyOmZvbw==")
+
+    def test_auth_meta_override(self):
+        meta = {"http_user": "bar", "http_pass": "foo"}
+        req = Request("http://example.com/", meta=meta)
+        assert self.mw.process_request(req, self.spider) is None
+        self.assertEqual(req.headers["Authorization"], b"Basic YmFyOmZvbw==")
