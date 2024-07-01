@@ -5,7 +5,7 @@ Scrapy Tutorial
 ===============
 
 In this tutorial, we'll assume that Scrapy is already installed on your system.
-If that's not the case, see :ref:`intro-install`.
+If that's not the case, see `installation guide <https://github.com/rafdlen/scrapy/blob/master/docs/intro/install.rst>`_.
 
 We are going to scrape `quotes.toscrape.com <https://quotes.toscrape.com/>`_, a website
 that lists quotes from famous authors.
@@ -44,6 +44,36 @@ as well as the `suggested resources in the learnpython-subreddit`_.
 .. _Learn Python 3 The Hard Way: https://learnpythonthehardway.org/python3/
 .. _suggested resources in the learnpython-subreddit: https://www.reddit.com/r/learnpython/wiki/index#wiki_new_to_python.3F
 
+Core Scrapy Components and Their Roles
+======================================
+
+- **Spider**
+  - **Role**: Defines how a specific site (or group of sites) will be scraped.
+  - **Function**: Contains logic for starting URLs, following links, and parsing page content.
+
+- **Item**
+  - **Role**: Structures the data to be scraped.
+  - **Function**: Acts as a container for scraped data, similar to a dictionary, but with added validation and serialization features.
+
+- **Item Pipeline**
+  - **Role**: Processes and stores scraped items.
+  - **Function**: Cleans, validates, and saves scraped data to databases, files, etc.
+
+- **Request**
+  - **Role**: Represents HTTP requests.
+  - **Function**: Defines HTTP requests and generates corresponding Response objects for parsing.
+
+- **Response**
+  - **Role**: Holds the content of the web page.
+  - **Function**: Contains the response data from a request and provides methods to extract data.
+
+- **Downloader Middleware**
+  - **Role**: Processes requests and responses globally.
+  - **Function**: Modifies requests and responses, e.g., adding headers, handling proxies.
+
+- **Spider Middleware**
+  - **Role**: Processes requests and responses specific to spiders.
+  - **Function**: Hooks into spider's processing to modify requests and responses.
 
 Creating a project
 ==================
@@ -819,6 +849,65 @@ will only visit URLs from the ``humor`` tag, such as
 ``https://quotes.toscrape.com/tag/humor``.
 
 You can :ref:`learn more about handling spider arguments here <spiderargs>`.
+
+Core Scrapy Components and Their Roles
+======================================
+
+- **Spider**
+  - **Role**: Defines how a specific site (or group of sites) will be scraped.
+  - **Function**: Contains logic for starting URLs, following links, and parsing page content.
+
+- **Item**
+  - **Role**: Structures the data to be scraped.
+  - **Function**: Acts as a container for scraped data, similar to a dictionary, but with added validation and serialization features.
+
+- **Item Pipeline**
+  - **Role**: Processes and stores scraped items.
+  - **Function**: Cleans, validates, and saves scraped data to databases, files, etc.
+
+- **Request**
+  - **Role**: Represents HTTP requests.
+  - **Function**: Defines HTTP requests and generates corresponding Response objects for parsing.
+
+- **Response**
+  - **Role**: Holds the content of the web page.
+  - **Function**: Contains the response data from a request and provides methods to extract data.
+
+- **Downloader Middleware**
+  - **Role**: Processes requests and responses globally.
+  - **Function**: Modifies requests and responses, e.g., adding headers, handling proxies.
+
+- **Spider Middleware**
+  - **Role**: Processes requests and responses specific to spiders.
+  - **Function**: Hooks into spider's processing to modify requests and responses.
+
+Common Errors and Troubleshooting Tips
+======================================
+
+- **Spider Not Crawling Expected URLs**
+  - **Cause**: Incorrectly defined start URLs or parsing logic.
+  - **Solution**: Verify start URLs and ensure the parsing logic follows the correct links.
+
+- **Empty Items or Missing Data**
+  - **Cause**: Incorrect XPath/CSS selectors or changes in the website structure.
+  - **Solution**: Review and update the selectors to match the current website structure.
+
+- **Spider Closing Unexpectedly**
+  - **Cause**: Errors in the spider code or network issues.
+  - **Solution**: Check the logs for error messages and debug the spider code. Ensure network connectivity is stable.
+
+- **Slow Crawling Speed**
+  - **Cause**: High latency, server response times, or download delays.
+  - **Solution**: Adjust download delays and concurrency settings in the Scrapy settings.
+
+- **Blocked by Website**
+  - **Cause**: Websites detecting and blocking the scraper.
+  - **Solution**: Implement user-agent rotation, use proxies, and respect robots.txt.
+
+- **Memory Leaks**
+  - **Cause**: Unreleased resources or too many items in memory.
+  - **Solution**: Ensure items are processed and released correctly. Use item pipelines to offload items to storage.
+
 
 Next steps
 ==========
