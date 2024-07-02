@@ -37,7 +37,7 @@ Note that sometimes this may require solving compilation issues for some Scrapy
 dependencies depending on your operating system, so be sure to check the
 :ref:`intro-install-platform-notes`.
 
-For more detailed and platform specific instructions, as well as
+For more detailed and platform-specific instructions, as well as
 troubleshooting information, read on.
 
 
