@@ -37,7 +37,7 @@ Note that sometimes this may require solving compilation issues for some Scrapy
 dependencies depending on your operating system, so be sure to check the
 :ref:`intro-install-platform-notes`.
 
-For more detailed and platform specifics instructions, as well as
+For more detailed and platform specific instructions, as well as
 troubleshooting information, read on.
 
 
@@ -80,7 +80,7 @@ Instead, we recommend that you install Scrapy within a so-called
 "virtual environment" (:mod:`venv`).
 Virtual environments allow you to not conflict with already-installed Python
 system packages (which could break some of your system tools and scripts),
-and still install packages normally with ``pip`` (without ``sudo`` and the likes).
+and still install packages normally with ``pip`` (without ``sudo`` and the like).
 
 See :ref:`tut-venv` on how to create your virtual environment.
 
@@ -120,7 +120,7 @@ To install Scrapy on Windows using ``pip``:
 
 #. Under the Workloads section, select **C++ build tools**.
 
-#. Check the installation details and make sure following packages are selected as optional components:
+#. Check the installation details and make sure the following packages are selected as optional components:
 
     * **MSVC**  (e.g MSVC v142 - VS 2019 C++ x64/x86 build tools (v14.23) )
     
@@ -141,7 +141,7 @@ But it should support older versions of Ubuntu too, like Ubuntu 14.04,
 albeit with potential issues with TLS connections.
 
 **Don't** use the ``python-scrapy`` package provided by Ubuntu, they are
-typically too old and slow to catch up with latest Scrapy.
+typically too old and slow to catch up with the latest Scrapy release.
 
 
 To install Scrapy on Ubuntu (or Ubuntu-based) systems, you need to install
@@ -200,7 +200,7 @@ solutions:
 
       brew install python
 
-  * Latest versions of python have ``pip`` bundled with them so you won't need
+  * Later versions of python have ``pip`` bundled with them, so you won't need
     to install it separately. If this is not the case, upgrade python::
 
       brew update; brew upgrade python
@@ -208,8 +208,8 @@ solutions:
 *   *(Optional)* :ref:`Install Scrapy inside a Python virtual environment
     <intro-using-virtualenv>`.
 
-  This method is a workaround for the above macOS issue, but it's an overall
-  good practice for managing dependencies and can complement the first method.
+  This method is a workaround for the above macOS issue, but it's good practice
+  for managing dependencies in general and can complement the first method.
 
 After any of these workarounds you should be able to install Scrapy::
 

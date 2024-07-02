@@ -65,7 +65,7 @@ When you ran the command ``scrapy runspider quotes_spider.py``, Scrapy looked fo
 Spider definition inside it and ran it through its crawler engine.
 
 The crawl started by making requests to the URLs defined in the ``start_urls``
-attribute (in this case, only the URL for quotes in *humor* category)
+attribute (in this case, only the URL for quotes in the *humor* category)
 and called the default callback method ``parse``, passing the response object as
 an argument. In the ``parse`` callback, we loop through the quote elements
 using a CSS Selector, yield a Python dict with the extracted quote text and author,
@@ -83,9 +83,9 @@ While this enables you to do very fast crawls (sending multiple concurrent
 requests at the same time, in a fault-tolerant way) Scrapy also gives you
 control over the politeness of the crawl through :ref:`a few settings
 <topics-settings-ref>`. You can do things like setting a download delay between
-each request, limiting amount of concurrent requests per domain or per IP, and
+each request, limiting the amount of concurrent requests per domain or IP, and
 even :ref:`using an auto-throttling extension <topics-autothrottle>` that tries
-to figure out these automatically.
+to figure this out automatically.
 
 .. note::
 
@@ -106,10 +106,10 @@ scraping easy and efficient, such as:
 
 * Built-in support for :ref:`selecting and extracting <topics-selectors>` data
   from HTML/XML sources using extended CSS selectors and XPath expressions,
-  with helper methods to extract using regular expressions.
+  with helper methods for extraction using regular expressions.
 
 * An :ref:`interactive shell console <topics-shell>` (IPython aware) for trying
-  out the CSS and XPath expressions to scrape data, very useful when writing or
+  out the CSS and XPath expressions to scrape data, which is very useful when writing or
   debugging your spiders.
 
 * Built-in support for :ref:`generating feed exports <topics-feed-exports>` in
@@ -124,10 +124,10 @@ scraping easy and efficient, such as:
   well-defined API (middlewares, :ref:`extensions <topics-extensions>`, and
   :ref:`pipelines <topics-item-pipeline>`).
 
-* Wide range of built-in extensions and middlewares for handling:
+* A wide range of built-in extensions and middlewares for handling:
 
   - cookies and session handling
-  - HTTP features like compression, authentication, caching
+  - HTTP features like compression, authentication and caching
   - user-agent spoofing
   - robots.txt
   - crawl depth restriction
