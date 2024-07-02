@@ -3,6 +3,7 @@ import sys
 import unittest
 from pathlib import Path
 from unittest import mock
+import ast
 
 from scrapy.item import Field, Item
 from scrapy.utils.misc import (
@@ -61,6 +62,12 @@ class UtilsMiscTestCase(unittest.TestCase):
         self.assertEqual({m.__name__ for m in mods}, set(expected))
 
         self.assertRaises(ImportError, walk_modules, "nomodule999")
+
+    def test_ast_constant(self):
+        node = ast.parse('None').body[0].value
+        self.assertIsInstance(node, ast.Constant)
+        self.assertIsNone(node.value)
+
 
     def test_walk_modules_egg(self):
         egg = str(Path(__file__).parent / "test.egg")
