@@ -39,6 +39,7 @@ class Base:
             self.assertEqual(
                 list(lx.extract_links(self.response)),
                 [
+                    Link(url="http://example.com", text=""),
                     Link(url="http://example.com/sample1.html", text=""),
                     Link(url="http://example.com/sample2.html", text="sample 2"),
                     Link(url="http://example.com/sample3.html", text="sample 3 text"),
@@ -462,6 +463,7 @@ class Base:
             self.assertEqual(
                 lx.extract_links(self.response),
                 [
+                    Link(url="http://example.com", text=""),
                     Link(url="http://example.com/sample1.html", text=""),
                     Link(url="http://example.com/sample2.html", text="sample 2"),
                     Link(url="http://example.com/sample3.html", text="sample 3 text"),
@@ -496,7 +498,81 @@ class Base:
             )
 
             lx = self.extractor_cls(attrs=None)
-            self.assertEqual(lx.extract_links(self.response), [])
+            self.assertEqual(
+                lx.extract_links(self.response),
+                [
+                    Link(url="http://example.com", text=""),
+                    Link(url="http://example.com/sample1.html", text=""),
+                    Link(url="http://example.com/sample2.html", text="sample 2"),
+                    Link(url="http://example.com/sample3.html", text="sample 3 text"),
+                    Link(
+                        url="http://example.com/sample3.html#foo",
+                        text="sample 3 repetition with fragment",
+                    ),
+                    Link(url="http://www.google.com/something", text=""),
+                    Link(url="http://example.com/innertag.html", text="inner tag"),
+                    Link(url=page4_url, text="href with whitespaces"),
+                ],
+            )
+
+            html = b"""<html>
+                <head>
+                    <base href="http://example.com">
+                    <title>Sample page with links for testing LinkExtractor</title>
+                </head>
+                <body>
+                    <div id="wrapper">
+                    <div id="subwrapper">
+                        <area href="sample1.html" alt="sample1">
+                        <a href="sample2.html">sample 2<img src="sample2.jpg" alt="sample2"></a>
+                    </div>
+                    <a href="http://example.com/sample3.html" title="sample 3" ping="http://example.com/sample3_1.html" >sample 3 text</a>
+                    <a href="sample3.html">sample 3 repetition</a>
+                    <a href="sample3.html">sample 3 repetition</a>
+                    <a href="sample3.html#foo">sample 3 repetition with fragment</a>
+                    <a href="http://www.google.com/something"></a>
+                    <a href="http://example.com/innertag.html"><strong>inner</strong> tag</a>
+                    <a href="page%204.html">href with whitespaces</a>
+                    </div>
+                </body>
+                </html>
+            """
+            response = HtmlResponse("http://example.org/somepage/index.html", body=html)
+
+            lx = self.extractor_cls(tags=("a",), deny_attrs="href")
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(url="http://example.com/sample%203", text="sample 3 text"),
+                    Link(url="http://example.com/sample3_1.html", text="sample 3 text"),
+                ],
+            )
+
+            html = b"""<html>
+                <head>
+                    <base href="http://example.com">
+                    <title>Sample page with links for testing LinkExtractor</title>
+                </head>
+                <body>
+                    <div id="wrapper">
+                    <div id="subwrapper">
+                        <area href="sample1.html" alt="sample1" ping="http://example.com/sample1_1.html">
+                        <a href="sample2.html">sample 2<img src="sample2.jpg" alt="sample2"></a>
+                    </div>
+                    </div>
+                </body>
+                </html>
+            """
+            response = HtmlResponse("http://example.org/somepage/index.html", body=html)
+
+            lx = self.extractor_cls(deny_tags="a", deny_attrs="ping")
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(url="http://example.com", text=""),
+                    Link(url="http://example.com/sample1.html", text=""),
+                ],
+            )
 
         def test_tags(self):
             html = (
@@ -506,7 +582,13 @@ class Base:
             response = HtmlResponse("http://example.com/index.html", body=html)
 
             lx = self.extractor_cls(tags=None)
-            self.assertEqual(lx.extract_links(response), [])
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(url="http://example.com/sample1.html", text=""),
+                    Link(url="http://example.com/sample2.html", text="sample 2"),
+                ],
+            )
 
             lx = self.extractor_cls()
             self.assertEqual(
@@ -520,9 +602,7 @@ class Base:
             lx = self.extractor_cls(tags="area")
             self.assertEqual(
                 lx.extract_links(response),
-                [
-                    Link(url="http://example.com/sample1.html", text=""),
-                ],
+                [Link(url="http://example.com/sample1.html", text="")],
             )
 
             lx = self.extractor_cls(tags="a")
@@ -541,6 +621,14 @@ class Base:
                 [
                     Link(url="http://example.com/sample2.html", text="sample 2"),
                     Link(url="http://example.com/sample2.jpg", text=""),
+                ],
+            )
+
+            lx = self.extractor_cls(attrs=("href",), deny_tags="a")
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(url="http://example.com/sample1.html", text=""),
                 ],
             )
 
