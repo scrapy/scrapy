@@ -200,11 +200,6 @@ solutions:
 
       brew install python
 
-  * Later versions of python have ``pip`` bundled with them, so you won't need
-    to install it separately. If this is not the case, upgrade python::
-
-      brew update; brew upgrade python
-
 *   *(Optional)* :ref:`Install Scrapy inside a Python virtual environment
     <intro-using-virtualenv>`.
 
