@@ -65,13 +65,9 @@ if TYPE_CHECKING:
 class Slot:
     """Scraper slot (one per running spider)"""
 
-    MIN_RESPONSE_SIZE = 1024
-
-    def __init__(self, max_active_size: int = 5000000):
-        self.max_active_size = max_active_size
+    def __init__(self):
         self.queue: Deque[QueueTuple] = deque()
         self.active: Set[Request] = set()
-        self.active_size: int = 0
         self.itemproc_size: int = 0
         self.closing: Optional[Deferred[Spider]] = None
 
@@ -80,10 +76,6 @@ class Slot:
     ) -> _HandleOutputDeferred:
         deferred: _HandleOutputDeferred = Deferred()
         self.queue.append((result, request, deferred))
-        if isinstance(result, Response):
-            self.active_size += max(len(result.body), self.MIN_RESPONSE_SIZE)
-        else:
-            self.active_size += self.MIN_RESPONSE_SIZE
         return deferred
 
     def next_response_request_deferred(self) -> QueueTuple:
@@ -95,16 +87,9 @@ class Slot:
         self, result: Union[Response, Failure], request: Request
     ) -> None:
         self.active.remove(request)
-        if isinstance(result, Response):
-            self.active_size -= max(len(result.body), self.MIN_RESPONSE_SIZE)
-        else:
-            self.active_size -= self.MIN_RESPONSE_SIZE
 
     def is_idle(self) -> bool:
         return not (self.queue or self.active)
-
-    def needs_backout(self) -> bool:
-        return self.active_size > self.max_active_size
 
 
 class Scraper:
@@ -126,7 +111,7 @@ class Scraper:
     @inlineCallbacks
     def open_spider(self, spider: Spider) -> Generator[Deferred[Any], Any, None]:
         """Open the given spider for scraping and allocate resources for it"""
-        self.slot = Slot(self.crawler.settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE"))
+        self.slot = Slot()
         yield self.itemproc.open_spider(spider)
 
     def close_spider(self, spider: Spider) -> Deferred[Spider]:
