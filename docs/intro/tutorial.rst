@@ -18,11 +18,12 @@ This tutorial will walk you through these tasks:
 4. Changing spider to recursively follow links
 5. Using spider arguments
 
-Scrapy is written in Python_. If you're new to the language you might want to
-start by getting an idea of what the language is like, to get the most out of
+Scrapy is written in Python_. If you're new to the language, you might want to
+start by getting an idea of what the language is like to get the most out of
 Scrapy.
 
-If you're already familiar with other languages, and want to learn Python quickly, the `Python Tutorial`_ is a good resource.
+If you're already familiar with other languages and want to learn Python quickly, the
+`Python Tutorial`_ is a good resource.
 
 If you're new to programming and want to start with Python, the following books
 may be useful to you:
@@ -78,8 +79,8 @@ Our first Spider
 
 Spiders are classes that you define and that Scrapy uses to scrape information
 from a website (or a group of websites). They must subclass
-:class:`~scrapy.Spider` and define the initial requests to make,
-optionally how to follow links in the pages, and how to parse the downloaded
+:class:`~scrapy.Spider` and define the initial requests to be made.
+They can also optionally define how to follow page links and how to parse the downloaded
 page content to extract data.
 
 This is the code for our first Spider. Save it in a file named
@@ -114,7 +115,7 @@ As you can see, our Spider subclasses :class:`scrapy.Spider <scrapy.Spider>`
 and defines some attributes and methods:
 
 * :attr:`~scrapy.Spider.name`: identifies the Spider. It must be
-  unique within a project, that is, you can't set the same name for different
+  unique within a project, i.e., you can't set the same name for multiple
   Spiders.
 
 * :meth:`~scrapy.Spider.start_requests`: must return an iterable of
@@ -138,7 +139,7 @@ To put our spider to work, go to the project's top level directory and run::
 
    scrapy crawl quotes
 
-This command runs the spider with name ``quotes`` that we've just added, that
+This command runs the spider with the name ``quotes`` that we've just added, that
 will send some requests for the ``quotes.toscrape.com`` domain. You will get an output
 similar to this::
 
