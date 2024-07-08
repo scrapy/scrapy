@@ -7,7 +7,6 @@ See documentation in docs/topics/request-response.rst
 
 from __future__ import annotations
 
-from functools import partial
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -25,7 +24,6 @@ from typing import (
     overload,
 )
 from urllib.parse import urljoin
-from weakref import finalize
 
 from scrapy.exceptions import NotSupported
 from scrapy.http.headers import Headers
@@ -72,12 +70,6 @@ class Response(object_ref):
     Currently used by :meth:`Response.replace`.
     """
 
-    _ACTIVE_SIZE = 0
-
-    @classmethod
-    def _finalize(cls, size):
-        Response._ACTIVE_SIZE -= size
-
     def __init__(
         self,
         url: str,
@@ -99,10 +91,6 @@ class Response(object_ref):
         self.certificate: Optional[Certificate] = certificate
         self.ip_address: Union[IPv4Address, IPv6Address, None] = ip_address
         self.protocol: Optional[str] = protocol
-
-        size = len(self._body)
-        Response._ACTIVE_SIZE += size
-        finalize(self, partial(Response._finalize, size))
 
     @property
     def cb_kwargs(self) -> Dict[str, Any]:

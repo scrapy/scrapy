@@ -4,6 +4,7 @@ import random
 import warnings
 from collections import deque
 from datetime import datetime
+from logging import getLogger
 from time import time
 from typing import (
     TYPE_CHECKING,
@@ -17,6 +18,7 @@ from typing import (
     Union,
     cast,
 )
+from warnings import warn
 
 from twisted.internet import task
 from twisted.internet.defer import Deferred
@@ -35,6 +37,7 @@ if TYPE_CHECKING:
     from scrapy.http import Response
     from scrapy.settings import BaseSettings
 
+logger = getLogger(__name__)
 
 _T = TypeVar("_T")
 
@@ -129,6 +132,25 @@ class Downloader:
         self.per_slot_settings: Dict[str, Dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS", {}
         )
+        self._stats = crawler.stats
+
+        default_response_max_active_size = 5000000
+        scraper_max_active_size = self.settings.getint(
+            "SCRAPER_MAX_ACTIVE_SIZE", 5000000
+        )
+        if scraper_max_active_size != default_response_max_active_size:
+            warn(
+                (
+                    "The SCRAPER_MAX_ACTIVE_SIZE setting is deprecated, use "
+                    "RESPONSE_MAX_ACTIVE_SIZE instead."
+                ),
+                ScrapyDeprecationWarning,
+            )
+            default_response_max_active_size = scraper_max_active_size
+        self._response_max_active_size = self.settings.getint(
+            "RESPONSE_MAX_ACTIVE_SIZE", default_response_max_active_size
+        )
+        self._response_max_active_size_warned = False
 
     def fetch(
         self, request: Request, spider: Spider
@@ -143,8 +165,42 @@ class Downloader:
         )
         return dfd.addBoth(_deactivate)
 
+    def _count_backout(self, reason):
+        self._stats.inc_value("request_backouts/total")
+        self._stats.inc_value(f"request_backouts/{reason}")
+
     def needs_backout(self) -> bool:
-        return len(self.active) >= self.total_concurrency
+        if len(self.active) >= self.total_concurrency:
+            self._count_backout("concurrent_requests")
+            return True
+        if (
+            self._response_max_active_size
+            and self.middleware.response_active_size >= self._response_max_active_size
+        ):
+            if not self._response_max_active_size_warned:
+                self._response_max_active_size_warned = True
+                logger.info(
+                    f"The active response size, i.e. the total size of all "
+                    f"bodies from responses that have been processed by "
+                    f"downloader middlewares and remain in memory, is "
+                    f"{self.middleware.response_active_size} B. The "
+                    f"RESPONSE_MAX_ACTIVE_SIZE setting sets its maximum value "
+                    f"at {self._response_max_active_size} B. No more requests "
+                    f"will be processed until active response size lowers. If "
+                    f"your memory allows it, you may increase "
+                    f"RESPONSE_MAX_ACTIVE_SIZE, which should increase your "
+                    f"crawl speed. If your code keeps non-weak references to "
+                    f"Response objects, your crawl might get stuck "
+                    f"indefinitely; you can set RESPONSE_MAX_ACTIVE_SIZE to 0 "
+                    f"to disable this limit, but then your code might run out "
+                    f"of memory. This message will only appear the first time "
+                    f"this happens. To learn how often request processing has "
+                    f"been paused during a crawl for this reason, see the "
+                    f"request_backouts/response_max_active_size stat."
+                )
+            self._count_backout("response_max_active_size")
+            return True
+        return False
 
     def _get_slot(self, request: Request, spider: Spider) -> Tuple[str, Slot]:
         key = self.get_slot_key(request)

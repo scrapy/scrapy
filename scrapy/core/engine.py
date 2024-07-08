@@ -23,7 +23,6 @@ from typing import (
     Union,
     cast,
 )
-from warnings import warn
 
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
 from twisted.internet.task import LoopingCall
@@ -32,12 +31,7 @@ from twisted.python.failure import Failure
 from scrapy import signals
 from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
-from scrapy.exceptions import (
-    CloseSpider,
-    DontCloseSpider,
-    IgnoreRequest,
-    ScrapyDeprecationWarning,
-)
+from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.logformatter import LogFormatter
 from scrapy.settings import Settings
@@ -122,24 +116,6 @@ class ExecutionEngine:
             spider_closed_callback
         )
         self.start_time: Optional[float] = None
-
-        default_response_max_active_size = 5000000
-        scraper_max_active_size = self.settings.getint(
-            "SCRAPER_SLOT_MAX_ACTIVE_SIZE", 5000000
-        )
-        if scraper_max_active_size != default_response_max_active_size:
-            warn(
-                (
-                    "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, "
-                    "use RESPONSE_MAX_ACTIVE_SIZE instead."
-                ),
-                ScrapyDeprecationWarning,
-            )
-            default_response_max_active_size = scraper_max_active_size
-        self._response_max_active_size = self.settings.getint(
-            "RESPONSE_MAX_ACTIVE_SIZE", default_response_max_active_size
-        )
-        self._response_max_active_size_warned = False
 
     def _get_scheduler_class(self, settings: BaseSettings) -> Type[BaseScheduler]:
         from scrapy.core.scheduler import BaseScheduler
@@ -234,43 +210,13 @@ class ExecutionEngine:
         if self.spider_is_idle() and self.slot.close_if_idle:
             self._spider_idle()
 
-    def _count_backout(self, reason):
-        self.crawler.stats.inc_value("request_backouts/total")
-        self.crawler.stats.inc_value(f"request_backouts/{reason}")
-
     def _needs_backout(self) -> bool:
         assert self.slot is not None  # typing
-        if not self.running or bool(self.slot.closing):
-            return True
-        if self.downloader.needs_backout():
-            self._count_backout("concurrent_requests")
-            return True
-        if (
-            self._response_max_active_size
-            and Response._ACTIVE_SIZE >= self._response_max_active_size
-        ):
-            if not self._response_max_active_size_warned:
-                self._response_max_active_size_warned = True
-                logger.info(
-                    f"The total size of all bodies from active responses "
-                    f"({Response._ACTIVE_SIZE} B) has surpassed its maximum "
-                    f"({self._response_max_active_size} B) configured through "
-                    f"the RESPONSE_MAX_ACTIVE_SIZE setting; no more requests "
-                    f"will be processed until that changes. If your memory "
-                    f"allows, increase RESPONSE_MAX_ACTIVE_SIZE to increase "
-                    f"your crawl speed. If your code keeps non-weak "
-                    f"references to Response objects, your crawl might get "
-                    f"stuck indefinitely; you can set "
-                    f"RESPONSE_MAX_ACTIVE_SIZE to 0 to disable this pause of "
-                    f"request processing, but then your code might run out of "
-                    f"memory. This message will only appear the first time "
-                    f"this happens. To learn how often request processing has "
-                    f"been paused during a crawl for this reason, see the "
-                    f"request_backouts/response_max_active_size stat."
-                )
-            self._count_backout("response_max_active_size")
-            return True
-        return False
+        return (
+            not self.running
+            or bool(self.slot.closing)
+            or self.downloader.needs_backout()
+        )
 
     def _next_request_from_scheduler(self) -> Optional[Deferred[None]]:
         assert self.slot is not None  # typing
