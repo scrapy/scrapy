@@ -50,22 +50,10 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             return
         self._tracked_responses.add(response)
         size = len(response.body)
-        from logging import getLogger
-
-        logger = getLogger(__name__)
-        logger.debug(
-            f"{self.response_active_size=} += {size=} → {self.response_active_size + size}"
-        )
         self.response_active_size += size
         finalize(response, partial(self._discount_response_size, size))
 
     def _discount_response_size(self, size: int) -> None:
-        from logging import getLogger
-
-        logger = getLogger(__name__)
-        logger.debug(
-            f"{self.response_active_size=} -= {size=} → {self.response_active_size - size}"
-        )
         self.response_active_size -= size
 
     def download(
