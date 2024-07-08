@@ -175,7 +175,7 @@ class Downloader:
 
     def needs_backout(self) -> bool:
         if len(self.active) >= self.total_concurrency:
-            self._count_backout("concurrent_requests")
+            self._count_backout("concurrency")
             return True
         if (
             self._response_max_active_size
