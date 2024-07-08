@@ -82,6 +82,7 @@ class Slot(ClassPropertiesMixin):
         warn(
             "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated.",
             ScrapyDeprecationWarning,
+            stacklevel=2,
         )
         return cls._MIN_RESPONSE_SIZE
 
@@ -90,6 +91,7 @@ class Slot(ClassPropertiesMixin):
         warn(
             "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated.",
             ScrapyDeprecationWarning,
+            stacklevel=2,
         )
         cls._MIN_RESPONSE_SIZE = value
 
@@ -102,6 +104,7 @@ class Slot(ClassPropertiesMixin):
                     "RESPONSE_MAX_ACTIVE_SIZE setting instead."
                 ),
                 ScrapyDeprecationWarning,
+                stacklevel=2,
             )
             self._max_active_size = max_active_size
         self.queue: Deque[QueueTuple] = deque()
@@ -119,6 +122,7 @@ class Slot(ClassPropertiesMixin):
                 "instead."
             ),
             ScrapyDeprecationWarning,
+            stacklevel=2,
         )
         return self._active_size
 
@@ -136,6 +140,7 @@ class Slot(ClassPropertiesMixin):
                 "your use case."
             ),
             ScrapyDeprecationWarning,
+            stacklevel=2,
         )
         self._active_size = value
 
@@ -147,6 +152,7 @@ class Slot(ClassPropertiesMixin):
                 "the RESPONSE_MAX_ACTIVE_SIZE setting instead."
             ),
             ScrapyDeprecationWarning,
+            stacklevel=2,
         )
         return self._max_active_size
 
@@ -158,6 +164,7 @@ class Slot(ClassPropertiesMixin):
                 "the RESPONSE_MAX_ACTIVE_SIZE setting instead."
             ),
             ScrapyDeprecationWarning,
+            stacklevel=2,
         )
         self._max_active_size = value
 
@@ -193,6 +200,7 @@ class Slot(ClassPropertiesMixin):
         warn(
             "scrapy.core.scraper.Slot.needs_backout is deprecated.",
             ScrapyDeprecationWarning,
+            stacklevel=2,
         )
         return self._active_size > self._max_active_size
 
