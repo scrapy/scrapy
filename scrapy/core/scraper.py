@@ -96,7 +96,9 @@ class Slot(ClassPropertiesMixin):
         cls._MIN_RESPONSE_SIZE = value
 
     def __init__(self, max_active_size: Any = _UNSET):
-        if max_active_size is not _UNSET:
+        if max_active_size is _UNSET:
+            max_active_size = 5_000_000
+        else:
             warn(
                 (
                     "The max_active_size parameter of "
@@ -106,7 +108,7 @@ class Slot(ClassPropertiesMixin):
                 ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            self._max_active_size = max_active_size
+        self._max_active_size = max_active_size
         self.queue: Deque[QueueTuple] = deque()
         self.active: Set[Request] = set()
         self.itemproc_size: int = 0
