@@ -136,13 +136,13 @@ class Downloader:
 
         default_response_max_active_size = 5_000_000
         scraper_max_active_size = self.settings.getint(
-            "SCRAPER_MAX_ACTIVE_SIZE", default_response_max_active_size
+            "SCRAPER_SLOT_MAX_ACTIVE_SIZE", default_response_max_active_size
         )
         if scraper_max_active_size != default_response_max_active_size:
             warn(
                 (
-                    "The SCRAPER_MAX_ACTIVE_SIZE setting is deprecated, use "
-                    "RESPONSE_MAX_ACTIVE_SIZE instead."
+                    "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, "
+                    "use RESPONSE_MAX_ACTIVE_SIZE instead."
                 ),
                 ScrapyDeprecationWarning,
             )
