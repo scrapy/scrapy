@@ -24,12 +24,12 @@ from typing import (
 )
 from warnings import warn
 
-from classutilities import ClassPropertiesMixin, classproperty
 from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
+from scrapy._classutilities import ClassPropertiesMixin, classproperty
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import (
     CloseSpider,
