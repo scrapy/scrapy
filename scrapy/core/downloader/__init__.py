@@ -134,11 +134,10 @@ class Downloader:
         )
         self._stats = crawler.stats
 
-        default_response_max_active_size = 5_000_000
-        scraper_max_active_size = self.settings.getint(
-            "SCRAPER_SLOT_MAX_ACTIVE_SIZE", default_response_max_active_size
+        deprecated_setting_priority = self.settings.getpriority(
+            "SCRAPER_SLOT_MAX_ACTIVE_SIZE"
         )
-        if scraper_max_active_size != default_response_max_active_size:
+        if deprecated_setting_priority > 0:
             warn(
                 (
                     "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, "
@@ -146,10 +145,15 @@ class Downloader:
                 ),
                 ScrapyDeprecationWarning,
             )
-            default_response_max_active_size = scraper_max_active_size
-        self._response_max_active_size = self.settings.getint(
-            "RESPONSE_MAX_ACTIVE_SIZE", default_response_max_active_size
-        )
+        setting_priority = self.settings.getpriority("RESPONSE_MAX_ACTIVE_SIZE")
+        if setting_priority >= deprecated_setting_priority:
+            self._response_max_active_size = self.settings.getint(
+                "RESPONSE_MAX_ACTIVE_SIZE"
+            )
+        else:
+            self._response_max_active_size = self.settings.getint(
+                "SCRAPER_SLOT_MAX_ACTIVE_SIZE"
+            )
         self._response_max_active_size_warned = False
 
     def fetch(
