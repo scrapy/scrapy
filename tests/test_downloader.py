@@ -6,6 +6,7 @@ from twisted.trial import unittest
 from scrapy import Spider
 from scrapy.core.downloader import Slot
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.http import Response
 from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.test import get_crawler
 
@@ -283,6 +284,149 @@ class RequestBackoutTest(unittest.TestCase):
             # message above is logged only once in a scenario where active size
             # is checked more than once.
             "request_backouts/response_max_active_size": gt(1),
+            "request_backouts/total": gt(0),
+            "request_backouts/total_per_second": gt(0),
+        }
+        actual_stats = {
+            k: v
+            for k, v in crawler.stats.get_stats().items()
+            if k.startswith("request_backouts/")
+        }
+        self.assertEqual(expected_stats, actual_stats)
+
+    @deferred_f_from_coro_f
+    async def test_response_size_process_request(self):
+
+        class DownloaderMiddleware:
+
+            def process_request(self, request, spider):
+                return Response("https://example.com", body=b"a")
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+            custom_settings = {
+                "DOWNLOADER_MIDDLEWARES": {DownloaderMiddleware: 0},
+                "RESPONSE_MAX_ACTIVE_SIZE": 1,
+            }
+
+            def parse(self, response):
+                pass
+
+        crawler = get_crawler(TestSpider)
+        self.caplog.clear()
+        with self.caplog.at_level("INFO"):
+            await crawler.crawl()
+
+        matching_log_count = 0
+        for log_record in self.caplog.records:
+            if (
+                str(log_record.msg).startswith("The active response size")
+                and log_record.levelname == "INFO"
+            ):
+                matching_log_count += 1
+        self.assertEqual(matching_log_count, 1)
+
+        expected_stats = {
+            "request_backouts/response_max_active_size": gt(0),
+            "request_backouts/total": gt(0),
+            "request_backouts/total_per_second": gt(0),
+        }
+        actual_stats = {
+            k: v
+            for k, v in crawler.stats.get_stats().items()
+            if k.startswith("request_backouts/")
+        }
+        self.assertEqual(expected_stats, actual_stats)
+
+    @deferred_f_from_coro_f
+    async def test_response_size_process_response(self):
+
+        class DownloaderMiddleware:
+
+            def process_response(self, request, response, spider):
+                return Response("https://example.com", body=b"a")
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+            custom_settings = {
+                "DOWNLOADER_MIDDLEWARES": {DownloaderMiddleware: 0},
+                "RESPONSE_MAX_ACTIVE_SIZE": 1,
+            }
+
+            def parse(self, response):
+                pass
+
+        crawler = get_crawler(TestSpider)
+        self.caplog.clear()
+        with self.caplog.at_level("INFO"):
+            await crawler.crawl()
+
+        matching_log_count = 0
+        for log_record in self.caplog.records:
+            if (
+                str(log_record.msg).startswith("The active response size")
+                and log_record.levelname == "INFO"
+            ):
+                matching_log_count += 1
+        self.assertEqual(matching_log_count, 1)
+
+        expected_stats = {
+            "request_backouts/response_max_active_size": gt(0),
+            "request_backouts/total": gt(0),
+            "request_backouts/total_per_second": gt(0),
+        }
+        actual_stats = {
+            k: v
+            for k, v in crawler.stats.get_stats().items()
+            if k.startswith("request_backouts/")
+        }
+        self.assertEqual(expected_stats, actual_stats)
+
+    @deferred_f_from_coro_f
+    async def test_response_size_process_exception(self):
+
+        class DownloaderMiddleware1:
+
+            def process_exception(self, request, exception, spider):
+                return Response("https://example.com", body=b"a")
+
+        class DownloaderMiddleware2:
+
+            def process_request(self, request, spider):
+                raise ValueError
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+            custom_settings = {
+                "DOWNLOADER_MIDDLEWARES": {
+                    DownloaderMiddleware1: 0,
+                    DownloaderMiddleware2: 1,
+                },
+                "RESPONSE_MAX_ACTIVE_SIZE": 1,
+            }
+
+            def parse(self, response):
+                pass
+
+        crawler = get_crawler(TestSpider)
+        self.caplog.clear()
+        with self.caplog.at_level("INFO"):
+            await crawler.crawl()
+
+        matching_log_count = 0
+        for log_record in self.caplog.records:
+            if (
+                str(log_record.msg).startswith("The active response size")
+                and log_record.levelname == "INFO"
+            ):
+                matching_log_count += 1
+        self.assertEqual(matching_log_count, 1)
+
+        expected_stats = {
+            "request_backouts/response_max_active_size": gt(0),
             "request_backouts/total": gt(0),
             "request_backouts/total_per_second": gt(0),
         }
