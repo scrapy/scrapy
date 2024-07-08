@@ -125,13 +125,13 @@ class ExecutionEngine:
 
         default_response_max_active_size = 5000000
         scraper_max_active_size = self.settings.getint(
-            "SCRAPER_MAX_ACTIVE_SIZE", 5000000
+            "SCRAPER_SLOT_MAX_ACTIVE_SIZE", 5000000
         )
         if scraper_max_active_size != default_response_max_active_size:
             warn(
                 (
-                    "The SCRAPER_MAX_ACTIVE_SIZE setting is deprecated, use "
-                    "RESPONSE_MAX_ACTIVE_SIZE instead."
+                    "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, "
+                    "use RESPONSE_MAX_ACTIVE_SIZE instead."
                 ),
                 ScrapyDeprecationWarning,
             )
