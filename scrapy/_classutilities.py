@@ -77,12 +77,12 @@ class ClassPropertyMetaClass(type):
     Metaclass that allows creating a standard setter.
     """
 
-    def __setattr__(self, key, value):
+    def __setattr__(cls, key, value):
         """Overloads setter for class"""
-        if key in self.__dict__:
-            obj = self.__dict__.get(key)
-        if obj and type(obj) is ClassPropertyContainer:
-            return obj.__set__(self, value)
+        if key in cls.__dict__:
+            obj = cls.__dict__.get(key)
+        if obj and isinstance(obj, ClassPropertyContainer):
+            return obj.__set__(cls, value)
 
         return super().__setattr__(key, value)
 
