@@ -85,7 +85,7 @@ class Slot(ClassPropertiesMixin):
         )
         return cls._MIN_RESPONSE_SIZE
 
-    @MIN_RESPONSE_SIZE.setter
+    @MIN_RESPONSE_SIZE.setter  # type: ignore[no-redef]
     def MIN_RESPONSE_SIZE(cls, value):
         warn(
             "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated.",
@@ -93,7 +93,7 @@ class Slot(ClassPropertiesMixin):
         )
         cls._MIN_RESPONSE_SIZE = value
 
-    def __init__(self, max_active_size: int = _UNSET):
+    def __init__(self, max_active_size: Any = _UNSET):
         if max_active_size is not _UNSET:
             warn(
                 (
