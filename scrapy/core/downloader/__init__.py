@@ -6,7 +6,6 @@ import warnings
 from collections import deque
 from datetime import datetime
 from logging import getLogger
-from time import time
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -20,6 +19,11 @@ from typing import (
     cast,
 )
 from warnings import warn
+
+try:
+    from win_precise_time import time
+except ImportError:
+    from time import time
 
 from twisted.internet import task
 from twisted.internet.defer import Deferred
