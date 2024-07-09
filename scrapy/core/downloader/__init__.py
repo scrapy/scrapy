@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import random
 import warnings
 from collections import deque
@@ -205,6 +206,9 @@ class Downloader:
                     f"request_backouts/response_max_active_size stat."
                 )
             self._count_backout("response_max_active_size")
+            # Force the garbage collection of response objects. Necessary for
+            # PyPy, which is lazier when it comes to garbage collection.
+            gc.collect()
             return True
         return False
 
