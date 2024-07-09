@@ -11,7 +11,6 @@ import pytest
 from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
-from scrapy.extensions import telnet
 from scrapy.utils.log import (
     LogCounterHandler,
     SpiderLoggerAdapter,
@@ -70,9 +69,6 @@ class TopLevelFormatterTest(unittest.TestCase):
 class LogCounterHandlerTest(unittest.TestCase):
     def setUp(self):
         settings = {"LOG_LEVEL": "WARNING"}
-        if not telnet.TWISTED_CONCH_AVAILABLE:
-            # disable it to avoid the extra warning
-            settings["TELNETCONSOLE_ENABLED"] = False
         self.logger = logging.getLogger("test")
         self.logger.setLevel(logging.NOTSET)
         self.logger.propagate = False
