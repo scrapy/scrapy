@@ -134,6 +134,7 @@ class Downloader:
             "DOWNLOAD_SLOTS", {}
         )
         self._stats = crawler.stats
+        self._last_backout = (None, None)
 
         deprecated_setting_priority = self.settings.getpriority(
             "SCRAPER_SLOT_MAX_ACTIVE_SIZE"
@@ -172,13 +173,22 @@ class Downloader:
         )
         return dfd.addBoth(_deactivate)
 
-    def _count_backout(self, reason):
-        self._stats.inc_value("request_backouts/total")
-        self._stats.inc_value(f"request_backouts/{reason}")
+    def _record_backout(self, reason):
+        last_reason, last_reason_start_time = self._last_backout
+        if last_reason == reason:
+            return
+        current_time = time()
+        if last_reason is not None:
+            last_reason_seconds = current_time - last_reason_start_time
+            self._stats.inc_value("request_backout_seconds/total", last_reason_seconds)
+            self._stats.inc_value(
+                f"request_backout_seconds/{last_reason}", last_reason_seconds
+            )
+        self._last_backout = (reason, current_time)
 
     def needs_backout(self) -> bool:
         if len(self.active) >= self.total_concurrency:
-            self._count_backout("concurrency")
+            self._record_backout("concurrency")
             return True
         if (
             self._response_max_active_size
@@ -207,11 +217,12 @@ class Downloader:
                     f"during a crawl for this reason, see the "
                     f"request_backouts/response_max_active_size stat."
                 )
-            self._count_backout("response_max_active_size")
+            self._record_backout("response_max_active_size")
             # Force the garbage collection of response objects. Necessary for
             # PyPy, which is lazier when it comes to garbage collection.
             gc.collect()
             return True
+        self._record_backout(None)
         return False
 
     def _get_slot(self, request: Request, spider: Spider) -> Tuple[str, Slot]:

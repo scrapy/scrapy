@@ -47,14 +47,6 @@ class CoreStats:
         )
         self.stats.set_value("finish_time", finish_time, spider=spider)
         self.stats.set_value("finish_reason", reason, spider=spider)
-        if elapsed_time_seconds > 0:
-            request_backouts = self.stats.get_value("request_backouts/total", 0)
-            if request_backouts:
-                self.stats.set_value(
-                    "request_backouts/total_per_second",
-                    request_backouts / elapsed_time_seconds,
-                    spider=spider,
-                )
 
     def item_scraped(self, item: Any, spider: Spider) -> None:
         self.stats.inc_value("item_scraped_count", spider=spider)

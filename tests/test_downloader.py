@@ -195,7 +195,7 @@ class RequestBackoutTest(unittest.TestCase):
         stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backouts/")
+            if k.startswith("request_backout_seconds/")
         }
         self.assertEqual(stats, {})
 
@@ -241,14 +241,13 @@ class RequestBackoutTest(unittest.TestCase):
         self.assertEqual(matching_log_count, 0)
 
         expected_stats = {
-            "request_backouts/concurrency": gt(0),
-            "request_backouts/total": gt(0),
-            "request_backouts/total_per_second": gt(0),
+            "request_backout_seconds/concurrency": gt(0),
+            "request_backout_seconds/total": gt(0),
         }
         actual_stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backouts/")
+            if k.startswith("request_backout_seconds/")
         }
         self.assertEqual(expected_stats, actual_stats)
 
@@ -280,17 +279,13 @@ class RequestBackoutTest(unittest.TestCase):
         self.assertEqual(matching_log_count, 1)
 
         expected_stats = {
-            # Test > 1, if 1 then we are not really making sure that the INFO
-            # message above is logged only once in a scenario where active size
-            # is checked more than once.
-            "request_backouts/response_max_active_size": gt(1),
-            "request_backouts/total": gt(0),
-            "request_backouts/total_per_second": gt(0),
+            "request_backout_seconds/response_max_active_size": gt(0),
+            "request_backout_seconds/total": gt(0),
         }
         actual_stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backouts/")
+            if k.startswith("request_backout_seconds/")
         }
         self.assertEqual(expected_stats, actual_stats)
 
@@ -328,14 +323,13 @@ class RequestBackoutTest(unittest.TestCase):
         self.assertEqual(matching_log_count, 1)
 
         expected_stats = {
-            "request_backouts/response_max_active_size": gt(0),
-            "request_backouts/total": gt(0),
-            "request_backouts/total_per_second": gt(0),
+            "request_backout_seconds/response_max_active_size": gt(0),
+            "request_backout_seconds/total": gt(0),
         }
         actual_stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backouts/")
+            if k.startswith("request_backout_seconds/")
         }
         self.assertEqual(expected_stats, actual_stats)
 
@@ -373,14 +367,13 @@ class RequestBackoutTest(unittest.TestCase):
         self.assertEqual(matching_log_count, 1)
 
         expected_stats = {
-            "request_backouts/response_max_active_size": gt(0),
-            "request_backouts/total": gt(0),
-            "request_backouts/total_per_second": gt(0),
+            "request_backout_seconds/response_max_active_size": gt(0),
+            "request_backout_seconds/total": gt(0),
         }
         actual_stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backouts/")
+            if k.startswith("request_backout_seconds/")
         }
         self.assertEqual(expected_stats, actual_stats)
 
@@ -426,14 +419,13 @@ class RequestBackoutTest(unittest.TestCase):
         self.assertEqual(matching_log_count, 1)
 
         expected_stats = {
-            "request_backouts/response_max_active_size": gt(0),
-            "request_backouts/total": gt(0),
-            "request_backouts/total_per_second": gt(0),
+            "request_backout_seconds/response_max_active_size": gt(0),
+            "request_backout_seconds/total": gt(0),
         }
         actual_stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backouts/")
+            if k.startswith("request_backout_seconds/")
         }
         self.assertEqual(expected_stats, actual_stats)
 
@@ -481,13 +473,12 @@ class RequestBackoutTest(unittest.TestCase):
         self.assertEqual(matching_log_count, 1)
 
         expected_stats = {
-            "request_backouts/response_max_active_size": gt(0),
-            "request_backouts/total": gt(0),
-            "request_backouts/total_per_second": gt(0),
+            "request_backout_seconds/response_max_active_size": gt(0),
+            "request_backout_seconds/total": gt(0),
         }
         actual_stats = {
             k: v
             for k, v in crawler.stats.get_stats().items()
-            if k.startswith("request_backouts/")
+            if k.startswith("request_backout_seconds/")
         }
         self.assertEqual(expected_stats, actual_stats)
