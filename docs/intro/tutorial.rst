@@ -77,10 +77,9 @@ This will create a ``tutorial`` directory with the following contents::
 Our first Spider
 ================
 
-Spiders are classes that you define and that Scrapy uses to scrape information
-from a website (or a group of websites). They must subclass
-:class:`~scrapy.Spider` and define the initial requests to be made.
-They can also optionally define how to follow page links and how to parse the downloaded
+Spiders are classes that you define and that Scrapy uses to scrape information from a website
+(or a group of websites). They must subclass :class:`~scrapy.Spider` and define the initial
+requests to be made, and optionally, how to follow links in pages and parse the downloaded
 page content to extract data.
 
 This is the code for our first Spider. Save it in a file named
@@ -139,7 +138,7 @@ To put our spider to work, go to the project's top level directory and run::
 
    scrapy crawl quotes
 
-This command runs the spider with the name ``quotes`` that we've just added, that
+This command runs the spider named ``quotes`` that we've just added, that
 will send some requests for the ``quotes.toscrape.com`` domain. You will get an output
 similar to this::
 
