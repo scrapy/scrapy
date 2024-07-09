@@ -35,6 +35,19 @@ class TestCloseSpider(TestCase):
         self.assertTrue(pagecount >= close_on)
 
     @defer.inlineCallbacks
+    def test_closespider_pagecount_no_item(self):
+        close_on = 5
+        crawler = get_crawler(
+            FollowAllSpider,
+            {"CLOSESPIDER_PAGECOUNT_NO_ITEM": close_on},
+        )
+        yield crawler.crawl(mockserver=self.mockserver)
+        reason = crawler.spider.meta["close_reason"]
+        self.assertEqual(reason, "closespider_pagecount_no_item")
+        pagecount = crawler.stats.get_value("response_received_count")
+        self.assertTrue(pagecount >= close_on)
+
+    @defer.inlineCallbacks
     def test_closespider_errorcount(self):
         close_on = 5
         crawler = get_crawler(ErrorSpider, {"CLOSESPIDER_ERRORCOUNT": close_on})

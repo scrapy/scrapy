@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, DefaultDict, Dict
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured
+from scrapy.signalmanager import dispatcher
 
 if TYPE_CHECKING:
     from twisted.python.failure import Failure
@@ -36,6 +37,9 @@ class CloseSpider:
             "pagecount": crawler.settings.getint("CLOSESPIDER_PAGECOUNT"),
             "errorcount": crawler.settings.getint("CLOSESPIDER_ERRORCOUNT"),
             "timeout_no_item": crawler.settings.getint("CLOSESPIDER_TIMEOUT_NO_ITEM"),
+            "pagecount_no_item": crawler.settings.getint(
+                "CLOSESPIDER_PAGECOUNT_NO_ITEM"
+            ),
         }
 
         if not any(self.close_on.values()):
@@ -60,6 +64,19 @@ class CloseSpider:
             crawler.signals.connect(
                 self.item_scraped_no_item, signal=signals.item_scraped
             )
+        if self.close_on.get("pagecount_no_item"):
+            if self.page_count not in dispatcher.getReceivers(
+                signal=signals.response_received
+            ):
+                crawler.signals.connect(
+                    self.page_count, signal=signals.response_received
+                )
+
+            if self.item_scraped not in dispatcher.getReceivers(
+                signal=signals.item_scraped
+            ):
+                crawler.signals.connect(self.item_scraped, signal=signals.item_scraped)
+
         crawler.signals.connect(self.spider_closed, signal=signals.spider_closed)
 
     @classmethod
@@ -74,9 +91,16 @@ class CloseSpider:
 
     def page_count(self, response: Response, request: Request, spider: Spider) -> None:
         self.counter["pagecount"] += 1
+        self.counter["pagecount_since_last_item"] += 1
         if self.counter["pagecount"] == self.close_on["pagecount"]:
             assert self.crawler.engine
             self.crawler.engine.close_spider(spider, "closespider_pagecount")
+        if self.close_on["pagecount_no_item"] and (
+            self.counter["pagecount_since_last_item"]
+            >= self.close_on["pagecount_no_item"]
+        ):
+            assert self.crawler.engine
+            self.crawler.engine.close_spider(spider, "closespider_pagecount_no_item")
 
     def spider_opened(self, spider: Spider) -> None:
         from twisted.internet import reactor
@@ -91,6 +115,7 @@ class CloseSpider:
 
     def item_scraped(self, item: Any, spider: Spider) -> None:
         self.counter["itemcount"] += 1
+        self.counter["pagecount_since_last_item"] = 0
         if self.counter["itemcount"] == self.close_on["itemcount"]:
             assert self.crawler.engine
             self.crawler.engine.close_spider(spider, "closespider_itemcount")
