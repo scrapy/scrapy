@@ -350,6 +350,7 @@ class Downloader:
         self._slot_gc_loop.stop()
         for slot in self.slots.values():
             slot.close()
+        self._record_backout(None)
 
     def _slot_gc(self, age: float = 60) -> None:
         mintime = time() - age
