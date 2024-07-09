@@ -137,6 +137,7 @@ class Downloader:
         deprecated_setting_priority = self.settings.getpriority(
             "SCRAPER_SLOT_MAX_ACTIVE_SIZE"
         )
+        assert deprecated_setting_priority is not None
         if deprecated_setting_priority > 0:
             warn(
                 (
@@ -146,6 +147,7 @@ class Downloader:
                 ScrapyDeprecationWarning,
             )
         setting_priority = self.settings.getpriority("RESPONSE_MAX_ACTIVE_SIZE")
+        assert setting_priority is not None
         if setting_priority >= deprecated_setting_priority:
             self._response_max_active_size = self.settings.getint(
                 "RESPONSE_MAX_ACTIVE_SIZE"
