@@ -3,7 +3,7 @@ import warnings
 import pytest
 from twisted.trial import unittest
 
-from scrapy import Spider
+from scrapy import Request, Spider
 from scrapy.core.downloader import Slot
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response
@@ -410,6 +410,61 @@ class RequestBackoutTest(unittest.TestCase):
 
             def parse(self, response):
                 pass
+
+        crawler = get_crawler(TestSpider)
+        self.caplog.clear()
+        with self.caplog.at_level("INFO"):
+            await crawler.crawl()
+
+        matching_log_count = 0
+        for log_record in self.caplog.records:
+            if (
+                str(log_record.msg).startswith("The active response size")
+                and log_record.levelname == "INFO"
+            ):
+                matching_log_count += 1
+        self.assertEqual(matching_log_count, 1)
+
+        expected_stats = {
+            "request_backouts/response_max_active_size": gt(0),
+            "request_backouts/total": gt(0),
+            "request_backouts/total_per_second": gt(0),
+        }
+        actual_stats = {
+            k: v
+            for k, v in crawler.stats.get_stats().items()
+            if k.startswith("request_backouts/")
+        }
+        self.assertEqual(expected_stats, actual_stats)
+
+    @deferred_f_from_coro_f
+    async def test_response_size_download(self):
+        """Ensure that responses from engine.download calls are also taken into
+        account for the RESPONSE_MAX_ACTIVE_SIZE setting."""
+
+        class SlowDown:
+            """Item pipeline that returns a non-instant deferred, to force
+            need_backout calls to happen at that point."""
+
+            def process_item(self, item, spider):
+                from twisted.internet import reactor
+                from twisted.internet.defer import Deferred
+
+                d = Deferred()
+                reactor.callLater(0, d.callback, {})
+                return d
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+            custom_settings = {
+                "ITEM_PIPELINES": {SlowDown: 0},
+                "RESPONSE_MAX_ACTIVE_SIZE": 1,
+            }
+
+            async def parse(self, response):
+                response = await self.crawler.engine.download(Request("data:,a"))
+                yield {"response": response}
 
         crawler = get_crawler(TestSpider)
         self.caplog.clear()
