@@ -7,7 +7,7 @@ from scrapy import Request, Spider
 from scrapy.core.downloader import Slot
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response
-from scrapy.utils.defer import deferred_f_from_coro_f
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
 
@@ -49,7 +49,7 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
         crawler = get_crawler(OfflineSpider)
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            await crawler.crawl()
+            await maybe_deferred_to_future(crawler.crawl())
         self.assertEqual(crawler.engine.downloader._response_max_active_size, 5_000_000)
 
     @deferred_f_from_coro_f
@@ -61,7 +61,7 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
         )
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            await crawler.crawl()
+            await maybe_deferred_to_future(crawler.crawl())
         self.assertEqual(crawler.engine.downloader._response_max_active_size, 0)
 
     @deferred_f_from_coro_f
@@ -72,7 +72,7 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
             OfflineSpider, settings_dict={"SCRAPER_SLOT_MAX_ACTIVE_SIZE": 5_000_000}
         )
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
-            await crawler.crawl()
+            await maybe_deferred_to_future(crawler.crawl())
         self.assertEqual(crawler.engine.downloader._response_max_active_size, 5_000_000)
         self.assertEqual(len(warning_messages), 1)
         self.assertEqual(
@@ -92,7 +92,7 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
             OfflineSpider, settings_dict={"SCRAPER_SLOT_MAX_ACTIVE_SIZE": 0}
         )
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
-            await crawler.crawl()
+            await maybe_deferred_to_future(crawler.crawl())
         self.assertEqual(crawler.engine.downloader._response_max_active_size, 0)
         self.assertEqual(len(warning_messages), 1)
         self.assertEqual(
@@ -117,7 +117,7 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
             },
         )
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
-            await crawler.crawl()
+            await maybe_deferred_to_future(crawler.crawl())
         self.assertEqual(crawler.engine.downloader._response_max_active_size, 1)
         self.assertEqual(len(warning_messages), 1)
         self.assertEqual(
@@ -150,7 +150,7 @@ class ResponseMaxActiveSizeTest(unittest.TestCase):
 
         crawler = get_crawler(TestSpider)
         with pytest.warns(ScrapyDeprecationWarning) as warning_messages:
-            await crawler.crawl()
+            await maybe_deferred_to_future(crawler.crawl())
         self.assertEqual(crawler.engine.downloader._response_max_active_size, 2)
         self.assertEqual(len(warning_messages), 1)
         self.assertEqual(
@@ -181,7 +181,7 @@ class RequestBackoutTest(unittest.TestCase):
         crawler = get_crawler(TestSpider)
         self.caplog.clear()
         with self.caplog.at_level("INFO"):
-            await crawler.crawl()
+            await maybe_deferred_to_future(crawler.crawl())
 
         matching_log_count = 0
         for log_record in self.caplog.records:
@@ -229,7 +229,7 @@ class RequestBackoutTest(unittest.TestCase):
         crawler = get_crawler(TestSpider)
         self.caplog.clear()
         with self.caplog.at_level("INFO"):
-            await crawler.crawl()
+            await maybe_deferred_to_future(crawler.crawl())
 
         matching_log_count = 0
         for log_record in self.caplog.records:
@@ -268,7 +268,7 @@ class RequestBackoutTest(unittest.TestCase):
         crawler = get_crawler(TestSpider)
         self.caplog.clear()
         with self.caplog.at_level("INFO"):
-            await crawler.crawl()
+            await maybe_deferred_to_future(crawler.crawl())
 
         matching_log_count = 0
         for log_record in self.caplog.records:
@@ -316,7 +316,7 @@ class RequestBackoutTest(unittest.TestCase):
         crawler = get_crawler(TestSpider)
         self.caplog.clear()
         with self.caplog.at_level("INFO"):
-            await crawler.crawl()
+            await maybe_deferred_to_future(crawler.crawl())
 
         matching_log_count = 0
         for log_record in self.caplog.records:
@@ -361,7 +361,7 @@ class RequestBackoutTest(unittest.TestCase):
         crawler = get_crawler(TestSpider)
         self.caplog.clear()
         with self.caplog.at_level("INFO"):
-            await crawler.crawl()
+            await maybe_deferred_to_future(crawler.crawl())
 
         matching_log_count = 0
         for log_record in self.caplog.records:
@@ -414,7 +414,7 @@ class RequestBackoutTest(unittest.TestCase):
         crawler = get_crawler(TestSpider)
         self.caplog.clear()
         with self.caplog.at_level("INFO"):
-            await crawler.crawl()
+            await maybe_deferred_to_future(crawler.crawl())
 
         matching_log_count = 0
         for log_record in self.caplog.records:
@@ -469,7 +469,7 @@ class RequestBackoutTest(unittest.TestCase):
         crawler = get_crawler(TestSpider)
         self.caplog.clear()
         with self.caplog.at_level("INFO"):
-            await crawler.crawl()
+            await maybe_deferred_to_future(crawler.crawl())
 
         matching_log_count = 0
         for log_record in self.caplog.records:

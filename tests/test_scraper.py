@@ -6,7 +6,7 @@ from twisted.trial import unittest
 from scrapy import Spider
 from scrapy.core.scraper import Slot
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.defer import deferred_f_from_coro_f
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
 
@@ -38,7 +38,7 @@ class ScraperTest(unittest.TestCase):
         crawler = get_crawler(TestSpider)
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            await crawler.crawl()
+            await maybe_deferred_to_future(crawler.crawl())
 
         with pytest.warns(ScrapyDeprecationWarning):
             expected = crawler.engine.scraper.slot.MIN_RESPONSE_SIZE
