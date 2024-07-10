@@ -320,7 +320,7 @@ number of crawled responses.
 .. setting:: CLOSESPIDER_PAGECOUNT_NO_ITEM
 
 CLOSESPIDER_PAGECOUNT_NO_ITEM
-"""""""""""""""""""""
+"""""""""""""""""""""""""""""
 
 Default: ``0``
 
