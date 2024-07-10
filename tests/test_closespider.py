@@ -3,7 +3,13 @@ from twisted.trial.unittest import TestCase
 
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
-from tests.spiders import ErrorSpider, FollowAllSpider, ItemSpider, SlowSpider
+from tests.spiders import (
+    ErrorSpider,
+    FollowAllSpider,
+    ItemSpider,
+    MaxItemsSpider,
+    SlowSpider,
+)
 
 
 class TestCloseSpider(TestCase):
@@ -37,15 +43,23 @@ class TestCloseSpider(TestCase):
     @defer.inlineCallbacks
     def test_closespider_pagecount_no_item(self):
         close_on = 5
+        close_on_pagecount = 20
+        max_items = 5
         crawler = get_crawler(
-            FollowAllSpider,
-            {"CLOSESPIDER_PAGECOUNT_NO_ITEM": close_on},
+            MaxItemsSpider,
+            {
+                "CLOSESPIDER_PAGECOUNT_NO_ITEM": close_on,
+                "CLOSESPIDER_PAGECOUNT": close_on_pagecount,
+            },
         )
-        yield crawler.crawl(mockserver=self.mockserver)
+        yield crawler.crawl(max_items=max_items, mockserver=self.mockserver)
         reason = crawler.spider.meta["close_reason"]
         self.assertEqual(reason, "closespider_pagecount_no_item")
         pagecount = crawler.stats.get_value("response_received_count")
-        self.assertTrue(pagecount >= close_on)
+        itemcount = crawler.stats.get_value("item_scraped_count")
+        self.assertEqual(itemcount, max_items)
+        self.assertLess(pagecount, close_on_pagecount)
+        self.assertTrue((pagecount - itemcount) >= close_on)
 
     @defer.inlineCallbacks
     def test_closespider_errorcount(self):

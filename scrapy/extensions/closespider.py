@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any, DefaultDict, Dict
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured
-from scrapy.signalmanager import dispatcher
 
 if TYPE_CHECKING:
     from twisted.python.failure import Failure
@@ -49,11 +48,11 @@ class CloseSpider:
 
         if self.close_on.get("errorcount"):
             crawler.signals.connect(self.error_count, signal=signals.spider_error)
-        if self.close_on.get("pagecount"):
+        if self.close_on.get("pagecount") or self.close_on.get("pagecount_no_item"):
             crawler.signals.connect(self.page_count, signal=signals.response_received)
         if self.close_on.get("timeout"):
             crawler.signals.connect(self.spider_opened, signal=signals.spider_opened)
-        if self.close_on.get("itemcount"):
+        if self.close_on.get("itemcount") or self.close_on.get("pagecount_no_item"):
             crawler.signals.connect(self.item_scraped, signal=signals.item_scraped)
         if self.close_on.get("timeout_no_item"):
             self.timeout_no_item: int = self.close_on["timeout_no_item"]
@@ -64,18 +63,6 @@ class CloseSpider:
             crawler.signals.connect(
                 self.item_scraped_no_item, signal=signals.item_scraped
             )
-        if self.close_on.get("pagecount_no_item"):
-            if self.page_count not in dispatcher.getReceivers(
-                signal=signals.response_received
-            ):
-                crawler.signals.connect(
-                    self.page_count, signal=signals.response_received
-                )
-
-            if self.item_scraped not in dispatcher.getReceivers(
-                signal=signals.item_scraped
-            ):
-                crawler.signals.connect(self.item_scraped, signal=signals.item_scraped)
 
         crawler.signals.connect(self.spider_closed, signal=signals.spider_closed)
 
@@ -95,6 +82,7 @@ class CloseSpider:
         if self.counter["pagecount"] == self.close_on["pagecount"]:
             assert self.crawler.engine
             self.crawler.engine.close_spider(spider, "closespider_pagecount")
+            return
         if self.close_on["pagecount_no_item"] and (
             self.counter["pagecount_since_last_item"]
             >= self.close_on["pagecount_no_item"]

@@ -283,6 +283,23 @@ class ItemSpider(FollowAllSpider):
             yield {}
 
 
+class MaxItemsSpider(ItemSpider):
+    def __init__(self, max_items=10, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.max_items = max_items
+        self.items_scraped = 0
+
+    def parse(self, response):
+        for item_or_req in super().parse(response):
+            if isinstance(item_or_req, Request):
+                yield item_or_req
+            else:
+                if self.items_scraped >= self.max_items:
+                    continue
+                self.items_scraped += 1
+                yield item_or_req
+
+
 class DefaultError(Exception):
     pass
 
