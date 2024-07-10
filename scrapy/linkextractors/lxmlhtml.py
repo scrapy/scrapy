@@ -67,8 +67,8 @@ def _canonicalize_link_url(link: Link) -> str:
 class LxmlParserLinkExtractor:
     def __init__(
         self,
-        allow_tag: Union[str, Callable[[str], bool]] = "",
-        allow_attr: Union[str, Callable[[str], bool]] = "",
+        tag: Union[str, Callable[[str], bool]] = "",
+        attr: Union[str, Callable[[str], bool]] = "",
         deny_tag: Union[str, Callable[[str], bool]] = "",
         deny_attr: Union[str, Callable[[str], bool]] = "",
         process: Optional[Callable[[Any], Any]] = None,
@@ -78,14 +78,14 @@ class LxmlParserLinkExtractor:
     ):
         # mypy doesn't infer types for operator.* and also for partial()
         self.scan_allowed_tag: Callable[[str], bool] = (
-            allow_tag
-            if callable(allow_tag)
-            else cast(Callable[[str], bool], partial(operator.eq, allow_tag))
+            tag
+            if callable(tag)
+            else cast(Callable[[str], bool], partial(operator.eq, tag))
         )
         self.scan_allowed_attr: Callable[[str], bool] = (
-            allow_attr
-            if callable(allow_attr)
-            else cast(Callable[[str], bool], partial(operator.eq, allow_attr))
+            attr
+            if callable(attr)
+            else cast(Callable[[str], bool], partial(operator.eq, attr))
         )
         self.scan_denied_tag: Callable[[str], bool] = (
             deny_tag
@@ -119,15 +119,8 @@ class LxmlParserLinkExtractor:
                 continue
             attribs = el.attrib
             for attrib in attribs:
-                print(attrib)
                 if self.scan_denied_attr(attrib) or not self.scan_allowed_attr(attrib):
-                    if(attrib == 'ping'):
-                        print("not happening")
                     continue
-                if(attrib == 'ping'):
-                    print(el)
-                    print(attrib)
-                    print(attribs[attrib])
 
                 yield el, attrib, attribs[attrib]
 
