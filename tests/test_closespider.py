@@ -7,7 +7,7 @@ from tests.spiders import (
     ErrorSpider,
     FollowAllSpider,
     ItemSpider,
-    MaxItemsSpider,
+    MaxItemsKeepCrawlingSpider,
     SlowSpider,
 )
 
@@ -43,13 +43,11 @@ class TestCloseSpider(TestCase):
     @defer.inlineCallbacks
     def test_closespider_pagecount_no_item(self):
         close_on = 5
-        close_on_pagecount = 20
         max_items = 5
         crawler = get_crawler(
-            MaxItemsSpider,
+            MaxItemsKeepCrawlingSpider,
             {
                 "CLOSESPIDER_PAGECOUNT_NO_ITEM": close_on,
-                "CLOSESPIDER_PAGECOUNT": close_on_pagecount,
             },
         )
         yield crawler.crawl(max_items=max_items, mockserver=self.mockserver)
@@ -58,8 +56,8 @@ class TestCloseSpider(TestCase):
         pagecount = crawler.stats.get_value("response_received_count")
         itemcount = crawler.stats.get_value("item_scraped_count")
         self.assertEqual(itemcount, max_items)
-        self.assertLess(pagecount, close_on_pagecount)
-        self.assertTrue((pagecount - itemcount) >= close_on)
+        self.assertLessEqual(pagecount, close_on + itemcount)
+        self.assertGreater(pagecount, itemcount)
 
     @defer.inlineCallbacks
     def test_closespider_errorcount(self):
