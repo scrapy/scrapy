@@ -324,10 +324,11 @@ CLOSESPIDER_PAGECOUNT_NO_ITEM
 
 Default: ``0``
 
-An integer which specifies the maximum number of consecutive responses to crawl without items scraped. If the spider
-crawls more consecutive responses than that and no items are scraped in the meantime, the spider will be closed with the reason
-``closespider_pagecount_no_item``. If zero (or non set), spiders won't be closed by
-number of crawled responses with no items.
+An integer which specifies the maximum number of consecutive responses to crawl
+without items scraped. If the spider crawls more consecutive responses than that
+and no items are scraped in the meantime, the spider will be closed with the
+reason ``closespider_pagecount_no_item``. If zero (or not set), spiders won't be
+closed by number of crawled responses with no items.
 
 .. setting:: CLOSESPIDER_ERRORCOUNT
 
