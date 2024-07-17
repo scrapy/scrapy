@@ -1,6 +1,8 @@
 import unittest
+from warnings import catch_warnings, filterwarnings
 
 from scrapy import Request, Spider
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import FormRequest, JsonRequest
 from scrapy.utils.request import request_from_dict
 
@@ -67,8 +69,10 @@ class RequestSerializationTest(unittest.TestCase):
             self.assertEqual(r1.dumps_kwargs, r2.dumps_kwargs)
 
     def test_request_class(self):
-        r1 = FormRequest("http://www.example.com")
-        self._assert_serializes_ok(r1, spider=self.spider)
+        with catch_warnings():
+            filterwarnings("ignore", category=ScrapyDeprecationWarning)
+            r1 = FormRequest("http://www.example.com")
+            self._assert_serializes_ok(r1, spider=self.spider)
         r2 = CustomRequest("http://www.example.com")
         self._assert_serializes_ok(r2, spider=self.spider)
         r3 = JsonRequest("http://www.example.com", dumps_kwargs={"indent": 4})

@@ -271,6 +271,14 @@ Request objects
     .. automethod:: to_dict
 
 
+.. _form:
+
+Creating requests that submit HTML forms
+----------------------------------------
+
+…
+
+
 Other functions related to requests
 -----------------------------------
 
