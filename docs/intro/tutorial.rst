@@ -114,7 +114,7 @@ As you can see, our Spider subclasses :class:`scrapy.Spider <scrapy.Spider>`
 and defines some attributes and methods:
 
 * :attr:`~scrapy.Spider.name`: identifies the Spider. It must be
-  unique within a project, i.e., you can't set the same name for multiple
+  unique within a project, that is, you can't set the same name for different
   Spiders.
 
 * :meth:`~scrapy.Spider.start_requests`: must return an iterable of
@@ -169,7 +169,7 @@ Scrapy schedules the :class:`scrapy.Request <scrapy.Request>` objects
 returned by the ``start_requests`` method of the Spider. Upon receiving a
 response for each one, it instantiates :class:`~scrapy.http.Response` objects
 and calls the callback method associated with the request (in this case, the
-``parse`` method) passing the response as argument.
+``parse`` method) passing the response as an argument.
 
 
 A shortcut to the start_requests method
@@ -217,7 +217,7 @@ using the :ref:`Scrapy shell <topics-shell>`. Run::
 
 .. note::
 
-   Remember to always enclose urls in quotes when running Scrapy shell from
+   Remember to always enclose urls in quotes when running Scrapy shell from the
    command-line, otherwise urls containing arguments (i.e. ``&`` character)
    will not work.
 
@@ -257,7 +257,7 @@ object:
 The result of running ``response.css('title')`` is a list-like object called
 :class:`~scrapy.selector.SelectorList`, which represents a list of
 :class:`~scrapy.Selector` objects that wrap around XML/HTML elements
-and allow you to run further queries to fine-grain the selection or extract the
+and allow you to run further queries to refine the selection or extract the
 data.
 
 To extract the text from the title above, you can do:
@@ -354,12 +354,12 @@ Besides `CSS`_, Scrapy selectors also support using `XPath`_ expressions:
 
 XPath expressions are very powerful, and are the foundation of Scrapy
 Selectors. In fact, CSS selectors are converted to XPath under-the-hood. You
-can see that if you read closely the text representation of the selector
-objects in the shell.
+can see that if you read the text representation of the selector
+objects in the shell closely.
 
 While perhaps not as popular as CSS selectors, XPath expressions offer more
 power because besides navigating the structure, it can also look at the
-content. Using XPath, you're able to select things like: *select the link
+content. Using XPath, you're able to select things like: *the link
 that contains the text "Next Page"*. This makes XPath very fitting to the task
 of scraping, and we encourage you to learn XPath even if you already know how to
 construct CSS selectors, it will make scraping much easier.
@@ -422,7 +422,7 @@ variable, so that we can run our CSS selectors directly on a particular quote:
 
     >>> quote = response.css("div.quote")[0]
 
-Now, let's extract ``text``, ``author`` and the ``tags`` from that quote
+Now, let's extract the ``text``, ``author`` and ``tags`` from that quote
 using the ``quote`` object we just created:
 
 .. code-block:: pycon
@@ -448,7 +448,7 @@ to get all of them:
   from sys import version_info
 
 Having figured out how to extract each bit, we can now iterate over all the
-quotes elements and put them together into a Python dictionary:
+quote elements and put them together into a Python dictionary:
 
 .. code-block:: pycon
 
@@ -465,8 +465,8 @@ quotes elements and put them together into a Python dictionary:
 Extracting data in our spider
 -----------------------------
 
-Let's get back to our spider. Until now, it doesn't extract any data in
-particular, just saves the whole HTML page to a local file. Let's integrate the
+Let's get back to our spider. Until now, it hasn't extracted any data in
+particular, just saving the whole HTML page to a local file. Let's integrate the
 extraction logic above into our spider.
 
 A Scrapy spider typically generates many dictionaries containing the data
@@ -529,8 +529,8 @@ using a different serialization format, such as `JSON Lines`_::
 
     scrapy crawl quotes -o quotes.jsonl
 
-The `JSON Lines`_ format is useful because it's stream-like, you can easily
-append new records to it. It doesn't have the same problem of JSON when you run
+The `JSON Lines`_ format is useful because it's stream-like, so you can easily
+append new records to it. It doesn't have the same problem as JSON when you run
 twice. Also, as each record is a separate line, you can process big files
 without having to fit everything in memory, there are tools like `JQ`_ to help
 do that at the command-line.
@@ -555,7 +555,7 @@ from https://quotes.toscrape.com, you want quotes from all the pages in the webs
 Now that you know how to extract data from pages, let's see how to follow links
 from them.
 
-First thing is to extract the link to the page we want to follow.  Examining
+The first thing to do is extract the link to the page we want to follow.  Examining
 our page, we can see there is a link to the next page with the following
 markup:
 
@@ -589,7 +589,7 @@ There is also an ``attrib`` property available
     >>> response.css("li.next a").attrib["href"]
     '/page/2/'
 
-Let's see now our spider modified to recursively follow the link to the next
+Now let's see our spider, modified to recursively follow the link to the next
 page, extracting data from it:
 
 .. code-block:: python
@@ -756,8 +756,8 @@ Another interesting thing this spider demonstrates is that, even if there are
 many quotes from the same author, we don't need to worry about visiting the
 same author page multiple times. By default, Scrapy filters out duplicated
 requests to URLs already visited, avoiding the problem of hitting servers too
-much because of a programming mistake. This can be configured by the setting
-:setting:`DUPEFILTER_CLASS`.
+much because of a programming mistake. This can be configured in the
+:setting:`DUPEFILTER_CLASS` setting.
 
 Hopefully by now you have a good understanding of how to use the mechanism
 of following links and callbacks with Scrapy.
@@ -824,12 +824,12 @@ Next steps
 ==========
 
 This tutorial covered only the basics of Scrapy, but there's a lot of other
-features not mentioned here. Check the :ref:`topics-whatelse` section in
+features not mentioned here. Check the :ref:`topics-whatelse` section in the
 :ref:`intro-overview` chapter for a quick overview of the most important ones.
 
 You can continue from the section :ref:`section-basics` to know more about the
 command-line tool, spiders, selectors and other things the tutorial hasn't covered like
-modeling the scraped data. If you prefer to play with an example project, check
+modeling the scraped data. If you'd prefer to play with an example project, check
 the :ref:`intro-examples` section.
 
 .. _JSON: https://en.wikipedia.org/wiki/JSON
