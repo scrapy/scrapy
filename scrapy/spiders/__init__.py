@@ -94,7 +94,12 @@ class Spider(object_ref):
 
     @classmethod
     def update_settings(cls, settings: BaseSettings) -> None:
-        settings.setdict(cls.custom_settings or {}, priority="spider")
+        if isinstance(cls.custom_settings, property):
+            custom_settings = cls.custom_settings()
+        else:
+            custom_settings = cls.custom_settings
+
+        settings.setdict(custom_settings or {}, priority="spider")
 
     @classmethod
     def handles_request(cls, request: Request) -> bool:
