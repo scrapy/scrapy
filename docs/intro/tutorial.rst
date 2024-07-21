@@ -18,9 +18,8 @@ This tutorial will walk you through these tasks:
 4. Changing spider to recursively follow links
 5. Using spider arguments
 
-Scrapy is written in Python_. If you're new to the language, you might want to
-start by getting an idea of what the language is like to get the most out of
-Scrapy.
+Scrapy is written in Python_. The more you learn about Python, the more you
+can get out of Scrapy.
 
 If you're already familiar with other languages and want to learn Python quickly, the
 `Python Tutorial`_ is a good resource.
