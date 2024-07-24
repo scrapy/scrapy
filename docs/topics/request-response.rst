@@ -144,10 +144,25 @@ Request objects
        Negative values are allowed in order to indicate relatively low-priority.
     :type priority: int
 
-    :param dont_filter: indicates that this request should not be filtered by
-       the scheduler. This is used when you want to perform an identical
-       request multiple times, to ignore the duplicates filter. Use it with
-       care, or you will get into crawling loops. Default to ``False``.
+    :param dont_filter: indicates that this request should not be dropped by any 
+       middleware or the scheduler. This parameter is crucial for scenarios where you 
+       wish to ensure that a request is processed even if it has been seen before, bypassing 
+       both the scheduler's duplicate filtering mechanism and any built-in or third-party 
+       middleware filters designed to prevent repeated processing. It is particularly useful in 
+       complex scraping projects where certain requests need to be retried under specific conditions, 
+       regardless of whether they have been previously processed. However, caution should be 
+       exercised when using this option, as improper usage can lead to infinite crawling loops. 
+       The default value is ``False``, meaning requests are subject to filtering unless explicitly instructed otherwise.
+
+       Built-in Middlewares that take 'dont_filter' into account:
+
+       -   OffSiteMiddleware: Filters out requests for URLs outside the domains covered by the spider. 
+           If the request has the `dont_filter` attribute set, the offsite middleware will allow the 
+           request even if its domain is not listed in allowed domains 
+
+       -   DepthMiddleware: Tracks the depth of each request inside the site being scraped. It sets 
+           `request.meta['depth'] = 0` whenever there is no value previously set and increments it by 1 otherwise. 
+           The `dont_filter` attribute can influence how requests are prioritized based on their depth
     :type dont_filter: bool
 
     :param errback: a function that will be called if any exception was
