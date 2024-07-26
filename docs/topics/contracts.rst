@@ -1,7 +1,7 @@
 .. _topics-contracts:
 
 =================
-Spiders Contracts
+Spider Contracts
 =================
 
 Testing spiders can get particularly annoying and while nothing prevents you
