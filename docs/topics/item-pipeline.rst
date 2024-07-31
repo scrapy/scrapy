@@ -254,7 +254,7 @@ returns multiples items with the same id:
         def process_item(self, item, spider):
             adapter = ItemAdapter(item)
             if adapter["id"] in self.ids_seen:
-                raise DropItem(f"Item ID already seen")
+                raise DropItem(f"Item ID already seen: {adapter['id']}")
             else:
                 self.ids_seen.add(adapter["id"])
                 return item
