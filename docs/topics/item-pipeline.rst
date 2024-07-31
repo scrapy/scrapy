@@ -99,7 +99,7 @@ contain a price:
                     adapter["price"] = adapter["price"] * self.vat_factor
                 return item
             else:
-                raise DropItem(f"Missing price in {item}")
+                raise DropItem("Missing price")
 
 
 Write items to a JSON lines file
