@@ -372,7 +372,7 @@ fetch
 Downloads the given URL using the Scrapy downloader and writes the contents to
 standard output.
 
-The interesting thing about this command is that it fetches the page according to how the
+The interesting thing about this command is that it fetches the page the way the
 spider would download it. For example, if the spider has a ``USER_AGENT``
 attribute which overrides the User Agent, it will use that one.
 
