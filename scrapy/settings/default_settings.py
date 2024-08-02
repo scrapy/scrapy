@@ -292,7 +292,8 @@ SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleLifoDiskQueue"
 SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.LifoMemoryQueue"
 SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ScrapyPriorityQueue"
 
-SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
+SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5_000_000
+RESPONSE_MAX_ACTIVE_SIZE = 5_000_000
 
 SPIDER_LOADER_CLASS = "scrapy.spiderloader.SpiderLoader"
 SPIDER_LOADER_WARN_ONLY = False
