@@ -67,24 +67,37 @@ def _canonicalize_link_url(link: Link) -> str:
 class LxmlParserLinkExtractor:
     def __init__(
         self,
-        tag: Union[str, Callable[[str], bool]] = "a",
-        attr: Union[str, Callable[[str], bool]] = "href",
+        tag: Union[str, Callable[[str], bool]] = "",
+        attr: Union[str, Callable[[str], bool]] = "",
+        deny_tag: Union[str, Callable[[str], bool]] = "",
+        deny_attr: Union[str, Callable[[str], bool]] = "",
         process: Optional[Callable[[Any], Any]] = None,
         unique: bool = False,
         strip: bool = True,
         canonicalized: bool = False,
     ):
         # mypy doesn't infer types for operator.* and also for partial()
-        self.scan_tag: Callable[[str], bool] = (
+        self.scan_allowed_tag: Callable[[str], bool] = (
             tag
             if callable(tag)
             else cast(Callable[[str], bool], partial(operator.eq, tag))
         )
-        self.scan_attr: Callable[[str], bool] = (
+        self.scan_allowed_attr: Callable[[str], bool] = (
             attr
             if callable(attr)
             else cast(Callable[[str], bool], partial(operator.eq, attr))
         )
+        self.scan_denied_tag: Callable[[str], bool] = (
+            deny_tag
+            if callable(deny_tag)
+            else cast(Callable[[str], bool], partial(operator.eq, deny_tag))
+        )
+        self.scan_denied_attr: Callable[[str], bool] = (
+            deny_attr
+            if callable(deny_attr)
+            else cast(Callable[[str], bool], partial(operator.eq, deny_attr))
+        )
+
         self.process_attr: Callable[[Any], Any] = (
             process if callable(process) else _identity
         )
@@ -100,12 +113,15 @@ class LxmlParserLinkExtractor:
         self, document: HtmlElement
     ) -> Iterable[Tuple[HtmlElement, str, str]]:
         for el in document.iter(etree.Element):
-            if not self.scan_tag(_nons(el.tag)):
+            if self.scan_denied_tag(_nons(el.tag)) or not self.scan_allowed_tag(
+                _nons(el.tag)
+            ):
                 continue
             attribs = el.attrib
             for attrib in attribs:
-                if not self.scan_attr(attrib):
+                if self.scan_denied_attr(attrib) or not self.scan_allowed_attr(attrib):
                     continue
+
                 yield el, attrib, attribs[attrib]
 
     def _extract_links(
@@ -178,8 +194,10 @@ class LxmlLinkExtractor:
         allow_domains: Union[str, Iterable[str]] = (),
         deny_domains: Union[str, Iterable[str]] = (),
         restrict_xpaths: Union[str, Iterable[str]] = (),
-        tags: Union[str, Iterable[str]] = ("a", "area"),
-        attrs: Union[str, Iterable[str]] = ("href",),
+        tags: Union[str, Iterable[str]] = (),
+        attrs: Union[str, Iterable[str]] = (),
+        deny_tags: Union[str, Iterable[str]] = (),
+        deny_attrs: Union[str, Iterable[str]] = (),
         canonicalize: bool = False,
         unique: bool = True,
         process_value: Optional[Callable[[Any], Any]] = None,
@@ -188,10 +206,30 @@ class LxmlLinkExtractor:
         strip: bool = True,
         restrict_text: Optional[_RegexOrSeveralT] = None,
     ):
-        tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
+
+        if not tags and not attrs:
+            attrs = {
+                "href",
+            }
+
+        allow_tags, allow_attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
+        deny_tags, deny_attrs = set(arg_to_iter(deny_tags)), set(
+            arg_to_iter(deny_attrs)
+        )
+
         self.link_extractor = LxmlParserLinkExtractor(
-            tag=partial(operator.contains, tags),
-            attr=partial(operator.contains, attrs),
+            allow_tag=(
+                partial(operator.truth)
+                if not allow_tags
+                else partial(operator.contains, allow_tags)
+            ),
+            allow_attr=(
+                partial(operator.truth)
+                if not allow_attrs
+                else partial(operator.contains, allow_attrs)
+            ),
+            deny_tag=partial(operator.contains, deny_tags),
+            deny_attr=partial(operator.contains, deny_attrs),
             unique=unique,
             process=process_value,
             strip=strip,
