@@ -20,7 +20,7 @@ For spiders, the scraping cycle goes through something like this:
    :meth:`~scrapy.Spider.start_requests` method which (by default)
    generates :class:`~scrapy.Request` for the URLs specified in the
    :attr:`~scrapy.Spider.start_urls` and the
-   :attr:`~scrapy.Spider.parse` method as callback function for the
+   :attr:`~scrapy.Spider.parse` method as a callback function for the
    Requests.
 
 2. In the callback function, you parse the response (web page) and return
@@ -34,7 +34,7 @@ For spiders, the scraping cycle goes through something like this:
    :ref:`topics-selectors` (but you can also use BeautifulSoup, lxml or whatever
    mechanism you prefer) and generate items with the parsed data.
 
-4. Finally, the items returned from the spider will be typically persisted to a
+4. Finally, the items returned from the spider will typically be saved to a
    database (in some :ref:`Item Pipeline <topics-item-pipeline>`) or written to
    a file using :ref:`topics-feed-exports`.
 
@@ -73,7 +73,7 @@ scrapy.Spider
    .. attribute:: allowed_domains
 
        An optional list of strings containing domains that this spider is
-       allowed to crawl. Requests for URLs not belonging to the domain names
+       allowed to crawl. Requests for URLs not belonging to any of the domain names
        specified in this list (or their subdomains) won't be followed if
        :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` is
        enabled.
@@ -122,7 +122,7 @@ scrapy.Spider
 
    .. attribute:: state
 
-      A dict you can use to persist some spider state between batches.
+      A dict you can use to keep a specific spider state between batches.
       See :ref:`topics-keeping-persistent-state-between-batches` to know more about it.
 
    .. method:: from_crawler(crawler, *args, **kwargs)
@@ -243,7 +243,7 @@ scrapy.Spider
        responses, when their requests don't specify a callback.
 
        The ``parse`` method is in charge of processing the response and returning
-       scraped data and/or more URLs to follow. Other Requests callbacks have
+       scraped data and/or more URLs to follow. Other Request callbacks have
        the same requirements as the :class:`Spider` class.
 
        This method, as well as any other Request callback, must return a
@@ -461,8 +461,8 @@ CrawlSpider
    .. method:: parse_start_url(response, **kwargs)
 
       This method is called for each response produced for the URLs in
-      the spider's ``start_urls`` attribute. It allows to parse
-      the initial responses and must return either an
+      the spider's ``start_urls`` attribute. It allows the initial
+      responses to be parsed and must return either an
       :ref:`item object <topics-items>`, a :class:`~scrapy.Request`
       object, or an iterable containing any of them.
 
@@ -502,8 +502,8 @@ Crawling rules
    ``process_request`` is a callable (or a string, in which case a method from
    the spider object with that name will be used) which will be called for every
    :class:`~scrapy.Request` extracted by this rule. This callable should
-   take said request as first argument and the :class:`~scrapy.http.Response`
-   from which the request originated as second argument. It must return a
+   take said request as its first argument and the :class:`~scrapy.http.Response`
+   from which the request originated as its second argument. It must return a
    ``Request`` object or ``None`` (to filter out the request).
 
    ``errback`` is a callable or a string (in which case a method from the spider
@@ -566,7 +566,7 @@ Let's now take a look at an example CrawlSpider with rules:
 
 
 This spider would start crawling example.com's home page, collecting category
-links, and item links, parsing the latter with the ``parse_item`` method. For
+links and item links, parsing the latter with the ``parse_item`` method. For
 each item response, some data will be extracted from the HTML using XPath, and
 an :class:`~scrapy.Item` will be filled with it.
 
@@ -587,16 +587,16 @@ XMLFeedSpider
 
     .. attribute:: iterator
 
-        A string which defines the iterator to use. It can be either:
+        A string which defines the iterator to use. It can be one of the following:
 
            - ``'iternodes'`` - a fast iterator based on regular expressions
 
            - ``'html'`` - an iterator which uses :class:`~scrapy.Selector`.
-             Keep in mind this uses DOM parsing and must load all DOM in memory
+             Keep in mind this uses DOM parsing and must load all DOM into memory
              which could be a problem for big feeds
 
            - ``'xml'`` - an iterator which uses :class:`~scrapy.Selector`.
-             Keep in mind this uses DOM parsing and must load all DOM in memory
+             Keep in mind this uses DOM parsing and must load all DOM into memory
              which could be a problem for big feeds
 
         It defaults to: ``'iternodes'``.
@@ -639,9 +639,9 @@ XMLFeedSpider
     .. method:: parse_node(response, selector)
 
         This method is called for the nodes matching the provided tag name
-        (``itertag``).  Receives the response and an
-        :class:`~scrapy.Selector` for each node.  Overriding this
-        method is mandatory. Otherwise, you spider won't work.  This method
+        (``itertag``). It receives the response and a
+        :class:`~scrapy.Selector` for each node. Overriding this
+        method is mandatory, otherwise your spider won't work. This method
         must return an :ref:`item object <topics-items>`, a
         :class:`~scrapy.Request` object, or an iterable containing any of
         them.
@@ -651,7 +651,7 @@ XMLFeedSpider
         This method is called for each result (item or request) returned by the
         spider, and it's intended to perform any last time processing required
         before returning the results to the framework core, for example setting the
-        item IDs. It receives a list of results and the response which originated
+        item IDs. It receives a list of results and the response which gave
         those results. It must return a list of results (items or requests).
 
     .. warning:: Because of its internal implementation, you must explicitly set
@@ -689,7 +689,7 @@ These spiders are pretty easy to use, let's have a look at one example:
             item["description"] = node.xpath("description").get()
             return item
 
-Basically what we did up there was to create a spider that downloads a feed from
+Basically what we did up there was create a spider that downloads a feed from
 the given ``start_urls``, and then iterates through each of its ``item`` tags,
 prints them out, and stores some random data in an :class:`~scrapy.Item`.
 
@@ -704,12 +704,12 @@ CSVFeedSpider
 
    .. attribute:: delimiter
 
-       A string with the separator character for each field in the CSV file
+       A string with the separator character for each field in the CSV file.
        Defaults to ``','`` (comma).
 
    .. attribute:: quotechar
 
-       A string with the enclosure character for each field in the CSV file
+       A string with the enclosure character for each field in the CSV file.
        Defaults to ``'"'`` (quotation mark).
 
    .. attribute:: headers
