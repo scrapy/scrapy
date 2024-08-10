@@ -49,6 +49,7 @@ from tests.spiders import (
     HeadersReceivedErrbackSpider,
     SimpleSpider,
     SingleRequestSpider,
+    StartRequestsItemSpider,
 )
 
 
@@ -183,6 +184,14 @@ class CrawlTestCase(TestCase):
         record = log.records[0]
         self.assertIsNotNone(record.exc_info)
         self.assertIs(record.exc_info[0], ZeroDivisionError)
+
+    @defer.inlineCallbacks
+    def test_start_requests_items(self):
+        with LogCapture("scrapy", level=logging.ERROR) as log:
+            crawler = get_crawler(StartRequestsItemSpider)
+            yield crawler.crawl(mockserver=self.mockserver)
+
+        self.assertEqual(len(log.records), 0)
 
     @defer.inlineCallbacks
     def test_start_requests_laziness(self):

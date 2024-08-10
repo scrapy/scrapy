@@ -328,6 +328,11 @@ class BrokenStartRequestsSpider(FollowAllSpider):
         yield from super().parse(response)
 
 
+class StartRequestsItemSpider(FollowAllSpider):
+    def start_requests(self):
+        yield {"name": "test item"}
+
+
 class SingleRequestSpider(MetaSpider):
     seed = None
     callback_func = None
