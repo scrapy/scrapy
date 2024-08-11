@@ -128,7 +128,7 @@ def configure_logging(
         settings = Settings(settings)
 
     if settings.getbool("LOG_STDOUT"):
-        sys.stdout = StreamLogger(logging.getLogger("stdout"))  # type: ignore[assignment]
+        sys.stdout = StreamLogger(logging.getLogger("stdout"))
 
     if install_root_handler:
         install_scrapy_root_handler(settings)
