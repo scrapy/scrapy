@@ -4,16 +4,12 @@ import json
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Type, cast
 
-from twisted.internet.defer import Deferred
+# working around https://github.com/sphinx-doc/sphinx/issues/10400
+from twisted.internet.defer import Deferred  # noqa: TC002
 
-from scrapy.crawler import Crawler
-from scrapy.dupefilters import BaseDupeFilter
-from scrapy.http.request import Request
-from scrapy.pqueues import ScrapyPriorityQueue
-from scrapy.spiders import Spider
-from scrapy.statscollectors import StatsCollector
+from scrapy.spiders import Spider  # noqa: TC001
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
 
@@ -23,6 +19,12 @@ if TYPE_CHECKING:
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.dupefilters import BaseDupeFilter
+    from scrapy.http.request import Request
+    from scrapy.pqueues import ScrapyPriorityQueue
+    from scrapy.statscollectors import StatsCollector
 
 
 logger = logging.getLogger(__name__)
@@ -71,7 +73,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         """
         return cls()
 
-    def open(self, spider: Spider) -> Optional[Deferred]:
+    def open(self, spider: Spider) -> Optional[Deferred[None]]:
         """
         Called when the spider is opened by the engine. It receives the spider
         instance as argument and it's useful to execute initialization code.
@@ -81,7 +83,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         """
         pass
 
-    def close(self, reason: str) -> Optional[Deferred]:
+    def close(self, reason: str) -> Optional[Deferred[None]]:
         """
         Called when the spider is closed by the engine. It receives the reason why the crawl
         finished as argument and it's useful to execute cleaning code.
@@ -216,7 +218,7 @@ class Scheduler(BaseScheduler):
     def has_pending_requests(self) -> bool:
         return len(self) > 0
 
-    def open(self, spider: Spider) -> Optional[Deferred]:
+    def open(self, spider: Spider) -> Optional[Deferred[None]]:
         """
         (1) initialize the memory queue
         (2) initialize the disk queue if the ``jobdir`` attribute is a valid directory
@@ -227,7 +229,7 @@ class Scheduler(BaseScheduler):
         self.dqs: Optional[ScrapyPriorityQueue] = self._dq() if self.dqdir else None
         return self.df.open()
 
-    def close(self, reason: str) -> Optional[Deferred]:
+    def close(self, reason: str) -> Optional[Deferred[None]]:
         """
         (1) dump pending requests to disk if there is a disk queue
         (2) return the result of the dupefilter's ``close`` method
@@ -362,13 +364,13 @@ class Scheduler(BaseScheduler):
             return str(dqdir)
         return None
 
-    def _read_dqs_state(self, dqdir: str) -> list:
+    def _read_dqs_state(self, dqdir: str) -> List[int]:
         path = Path(dqdir, "active.json")
         if not path.exists():
             return []
         with path.open(encoding="utf-8") as f:
-            return cast(list, json.load(f))
+            return cast(List[int], json.load(f))
 
-    def _write_dqs_state(self, dqdir: str, state: list) -> None:
+    def _write_dqs_state(self, dqdir: str, state: List[int]) -> None:
         with Path(dqdir, "active.json").open("w", encoding="utf-8") as f:
             json.dump(state, f)

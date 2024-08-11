@@ -13,7 +13,7 @@ from shutil import copytree, rmtree
 from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
 from tempfile import TemporaryFile, mkdtemp
 from threading import Timer
-from typing import Dict, Generator, Optional, Union
+from typing import Dict, Iterator, Optional, Union
 from unittest import skipIf
 
 from pytest import mark
@@ -101,7 +101,7 @@ class ProjectTest(unittest.TestCase):
         def kill_proc():
             p.kill()
             p.communicate()
-            assert False, "Command took too much time to complete"
+            raise AssertionError("Command took too much time to complete")
 
         timer = Timer(15, kill_proc)
         try:
@@ -200,7 +200,7 @@ def get_permissions_dict(
 
     path_obj = Path(path)
 
-    renamings = renamings or tuple()
+    renamings = renamings or ()
     permissions_dict = {
         ".": get_permissions(path_obj),
     }
@@ -674,7 +674,7 @@ class BadSpider(scrapy.Spider):
         """
 
     @contextmanager
-    def _create_file(self, content, name=None) -> Generator[str, None, None]:
+    def _create_file(self, content, name=None) -> Iterator[str]:
         tmpdir = Path(self.mktemp())
         tmpdir.mkdir()
         if name:

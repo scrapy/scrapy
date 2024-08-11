@@ -59,6 +59,7 @@ class Selector(_ParselSelector, object_ref):
 
     * ``"html"`` for :class:`~scrapy.http.HtmlResponse` type
     * ``"xml"`` for :class:`~scrapy.http.XmlResponse` type
+    * ``"json"`` for :class:`~scrapy.http.TextResponse` type
     * ``"html"`` for anything else
 
     Otherwise, if ``type`` is set, the selector type will be forced and no

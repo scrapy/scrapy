@@ -13,26 +13,33 @@ from typing import (
     List,
     Optional,
     Tuple,
+    TypeVar,
     Union,
     cast,
 )
 
-from twisted.internet.defer import Deferred
-
-from scrapy import Spider
 from scrapy.exceptions import NotConfigured
-from scrapy.settings import Settings
 from scrapy.utils.defer import process_chain, process_parallel
 from scrapy.utils.misc import build_from_crawler, build_from_settings, load_object
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
+    from twisted.internet.defer import Deferred
 
+    # typing.Concatenate and typing.ParamSpec require Python 3.10
+    # typing.Self requires Python 3.11
+    from typing_extensions import Concatenate, ParamSpec, Self
+
+    from scrapy import Spider
     from scrapy.crawler import Crawler
+    from scrapy.settings import Settings
+
+    _P = ParamSpec("_P")
 
 
 logger = logging.getLogger(__name__)
+
+_T = TypeVar("_T")
+_T2 = TypeVar("_T2")
 
 
 class MiddlewareManager:
@@ -98,16 +105,22 @@ class MiddlewareManager:
         if hasattr(mw, "close_spider"):
             self.methods["close_spider"].appendleft(mw.close_spider)
 
-    def _process_parallel(self, methodname: str, obj: Any, *args: Any) -> Deferred:
-        methods = cast(Iterable[Callable], self.methods[methodname])
+    def _process_parallel(
+        self, methodname: str, obj: _T, *args: Any
+    ) -> Deferred[List[_T2]]:
+        methods = cast(
+            "Iterable[Callable[Concatenate[_T, _P], _T2]]", self.methods[methodname]
+        )
         return process_parallel(methods, obj, *args)
 
-    def _process_chain(self, methodname: str, obj: Any, *args: Any) -> Deferred:
-        methods = cast(Iterable[Callable], self.methods[methodname])
+    def _process_chain(self, methodname: str, obj: _T, *args: Any) -> Deferred[_T]:
+        methods = cast(
+            "Iterable[Callable[Concatenate[_T, _P], _T]]", self.methods[methodname]
+        )
         return process_chain(methods, obj, *args)
 
-    def open_spider(self, spider: Spider) -> Deferred:
+    def open_spider(self, spider: Spider) -> Deferred[List[None]]:
         return self._process_parallel("open_spider", spider)
 
-    def close_spider(self, spider: Spider) -> Deferred:
+    def close_spider(self, spider: Spider) -> Deferred[List[None]]:
         return self._process_parallel("close_spider", spider)

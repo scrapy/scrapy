@@ -8,14 +8,16 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from twisted.internet import task
 
 from scrapy import Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
-from scrapy.statscollectors import StatsCollector
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
+
 
 logger = logging.getLogger(__name__)
 

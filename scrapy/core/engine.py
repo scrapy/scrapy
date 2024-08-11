@@ -5,6 +5,8 @@ For more information see docs/topics/architecture.rst
 
 """
 
+from __future__ import annotations
+
 import logging
 from time import time
 from typing import (
@@ -17,6 +19,7 @@ from typing import (
     Optional,
     Set,
     Type,
+    TypeVar,
     Union,
     cast,
 )
@@ -31,9 +34,8 @@ from scrapy.core.scraper import Scraper
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.logformatter import LogFormatter
-from scrapy.settings import BaseSettings, Settings
+from scrapy.settings import Settings
 from scrapy.signalmanager import SignalManager
-from scrapy.spiders import Spider
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import global_object_name
@@ -41,9 +43,15 @@ from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
     from scrapy.core.scheduler import BaseScheduler
+    from scrapy.core.scraper import _HandleOutputDeferred
     from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
+    from scrapy.spiders import Spider
+
 
 logger = logging.getLogger(__name__)
+
+_T = TypeVar("_T")
 
 
 class Slot:
@@ -51,15 +59,15 @@ class Slot:
         self,
         start_requests: Iterable[Request],
         close_if_idle: bool,
-        nextcall: CallLaterOnce,
-        scheduler: "BaseScheduler",
+        nextcall: CallLaterOnce[None],
+        scheduler: BaseScheduler,
     ) -> None:
-        self.closing: Optional[Deferred] = None
+        self.closing: Optional[Deferred[None]] = None
         self.inprogress: Set[Request] = set()
         self.start_requests: Optional[Iterator[Request]] = iter(start_requests)
         self.close_if_idle: bool = close_if_idle
-        self.nextcall: CallLaterOnce = nextcall
-        self.scheduler: "BaseScheduler" = scheduler
+        self.nextcall: CallLaterOnce[None] = nextcall
+        self.scheduler: BaseScheduler = scheduler
         self.heartbeat: LoopingCall = LoopingCall(nextcall.schedule)
 
     def add_request(self, request: Request) -> None:
@@ -69,7 +77,7 @@ class Slot:
         self.inprogress.remove(request)
         self._maybe_fire_closing()
 
-    def close(self) -> Deferred:
+    def close(self) -> Deferred[None]:
         self.closing = Deferred()
         self._maybe_fire_closing()
         return self.closing
@@ -84,8 +92,12 @@ class Slot:
 
 
 class ExecutionEngine:
-    def __init__(self, crawler: "Crawler", spider_closed_callback: Callable) -> None:
-        self.crawler: "Crawler" = crawler
+    def __init__(
+        self,
+        crawler: Crawler,
+        spider_closed_callback: Callable[[Spider], Optional[Deferred[None]]],
+    ) -> None:
+        self.crawler: Crawler = crawler
         self.settings: Settings = crawler.settings
         self.signals: SignalManager = crawler.signals
         assert crawler.logformatter
@@ -94,19 +106,21 @@ class ExecutionEngine:
         self.spider: Optional[Spider] = None
         self.running: bool = False
         self.paused: bool = False
-        self.scheduler_cls: Type["BaseScheduler"] = self._get_scheduler_class(
+        self.scheduler_cls: Type[BaseScheduler] = self._get_scheduler_class(
             crawler.settings
         )
         downloader_cls: Type[Downloader] = load_object(self.settings["DOWNLOADER"])
         self.downloader: Downloader = downloader_cls(crawler)
         self.scraper = Scraper(crawler)
-        self._spider_closed_callback: Callable = spider_closed_callback
+        self._spider_closed_callback: Callable[[Spider], Optional[Deferred[None]]] = (
+            spider_closed_callback
+        )
         self.start_time: Optional[float] = None
 
-    def _get_scheduler_class(self, settings: BaseSettings) -> Type["BaseScheduler"]:
+    def _get_scheduler_class(self, settings: BaseSettings) -> Type[BaseScheduler]:
         from scrapy.core.scheduler import BaseScheduler
 
-        scheduler_cls: Type = load_object(settings["SCHEDULER"])
+        scheduler_cls: Type[BaseScheduler] = load_object(settings["SCHEDULER"])
         if not issubclass(scheduler_cls, BaseScheduler):
             raise TypeError(
                 f"The provided scheduler class ({settings['SCHEDULER']})"
@@ -115,20 +129,20 @@ class ExecutionEngine:
         return scheduler_cls
 
     @inlineCallbacks
-    def start(self) -> Generator[Deferred, Any, None]:
+    def start(self) -> Generator[Deferred[Any], Any, None]:
         if self.running:
             raise RuntimeError("Engine already running")
         self.start_time = time()
         yield self.signals.send_catch_log_deferred(signal=signals.engine_started)
         self.running = True
-        self._closewait: Deferred = Deferred()
+        self._closewait: Deferred[None] = Deferred()
         yield self._closewait
 
-    def stop(self) -> Deferred:
+    def stop(self) -> Deferred[None]:
         """Gracefully stop the execution engine"""
 
         @inlineCallbacks
-        def _finish_stopping_engine(_: Any) -> Generator[Deferred, Any, None]:
+        def _finish_stopping_engine(_: Any) -> Generator[Deferred[Any], Any, None]:
             yield self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
             self._closewait.callback(None)
 
@@ -143,7 +157,7 @@ class ExecutionEngine:
         )
         return dfd.addBoth(_finish_stopping_engine)
 
-    def close(self) -> Deferred:
+    def close(self) -> Deferred[None]:
         """
         Gracefully close the execution engine.
         If it has already been started, stop it. In all cases, close the spider and the downloader.
@@ -206,7 +220,7 @@ class ExecutionEngine:
             or self.scraper.slot.needs_backout()
         )
 
-    def _next_request_from_scheduler(self) -> Optional[Deferred]:
+    def _next_request_from_scheduler(self) -> Optional[Deferred[None]]:
         assert self.slot is not None  # typing
         assert self.spider is not None  # typing
 
@@ -214,7 +228,7 @@ class ExecutionEngine:
         if request is None:
             return None
 
-        d = self._download(request)
+        d: Deferred[Union[Response, Request]] = self._download(request)
         d.addBoth(self._handle_downloader_output, request)
         d.addErrback(
             lambda f: logger.info(
@@ -228,8 +242,8 @@ class ExecutionEngine:
             assert self.slot
             self.slot.remove_request(request)
 
-        d.addBoth(_remove_request)
-        d.addErrback(
+        d2: Deferred[None] = d.addBoth(_remove_request)
+        d2.addErrback(
             lambda f: logger.info(
                 "Error while removing request from slot",
                 exc_info=failure_to_exc_info(f),
@@ -237,19 +251,19 @@ class ExecutionEngine:
             )
         )
         slot = self.slot
-        d.addBoth(lambda _: slot.nextcall.schedule())
-        d.addErrback(
+        d2.addBoth(lambda _: slot.nextcall.schedule())
+        d2.addErrback(
             lambda f: logger.info(
                 "Error while scheduling new request",
                 exc_info=failure_to_exc_info(f),
                 extra={"spider": self.spider},
             )
         )
-        return d
+        return d2
 
     def _handle_downloader_output(
         self, result: Union[Request, Response, Failure], request: Request
-    ) -> Optional[Deferred]:
+    ) -> Optional[_HandleOutputDeferred]:
         assert self.spider is not None  # typing
 
         if not isinstance(result, (Request, Response, Failure)):
@@ -311,20 +325,23 @@ class ExecutionEngine:
                 signals.request_dropped, request=request, spider=spider
             )
 
-    def download(self, request: Request) -> Deferred:
+    def download(self, request: Request) -> Deferred[Response]:
         """Return a Deferred which fires with a Response as result, only downloader middlewares are applied"""
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
-        return self._download(request).addBoth(self._downloaded, request)
+        d: Deferred[Union[Response, Request]] = self._download(request)
+        # Deferred.addBoth() overloads don't seem to support a Union[_T, Deferred[_T]] return type
+        d2: Deferred[Response] = d.addBoth(self._downloaded, request)  # type: ignore[arg-type]
+        return d2
 
     def _downloaded(
         self, result: Union[Response, Request, Failure], request: Request
-    ) -> Union[Deferred, Response, Failure]:
+    ) -> Union[Deferred[Response], Response, Failure]:
         assert self.slot is not None  # typing
         self.slot.remove_request(request)
         return self.download(result) if isinstance(result, Request) else result
 
-    def _download(self, request: Request) -> Deferred:
+    def _download(self, request: Request) -> Deferred[Union[Response, Request]]:
         assert self.slot is not None  # typing
 
         self.slot.add_request(request)
@@ -351,21 +368,26 @@ class ExecutionEngine:
                 )
             return result
 
-        def _on_complete(_: Any) -> Any:
+        def _on_complete(_: _T) -> _T:
             assert self.slot is not None
             self.slot.nextcall.schedule()
             return _
 
         assert self.spider is not None
-        dwld = self.downloader.fetch(request, self.spider)
+        dwld: Deferred[Union[Response, Request]] = self.downloader.fetch(
+            request, self.spider
+        )
         dwld.addCallback(_on_success)
         dwld.addBoth(_on_complete)
         return dwld
 
     @inlineCallbacks
     def open_spider(
-        self, spider: Spider, start_requests: Iterable = (), close_if_idle: bool = True
-    ) -> Generator[Deferred, Any, None]:
+        self,
+        spider: Spider,
+        start_requests: Iterable[Request] = (),
+        close_if_idle: bool = True,
+    ) -> Generator[Deferred[Any], Any, None]:
         if self.slot is not None:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={"spider": spider})
@@ -411,7 +433,7 @@ class ExecutionEngine:
             assert isinstance(ex, CloseSpider)  # typing
             self.close_spider(self.spider, reason=ex.reason)
 
-    def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred:
+    def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred[None]:
         """Close (cancel) spider and clear all its outstanding requests"""
         if self.slot is None:
             raise RuntimeError("Engine slot not assigned")
@@ -425,7 +447,7 @@ class ExecutionEngine:
 
         dfd = self.slot.close()
 
-        def log_failure(msg: str) -> Callable:
+        def log_failure(msg: str) -> Callable[[Failure], None]:
             def errback(failure: Failure) -> None:
                 logger.error(
                     msg, exc_info=failure_to_exc_info(failure), extra={"spider": spider}

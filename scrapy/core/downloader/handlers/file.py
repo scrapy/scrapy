@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from w3lib.url import file_uri_to_path
 
-from scrapy import Request, Spider
-from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.decorators import defers
+
+if TYPE_CHECKING:
+    from scrapy import Request, Spider
+    from scrapy.http import Response
 
 
 class FileDownloadHandler:

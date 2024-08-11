@@ -4,6 +4,8 @@ See documentation in docs/topics/shell.rst
 
 """
 
+from __future__ import annotations
+
 import os
 import signal
 from typing import Any, Callable, Dict, Optional, Tuple, Union
@@ -92,7 +94,9 @@ class Shell:
                 self.vars, shells=shells, banner=self.vars.pop("banner", "")
             )
 
-    def _schedule(self, request: Request, spider: Optional[Spider]) -> defer.Deferred:
+    def _schedule(
+        self, request: Request, spider: Optional[Spider]
+    ) -> defer.Deferred[Any]:
         if is_asyncio_reactor_installed():
             # set the asyncio event loop for the current thread
             event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
@@ -209,7 +213,7 @@ def inspect_response(response: Response, spider: Spider) -> None:
     signal.signal(signal.SIGINT, sigint_handler)
 
 
-def _request_deferred(request: Request) -> defer.Deferred:
+def _request_deferred(request: Request) -> defer.Deferred[Any]:
     """Wrap a request inside a Deferred.
 
     This function is harmful, do not use it until you know what you are doing.
@@ -228,7 +232,7 @@ def _request_deferred(request: Request) -> defer.Deferred:
         request.errback = request_errback
         return result
 
-    d: defer.Deferred = defer.Deferred()
+    d: defer.Deferred[Any] = defer.Deferred()
     d.addBoth(_restore_callbacks)
     if request.callback:
         d.addCallback(request.callback)

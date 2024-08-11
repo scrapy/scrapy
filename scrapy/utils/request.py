@@ -12,7 +12,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    Generator,
     Iterable,
     List,
     Optional,
@@ -40,18 +39,16 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
 
 
-def _serialize_headers(
-    headers: Iterable[bytes], request: Request
-) -> Generator[bytes, Any, None]:
+def _serialize_headers(headers: Iterable[bytes], request: Request) -> Iterable[bytes]:
     for header in headers:
         if header in request.headers:
             yield header
             yield from request.headers.getlist(header)
 
 
-_fingerprint_cache: (
-    "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]]"
-)
+_fingerprint_cache: WeakKeyDictionary[
+    Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]
+]
 _fingerprint_cache = WeakKeyDictionary()
 
 
@@ -138,7 +135,7 @@ class RequestFingerprinter:
     """
 
     @classmethod
-    def from_crawler(cls, crawler) -> Self:
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler)
 
     def __init__(self, crawler: Optional[Crawler] = None):
@@ -197,7 +194,7 @@ def referer_str(request: Request) -> Optional[str]:
     return to_unicode(referrer, errors="replace")
 
 
-def request_from_dict(d: dict, *, spider: Optional[Spider] = None) -> Request:
+def request_from_dict(d: Dict[str, Any], *, spider: Optional[Spider] = None) -> Request:
     """Create a :class:`~scrapy.Request` object from a dict.
 
     If a spider is given, it will try to resolve the callbacks looking at the

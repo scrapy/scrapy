@@ -3,20 +3,22 @@ from __future__ import annotations
 import traceback
 import warnings
 from collections import defaultdict
-from types import ModuleType
 from typing import TYPE_CHECKING, DefaultDict, Dict, List, Tuple, Type
 
 from zope.interface import implementer
 
-from scrapy import Request, Spider
 from scrapy.interfaces import ISpiderLoader
-from scrapy.settings import BaseSettings
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
+    from types import ModuleType
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Request, Spider
+    from scrapy.settings import BaseSettings
 
 
 @implementer(ISpiderLoader)

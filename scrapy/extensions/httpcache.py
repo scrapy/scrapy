@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import gzip
 import logging
 import os
@@ -13,10 +15,7 @@ from weakref import WeakKeyDictionary
 from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
 
 from scrapy.http import Headers, Response
-from scrapy.http.request import Request
 from scrapy.responsetypes import responsetypes
-from scrapy.settings import BaseSettings
-from scrapy.spiders import Spider
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode
@@ -25,6 +24,10 @@ from scrapy.utils.request import RequestFingerprinter
 if TYPE_CHECKING:
     # typing.Concatenate requires Python 3.10
     from typing_extensions import Concatenate
+
+    from scrapy.http.request import Request
+    from scrapy.settings import BaseSettings
+    from scrapy.spiders import Spider
 
 
 logger = logging.getLogger(__name__)
@@ -315,7 +318,9 @@ class FilesystemCacheStorage:
         self.expiration_secs: int = settings.getint("HTTPCACHE_EXPIRATION_SECS")
         self.use_gzip: bool = settings.getbool("HTTPCACHE_GZIP")
         # https://github.com/python/mypy/issues/10740
-        self._open: Callable[Concatenate[Union[str, os.PathLike], str, ...], IO] = (
+        self._open: Callable[
+            Concatenate[Union[str, os.PathLike], str, ...], IO[bytes]
+        ] = (
             gzip.open if self.use_gzip else open  # type: ignore[assignment]
         )
 

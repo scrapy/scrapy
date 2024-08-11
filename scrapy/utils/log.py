@@ -7,6 +7,7 @@ from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
+    Dict,
     List,
     MutableMapping,
     Optional,
@@ -20,11 +21,13 @@ from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.settings import Settings
+from scrapy.settings import Settings, _SettingsKeyT
 from scrapy.utils.versions import scrapy_components_versions
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
+    from scrapy.logformatter import LogFormatterResult
+
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +89,8 @@ DEFAULT_LOGGING = {
 
 
 def configure_logging(
-    settings: Union[Settings, dict, None] = None, install_root_handler: bool = True
+    settings: Union[Settings, Dict[_SettingsKeyT, Any], None] = None,
+    install_root_handler: bool = True,
 ) -> None:
     """
     Initialize logging defaults for Scrapy.
@@ -234,7 +238,9 @@ class LogCounterHandler(logging.Handler):
         self.crawler.stats.inc_value(sname)
 
 
-def logformatter_adapter(logkws: dict) -> Tuple[int, str, dict]:
+def logformatter_adapter(
+    logkws: LogFormatterResult,
+) -> Tuple[int, str, Union[Dict[str, Any], Tuple[Any, ...]]]:
     """
     Helper that takes the dictionary output from the methods in LogFormatter
     and adapts it into a tuple of positional arguments for logger.log calls,
@@ -245,7 +251,7 @@ def logformatter_adapter(logkws: dict) -> Tuple[int, str, dict]:
     message = logkws.get("msg") or ""
     # NOTE: This also handles 'args' being an empty dict, that case doesn't
     # play well in logger.log calls
-    args = logkws if not logkws.get("args") else logkws["args"]
+    args = cast(Dict[str, Any], logkws) if not logkws.get("args") else logkws["args"]
 
     return (level, message, args)
 

@@ -30,19 +30,21 @@ from typing import (
 from twisted import version as twisted_version
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred
-from twisted.python.failure import Failure
 from twisted.python.versions import Version
 
-from scrapy.settings import BaseSettings
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
     # imports twisted.internet.reactor
     from twisted.mail.smtp import ESMTPSenderFactory
+    from twisted.python.failure import Failure
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.settings import BaseSettings
+
 
 logger = logging.getLogger(__name__)
 
@@ -97,11 +99,11 @@ class MailSender:
         subject: str,
         body: str,
         cc: Union[str, List[str], None] = None,
-        attachs: Sequence[Tuple[str, str, IO]] = (),
+        attachs: Sequence[Tuple[str, str, IO[Any]]] = (),
         mimetype: str = "text/plain",
         charset: Optional[str] = None,
         _callback: Optional[Callable[..., None]] = None,
-    ) -> Optional[Deferred]:
+    ) -> Optional[Deferred[None]]:
         from twisted.internet import reactor
 
         msg: MIMEBase
@@ -153,7 +155,9 @@ class MailSender:
             )
             return None
 
-        dfd = self._sendmail(rcpts, msg.as_string().encode(charset or "utf-8"))
+        dfd: Deferred[Any] = self._sendmail(
+            rcpts, msg.as_string().encode(charset or "utf-8")
+        )
         dfd.addCallback(self._sent_ok, to, cc, subject, len(attachs))
         dfd.addErrback(self._sent_failed, to, cc, subject, len(attachs))
         reactor.addSystemEventTrigger("before", "shutdown", lambda: dfd)
@@ -196,11 +200,11 @@ class MailSender:
         )
         return failure
 
-    def _sendmail(self, to_addrs: List[str], msg: bytes) -> Deferred:
+    def _sendmail(self, to_addrs: List[str], msg: bytes) -> Deferred[Any]:
         from twisted.internet import reactor
 
         msg_io = BytesIO(msg)
-        d: Deferred = Deferred()
+        d: Deferred[Any] = Deferred()
 
         factory = self._create_sender_factory(to_addrs, msg_io, d)
 
@@ -214,7 +218,7 @@ class MailSender:
         return d
 
     def _create_sender_factory(
-        self, to_addrs: List[str], msg: IO, d: Deferred
+        self, to_addrs: List[str], msg: IO[bytes], d: Deferred[Any]
     ) -> ESMTPSenderFactory:
         from twisted.mail.smtp import ESMTPSenderFactory
 

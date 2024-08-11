@@ -1,11 +1,15 @@
-from typing import Any, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional
 
 import OpenSSL._util as pyOpenSSLutil
 import OpenSSL.SSL
 import OpenSSL.version
-from OpenSSL.crypto import X509Name
 
 from scrapy.utils.python import to_unicode
+
+if TYPE_CHECKING:
+    from OpenSSL.crypto import X509Name
 
 
 def ffi_buf_to_string(buf: Any) -> str:

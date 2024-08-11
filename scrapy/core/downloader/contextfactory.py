@@ -21,8 +21,6 @@ from scrapy.core.downloader.tls import (
     ScrapyClientTLSOptions,
     openssl_methods,
 )
-from scrapy.crawler import Crawler
-from scrapy.settings import BaseSettings
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
@@ -30,6 +28,9 @@ if TYPE_CHECKING:
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
 
 
 @implementer(IPolicyForHTTPS)
@@ -107,7 +108,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         ctx.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
         return ctx
 
-    def creatorForNetloc(self, hostname: bytes, port: int) -> "ClientTLSOptions":
+    def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
         return ScrapyClientTLSOptions(
             hostname.decode("ascii"),
             self.getContext(),
@@ -134,7 +135,7 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
     ``SSLv23_METHOD``) which allows TLS protocol negotiation.
     """
 
-    def creatorForNetloc(self, hostname: bytes, port: int) -> "ClientTLSOptions":
+    def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
         # trustRoot set to platformTrust() will use the platform's root CAs.
         #
         # This means that a website like https://www.cacert.org will be rejected
@@ -158,8 +159,8 @@ class AcceptableProtocolsContextFactory:
         self._wrapped_context_factory: Any = context_factory
         self._acceptable_protocols: List[bytes] = acceptable_protocols
 
-    def creatorForNetloc(self, hostname: bytes, port: int) -> "ClientTLSOptions":
-        options: "ClientTLSOptions" = self._wrapped_context_factory.creatorForNetloc(
+    def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
+        options: ClientTLSOptions = self._wrapped_context_factory.creatorForNetloc(
             hostname, port
         )
         _setAcceptableProtocols(options._ctx, self._acceptable_protocols)

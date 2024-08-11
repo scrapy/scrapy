@@ -13,15 +13,14 @@ from contextlib import contextmanager
 from functools import partial
 from importlib import import_module
 from pkgutil import iter_modules
-from types import ModuleType
 from typing import (
     IO,
     TYPE_CHECKING,
     Any,
     Callable,
     Deque,
-    Generator,
     Iterable,
+    Iterator,
     List,
     Optional,
     Type,
@@ -35,9 +34,12 @@ from scrapy.item import Item
 from scrapy.utils.datatypes import LocalWeakReferencedCache
 
 if TYPE_CHECKING:
+    from types import ModuleType
+
     from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
+
 
 _ITERABLE_SINGLE_VALUES = dict, Item, str, bytes
 T = TypeVar("T")
@@ -56,7 +58,7 @@ def arg_to_iter(arg: Any) -> Iterable[Any]:
     return [arg]
 
 
-def load_object(path: Union[str, Callable]) -> Any:
+def load_object(path: Union[str, Callable[..., Any]]) -> Any:
     """Load an object given its absolute object path, and return it.
 
     The object can be the import path of a class, function, variable or an
@@ -111,7 +113,7 @@ def walk_modules(path: str) -> List[ModuleType]:
     return mods
 
 
-def md5sum(file: IO) -> str:
+def md5sum(file: IO[bytes]) -> str:
     """Calculate the md5 checksum of a file-like object without reading its
     whole content in memory.
 
@@ -227,7 +229,7 @@ def build_from_settings(
 
 
 @contextmanager
-def set_environ(**kwargs: str) -> Generator[None, Any, None]:
+def set_environ(**kwargs: str) -> Iterator[None]:
     """Temporarily set environment variables inside the context manager and
     fully restore previous environment afterwards
     """
@@ -244,7 +246,7 @@ def set_environ(**kwargs: str) -> Generator[None, Any, None]:
                 os.environ[k] = v
 
 
-def walk_callable(node: ast.AST) -> Generator[ast.AST, Any, None]:
+def walk_callable(node: ast.AST) -> Iterable[ast.AST]:
     """Similar to ``ast.walk``, but walks only function body and skips nested
     functions defined within the node.
     """
@@ -263,7 +265,7 @@ def walk_callable(node: ast.AST) -> Generator[ast.AST, Any, None]:
 _generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
 
 
-def is_generator_with_return_value(callable: Callable) -> bool:
+def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:
     """
     Returns True if a callable is a generator function which includes a
     'return' statement with a value different than None, False otherwise
@@ -300,7 +302,9 @@ def is_generator_with_return_value(callable: Callable) -> bool:
     return bool(_generator_callbacks_cache[callable])
 
 
-def warn_on_generator_with_return_value(spider: Spider, callable: Callable) -> None:
+def warn_on_generator_with_return_value(
+    spider: Spider, callable: Callable[..., Any]
+) -> None:
     """
     Logs a warning if a callable is a generator function and includes
     a 'return' statement with a value different than None

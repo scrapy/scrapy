@@ -4,14 +4,16 @@ import logging
 from typing import TYPE_CHECKING, Optional, Tuple
 
 from scrapy import Request, Spider, signals
-from scrapy.core.downloader import Slot
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
-from scrapy.http import Response
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.core.downloader import Slot
+    from scrapy.crawler import Crawler
+    from scrapy.http import Response
+
 
 logger = logging.getLogger(__name__)
 

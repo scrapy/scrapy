@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, List, Optional, Sequence, Type
 
 from twisted.internet import defer
 from twisted.internet.base import ReactorBase, ThreadedResolver
-from twisted.internet.defer import Deferred
 from twisted.internet.interfaces import (
     IAddress,
     IHostnameResolver,
@@ -17,6 +16,8 @@ from zope.interface.declarations import implementer, provider
 from scrapy.utils.datatypes import LocalCache
 
 if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 

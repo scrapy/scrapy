@@ -8,15 +8,13 @@ import re
 from contextlib import suppress
 from io import BytesIO
 from time import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, TypedDict, TypeVar, Union
 from urllib.parse import urldefrag, urlunparse
 
 from twisted.internet import ssl
-from twisted.internet.base import ReactorBase
 from twisted.internet.defer import CancelledError, Deferred, succeed
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
-from twisted.internet.interfaces import IConsumer
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
 from twisted.web.client import URI, Agent, HTTPConnectionPool
@@ -30,19 +28,34 @@ from zope.interface import implementer
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.webclient import _parse
-from scrapy.crawler import Crawler
 from scrapy.exceptions import StopDownload
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
-from scrapy.settings import BaseSettings
 from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
+    from twisted.internet.base import ReactorBase
+    from twisted.internet.interfaces import IConsumer
+
+    # typing.NotRequired and typing.Self require Python 3.11
+    from typing_extensions import NotRequired, Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
 
 
 logger = logging.getLogger(__name__)
+
+_T = TypeVar("_T")
+
+
+class _ResultT(TypedDict):
+    txresponse: TxResponse
+    body: bytes
+    flags: Optional[List[str]]
+    certificate: Optional[ssl.Certificate]
+    ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address, None]
+    failure: NotRequired[Optional[Failure]]
 
 
 class HTTP11DownloadHandler:
@@ -71,7 +84,7 @@ class HTTP11DownloadHandler:
     def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings, crawler)
 
-    def download_request(self, request: Request, spider: Spider) -> Deferred:
+    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         """Return a deferred for the HTTP download"""
         agent = ScrapyAgent(
             contextFactory=self._contextFactory,
@@ -83,10 +96,10 @@ class HTTP11DownloadHandler:
         )
         return agent.download_request(request)
 
-    def close(self) -> Deferred:
+    def close(self) -> Deferred[None]:
         from twisted.internet import reactor
 
-        d: Deferred = self._pool.closeCachedConnections()
+        d: Deferred[None] = self._pool.closeCachedConnections()
         # closeCachedConnections will hang on network or server issues, so
         # we'll manually timeout the deferred.
         #
@@ -97,7 +110,7 @@ class HTTP11DownloadHandler:
         # issue a callback after `_disconnect_timeout` seconds.
         delayed_call = reactor.callLater(self._disconnect_timeout, d.callback, [])
 
-        def cancel_delayed_call(result: Any) -> Any:
+        def cancel_delayed_call(result: _T) -> _T:
             if delayed_call.active():
                 delayed_call.cancel()
             return result
@@ -137,7 +150,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     ):
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
         super().__init__(reactor, proxyHost, proxyPort, timeout, bindAddress)
-        self._tunnelReadyDeferred: Deferred = Deferred()
+        self._tunnelReadyDeferred: Deferred[Protocol] = Deferred()
         self._tunneledHost: str = host
         self._tunneledPort: int = port
         self._contextFactory: IPolicyForHTTPS = contextFactory
@@ -198,7 +211,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         """Propagates the errback to the appropriate deferred."""
         self._tunnelReadyDeferred.errback(reason)
 
-    def connect(self, protocolFactory: Factory) -> Deferred:
+    def connect(self, protocolFactory: Factory) -> Deferred[Protocol]:
         self._protocolFactory = protocolFactory
         connectDeferred = super().connect(protocolFactory)
         connectDeferred.addCallback(self.requestTunnel)
@@ -271,7 +284,7 @@ class TunnelingAgent(Agent):
         headers: Optional[TxHeaders],
         bodyProducer: Optional[IBodyProducer],
         requestPath: bytes,
-    ) -> Deferred:
+    ) -> Deferred[TxResponse]:
         # proxy host and port are required for HTTP pool `key`
         # otherwise, same remote host connection request could reuse
         # a cached tunneled connection to a different proxy
@@ -310,7 +323,7 @@ class ScrapyProxyAgent(Agent):
         uri: bytes,
         headers: Optional[TxHeaders] = None,
         bodyProducer: Optional[IBodyProducer] = None,
-    ) -> Deferred:
+    ) -> Deferred[TxResponse]:
         """
         Issue a new request via the configured proxy.
         """
@@ -394,7 +407,7 @@ class ScrapyAgent:
             pool=self._pool,
         )
 
-    def download_request(self, request: Request) -> Deferred:
+    def download_request(self, request: Request) -> Deferred[Response]:
         from twisted.internet import reactor
 
         timeout = request.meta.get("download_timeout") or self._connectTimeout
@@ -411,22 +424,20 @@ class ScrapyAgent:
         else:
             bodyproducer = None
         start_time = time()
-        d: Deferred = agent.request(
+        d: Deferred[TxResponse] = agent.request(
             method, to_bytes(url, encoding="ascii"), headers, bodyproducer
         )
         # set download latency
         d.addCallback(self._cb_latency, request, start_time)
         # response body is ready to be consumed
-        d.addCallback(self._cb_bodyready, request)
-        d.addCallback(self._cb_bodydone, request, url)
+        d2: Deferred[_ResultT] = d.addCallback(self._cb_bodyready, request)
+        d3: Deferred[Response] = d2.addCallback(self._cb_bodydone, request, url)
         # check download timeout
-        self._timeout_cl = reactor.callLater(timeout, d.cancel)
-        d.addBoth(self._cb_timeout, request, url, timeout)
-        return d
+        self._timeout_cl = reactor.callLater(timeout, d3.cancel)
+        d3.addBoth(self._cb_timeout, request, url, timeout)
+        return d3
 
-    def _cb_timeout(
-        self, result: Any, request: Request, url: str, timeout: float
-    ) -> Any:
+    def _cb_timeout(self, result: _T, request: Request, url: str, timeout: float) -> _T:
         if self._timeout_cl.active():
             self._timeout_cl.cancel()
             return result
@@ -437,7 +448,7 @@ class ScrapyAgent:
 
         raise TimeoutError(f"Getting {url} took longer than {timeout} seconds.")
 
-    def _cb_latency(self, result: Any, request: Request, start_time: float) -> Any:
+    def _cb_latency(self, result: _T, request: Request, start_time: float) -> _T:
         request.meta["download_latency"] = time() - start_time
         return result
 
@@ -451,7 +462,7 @@ class ScrapyAgent:
 
     def _cb_bodyready(
         self, txresponse: TxResponse, request: Request
-    ) -> Union[Dict[str, Any], Deferred]:
+    ) -> Union[_ResultT, Deferred[_ResultT]]:
         headers_received_result = self._crawler.signals.send_catch_log(
             signal=signals.headers_received,
             headers=self._headers_from_twisted_response(txresponse),
@@ -520,7 +531,7 @@ class ScrapyAgent:
             # Abort connection immediately.
             txresponse._transport._producer.abortConnection()
 
-        d: Deferred = Deferred(_cancel)
+        d: Deferred[_ResultT] = Deferred(_cancel)
         txresponse.deliverBody(
             _ResponseReader(
                 finished=d,
@@ -539,7 +550,7 @@ class ScrapyAgent:
         return d
 
     def _cb_bodydone(
-        self, result: Dict[str, Any], request: Request, url: str
+        self, result: _ResultT, request: Request, url: str
     ) -> Union[Response, Failure]:
         headers = self._headers_from_twisted_response(result["txresponse"])
         respcls = responsetypes.from_args(headers=headers, url=url, body=result["body"])
@@ -559,8 +570,9 @@ class ScrapyAgent:
             protocol=protocol,
         )
         if result.get("failure"):
+            assert result["failure"]
             result["failure"].value.response = response
-            return cast(Failure, result["failure"])
+            return result["failure"]
         return response
 
 
@@ -570,7 +582,7 @@ class _RequestBodyProducer:
         self.body = body
         self.length = len(body)
 
-    def startProducing(self, consumer: IConsumer) -> Deferred:
+    def startProducing(self, consumer: IConsumer) -> Deferred[None]:
         consumer.write(self.body)
         return succeed(None)
 
@@ -584,7 +596,7 @@ class _RequestBodyProducer:
 class _ResponseReader(Protocol):
     def __init__(
         self,
-        finished: Deferred,
+        finished: Deferred[_ResultT],
         txresponse: TxResponse,
         request: Request,
         maxsize: int,
@@ -592,7 +604,7 @@ class _ResponseReader(Protocol):
         fail_on_dataloss: bool,
         crawler: Crawler,
     ):
-        self._finished: Deferred = finished
+        self._finished: Deferred[_ResultT] = finished
         self._txresponse: TxResponse = txresponse
         self._request: Request = request
         self._bodybuf: BytesIO = BytesIO()

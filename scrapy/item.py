@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-class Field(dict):
+class Field(Dict[str, Any]):
     """Container of field metadata"""
 
 

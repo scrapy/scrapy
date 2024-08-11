@@ -1125,7 +1125,7 @@ class RedirectMiddlewareTest(Base.Test):
 
     def test_utf8_location(self):
         req = Request("http://scrapytest.org/first")
-        utf8_location = "/ação".encode("utf-8")  # header using UTF-8 encoding
+        utf8_location = "/ação".encode()  # header using UTF-8 encoding
         resp = Response(
             "http://scrapytest.org/first",
             headers={"Location": utf8_location},

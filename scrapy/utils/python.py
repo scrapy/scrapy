@@ -15,12 +15,10 @@ from itertools import chain
 from typing import (
     TYPE_CHECKING,
     Any,
-    AsyncGenerator,
     AsyncIterable,
     AsyncIterator,
     Callable,
     Dict,
-    Generator,
     Iterable,
     Iterator,
     List,
@@ -42,9 +40,11 @@ if TYPE_CHECKING:
     _P = ParamSpec("_P")
 
 _T = TypeVar("_T")
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
 
 
-def flatten(x: Iterable) -> list:
+def flatten(x: Iterable[Any]) -> List[Any]:
     """flatten(sequence) -> list
 
     Returns a single, flat list which contains all elements retrieved
@@ -64,7 +64,7 @@ def flatten(x: Iterable) -> list:
     return list(iflatten(x))
 
 
-def iflatten(x: Iterable) -> Iterable:
+def iflatten(x: Iterable[Any]) -> Iterable[Any]:
     """iflatten(sequence) -> iterator
 
     Similar to ``.flatten()``, but returns iterator instead"""
@@ -99,10 +99,10 @@ def is_listlike(x: Any) -> bool:
     return hasattr(x, "__iter__") and not isinstance(x, (str, bytes))
 
 
-def unique(list_: Iterable, key: Callable[[Any], Any] = lambda x: x) -> list:
+def unique(list_: Iterable[_T], key: Callable[[_T], Any] = lambda x: x) -> List[_T]:
     """efficient function to uniquify a list preserving item order"""
     seen = set()
-    result = []
+    result: List[_T] = []
     for item in list_:
         seenkey = key(item)
         if seenkey in seen:
@@ -146,7 +146,7 @@ def to_bytes(
 
 
 def re_rsearch(
-    pattern: Union[str, Pattern], text: str, chunk_size: int = 1024
+    pattern: Union[str, Pattern[str]], text: str, chunk_size: int = 1024
 ) -> Optional[Tuple[int, int]]:
     """
     This function does a reverse search in a text using a regular expression
@@ -161,7 +161,7 @@ def re_rsearch(
     the start position of the match, and the ending (regarding the entire text).
     """
 
-    def _chunk_iter() -> Generator[Tuple[str, int], Any, None]:
+    def _chunk_iter() -> Iterable[Tuple[str, int]]:
         offset = len(text)
         while True:
             offset -= chunk_size * 1024
@@ -215,7 +215,7 @@ def binary_is_text(data: bytes) -> bool:
     return all(c not in _BINARYCHARS for c in data)
 
 
-def get_func_args(func: Callable, stripself: bool = False) -> List[str]:
+def get_func_args(func: Callable[..., Any], stripself: bool = False) -> List[str]:
     """Return the argument name list of a callable object"""
     if not callable(func):
         raise TypeError(f"func must be callable, got '{type(func).__name__}'")
@@ -245,7 +245,7 @@ def get_func_args(func: Callable, stripself: bool = False) -> List[str]:
     return args
 
 
-def get_spec(func: Callable) -> Tuple[List[str], Dict[str, Any]]:
+def get_spec(func: Callable[..., Any]) -> Tuple[List[str], Dict[str, Any]]:
     """Returns (args, kwargs) tuple for a function
     >>> import re
     >>> get_spec(re.match)
@@ -269,7 +269,7 @@ def get_spec(func: Callable) -> Tuple[List[str], Dict[str, Any]]:
 
     if inspect.isfunction(func) or inspect.ismethod(func):
         spec = inspect.getfullargspec(func)
-    elif hasattr(func, "__call__"):
+    elif hasattr(func, "__call__"):  # noqa: B004
         spec = inspect.getfullargspec(func.__call__)
     else:
         raise TypeError(f"{type(func)} is not callable")
@@ -283,7 +283,7 @@ def get_spec(func: Callable) -> Tuple[List[str], Dict[str, Any]]:
 
 
 def equal_attributes(
-    obj1: Any, obj2: Any, attributes: Optional[List[Union[str, Callable]]]
+    obj1: Any, obj2: Any, attributes: Optional[List[Union[str, Callable[[Any], Any]]]]
 ) -> bool:
     """Compare two objects attributes"""
     # not attributes given return False by default
@@ -303,14 +303,16 @@ def equal_attributes(
 
 
 @overload
-def without_none_values(iterable: Mapping) -> dict: ...
+def without_none_values(iterable: Mapping[_KT, _VT]) -> Dict[_KT, _VT]: ...
 
 
 @overload
-def without_none_values(iterable: Iterable) -> Iterable: ...
+def without_none_values(iterable: Iterable[_KT]) -> Iterable[_KT]: ...
 
 
-def without_none_values(iterable: Union[Mapping, Iterable]) -> Union[dict, Iterable]:
+def without_none_values(
+    iterable: Union[Mapping[_KT, _VT], Iterable[_KT]]
+) -> Union[Dict[_KT, _VT], Iterable[_KT]]:
     """Return a copy of ``iterable`` with all ``None`` entries removed.
 
     If ``iterable`` is a mapping, return a dictionary where all pairs that have
@@ -347,43 +349,45 @@ else:
         gc.collect()
 
 
-class MutableChain(Iterable):
+class MutableChain(Iterable[_T]):
     """
     Thin wrapper around itertools.chain, allowing to add iterables "in-place"
     """
 
-    def __init__(self, *args: Iterable):
-        self.data = chain.from_iterable(args)
+    def __init__(self, *args: Iterable[_T]):
+        self.data: Iterator[_T] = chain.from_iterable(args)
 
-    def extend(self, *iterables: Iterable) -> None:
+    def extend(self, *iterables: Iterable[_T]) -> None:
         self.data = chain(self.data, chain.from_iterable(iterables))
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator[_T]:
         return self
 
-    def __next__(self) -> Any:
+    def __next__(self) -> _T:
         return next(self.data)
 
 
-async def _async_chain(*iterables: Union[Iterable, AsyncIterable]) -> AsyncGenerator:
+async def _async_chain(
+    *iterables: Union[Iterable[_T], AsyncIterable[_T]]
+) -> AsyncIterator[_T]:
     for it in iterables:
         async for o in as_async_generator(it):
             yield o
 
 
-class MutableAsyncChain(AsyncIterable):
+class MutableAsyncChain(AsyncIterable[_T]):
     """
     Similar to MutableChain but for async iterables
     """
 
-    def __init__(self, *args: Union[Iterable, AsyncIterable]):
-        self.data = _async_chain(*args)
+    def __init__(self, *args: Union[Iterable[_T], AsyncIterable[_T]]):
+        self.data: AsyncIterator[_T] = _async_chain(*args)
 
-    def extend(self, *iterables: Union[Iterable, AsyncIterable]) -> None:
+    def extend(self, *iterables: Union[Iterable[_T], AsyncIterable[_T]]) -> None:
         self.data = _async_chain(self.data, _async_chain(*iterables))
 
-    def __aiter__(self) -> AsyncIterator:
+    def __aiter__(self) -> AsyncIterator[_T]:
         return self
 
-    async def __anext__(self) -> Any:
+    async def __anext__(self) -> _T:
         return await self.data.__anext__()

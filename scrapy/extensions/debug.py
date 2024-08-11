@@ -12,16 +12,19 @@ import sys
 import threading
 import traceback
 from pdb import Pdb
-from types import FrameType
 from typing import TYPE_CHECKING, Optional
 
-from scrapy.crawler import Crawler
 from scrapy.utils.engine import format_engine_status
 from scrapy.utils.trackref import format_live_refs
 
 if TYPE_CHECKING:
+    from types import FrameType
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +58,7 @@ class StackTraceDump:
         )
 
     def _thread_stacks(self) -> str:
-        id2name = dict((th.ident, th.name) for th in threading.enumerate())
+        id2name = {th.ident: th.name for th in threading.enumerate()}
         dumps = ""
         for id_, frame in sys._current_frames().items():
             name = id2name.get(id_, "")
@@ -74,4 +77,4 @@ class Debugger:
 
     def _enter_debugger(self, signum: int, frame: Optional[FrameType]) -> None:
         assert frame
-        Pdb().set_trace(frame.f_back)
+        Pdb().set_trace(frame.f_back)  # noqa: T100

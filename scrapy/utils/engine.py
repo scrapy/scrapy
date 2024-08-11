@@ -4,9 +4,10 @@ from __future__ import annotations
 
 # used in global tests code
 from time import time  # noqa: F401
-from typing import Any, List, Tuple
+from typing import TYPE_CHECKING, Any, List, Tuple
 
-from scrapy.core.engine import ExecutionEngine
+if TYPE_CHECKING:
+    from scrapy.core.engine import ExecutionEngine
 
 
 def get_engine_status(engine: ExecutionEngine) -> List[Tuple[str, Any]]:

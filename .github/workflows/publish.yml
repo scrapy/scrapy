@@ -13,13 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.13.0-beta.1"
       - run: | 
           pip install --upgrade build twine
           python -m build
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.6.4
+        uses: pypa/gh-action-pypi-publish@v1.9.0
         with:
           password: ${{ secrets.PYPI_TOKEN }}

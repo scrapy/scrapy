@@ -362,7 +362,7 @@ class CookiesMiddlewareTest(TestCase):
 
     def test_request_cookies_encoding(self):
         # 1) UTF8-encoded bytes
-        req1 = Request("http://example.org", cookies={"a": "á".encode("utf8")})
+        req1 = Request("http://example.org", cookies={"a": "á".encode()})
         assert self.mw.process_request(req1, self.spider) is None
         self.assertCookieValEqual(req1.headers["Cookie"], b"a=\xc3\xa1")
 
@@ -379,7 +379,7 @@ class CookiesMiddlewareTest(TestCase):
     @pytest.mark.xfail(reason="Cookie header is not currently being processed")
     def test_request_headers_cookie_encoding(self):
         # 1) UTF8-encoded bytes
-        req1 = Request("http://example.org", headers={"Cookie": "a=á".encode("utf8")})
+        req1 = Request("http://example.org", headers={"Cookie": "a=á".encode()})
         assert self.mw.process_request(req1, self.spider) is None
         self.assertCookieValEqual(req1.headers["Cookie"], b"a=\xc3\xa1")
 

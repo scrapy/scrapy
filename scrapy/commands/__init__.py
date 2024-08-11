@@ -2,17 +2,21 @@
 Base class for Scrapy commands
 """
 
+from __future__ import annotations
+
 import argparse
 import builtins
 import os
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional
 
 from twisted.python import failure
 
-from scrapy.crawler import Crawler, CrawlerProcess
 from scrapy.exceptions import UsageError
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
+
+if TYPE_CHECKING:
+    from scrapy.crawler import Crawler, CrawlerProcess
 
 
 class ScrapyCommand:

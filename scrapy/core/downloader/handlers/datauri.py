@@ -1,11 +1,15 @@
-from typing import Any, Dict
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Dict
 
 from w3lib.url import parse_data_uri
 
-from scrapy import Request, Spider
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.decorators import defers
+
+if TYPE_CHECKING:
+    from scrapy import Request, Spider
 
 
 class DataURIDownloadHandler:
