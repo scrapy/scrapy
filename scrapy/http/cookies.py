@@ -72,7 +72,23 @@ class CookieJar:
             if host in self.jar._cookies:  # type: ignore[attr-defined]
                 cookies += self.jar._cookies_for_domain(host, wreq)  # type: ignore[attr-defined]
 
-        attrs = self.jar._cookie_attrs(cookies)  # type: ignore[attr-defined]
+        # cookie selection for given path in request according to RFC6265 Section 5.4:
+        # -> _cookies_for_domain returns all cookies matching domain and path
+        #     -> there can be multiple cookies with the same name but different paths
+        # -> select the one with the longest path for each name
+        # https://datatracker.ietf.org/doc/html/rfc6265#section-5.4
+        cookies_by_name: dict[str, list[Cookie]] = {}
+        for cookie in cookies:
+            if cookie.name not in cookies_by_name:
+                cookies_by_name[cookie.name] = []
+            cookies_by_name[cookie.name].append(cookie)
+
+        deduplicated_cookies = [
+            sorted(cookie_list, key=lambda c: len(c.path), reverse=True)[0]
+            for name, cookie_list in cookies_by_name.items()
+        ]
+
+        attrs = self.jar._cookie_attrs(deduplicated_cookies)  # type: ignore[attr-defined]
         if attrs:
             if not wreq.has_header("Cookie"):
                 wreq.add_unredirected_header("Cookie", "; ".join(attrs))

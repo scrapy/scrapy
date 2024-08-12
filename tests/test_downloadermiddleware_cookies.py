@@ -238,6 +238,35 @@ class CookiesMiddlewareTest(TestCase):
         self.mw.process_request(req, self.spider)
         assert "Cookie" not in req.headers
 
+    def test_cookie_selection_by_path(self):
+        cookies = [
+            {
+                "name": "TESTNAME",
+                "value": "value1",
+                "path": "/",
+                "domain": "scrapytest.org",
+            },
+            {
+                "name": "TESTNAME",
+                "value": "value2",
+                "path": "/bar",
+                "domain": "scrapytest.org",
+            },
+        ]
+
+        req = Request("https://scrapytest.org/", cookies=cookies)
+        self.mw.process_request(req, self.spider)
+
+        # path matches only one cookie in the jar -> check that it gets returned
+        req = Request("https://scrapytest.org/")
+        self.mw.process_request(req, self.spider)
+        assert req.headers.get("Cookie") == b"TESTNAME=value1"
+
+        # path matches both cookies in the jar -> check that only the one with the longer path gets returned
+        req = Request("https://scrapytest.org/bar")
+        self.mw.process_request(req, self.spider)
+        self.assertEqual(req.headers.get("Cookie"), b"TESTNAME=value2")
+
     def test_merge_request_cookies(self):
         req = Request("http://scrapytest.org/", cookies={"galleta": "salada"})
         assert self.mw.process_request(req, self.spider) is None
