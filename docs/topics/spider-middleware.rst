@@ -176,7 +176,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         items).
 
         It receives an iterable (in the ``start_requests`` parameter) and must
-        return another iterable of :class:`~scrapy.Request` objects.
+        return another iterable of :class:`~scrapy.Request` objects and :ref:`item objects.
 
         .. note:: When implementing this method in your spider middleware, you
            should always return an iterable (that follows the input one) and
