@@ -1,5 +1,5 @@
 import collections.abc
-from typing import Optional, Union
+from typing import Optional
 from unittest import mock
 
 from testfixtures import LogCapture
@@ -328,7 +328,7 @@ class ProcessStartRequestsSimpleMiddleware:
 class ProcessStartRequestsSimple(BaseAsyncSpiderMiddlewareTestCase):
     """process_start_requests tests for simple start_requests"""
 
-    ITEM_TYPE = Union[Request, dict]
+    ITEM_TYPE = (Request, dict)
     MW_SIMPLE = ProcessStartRequestsSimpleMiddleware
 
     def _start_requests(self):
