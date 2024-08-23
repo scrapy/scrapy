@@ -209,8 +209,7 @@ class ExecutionEngine:
                 if isinstance(request_or_item, Request):
                     self.crawl(request_or_item)
                 elif is_item(request_or_item):
-                    src = f"{global_object_name(self.spider.__class__)}.start_requests"
-                    self.scraper.start_itemproc(request_or_item, src)
+                    self.scraper.start_itemproc(request_or_item, response=None)
                 else:
                     type_import_path = global_object_name(type(request_or_item))
                     logger.error(
