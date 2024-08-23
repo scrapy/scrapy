@@ -318,10 +318,7 @@ class Scraper:
             assert self.crawler.engine is not None  # typing
             self.crawler.engine.crawl(request=output)
         elif is_item(output):
-            self.slot.itemproc_size += 1
-            dfd = self.itemproc.process_item(output, spider)
-            dfd.addBoth(self._itemproc_finished, output, response, spider)
-            return dfd
+            return self.start_itemproc(output, response)
         elif output is None:
             pass
         else:
@@ -332,6 +329,19 @@ class Scraper:
                 extra={"spider": spider},
             )
         return None
+
+    def start_itemproc(self, item, src):
+        """Send *item* to the item pipelines for processing.
+
+        *src* is used to indicate in the logs where the item came from. It
+        should be a Response object when possible, but it can be something
+        else, e.g. "<spider class import path>.start_requests" when the item is
+        yielded directly from that method, without a source response.
+        """
+        self.slot.itemproc_size += 1
+        dfd = self.itemproc.process_item(item, self.crawler.spider)
+        dfd.addBoth(self._itemproc_finished, item, src, self.crawler.spider)
+        return dfd
 
     def _log_download_errors(
         self,
@@ -373,7 +383,7 @@ class Scraper:
         return None
 
     def _itemproc_finished(
-        self, output: Any, item: Any, response: Response, spider: Spider
+        self, output: Any, item: Any, src: Any, spider: Spider
     ) -> Deferred[Any]:
         """ItemProcessor finished for the given ``item`` and returned ``output``"""
         assert self.slot is not None  # typing
@@ -381,18 +391,18 @@ class Scraper:
         if isinstance(output, Failure):
             ex = output.value
             if isinstance(ex, DropItem):
-                logkws = self.logformatter.dropped(item, ex, response, spider)
+                logkws = self.logformatter.dropped(item, ex, src, spider)
                 if logkws is not None:
                     logger.log(*logformatter_adapter(logkws), extra={"spider": spider})
                 return self.signals.send_catch_log_deferred(
                     signal=signals.item_dropped,
                     item=item,
-                    response=response,
+                    response=src,
                     spider=spider,
                     exception=output.value,
                 )
             assert ex
-            logkws = self.logformatter.item_error(item, ex, response, spider)
+            logkws = self.logformatter.item_error(item, ex, src, spider)
             logger.log(
                 *logformatter_adapter(logkws),
                 extra={"spider": spider},
@@ -401,13 +411,13 @@ class Scraper:
             return self.signals.send_catch_log_deferred(
                 signal=signals.item_error,
                 item=item,
-                response=response,
+                response=src,
                 spider=spider,
                 failure=output,
             )
-        logkws = self.logformatter.scraped(output, response, spider)
+        logkws = self.logformatter.scraped(output, src, spider)
         if logkws is not None:
             logger.log(*logformatter_adapter(logkws), extra={"spider": spider})
         return self.signals.send_catch_log_deferred(
-            signal=signals.item_scraped, item=output, response=response, spider=spider
+            signal=signals.item_scraped, item=output, response=src, spider=spider
         )

@@ -195,7 +195,7 @@ class ExecutionEngine:
 
         if self.slot.start_requests is not None and not self._needs_backout():
             try:
-                request = next(self.slot.start_requests)
+                request_or_item = next(self.slot.start_requests)
             except StopIteration:
                 self.slot.start_requests = None
             except Exception:
@@ -206,18 +206,17 @@ class ExecutionEngine:
                     extra={"spider": self.spider},
                 )
             else:
-                if isinstance(request, Request):
-                    self.crawl(request)
-                elif is_item(request):
-                    self.scraper.slot.itemproc_size += 1
-                    dfd = self.scraper.itemproc.process_item(
-                        request, self.crawler.spider
-                    )
-                    dfd.addBoth(
-                        self.scraper._itemproc_finished,
-                        request,
-                        f"{self.crawler.spider.__class__.__name__}.start_requests",
-                        self.crawler.spider,
+                if isinstance(request_or_item, Request):
+                    self.crawl(request_or_item)
+                elif is_item(request_or_item):
+                    src = f"{global_object_name(self.spider.__class__)}.start_requests"
+                    self.scraper.start_itemproc(request_or_item, src)
+                else:
+                    type_import_path = global_object_name(type(request_or_item))
+                    logger.error(
+                        f"Got an instance of {type_import_path} among start "
+                        f"requests. Only requests and items are supported. It "
+                        f"will be ignored."
                     )
 
         if self.spider_is_idle() and self.slot.close_if_idle:
