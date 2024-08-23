@@ -15,19 +15,15 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     from twisted.internet.defer import Deferred
 
-    # typing.Concatenate requires Python 3.10
     # typing.Self requires Python 3.11
-    from typing_extensions import Concatenate, Self
+    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
+    from scrapy.http.request import CallbackT
     from scrapy.settings import BaseSettings, _SettingsKeyT
     from scrapy.utils.log import SpiderLoggerAdapter
-
-    CallbackT = Callable[Concatenate[Response, ...], Any]
 
 
 class Spider(object_ref):
