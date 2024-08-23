@@ -212,7 +212,7 @@ class CrawlTestCase(TestCase):
         self.assertTrue(
             re.match(
                 (
-                    r"^Got <object object at 0x[0-9a-f]{12}> among start "
+                    r"^Got <object object at 0x[0-9a-f]+> among start "
                     r"requests\. Only requests and items are supported\. It "
                     r"will be ignored\.$"
                 ),
