@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import unittest
 from ipaddress import IPv4Address
 from socket import gethostbyname
@@ -49,6 +50,7 @@ from tests.spiders import (
     HeadersReceivedErrbackSpider,
     SimpleSpider,
     SingleRequestSpider,
+    StartRequestsGoodAndBadOutput,
     StartRequestsItemSpider,
 )
 
@@ -192,6 +194,31 @@ class CrawlTestCase(TestCase):
             yield crawler.crawl(mockserver=self.mockserver)
 
         self.assertEqual(len(log.records), 0)
+
+    @defer.inlineCallbacks
+    def test_start_requests_unsupported_output(self):
+        with LogCapture("scrapy", level=logging.ERROR) as log:
+            crawler = get_crawler(StartRequestsGoodAndBadOutput)
+            yield crawler.crawl(mockserver=self.mockserver)
+
+        self.assertEqual(len(log.records), 2)
+        self.assertEqual(
+            log.records[0].msg,
+            (
+                "Got 'data:,b' among start requests. Only requests and items "
+                "are supported. It will be ignored."
+            ),
+        )
+        self.assertTrue(
+            re.match(
+                (
+                    r"^Got <object object at 0x[0-9a-f]{12}> among start "
+                    r"requests\. Only requests and items are supported\. It "
+                    r"will be ignored\.$"
+                ),
+                log.records[1].msg,
+            )
+        )
 
     @defer.inlineCallbacks
     def test_start_requests_laziness(self):

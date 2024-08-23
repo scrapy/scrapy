@@ -211,11 +211,10 @@ class ExecutionEngine:
                 elif is_item(request_or_item):
                     self.scraper.start_itemproc(request_or_item, response=None)
                 else:
-                    type_import_path = global_object_name(type(request_or_item))
                     logger.error(
-                        f"Got an instance of {type_import_path} among start "
-                        f"requests. Only requests and items are supported. It "
-                        f"will be ignored."
+                        f"Got {request_or_item!r} among start requests. Only "
+                        f"requests and items are supported. It will be "
+                        f"ignored."
                     )
 
         if self.spider_is_idle() and self.slot.close_if_idle:

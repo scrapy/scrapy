@@ -351,6 +351,14 @@ class StartRequestsItemSpider(FollowAllSpider):
         yield {"name": "test item"}
 
 
+class StartRequestsGoodAndBadOutput(FollowAllSpider):
+    def start_requests(self):
+        yield {"a": "a"}
+        yield Request("data:,a")
+        yield "data:,b"
+        yield object()
+
+
 class SingleRequestSpider(MetaSpider):
     seed = None
     callback_func = None
