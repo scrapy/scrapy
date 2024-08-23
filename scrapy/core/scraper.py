@@ -313,7 +313,6 @@ class Scraper:
         """Process each Request/Item (given in the output parameter) returned
         from the given spider
         """
-        assert self.slot is not None  # typing
         if isinstance(output, Request):
             assert self.crawler.engine is not None  # typing
             self.crawler.engine.crawl(request=output)
@@ -336,6 +335,8 @@ class Scraper:
         *response* is the source of the item data. If the item does not come
         from response data, e.g. it was hard-coded, set it to ``None``.
         """
+        assert self.slot is not None  # typing
+        assert self.crawler.spider is not None  # typing
         self.slot.itemproc_size += 1
         dfd = self.itemproc.process_item(item, self.crawler.spider)
         dfd.addBoth(self._itemproc_finished, item, response, self.crawler.spider)
