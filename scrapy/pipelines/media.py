@@ -208,7 +208,7 @@ class MediaPipeline:
             # minimize cached information for failure
             result.cleanFailure()
             result.frames = []
-            result.stack = None
+            result.stack = []
 
             # This code fixes a memory leak by avoiding to keep references to
             # the Request and Response objects on the Media Pipeline cache.
