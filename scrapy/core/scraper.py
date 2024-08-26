@@ -329,7 +329,7 @@ class Scraper:
             )
         return None
 
-    def start_itemproc(self, item, *, response: Optional[Response]):
+    def start_itemproc(self, item, *, response: Optional[Response]) -> Deferred[Any]:
         """Send *item* to the item pipelines for processing.
 
         *response* is the source of the item data. If the item does not come
