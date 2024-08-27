@@ -48,7 +48,7 @@ This callback is tested using three built-in contracts:
 
 .. class:: MetadataContract
 
-    This contract (``@meta``) sets the :attr:` meta <scrapy.Request.meta>`
+    This contract (``@meta``) sets the :attr:`meta <scrapy.Request.meta>`
     attribute for the sample request. It must be a valid JSON dictionary.
     ::
 
