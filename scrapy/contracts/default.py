@@ -35,6 +35,20 @@ class CallbackKeywordArgumentsContract(Contract):
         return args
 
 
+class MetadataContract(Contract):
+    """Contract to key metadata arguments for the request.
+    The value should be JSON-encoded dictionary, e.g.:
+
+    @meta {"arg1": "some value"}
+    """
+
+    name = "meta"
+
+    def adjust_request_args(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        args["meta"] = json.loads(" ".join(self.args))
+        return args
+
+
 class ReturnsContract(Contract):
     """Contract to check the output of a callback
 

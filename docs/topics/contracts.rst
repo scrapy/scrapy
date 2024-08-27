@@ -46,6 +46,14 @@ This callback is tested using three built-in contracts:
 
     @cb_kwargs {"arg1": "value1", "arg2": "value2", ...}
 
+.. class:: MetadataContract
+
+    This contract (``@meta``) sets the :attr:` meta <scrapy.Request.meta>`
+    attribute for the sample request. It must be a valid JSON dictionary.
+    ::
+
+    @meta {"arg1": "value1", "arg2": "value2", ...}
+
 .. class:: ReturnsContract
 
     This contract (``@returns``) sets lower and upper bounds for the items and
