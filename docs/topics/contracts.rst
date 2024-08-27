@@ -20,13 +20,13 @@ following example:
         This function parses a sample response. Some contracts are mingled
         with this docstring.
 
-        @url http://www.amazon.com/s?field-keywords=selfish+gene
+        @url http://www.example.com/s?field-keywords=selfish+gene
         @returns items 1 16
         @returns requests 0 0
         @scrapes Title Author Year Price
         """
 
-This callback is tested using three built-in contracts:
+You can use the following contracts:
 
 .. module:: scrapy.contracts.default
 
