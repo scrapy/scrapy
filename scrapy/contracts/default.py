@@ -36,7 +36,7 @@ class CallbackKeywordArgumentsContract(Contract):
 
 
 class MetadataContract(Contract):
-    """Contract to key metadata arguments for the request.
+    """Contract to set metadata arguments for the request.
     The value should be JSON-encoded dictionary, e.g.:
 
     @meta {"arg1": "some value"}
