@@ -117,6 +117,7 @@ class Command(ScrapyCommand):
                 self.exitcode = os.system(f'scrapy edit "{name}"')  # nosec
 
     def _generate_template_variables(
+        self,
         module: str,
         name: str,
         url: str,
