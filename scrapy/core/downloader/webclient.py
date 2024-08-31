@@ -7,7 +7,7 @@ from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
 from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
-from twisted.web.http import HTTPClient
+from twisted.web.client import Agent
 
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
@@ -46,7 +46,7 @@ def _parse(url: str) -> Tuple[bytes, bytes, bytes, int, bytes]:
     return _parsed_url_args(parsed)
 
 
-class ScrapyHTTPPageGetter(HTTPClient):
+class ScrapyHTTPPageGetter(Agent):
     delimiter = b"\n"
 
     def connectionMade(self):
@@ -64,7 +64,7 @@ class ScrapyHTTPPageGetter(HTTPClient):
             self.transport.write(self.factory.body)
 
     def lineReceived(self, line):
-        return HTTPClient.lineReceived(self, line.rstrip())
+        return Agent.lineReceived(self, line.rstrip())
 
     def handleHeader(self, key, value):
         self.headers.appendlist(key, value)
@@ -77,7 +77,7 @@ class ScrapyHTTPPageGetter(HTTPClient):
 
     def connectionLost(self, reason):
         self._connection_lost_reason = reason
-        HTTPClient.connectionLost(self, reason)
+        Agent.connectionLost(self, reason)
         self.factory.noPage(reason)
 
     def handleResponse(self, response):
