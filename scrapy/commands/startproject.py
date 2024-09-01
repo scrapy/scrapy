@@ -107,8 +107,6 @@ class Command(ScrapyCommand):
             return
 
         self._copytree(Path(self.templates_dir), project_dir.resolve())
-        # On 3.8 shutil.move doesn't fully support Path args, but it supports our use case
-        # See https://bugs.python.org/issue32689
         move(project_dir / "module", project_dir / project_name)  # type: ignore[arg-type]
         for paths in TEMPLATES_TO_RENDER:
             tplfile = Path(
