@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import logging
 import operator
+import re
 from collections.abc import Callable, Iterable
 from functools import partial
-from re import Pattern
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 from urllib.parse import urljoin, urlparse
 
@@ -18,7 +18,7 @@ from w3lib.html import strip_html5_whitespace
 from w3lib.url import canonicalize_url, safe_url_string
 
 from scrapy.link import Link
-from scrapy.linkextractors import IGNORED_EXTENSIONS, _is_valid_url, _matches, re
+from scrapy.linkextractors import IGNORED_EXTENSIONS, _is_valid_url, _matches
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list
 from scrapy.utils.response import get_base_url
@@ -155,7 +155,7 @@ class LxmlParserLinkExtractor:
         return links
 
 
-_RegexT = Union[str, Pattern[str]]
+_RegexT = Union[str, re.Pattern[str]]
 _RegexOrSeveralT = Union[_RegexT, Iterable[_RegexT]]
 
 
@@ -188,8 +188,8 @@ class LxmlLinkExtractor:
             strip=strip,
             canonicalized=not canonicalize,
         )
-        self.allow_res: list[Pattern[str]] = self._compile_regexes(allow)
-        self.deny_res: list[Pattern[str]] = self._compile_regexes(deny)
+        self.allow_res: list[re.Pattern[str]] = self._compile_regexes(allow)
+        self.deny_res: list[re.Pattern[str]] = self._compile_regexes(deny)
 
         self.allow_domains: set[str] = set(arg_to_iter(allow_domains))
         self.deny_domains: set[str] = set(arg_to_iter(deny_domains))
@@ -203,10 +203,10 @@ class LxmlLinkExtractor:
             deny_extensions = IGNORED_EXTENSIONS
         self.canonicalize: bool = canonicalize
         self.deny_extensions: set[str] = {"." + e for e in arg_to_iter(deny_extensions)}
-        self.restrict_text: list[Pattern[str]] = self._compile_regexes(restrict_text)
+        self.restrict_text: list[re.Pattern[str]] = self._compile_regexes(restrict_text)
 
     @staticmethod
-    def _compile_regexes(value: Optional[_RegexOrSeveralT]) -> list[Pattern[str]]:
+    def _compile_regexes(value: Optional[_RegexOrSeveralT]) -> list[re.Pattern[str]]:
         return [
             x if isinstance(x, re.Pattern) else re.compile(x)
             for x in arg_to_iter(value)

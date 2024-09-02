@@ -37,7 +37,7 @@ def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
     return any((host == d) or (host.endswith(f".{d}")) for d in domains)
 
 
-def url_is_from_spider(url: UrlT, spider: Spider) -> bool:
+def url_is_from_spider(url: UrlT, spider: type[Spider]) -> bool:
     """Return True if the url belongs to the given spider"""
     return url_is_from_any_domain(
         url, [spider.name] + list(getattr(spider, "allowed_domains", []))
