@@ -17,6 +17,7 @@ from twisted.internet import defer
 from twisted.internet.defer import Deferred, DeferredList, ensureDeferred
 from twisted.internet.task import Cooperator
 from twisted.python import failure
+from typing_extensions import ParamSpec
 
 from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.utils.reactor import _get_asyncio_event_loop, is_asyncio_reactor_installed
@@ -27,12 +28,12 @@ if TYPE_CHECKING:
     from twisted.python.failure import Failure
 
     # typing.Concatenate and typing.ParamSpec require Python 3.10
-    from typing_extensions import Concatenate, ParamSpec
+    from typing_extensions import Concatenate
 
-    _P = ParamSpec("_P")
 
 _T = TypeVar("_T")
 _T2 = TypeVar("_T2")
+_P = ParamSpec("_P")
 
 
 def defer_fail(_failure: Failure) -> Deferred[Any]:
@@ -129,7 +130,7 @@ def parallel(
     return DeferredList([coop.coiterate(work) for _ in range(count)])
 
 
-class _AsyncCooperatorAdapter(Iterator[Deferred], Generic[_T]):
+class _AsyncCooperatorAdapter(Iterator[Deferred], Generic[_T, _P]):
     """A class that wraps an async iterable into a normal iterator suitable
     for using in Cooperator.coiterate(). As it's only needed for parallel_async(),
     it calls the callable directly in the callback, instead of providing a more
