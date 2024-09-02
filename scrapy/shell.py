@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import os
 import signal
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from itemadapter import is_item
 from twisted.internet import defer, threads
@@ -27,25 +27,28 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
 from scrapy.utils.response import open_in_browser
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 
 class Shell:
-    relevant_classes: Tuple[type, ...] = (Crawler, Spider, Request, Response, Settings)
+    relevant_classes: tuple[type, ...] = (Crawler, Spider, Request, Response, Settings)
 
     def __init__(
         self,
         crawler: Crawler,
-        update_vars: Optional[Callable[[Dict[str, Any]], None]] = None,
+        update_vars: Optional[Callable[[dict[str, Any]], None]] = None,
         code: Optional[str] = None,
     ):
         self.crawler: Crawler = crawler
-        self.update_vars: Callable[[Dict[str, Any]], None] = update_vars or (
+        self.update_vars: Callable[[dict[str, Any]], None] = update_vars or (
             lambda x: None
         )
         self.item_class: type = load_object(crawler.settings["DEFAULT_ITEM_CLASS"])
         self.spider: Optional[Spider] = None
         self.inthread: bool = not threadable.isInIOThread()
         self.code: Optional[str] = code
-        self.vars: Dict[str, Any] = {}
+        self.vars: dict[str, Any] = {}
 
     def start(
         self,

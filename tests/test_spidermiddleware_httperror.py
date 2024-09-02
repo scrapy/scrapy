@@ -1,5 +1,4 @@
 import logging
-from typing import Set
 from unittest import TestCase
 
 from testfixtures import LogCapture
@@ -17,7 +16,7 @@ from tests.spiders import MockServerSpider
 
 class _HttpErrorSpider(MockServerSpider):
     name = "httperror"
-    bypass_status_codes: Set[int] = set()
+    bypass_status_codes: set[int] = set()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

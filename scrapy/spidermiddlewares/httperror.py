@@ -7,11 +7,13 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Iterable, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from scrapy.exceptions import IgnoreRequest
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -39,7 +41,7 @@ class HttpErrorMiddleware:
 
     def __init__(self, settings: BaseSettings):
         self.handle_httpstatus_all: bool = settings.getbool("HTTPERROR_ALLOW_ALL")
-        self.handle_httpstatus_list: List[int] = settings.getlist(
+        self.handle_httpstatus_list: list[int] = settings.getlist(
             "HTTPERROR_ALLOWED_CODES"
         )
 

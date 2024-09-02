@@ -3,18 +3,7 @@ from __future__ import annotations
 import asyncio
 import sys
 from contextlib import suppress
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    Generic,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
 from warnings import catch_warnings, filterwarnings, warn
 
 from twisted.internet import asyncioreactor, error
@@ -25,6 +14,7 @@ from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
     from asyncio import AbstractEventLoop, AbstractEventLoopPolicy
+    from collections.abc import Callable
 
     from twisted.internet.protocol import ServerFactory
     from twisted.internet.tcp import Port
@@ -37,7 +27,7 @@ if TYPE_CHECKING:
 _T = TypeVar("_T")
 
 
-def listen_tcp(portrange: List[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]
+def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]
     """Like reactor.listenTCP but tries different ports in a range."""
     from twisted.internet import reactor
 
@@ -62,8 +52,8 @@ class CallLaterOnce(Generic[_T]):
 
     def __init__(self, func: Callable[_P, _T], *a: _P.args, **kw: _P.kwargs):
         self._func: Callable[_P, _T] = func
-        self._a: Tuple[Any, ...] = a
-        self._kw: Dict[str, Any] = kw
+        self._a: tuple[Any, ...] = a
+        self._kw: dict[str, Any] = kw
         self._call: Optional[DelayedCall] = None
 
     def schedule(self, delay: float = 0) -> None:
@@ -142,7 +132,7 @@ def _get_asyncio_event_loop() -> AbstractEventLoop:
 def set_asyncio_event_loop(event_loop_path: Optional[str]) -> AbstractEventLoop:
     """Sets and returns the event loop with specified import path."""
     if event_loop_path is not None:
-        event_loop_class: Type[AbstractEventLoop] = load_object(event_loop_path)
+        event_loop_class: type[AbstractEventLoop] = load_object(event_loop_path)
         event_loop = event_loop_class()
         asyncio.set_event_loop(event_loop)
     else:
