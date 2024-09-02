@@ -6,8 +6,10 @@ Some of the functions that used to be imported from this module have been moved
 to the w3lib.url module. Always import those from there instead.
 """
 
+from __future__ import annotations
+
 import re
-from typing import TYPE_CHECKING, Iterable, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Optional, Union, cast
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this
@@ -18,6 +20,8 @@ from w3lib.url import _safe_chars, _unquotepath  # noqa: F401
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from scrapy import Spider
 
 
@@ -33,7 +37,7 @@ def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
     return any((host == d) or (host.endswith(f".{d}")) for d in domains)
 
 
-def url_is_from_spider(url: UrlT, spider: Type["Spider"]) -> bool:
+def url_is_from_spider(url: UrlT, spider: Spider) -> bool:
     """Return True if the url belongs to the given spider"""
     return url_is_from_any_domain(
         url, [spider.name] + list(getattr(spider, "allowed_domains", []))

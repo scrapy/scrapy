@@ -5,10 +5,15 @@ Note: The main purpose of this module is to provide support for the
 SitemapSpider, its API is subject to change without notice.
 """
 
-from typing import Any, Dict, Iterable, Iterator, Optional, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib.parse import urljoin
 
 import lxml.etree  # nosec
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
 
 
 class Sitemap:
@@ -23,9 +28,9 @@ class Sitemap:
         rt = self._root.tag
         self.type = self._root.tag.split("}", 1)[1] if "}" in rt else rt
 
-    def __iter__(self) -> Iterator[Dict[str, Any]]:
+    def __iter__(self) -> Iterator[dict[str, Any]]:
         for elem in self._root.getchildren():
-            d: Dict[str, Any] = {}
+            d: dict[str, Any] = {}
             for el in elem.getchildren():
                 tag = el.tag
                 name = tag.split("}", 1)[1] if "}" in tag else tag

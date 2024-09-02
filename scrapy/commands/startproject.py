@@ -6,14 +6,14 @@ from importlib.util import find_spec
 from pathlib import Path
 from shutil import copy2, copystat, ignore_patterns, move
 from stat import S_IWUSR as OWNER_WRITE_PERMISSION
-from typing import List, Tuple, Union
+from typing import Union
 
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.template import render_templatefile, string_camelcase
 
-TEMPLATES_TO_RENDER: Tuple[Tuple[str, ...], ...] = (
+TEMPLATES_TO_RENDER: tuple[tuple[str, ...], ...] = (
     ("scrapy.cfg",),
     ("${project_name}", "settings.py.tmpl"),
     ("${project_name}", "items.py.tmpl"),
@@ -86,7 +86,7 @@ class Command(ScrapyCommand):
         copystat(src, dst)
         _make_writable(dst)
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) not in (1, 2):
             raise UsageError()
 
