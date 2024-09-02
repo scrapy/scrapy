@@ -21,7 +21,7 @@ install_requires = [
     "setuptools",
     "packaging",
     "tldextract",
-    "lxml>=4.4.1",
+    "lxml>=4.6.0",
     "defusedxml>=0.7.1",
 ]
 extras_require = {
