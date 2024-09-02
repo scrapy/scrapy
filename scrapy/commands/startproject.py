@@ -107,7 +107,7 @@ class Command(ScrapyCommand):
             return
 
         self._copytree(Path(self.templates_dir), project_dir.resolve())
-        move(project_dir / "module", project_dir / project_name)  # type: ignore[arg-type]
+        move(project_dir / "module", project_dir / project_name)
         for paths in TEMPLATES_TO_RENDER:
             tplfile = Path(
                 project_dir,
