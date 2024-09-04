@@ -20,6 +20,9 @@ from weakref import WeakKeyDictionary
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
 
 NoneType = type(None)
 live_refs: defaultdict[type, WeakKeyDictionary] = defaultdict(WeakKeyDictionary)
@@ -30,7 +33,7 @@ class object_ref:
 
     __slots__ = ()
 
-    def __new__(cls, *args: Any, **kwargs: Any) -> object_ref:
+    def __new__(cls, *args: Any, **kwargs: Any) -> Self:
         obj = object.__new__(cls)
         live_refs[cls][obj] = time()
         return obj
