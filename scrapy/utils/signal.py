@@ -1,5 +1,7 @@
 """Helper functions for working with signals"""
 
+from __future__ import annotations
+
 import logging
 from collections.abc import Sequence
 from typing import Any as TypingAny
