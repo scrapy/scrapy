@@ -1,5 +1,3 @@
-"""Download handlers for http and https schemes"""
-
 from __future__ import annotations
 
 import ipaddress
@@ -20,7 +18,6 @@ from twisted.python.failure import Failure
 from twisted.web.client import URI, Agent, HTTPConnectionPool
 from twisted.web.client import Response as TxResponse
 from twisted.web.client import ResponseDone, ResponseFailed
-from twisted.web.http import PotentialDataLoss, _DataLoss
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS
 from zope.interface import implementer
@@ -41,13 +38,56 @@ if TYPE_CHECKING:
     from typing_extensions import NotRequired, Self
 
     from scrapy.crawler import Crawler
-    from scrapy.settings import BaseSettings
+    from scrapy.settings import BaseS
+... [output truncated]Here’s the complete updated code for the `HTTP11DownloadHandler` and related classes, replacing `twisted.web.http.HTTPClient` with `twisted.web.client.Agent`. This code is meant to be placed in the `scrapy/core/downloader/handlers/http11.py` file.
 
+### Updated Code for `http11.py`
+
+```python
+from __future__ import annotations
+
+import ipaddress
+import logging
+import re
+from contextlib import suppress
+from io import BytesIO
+from time import time
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, TypedDict, TypeVar, Union
+from urllib.parse import urldefrag, urlunparse
+
+from twisted.internet import ssl
+from twisted.internet.defer import CancelledError, Deferred, succeed
+from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.error import TimeoutError
+from twisted.internet.protocol import Factory, Protocol, connectionDone
+from twisted.python.failure import Failure
+from twisted.web.client import URI, Agent, HTTPConnectionPool
+from twisted.web.client import Response as TxResponse
+from twisted.web.client import ResponseDone, ResponseFailed
+from twisted.web.http_headers import Headers as TxHeaders
+from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS
+from zope.interface import implementer
+
+from scrapy import Request, Spider, signals
+from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
+from scrapy.core.downloader.webclient import _parse
+from scrapy.exceptions import StopDownload
+from scrapy.http import Headers, Response
+from scrapy.responsetypes import responsetypes
+from scrapy.utils.python import to_bytes, to_unicode
+
+if TYPE_CHECKING:
+    from twisted.internet.base import ReactorBase
+    from twisted.internet.interfaces import IConsumer
+
+    from typing_extensions import NotRequired, Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
 
 logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
-
 
 class _ResultT(TypedDict):
     txresponse: TxResponse
@@ -56,7 +96,6 @@ class _ResultT(TypedDict):
     certificate: Optional[ssl.Certificate]
     ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address, None]
     failure: NotRequired[Optional[Failure]]
-
 
 class HTTP11DownloadHandler:
     lazy = False
@@ -67,14 +106,10 @@ class HTTP11DownloadHandler:
         from twisted.internet import reactor
 
         self._pool: HTTPConnectionPool = HTTPConnectionPool(reactor, persistent=True)
-        self._pool.maxPersistentPerHost = settings.getint(
-            "CONCURRENT_REQUESTS_PER_DOMAIN"
-        )
+        self._pool.maxPersistentPerHost = settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN")
         self._pool._factory.noisy = False
 
-        self._contextFactory: IPolicyForHTTPS = load_context_factory_from_settings(
-            settings, crawler
-        )
+        self._contextFactory: IPolicyForHTTPS = load_context_factory_from_settings(settings, crawler)
         self._default_maxsize: int = settings.getint("DOWNLOAD_MAXSIZE")
         self._default_warnsize: int = settings.getint("DOWNLOAD_WARNSIZE")
         self._fail_on_dataloss: bool = settings.getbool("DOWNLOAD_FAIL_ON_DATALOSS")
@@ -100,14 +135,6 @@ class HTTP11DownloadHandler:
         from twisted.internet import reactor
 
         d: Deferred[None] = self._pool.closeCachedConnections()
-        # closeCachedConnections will hang on network or server issues, so
-        # we'll manually timeout the deferred.
-        #
-        # Twisted issue addressing this problem can be found here:
-        # https://twistedmatrix.com/trac/ticket/7738.
-        #
-        # closeCachedConnections doesn't handle external errbacks, so we'll
-        # issue a callback after `_disconnect_timeout` seconds.
         delayed_call = reactor.callLater(self._disconnect_timeout, d.callback, [])
 
         def cancel_delayed_call(result: _T) -> _T:
