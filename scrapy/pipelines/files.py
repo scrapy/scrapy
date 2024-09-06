@@ -191,6 +191,7 @@ class S3FilesStore:
                 "X-Amz-Request-Payer": "RequestPayer",
                 "X-Amz-Server-Side-Encryption": "ServerSideEncryption",
                 "X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id": "SSEKMSKeyId",
+                "X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id": "SSEKMSKeyId",
                 "X-Amz-Server-Side-Encryption-Context": "SSEKMSEncryptionContext",
                 "X-Amz-Server-Side-Encryption-Customer-Algorithm": "SSECustomerAlgorithm",
                 "X-Amz-Server-Side-Encryption-Customer-Key": "SSECustomerKey",
@@ -506,34 +507,30 @@ class FilesPipeline(MediaPipeline):
         )
         self.inc_stats(info.spider, status)
 
-        try:
-            path = self.file_path(request, response=response, info=info, item=item)
-            checksum = self.file_downloaded(response, request, info, item=item)
-        except FileException as exc:
-            logger.warning(
-                "File (error): Error processing file from %(request)s "
-                "referred in <%(referer)s>: %(errormsg)s",
-                {"request": request, "referer": referer, "errormsg": str(exc)},
-                extra={"spider": info.spider},
-                exc_info=True,
-            )
-            raise
-        except Exception as exc:
-            logger.error(
-                "File (unknown-error): Error processing file from %(request)s "
-                "referred in <%(referer)s>",
-                {"request": request, "referer": referer},
-                exc_info=True,
-                extra={"spider": info.spider},
-            )
-            raise FileException(str(exc))
+        deferred = defer.maybeDeferred(
+            self._download_file_with_deferred, response, request, info, item
+        )
 
+        deferred.addCallback(self._handle_file_download_success, request, info, referer)
+        deferred.addErrback(self._handle_file_download_failure, request, info, referer)
+
+        return deferred
+
+    def _download_file_with_deferred(self, response, request, info, item):
+        return self.file_downloaded(response, request, info, item=item)
+
+    def _handle_file_download_success(self, checksum, request, info):
+        path = self.file_path(request, response=None, info=info, item=None)
         return {
             "url": request.url,
             "path": path,
             "checksum": checksum,
-            "status": status,
+            "status": "downloaded",
         }
+
+    def _handle_file_download_failure(self, failure, request, info, referer):
+        logger.error(f"Failed to download file from {request.url}, referer {referer}")
+        raise FileException(f"Failed to download file from {request.url}")
 
     def inc_stats(self, spider, status):
         spider.crawler.stats.inc_value("file_count", spider=spider)
@@ -549,8 +546,9 @@ class FilesPipeline(MediaPipeline):
         buf = BytesIO(response.body)
         checksum = _md5sum(buf)
         buf.seek(0)
-        self.store.persist_file(path, buf, info)
-        return checksum
+
+        dfd = defer.maybeDeferred(self.store.persist_file, path, buf, info)
+        return dfd.addCallback(lambda _: checksum)
 
     def item_completed(self, results, item, info):
         with suppress(KeyError):
