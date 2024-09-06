@@ -510,7 +510,7 @@ class FilesPipeline(MediaPipeline):
             self._download_file_with_deferred, response, request, info, item
         )
 
-        deferred.addCallback(self._handle_file_download_success, request, info, referer)
+        deferred.addCallback(self._handle_file_download_success, request, info, status)
         deferred.addErrback(self._handle_file_download_failure, request, info, referer)
 
         return deferred
@@ -518,18 +518,24 @@ class FilesPipeline(MediaPipeline):
     def _download_file_with_deferred(self, response, request, info, item):
         return self.file_downloaded(response, request, info, item=item)
 
-    def _handle_file_download_success(self, checksum, request, info):
+    def _handle_file_download_success(self, checksum, request, info, status):
         path = self.file_path(request, response=None, info=info, item=None)
         return {
             "url": request.url,
             "path": path,
             "checksum": checksum,
-            "status": "downloaded",
+            "status": status,
         }
 
     def _handle_file_download_failure(self, failure, request, info, referer):
-        logger.error(f"Failed to download file from {request.url}, referer {referer}")
-        raise FileException(f"Failed to download file from {request.url}")
+        logger.error(
+            "File (unknown-error): Error processing file from %(request)s "
+            "referred in <%(referer)s>",
+            {"request": request, "referer": referer},
+            exc_info=True,
+            extra={"spider": info.spider},
+        )
+        raise FileException(str(failure))
 
     def inc_stats(self, spider, status):
         spider.crawler.stats.inc_value("file_count", spider=spider)
