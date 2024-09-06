@@ -4,21 +4,27 @@ import json
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Type, cast
 
-from twisted.internet.defer import Deferred
+# working around https://github.com/sphinx-doc/sphinx/issues/10400
+from twisted.internet.defer import Deferred  # noqa: TC002
 
-from scrapy.crawler import Crawler
-from scrapy.dupefilters import BaseDupeFilter
-from scrapy.http.request import Request
-from scrapy.spiders import Spider
-from scrapy.statscollectors import StatsCollector
+from scrapy.spiders import Spider  # noqa: TC001
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
+    # requires queuelib >= 1.6.2
+    from queuelib.queue import BaseQueue
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.dupefilters import BaseDupeFilter
+    from scrapy.http.request import Request
+    from scrapy.pqueues import ScrapyPriorityQueue
+    from scrapy.statscollectors import StatsCollector
 
 
 logger = logging.getLogger(__name__)
@@ -67,7 +73,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         """
         return cls()
 
-    def open(self, spider: Spider) -> Optional[Deferred]:
+    def open(self, spider: Spider) -> Optional[Deferred[None]]:
         """
         Called when the spider is opened by the engine. It receives the spider
         instance as argument and it's useful to execute initialization code.
@@ -77,7 +83,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         """
         pass
 
-    def close(self, reason: str) -> Optional[Deferred]:
+    def close(self, reason: str) -> Optional[Deferred[None]]:
         """
         Called when the spider is closed by the engine. It receives the reason why the crawl
         finished as argument and it's useful to execute cleaning code.
@@ -119,9 +125,6 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         calling ``next_request`` until ``has_pending_requests`` is ``False``.
         """
         raise NotImplementedError()
-
-
-SchedulerTV = TypeVar("SchedulerTV", bound="Scheduler")
 
 
 class Scheduler(BaseScheduler):
@@ -179,24 +182,24 @@ class Scheduler(BaseScheduler):
         self,
         dupefilter: BaseDupeFilter,
         jobdir: Optional[str] = None,
-        dqclass=None,
-        mqclass=None,
+        dqclass: Optional[Type[BaseQueue]] = None,
+        mqclass: Optional[Type[BaseQueue]] = None,
         logunser: bool = False,
         stats: Optional[StatsCollector] = None,
-        pqclass=None,
+        pqclass: Optional[Type[ScrapyPriorityQueue]] = None,
         crawler: Optional[Crawler] = None,
     ):
         self.df: BaseDupeFilter = dupefilter
         self.dqdir: Optional[str] = self._dqdir(jobdir)
-        self.pqclass = pqclass
-        self.dqclass = dqclass
-        self.mqclass = mqclass
+        self.pqclass: Optional[Type[ScrapyPriorityQueue]] = pqclass
+        self.dqclass: Optional[Type[BaseQueue]] = dqclass
+        self.mqclass: Optional[Type[BaseQueue]] = mqclass
         self.logunser: bool = logunser
         self.stats: Optional[StatsCollector] = stats
         self.crawler: Optional[Crawler] = crawler
 
     @classmethod
-    def from_crawler(cls: Type[SchedulerTV], crawler: Crawler) -> SchedulerTV:
+    def from_crawler(cls, crawler: Crawler) -> Self:
         """
         Factory method, initializes the scheduler with arguments taken from the crawl settings
         """
@@ -215,18 +218,18 @@ class Scheduler(BaseScheduler):
     def has_pending_requests(self) -> bool:
         return len(self) > 0
 
-    def open(self, spider: Spider) -> Optional[Deferred]:
+    def open(self, spider: Spider) -> Optional[Deferred[None]]:
         """
         (1) initialize the memory queue
         (2) initialize the disk queue if the ``jobdir`` attribute is a valid directory
         (3) return the result of the dupefilter's ``open`` method
         """
-        self.spider = spider
-        self.mqs = self._mq()
-        self.dqs = self._dq() if self.dqdir else None
+        self.spider: Spider = spider
+        self.mqs: ScrapyPriorityQueue = self._mq()
+        self.dqs: Optional[ScrapyPriorityQueue] = self._dq() if self.dqdir else None
         return self.df.open()
 
-    def close(self, reason: str) -> Optional[Deferred]:
+    def close(self, reason: str) -> Optional[Deferred[None]]:
         """
         (1) dump pending requests to disk if there is a disk queue
         (2) return the result of the dupefilter's ``close`` method
@@ -320,8 +323,10 @@ class Scheduler(BaseScheduler):
             return self.dqs.pop()
         return None
 
-    def _mq(self):
+    def _mq(self) -> ScrapyPriorityQueue:
         """Create a new priority queue instance, with in-memory storage"""
+        assert self.crawler
+        assert self.pqclass
         return build_from_crawler(
             self.pqclass,
             self.crawler,
@@ -329,9 +334,11 @@ class Scheduler(BaseScheduler):
             key="",
         )
 
-    def _dq(self):
+    def _dq(self) -> ScrapyPriorityQueue:
         """Create a new priority queue instance, with disk storage"""
+        assert self.crawler
         assert self.dqdir
+        assert self.pqclass
         state = self._read_dqs_state(self.dqdir)
         q = build_from_crawler(
             self.pqclass,
@@ -357,13 +364,13 @@ class Scheduler(BaseScheduler):
             return str(dqdir)
         return None
 
-    def _read_dqs_state(self, dqdir: str) -> list:
+    def _read_dqs_state(self, dqdir: str) -> List[int]:
         path = Path(dqdir, "active.json")
         if not path.exists():
             return []
         with path.open(encoding="utf-8") as f:
-            return cast(list, json.load(f))
+            return cast(List[int], json.load(f))
 
-    def _write_dqs_state(self, dqdir: str, state: list) -> None:
+    def _write_dqs_state(self, dqdir: str, state: List[int]) -> None:
         with Path(dqdir, "active.json").open("w", encoding="utf-8") as f:
             json.dump(state, f)

@@ -7,25 +7,23 @@ See documentation in docs/topics/request-response.rst
 
 from __future__ import annotations
 
-from ipaddress import IPv4Address, IPv6Address
 from typing import (
     TYPE_CHECKING,
     Any,
     AnyStr,
     Callable,
     Dict,
-    Generator,
     Iterable,
     List,
     Mapping,
     Optional,
     Tuple,
+    Type,
+    TypeVar,
     Union,
-    cast,
+    overload,
 )
 from urllib.parse import urljoin
-
-from twisted.internet.ssl import Certificate
 
 from scrapy.exceptions import NotSupported
 from scrapy.http.headers import Headers
@@ -34,7 +32,19 @@ from scrapy.link import Link
 from scrapy.utils.trackref import object_ref
 
 if TYPE_CHECKING:
+    from ipaddress import IPv4Address, IPv6Address
+
+    from twisted.internet.ssl import Certificate
+    from twisted.python.failure import Failure
+
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.http.request import CallbackT, CookiesT
     from scrapy.selector import SelectorList
+
+
+ResponseTypeVar = TypeVar("ResponseTypeVar", bound="Response")
 
 
 class Response(object_ref):
@@ -133,16 +143,27 @@ class Response(object_ref):
     def __repr__(self) -> str:
         return f"<{self.status} {self.url}>"
 
-    def copy(self) -> Response:
+    def copy(self) -> Self:
         """Return a copy of this Response"""
         return self.replace()
 
-    def replace(self, *args: Any, **kwargs: Any) -> Response:
+    @overload
+    def replace(
+        self, *args: Any, cls: Type[ResponseTypeVar], **kwargs: Any
+    ) -> ResponseTypeVar: ...
+
+    @overload
+    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self: ...
+
+    def replace(
+        self, *args: Any, cls: Optional[Type[Response]] = None, **kwargs: Any
+    ) -> Response:
         """Create a new Response with the same attributes except for those given new values"""
         for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
-        cls = kwargs.pop("cls", self.__class__)
-        return cast(Response, cls(*args, **kwargs))
+        if cls is None:
+            cls = self.__class__
+        return cls(*args, **kwargs)
 
     def urljoin(self, url: str) -> str:
         """Join this Response's url with a possible relative url to form an
@@ -177,16 +198,16 @@ class Response(object_ref):
     def follow(
         self,
         url: Union[str, Link],
-        callback: Optional[Callable] = None,
+        callback: Optional[CallbackT] = None,
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
-        cookies: Optional[Union[dict, List[dict]]] = None,
+        cookies: Optional[CookiesT] = None,
         meta: Optional[Dict[str, Any]] = None,
         encoding: Optional[str] = "utf-8",
         priority: int = 0,
         dont_filter: bool = False,
-        errback: Optional[Callable] = None,
+        errback: Optional[Callable[[Failure], Any]] = None,
         cb_kwargs: Optional[Dict[str, Any]] = None,
         flags: Optional[List[str]] = None,
     ) -> Request:
@@ -230,19 +251,19 @@ class Response(object_ref):
     def follow_all(
         self,
         urls: Iterable[Union[str, Link]],
-        callback: Optional[Callable] = None,
+        callback: Optional[CallbackT] = None,
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
-        cookies: Optional[Union[dict, List[dict]]] = None,
+        cookies: Optional[CookiesT] = None,
         meta: Optional[Dict[str, Any]] = None,
         encoding: Optional[str] = "utf-8",
         priority: int = 0,
         dont_filter: bool = False,
-        errback: Optional[Callable] = None,
+        errback: Optional[Callable[[Failure], Any]] = None,
         cb_kwargs: Optional[Dict[str, Any]] = None,
         flags: Optional[List[str]] = None,
-    ) -> Generator[Request, None, None]:
+    ) -> Iterable[Request]:
         """
         .. versionadded:: 2.0
 

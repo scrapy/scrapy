@@ -6,7 +6,7 @@ from bz2 import BZ2File
 from gzip import GzipFile
 from io import IOBase
 from lzma import LZMAFile
-from typing import Any, BinaryIO, Dict, List, cast
+from typing import IO, Any, BinaryIO, Dict, List, cast
 
 from scrapy.utils.misc import load_object
 
@@ -126,7 +126,7 @@ class PostProcessingManager(IOBase):
     """
 
     def __init__(
-        self, plugins: List[Any], file: BinaryIO, feed_options: Dict[str, Any]
+        self, plugins: List[Any], file: IO[bytes], feed_options: Dict[str, Any]
     ) -> None:
         self.plugins = self._load_plugins(plugins)
         self.file = file

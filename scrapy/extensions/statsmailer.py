@@ -8,17 +8,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Optional
 
-from twisted.internet.defer import Deferred
-
 from scrapy import Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.mail import MailSender
-from scrapy.statscollectors import StatsCollector
 
 if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
 
 
 class StatsMailer:
@@ -38,7 +39,7 @@ class StatsMailer:
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
 
-    def spider_closed(self, spider: Spider) -> Optional[Deferred]:
+    def spider_closed(self, spider: Spider) -> Optional[Deferred[None]]:
         spider_stats = self.stats.get_stats(spider)
         body = "Global stats\n\n"
         body += "\n".join(f"{k:<50} : {v}" for k, v in self.stats.get_stats().items())

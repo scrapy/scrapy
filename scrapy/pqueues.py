@@ -1,12 +1,33 @@
+from __future__ import annotations
+
 import hashlib
 import logging
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Protocol,
+    Tuple,
+    Type,
+    cast,
+)
 
+from scrapy import Request
+from scrapy.core.downloader import Downloader
 from scrapy.utils.misc import build_from_crawler
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
 
 logger = logging.getLogger(__name__)
 
 
-def _path_safe(text):
+def _path_safe(text: str) -> str:
     """
     Return a filesystem-safe version of a string ``text``
 
@@ -22,6 +43,18 @@ def _path_safe(text):
     # add we add unique part
     unique_slot = hashlib.md5(text.encode("utf8")).hexdigest()  # nosec
     return "-".join([pathable_slot, unique_slot])
+
+
+class QueueProtocol(Protocol):
+    """Protocol for downstream queues of ``ScrapyPriorityQueue``."""
+
+    def push(self, request: Request) -> None: ...
+
+    def pop(self) -> Optional[Request]: ...
+
+    def close(self) -> None: ...
+
+    def __len__(self) -> int: ...
 
 
 class ScrapyPriorityQueue:
@@ -51,18 +84,30 @@ class ScrapyPriorityQueue:
     """
 
     @classmethod
-    def from_crawler(cls, crawler, downstream_queue_cls, key, startprios=()):
+    def from_crawler(
+        cls,
+        crawler: Crawler,
+        downstream_queue_cls: Type[QueueProtocol],
+        key: str,
+        startprios: Iterable[int] = (),
+    ) -> Self:
         return cls(crawler, downstream_queue_cls, key, startprios)
 
-    def __init__(self, crawler, downstream_queue_cls, key, startprios=()):
-        self.crawler = crawler
-        self.downstream_queue_cls = downstream_queue_cls
-        self.key = key
-        self.queues = {}
-        self.curprio = None
+    def __init__(
+        self,
+        crawler: Crawler,
+        downstream_queue_cls: Type[QueueProtocol],
+        key: str,
+        startprios: Iterable[int] = (),
+    ):
+        self.crawler: Crawler = crawler
+        self.downstream_queue_cls: Type[QueueProtocol] = downstream_queue_cls
+        self.key: str = key
+        self.queues: Dict[int, QueueProtocol] = {}
+        self.curprio: Optional[int] = None
         self.init_prios(startprios)
 
-    def init_prios(self, startprios):
+    def init_prios(self, startprios: Iterable[int]) -> None:
         if not startprios:
             return
 
@@ -71,17 +116,17 @@ class ScrapyPriorityQueue:
 
         self.curprio = min(startprios)
 
-    def qfactory(self, key):
+    def qfactory(self, key: int) -> QueueProtocol:
         return build_from_crawler(
             self.downstream_queue_cls,
             self.crawler,
             self.key + "/" + str(key),
         )
 
-    def priority(self, request):
+    def priority(self, request: Request) -> int:
         return -request.priority
 
-    def push(self, request):
+    def push(self, request: Request) -> None:
         priority = self.priority(request)
         if priority not in self.queues:
             self.queues[priority] = self.qfactory(priority)
@@ -90,9 +135,9 @@ class ScrapyPriorityQueue:
         if self.curprio is None or priority < self.curprio:
             self.curprio = priority
 
-    def pop(self):
+    def pop(self) -> Optional[Request]:
         if self.curprio is None:
-            return
+            return None
         q = self.queues[self.curprio]
         m = q.pop()
         if not q:
@@ -102,7 +147,7 @@ class ScrapyPriorityQueue:
             self.curprio = min(prios) if prios else None
         return m
 
-    def peek(self):
+    def peek(self) -> Optional[Request]:
         """Returns the next object to be returned by :meth:`pop`,
         but without removing it from the queue.
 
@@ -112,30 +157,32 @@ class ScrapyPriorityQueue:
         if self.curprio is None:
             return None
         queue = self.queues[self.curprio]
-        return queue.peek()
+        # Protocols can't declare optional members
+        return cast(Request, queue.peek())  # type: ignore[attr-defined]
 
-    def close(self):
-        active = []
+    def close(self) -> List[int]:
+        active: List[int] = []
         for p, q in self.queues.items():
             active.append(p)
             q.close()
         return active
 
-    def __len__(self):
+    def __len__(self) -> int:
         return sum(len(x) for x in self.queues.values()) if self.queues else 0
 
 
 class DownloaderInterface:
-    def __init__(self, crawler):
-        self.downloader = crawler.engine.downloader
+    def __init__(self, crawler: Crawler):
+        assert crawler.engine
+        self.downloader: Downloader = crawler.engine.downloader
 
-    def stats(self, possible_slots):
+    def stats(self, possible_slots: Iterable[str]) -> List[Tuple[int, str]]:
         return [(self._active_downloads(slot), slot) for slot in possible_slots]
 
-    def get_slot_key(self, request):
-        return self.downloader._get_slot_key(request, None)
+    def get_slot_key(self, request: Request) -> str:
+        return self.downloader.get_slot_key(request)
 
-    def _active_downloads(self, slot):
+    def _active_downloads(self, slot: str) -> int:
         """Return a number of requests in a Downloader for a given slot"""
         if slot not in self.downloader.slots:
             return 0
@@ -149,10 +196,22 @@ class DownloaderAwarePriorityQueue:
     """
 
     @classmethod
-    def from_crawler(cls, crawler, downstream_queue_cls, key, startprios=()):
+    def from_crawler(
+        cls,
+        crawler: Crawler,
+        downstream_queue_cls: Type[QueueProtocol],
+        key: str,
+        startprios: Optional[Dict[str, Iterable[int]]] = None,
+    ) -> Self:
         return cls(crawler, downstream_queue_cls, key, startprios)
 
-    def __init__(self, crawler, downstream_queue_cls, key, slot_startprios=()):
+    def __init__(
+        self,
+        crawler: Crawler,
+        downstream_queue_cls: Type[QueueProtocol],
+        key: str,
+        slot_startprios: Optional[Dict[str, Iterable[int]]] = None,
+    ):
         if crawler.settings.getint("CONCURRENT_REQUESTS_PER_IP") != 0:
             raise ValueError(
                 f'"{self.__class__}" does not support CONCURRENT_REQUESTS_PER_IP'
@@ -169,16 +228,18 @@ class DownloaderAwarePriorityQueue:
                 "queue class can be resumed."
             )
 
-        self._downloader_interface = DownloaderInterface(crawler)
-        self.downstream_queue_cls = downstream_queue_cls
-        self.key = key
-        self.crawler = crawler
+        self._downloader_interface: DownloaderInterface = DownloaderInterface(crawler)
+        self.downstream_queue_cls: Type[QueueProtocol] = downstream_queue_cls
+        self.key: str = key
+        self.crawler: Crawler = crawler
 
-        self.pqueues = {}  # slot -> priority queue
+        self.pqueues: Dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
         for slot, startprios in (slot_startprios or {}).items():
             self.pqueues[slot] = self.pqfactory(slot, startprios)
 
-    def pqfactory(self, slot, startprios=()):
+    def pqfactory(
+        self, slot: str, startprios: Iterable[int] = ()
+    ) -> ScrapyPriorityQueue:
         return ScrapyPriorityQueue(
             self.crawler,
             self.downstream_queue_cls,
@@ -186,11 +247,11 @@ class DownloaderAwarePriorityQueue:
             startprios,
         )
 
-    def pop(self):
+    def pop(self) -> Optional[Request]:
         stats = self._downloader_interface.stats(self.pqueues)
 
         if not stats:
-            return
+            return None
 
         slot = min(stats)[1]
         queue = self.pqueues[slot]
@@ -199,14 +260,14 @@ class DownloaderAwarePriorityQueue:
             del self.pqueues[slot]
         return request
 
-    def push(self, request):
+    def push(self, request: Request) -> None:
         slot = self._downloader_interface.get_slot_key(request)
         if slot not in self.pqueues:
             self.pqueues[slot] = self.pqfactory(slot)
         queue = self.pqueues[slot]
         queue.push(request)
 
-    def peek(self):
+    def peek(self) -> Optional[Request]:
         """Returns the next object to be returned by :meth:`pop`,
         but without removing it from the queue.
 
@@ -220,13 +281,13 @@ class DownloaderAwarePriorityQueue:
         queue = self.pqueues[slot]
         return queue.peek()
 
-    def close(self):
+    def close(self) -> Dict[str, List[int]]:
         active = {slot: queue.close() for slot, queue in self.pqueues.items()}
         self.pqueues.clear()
         return active
 
-    def __len__(self):
+    def __len__(self) -> int:
         return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
 
-    def __contains__(self, slot):
+    def __contains__(self, slot: str) -> bool:
         return slot in self.pqueues

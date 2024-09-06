@@ -58,7 +58,7 @@ def response_status_message(status: Union[bytes, float, int, str]) -> str:
     return f"{status_int} {to_unicode(message)}"
 
 
-def _remove_html_comments(body):
+def _remove_html_comments(body: bytes) -> bytes:
     start = body.find(b"<!--")
     while start != -1:
         end = body.find(b"-->", start + 1)

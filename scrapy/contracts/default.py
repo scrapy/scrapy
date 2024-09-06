@@ -1,4 +1,5 @@
 import json
+from typing import Any, Callable, Dict, List, Optional
 
 from itemadapter import ItemAdapter, is_item
 
@@ -15,7 +16,7 @@ class UrlContract(Contract):
 
     name = "url"
 
-    def adjust_request_args(self, args):
+    def adjust_request_args(self, args: Dict[str, Any]) -> Dict[str, Any]:
         args["url"] = self.args[0]
         return args
 
@@ -29,8 +30,22 @@ class CallbackKeywordArgumentsContract(Contract):
 
     name = "cb_kwargs"
 
-    def adjust_request_args(self, args):
+    def adjust_request_args(self, args: Dict[str, Any]) -> Dict[str, Any]:
         args["cb_kwargs"] = json.loads(" ".join(self.args))
+        return args
+
+
+class MetadataContract(Contract):
+    """Contract to set metadata arguments for the request.
+    The value should be JSON-encoded dictionary, e.g.:
+
+    @meta {"arg1": "some value"}
+    """
+
+    name = "meta"
+
+    def adjust_request_args(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        args["meta"] = json.loads(" ".join(self.args))
         return args
 
 
@@ -48,14 +63,14 @@ class ReturnsContract(Contract):
     """
 
     name = "returns"
-    object_type_verifiers = {
+    object_type_verifiers: Dict[Optional[str], Callable[[Any], bool]] = {
         "request": lambda x: isinstance(x, Request),
         "requests": lambda x: isinstance(x, Request),
         "item": is_item,
         "items": is_item,
     }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
         if len(self.args) not in [1, 2, 3]:
@@ -66,16 +81,16 @@ class ReturnsContract(Contract):
         self.obj_type_verifier = self.object_type_verifiers[self.obj_name]
 
         try:
-            self.min_bound = int(self.args[1])
+            self.min_bound: float = int(self.args[1])
         except IndexError:
             self.min_bound = 1
 
         try:
-            self.max_bound = int(self.args[2])
+            self.max_bound: float = int(self.args[2])
         except IndexError:
             self.max_bound = float("inf")
 
-    def post_process(self, output):
+    def post_process(self, output: List[Any]) -> None:
         occurrences = 0
         for x in output:
             if self.obj_type_verifier(x):
@@ -85,7 +100,7 @@ class ReturnsContract(Contract):
 
         if not assertion:
             if self.min_bound == self.max_bound:
-                expected = self.min_bound
+                expected = str(self.min_bound)
             else:
                 expected = f"{self.min_bound}..{self.max_bound}"
 
@@ -101,7 +116,7 @@ class ScrapesContract(Contract):
 
     name = "scrapes"
 
-    def post_process(self, output):
+    def post_process(self, output: List[Any]) -> None:
         for x in output:
             if is_item(x):
                 missing = [arg for arg in self.args if arg not in ItemAdapter(x)]

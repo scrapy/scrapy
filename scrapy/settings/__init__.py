@@ -4,7 +4,6 @@ import copy
 import json
 from importlib import import_module
 from pprint import pformat
-from types import ModuleType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -27,6 +26,8 @@ from scrapy.settings import default_settings
 _SettingsKeyT = Union[bool, float, int, str, None]
 
 if TYPE_CHECKING:
+    from types import ModuleType
+
     # https://github.com/python/typing/issues/445#issuecomment-1131458824
     from _typeshed import SupportsItems
 
@@ -275,7 +276,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         assert isinstance(value, (dict, list))
         return copy.deepcopy(value)
 
-    def getwithbase(self, name: _SettingsKeyT) -> "BaseSettings":
+    def getwithbase(self, name: _SettingsKeyT) -> BaseSettings:
         """Get a composition of a dictionary-like setting and its `_BASE`
         counterpart.
 
@@ -411,7 +412,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """
         self._assert_mutability()
         if isinstance(values, str):
-            values = cast(dict, json.loads(values))
+            values = cast(Dict[_SettingsKeyT, Any], json.loads(values))
         if values is not None:
             if isinstance(values, BaseSettings):
                 for name, value in values.items():
@@ -438,7 +439,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         if self.frozen:
             raise TypeError("Trying to modify an immutable Settings object")
 
-    def copy(self) -> "Self":
+    def copy(self) -> Self:
         """
         Make a deep copy of current settings.
 
@@ -460,7 +461,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """
         self.frozen = True
 
-    def frozencopy(self) -> "Self":
+    def frozencopy(self) -> Self:
         """
         Return an immutable copy of the current settings.
 

@@ -2,20 +2,38 @@
 This module contains some assorted functions used in tests
 """
 
+from __future__ import annotations
+
 import asyncio
 import os
 from importlib import import_module
 from pathlib import Path
 from posixpath import split
-from typing import Any, Coroutine, Dict, List, Optional, Tuple, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Awaitable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+)
 from unittest import TestCase, mock
 
-from twisted.internet.defer import Deferred
 from twisted.trial.unittest import SkipTest
 
 from scrapy import Spider
 from scrapy.crawler import Crawler
 from scrapy.utils.boto import is_botocore_available
+
+if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+    from twisted.web.client import Response as TxResponse
+
+
+_T = TypeVar("_T")
 
 
 def assert_gcs_environ() -> None:
@@ -118,8 +136,8 @@ def assert_samelines(
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
 
 
-def get_from_asyncio_queue(value: Any) -> Coroutine:
-    q: asyncio.Queue = asyncio.Queue()
+def get_from_asyncio_queue(value: _T) -> Awaitable[_T]:
+    q: asyncio.Queue[_T] = asyncio.Queue()
     getter = q.get()
     q.put_nowait(value)
     return getter
@@ -142,7 +160,7 @@ def mock_google_cloud_storage() -> Tuple[Any, Any, Any]:
     return (client_mock, bucket_mock, blob_mock)
 
 
-def get_web_client_agent_req(url: str) -> Deferred:
+def get_web_client_agent_req(url: str) -> Deferred[TxResponse]:
     from twisted.internet import reactor
     from twisted.web.client import Agent  # imports twisted.internet.reactor
 

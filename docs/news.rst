@@ -3,6 +3,130 @@
 Release notes
 =============
 
+.. _release-VERSION:
+
+Scrapy VERSION (YYYY-MM-DD)
+---------------------------
+
+Deprecations
+~~~~~~~~~~~~
+
+-   :meth:`scrapy.core.downloader.Downloader._get_slot_key` is deprecated, use
+    :meth:`scrapy.core.downloader.Downloader.get_slot_key` instead.
+    (:issue:`6340`)
+
+
+.. _release-2.11.2:
+
+Scrapy 2.11.2 (2024-05-14)
+--------------------------
+
+Security bug fixes
+~~~~~~~~~~~~~~~~~~
+
+-   Redirects to non-HTTP protocols are no longer followed. Please, see the
+    `23j4-mw76-5v7h security advisory`_ for more information. (:issue:`457`)
+
+    .. _23j4-mw76-5v7h security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-23j4-mw76-5v7h
+
+-   The ``Authorization`` header is now dropped on redirects to a different
+    scheme (``http://`` or ``https://``) or port, even if the domain is the
+    same. Please, see the `4qqq-9vqf-3h3f security advisory`_ for more
+    information.
+
+    .. _4qqq-9vqf-3h3f security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-4qqq-9vqf-3h3f
+
+-   When using system proxy settings that are different for ``http://`` and
+    ``https://``, redirects to a different URL scheme will now also trigger the
+    corresponding change in proxy settings for the redirected request. Please,
+    see the `jm3v-qxmh-hxwv security advisory`_ for more information.
+    (:issue:`767`)
+
+    .. _jm3v-qxmh-hxwv security advisory: https://github.com/scrapy/scrapy/security/advisories/GHSA-jm3v-qxmh-hxwv
+
+-   :attr:`Spider.allowed_domains <scrapy.Spider.allowed_domains>` is now
+    enforced for all requests, and not only requests from spider callbacks.
+    (:issue:`1042`, :issue:`2241`, :issue:`6358`)
+
+-   :func:`~scrapy.utils.iterators.xmliter_lxml` no longer resolves XML
+    entities. (:issue:`6265`)
+
+-   defusedxml_ is now used to make
+    :class:`scrapy.http.request.rpc.XmlRpcRequest` more secure.
+    (:issue:`6250`, :issue:`6251`)
+
+    .. _defusedxml: https://github.com/tiran/defusedxml
+
+Bug fixes
+~~~~~~~~~
+
+-   Restored support for brotlipy_, which had been dropped in Scrapy 2.11.1 in
+    favor of brotli_. (:issue:`6261`)
+
+    .. _brotli: https://github.com/google/brotli
+
+    .. note:: brotlipy is deprecated, both in Scrapy and upstream. Use brotli
+        instead if you can.
+
+-   Make :setting:`METAREFRESH_IGNORE_TAGS` ``["noscript"]`` by default. This
+    prevents
+    :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware` from
+    following redirects that would not be followed by web browsers with
+    JavaScript enabled. (:issue:`6342`, :issue:`6347`)
+
+-   During :ref:`feed export <topics-feed-exports>`, do not close the
+    underlying file from :ref:`built-in post-processing plugins
+    <builtin-plugins>`.
+    (:issue:`5932`, :issue:`6178`, :issue:`6239`)
+
+-   :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
+    now properly applies the ``unique`` and ``canonicalize`` parameters.
+    (:issue:`3273`, :issue:`6221`)
+
+-   Do not initialize the scheduler disk queue if :setting:`JOBDIR` is an empty
+    string. (:issue:`6121`, :issue:`6124`)
+
+-   Fix :attr:`Spider.logger <scrapy.Spider.logger>` not logging custom extra
+    information. (:issue:`6323`, :issue:`6324`)
+
+-   ``robots.txt`` files with a non-UTF-8 encoding no longer prevent parsing
+    the UTF-8-compatible (e.g. ASCII) parts of the document.
+    (:issue:`6292`, :issue:`6298`)
+
+-   :meth:`scrapy.http.cookies.WrappedRequest.get_header` no longer raises an
+    exception if ``default`` is ``None``.
+    (:issue:`6308`, :issue:`6310`)
+
+-   :class:`~scrapy.selector.Selector` now uses
+    :func:`scrapy.utils.response.get_base_url` to determine the base URL of a
+    given :class:`~scrapy.http.Response`. (:issue:`6265`)
+
+-   The :meth:`media_to_download` method of :ref:`media pipelines
+    <topics-media-pipeline>` now logs exceptions before stripping them.
+    (:issue:`5067`, :issue:`5068`)
+
+-   When passing a callback to the :command:`parse` command, build the callback
+    callable with the right signature.
+    (:issue:`6182`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Add a FAQ entry about :ref:`creating blank requests <faq-blank-request>`.
+    (:issue:`6203`, :issue:`6208`)
+
+-   Document that :attr:`scrapy.selector.Selector.type` can be ``"json"``.
+    (:issue:`6328`, :issue:`6334`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Make builds reproducible. (:issue:`5019`, :issue:`6322`)
+
+-   Packaging and test fixes.
+    (:issue:`6286`, :issue:`6290`, :issue:`6312`, :issue:`6316`, :issue:`6344`)
+
+
 .. _release-2.11.1:
 
 Scrapy 2.11.1 (2024-02-14)

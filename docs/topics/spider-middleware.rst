@@ -51,8 +51,8 @@ value.  For example, if you want to disable the off-site middleware:
 .. code-block:: python
 
     SPIDER_MIDDLEWARES = {
-        "myproject.middlewares.CustomSpiderMiddleware": 543,
-        "scrapy.spidermiddlewares.offsite.OffsiteMiddleware": None,
+        "scrapy.spidermiddlewares.referer.RefererMiddleware": None,
+        "myproject.middlewares.CustomRefererSpiderMiddleware": 700,
     }
 
 Finally, keep in mind that some middlewares may need to be enabled through a
@@ -176,7 +176,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         items).
 
         It receives an iterable (in the ``start_requests`` parameter) and must
-        return another iterable of :class:`~scrapy.Request` objects.
+        return another iterable of :class:`~scrapy.Request` objects and/or :ref:`item objects <topics-items>`.
 
         .. note:: When implementing this method in your spider middleware, you
            should always return an iterable (that follows the input one) and
@@ -312,42 +312,6 @@ HTTPERROR_ALLOW_ALL
 Default: ``False``
 
 Pass all responses, regardless of its status code.
-
-OffsiteMiddleware
------------------
-
-.. module:: scrapy.spidermiddlewares.offsite
-   :synopsis: Offsite Spider Middleware
-
-.. class:: OffsiteMiddleware
-
-   Filters out Requests for URLs outside the domains covered by the spider.
-
-   This middleware filters out every request whose host names aren't in the
-   spider's :attr:`~scrapy.Spider.allowed_domains` attribute.
-   All subdomains of any domain in the list are also allowed.
-   E.g. the rule ``www.example.org`` will also allow ``bob.www.example.org``
-   but not ``www2.example.com`` nor ``example.com``.
-
-   When your spider returns a request for a domain not belonging to those
-   covered by the spider, this middleware will log a debug message similar to
-   this one::
-
-      DEBUG: Filtered offsite request to 'www.othersite.com': <GET http://www.othersite.com/some/page.html>
-
-   To avoid filling the log with too much noise, it will only print one of
-   these messages for each new domain filtered. So, for example, if another
-   request for ``www.othersite.com`` is filtered, no log message will be
-   printed. But if a request for ``someothersite.com`` is filtered, a message
-   will be printed (but only for the first request filtered).
-
-   If the spider doesn't define an
-   :attr:`~scrapy.Spider.allowed_domains` attribute, or the
-   attribute is empty, the offsite middleware will allow all requests.
-
-   If the request has the :attr:`~scrapy.Request.dont_filter` attribute
-   set, the offsite middleware will allow the request even if its domain is not
-   listed in allowed domains.
 
 
 RefererMiddleware

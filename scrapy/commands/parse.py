@@ -1,13 +1,15 @@
+from __future__ import annotations
+
 import argparse
 import functools
 import inspect
 import json
 import logging
-from types import CoroutineType
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncGenerator,
-    Callable,
+    Coroutine,
     Dict,
     Iterable,
     List,
@@ -20,19 +22,24 @@ from typing import (
 
 from itemadapter import ItemAdapter, is_item
 from twisted.internet.defer import Deferred, maybeDeferred
-from twisted.python.failure import Failure
 from w3lib.url import is_url
 
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
-from scrapy.spiders import Spider
 from scrapy.utils import display
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.defer import aiter_errback, deferred_from_coro
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.spider import spidercls_for_request
+
+if TYPE_CHECKING:
+    from twisted.python.failure import Failure
+
+    from scrapy.http.request import CallbackT
+    from scrapy.spiders import Spider
+
 
 logger = logging.getLogger(__name__)
 
@@ -140,13 +147,13 @@ class Command(BaseRunSpiderCommand):
 
     @overload
     def iterate_spider_output(
-        self, result: Union[AsyncGenerator, CoroutineType]
-    ) -> Deferred: ...
+        self, result: Union[AsyncGenerator[_T, None], Coroutine[Any, Any, _T]]
+    ) -> Deferred[_T]: ...
 
     @overload
-    def iterate_spider_output(self, result: _T) -> Iterable: ...
+    def iterate_spider_output(self, result: _T) -> Iterable[Any]: ...
 
-    def iterate_spider_output(self, result: Any) -> Union[Iterable, Deferred]:
+    def iterate_spider_output(self, result: Any) -> Union[Iterable[Any], Deferred[Any]]:
         if inspect.isasyncgen(result):
             d = deferred_from_coro(
                 collect_asyncgen(aiter_errback(result, self.handle_exception))
@@ -211,8 +218,8 @@ class Command(BaseRunSpiderCommand):
         opts: argparse.Namespace,
         depth: int,
         spider: Spider,
-        callback: Callable,
-    ) -> Tuple[List[Any], List[Request], argparse.Namespace, int, Spider, Callable]:
+        callback: CallbackT,
+    ) -> Tuple[List[Any], List[Request], argparse.Namespace, int, Spider, CallbackT]:
         items, requests = [], []
         for x in spider_output:
             if is_item(x):
@@ -224,16 +231,16 @@ class Command(BaseRunSpiderCommand):
     def run_callback(
         self,
         response: Response,
-        callback: Callable,
+        callback: CallbackT,
         cb_kwargs: Optional[Dict[str, Any]] = None,
-    ) -> Deferred:
+    ) -> Deferred[Any]:
         cb_kwargs = cb_kwargs or {}
         d = maybeDeferred(self.iterate_spider_output, callback(response, **cb_kwargs))
         return d
 
     def get_callback_from_rules(
         self, spider: Spider, response: Response
-    ) -> Union[Callable, str, None]:
+    ) -> Union[CallbackT, str, None]:
         if getattr(spider, "rules", None):
             for rule in spider.rules:  # type: ignore[attr-defined]
                 if rule.link_extractor.matches(response.url):
@@ -279,7 +286,7 @@ class Command(BaseRunSpiderCommand):
     def scraped_data(
         self,
         args: Tuple[
-            List[Any], List[Request], argparse.Namespace, int, Spider, Callable
+            List[Any], List[Request], argparse.Namespace, int, Spider, CallbackT
         ],
     ) -> List[Any]:
         items, requests, opts, depth, spider, callback = args
@@ -306,8 +313,8 @@ class Command(BaseRunSpiderCommand):
         spider: Spider,
         opts: argparse.Namespace,
         response: Optional[Response] = None,
-    ) -> Callable:
-        cb: Union[str, Callable, None] = None
+    ) -> CallbackT:
+        cb: Union[str, CallbackT, None] = None
         if response:
             cb = response.meta["_callback"]
         if not cb:
@@ -338,7 +345,7 @@ class Command(BaseRunSpiderCommand):
     def prepare_request(
         self, spider: Spider, request: Request, opts: argparse.Namespace
     ) -> Request:
-        def callback(response: Response, **cb_kwargs: Any) -> Deferred:
+        def callback(response: Response, **cb_kwargs: Any) -> Deferred[List[Any]]:
             # memorize first request
             if not self.first_response:
                 self.first_response = response

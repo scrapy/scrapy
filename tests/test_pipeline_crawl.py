@@ -107,9 +107,7 @@ class FileDownloadCrawlTestCase(TestCase):
 
         # check that the images/files checksums are what we know they should be
         if self.expected_checksums is not None:
-            checksums = set(
-                i["checksum"] for item in items for i in item[self.media_key]
-            )
+            checksums = {i["checksum"] for item in items for i in item[self.media_key]}
             self.assertEqual(checksums, self.expected_checksums)
 
         # check that the image files where actually written to the media store

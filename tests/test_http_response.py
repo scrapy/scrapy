@@ -728,9 +728,7 @@ class TextResponseTest(BaseResponseTest):
         resp1 = self.response_class(
             "http://example.com",
             encoding="utf8",
-            body='<html><body><a href="foo?привет">click me</a></body></html>'.encode(
-                "utf8"
-            ),
+            body='<html><body><a href="foo?привет">click me</a></body></html>'.encode(),
         )
         req = self._assert_followed_url(
             resp1.css("a")[0],

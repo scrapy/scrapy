@@ -8,14 +8,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterable, Tuple, Union
 
-from scrapy import Request, Spider
-from scrapy.crawler import Crawler
-from scrapy.http import Response
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Request, Spider
+    from scrapy.crawler import Crawler
+    from scrapy.http import Response
 
 
 class DefaultHeadersMiddleware:

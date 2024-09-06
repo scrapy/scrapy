@@ -3,6 +3,8 @@ This module provides some useful functions for working with
 scrapy.http.Request objects
 """
 
+from __future__ import annotations
+
 import hashlib
 import json
 import warnings
@@ -10,7 +12,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
-    Generator,
     Iterable,
     List,
     Optional,
@@ -32,21 +33,22 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
     from scrapy.crawler import Crawler
 
 
-def _serialize_headers(
-    headers: Iterable[bytes], request: Request
-) -> Generator[bytes, Any, None]:
+def _serialize_headers(headers: Iterable[bytes], request: Request) -> Iterable[bytes]:
     for header in headers:
         if header in request.headers:
             yield header
             yield from request.headers.getlist(header)
 
 
-_fingerprint_cache: (
-    "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]]"
-)
+_fingerprint_cache: WeakKeyDictionary[
+    Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]
+]
 _fingerprint_cache = WeakKeyDictionary()
 
 
@@ -133,10 +135,10 @@ class RequestFingerprinter:
     """
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler)
 
-    def __init__(self, crawler: Optional["Crawler"] = None):
+    def __init__(self, crawler: Optional[Crawler] = None):
         if crawler:
             implementation = crawler.settings.get(
                 "REQUEST_FINGERPRINTER_IMPLEMENTATION"
@@ -192,7 +194,7 @@ def referer_str(request: Request) -> Optional[str]:
     return to_unicode(referrer, errors="replace")
 
 
-def request_from_dict(d: dict, *, spider: Optional[Spider] = None) -> Request:
+def request_from_dict(d: Dict[str, Any], *, spider: Optional[Spider] = None) -> Request:
     """Create a :class:`~scrapy.Request` object from a dict.
 
     If a spider is given, it will try to resolve the callbacks looking at the
