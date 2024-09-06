@@ -4,6 +4,7 @@ Some spiders used for testing and benchmarking
 
 import asyncio
 import time
+from typing import Optional
 from urllib.parse import urlencode
 
 from twisted.internet import defer
@@ -76,6 +77,28 @@ class DelaySpider(MetaSpider):
 
     def errback(self, failure):
         self.t2_err = time.time()
+
+
+class LogSpider(MetaSpider):
+    name = "log_spider"
+
+    def log_debug(self, message: str, extra: Optional[dict] = None):
+        self.logger.debug(message, extra=extra)
+
+    def log_info(self, message: str, extra: Optional[dict] = None):
+        self.logger.info(message, extra=extra)
+
+    def log_warning(self, message: str, extra: Optional[dict] = None):
+        self.logger.warning(message, extra=extra)
+
+    def log_error(self, message: str, extra: Optional[dict] = None):
+        self.logger.error(message, extra=extra)
+
+    def log_critical(self, message: str, extra: Optional[dict] = None):
+        self.logger.critical(message, extra=extra)
+
+    def parse(self, response):
+        pass
 
 
 class SlowSpider(DelaySpider):
@@ -260,6 +283,24 @@ class ItemSpider(FollowAllSpider):
             yield {}
 
 
+class MaxItemsAndRequestsSpider(FollowAllSpider):
+    def __init__(self, max_items=10, max_requests=10, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.max_items = max_items
+        self.max_requests = max_requests
+
+    def parse(self, response):
+        self.items_scraped = 0
+        self.pages_crawled = 1  # account for the start url
+        for request in super().parse(response):
+            if self.pages_crawled < self.max_requests:
+                yield request
+                self.pages_crawled += 1
+            if self.items_scraped < self.max_items:
+                yield Item()
+                self.items_scraped += 1
+
+
 class DefaultError(Exception):
     pass
 
@@ -303,6 +344,19 @@ class BrokenStartRequestsSpider(FollowAllSpider):
     def parse(self, response):
         self.seedsseen.append(response.meta.get("seed"))
         yield from super().parse(response)
+
+
+class StartRequestsItemSpider(FollowAllSpider):
+    def start_requests(self):
+        yield {"name": "test item"}
+
+
+class StartRequestsGoodAndBadOutput(FollowAllSpider):
+    def start_requests(self):
+        yield {"a": "a"}
+        yield Request("data:,a")
+        yield "data:,b"
+        yield object()
 
 
 class SingleRequestSpider(MetaSpider):

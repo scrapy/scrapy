@@ -7,9 +7,7 @@ See documentation in docs/topics/spiders.rst
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Iterable, List, Optional, Union, cast
-
-from twisted.internet.defer import Deferred
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, cast
 
 from scrapy import signals
 from scrapy.http import Request, Response
@@ -17,11 +15,15 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
 if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
-    from scrapy.settings import BaseSettings
+    from scrapy.http.request import CallbackT
+    from scrapy.settings import BaseSettings, _SettingsKeyT
+    from scrapy.utils.log import SpiderLoggerAdapter
 
 
 class Spider(object_ref):
@@ -30,11 +32,11 @@ class Spider(object_ref):
     """
 
     name: str
-    custom_settings: Optional[dict] = None
+    custom_settings: Optional[Dict[_SettingsKeyT, Any]] = None
 
     def __init__(self, name: Optional[str] = None, **kwargs: Any):
         if name is not None:
-            self.name = name
+            self.name: str = name
         elif not getattr(self, "name", None):
             raise ValueError(f"{type(self).__name__} must have a name")
         self.__dict__.update(kwargs)
@@ -42,9 +44,11 @@ class Spider(object_ref):
             self.start_urls: List[str] = []
 
     @property
-    def logger(self) -> logging.LoggerAdapter:
+    def logger(self) -> SpiderLoggerAdapter:
+        from scrapy.utils.log import SpiderLoggerAdapter
+
         logger = logging.getLogger(self.name)
-        return logging.LoggerAdapter(logger, {"spider": self})
+        return SpiderLoggerAdapter(logger, {"spider": self})
 
     def log(self, message: Any, level: int = logging.DEBUG, **kw: Any) -> None:
         """Log the given message at the given log level
@@ -62,8 +66,8 @@ class Spider(object_ref):
         return spider
 
     def _set_crawler(self, crawler: Crawler) -> None:
-        self.crawler = crawler
-        self.settings = crawler.settings
+        self.crawler: Crawler = crawler
+        self.settings: BaseSettings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
 
     def start_requests(self) -> Iterable[Request]:
@@ -79,10 +83,14 @@ class Spider(object_ref):
     def _parse(self, response: Response, **kwargs: Any) -> Any:
         return self.parse(response, **kwargs)
 
-    def parse(self, response: Response, **kwargs: Any) -> Any:
-        raise NotImplementedError(
-            f"{self.__class__.__name__}.parse callback is not defined"
-        )
+    if TYPE_CHECKING:
+        parse: CallbackT
+    else:
+
+        def parse(self, response: Response, **kwargs: Any) -> Any:
+            raise NotImplementedError(
+                f"{self.__class__.__name__}.parse callback is not defined"
+            )
 
     @classmethod
     def update_settings(cls, settings: BaseSettings) -> None:
@@ -93,10 +101,10 @@ class Spider(object_ref):
         return url_is_from_spider(request.url, cls)
 
     @staticmethod
-    def close(spider: Spider, reason: str) -> Union[Deferred, None]:
+    def close(spider: Spider, reason: str) -> Optional[Deferred[None]]:
         closed = getattr(spider, "closed", None)
         if callable(closed):
-            return cast(Union[Deferred, None], closed(reason))
+            return cast("Optional[Deferred[None]]", closed(reason))
         return None
 
     def __repr__(self) -> str:

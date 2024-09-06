@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Iterable, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, cast
 
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ProcessTerminated
 from twisted.internet.protocol import ProcessProtocol
-from twisted.python.failure import Failure
+
+if TYPE_CHECKING:
+    from twisted.python.failure import Failure
 
 
 class ProcessTest:
@@ -20,7 +22,7 @@ class ProcessTest:
         args: Iterable[str],
         check_code: bool = True,
         settings: Optional[str] = None,
-    ) -> Deferred:
+    ) -> Deferred[TestProcessProtocol]:
         from twisted.internet import reactor
 
         env = os.environ.copy()
@@ -47,7 +49,7 @@ class ProcessTest:
 
 class TestProcessProtocol(ProcessProtocol):
     def __init__(self) -> None:
-        self.deferred: Deferred = Deferred()
+        self.deferred: Deferred[TestProcessProtocol] = Deferred()
         self.out: bytes = b""
         self.err: bytes = b""
         self.exitcode: Optional[int] = None

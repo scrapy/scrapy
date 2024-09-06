@@ -3,14 +3,12 @@ from __future__ import annotations
 import warnings
 from itertools import chain
 from logging import getLogger
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from scrapy import Request, Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.statscollectors import StatsCollector
 from scrapy.utils._compression import (
     _DecompressionMaxSizeExceeded,
     _inflate,
@@ -23,6 +21,10 @@ from scrapy.utils.gz import gunzip
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
+
 
 logger = getLogger(__name__)
 
@@ -138,31 +140,35 @@ class HttpCompressionMiddleware:
                 respcls = responsetypes.from_args(
                     headers=response.headers, url=response.url, body=decoded_body
                 )
-                kwargs = {"cls": respcls, "body": decoded_body}
+                kwargs: Dict[str, Any] = {"body": decoded_body}
                 if issubclass(respcls, TextResponse):
                     # force recalculating the encoding until we make sure the
                     # responsetypes guessing is reliable
                     kwargs["encoding"] = None
-                response = response.replace(**kwargs)
+                response = response.replace(cls=respcls, **kwargs)
                 if not content_encoding:
                     del response.headers["Content-Encoding"]
 
         return response
 
-    def _handle_encoding(self, body, content_encoding, max_size):
+    def _handle_encoding(
+        self, body: bytes, content_encoding: List[bytes], max_size: int
+    ) -> Tuple[bytes, List[bytes]]:
         to_decode, to_keep = self._split_encodings(content_encoding)
         for encoding in to_decode:
             body = self._decode(body, encoding, max_size)
         return body, to_keep
 
-    def _split_encodings(self, content_encoding):
-        to_keep = [
+    def _split_encodings(
+        self, content_encoding: List[bytes]
+    ) -> Tuple[List[bytes], List[bytes]]:
+        to_keep: List[bytes] = [
             encoding.strip().lower()
             for encoding in chain.from_iterable(
                 encodings.split(b",") for encodings in content_encoding
             )
         ]
-        to_decode = []
+        to_decode: List[bytes] = []
         while to_keep:
             encoding = to_keep.pop()
             if encoding not in ACCEPTED_ENCODINGS:

@@ -23,10 +23,8 @@ from urllib.parse import urlparse
 from w3lib.url import safe_url_string
 
 from scrapy import Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
-from scrapy.settings import BaseSettings
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_unicode
 from scrapy.utils.url import strip_url
@@ -34,6 +32,10 @@ from scrapy.utils.url import strip_url
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
+
 
 LOCAL_SCHEMES: Tuple[str, ...] = (
     "about",
@@ -323,15 +325,18 @@ def _load_policy_class(
     try:
         return cast(Type[ReferrerPolicy], load_object(policy))
     except ValueError:
-        try:
-            return _policy_classes[policy.lower()]
-        except KeyError:
-            msg = f"Could not load referrer policy {policy!r}"
-            if not warning_only:
-                raise RuntimeError(msg)
-            else:
-                warnings.warn(msg, RuntimeWarning)
-                return None
+        tokens = [token.strip() for token in policy.lower().split(",")]
+        # https://www.w3.org/TR/referrer-policy/#parse-referrer-policy-from-header
+        for token in tokens[::-1]:
+            if token in _policy_classes:
+                return _policy_classes[token]
+
+        msg = f"Could not load referrer policy {policy!r}"
+        if not warning_only:
+            raise RuntimeError(msg)
+        else:
+            warnings.warn(msg, RuntimeWarning)
+            return None
 
 
 class RefererMiddleware:

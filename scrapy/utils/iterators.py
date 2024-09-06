@@ -3,12 +3,10 @@ import logging
 import re
 from io import StringIO
 from typing import (
-    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
-    Generator,
-    Iterable,
+    Iterator,
     List,
     Literal,
     Optional,
@@ -23,17 +21,12 @@ from lxml import etree  # nosec
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
 from scrapy.selector import Selector
-from scrapy.utils.python import re_rsearch, to_unicode
-
-if TYPE_CHECKING:
-    from lxml._types import SupportsReadClose  # nosec
+from scrapy.utils.python import re_rsearch
 
 logger = logging.getLogger(__name__)
 
 
-def xmliter(
-    obj: Union[Response, str, bytes], nodename: str
-) -> Generator[Selector, Any, None]:
+def xmliter(obj: Union[Response, str, bytes], nodename: str) -> Iterator[Selector]:
     """Return a iterator of Selector's over all nodes of a XML document,
        given the name of the node to iterate. Useful for parsing XML feeds.
 
@@ -94,11 +87,11 @@ def xmliter_lxml(
     nodename: str,
     namespace: Optional[str] = None,
     prefix: str = "x",
-) -> Generator[Selector, Any, None]:
+) -> Iterator[Selector]:
     reader = _StreamReader(obj)
     tag = f"{{{namespace}}}{nodename}" if namespace else nodename
     iterable = etree.iterparse(
-        cast("SupportsReadClose[bytes]", reader),
+        reader,
         encoding=reader.encoding,
         events=("end", "start-ns"),
         resolve_entities=False,
@@ -172,7 +165,7 @@ def csviter(
     headers: Optional[List[str]] = None,
     encoding: Optional[str] = None,
     quotechar: Optional[str] = None,
-) -> Generator[Dict[str, str], Any, None]:
+) -> Iterator[Dict[str, str]]:
     """Returns an iterator of dictionaries from the given csv object
 
     obj can be:
@@ -188,10 +181,13 @@ def csviter(
     quotechar is the character used to enclosure fields on the given obj.
     """
 
-    encoding = obj.encoding if isinstance(obj, TextResponse) else encoding or "utf-8"
-
-    def row_to_unicode(row_: Iterable) -> List[str]:
-        return [to_unicode(field, encoding) for field in row_]
+    if encoding is not None:
+        warn(
+            "The encoding argument of csviter() is ignored and will be removed"
+            " in a future Scrapy version.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
 
     lines = StringIO(_body_or_str(obj, unicode=True))
 
@@ -204,13 +200,11 @@ def csviter(
 
     if not headers:
         try:
-            row = next(csv_r)
+            headers = next(csv_r)
         except StopIteration:
             return
-        headers = row_to_unicode(row)
 
     for row in csv_r:
-        row = row_to_unicode(row)
         if len(row) != len(headers):
             logger.warning(
                 "ignoring row %(csvlnum)d (length: %(csvrow)d, "

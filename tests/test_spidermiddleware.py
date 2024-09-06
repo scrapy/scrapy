@@ -1,5 +1,5 @@
 import collections.abc
-from typing import Optional
+from typing import Optional, Union
 from unittest import mock
 
 from testfixtures import LogCapture
@@ -112,7 +112,7 @@ class BaseAsyncSpiderMiddlewareTestCase(SpiderMiddlewareTestCase):
     Should work for process_spider_output and, when it's supported, process_start_requests.
     """
 
-    ITEM_TYPE: type
+    ITEM_TYPE: Union[type, tuple]
     RESULT_COUNT = 3  # to simplify checks, let everything return 3 objects
 
     @staticmethod
@@ -328,12 +328,13 @@ class ProcessStartRequestsSimpleMiddleware:
 class ProcessStartRequestsSimple(BaseAsyncSpiderMiddlewareTestCase):
     """process_start_requests tests for simple start_requests"""
 
-    ITEM_TYPE = Request
+    ITEM_TYPE = (Request, dict)
     MW_SIMPLE = ProcessStartRequestsSimpleMiddleware
 
     def _start_requests(self):
-        for i in range(3):
+        for i in range(2):
             yield Request(f"https://example.com/{i}", dont_filter=True)
+        yield {"name": "test item"}
 
     @defer.inlineCallbacks
     def _get_middleware_result(self, *mw_classes, start_index: Optional[int] = None):

@@ -21,7 +21,6 @@ import scrapy
 from scrapy import Spider
 from scrapy.crawler import Crawler, CrawlerProcess, CrawlerRunner
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.extensions import telnet
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
@@ -482,7 +481,6 @@ class CrawlerLoggingTestCase(unittest.TestCase):
                 "LOG_FILE": str(log_file),
                 # settings to avoid extra warnings
                 "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
-                "TELNETCONSOLE_ENABLED": telnet.TWISTED_CONCH_AVAILABLE,
             }
 
         configure_logging()
@@ -516,8 +514,6 @@ class CrawlerLoggingTestCase(unittest.TestCase):
             custom_settings = {
                 "LOG_FILE": str(log_file),
                 "LOG_FILE_APPEND": False,
-                # disable telnet if not available to avoid an extra warning
-                "TELNETCONSOLE_ENABLED": telnet.TWISTED_CONCH_AVAILABLE,
             }
 
         configure_logging()
@@ -926,3 +922,11 @@ class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
         self.assertIn("INFO: Host: not.a.real.domain", log)
         self.assertIn("INFO: Type: <class 'ipaddress.IPv4Address'>", log)
         self.assertIn("INFO: IP address: 127.0.0.1", log)
+
+    def test_change_default_reactor(self):
+        log = self.run_script("change_reactor.py")
+        self.assertIn(
+            "DEBUG: Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+            log,
+        )
+        self.assertIn("DEBUG: Using asyncio event loop", log)

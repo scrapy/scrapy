@@ -7,7 +7,17 @@ See documentation in docs/topics/request-response.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable, List, Optional, Tuple, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 
 from lxml.html import FormElement  # nosec
@@ -18,16 +28,18 @@ from lxml.html import TextareaElement  # nosec
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.request import Request
-from scrapy.http.response.text import TextResponse
 from scrapy.utils.python import is_listlike, to_bytes
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    from scrapy.http.response.text import TextResponse
 
-FormdataKVType = Tuple[str, Union[str, Iterable[str]]]
-FormdataType = Optional[Union[dict, List[FormdataKVType]]]
+
+FormdataVType = Union[str, Iterable[str]]
+FormdataKVType = Tuple[str, FormdataVType]
+FormdataType = Optional[Union[Dict[str, FormdataVType], List[FormdataKVType]]]
 
 
 class FormRequest(Request):
@@ -62,7 +74,7 @@ class FormRequest(Request):
         formid: Optional[str] = None,
         formnumber: int = 0,
         formdata: FormdataType = None,
-        clickdata: Optional[dict] = None,
+        clickdata: Optional[Dict[str, Union[str, int]]] = None,
         dont_click: bool = False,
         formxpath: Optional[str] = None,
         formcss: Optional[str] = None,
@@ -156,7 +168,7 @@ def _get_inputs(
     form: FormElement,
     formdata: FormdataType,
     dont_click: bool,
-    clickdata: Optional[dict],
+    clickdata: Optional[Dict[str, Union[str, int]]],
 ) -> List[FormdataKVType]:
     """Return a list of key-value pairs for the inputs found in the given form."""
     try:
@@ -186,10 +198,8 @@ def _get_inputs(
         if clickable and clickable[0] not in formdata and not clickable[0] is None:
             values.append(clickable)
 
-    if isinstance(formdata, dict):
-        formdata = formdata.items()  # type: ignore[assignment]
-
-    values.extend((k, v) for k, v in formdata if v is not None)
+    formdata_items = formdata.items() if isinstance(formdata, dict) else formdata
+    values.extend((k, v) for k, v in formdata_items if v is not None)
     return values
 
 
@@ -216,7 +226,7 @@ def _select_value(
 
 
 def _get_clickable(
-    clickdata: Optional[dict], form: FormElement
+    clickdata: Optional[Dict[str, Union[str, int]]], form: FormElement
 ) -> Optional[Tuple[str, str]]:
     """
     Returns the clickable element specified in clickdata,
@@ -243,6 +253,7 @@ def _get_clickable(
     # because that uniquely identifies the element
     nr = clickdata.get("nr", None)
     if nr is not None:
+        assert isinstance(nr, int)
         try:
             el = list(form.inputs)[nr]
         except IndexError:

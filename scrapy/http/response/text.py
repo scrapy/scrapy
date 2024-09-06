@@ -15,7 +15,6 @@ from typing import (
     AnyStr,
     Callable,
     Dict,
-    Generator,
     Iterable,
     List,
     Mapping,
@@ -36,14 +35,17 @@ from w3lib.encoding import (
 )
 from w3lib.html import strip_html5_whitespace
 
-from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.link import Link
 from scrapy.utils.python import memoizemethod_noargs, to_unicode
 from scrapy.utils.response import get_base_url
 
 if TYPE_CHECKING:
+    from twisted.python.failure import Failure
+
+    from scrapy.http.request import CallbackT, CookiesT, Request
     from scrapy.selector import Selector, SelectorList
+
 
 _NONE = object()
 
@@ -159,12 +161,12 @@ class TextResponse(Response):
     def jmespath(self, query: str, **kwargs: Any) -> SelectorList:
         from scrapy.selector import SelectorList
 
-        if not hasattr(self.selector, "jmespath"):  # type: ignore[attr-defined]
+        if not hasattr(self.selector, "jmespath"):
             raise AttributeError(
                 "Please install parsel >= 1.8.1 to get jmespath support"
             )
 
-        return cast(SelectorList, self.selector.jmespath(query, **kwargs))  # type: ignore[attr-defined]
+        return cast(SelectorList, self.selector.jmespath(query, **kwargs))
 
     def xpath(self, query: str, **kwargs: Any) -> SelectorList:
         from scrapy.selector import SelectorList
@@ -179,16 +181,16 @@ class TextResponse(Response):
     def follow(
         self,
         url: Union[str, Link, parsel.Selector],
-        callback: Optional[Callable] = None,
+        callback: Optional[CallbackT] = None,
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
-        cookies: Optional[Union[dict, List[dict]]] = None,
+        cookies: Optional[CookiesT] = None,
         meta: Optional[Dict[str, Any]] = None,
         encoding: Optional[str] = None,
         priority: int = 0,
         dont_filter: bool = False,
-        errback: Optional[Callable] = None,
+        errback: Optional[Callable[[Failure], Any]] = None,
         cb_kwargs: Optional[Dict[str, Any]] = None,
         flags: Optional[List[str]] = None,
     ) -> Request:
@@ -232,21 +234,21 @@ class TextResponse(Response):
     def follow_all(
         self,
         urls: Union[Iterable[Union[str, Link]], parsel.SelectorList, None] = None,
-        callback: Optional[Callable] = None,
+        callback: Optional[CallbackT] = None,
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
-        cookies: Optional[Union[dict, List[dict]]] = None,
+        cookies: Optional[CookiesT] = None,
         meta: Optional[Dict[str, Any]] = None,
         encoding: Optional[str] = None,
         priority: int = 0,
         dont_filter: bool = False,
-        errback: Optional[Callable] = None,
+        errback: Optional[Callable[[Failure], Any]] = None,
         cb_kwargs: Optional[Dict[str, Any]] = None,
         flags: Optional[List[str]] = None,
         css: Optional[str] = None,
         xpath: Optional[str] = None,
-    ) -> Generator[Request, None, None]:
+    ) -> Iterable[Request]:
         """
         A generator that produces :class:`~.Request` instances to follow all
         links in ``urls``. It accepts the same arguments as the :class:`~.Request`'s

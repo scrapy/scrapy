@@ -186,7 +186,7 @@ class Base:
             )
 
         def test_nofollow(self):
-            '''Test the extractor's behaviour for links with rel="nofollow"'''
+            """Test the extractor's behaviour for links with rel='nofollow'"""
 
             html = b"""<html><head><title>Page title<title>
             <body>
@@ -744,6 +744,118 @@ class Base:
         def test_pickle_extractor(self):
             lx = self.extractor_cls()
             self.assertIsInstance(pickle.loads(pickle.dumps(lx)), self.extractor_cls)
+
+        def test_link_extractor_aggregation(self):
+            """When a parameter like restrict_css is used, the underlying
+            implementation calls its internal link extractor once per selector
+            matching the specified restrictions, and then aggregates the
+            extracted links.
+
+            Test that aggregation respects the unique and canonicalize
+            parameters.
+            """
+            # unique=True (default), canonicalize=False (default)
+            lx = self.extractor_cls(restrict_css=("div",))
+            response = HtmlResponse(
+                "https://example.com",
+                body=b"""
+                    <div>
+                        <a href="/a">a1</a>
+                        <a href="/b?a=1&b=2">b1</a>
+                    </div>
+                    <div>
+                        <a href="/a">a2</a>
+                        <a href="/b?b=2&a=1">b2</a>
+                    </div>
+                """,
+            )
+            actual = lx.extract_links(response)
+            self.assertEqual(
+                actual,
+                [
+                    Link(url="https://example.com/a", text="a1"),
+                    Link(url="https://example.com/b?a=1&b=2", text="b1"),
+                    Link(url="https://example.com/b?b=2&a=1", text="b2"),
+                ],
+            )
+
+            # unique=True (default), canonicalize=True
+            lx = self.extractor_cls(restrict_css=("div",), canonicalize=True)
+            response = HtmlResponse(
+                "https://example.com",
+                body=b"""
+                    <div>
+                        <a href="/a">a1</a>
+                        <a href="/b?a=1&b=2">b1</a>
+                    </div>
+                    <div>
+                        <a href="/a">a2</a>
+                        <a href="/b?b=2&a=1">b2</a>
+                    </div>
+                """,
+            )
+            actual = lx.extract_links(response)
+            self.assertEqual(
+                actual,
+                [
+                    Link(url="https://example.com/a", text="a1"),
+                    Link(url="https://example.com/b?a=1&b=2", text="b1"),
+                ],
+            )
+
+            # unique=False, canonicalize=False (default)
+            lx = self.extractor_cls(restrict_css=("div",), unique=False)
+            response = HtmlResponse(
+                "https://example.com",
+                body=b"""
+                    <div>
+                        <a href="/a">a1</a>
+                        <a href="/b?a=1&b=2">b1</a>
+                    </div>
+                    <div>
+                        <a href="/a">a2</a>
+                        <a href="/b?b=2&a=1">b2</a>
+                    </div>
+                """,
+            )
+            actual = lx.extract_links(response)
+            self.assertEqual(
+                actual,
+                [
+                    Link(url="https://example.com/a", text="a1"),
+                    Link(url="https://example.com/b?a=1&b=2", text="b1"),
+                    Link(url="https://example.com/a", text="a2"),
+                    Link(url="https://example.com/b?b=2&a=1", text="b2"),
+                ],
+            )
+
+            # unique=False, canonicalize=True
+            lx = self.extractor_cls(
+                restrict_css=("div",), unique=False, canonicalize=True
+            )
+            response = HtmlResponse(
+                "https://example.com",
+                body=b"""
+                    <div>
+                        <a href="/a">a1</a>
+                        <a href="/b?a=1&b=2">b1</a>
+                    </div>
+                    <div>
+                        <a href="/a">a2</a>
+                        <a href="/b?b=2&a=1">b2</a>
+                    </div>
+                """,
+            )
+            actual = lx.extract_links(response)
+            self.assertEqual(
+                actual,
+                [
+                    Link(url="https://example.com/a", text="a1"),
+                    Link(url="https://example.com/b?a=1&b=2", text="b1"),
+                    Link(url="https://example.com/a", text="a2"),
+                    Link(url="https://example.com/b?a=1&b=2", text="b2"),
+                ],
+            )
 
 
 class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):

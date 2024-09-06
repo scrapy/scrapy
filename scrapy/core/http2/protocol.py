@@ -1,9 +1,10 @@
+from __future__ import annotations
+
 import ipaddress
 import itertools
 import logging
 from collections import deque
-from ipaddress import IPv4Address, IPv6Address
-from typing import Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Deque, Dict, List, Optional, Union
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
@@ -20,20 +21,30 @@ from h2.events import (
     WindowUpdated,
 )
 from h2.exceptions import FrameTooLargeError, H2Error
-from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
-from twisted.internet.interfaces import IHandshakeListener, IProtocolNegotiationFactory
+from twisted.internet.interfaces import (
+    IAddress,
+    IHandshakeListener,
+    IProtocolNegotiationFactory,
+)
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.internet.ssl import Certificate
 from twisted.protocols.policies import TimeoutMixin
-from twisted.python.failure import Failure
-from twisted.web.client import URI
 from zope.interface import implementer
 
 from scrapy.core.http2.stream import Stream, StreamCloseReason
-from scrapy.http import Request
-from scrapy.settings import Settings
-from scrapy.spiders import Spider
+from scrapy.http import Request, Response
+
+if TYPE_CHECKING:
+    from ipaddress import IPv4Address, IPv6Address
+
+    from twisted.internet.defer import Deferred
+    from twisted.python.failure import Failure
+    from twisted.web.client import URI
+
+    from scrapy.settings import Settings
+    from scrapy.spiders import Spider
+
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +88,10 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
     IDLE_TIMEOUT = 240
 
     def __init__(
-        self, uri: URI, settings: Settings, conn_lost_deferred: Deferred
+        self,
+        uri: URI,
+        settings: Settings,
+        conn_lost_deferred: Deferred[List[BaseException]],
     ) -> None:
         """
         Arguments:
@@ -88,7 +102,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             conn_lost_deferred -- Deferred fires with the reason: Failure to notify
                 that connection was lost
         """
-        self._conn_lost_deferred = conn_lost_deferred
+        self._conn_lost_deferred: Deferred[List[BaseException]] = conn_lost_deferred
 
         config = H2Configuration(client_side=True, header_encoding="utf-8")
         self.conn = H2Connection(config=config)
@@ -103,7 +117,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
         # If requests are received before connection is made we keep
         # all requests in a pool and send them as the connection is made
-        self._pending_request_stream_pool: deque = deque()
+        self._pending_request_stream_pool: Deque[Stream] = deque()
 
         # Save an instance of errors raised which lead to losing the connection
         # We pass these instances to the streams ResponseFailed() failure
@@ -111,7 +125,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
         # Some meta data of this connection
         # initialized when connection is successfully made
-        self.metadata: Dict = {
+        self.metadata: Dict[str, Any] = {
             # Peer certificate instance
             "certificate": None,
             # Address of the server we are connected to which
@@ -204,14 +218,14 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         data = self.conn.data_to_send()
         self.transport.write(data)
 
-    def request(self, request: Request, spider: Spider) -> Deferred:
+    def request(self, request: Request, spider: Spider) -> Deferred[Response]:
         if not isinstance(request, Request):
             raise TypeError(
                 f"Expected scrapy.http.Request, received {request.__class__.__qualname__}"
             )
 
         stream = self._new_stream(request, spider)
-        d = stream.get_response()
+        d: Deferred[Response] = stream.get_response()
 
         # Add the stream to the request pool
         self._pending_request_stream_pool.append(stream)
@@ -425,13 +439,16 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 @implementer(IProtocolNegotiationFactory)
 class H2ClientFactory(Factory):
     def __init__(
-        self, uri: URI, settings: Settings, conn_lost_deferred: Deferred
+        self,
+        uri: URI,
+        settings: Settings,
+        conn_lost_deferred: Deferred[List[BaseException]],
     ) -> None:
         self.uri = uri
         self.settings = settings
         self.conn_lost_deferred = conn_lost_deferred
 
-    def buildProtocol(self, addr) -> H2ClientProtocol:
+    def buildProtocol(self, addr: IAddress) -> H2ClientProtocol:
         return H2ClientProtocol(self.uri, self.settings, self.conn_lost_deferred)
 
     def acceptableProtocols(self) -> List[bytes]:

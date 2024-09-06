@@ -6,6 +6,7 @@ import unittest
 import warnings
 from pathlib import Path
 
+from scrapy.utils.misc import set_environ
 from scrapy.utils.project import data_path, get_project_settings
 
 
@@ -38,20 +39,6 @@ class ProjectUtilsTest(unittest.TestCase):
             self.assertEqual(abspath, data_path(abspath))
 
 
-@contextlib.contextmanager
-def set_env(**update):
-    modified = set(update.keys()) & set(os.environ.keys())
-    update_after = {k: os.environ[k] for k in modified}
-    remove_after = frozenset(k for k in update if k not in os.environ)
-    try:
-        os.environ.update(update)
-        yield
-    finally:
-        os.environ.update(update_after)
-        for k in remove_after:
-            os.environ.pop(k)
-
-
 class GetProjectSettingsTestCase(unittest.TestCase):
     def test_valid_envvar(self):
         value = "tests.test_cmdline.settings"
@@ -60,7 +47,7 @@ class GetProjectSettingsTestCase(unittest.TestCase):
         }
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            with set_env(**envvars):
+            with set_environ(**envvars):
                 settings = get_project_settings()
 
         assert settings.get("SETTINGS_MODULE") == value
@@ -69,7 +56,7 @@ class GetProjectSettingsTestCase(unittest.TestCase):
         envvars = {
             "SCRAPY_FOO": "bar",
         }
-        with set_env(**envvars):
+        with set_environ(**envvars):
             settings = get_project_settings()
 
         assert settings.get("SCRAPY_FOO") is None
@@ -80,7 +67,7 @@ class GetProjectSettingsTestCase(unittest.TestCase):
             "SCRAPY_FOO": "bar",
             "SCRAPY_SETTINGS_MODULE": value,
         }
-        with set_env(**envvars):
+        with set_environ(**envvars):
             settings = get_project_settings()
         assert settings.get("SETTINGS_MODULE") == value
         assert settings.get("SCRAPY_FOO") is None

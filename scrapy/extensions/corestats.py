@@ -8,12 +8,13 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Optional
 
 from scrapy import Spider, signals
-from scrapy.crawler import Crawler
-from scrapy.statscollectors import StatsCollector
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
 
 
 class CoreStats:

@@ -2,22 +2,10 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from http.cookiejar import Cookie
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    DefaultDict,
-    Dict,
-    Iterable,
-    Optional,
-    Sequence,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, DefaultDict, Iterable, Optional, Sequence, Union
 
 from tldextract import TLDExtract
 
-from scrapy import Request, Spider
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
@@ -25,14 +13,21 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
+    from http.cookiejar import Cookie
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Request, Spider
+    from scrapy.crawler import Crawler
+    from scrapy.http.request import VerboseCookie
 
 
 logger = logging.getLogger(__name__)
 
 
 _split_domain = TLDExtract(include_psl_private_domains=True)
+_UNSET = object()
 
 
 def _is_public_domain(domain: str) -> bool:
@@ -127,12 +122,13 @@ class CookiesMiddleware:
                 msg = f"Received cookies from: {response}\n{cookies}"
                 logger.debug(msg, extra={"spider": spider})
 
-    def _format_cookie(self, cookie: Dict[str, Any], request: Request) -> Optional[str]:
+    def _format_cookie(self, cookie: VerboseCookie, request: Request) -> Optional[str]:
         """
         Given a dict consisting of cookie components, return its string representation.
         Decode from bytes if necessary.
         """
         decoded = {}
+        flags = set()
         for key in ("name", "value", "path", "domain"):
             if cookie.get(key) is None:
                 if key in ("name", "value"):
@@ -140,22 +136,29 @@ class CookiesMiddleware:
                     logger.warning(msg)
                     return None
                 continue
-            if isinstance(cookie[key], (bool, float, int, str)):
-                decoded[key] = str(cookie[key])
+            # https://github.com/python/mypy/issues/7178, https://github.com/python/mypy/issues/9168
+            if isinstance(cookie[key], (bool, float, int, str)):  # type: ignore[literal-required]
+                decoded[key] = str(cookie[key])  # type: ignore[literal-required]
             else:
                 try:
-                    decoded[key] = cookie[key].decode("utf8")
+                    decoded[key] = cookie[key].decode("utf8")  # type: ignore[literal-required]
                 except UnicodeDecodeError:
                     logger.warning(
                         "Non UTF-8 encoded cookie found in request %s: %s",
                         request,
                         cookie,
                     )
-                    decoded[key] = cookie[key].decode("latin1", errors="replace")
-
+                    decoded[key] = cookie[key].decode("latin1", errors="replace")  # type: ignore[literal-required]
+        for flag in ("secure",):
+            value = cookie.get(flag, _UNSET)
+            if value is _UNSET or not value:
+                continue
+            flags.add(flag)
         cookie_str = f"{decoded.pop('name')}={decoded.pop('value')}"
         for key, value in decoded.items():  # path, domain
             cookie_str += f"; {key.capitalize()}={value}"
+        for flag in flags:  # secure
+            cookie_str += f"; {flag.capitalize()}"
         return cookie_str
 
     def _get_request_cookies(
@@ -166,11 +169,13 @@ class CookiesMiddleware:
         """
         if not request.cookies:
             return []
-        cookies: Iterable[Dict[str, Any]]
+        cookies: Iterable[VerboseCookie]
         if isinstance(request.cookies, dict):
-            cookies = ({"name": k, "value": v} for k, v in request.cookies.items())
+            cookies = tuple({"name": k, "value": v} for k, v in request.cookies.items())
         else:
             cookies = request.cookies
+        for cookie in cookies:
+            cookie.setdefault("secure", urlparse_cached(request).scheme == "https")
         formatted = filter(None, (self._format_cookie(c, request) for c in cookies))
         response = Response(request.url, headers={"Set-Cookie": formatted})
         return jar.make_cookies(response, request)

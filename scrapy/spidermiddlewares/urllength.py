@@ -9,14 +9,16 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, AsyncIterable, Iterable
 
-from scrapy import Spider
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
-from scrapy.settings import BaseSettings
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Spider
+    from scrapy.settings import BaseSettings
+
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import sys
-from argparse import ArgumentParser, Namespace
-from typing import Dict, List, Type
+from typing import TYPE_CHECKING, Dict, List, Type
 
 from w3lib.url import is_url
 
@@ -10,6 +11,9 @@ from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
+
+if TYPE_CHECKING:
+    from argparse import ArgumentParser, Namespace
 
 
 class Command(ScrapyCommand):

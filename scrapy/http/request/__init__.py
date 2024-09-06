@@ -5,11 +5,13 @@ requests in Scrapy.
 See documentation in docs/topics/request-response.rst
 """
 
+from __future__ import annotations
+
 import inspect
 from typing import (
+    TYPE_CHECKING,
     Any,
     AnyStr,
-    Callable,
     Dict,
     Iterable,
     List,
@@ -18,9 +20,10 @@ from typing import (
     Optional,
     Tuple,
     Type,
+    TypedDict,
     TypeVar,
     Union,
-    cast,
+    overload,
 )
 
 from w3lib.url import safe_url_string
@@ -31,6 +34,31 @@ from scrapy.utils.curl import curl_to_request_kwargs
 from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from twisted.python.failure import Failure
+
+    # typing.Concatenate requires Python 3.10
+    # typing.NotRequired and typing.Self require Python 3.11
+    from typing_extensions import Concatenate, NotRequired, Self
+
+    from scrapy.http import Response
+
+    CallbackT = Callable[Concatenate[Response, ...], Any]
+
+
+class VerboseCookie(TypedDict):
+    name: str
+    value: str
+    domain: NotRequired[str]
+    path: NotRequired[str]
+    secure: NotRequired[bool]
+
+
+CookiesT = Union[Dict[str, str], List[VerboseCookie]]
+
 
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 
@@ -90,16 +118,16 @@ class Request(object_ref):
     def __init__(
         self,
         url: str,
-        callback: Optional[Callable] = None,
+        callback: Optional[CallbackT] = None,
         method: str = "GET",
         headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
-        cookies: Optional[Union[dict, List[dict]]] = None,
+        cookies: Optional[CookiesT] = None,
         meta: Optional[Dict[str, Any]] = None,
         encoding: str = "utf-8",
         priority: int = 0,
         dont_filter: bool = False,
-        errback: Optional[Callable] = None,
+        errback: Optional[Callable[[Failure], Any]] = None,
         flags: Optional[List[str]] = None,
         cb_kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
@@ -117,10 +145,10 @@ class Request(object_ref):
             )
         if not (callable(errback) or errback is None):
             raise TypeError(f"errback must be a callable, got {type(errback).__name__}")
-        self.callback: Optional[Callable] = callback
-        self.errback: Optional[Callable] = errback
+        self.callback: Optional[CallbackT] = callback
+        self.errback: Optional[Callable[[Failure], Any]] = errback
 
-        self.cookies: Union[dict, List[dict]] = cookies or {}
+        self.cookies: CookiesT = cookies or {}
         self.headers: Headers = Headers(headers or {}, encoding=encoding)
         self.dont_filter: bool = dont_filter
 
@@ -174,23 +202,34 @@ class Request(object_ref):
     def __repr__(self) -> str:
         return f"<{self.method} {self.url}>"
 
-    def copy(self) -> "Request":
+    def copy(self) -> Self:
         return self.replace()
 
-    def replace(self, *args: Any, **kwargs: Any) -> "Request":
+    @overload
+    def replace(
+        self, *args: Any, cls: Type[RequestTypeVar], **kwargs: Any
+    ) -> RequestTypeVar: ...
+
+    @overload
+    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self: ...
+
+    def replace(
+        self, *args: Any, cls: Optional[Type[Request]] = None, **kwargs: Any
+    ) -> Request:
         """Create a new Request with the same attributes except for those given new values"""
         for x in self.attributes:
             kwargs.setdefault(x, getattr(self, x))
-        cls = kwargs.pop("cls", self.__class__)
-        return cast(Request, cls(*args, **kwargs))
+        if cls is None:
+            cls = self.__class__
+        return cls(*args, **kwargs)
 
     @classmethod
     def from_curl(
-        cls: Type[RequestTypeVar],
+        cls,
         curl_command: str,
         ignore_unknown_options: bool = True,
         **kwargs: Any,
-    ) -> RequestTypeVar:
+    ) -> Self:
         """Create a Request object from a string containing a `cURL
         <https://curl.haxx.se/>`_ command. It populates the HTTP method, the
         URL, the headers, the cookies and the body. It accepts the same
@@ -222,7 +261,7 @@ class Request(object_ref):
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
 
-    def to_dict(self, *, spider: Optional["scrapy.Spider"] = None) -> Dict[str, Any]:
+    def to_dict(self, *, spider: Optional[scrapy.Spider] = None) -> Dict[str, Any]:
         """Return a dictionary containing the Request's data.
 
         Use :func:`~scrapy.utils.request.request_from_dict` to convert back into a :class:`~scrapy.Request` object.
@@ -251,7 +290,7 @@ class Request(object_ref):
         return d
 
 
-def _find_method(obj: Any, func: Callable) -> str:
+def _find_method(obj: Any, func: Callable[..., Any]) -> str:
     """Helper function for Request.to_dict"""
     # Only instance methods contain ``__func__``
     if obj and hasattr(func, "__func__"):

@@ -16,7 +16,6 @@ from typing import TYPE_CHECKING, List
 from twisted.internet import task
 
 from scrapy import signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.mail import MailSender
 from scrapy.utils.engine import get_engine_status
@@ -24,6 +23,9 @@ from scrapy.utils.engine import get_engine_status
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+
 
 logger = logging.getLogger(__name__)
 
