@@ -191,7 +191,6 @@ class S3FilesStore:
                 "X-Amz-Request-Payer": "RequestPayer",
                 "X-Amz-Server-Side-Encryption": "ServerSideEncryption",
                 "X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id": "SSEKMSKeyId",
-                "X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id": "SSEKMSKeyId",
                 "X-Amz-Server-Side-Encryption-Context": "SSEKMSEncryptionContext",
                 "X-Amz-Server-Side-Encryption-Customer-Algorithm": "SSECustomerAlgorithm",
                 "X-Amz-Server-Side-Encryption-Customer-Key": "SSECustomerKey",
