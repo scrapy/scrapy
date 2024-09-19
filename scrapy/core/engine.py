@@ -209,10 +209,12 @@ class ExecutionEngine:
                     self.crawl(request_or_item)
                 elif is_item(request_or_item):
                     self.scraper.start_itemproc(request_or_item, response=None)
+                elif request_or_item == None:
+                    logger.debug(f"Got None among start requests. It will be ignored.")
                 else:
                     logger.error(
                         f"Got {request_or_item!r} among start requests. Only "
-                        f"requests and items are supported. It will be "
+                        f"requests,items and none are supported. It will be "
                         f"ignored."
                     )
 
