@@ -14,7 +14,7 @@ from scrapy.pipelines.media import MediaPipeline
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.signal import disconnect_all
+from scrapy.utils.signal_ops import disconnect_all
 from scrapy.utils.test import get_crawler
 
 try:
