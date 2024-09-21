@@ -9,7 +9,7 @@ from scrapy import Request, Spider, signals
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.utils._compression import (
+from scrapy.utils._compression_ops import (
     _DecompressionMaxSizeExceeded,
     _inflate,
     _unbrotli,
