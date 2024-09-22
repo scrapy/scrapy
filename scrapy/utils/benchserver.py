@@ -31,11 +31,10 @@ def _getarg(request, name: bytes, default: Any = None, type=str):
     return type(request.args[name][0]) if name in request.args else default
 
 
-if __name__ == "__main__":
+def main():
     from twisted.internet import reactor
 
     root = Root()
-    factory = Site(root)
     httpPort = reactor.listenTCP(8998, Site(root))
 
     def _print_listening() -> None:
@@ -44,3 +43,7 @@ if __name__ == "__main__":
 
     reactor.callWhenRunning(_print_listening)
     reactor.run()
+
+
+if __name__ == "__main__":
+    main()
