@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 from unittest import mock
 from urllib.parse import parse_qs, unquote_to_bytes
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import (
     FormRequest,
     Headers,
@@ -426,6 +427,11 @@ class RequestTest(unittest.TestCase):
 
 class FormRequestTest(RequestTest):
     request_class = FormRequest
+
+    def run(self, result=None):
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning)
+            super().run(result)
 
     def assertQueryEqual(self, first, second, msg=None):
         first = to_unicode(first).split("&")
