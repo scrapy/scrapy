@@ -299,6 +299,37 @@ class MockServer:
         return host + path
 
 
+class MockProxy:
+    auth_user = "scrapy"
+    auth_pass = "scrapy"
+
+    def __enter__(self):
+        self.proc = Popen(
+            [
+                sys.executable,
+                "-u",
+                "-m",
+                "tests.mockproxy",
+                self.auth_user,
+                self.auth_pass,
+            ],
+            stdout=PIPE,
+            env=get_mockserver_env(),
+        )
+        self.host = "127.0.0.1"
+        self.port = int(
+            self.proc.stdout.readline().strip().decode("ascii").split(":")[1]
+        )
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.proc.kill()
+        self.proc.communicate()
+
+    def url(self):
+        return f"http://{self.auth_user}:{self.auth_pass}@{self.host}:{self.port}"
+
+
 class MockDNSResolver:
     """
     Implements twisted.internet.interfaces.IResolver partially
