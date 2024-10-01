@@ -4,6 +4,7 @@ import tempfile
 import warnings
 from pathlib import Path
 from tempfile import mkdtemp
+from unittest import mock
 
 from twisted.trial import unittest
 from zope.interface.verify import verifyObject
@@ -122,6 +123,33 @@ class SpiderLoaderTest(unittest.TestCase):
     def test_bad_spider_modules_warning(self):
         with warnings.catch_warnings(record=True) as w:
             module = "tests.test_spiderloader.test_spiders.doesnotexist"
+            settings = Settings(
+                {"SPIDER_MODULES": [module], "SPIDER_LOADER_WARN_ONLY": True}
+            )
+            spider_loader = SpiderLoader.from_settings(settings)
+            if str(w[0].message).startswith("_SixMetaPathImporter"):
+                # needed on 3.10 because of https://github.com/benjaminp/six/issues/349,
+                # at least until all six versions we can import (including botocore.vendored.six)
+                # are updated to 1.16.0+
+                w.pop(0)
+            self.assertIn("Could not load spiders from module", str(w[0].message))
+
+            spiders = spider_loader.list()
+            self.assertEqual(spiders, [])
+
+    def test_syntax_error_exception(self):
+        module = "tests.test_spiderloader.test_spiders.spider1"
+        with mock.patch.object(SpiderLoader, "_load_spiders") as m:
+            m.side_effect = SyntaxError
+            settings = Settings({"SPIDER_MODULES": [module]})
+            self.assertRaises(SyntaxError, SpiderLoader.from_settings, settings)
+
+    def test_syntax_error_warning(self):
+        with warnings.catch_warnings(record=True) as w, mock.patch.object(
+            SpiderLoader, "_load_spiders"
+        ) as m:
+            m.side_effect = SyntaxError
+            module = "tests.test_spiderloader.test_spiders.spider1"
             settings = Settings(
                 {"SPIDER_MODULES": [module], "SPIDER_LOADER_WARN_ONLY": True}
             )

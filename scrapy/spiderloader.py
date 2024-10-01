@@ -64,7 +64,7 @@ class SpiderLoader:
             try:
                 for module in walk_modules(name):
                     self._load_spiders(module)
-            except ImportError:
+            except (ImportError, SyntaxError):
                 if self.warn_only:
                     warnings.warn(
                         f"\n{traceback.format_exc()}Could not load spiders "

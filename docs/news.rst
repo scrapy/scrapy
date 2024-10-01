@@ -8,6 +8,12 @@ Release notes
 Scrapy VERSION (YYYY-MM-DD)
 ---------------------------
 
+New features
+~~~~~~~~~~~~
+
+- If :setting:`SPIDER_LOADER_WARN_ONLY` is set to ``True``,
+  ``SpiderLoader`` does not raise ``SyntaxError`` but emits a warning instead.
+
 Deprecations
 ~~~~~~~~~~~~
 
