@@ -12,7 +12,7 @@ New features
 ~~~~~~~~~~~~
 
 - If :setting:`SPIDER_LOADER_WARN_ONLY` is set to ``True``,
-  ``SpiderLoader`` does not raise ``SyntaxError`` but emits a warning instead.
+  ``SpiderLoader`` does not raise :exc:`SyntaxError` but emits a warning instead.
 
 Deprecations
 ~~~~~~~~~~~~
