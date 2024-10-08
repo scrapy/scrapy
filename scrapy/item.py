@@ -61,16 +61,13 @@ class ItemMeta(ABCMeta):
 
 
 class Item(MutableMapping[str, Any], object_ref, metaclass=ItemMeta):
-    """
-    Base class for scraped items.
+    """Base class for scraped items.
 
-    In Scrapy, an object is considered an ``item`` if it is an instance of either
-    :class:`Item` or :class:`dict`, or any subclass. For example, when the output of a
-    spider callback is evaluated, only instances of :class:`Item` or
-    :class:`dict` are passed to :ref:`item pipelines <topics-item-pipeline>`.
-
-    If you need instances of a custom class to be considered items by Scrapy,
-    you must inherit from either :class:`Item` or :class:`dict`.
+    In Scrapy, an object is considered an ``item`` if it's supported by the
+    `itemadapter`_ library. For example, when the output of a spider callback
+    is evaluated, only such objects are passed to :ref:`item pipelines
+    <topics-item-pipeline>`. :class:`Item` is one of the classes supported by
+    `itemadapter`_ by default.
 
     Items must declare :class:`Field` attributes, which are processed and stored
     in the ``fields`` attribute. This restricts the set of allowed field names
@@ -81,6 +78,8 @@ class Item(MutableMapping[str, Any], object_ref, metaclass=ItemMeta):
 
     Unlike instances of :class:`dict`, instances of :class:`Item` may be
     :ref:`tracked <topics-leaks-trackrefs>` to debug memory leaks.
+
+    .. _itemadapter: https://github.com/scrapy/itemadapter
     """
 
     fields: Dict[str, Field]
