@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 import re
+import gzip
+import xml.etree.ElementTree as ET
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -20,6 +22,7 @@ from scrapy.spiders import Spider
 from scrapy.utils._compression import _DecompressionMaxSizeExceeded
 from scrapy.utils.gz import gunzip, gzip_magic_number
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
+from io import BytesIO
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -75,72 +78,93 @@ class SitemapSpider(Spider):
         yield from entries
 
     def _parse_sitemap(self, response: Response) -> Iterable[Request]:
-        if response.url.endswith("/robots.txt"):
-            for url in sitemap_urls_from_robots(response.text, base_url=response.url):
-                yield Request(url, callback=self._parse_sitemap)
-        else:
-            body = self._get_sitemap_body(response)
-            if body is None:
-                logger.warning(
-                    "Ignoring invalid sitemap: %(response)s",
-                    {"response": response},
-                    extra={"spider": self},
-                )
-                return
+    # Try to parse robots.txt for sitemaps if the response is robots.txt
+    if response.url.endswith("/robots.txt"):
+        for url in sitemap_urls_from_robots(response.text, base_url=response.url):
+            yield Request(url, callback=self._parse_sitemap)
+        return
+    
+    # Get the sitemap body (can handle XML, .xml.gz, etc.)
+    body = self._get_sitemap_body(response)
+    if body is None:
+        logger.warning(
+            "Ignoring invalid sitemap: %(response)s",
+            {"response": response},
+            extra={"spider": self},
+        )
+        return
 
-            s = Sitemap(body)
-            it = self.sitemap_filter(s)
+    # Stream the sitemap if it's an XML sitemap
+    if response.url.endswith(".xml") or response.url.endswith(".xml.gz"):
+        yield from self._stream_sitemap(body)
 
-            if s.type == "sitemapindex":
-                for loc in iterloc(it, self.sitemap_alternate_links):
-                    if any(x.search(loc) for x in self._follow):
-                        yield Request(loc, callback=self._parse_sitemap)
-            elif s.type == "urlset":
-                for loc in iterloc(it, self.sitemap_alternate_links):
+    def _stream_sitemap(self, body: bytes) -> Iterable[Request]:
+    # Use streaming parsing to handle large sitemaps
+    try:
+        # Create an incremental XML parser
+        context = ET.iterparse(BytesIO(body), events=("start", "end"))
+        
+        url = None
+        for event, elem in context:
+            if event == 'end' and elem.tag.endswith("loc"):
+                url = elem.text
+                elem.clear()  # Free up memory
+            if event == 'end' and elem.tag.endswith("url"):
+                # Filter and process each <url> element as it's encountered
+                if url:
                     for r, c in self._cbs:
-                        if r.search(loc):
-                            yield Request(loc, callback=c)
+                        if r.search(url):
+                            yield Request(url, callback=c)
                             break
+                elem.clear()
+        except ET.ParseError as e:
+            logger.error(f"Error parsing sitemap: {e}")
 
     def _get_sitemap_body(self, response: Response) -> Optional[bytes]:
-        """Return the sitemap body contained in the given response,
-        or None if the response is not a sitemap.
-        """
-        if isinstance(response, XmlResponse):
-            return response.body
-        if gzip_magic_number(response):
-            uncompressed_size = len(response.body)
-            max_size = response.meta.get("download_maxsize", self._max_size)
-            warn_size = response.meta.get("download_warnsize", self._warn_size)
-            try:
-                body = gunzip(response.body, max_size=max_size)
-            except _DecompressionMaxSizeExceeded:
-                return None
-            if uncompressed_size < warn_size <= len(body):
-                logger.warning(
-                    f"{response} body size after decompression ({len(body)} B) "
-                    f"is larger than the download warning size ({warn_size} B)."
-                )
-            return body
-        # actual gzipped sitemap files are decompressed above ;
-        # if we are here (response body is not gzipped)
-        # and have a response for .xml.gz,
-        # it usually means that it was already gunzipped
-        # by HttpCompression middleware,
-        # the HTTP response being sent with "Content-Encoding: gzip"
-        # without actually being a .xml.gz file in the first place,
-        # merely XML gzip-compressed on the fly,
-        # in other word, here, we have plain XML
-        if response.url.endswith(".xml") or response.url.endswith(".xml.gz"):
-            return response.body
-        return None
+    """Return the sitemap body contained in the given response,
+    or None if the response is not a sitemap.
+    """
+    if isinstance(response, XmlResponse):
+        return response.body
+    if gzip_magic_number(response):
+        max_size = response.meta.get("download_maxsize", self._max_size)
+        return self._decompress_gzip_stream(response.body, max_size)
+    if response.url.endswith(".xml") or response.url.endswith(".xml.gz"):
+        return response.body
+    return None
 
+    def _decompress_gzip_stream(self, data: bytes, max_size: int) -> Optional[bytes]:
+    """Decompress gzipped sitemap data in chunks to avoid memory overload."""
+    try:
+        buffer = BytesIO(data)
+        with gzip.GzipFile(fileobj=buffer) as gz_file:
+            decompressed_data = BytesIO()
+            total_size = 0
+            chunk_size = 1024 * 1024  # 1 MB chunks
+            
+            while True:
+                chunk = gz_file.read(chunk_size)
+                if not chunk:
+                    break
+                total_size += len(chunk)
+                if total_size > max_size:
+                    raise _DecompressionMaxSizeExceeded(
+                        f"Sitemap size exceeds maximum allowed size of {max_size} bytes"
+                    )
+                decompressed_data.write(chunk)
+            
+            return decompressed_data.getvalue()
+        except _DecompressionMaxSizeExceeded as e:
+            logger.warning(f"Sitemap exceeds allowed size: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error decompressing sitemap: {e}")
+            return None
 
 def regex(x: Union[re.Pattern[str], str]) -> re.Pattern[str]:
     if isinstance(x, str):
         return re.compile(x)
     return x
-
 
 def iterloc(it: Iterable[Dict[str, Any]], alt: bool = False) -> Iterable[str]:
     for d in it:
