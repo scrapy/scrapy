@@ -1,6 +1,5 @@
 import platform
 import sys
-from typing import List, Tuple
 
 import cryptography
 import cssselect
@@ -13,7 +12,7 @@ import scrapy
 from scrapy.utils.ssl import get_openssl_version
 
 
-def scrapy_components_versions() -> List[Tuple[str, str]]:
+def scrapy_components_versions() -> list[tuple[str, str]]:
     lxml_version = ".".join(map(str, lxml.etree.LXML_VERSION))
     libxml2_version = ".".join(map(str, lxml.etree.LIBXML_VERSION))
 

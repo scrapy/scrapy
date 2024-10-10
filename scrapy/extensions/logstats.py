@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from twisted.internet import task
 
@@ -81,7 +81,7 @@ class LogStats:
 
     def calculate_final_stats(
         self, spider: Spider
-    ) -> Union[Tuple[None, None], Tuple[float, float]]:
+    ) -> Union[tuple[None, None], tuple[float, float]]:
         start_time = self.stats.get_value("start_time")
         finished_time = self.stats.get_value("finished_time")
 

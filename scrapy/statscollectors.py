@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import pprint
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from scrapy import Spider
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-StatsT = Dict[str, Any]
+StatsT = dict[str, Any]
 
 
 class StatsCollector:
@@ -71,7 +71,7 @@ class StatsCollector:
 class MemoryStatsCollector(StatsCollector):
     def __init__(self, crawler: Crawler):
         super().__init__(crawler)
-        self.spider_stats: Dict[str, StatsT] = {}
+        self.spider_stats: dict[str, StatsT] = {}
 
     def _persist_stats(self, stats: StatsT, spider: Spider) -> None:
         self.spider_stats[spider.name] = stats

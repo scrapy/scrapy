@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from scrapy.commands import ScrapyCommand
 
@@ -15,7 +15,7 @@ class Command(ScrapyCommand):
     def short_desc(self) -> str:
         return "List available spiders"
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         assert self.crawler_process
         for s in sorted(self.crawler_process.spider_loader.list()):
             print(s)

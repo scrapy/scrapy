@@ -10,23 +10,15 @@ from __future__ import annotations
 import collections
 import warnings
 import weakref
+from collections import OrderedDict
 from collections.abc import Mapping
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AnyStr,
-    Iterable,
-    Optional,
-    OrderedDict,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, AnyStr, Optional, TypeVar, Union
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -52,7 +44,7 @@ class CaselessDict(dict):
 
     def __init__(
         self,
-        seq: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
+        seq: Union[Mapping[AnyStr, Any], Iterable[tuple[AnyStr, Any]], None] = None,
     ):
         super().__init__()
         if seq:
@@ -92,7 +84,7 @@ class CaselessDict(dict):
         return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))  # type: ignore[arg-type]
 
     # doesn't fully implement MutableMapping.update()
-    def update(self, seq: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]]]) -> None:  # type: ignore[override]
+    def update(self, seq: Union[Mapping[AnyStr, Any], Iterable[tuple[AnyStr, Any]]]) -> None:  # type: ignore[override]
         seq = seq.items() if isinstance(seq, Mapping) else seq
         iseq = ((self.normkey(k), self.normvalue(v)) for k, v in seq)
         super().update(iseq)

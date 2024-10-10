@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import json
 import logging
 import re
 import sys
 import unittest
 from io import StringIO
-from typing import Any, Dict, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any
 from unittest import TestCase
 
 import pytest
@@ -20,6 +22,9 @@ from scrapy.utils.log import (
 )
 from scrapy.utils.test import get_crawler
 from tests.spiders import LogSpider
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, MutableMapping
 
 
 class FailureToExcInfoTest(unittest.TestCase):
@@ -133,7 +138,7 @@ class StreamLoggerTest(unittest.TestCase):
     ),
 )
 def test_spider_logger_adapter_process(
-    base_extra: Mapping[str, Any], log_extra: MutableMapping, expected_extra: Dict
+    base_extra: Mapping[str, Any], log_extra: MutableMapping, expected_extra: dict
 ):
     logger = logging.getLogger("test")
     spider_logger_adapter = SpiderLoggerAdapter(logger, base_extra)

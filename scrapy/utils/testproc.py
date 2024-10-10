@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ProcessTerminated
 from twisted.internet.protocol import ProcessProtocol
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from twisted.python.failure import Failure
 
 
@@ -36,8 +38,8 @@ class ProcessTest:
         return pp.deferred
 
     def _process_finished(
-        self, pp: TestProcessProtocol, cmd: List[str], check_code: bool
-    ) -> Tuple[int, bytes, bytes]:
+        self, pp: TestProcessProtocol, cmd: list[str], check_code: bool
+    ) -> tuple[int, bytes, bytes]:
         if pp.exitcode and check_code:
             msg = f"process {cmd} exit with code {pp.exitcode}"
             msg += f"\n>>> stdout <<<\n{pp.out.decode()}"

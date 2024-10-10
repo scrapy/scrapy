@@ -8,18 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import warnings
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Protocol,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Optional, Protocol, Union
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
 
@@ -33,6 +22,8 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -47,7 +38,7 @@ def _serialize_headers(headers: Iterable[bytes], request: Request) -> Iterable[b
 
 
 _fingerprint_cache: WeakKeyDictionary[
-    Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]
+    Request, dict[tuple[Optional[tuple[bytes, ...]], bool], bytes]
 ]
 _fingerprint_cache = WeakKeyDictionary()
 
@@ -88,7 +79,7 @@ def fingerprint(
     If you want to include them, set the keep_fragments argument to True
     (for instance when handling requests with a headless browser).
     """
-    processed_include_headers: Optional[Tuple[bytes, ...]] = None
+    processed_include_headers: Optional[tuple[bytes, ...]] = None
     if include_headers:
         processed_include_headers = tuple(
             to_bytes(h.lower()) for h in sorted(include_headers)
@@ -98,7 +89,7 @@ def fingerprint(
     if cache_key not in cache:
         # To decode bytes reliably (JSON does not support bytes), regardless of
         # character encoding, we use bytes.hex()
-        headers: Dict[str, List[str]] = {}
+        headers: dict[str, list[str]] = {}
         if processed_include_headers:
             for header in processed_include_headers:
                 if header in request.headers:
@@ -194,13 +185,13 @@ def referer_str(request: Request) -> Optional[str]:
     return to_unicode(referrer, errors="replace")
 
 
-def request_from_dict(d: Dict[str, Any], *, spider: Optional[Spider] = None) -> Request:
+def request_from_dict(d: dict[str, Any], *, spider: Optional[Spider] = None) -> Request:
     """Create a :class:`~scrapy.Request` object from a dict.
 
     If a spider is given, it will try to resolve the callbacks looking at the
     spider for methods with the same name.
     """
-    request_cls: Type[Request] = load_object(d["_class"]) if "_class" in d else Request
+    request_cls: type[Request] = load_object(d["_class"]) if "_class" in d else Request
     kwargs = {key: value for key, value in d.items() if key in request_cls.attributes}
     if d.get("callback") and spider:
         kwargs["callback"] = _get_method(spider, d["callback"])

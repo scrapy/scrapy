@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Tuple
+from typing import TYPE_CHECKING, Any
 
 from pydispatch import dispatcher
 
@@ -40,7 +40,7 @@ class SignalManager:
         kwargs.setdefault("sender", self.sender)
         dispatcher.disconnect(receiver, signal, **kwargs)
 
-    def send_catch_log(self, signal: Any, **kwargs: Any) -> List[Tuple[Any, Any]]:
+    def send_catch_log(self, signal: Any, **kwargs: Any) -> list[tuple[Any, Any]]:
         """
         Send a signal, catch exceptions and log them.
 
@@ -52,7 +52,7 @@ class SignalManager:
 
     def send_catch_log_deferred(
         self, signal: Any, **kwargs: Any
-    ) -> Deferred[List[Tuple[Any, Any]]]:
+    ) -> Deferred[list[tuple[Any, Any]]]:
         """
         Like :meth:`send_catch_log` but supports returning
         :class:`~twisted.internet.defer.Deferred` objects from signal handlers.

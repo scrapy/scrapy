@@ -7,17 +7,8 @@ See documentation in docs/topics/request-response.rst
 
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 
 from lxml.html import FormElement  # nosec
@@ -31,6 +22,7 @@ from scrapy.http.request import Request
 from scrapy.utils.python import is_listlike, to_bytes
 
 if TYPE_CHECKING:
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -38,8 +30,8 @@ if TYPE_CHECKING:
 
 
 FormdataVType = Union[str, Iterable[str]]
-FormdataKVType = Tuple[str, FormdataVType]
-FormdataType = Optional[Union[Dict[str, FormdataVType], List[FormdataKVType]]]
+FormdataKVType = tuple[str, FormdataVType]
+FormdataType = Optional[Union[dict[str, FormdataVType], list[FormdataKVType]]]
 
 
 class FormRequest(Request):
@@ -74,7 +66,7 @@ class FormRequest(Request):
         formid: Optional[str] = None,
         formnumber: int = 0,
         formdata: FormdataType = None,
-        clickdata: Optional[Dict[str, Union[str, int]]] = None,
+        clickdata: Optional[dict[str, Union[str, int]]] = None,
         dont_click: bool = False,
         formxpath: Optional[str] = None,
         formcss: Optional[str] = None,
@@ -168,8 +160,8 @@ def _get_inputs(
     form: FormElement,
     formdata: FormdataType,
     dont_click: bool,
-    clickdata: Optional[Dict[str, Union[str, int]]],
-) -> List[FormdataKVType]:
+    clickdata: Optional[dict[str, Union[str, int]]],
+) -> list[FormdataKVType]:
     """Return a list of key-value pairs for the inputs found in the given form."""
     try:
         formdata_keys = dict(formdata or ()).keys()
@@ -187,7 +179,7 @@ def _get_inputs(
         '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
         namespaces={"re": "http://exslt.org/regular-expressions"},
     )
-    values: List[FormdataKVType] = [
+    values: list[FormdataKVType] = [
         (k, "" if v is None else v)
         for k, v in (_value(e) for e in inputs)
         if k and k not in formdata_keys
@@ -205,7 +197,7 @@ def _get_inputs(
 
 def _value(
     ele: Union[InputElement, SelectElement, TextareaElement]
-) -> Tuple[Optional[str], Union[None, str, MultipleSelectOptions]]:
+) -> tuple[Optional[str], Union[None, str, MultipleSelectOptions]]:
     n = ele.name
     v = ele.value
     if ele.tag == "select":
@@ -215,7 +207,7 @@ def _value(
 
 def _select_value(
     ele: SelectElement, n: Optional[str], v: Union[None, str, MultipleSelectOptions]
-) -> Tuple[Optional[str], Union[None, str, MultipleSelectOptions]]:
+) -> tuple[Optional[str], Union[None, str, MultipleSelectOptions]]:
     multiple = ele.multiple
     if v is None and not multiple:
         # Match browser behaviour on simple select tag without options selected
@@ -226,8 +218,8 @@ def _select_value(
 
 
 def _get_clickable(
-    clickdata: Optional[Dict[str, Union[str, int]]], form: FormElement
-) -> Optional[Tuple[str, str]]:
+    clickdata: Optional[dict[str, Union[str, int]]], form: FormElement
+) -> Optional[tuple[str, str]]:
     """
     Returns the clickable element specified in clickdata,
     if the latter is given. If not, it returns the first

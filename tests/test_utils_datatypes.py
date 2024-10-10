@@ -1,8 +1,7 @@
 import copy
 import unittest
 import warnings
-from collections.abc import Mapping, MutableMapping
-from typing import Iterator
+from collections.abc import Iterator, Mapping, MutableMapping
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request

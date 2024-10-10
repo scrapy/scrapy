@@ -6,7 +6,7 @@ See documentation in docs/item-pipeline.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any
 
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
@@ -23,7 +23,7 @@ class ItemPipelineManager(MiddlewareManager):
     component_name = "item pipeline"
 
     @classmethod
-    def _get_mwlist_from_settings(cls, settings: Settings) -> List[Any]:
+    def _get_mwlist_from_settings(cls, settings: Settings) -> list[Any]:
         return build_component_list(settings.getwithbase("ITEM_PIPELINES"))
 
     def _add_middleware(self, pipe: Any) -> None:

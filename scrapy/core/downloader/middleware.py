@@ -6,7 +6,8 @@ See documentation in docs/topics/downloader-middleware.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Generator, List, Union, cast
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Union, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 
@@ -17,6 +18,8 @@ from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import deferred_from_coro, mustbe_deferred
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from twisted.python.failure import Failure
 
     from scrapy import Spider
@@ -27,7 +30,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
     component_name = "downloader middleware"
 
     @classmethod
-    def _get_mwlist_from_settings(cls, settings: BaseSettings) -> List[Any]:
+    def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
         return build_component_list(settings.getwithbase("DOWNLOADER_MIDDLEWARES"))
 
     def _add_middleware(self, mw: Any) -> None:

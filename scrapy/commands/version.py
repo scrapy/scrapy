@@ -1,5 +1,4 @@
 import argparse
-from typing import List
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -25,7 +24,7 @@ class Command(ScrapyCommand):
             help="also display twisted/python/platform info (useful for bug reports)",
         )
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if opts.verbose:
             versions = scrapy_components_versions()
             width = max(len(n) for (n, _) in versions)

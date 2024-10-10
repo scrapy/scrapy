@@ -8,7 +8,7 @@ import string
 from ipaddress import IPv4Address
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 from unittest import mock, skipIf
 from urllib.parse import urlencode
 
@@ -152,7 +152,7 @@ class QueryParams(LeafResource):
         request.setHeader("Content-Type", "application/json; charset=UTF-8")
         request.setHeader("Content-Encoding", "UTF-8")
 
-        query_params: Dict[str, str] = {}
+        query_params: dict[str, str] = {}
         assert request.args is not None
         for k, v in request.args.items():
             query_params[str(k, "utf-8")] = str(v[0], "utf-8")

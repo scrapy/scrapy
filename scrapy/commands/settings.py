@@ -1,6 +1,5 @@
 import argparse
 import json
-from typing import List
 
 from scrapy.commands import ScrapyCommand
 from scrapy.settings import BaseSettings
@@ -46,7 +45,7 @@ class Command(ScrapyCommand):
             help="print setting value, interpreted as a list",
         )
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         assert self.crawler_process
         settings = self.crawler_process.settings
         if opts.get:

@@ -7,14 +7,14 @@ RETRY_TIMES - how many times to retry a failed page
 RETRY_HTTP_CODES - which HTTP response codes to retry
 
 Failed pages are collected on the scraping process and rescheduled at the end,
-once the spider has finished crawling all regular (non failed) pages.
+once the spider has finished crawling all regular (non-failed) pages.
 """
 
 from __future__ import annotations
 
 import warnings
 from logging import Logger, getLogger
-from typing import TYPE_CHECKING, Any, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.settings import BaseSettings, Settings
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 retry_logger = getLogger(__name__)
 
 
-def backwards_compatibility_getattr(self: Any, name: str) -> Tuple[Any, ...]:
+def backwards_compatibility_getattr(self: Any, name: str) -> tuple[Any, ...]:
     if name == "EXCEPTIONS_TO_RETRY":
         warnings.warn(
             "Attribute RetryMiddleware.EXCEPTIONS_TO_RETRY is deprecated. "
@@ -60,7 +60,7 @@ def get_retry_request(
     request: Request,
     *,
     spider: Spider,
-    reason: Union[str, Exception, Type[Exception]] = "unspecified",
+    reason: Union[str, Exception, type[Exception]] = "unspecified",
     max_retry_times: Optional[int] = None,
     priority_adjust: Optional[int] = None,
     logger: Logger = retry_logger,
@@ -187,7 +187,7 @@ class RetryMiddleware(metaclass=BackwardsCompatibilityMetaclass):
     def _retry(
         self,
         request: Request,
-        reason: Union[str, Exception, Type[Exception]],
+        reason: Union[str, Exception, type[Exception]],
         spider: Spider,
     ) -> Optional[Request]:
         max_retry_times = request.meta.get("max_retry_times", self.max_retry_times)

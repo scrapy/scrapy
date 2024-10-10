@@ -7,22 +7,7 @@ See documentation in docs/topics/request-response.rst
 
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AnyStr,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, AnyStr, Optional, TypeVar, Union, overload
 from urllib.parse import urljoin
 
 from scrapy.exceptions import NotSupported
@@ -32,6 +17,7 @@ from scrapy.link import Link
 from scrapy.utils.trackref import object_ref
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Mapping
     from ipaddress import IPv4Address, IPv6Address
 
     from twisted.internet.ssl import Certificate
@@ -52,7 +38,7 @@ class Response(object_ref):
     downloaded (by the Downloader) and fed to the Spiders for processing.
     """
 
-    attributes: Tuple[str, ...] = (
+    attributes: tuple[str, ...] = (
         "url",
         "status",
         "headers",
@@ -74,9 +60,9 @@ class Response(object_ref):
         self,
         url: str,
         status: int = 200,
-        headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
+        headers: Union[Mapping[AnyStr, Any], Iterable[tuple[AnyStr, Any]], None] = None,
         body: bytes = b"",
-        flags: Optional[List[str]] = None,
+        flags: Optional[list[str]] = None,
         request: Optional[Request] = None,
         certificate: Optional[Certificate] = None,
         ip_address: Union[IPv4Address, IPv6Address, None] = None,
@@ -87,13 +73,13 @@ class Response(object_ref):
         self._set_body(body)
         self._set_url(url)
         self.request: Optional[Request] = request
-        self.flags: List[str] = [] if flags is None else list(flags)
+        self.flags: list[str] = [] if flags is None else list(flags)
         self.certificate: Optional[Certificate] = certificate
         self.ip_address: Union[IPv4Address, IPv6Address, None] = ip_address
         self.protocol: Optional[str] = protocol
 
     @property
-    def cb_kwargs(self) -> Dict[str, Any]:
+    def cb_kwargs(self) -> dict[str, Any]:
         try:
             return self.request.cb_kwargs  # type: ignore[union-attr]
         except AttributeError:
@@ -103,7 +89,7 @@ class Response(object_ref):
             )
 
     @property
-    def meta(self) -> Dict[str, Any]:
+    def meta(self) -> dict[str, Any]:
         try:
             return self.request.meta  # type: ignore[union-attr]
         except AttributeError:
@@ -149,14 +135,14 @@ class Response(object_ref):
 
     @overload
     def replace(
-        self, *args: Any, cls: Type[ResponseTypeVar], **kwargs: Any
+        self, *args: Any, cls: type[ResponseTypeVar], **kwargs: Any
     ) -> ResponseTypeVar: ...
 
     @overload
     def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self: ...
 
     def replace(
-        self, *args: Any, cls: Optional[Type[Response]] = None, **kwargs: Any
+        self, *args: Any, cls: Optional[type[Response]] = None, **kwargs: Any
     ) -> Response:
         """Create a new Response with the same attributes except for those given new values"""
         for x in self.attributes:
@@ -200,16 +186,16 @@ class Response(object_ref):
         url: Union[str, Link],
         callback: Optional[CallbackT] = None,
         method: str = "GET",
-        headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
+        headers: Union[Mapping[AnyStr, Any], Iterable[tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
         cookies: Optional[CookiesT] = None,
-        meta: Optional[Dict[str, Any]] = None,
+        meta: Optional[dict[str, Any]] = None,
         encoding: Optional[str] = "utf-8",
         priority: int = 0,
         dont_filter: bool = False,
         errback: Optional[Callable[[Failure], Any]] = None,
-        cb_kwargs: Optional[Dict[str, Any]] = None,
-        flags: Optional[List[str]] = None,
+        cb_kwargs: Optional[dict[str, Any]] = None,
+        flags: Optional[list[str]] = None,
     ) -> Request:
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
@@ -253,16 +239,16 @@ class Response(object_ref):
         urls: Iterable[Union[str, Link]],
         callback: Optional[CallbackT] = None,
         method: str = "GET",
-        headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
+        headers: Union[Mapping[AnyStr, Any], Iterable[tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
         cookies: Optional[CookiesT] = None,
-        meta: Optional[Dict[str, Any]] = None,
+        meta: Optional[dict[str, Any]] = None,
         encoding: Optional[str] = "utf-8",
         priority: int = 0,
         dont_filter: bool = False,
         errback: Optional[Callable[[Failure], Any]] = None,
-        cb_kwargs: Optional[Dict[str, Any]] = None,
-        flags: Optional[List[str]] = None,
+        cb_kwargs: Optional[dict[str, Any]] = None,
+        flags: Optional[list[str]] = None,
     ) -> Iterable[Request]:
         """
         .. versionadded:: 2.0

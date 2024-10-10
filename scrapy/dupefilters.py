@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Set
+from typing import TYPE_CHECKING, Optional
 
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import (
@@ -56,7 +56,7 @@ class RFPDupeFilter(BaseDupeFilter):
         self.fingerprinter: RequestFingerprinterProtocol = (
             fingerprinter or RequestFingerprinter()
         )
-        self.fingerprints: Set[str] = set()
+        self.fingerprints: set[str] = set()
         self.logdupes = True
         self.debug = debug
         self.logger = logging.getLogger(__name__)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, TypedDict, Union
+from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
 
 from twisted.python.failure import Failure
 
@@ -31,7 +31,7 @@ DOWNLOADERRORMSG_LONG = "Error downloading %(request)s: %(errmsg)s"
 class LogFormatterResult(TypedDict):
     level: int
     msg: str
-    args: Union[Dict[str, Any], Tuple[Any, ...]]
+    args: Union[dict[str, Any], tuple[Any, ...]]
 
 
 class LogFormatter:
@@ -181,7 +181,7 @@ class LogFormatter:
 
         .. versionadded:: 2.0
         """
-        args: Dict[str, Any] = {"request": request}
+        args: dict[str, Any] = {"request": request}
         if errmsg:
             msg = DOWNLOADERRORMSG_LONG
             args["errmsg"] = errmsg

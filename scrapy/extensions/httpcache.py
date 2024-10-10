@@ -9,7 +9,7 @@ from importlib import import_module
 from pathlib import Path
 from time import time
 from types import ModuleType
-from typing import IO, TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union, cast
+from typing import IO, TYPE_CHECKING, Any, Optional, Union, cast
 from weakref import WeakKeyDictionary
 
 from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
@@ -22,6 +22,8 @@ from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.request import RequestFingerprinter
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     # typing.Concatenate requires Python 3.10
     from typing_extensions import Concatenate
 
@@ -35,8 +37,8 @@ logger = logging.getLogger(__name__)
 
 class DummyPolicy:
     def __init__(self, settings: BaseSettings):
-        self.ignore_schemes: List[str] = settings.getlist("HTTPCACHE_IGNORE_SCHEMES")
-        self.ignore_http_codes: List[int] = [
+        self.ignore_schemes: list[str] = settings.getlist("HTTPCACHE_IGNORE_SCHEMES")
+        self.ignore_http_codes: list[int] = [
             int(x) for x in settings.getlist("HTTPCACHE_IGNORE_HTTP_CODES")
         ]
 
@@ -62,18 +64,18 @@ class RFC2616Policy:
 
     def __init__(self, settings: BaseSettings):
         self.always_store: bool = settings.getbool("HTTPCACHE_ALWAYS_STORE")
-        self.ignore_schemes: List[str] = settings.getlist("HTTPCACHE_IGNORE_SCHEMES")
+        self.ignore_schemes: list[str] = settings.getlist("HTTPCACHE_IGNORE_SCHEMES")
         self._cc_parsed: WeakKeyDictionary[
-            Union[Request, Response], Dict[bytes, Optional[bytes]]
+            Union[Request, Response], dict[bytes, Optional[bytes]]
         ] = WeakKeyDictionary()
-        self.ignore_response_cache_controls: List[bytes] = [
+        self.ignore_response_cache_controls: list[bytes] = [
             to_bytes(cc)
             for cc in settings.getlist("HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS")
         ]
 
     def _parse_cachecontrol(
         self, r: Union[Request, Response]
-    ) -> Dict[bytes, Optional[bytes]]:
+    ) -> dict[bytes, Optional[bytes]]:
         if r not in self._cc_parsed:
             cch = r.headers.get(b"Cache-Control", b"")
             assert cch is not None
@@ -189,7 +191,7 @@ class RFC2616Policy:
         if b"ETag" in cachedresponse.headers:
             request.headers[b"If-None-Match"] = cachedresponse.headers[b"ETag"]
 
-    def _get_max_age(self, cc: Dict[bytes, Optional[bytes]]) -> Optional[int]:
+    def _get_max_age(self, cc: dict[bytes, Optional[bytes]]) -> Optional[int]:
         try:
             return max(0, int(cc[b"max-age"]))  # type: ignore[arg-type]
         except (KeyError, ValueError):
@@ -298,7 +300,7 @@ class DbmCacheStorage:
         self.db[f"{key}_data"] = pickle.dumps(data, protocol=4)
         self.db[f"{key}_time"] = str(time())
 
-    def _read_data(self, spider: Spider, request: Request) -> Optional[Dict[str, Any]]:
+    def _read_data(self, spider: Spider, request: Request) -> Optional[dict[str, Any]]:
         key = self._fingerprinter.fingerprint(request).hex()
         db = self.db
         tkey = f"{key}_time"
@@ -309,7 +311,7 @@ class DbmCacheStorage:
         if 0 < self.expiration_secs < time() - float(ts):
             return None  # expired
 
-        return cast(Dict[str, Any], pickle.loads(db[f"{key}_data"]))  # nosec
+        return cast(dict[str, Any], pickle.loads(db[f"{key}_data"]))  # nosec
 
 
 class FilesystemCacheStorage:
@@ -385,7 +387,7 @@ class FilesystemCacheStorage:
         key = self._fingerprinter.fingerprint(request).hex()
         return str(Path(self.cachedir, spider.name, key[0:2], key))
 
-    def _read_meta(self, spider: Spider, request: Request) -> Optional[Dict[str, Any]]:
+    def _read_meta(self, spider: Spider, request: Request) -> Optional[dict[str, Any]]:
         rpath = Path(self._get_request_path(spider, request))
         metapath = rpath / "pickled_meta"
         if not metapath.exists():
@@ -394,10 +396,10 @@ class FilesystemCacheStorage:
         if 0 < self.expiration_secs < time() - mtime:
             return None  # expired
         with self._open(metapath, "rb") as f:
-            return cast(Dict[str, Any], pickle.load(f))  # nosec
+            return cast(dict[str, Any], pickle.load(f))  # nosec
 
 
-def parse_cachecontrol(header: bytes) -> Dict[bytes, Optional[bytes]]:
+def parse_cachecontrol(header: bytes) -> dict[bytes, Optional[bytes]]:
     """Parse Cache-Control header
 
     https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9

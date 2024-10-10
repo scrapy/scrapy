@@ -3,7 +3,7 @@ from __future__ import annotations
 import warnings
 from itertools import chain
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import IgnoreRequest, NotConfigured
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 logger = getLogger(__name__)
 
-ACCEPTED_ENCODINGS: List[bytes] = [b"gzip", b"deflate"]
+ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate"]
 
 try:
     try:
@@ -50,7 +50,7 @@ else:
 
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
-    sent/received from web sites"""
+    sent/received from websites"""
 
     def __init__(
         self,
@@ -140,7 +140,7 @@ class HttpCompressionMiddleware:
                 respcls = responsetypes.from_args(
                     headers=response.headers, url=response.url, body=decoded_body
                 )
-                kwargs: Dict[str, Any] = {"body": decoded_body}
+                kwargs: dict[str, Any] = {"body": decoded_body}
                 if issubclass(respcls, TextResponse):
                     # force recalculating the encoding until we make sure the
                     # responsetypes guessing is reliable
@@ -152,23 +152,23 @@ class HttpCompressionMiddleware:
         return response
 
     def _handle_encoding(
-        self, body: bytes, content_encoding: List[bytes], max_size: int
-    ) -> Tuple[bytes, List[bytes]]:
+        self, body: bytes, content_encoding: list[bytes], max_size: int
+    ) -> tuple[bytes, list[bytes]]:
         to_decode, to_keep = self._split_encodings(content_encoding)
         for encoding in to_decode:
             body = self._decode(body, encoding, max_size)
         return body, to_keep
 
     def _split_encodings(
-        self, content_encoding: List[bytes]
-    ) -> Tuple[List[bytes], List[bytes]]:
-        to_keep: List[bytes] = [
+        self, content_encoding: list[bytes]
+    ) -> tuple[list[bytes], list[bytes]]:
+        to_keep: list[bytes] = [
             encoding.strip().lower()
             for encoding in chain.from_iterable(
                 encodings.split(b",") for encodings in content_encoding
             )
         ]
-        to_decode: List[bytes] = []
+        to_decode: list[bytes] = []
         while to_keep:
             encoding = to_keep.pop()
             if encoding not in ACCEPTED_ENCODINGS:

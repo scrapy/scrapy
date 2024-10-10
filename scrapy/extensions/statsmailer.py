@@ -6,7 +6,7 @@ Use STATSMAILER_RCPTS setting to enable and give the recipient mail address
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
@@ -23,14 +23,14 @@ if TYPE_CHECKING:
 
 
 class StatsMailer:
-    def __init__(self, stats: StatsCollector, recipients: List[str], mail: MailSender):
+    def __init__(self, stats: StatsCollector, recipients: list[str], mail: MailSender):
         self.stats: StatsCollector = stats
-        self.recipients: List[str] = recipients
+        self.recipients: list[str] = recipients
         self.mail: MailSender = mail
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        recipients: List[str] = crawler.settings.getlist("STATSMAILER_RCPTS")
+        recipients: list[str] = crawler.settings.getlist("STATSMAILER_RCPTS")
         if not recipients:
             raise NotConfigured
         mail: MailSender = MailSender.from_settings(crawler.settings)

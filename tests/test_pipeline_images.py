@@ -5,7 +5,7 @@ import random
 import warnings
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import Dict, List, Optional
+from typing import Optional
 from unittest.mock import patch
 
 import attr
@@ -406,11 +406,11 @@ class ImagesPipelineTestCaseFieldsDataClass(
 class ImagesPipelineTestAttrsItem:
     name = attr.ib(default="")
     # default fields
-    image_urls: List[str] = attr.ib(default=lambda: [])
-    images: List[Dict[str, str]] = attr.ib(default=lambda: [])
+    image_urls: list[str] = attr.ib(default=lambda: [])
+    images: list[dict[str, str]] = attr.ib(default=lambda: [])
     # overridden fields
-    custom_image_urls: List[str] = attr.ib(default=lambda: [])
-    custom_images: List[Dict[str, str]] = attr.ib(default=lambda: [])
+    custom_image_urls: list[str] = attr.ib(default=lambda: [])
+    custom_images: list[dict[str, str]] = attr.ib(default=lambda: [])
 
 
 class ImagesPipelineTestCaseFieldsAttrsItem(

@@ -9,7 +9,7 @@ from pathlib import Path
 from shutil import rmtree
 from subprocess import PIPE, Popen
 from tempfile import mkdtemp
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 from urllib.parse import urlencode
 
 from OpenSSL import SSL
@@ -37,7 +37,7 @@ def getarg(request, name, default=None, type=None):
     return default
 
 
-def get_mockserver_env() -> Dict[str, str]:
+def get_mockserver_env() -> dict[str, str]:
     """Return a OS environment dict suitable to run mockserver processes."""
 
     tests_path = Path(__file__).parent.parent

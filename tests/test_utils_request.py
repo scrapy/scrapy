@@ -2,7 +2,7 @@ import json
 import unittest
 import warnings
 from hashlib import sha1
-from typing import Dict, Optional, Tuple, Union
+from typing import Optional, Union
 from weakref import WeakKeyDictionary
 
 from scrapy.http import Request
@@ -57,11 +57,11 @@ class FingerprintTest(unittest.TestCase):
 
     function: staticmethod = staticmethod(fingerprint)
     cache: Union[
-        "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]]",
-        "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], str]]",
+        "WeakKeyDictionary[Request, dict[tuple[Optional[tuple[bytes, ...]], bool], bytes]]",
+        "WeakKeyDictionary[Request, dict[tuple[Optional[tuple[bytes, ...]], bool], str]]",
     ] = _fingerprint_cache
     default_cache_key = (None, False)
-    known_hashes: Tuple[Tuple[Request, Union[bytes, str], Dict], ...] = (
+    known_hashes: tuple[tuple[Request, Union[bytes, str], dict], ...] = (
         (
             Request("http://example.org"),
             b"xs\xd7\x0c3uj\x15\xfe\xd7d\x9b\xa9\t\xe0d\xbf\x9cXD",

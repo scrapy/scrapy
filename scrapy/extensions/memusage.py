@@ -11,7 +11,7 @@ import socket
 import sys
 from importlib import import_module
 from pprint import pformat
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from twisted.internet import task
 
@@ -42,7 +42,7 @@ class MemoryUsage:
 
         self.crawler: Crawler = crawler
         self.warned: bool = False
-        self.notify_mails: List[str] = crawler.settings.getlist("MEMUSAGE_NOTIFY_MAIL")
+        self.notify_mails: list[str] = crawler.settings.getlist("MEMUSAGE_NOTIFY_MAIL")
         self.limit: int = crawler.settings.getint("MEMUSAGE_LIMIT_MB") * 1024 * 1024
         self.warning: int = crawler.settings.getint("MEMUSAGE_WARNING_MB") * 1024 * 1024
         self.check_interval: float = crawler.settings.getfloat(
@@ -66,7 +66,7 @@ class MemoryUsage:
     def engine_started(self) -> None:
         assert self.crawler.stats
         self.crawler.stats.set_value("memusage/startup", self.get_virtual_size())
-        self.tasks: List[task.LoopingCall] = []
+        self.tasks: list[task.LoopingCall] = []
         tsk = task.LoopingCall(self.update)
         self.tasks.append(tsk)
         tsk.start(self.check_interval, now=True)
@@ -141,7 +141,7 @@ class MemoryUsage:
                 self.crawler.stats.set_value("memusage/warning_notified", 1)
             self.warned = True
 
-    def _send_report(self, rcpts: List[str], subject: str) -> None:
+    def _send_report(self, rcpts: list[str], subject: str) -> None:
         """send notification mail with some additional useful info"""
         assert self.crawler.engine
         assert self.crawler.stats

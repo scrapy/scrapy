@@ -8,7 +8,7 @@ import re
 from contextlib import suppress
 from io import BytesIO
 from time import time
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, TypedDict, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypedDict, TypeVar, Union
 from urllib.parse import urldefrag, urlunparse
 
 from twisted.internet import ssl
@@ -52,7 +52,7 @@ _T = TypeVar("_T")
 class _ResultT(TypedDict):
     txresponse: TxResponse
     body: bytes
-    flags: Optional[List[str]]
+    flags: Optional[list[str]]
     certificate: Optional[ssl.Certificate]
     ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address, None]
     failure: NotRequired[Optional[Failure]]
@@ -143,10 +143,10 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         reactor: ReactorBase,
         host: str,
         port: int,
-        proxyConf: Tuple[str, int, Optional[bytes]],
+        proxyConf: tuple[str, int, Optional[bytes]],
         contextFactory: IPolicyForHTTPS,
         timeout: float = 30,
-        bindAddress: Optional[Tuple[str, int]] = None,
+        bindAddress: Optional[tuple[str, int]] = None,
     ):
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
         super().__init__(reactor, proxyHost, proxyPort, timeout, bindAddress)
@@ -254,14 +254,14 @@ class TunnelingAgent(Agent):
         self,
         *,
         reactor: ReactorBase,
-        proxyConf: Tuple[str, int, Optional[bytes]],
+        proxyConf: tuple[str, int, Optional[bytes]],
         contextFactory: IPolicyForHTTPS,
         connectTimeout: Optional[float] = None,
         bindAddress: Optional[bytes] = None,
         pool: Optional[HTTPConnectionPool] = None,
     ):
         super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)
-        self._proxyConf: Tuple[str, int, Optional[bytes]] = proxyConf
+        self._proxyConf: tuple[str, int, Optional[bytes]] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
 
     def _getEndpoint(self, uri: URI) -> TunnelingTCP4ClientEndpoint:
@@ -621,7 +621,7 @@ class _ResponseReader(Protocol):
         self._crawler: Crawler = crawler
 
     def _finish_response(
-        self, flags: Optional[List[str]] = None, failure: Optional[Failure] = None
+        self, flags: Optional[list[str]] = None, failure: Optional[Failure] = None
     ) -> None:
         self._finished.callback(
             {

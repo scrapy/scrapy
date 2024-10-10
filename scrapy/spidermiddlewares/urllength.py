@@ -7,12 +7,14 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, AsyncIterable, Iterable
+from typing import TYPE_CHECKING, Any
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterable, Iterable
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 

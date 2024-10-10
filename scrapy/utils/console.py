@@ -1,12 +1,18 @@
+from __future__ import annotations
+
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Dict, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 EmbedFuncT = Callable[..., None]
-KnownShellsT = Dict[str, Callable[..., EmbedFuncT]]
+KnownShellsT = dict[str, Callable[..., EmbedFuncT]]
 
 
 def _embed_ipython_shell(
-    namespace: Dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] = {}, banner: str = ""
 ) -> EmbedFuncT:
     """Start an IPython Shell"""
     try:
@@ -21,7 +27,7 @@ def _embed_ipython_shell(
         )
 
     @wraps(_embed_ipython_shell)
-    def wrapper(namespace: Dict[str, Any] = namespace, banner: str = "") -> None:
+    def wrapper(namespace: dict[str, Any] = namespace, banner: str = "") -> None:
         config = load_default_config()
         # Always use .instance() to ensure _instance propagation to all parents
         # this is needed for <TAB> completion works well for new imports
@@ -37,26 +43,26 @@ def _embed_ipython_shell(
 
 
 def _embed_bpython_shell(
-    namespace: Dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] = {}, banner: str = ""
 ) -> EmbedFuncT:
     """Start a bpython shell"""
     import bpython
 
     @wraps(_embed_bpython_shell)
-    def wrapper(namespace: Dict[str, Any] = namespace, banner: str = "") -> None:
+    def wrapper(namespace: dict[str, Any] = namespace, banner: str = "") -> None:
         bpython.embed(locals_=namespace, banner=banner)
 
     return wrapper
 
 
 def _embed_ptpython_shell(
-    namespace: Dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] = {}, banner: str = ""
 ) -> EmbedFuncT:
     """Start a ptpython shell"""
     import ptpython.repl
 
     @wraps(_embed_ptpython_shell)
-    def wrapper(namespace: Dict[str, Any] = namespace, banner: str = "") -> None:
+    def wrapper(namespace: dict[str, Any] = namespace, banner: str = "") -> None:
         print(banner)
         ptpython.repl.embed(locals=namespace)
 
@@ -64,7 +70,7 @@ def _embed_ptpython_shell(
 
 
 def _embed_standard_shell(
-    namespace: Dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] = {}, banner: str = ""
 ) -> EmbedFuncT:
     """Start a standard python shell"""
     import code
@@ -79,7 +85,7 @@ def _embed_standard_shell(
         readline.parse_and_bind("tab:complete")
 
     @wraps(_embed_standard_shell)
-    def wrapper(namespace: Dict[str, Any] = namespace, banner: str = "") -> None:
+    def wrapper(namespace: dict[str, Any] = namespace, banner: str = "") -> None:
         code.interact(banner=banner, local=namespace)
 
     return wrapper
@@ -114,7 +120,7 @@ def get_shell_embed_func(
 
 
 def start_python_console(
-    namespace: Optional[Dict[str, Any]] = None,
+    namespace: Optional[dict[str, Any]] = None,
     banner: str = "",
     shells: Optional[Iterable[str]] = None,
 ) -> None:

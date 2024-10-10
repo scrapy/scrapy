@@ -2,23 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import (
-    TYPE_CHECKING,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Protocol,
-    Tuple,
-    Type,
-    cast,
-)
+from typing import TYPE_CHECKING, Optional, Protocol, cast
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -87,7 +79,7 @@ class ScrapyPriorityQueue:
     def from_crawler(
         cls,
         crawler: Crawler,
-        downstream_queue_cls: Type[QueueProtocol],
+        downstream_queue_cls: type[QueueProtocol],
         key: str,
         startprios: Iterable[int] = (),
     ) -> Self:
@@ -96,14 +88,14 @@ class ScrapyPriorityQueue:
     def __init__(
         self,
         crawler: Crawler,
-        downstream_queue_cls: Type[QueueProtocol],
+        downstream_queue_cls: type[QueueProtocol],
         key: str,
         startprios: Iterable[int] = (),
     ):
         self.crawler: Crawler = crawler
-        self.downstream_queue_cls: Type[QueueProtocol] = downstream_queue_cls
+        self.downstream_queue_cls: type[QueueProtocol] = downstream_queue_cls
         self.key: str = key
-        self.queues: Dict[int, QueueProtocol] = {}
+        self.queues: dict[int, QueueProtocol] = {}
         self.curprio: Optional[int] = None
         self.init_prios(startprios)
 
@@ -160,8 +152,8 @@ class ScrapyPriorityQueue:
         # Protocols can't declare optional members
         return cast(Request, queue.peek())  # type: ignore[attr-defined]
 
-    def close(self) -> List[int]:
-        active: List[int] = []
+    def close(self) -> list[int]:
+        active: list[int] = []
         for p, q in self.queues.items():
             active.append(p)
             q.close()
@@ -176,7 +168,7 @@ class DownloaderInterface:
         assert crawler.engine
         self.downloader: Downloader = crawler.engine.downloader
 
-    def stats(self, possible_slots: Iterable[str]) -> List[Tuple[int, str]]:
+    def stats(self, possible_slots: Iterable[str]) -> list[tuple[int, str]]:
         return [(self._active_downloads(slot), slot) for slot in possible_slots]
 
     def get_slot_key(self, request: Request) -> str:
@@ -199,18 +191,18 @@ class DownloaderAwarePriorityQueue:
     def from_crawler(
         cls,
         crawler: Crawler,
-        downstream_queue_cls: Type[QueueProtocol],
+        downstream_queue_cls: type[QueueProtocol],
         key: str,
-        startprios: Optional[Dict[str, Iterable[int]]] = None,
+        startprios: Optional[dict[str, Iterable[int]]] = None,
     ) -> Self:
         return cls(crawler, downstream_queue_cls, key, startprios)
 
     def __init__(
         self,
         crawler: Crawler,
-        downstream_queue_cls: Type[QueueProtocol],
+        downstream_queue_cls: type[QueueProtocol],
         key: str,
-        slot_startprios: Optional[Dict[str, Iterable[int]]] = None,
+        slot_startprios: Optional[dict[str, Iterable[int]]] = None,
     ):
         if crawler.settings.getint("CONCURRENT_REQUESTS_PER_IP") != 0:
             raise ValueError(
@@ -229,11 +221,11 @@ class DownloaderAwarePriorityQueue:
             )
 
         self._downloader_interface: DownloaderInterface = DownloaderInterface(crawler)
-        self.downstream_queue_cls: Type[QueueProtocol] = downstream_queue_cls
+        self.downstream_queue_cls: type[QueueProtocol] = downstream_queue_cls
         self.key: str = key
         self.crawler: Crawler = crawler
 
-        self.pqueues: Dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
+        self.pqueues: dict[str, ScrapyPriorityQueue] = {}  # slot -> priority queue
         for slot, startprios in (slot_startprios or {}).items():
             self.pqueues[slot] = self.pqfactory(slot, startprios)
 
@@ -281,7 +273,7 @@ class DownloaderAwarePriorityQueue:
         queue = self.pqueues[slot]
         return queue.peek()
 
-    def close(self) -> Dict[str, List[int]]:
+    def close(self) -> dict[str, list[int]]:
         active = {slot: queue.close() for slot, queue in self.pqueues.items()}
         self.pqueues.clear()
         return active

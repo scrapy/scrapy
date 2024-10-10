@@ -7,7 +7,7 @@ See documentation in docs/topics/spiders.rst
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from scrapy import signals
 from scrapy.http import Request, Response
@@ -15,6 +15,8 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from twisted.internet.defer import Deferred
 
     # typing.Self requires Python 3.11
@@ -32,7 +34,7 @@ class Spider(object_ref):
     """
 
     name: str
-    custom_settings: Optional[Dict[_SettingsKeyT, Any]] = None
+    custom_settings: Optional[dict[_SettingsKeyT, Any]] = None
 
     def __init__(self, name: Optional[str] = None, **kwargs: Any):
         if name is not None:
@@ -41,7 +43,7 @@ class Spider(object_ref):
             raise ValueError(f"{type(self).__name__} must have a name")
         self.__dict__.update(kwargs)
         if not hasattr(self, "start_urls"):
-            self.start_urls: List[str] = []
+            self.start_urls: list[str] = []
 
     @property
     def logger(self) -> SpiderLoggerAdapter:

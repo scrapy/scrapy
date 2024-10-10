@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from OpenSSL import SSL
 from service_identity.exceptions import CertificateError
@@ -21,7 +21,7 @@ METHOD_TLSv11 = "TLSv1.1"
 METHOD_TLSv12 = "TLSv1.2"
 
 
-openssl_methods: Dict[str, int] = {
+openssl_methods: dict[str, int] = {
     METHOD_TLS: SSL.SSLv23_METHOD,  # protocol negotiation (recommended)
     METHOD_TLSv10: SSL.TLSv1_METHOD,  # TLS 1.0 only
     METHOD_TLSv11: SSL.TLSv1_1_METHOD,  # TLS 1.1 only

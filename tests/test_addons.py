@@ -1,5 +1,5 @@
 import itertools
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import patch
 
 from twisted.internet.defer import inlineCallbacks
@@ -17,7 +17,7 @@ class SimpleAddon:
         pass
 
 
-def get_addon_cls(config: Dict[str, Any]) -> type:
+def get_addon_cls(config: dict[str, Any]) -> type:
     class AddonWithConfig:
         def update_settings(self, settings: BaseSettings):
             settings.update(config, priority="addon")

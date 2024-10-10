@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, List, Union, cast
+from typing import TYPE_CHECKING, Any, Union, cast
 from urllib.parse import urljoin
 
 from w3lib.url import safe_url_string
@@ -180,7 +180,7 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
 
     def __init__(self, settings: BaseSettings):
         super().__init__(settings)
-        self._ignore_tags: List[str] = settings.getlist("METAREFRESH_IGNORE_TAGS")
+        self._ignore_tags: list[str] = settings.getlist("METAREFRESH_IGNORE_TAGS")
         self._maxdelay: int = settings.getint("METAREFRESH_MAXDELAY")
 
     def process_response(

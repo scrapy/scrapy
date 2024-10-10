@@ -2,22 +2,10 @@ from __future__ import annotations
 
 import copy
 import json
+from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 from importlib import import_module
 from pprint import pformat
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 from scrapy.settings import default_settings
 
@@ -37,7 +25,7 @@ if TYPE_CHECKING:
     _SettingsInputT = Union[SupportsItems[_SettingsKeyT, Any], str, None]
 
 
-SETTINGS_PRIORITIES: Dict[str, int] = {
+SETTINGS_PRIORITIES: dict[str, int] = {
     "default": 0,
     "command": 10,
     "addon": 15,
@@ -192,8 +180,8 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         return float(self.get(name, default))
 
     def getlist(
-        self, name: _SettingsKeyT, default: Optional[List[Any]] = None
-    ) -> List[Any]:
+        self, name: _SettingsKeyT, default: Optional[list[Any]] = None
+    ) -> list[Any]:
         """
         Get a setting value as a list. If the setting original type is a list, a
         copy of it will be returned. If it's a string it will be split by ",".
@@ -213,8 +201,8 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         return list(value)
 
     def getdict(
-        self, name: _SettingsKeyT, default: Optional[Dict[Any, Any]] = None
-    ) -> Dict[Any, Any]:
+        self, name: _SettingsKeyT, default: Optional[dict[Any, Any]] = None
+    ) -> dict[Any, Any]:
         """
         Get a setting value as a dictionary. If the setting original type is a
         dictionary, a copy of it will be returned. If it is a string it will be
@@ -238,8 +226,8 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
     def getdictorlist(
         self,
         name: _SettingsKeyT,
-        default: Union[Dict[Any, Any], List[Any], Tuple[Any], None] = None,
-    ) -> Union[Dict[Any, Any], List[Any]]:
+        default: Union[dict[Any, Any], list[Any], tuple[Any], None] = None,
+    ) -> Union[dict[Any, Any], list[Any]]:
         """Get a setting value as either a :class:`dict` or a :class:`list`.
 
         If the setting is already a dict or a list, a copy of it will be
@@ -412,7 +400,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """
         self._assert_mutability()
         if isinstance(values, str):
-            values = cast(Dict[_SettingsKeyT, Any], json.loads(values))
+            values = cast(dict[_SettingsKeyT, Any], json.loads(values))
         if values is not None:
             if isinstance(values, BaseSettings):
                 for name, value in values.items():
@@ -477,7 +465,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
     def __len__(self) -> int:
         return len(self.attributes)
 
-    def _to_dict(self) -> Dict[_SettingsKeyT, Any]:
+    def _to_dict(self) -> dict[_SettingsKeyT, Any]:
         return {
             self._get_key(k): (v._to_dict() if isinstance(v, BaseSettings) else v)
             for k, v in self.items()
@@ -490,7 +478,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
             else str(key_value)
         )
 
-    def copy_to_dict(self) -> Dict[_SettingsKeyT, Any]:
+    def copy_to_dict(self) -> dict[_SettingsKeyT, Any]:
         """
         Make a copy of current settings and convert to a dict.
 
@@ -553,7 +541,7 @@ class Settings(BaseSettings):
         self.update(values, priority)
 
 
-def iter_default_settings() -> Iterable[Tuple[str, Any]]:
+def iter_default_settings() -> Iterable[tuple[str, Any]]:
     """Return the default settings as an iterator of (name, value) tuples"""
     for name in dir(default_settings):
         if name.isupper():
@@ -562,7 +550,7 @@ def iter_default_settings() -> Iterable[Tuple[str, Any]]:
 
 def overridden_settings(
     settings: Mapping[_SettingsKeyT, Any]
-) -> Iterable[Tuple[str, Any]]:
+) -> Iterable[tuple[str, Any]]:
     """Return an iterable of the settings that have been overridden"""
     for name, defvalue in iter_default_settings():
         value = settings[name]

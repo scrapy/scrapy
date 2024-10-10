@@ -12,14 +12,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     AnyStr,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
     NoReturn,
     Optional,
-    Tuple,
-    Type,
     TypedDict,
     TypeVar,
     Union,
@@ -36,7 +30,7 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import escape_ajax
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable, Mapping
 
     from twisted.python.failure import Failure
 
@@ -57,7 +51,7 @@ class VerboseCookie(TypedDict):
     secure: NotRequired[bool]
 
 
-CookiesT = Union[Dict[str, str], List[VerboseCookie]]
+CookiesT = Union[dict[str, str], list[VerboseCookie]]
 
 
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
@@ -92,7 +86,7 @@ class Request(object_ref):
     executed by the Downloader, thus generating a :class:`Response`.
     """
 
-    attributes: Tuple[str, ...] = (
+    attributes: tuple[str, ...] = (
         "url",
         "callback",
         "method",
@@ -120,16 +114,16 @@ class Request(object_ref):
         url: str,
         callback: Optional[CallbackT] = None,
         method: str = "GET",
-        headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
+        headers: Union[Mapping[AnyStr, Any], Iterable[tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
         cookies: Optional[CookiesT] = None,
-        meta: Optional[Dict[str, Any]] = None,
+        meta: Optional[dict[str, Any]] = None,
         encoding: str = "utf-8",
         priority: int = 0,
         dont_filter: bool = False,
         errback: Optional[Callable[[Failure], Any]] = None,
-        flags: Optional[List[str]] = None,
-        cb_kwargs: Optional[Dict[str, Any]] = None,
+        flags: Optional[list[str]] = None,
+        cb_kwargs: Optional[dict[str, Any]] = None,
     ) -> None:
         self._encoding: str = encoding  # this one has to be set first
         self.method: str = str(method).upper()
@@ -152,20 +146,20 @@ class Request(object_ref):
         self.headers: Headers = Headers(headers or {}, encoding=encoding)
         self.dont_filter: bool = dont_filter
 
-        self._meta: Optional[Dict[str, Any]] = dict(meta) if meta else None
-        self._cb_kwargs: Optional[Dict[str, Any]] = (
+        self._meta: Optional[dict[str, Any]] = dict(meta) if meta else None
+        self._cb_kwargs: Optional[dict[str, Any]] = (
             dict(cb_kwargs) if cb_kwargs else None
         )
-        self.flags: List[str] = [] if flags is None else list(flags)
+        self.flags: list[str] = [] if flags is None else list(flags)
 
     @property
-    def cb_kwargs(self) -> Dict[str, Any]:
+    def cb_kwargs(self) -> dict[str, Any]:
         if self._cb_kwargs is None:
             self._cb_kwargs = {}
         return self._cb_kwargs
 
     @property
-    def meta(self) -> Dict[str, Any]:
+    def meta(self) -> dict[str, Any]:
         if self._meta is None:
             self._meta = {}
         return self._meta
@@ -207,14 +201,14 @@ class Request(object_ref):
 
     @overload
     def replace(
-        self, *args: Any, cls: Type[RequestTypeVar], **kwargs: Any
+        self, *args: Any, cls: type[RequestTypeVar], **kwargs: Any
     ) -> RequestTypeVar: ...
 
     @overload
     def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self: ...
 
     def replace(
-        self, *args: Any, cls: Optional[Type[Request]] = None, **kwargs: Any
+        self, *args: Any, cls: Optional[type[Request]] = None, **kwargs: Any
     ) -> Request:
         """Create a new Request with the same attributes except for those given new values"""
         for x in self.attributes:
@@ -261,7 +255,7 @@ class Request(object_ref):
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
 
-    def to_dict(self, *, spider: Optional[scrapy.Spider] = None) -> Dict[str, Any]:
+    def to_dict(self, *, spider: Optional[scrapy.Spider] = None) -> dict[str, Any]:
         """Return a dictionary containing the Request's data.
 
         Use :func:`~scrapy.utils.request.request_from_dict` to convert back into a :class:`~scrapy.Request` object.

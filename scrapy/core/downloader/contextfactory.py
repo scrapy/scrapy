@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from OpenSSL import SSL
 from twisted.internet._sslverify import _setAcceptableProtocols
@@ -154,10 +154,10 @@ class AcceptableProtocolsContextFactory:
     negotiation.
     """
 
-    def __init__(self, context_factory: Any, acceptable_protocols: List[bytes]):
+    def __init__(self, context_factory: Any, acceptable_protocols: list[bytes]):
         verifyObject(IPolicyForHTTPS, context_factory)
         self._wrapped_context_factory: Any = context_factory
-        self._acceptable_protocols: List[bytes] = acceptable_protocols
+        self._acceptable_protocols: list[bytes] = acceptable_protocols
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
         options: ClientTLSOptions = self._wrapped_context_factory.creatorForNetloc(

@@ -4,7 +4,7 @@ import shutil
 import string
 from importlib import import_module
 from pathlib import Path
-from typing import List, Optional, Union, cast
+from typing import Optional, Union, cast
 from urllib.parse import urlparse
 
 import scrapy
@@ -87,7 +87,7 @@ class Command(ScrapyCommand):
             help="If the spider already exists, overwrite it with the template",
         )
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if opts.list:
             self._list_templates()
             return

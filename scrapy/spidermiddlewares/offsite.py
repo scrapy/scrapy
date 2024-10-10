@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import re
 import warnings
-from typing import TYPE_CHECKING, Any, AsyncIterable, Iterable, Set
+from typing import TYPE_CHECKING, Any
 
 from scrapy import Spider, signals
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -23,6 +23,8 @@ warnings.warn(
 )
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterable, Iterable
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -109,7 +111,7 @@ class OffsiteMiddleware:
 
     def spider_opened(self, spider: Spider) -> None:
         self.host_regex: re.Pattern[str] = self.get_host_regex(spider)
-        self.domains_seen: Set[str] = set()
+        self.domains_seen: set[str] = set()
 
 
 class URLWarning(Warning):

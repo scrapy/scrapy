@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import re
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, BinaryIO, Dict, Optional
+from typing import TYPE_CHECKING, Any, BinaryIO, Optional
 from urllib.parse import unquote
 
 from twisted.internet.protocol import ClientCreator, Protocol
@@ -79,7 +79,7 @@ _CODE_RE = re.compile(r"\d+")
 class FTPDownloadHandler:
     lazy = False
 
-    CODE_MAPPING: Dict[str, int] = {
+    CODE_MAPPING: dict[str, int] = {
         "550": 404,
         "default": 503,
     }

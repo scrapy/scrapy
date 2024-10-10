@@ -7,22 +7,10 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncIterable, Callable, Iterable
 from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AsyncIterable,
-    Callable,
-    Generator,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
@@ -42,6 +30,8 @@ from scrapy.utils.defer import (
 from scrapy.utils.python import MutableAsyncChain, MutableChain
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from scrapy.settings import BaseSettings
 
 
@@ -66,7 +56,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self.downgrade_warning_done = False
 
     @classmethod
-    def _get_mwlist_from_settings(cls, settings: BaseSettings) -> List[Any]:
+    def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
         return build_component_list(settings.getwithbase("SPIDER_MIDDLEWARES"))
 
     def _add_middleware(self, mw: Any) -> None:
@@ -349,7 +339,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
     @staticmethod
     def _get_async_method_pair(
         mw: Any, methodname: str
-    ) -> Union[None, Callable, Tuple[Callable, Callable]]:
+    ) -> Union[None, Callable, tuple[Callable, Callable]]:
         normal_method: Optional[Callable] = getattr(mw, methodname, None)
         methodname_async = methodname + "_async"
         async_method: Optional[Callable] = getattr(mw, methodname_async, None)

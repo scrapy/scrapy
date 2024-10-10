@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, cast
+from typing import TYPE_CHECKING, cast
 
 from twisted.python.failure import Failure
 
@@ -20,7 +20,7 @@ class Command(BaseRunSpiderCommand):
     def short_desc(self) -> str:
         return "Run a spider"
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) < 1:
             raise UsageError()
         elif len(args) > 1:

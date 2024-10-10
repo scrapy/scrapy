@@ -7,15 +7,9 @@ from collections import defaultdict
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
-    DefaultDict,
-    Dict,
-    List,
     Literal,
     NoReturn,
     Optional,
-    Set,
-    Tuple,
     TypedDict,
     TypeVar,
     Union,
@@ -33,6 +27,8 @@ from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -52,7 +48,7 @@ class FileInfo(TypedDict):
     status: str
 
 
-FileInfoOrError = Union[Tuple[Literal[True], FileInfo], Tuple[Literal[False], Failure]]
+FileInfoOrError = Union[tuple[Literal[True], FileInfo], tuple[Literal[False], Failure]]
 
 
 logger = logging.getLogger(__name__)
@@ -67,16 +63,16 @@ class MediaPipeline(ABC):
     class SpiderInfo:
         def __init__(self, spider: Spider):
             self.spider: Spider = spider
-            self.downloading: Set[bytes] = set()
-            self.downloaded: Dict[bytes, Union[FileInfo, Failure]] = {}
-            self.waiting: DefaultDict[bytes, List[Deferred[FileInfo]]] = defaultdict(
+            self.downloading: set[bytes] = set()
+            self.downloaded: dict[bytes, Union[FileInfo, Failure]] = {}
+            self.waiting: defaultdict[bytes, list[Deferred[FileInfo]]] = defaultdict(
                 list
             )
 
     def __init__(
         self,
         download_func: Optional[Callable[[Request, Spider], Response]] = None,
-        settings: Union[Settings, Dict[str, Any], None] = None,
+        settings: Union[Settings, dict[str, Any], None] = None,
     ):
         self.download_func = download_func
 
@@ -129,12 +125,12 @@ class MediaPipeline(ABC):
 
     def process_item(
         self, item: Any, spider: Spider
-    ) -> Deferred[List[FileInfoOrError]]:
+    ) -> Deferred[list[FileInfoOrError]]:
         info = self.spiderinfo
         requests = arg_to_iter(self.get_media_requests(item, info))
         dlist = [self._process_request(r, info, item) for r in requests]
         dfd = cast(
-            "Deferred[List[FileInfoOrError]]", DeferredList(dlist, consumeErrors=True)
+            "Deferred[list[FileInfoOrError]]", DeferredList(dlist, consumeErrors=True)
         )
         return dfd.addCallback(self.item_completed, item, info)
 
@@ -252,7 +248,7 @@ class MediaPipeline(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_media_requests(self, item: Any, info: SpiderInfo) -> List[Request]:
+    def get_media_requests(self, item: Any, info: SpiderInfo) -> list[Request]:
         """Returns the media requests to download"""
         raise NotImplementedError()
 
@@ -276,7 +272,7 @@ class MediaPipeline(ABC):
         raise NotImplementedError()
 
     def item_completed(
-        self, results: List[FileInfoOrError], item: Any, info: SpiderInfo
+        self, results: list[FileInfoOrError], item: Any, info: SpiderInfo
     ) -> Any:
         """Called per item when all media requests has been processed"""
         if self.LOG_FAILED_RESULTS:

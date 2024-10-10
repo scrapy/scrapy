@@ -5,18 +5,7 @@ import warnings
 from collections import deque
 from datetime import datetime
 from time import time
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Deque,
-    Dict,
-    Optional,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 from twisted.internet import task
 from twisted.internet.defer import Deferred
@@ -55,9 +44,9 @@ class Slot:
         self.randomize_delay: bool = randomize_delay
         self.throttle = throttle
 
-        self.active: Set[Request] = set()
-        self.queue: Deque[Tuple[Request, Deferred[Response]]] = deque()
-        self.transferring: Set[Request] = set()
+        self.active: set[Request] = set()
+        self.queue: deque[tuple[Request, Deferred[Response]]] = deque()
+        self.transferring: set[Request] = set()
         self.lastseen: float = 0
         self.latercall = None
 
@@ -95,7 +84,7 @@ class Slot:
 
 def _get_concurrency_delay(
     concurrency: int, spider: Spider, settings: BaseSettings
-) -> Tuple[int, float]:
+) -> tuple[int, float]:
     delay: float = settings.getfloat("DOWNLOAD_DELAY")
     if hasattr(spider, "download_delay"):
         delay = spider.download_delay
@@ -112,8 +101,8 @@ class Downloader:
     def __init__(self, crawler: Crawler):
         self.settings: BaseSettings = crawler.settings
         self.signals: SignalManager = crawler.signals
-        self.slots: Dict[str, Slot] = {}
-        self.active: Set[Request] = set()
+        self.slots: dict[str, Slot] = {}
+        self.active: set[Request] = set()
         self.handlers: DownloadHandlers = DownloadHandlers(crawler)
         self.total_concurrency: int = self.settings.getint("CONCURRENT_REQUESTS")
         self.domain_concurrency: int = self.settings.getint(
@@ -126,7 +115,7 @@ class Downloader:
         )
         self._slot_gc_loop: task.LoopingCall = task.LoopingCall(self._slot_gc)
         self._slot_gc_loop.start(60)
-        self.per_slot_settings: Dict[str, Dict[str, Any]] = self.settings.getdict(
+        self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS", {}
         )
 
@@ -146,7 +135,7 @@ class Downloader:
     def needs_backout(self) -> bool:
         return len(self.active) >= self.total_concurrency
 
-    def _get_slot(self, request: Request, spider: Spider) -> Tuple[str, Slot]:
+    def _get_slot(self, request: Request, spider: Spider) -> tuple[str, Slot]:
         key = self.get_slot_key(request)
         if key not in self.slots:
             slot_settings = self.per_slot_settings.get(key, {})

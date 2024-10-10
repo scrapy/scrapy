@@ -7,13 +7,14 @@ from __future__ import annotations
 import marshal
 import pickle  # nosec
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from queuelib import queue
 
 from scrapy.utils.request import request_from_dict
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from os import PathLike
 
     # typing.Self requires Python 3.11
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
 
 
-def _with_mkdir(queue_class: Type[queue.BaseQueue]) -> Type[queue.BaseQueue]:
+def _with_mkdir(queue_class: type[queue.BaseQueue]) -> type[queue.BaseQueue]:
     class DirectoriesCreated(queue_class):  # type: ignore[valid-type,misc]
         def __init__(self, path: Union[str, PathLike], *args: Any, **kwargs: Any):
             dirname = Path(path).parent
@@ -35,10 +36,10 @@ def _with_mkdir(queue_class: Type[queue.BaseQueue]) -> Type[queue.BaseQueue]:
 
 
 def _serializable_queue(
-    queue_class: Type[queue.BaseQueue],
+    queue_class: type[queue.BaseQueue],
     serialize: Callable[[Any], bytes],
     deserialize: Callable[[bytes], Any],
-) -> Type[queue.BaseQueue]:
+) -> type[queue.BaseQueue]:
     class SerializableQueue(queue_class):  # type: ignore[valid-type,misc]
         def push(self, obj: Any) -> None:
             s = serialize(obj)
@@ -71,8 +72,8 @@ def _serializable_queue(
 
 
 def _scrapy_serialization_queue(
-    queue_class: Type[queue.BaseQueue],
-) -> Type[queue.BaseQueue]:
+    queue_class: type[queue.BaseQueue],
+) -> type[queue.BaseQueue]:
     class ScrapyRequestQueue(queue_class):  # type: ignore[valid-type,misc]
         def __init__(self, crawler: Crawler, key: str):
             self.spider = crawler.spider
@@ -110,8 +111,8 @@ def _scrapy_serialization_queue(
 
 
 def _scrapy_non_serialization_queue(
-    queue_class: Type[queue.BaseQueue],
-) -> Type[queue.BaseQueue]:
+    queue_class: type[queue.BaseQueue],
+) -> type[queue.BaseQueue]:
     class ScrapyRequestQueue(queue_class):  # type: ignore[valid-type,misc]
         @classmethod
         def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:

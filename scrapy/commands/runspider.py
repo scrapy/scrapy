@@ -4,7 +4,7 @@ import argparse
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, Union
 
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
@@ -41,7 +41,7 @@ class Command(BaseRunSpiderCommand):
     def long_desc(self) -> str:
         return "Run the spider defined in the given file"
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) != 1:
             raise UsageError()
         filename = Path(args[0])

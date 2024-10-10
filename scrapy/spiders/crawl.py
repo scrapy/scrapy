@@ -1,6 +1,6 @@
 """
 This modules implements the CrawlSpider which is the recommended spider to use
-for scraping typical web sites that requires crawling pages.
+for scraping typical websites that requires crawling pages.
 
 See documentation in docs/topics/spiders.rst
 """
@@ -8,22 +8,8 @@ See documentation in docs/topics/spiders.rst
 from __future__ import annotations
 
 import copy
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AsyncIterable,
-    Awaitable,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    TypeVar,
-    Union,
-    cast,
-)
+from collections.abc import AsyncIterable, Awaitable, Callable
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 from twisted.python.failure import Failure
 
@@ -35,6 +21,8 @@ from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.spider import iterate_spider_output
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -43,7 +31,7 @@ if TYPE_CHECKING:
 
 
 _T = TypeVar("_T")
-ProcessLinksT = Callable[[List[Link]], List[Link]]
+ProcessLinksT = Callable[[list[Link]], list[Link]]
 ProcessRequestT = Callable[[Request, Response], Optional[Request]]
 
 
@@ -75,7 +63,7 @@ class Rule:
         self,
         link_extractor: Optional[LinkExtractor] = None,
         callback: Union[CallbackT, str, None] = None,
-        cb_kwargs: Optional[Dict[str, Any]] = None,
+        cb_kwargs: Optional[dict[str, Any]] = None,
         follow: Optional[bool] = None,
         process_links: Union[ProcessLinksT, str, None] = None,
         process_request: Union[ProcessRequestT, str, None] = None,
@@ -84,7 +72,7 @@ class Rule:
         self.link_extractor: LinkExtractor = link_extractor or _default_link_extractor
         self.callback: Union[CallbackT, str, None] = callback
         self.errback: Union[Callable[[Failure], Any], str, None] = errback
-        self.cb_kwargs: Dict[str, Any] = cb_kwargs or {}
+        self.cb_kwargs: dict[str, Any] = cb_kwargs or {}
         self.process_links: Union[ProcessLinksT, str] = process_links or _identity
         self.process_request: Union[ProcessRequestT, str] = (
             process_request or _identity_process_request
@@ -105,7 +93,7 @@ class Rule:
 
 class CrawlSpider(Spider):
     rules: Sequence[Rule] = ()
-    _rules: List[Rule]
+    _rules: list[Rule]
     _follow_links: bool
 
     def __init__(self, *a: Any, **kw: Any):
@@ -139,9 +127,9 @@ class CrawlSpider(Spider):
     def _requests_to_follow(self, response: Response) -> Iterable[Optional[Request]]:
         if not isinstance(response, HtmlResponse):
             return
-        seen: Set[Link] = set()
+        seen: set[Link] = set()
         for rule_index, rule in enumerate(self._rules):
-            links: List[Link] = [
+            links: list[Link] = [
                 lnk
                 for lnk in rule.link_extractor.extract_links(response)
                 if lnk not in seen
@@ -170,7 +158,7 @@ class CrawlSpider(Spider):
         self,
         response: Response,
         callback: Optional[CallbackT],
-        cb_kwargs: Dict[str, Any],
+        cb_kwargs: dict[str, Any],
         follow: bool = True,
     ) -> AsyncIterable[Any]:
         if callback:

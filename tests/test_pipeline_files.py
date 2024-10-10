@@ -7,7 +7,6 @@ from io import BytesIO
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import Dict, List
 from unittest import mock
 from urllib.parse import urlparse
 
@@ -309,11 +308,11 @@ class FilesPipelineTestCaseFieldsDataClass(
 class FilesPipelineTestAttrsItem:
     name = attr.ib(default="")
     # default fields
-    file_urls: List[str] = attr.ib(default=lambda: [])
-    files: List[Dict[str, str]] = attr.ib(default=lambda: [])
+    file_urls: list[str] = attr.ib(default=lambda: [])
+    files: list[dict[str, str]] = attr.ib(default=lambda: [])
     # overridden fields
-    custom_file_urls: List[str] = attr.ib(default=lambda: [])
-    custom_files: List[Dict[str, str]] = attr.ib(default=lambda: [])
+    custom_file_urls: list[str] = attr.ib(default=lambda: [])
+    custom_files: list[dict[str, str]] = attr.ib(default=lambda: [])
 
 
 class FilesPipelineTestCaseFieldsAttrsItem(
