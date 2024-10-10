@@ -20,6 +20,6 @@ jobs:
           pip install --upgrade build twine
           python -m build
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.9.0
+        uses: pypa/gh-action-pypi-publish@v1.10.3
         with:
           password: ${{ secrets.PYPI_TOKEN }}
