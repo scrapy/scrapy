@@ -37,7 +37,7 @@ from typing import (
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
-from twisted.internet.defer import Deferred, maybeDeferred
+from twisted.internet.defer import Deferred, maybeDeferred, succeed
 from twisted.internet.threads import deferToThread
 
 from scrapy.exceptions import IgnoreRequest, NotConfigured
@@ -593,7 +593,7 @@ class FilesPipeline(MediaPipeline):
         info: MediaPipeline.SpiderInfo,
         *,
         item: Any = None,
-    ) -> FileInfo:
+    ) -> Deferred:
         referer = referer_str(request)
 
         if response.status != 200:
@@ -623,34 +623,18 @@ class FilesPipeline(MediaPipeline):
         )
         self.inc_stats(info.spider, status)
 
-        try:
-            path = self.file_path(request, response=response, info=info, item=item)
-            checksum = self.file_downloaded(response, request, info, item=item)
-        except FileException as exc:
-            logger.warning(
-                "File (error): Error processing file from %(request)s "
-                "referred in <%(referer)s>: %(errormsg)s",
-                {"request": request, "referer": referer, "errormsg": str(exc)},
-                extra={"spider": info.spider},
-                exc_info=True,
-            )
-            raise
-        except Exception as exc:
-            logger.error(
-                "File (unknown-error): Error processing file from %(request)s "
-                "referred in <%(referer)s>",
-                {"request": request, "referer": referer},
-                exc_info=True,
-                extra={"spider": info.spider},
-            )
-            raise FileException(str(exc))
+        deferred = self.file_downloaded(response, request, info, item=item)
 
-        return {
-            "url": request.url,
-            "path": path,
-            "checksum": checksum,
-            "status": status,
-        }
+        return deferred.addCallback(
+            lambda checksum: {
+                "url": request.url,
+                "path": self.file_path(
+                    request, response=response, info=info, item=item
+                ),
+                "checksum": checksum,
+                "status": status,
+            }
+        )
 
     def inc_stats(self, spider: Spider, status: str) -> None:
         assert spider.crawler.stats
@@ -671,13 +655,20 @@ class FilesPipeline(MediaPipeline):
         info: MediaPipeline.SpiderInfo,
         *,
         item: Any = None,
-    ) -> str:
+    ) -> Deferred:
         path = self.file_path(request, response=response, info=info, item=item)
         buf = BytesIO(response.body)
         checksum = _md5sum(buf)
         buf.seek(0)
-        self.store.persist_file(path, buf, info)
-        return checksum
+
+        result = self.store.persist_file(path, buf, info)
+
+        if isinstance(result, Deferred):
+            deferred = result
+        else:
+            deferred = succeed(None)
+
+        return deferred.addCallback(lambda _: checksum)
 
     def item_completed(
         self, results: List[FileInfoOrError], item: Any, info: MediaPipeline.SpiderInfo

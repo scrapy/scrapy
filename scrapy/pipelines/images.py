@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from os import PathLike
 
     from PIL import Image
+    from twisted.internet.defer import Deferred
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -168,7 +169,7 @@ class ImagesPipeline(FilesPipeline):
         info: MediaPipeline.SpiderInfo,
         *,
         item: Any = None,
-    ) -> str:
+    ) -> Deferred:
         return self.image_downloaded(response, request, info, item=item)
 
     def image_downloaded(
