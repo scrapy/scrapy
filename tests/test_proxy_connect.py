@@ -1,9 +1,5 @@
 import json
 import os
-import re
-import sys
-from pathlib import Path
-from subprocess import PIPE, Popen
 from urllib.parse import urlsplit, urlunsplit
 
 from testfixtures import LogCapture
@@ -12,48 +8,8 @@ from twisted.trial.unittest import TestCase
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver import MockProxy, MockServer
 from tests.spiders import SimpleSpider, SingleRequestSpider
-
-
-class MitmProxy:
-    auth_user = "scrapy"
-    auth_pass = "scrapy"
-
-    def start(self):
-        script = """
-import sys
-from mitmproxy.tools.main import mitmdump
-sys.argv[0] = "mitmdump"
-sys.exit(mitmdump())
-        """
-        cert_path = Path(__file__).parent.resolve() / "keys"
-        self.proc = Popen(
-            [
-                sys.executable,
-                "-u",
-                "-c",
-                script,
-                "--listen-host",
-                "127.0.0.1",
-                "--listen-port",
-                "0",
-                "--proxyauth",
-                f"{self.auth_user}:{self.auth_pass}",
-                "--set",
-                f"confdir={cert_path}",
-                "--ssl-insecure",
-            ],
-            stdout=PIPE,
-        )
-        line = self.proc.stdout.readline().decode("utf-8")
-        host_port = re.search(r"listening at (?:http://)?([^:]+:\d+)", line).group(1)
-        address = f"http://{self.auth_user}:{self.auth_pass}@{host_port}"
-        return address
-
-    def stop(self):
-        self.proc.kill()
-        self.proc.communicate()
 
 
 def _wrong_credentials(proxy_url):
@@ -64,23 +20,19 @@ def _wrong_credentials(proxy_url):
 
 class ProxyConnectTestCase(TestCase):
     def setUp(self):
-        try:
-            import mitmproxy  # noqa: F401
-        except ImportError:
-            self.skipTest("mitmproxy is not installed")
-
         self.mockserver = MockServer()
         self.mockserver.__enter__()
         self._oldenv = os.environ.copy()
 
-        self._proxy = MitmProxy()
-        proxy_url = self._proxy.start()
+        self._proxy = MockProxy()
+        self._proxy.__enter__()
+        proxy_url = self._proxy.url()
         os.environ["https_proxy"] = proxy_url
         os.environ["http_proxy"] = proxy_url
 
     def tearDown(self):
         self.mockserver.__exit__(None, None, None)
-        self._proxy.stop()
+        self._proxy.__exit__(None, None, None)
         os.environ = self._oldenv
 
     @defer.inlineCallbacks
