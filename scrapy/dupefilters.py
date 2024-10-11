@@ -52,7 +52,7 @@ class RFPDupeFilter(BaseDupeFilter):
         *,
         fingerprinter: Optional[RequestFingerprinterProtocol] = None,
     ) -> None:
-        self.file = None
+        self.file:Optional[Path] = None
         self.fingerprinter: RequestFingerprinterProtocol = (
             fingerprinter or RequestFingerprinter()
         )
