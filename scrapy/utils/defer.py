@@ -130,7 +130,7 @@ def parallel(
     return DeferredList([coop.coiterate(work) for _ in range(count)])
 
 
-class _AsyncCooperatorAdapter(Iterator[Deferred], Generic[_T]):
+class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
     """A class that wraps an async iterable into a normal iterator suitable
     for using in Cooperator.coiterate(). As it's only needed for parallel_async(),
     it calls the callable directly in the callback, instead of providing a more
