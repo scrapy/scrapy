@@ -6,8 +6,8 @@ version = (Path(__file__).parent / "scrapy/VERSION").read_text("ascii").strip()
 
 
 install_requires = [
-    "Twisted>=20.3.0",
-    "cryptography>=36.0.2",
+    "Twisted>=21.2.0",
+    "cryptography>=37.0.0",
     "cssselect>=0.9.1",
     "itemloaders>=1.0.1",
     "parsel>=1.5.0",
