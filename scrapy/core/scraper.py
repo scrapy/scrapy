@@ -68,7 +68,7 @@ class Slot:
     MIN_RESPONSE_SIZE = 1024
 
     def __init__(self, max_active_size: int = 5000000):
-        self.max_active_size = max_active_size
+        self.max_active_size: int = max_active_size
         self.queue: Deque[QueueTuple] = deque()
         self.active: Set[Request] = set()
         self.active_size: int = 0
@@ -329,7 +329,9 @@ class Scraper:
             )
         return None
 
-    def start_itemproc(self, item, *, response: Optional[Response]) -> Deferred[Any]:
+    def start_itemproc(
+        self, item: Any, *, response: Optional[Response]
+    ) -> Deferred[Any]:
         """Send *item* to the item pipelines for processing.
 
         *response* is the source of the item data. If the item does not come

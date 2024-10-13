@@ -88,7 +88,7 @@ class HttpCompressionMiddleware:
             crawler.signals.connect(mw.open_spider, signals.spider_opened)
             return mw
 
-    def open_spider(self, spider):
+    def open_spider(self, spider: Spider) -> None:
         if hasattr(spider, "download_maxsize"):
             self._max_size = spider.download_maxsize
         if hasattr(spider, "download_warnsize"):

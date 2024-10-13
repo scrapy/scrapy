@@ -4,7 +4,7 @@ import shutil
 import string
 from importlib import import_module
 from pathlib import Path
-from typing import List, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union, cast
 from urllib.parse import urlparse
 
 import scrapy
@@ -122,7 +122,7 @@ class Command(ScrapyCommand):
         name: str,
         url: str,
         template_name: str,
-    ):
+    ) -> Dict[str, Any]:
         capitalized_module = "".join(s.capitalize() for s in module.split("_"))
         return {
             "project_name": self.settings.get("BOT_NAME"),

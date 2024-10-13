@@ -111,7 +111,7 @@ class ExecutionEngine:
         )
         downloader_cls: Type[Downloader] = load_object(self.settings["DOWNLOADER"])
         self.downloader: Downloader = downloader_cls(crawler)
-        self.scraper = Scraper(crawler)
+        self.scraper: Scraper = Scraper(crawler)
         self._spider_closed_callback: Callable[[Spider], Optional[Deferred[None]]] = (
             spider_closed_callback
         )
