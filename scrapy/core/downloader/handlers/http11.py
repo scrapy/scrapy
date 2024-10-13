@@ -335,7 +335,7 @@ class ScrapyProxyAgent(Agent):
         proxy_key_host_and_auth = None
          
         if headers:
-            auth = headers.getRawHeaders("Proxy-Authorization1")
+            auth = headers.getRawHeaders("Proxy-Authorization")
             if auth:
                 proxy_key_host_and_auth = self._proxyURI.host.decode() + auth[0]
         
