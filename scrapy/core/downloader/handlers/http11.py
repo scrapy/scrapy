@@ -327,6 +327,20 @@ class ScrapyProxyAgent(Agent):
         """
         Issue a new request via the configured proxy.
         """
+        
+        # Some proxy providers include a session_id within the proxy username.
+        # The session_id determines the specific proxy being used; different sessions correspond to different IP addresses.
+        # Therefore, the authentication credentials should be part of the key to ensure that a new proxy is utilized when the user changes.
+        
+        proxy_key_host_and_auth = None
+         
+        if headers:
+            auth = headers.getRawHeaders("Proxy-Authorization1")
+            if auth:
+                proxy_key_host_and_auth = self._proxyURI.host.decode() + auth[0]
+        
+        if not proxy_key_host_and_auth:
+            proxy_key_host_and_auth = self._proxyURI.host.decode()
         # Cache *all* connections under the same key, since we are only
         # connecting to a single destination, the proxy:
         return self._requestWithEndpoint(
