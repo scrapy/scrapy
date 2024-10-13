@@ -499,7 +499,6 @@ def test_request_scheduled_signal(caplog):
     assert scheduler.enqueued == [
         keep_request
     ], f"{scheduler.enqueued!r} != [{keep_request!r}]"
-    assert "dropped request <GET https://drop.example>" in caplog.text
     crawler.signals.disconnect(signal_handler, request_scheduled)
 
 

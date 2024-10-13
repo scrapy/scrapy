@@ -18,7 +18,6 @@ install_requires = [
     "zope.interface>=5.1.0",
     "protego>=0.1.15",
     "itemadapter>=0.1.0",
-    "setuptools",
     "packaging",
     "tldextract",
     "lxml>=4.6.0",

@@ -26,7 +26,6 @@ from scrapy.settings import Settings
 from scrapy.signalmanager import SignalManager
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
-from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
@@ -314,10 +313,6 @@ class ExecutionEngine:
         )
         for handler, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
-                logger.debug(
-                    f"Signal handler {global_object_name(handler)} dropped "
-                    f"request {request} before it reached the scheduler."
-                )
                 return
         if not self.slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
             self.signals.send_catch_log(
