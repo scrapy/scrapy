@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import gc
 import random
 import warnings
 from collections import deque
 from datetime import datetime
-from time import time
+from logging import getLogger
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -17,6 +18,12 @@ from typing import (
     Union,
     cast,
 )
+from warnings import warn
+
+try:
+    from win_precise_time import time
+except ImportError:
+    from time import time
 
 from twisted.internet import task
 from twisted.internet.defer import Deferred
@@ -35,6 +42,7 @@ if TYPE_CHECKING:
     from scrapy.http import Response
     from scrapy.settings import BaseSettings
 
+logger = getLogger(__name__)
 
 _T = TypeVar("_T")
 
@@ -129,6 +137,32 @@ class Downloader:
         self.per_slot_settings: Dict[str, Dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS", {}
         )
+        self._stats = crawler.stats
+        self._last_backout = (None, None)
+
+        deprecated_setting_priority = self.settings.getpriority(
+            "SCRAPER_SLOT_MAX_ACTIVE_SIZE"
+        )
+        assert deprecated_setting_priority is not None
+        if deprecated_setting_priority > 0:
+            warn(
+                (
+                    "The SCRAPER_SLOT_MAX_ACTIVE_SIZE setting is deprecated, "
+                    "use RESPONSE_MAX_ACTIVE_SIZE instead."
+                ),
+                ScrapyDeprecationWarning,
+            )
+        setting_priority = self.settings.getpriority("RESPONSE_MAX_ACTIVE_SIZE")
+        assert setting_priority is not None
+        if setting_priority >= deprecated_setting_priority:
+            self._response_max_active_size = self.settings.getint(
+                "RESPONSE_MAX_ACTIVE_SIZE"
+            )
+        else:
+            self._response_max_active_size = self.settings.getint(
+                "SCRAPER_SLOT_MAX_ACTIVE_SIZE"
+            )
+        self._response_max_active_size_warned = False
 
     def fetch(
         self, request: Request, spider: Spider
@@ -143,8 +177,57 @@ class Downloader:
         )
         return dfd.addBoth(_deactivate)
 
+    def _record_backout(self, reason):
+        last_reason, last_reason_start_time = self._last_backout
+        if last_reason == reason:
+            return
+        current_time = time()
+        if last_reason is not None:
+            last_reason_seconds = current_time - last_reason_start_time
+            self._stats.inc_value("request_backout_seconds/total", last_reason_seconds)
+            self._stats.inc_value(
+                f"request_backout_seconds/{last_reason}", last_reason_seconds
+            )
+        self._last_backout = (reason, current_time)
+
     def needs_backout(self) -> bool:
-        return len(self.active) >= self.total_concurrency
+        if len(self.active) >= self.total_concurrency:
+            self._record_backout("concurrency")
+            return True
+        if (
+            self._response_max_active_size
+            and self.middleware.response_active_size >= self._response_max_active_size
+        ):
+            if not self._response_max_active_size_warned:
+                self._response_max_active_size_warned = True
+                logger.info(
+                    f"The active response size, i.e. the total size of all "
+                    f"bodies from responses that have been processed by "
+                    f"downloader middlewares and remain in memory, is "
+                    f"{self.middleware.response_active_size} B. The "
+                    f"RESPONSE_MAX_ACTIVE_SIZE setting sets its maximum value "
+                    f"at {self._response_max_active_size} B. No more requests "
+                    f"will be processed until active response size lowers. If "
+                    f"your memory allows it, you may increase "
+                    f"RESPONSE_MAX_ACTIVE_SIZE, which should increase your "
+                    f"crawl speed. If your code keeps non-weak references to "
+                    f"Response objects, e.g. in (scheduled) requests or in a "
+                    f"container within a component, your crawl might get "
+                    f"stuck indefinitely; you can set "
+                    f"RESPONSE_MAX_ACTIVE_SIZE to 0 to disable this limit, "
+                    f"but then your code might run out of memory. This "
+                    f"message will only appear the first time this happens. "
+                    f"To learn how often request processing has been paused "
+                    f"during a crawl for this reason, see the "
+                    f"request_backouts/response_max_active_size stat."
+                )
+            self._record_backout("response_max_active_size")
+            # Force the garbage collection of response objects. Necessary for
+            # PyPy, which is lazier when it comes to garbage collection.
+            gc.collect()
+            return True
+        self._record_backout(None)
+        return False
 
     def _get_slot(self, request: Request, spider: Spider) -> Tuple[str, Slot]:
         key = self.get_slot_key(request)
@@ -271,6 +354,7 @@ class Downloader:
         self._slot_gc_loop.stop()
         for slot in self.slots.values():
             slot.close()
+        self._record_backout(None)
 
     def _slot_gc(self, age: float = 60) -> None:
         mintime = time() - age

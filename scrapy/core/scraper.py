@@ -22,14 +22,21 @@ from typing import (
     Union,
     cast,
 )
+from warnings import warn
 
 from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
+from scrapy._classutilities import ClassPropertiesMixin, classproperty
 from scrapy.core.spidermw import SpiderMiddlewareManager
-from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
+from scrapy.exceptions import (
+    CloseSpider,
+    DropItem,
+    IgnoreRequest,
+    ScrapyDeprecationWarning,
+)
 from scrapy.http import Request, Response
 from scrapy.logformatter import LogFormatter
 from scrapy.pipelines import ItemPipelineManager
@@ -62,18 +69,106 @@ if TYPE_CHECKING:
     QueueTuple = Tuple[Union[Response, Failure], Request, _HandleOutputDeferred]
 
 
-class Slot:
+_UNSET = object()
+
+
+class Slot(ClassPropertiesMixin):
     """Scraper slot (one per running spider)"""
 
-    MIN_RESPONSE_SIZE = 1024
+    _MIN_RESPONSE_SIZE = 1024
 
-    def __init__(self, max_active_size: int = 5000000):
-        self.max_active_size = max_active_size
+    @classproperty
+    def MIN_RESPONSE_SIZE(cls):
+        warn(
+            "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return cls._MIN_RESPONSE_SIZE
+
+    @MIN_RESPONSE_SIZE.setter  # type: ignore[no-redef]
+    def MIN_RESPONSE_SIZE(cls, value):
+        warn(
+            "scrapy.core.scraper.Slot.MIN_RESPONSE_SIZE is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        cls._MIN_RESPONSE_SIZE = value
+
+    def __init__(self, max_active_size: Any = _UNSET):
+        if max_active_size is _UNSET:
+            max_active_size = 5_000_000
+        else:
+            warn(
+                (
+                    "The max_active_size parameter of "
+                    "scrapy.core.scraper.Slot is deprecated. Use the "
+                    "RESPONSE_MAX_ACTIVE_SIZE setting instead."
+                ),
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        self._max_active_size = max_active_size
         self.queue: Deque[QueueTuple] = deque()
         self.active: Set[Request] = set()
-        self.active_size: int = 0
         self.itemproc_size: int = 0
         self.closing: Optional[Deferred[Spider]] = None
+        self._active_size: int = 0
+
+    @property
+    def active_size(self):
+        warn(
+            (
+                "scrapy.core.scraper.Slot.active_size is deprecated. Read "
+                "scrapy.core.downloader.DownloaderMiddlewareManager.response_active_size "
+                "instead."
+            ),
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self._active_size
+
+    @active_size.setter
+    def active_size(self, value):
+        warn(
+            (
+                "scrapy.core.scraper.Slot.active_size is deprecated. "
+                "scrapy.core.downloader.DownloaderMiddlewareManager.response_active_size "
+                "might work as a replacement, but modifying that attribute "
+                "might not be a good idea. If you have a use case for it, you "
+                "might want to bring it up in a GitHub issue, to discuss with "
+                "Scrapy developers if there is a better approach, or some "
+                "change we could implement in Scrapy to improve support for "
+                "your use case."
+            ),
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        self._active_size = value
+
+    @property
+    def max_active_size(self):
+        warn(
+            (
+                "scrapy.core.scraper.Slot.max_active_size is deprecated. Read "
+                "the RESPONSE_MAX_ACTIVE_SIZE setting instead."
+            ),
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self._max_active_size
+
+    @max_active_size.setter
+    def max_active_size(self, value):
+        warn(
+            (
+                "scrapy.core.scraper.Slot.max_active_size is deprecated. Set "
+                "the RESPONSE_MAX_ACTIVE_SIZE setting instead."
+            ),
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        self._max_active_size = value
 
     def add_response_request(
         self, result: Union[Response, Failure], request: Request
@@ -81,9 +176,9 @@ class Slot:
         deferred: _HandleOutputDeferred = Deferred()
         self.queue.append((result, request, deferred))
         if isinstance(result, Response):
-            self.active_size += max(len(result.body), self.MIN_RESPONSE_SIZE)
+            self._active_size += max(len(result.body), self._MIN_RESPONSE_SIZE)
         else:
-            self.active_size += self.MIN_RESPONSE_SIZE
+            self._active_size += self._MIN_RESPONSE_SIZE
         return deferred
 
     def next_response_request_deferred(self) -> QueueTuple:
@@ -96,15 +191,20 @@ class Slot:
     ) -> None:
         self.active.remove(request)
         if isinstance(result, Response):
-            self.active_size -= max(len(result.body), self.MIN_RESPONSE_SIZE)
+            self._active_size -= max(len(result.body), self._MIN_RESPONSE_SIZE)
         else:
-            self.active_size -= self.MIN_RESPONSE_SIZE
+            self._active_size -= self._MIN_RESPONSE_SIZE
 
     def is_idle(self) -> bool:
         return not (self.queue or self.active)
 
     def needs_backout(self) -> bool:
-        return self.active_size > self.max_active_size
+        warn(
+            "scrapy.core.scraper.Slot.needs_backout is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self._active_size > self._max_active_size
 
 
 class Scraper:
@@ -126,7 +226,7 @@ class Scraper:
     @inlineCallbacks
     def open_spider(self, spider: Spider) -> Generator[Deferred[Any], Any, None]:
         """Open the given spider for scraping and allocate resources for it"""
-        self.slot = Slot(self.crawler.settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE"))
+        self.slot = Slot()
         yield self.itemproc.open_spider(spider)
 
     def close_spider(self, spider: Spider) -> Deferred[Spider]:
