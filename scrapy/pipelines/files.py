@@ -555,7 +555,7 @@ class FilesPipeline(MediaPipeline):
 
         path = self.file_path(request, info=info, item=item)
         # maybeDeferred() overloads don't seem to support a Union[_T, Deferred[_T]] return type
-        dfd: Deferred[StatInfo] = maybeDeferred(self.store.stat_file, path, info)  # type: ignore[arg-type]
+        dfd: Deferred[StatInfo] = maybeDeferred(self.store.stat_file, path, info)  # type: ignore[call-overload]
         dfd2: Deferred[Optional[FileInfo]] = dfd.addCallback(_onsuccess)
         dfd2.addErrback(lambda _: None)
         dfd2.addErrback(

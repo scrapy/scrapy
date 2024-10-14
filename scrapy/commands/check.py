@@ -14,8 +14,7 @@ from scrapy.utils.misc import load_object, set_environ
 class TextTestResult(_TextTestResult):
     def printSummary(self, start: float, stop: float) -> None:
         write = self.stream.write
-        # _WritelnDecorator isn't implemented in typeshed yet
-        writeln = self.stream.writeln  # type: ignore[attr-defined]
+        writeln = self.stream.writeln
 
         run = self.testsRun
         plural = "s" if run != 1 else ""

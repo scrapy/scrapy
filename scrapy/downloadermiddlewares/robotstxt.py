@@ -67,7 +67,7 @@ class RobotsTxtMiddleware:
         if request.url.startswith("data:") or request.url.startswith("file:"):
             return None
         d: Deferred[Optional[RobotParser]] = maybeDeferred(
-            self.robot_parser, request, spider  # type: ignore[arg-type]
+            self.robot_parser, request, spider  # type: ignore[call-overload]
         )
         d2: Deferred[None] = d.addCallback(self.process_request_2, request, spider)
         return d2
