@@ -344,7 +344,7 @@ class ScrapyProxyAgent(Agent):
         # Cache *all* connections under the same key, since we are only
         # connecting to a single destination, the proxy:
         return self._requestWithEndpoint(
-            key=("http-proxy", self._proxyURI.host, self._proxyURI.port),
+            key=("http-proxy", proxy_key_host_and_auth, self._proxyURI.port),
             endpoint=self._getEndpoint(self._proxyURI),
             method=method,
             parsedURI=URI.fromBytes(uri),
