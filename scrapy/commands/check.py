@@ -1,7 +1,6 @@
 import argparse
 import time
 from collections import defaultdict
-from typing import List
 from unittest import TextTestResult as _TextTestResult
 from unittest import TextTestRunner
 
@@ -69,7 +68,7 @@ class Command(ScrapyCommand):
             help="print contract tests for all spiders",
         )
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # load contracts
         contracts = build_component_list(self.settings.getwithbase("SPIDER_CONTRACTS"))
         conman = ContractsManager(load_object(c) for c in contracts)

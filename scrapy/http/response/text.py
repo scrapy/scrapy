@@ -8,21 +8,9 @@ See documentation in docs/topics/request-response.rst
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from contextlib import suppress
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AnyStr,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, AnyStr, Optional, Union, cast
 from urllib.parse import urljoin
 
 import parsel
@@ -41,6 +29,8 @@ from scrapy.utils.python import memoizemethod_noargs, to_unicode
 from scrapy.utils.response import get_base_url
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping
+
     from twisted.python.failure import Failure
 
     from scrapy.http.request import CallbackT, CookiesT, Request
@@ -54,7 +44,7 @@ class TextResponse(Response):
     _DEFAULT_ENCODING = "ascii"
     _cached_decoded_json = _NONE
 
-    attributes: Tuple[str, ...] = Response.attributes + ("encoding",)
+    attributes: tuple[str, ...] = Response.attributes + ("encoding",)
 
     def __init__(self, *args: Any, **kwargs: Any):
         self._encoding: Optional[str] = kwargs.pop("encoding", None)
@@ -183,16 +173,16 @@ class TextResponse(Response):
         url: Union[str, Link, parsel.Selector],
         callback: Optional[CallbackT] = None,
         method: str = "GET",
-        headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
+        headers: Union[Mapping[AnyStr, Any], Iterable[tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
         cookies: Optional[CookiesT] = None,
-        meta: Optional[Dict[str, Any]] = None,
+        meta: Optional[dict[str, Any]] = None,
         encoding: Optional[str] = None,
         priority: int = 0,
         dont_filter: bool = False,
         errback: Optional[Callable[[Failure], Any]] = None,
-        cb_kwargs: Optional[Dict[str, Any]] = None,
-        flags: Optional[List[str]] = None,
+        cb_kwargs: Optional[dict[str, Any]] = None,
+        flags: Optional[list[str]] = None,
     ) -> Request:
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
@@ -236,16 +226,16 @@ class TextResponse(Response):
         urls: Union[Iterable[Union[str, Link]], parsel.SelectorList, None] = None,
         callback: Optional[CallbackT] = None,
         method: str = "GET",
-        headers: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
+        headers: Union[Mapping[AnyStr, Any], Iterable[tuple[AnyStr, Any]], None] = None,
         body: Optional[Union[bytes, str]] = None,
         cookies: Optional[CookiesT] = None,
-        meta: Optional[Dict[str, Any]] = None,
+        meta: Optional[dict[str, Any]] = None,
         encoding: Optional[str] = None,
         priority: int = 0,
         dont_filter: bool = False,
         errback: Optional[Callable[[Failure], Any]] = None,
-        cb_kwargs: Optional[Dict[str, Any]] = None,
-        flags: Optional[List[str]] = None,
+        cb_kwargs: Optional[dict[str, Any]] = None,
+        flags: Optional[list[str]] = None,
         css: Optional[str] = None,
         xpath: Optional[str] = None,
     ) -> Iterable[Request]:

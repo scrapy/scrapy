@@ -4,36 +4,22 @@ This module contains essential stuff that should've come with Python itself ;)
 
 from __future__ import annotations
 
-import collections.abc
 import gc
 import inspect
 import re
 import sys
 import weakref
+from collections.abc import AsyncIterable, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AsyncIterable,
-    AsyncIterator,
-    Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    Optional,
-    Pattern,
-    Tuple,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, overload
 
 from scrapy.utils.asyncgen import as_async_generator
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Callable, Iterator
+    from re import Pattern
+
     # typing.Concatenate and typing.ParamSpec require Python 3.10
     from typing_extensions import Concatenate, ParamSpec
 
@@ -44,7 +30,7 @@ _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
 
 
-def flatten(x: Iterable[Any]) -> List[Any]:
+def flatten(x: Iterable[Any]) -> list[Any]:
     """flatten(sequence) -> list
 
     Returns a single, flat list which contains all elements retrieved
@@ -99,10 +85,10 @@ def is_listlike(x: Any) -> bool:
     return hasattr(x, "__iter__") and not isinstance(x, (str, bytes))
 
 
-def unique(list_: Iterable[_T], key: Callable[[_T], Any] = lambda x: x) -> List[_T]:
+def unique(list_: Iterable[_T], key: Callable[[_T], Any] = lambda x: x) -> list[_T]:
     """efficient function to uniquify a list preserving item order"""
     seen = set()
-    result: List[_T] = []
+    result: list[_T] = []
     for item in list_:
         seenkey = key(item)
         if seenkey in seen:
@@ -147,7 +133,7 @@ def to_bytes(
 
 def re_rsearch(
     pattern: Union[str, Pattern[str]], text: str, chunk_size: int = 1024
-) -> Optional[Tuple[int, int]]:
+) -> Optional[tuple[int, int]]:
     """
     This function does a reverse search in a text using a regular expression
     given in the attribute 'pattern'.
@@ -161,7 +147,7 @@ def re_rsearch(
     the start position of the match, and the ending (regarding the entire text).
     """
 
-    def _chunk_iter() -> Iterable[Tuple[str, int]]:
+    def _chunk_iter() -> Iterable[tuple[str, int]]:
         offset = len(text)
         while True:
             offset -= chunk_size * 1024
@@ -215,12 +201,12 @@ def binary_is_text(data: bytes) -> bool:
     return all(c not in _BINARYCHARS for c in data)
 
 
-def get_func_args(func: Callable[..., Any], stripself: bool = False) -> List[str]:
+def get_func_args(func: Callable[..., Any], stripself: bool = False) -> list[str]:
     """Return the argument name list of a callable object"""
     if not callable(func):
         raise TypeError(f"func must be callable, got '{type(func).__name__}'")
 
-    args: List[str] = []
+    args: list[str] = []
     try:
         sig = inspect.signature(func)
     except ValueError:
@@ -245,7 +231,7 @@ def get_func_args(func: Callable[..., Any], stripself: bool = False) -> List[str
     return args
 
 
-def get_spec(func: Callable[..., Any]) -> Tuple[List[str], Dict[str, Any]]:
+def get_spec(func: Callable[..., Any]) -> tuple[list[str], dict[str, Any]]:
     """Returns (args, kwargs) tuple for a function
     >>> import re
     >>> get_spec(re.match)
@@ -274,7 +260,7 @@ def get_spec(func: Callable[..., Any]) -> Tuple[List[str], Dict[str, Any]]:
     else:
         raise TypeError(f"{type(func)} is not callable")
 
-    defaults: Tuple[Any, ...] = spec.defaults or ()
+    defaults: tuple[Any, ...] = spec.defaults or ()
 
     firstdefault = len(spec.args) - len(defaults)
     args = spec.args[:firstdefault]
@@ -283,7 +269,7 @@ def get_spec(func: Callable[..., Any]) -> Tuple[List[str], Dict[str, Any]]:
 
 
 def equal_attributes(
-    obj1: Any, obj2: Any, attributes: Optional[List[Union[str, Callable[[Any], Any]]]]
+    obj1: Any, obj2: Any, attributes: Optional[list[Union[str, Callable[[Any], Any]]]]
 ) -> bool:
     """Compare two objects attributes"""
     # not attributes given return False by default
@@ -303,7 +289,7 @@ def equal_attributes(
 
 
 @overload
-def without_none_values(iterable: Mapping[_KT, _VT]) -> Dict[_KT, _VT]: ...
+def without_none_values(iterable: Mapping[_KT, _VT]) -> dict[_KT, _VT]: ...
 
 
 @overload
@@ -312,13 +298,13 @@ def without_none_values(iterable: Iterable[_KT]) -> Iterable[_KT]: ...
 
 def without_none_values(
     iterable: Union[Mapping[_KT, _VT], Iterable[_KT]]
-) -> Union[Dict[_KT, _VT], Iterable[_KT]]:
+) -> Union[dict[_KT, _VT], Iterable[_KT]]:
     """Return a copy of ``iterable`` with all ``None`` entries removed.
 
     If ``iterable`` is a mapping, return a dictionary where all pairs that have
     value ``None`` have been removed.
     """
-    if isinstance(iterable, collections.abc.Mapping):
+    if isinstance(iterable, Mapping):
         return {k: v for k, v in iterable.items() if v is not None}
     else:
         # the iterable __init__ must take another iterable

@@ -5,20 +5,7 @@ import functools
 import inspect
 import json
 import logging
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AsyncGenerator,
-    Coroutine,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, overload
 
 from itemadapter import ItemAdapter, is_item
 from twisted.internet.defer import Deferred, maybeDeferred
@@ -35,6 +22,8 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.spider import spidercls_for_request
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Coroutine, Iterable
+
     from twisted.python.failure import Failure
 
     from scrapy.http.request import CallbackT
@@ -50,8 +39,8 @@ class Command(BaseRunSpiderCommand):
     requires_project = True
 
     spider = None
-    items: Dict[int, List[Any]] = {}
-    requests: Dict[int, List[Request]] = {}
+    items: dict[int, list[Any]] = {}
+    requests: dict[int, list[Request]] = {}
 
     first_response = None
 
@@ -166,11 +155,11 @@ class Command(BaseRunSpiderCommand):
             return d
         return arg_to_iter(deferred_from_coro(result))
 
-    def add_items(self, lvl: int, new_items: List[Any]) -> None:
+    def add_items(self, lvl: int, new_items: list[Any]) -> None:
         old_items = self.items.get(lvl, [])
         self.items[lvl] = old_items + new_items
 
-    def add_requests(self, lvl: int, new_reqs: List[Request]) -> None:
+    def add_requests(self, lvl: int, new_reqs: list[Request]) -> None:
         old_reqs = self.requests.get(lvl, [])
         self.requests[lvl] = old_reqs + new_reqs
 
@@ -219,7 +208,7 @@ class Command(BaseRunSpiderCommand):
         depth: int,
         spider: Spider,
         callback: CallbackT,
-    ) -> Tuple[List[Any], List[Request], argparse.Namespace, int, Spider, CallbackT]:
+    ) -> tuple[list[Any], list[Request], argparse.Namespace, int, Spider, CallbackT]:
         items, requests = [], []
         for x in spider_output:
             if is_item(x):
@@ -232,7 +221,7 @@ class Command(BaseRunSpiderCommand):
         self,
         response: Response,
         callback: CallbackT,
-        cb_kwargs: Optional[Dict[str, Any]] = None,
+        cb_kwargs: Optional[dict[str, Any]] = None,
     ) -> Deferred[Any]:
         cb_kwargs = cb_kwargs or {}
         d = maybeDeferred(self.iterate_spider_output, callback(response, **cb_kwargs))
@@ -285,10 +274,10 @@ class Command(BaseRunSpiderCommand):
 
     def scraped_data(
         self,
-        args: Tuple[
-            List[Any], List[Request], argparse.Namespace, int, Spider, CallbackT
+        args: tuple[
+            list[Any], list[Request], argparse.Namespace, int, Spider, CallbackT
         ],
-    ) -> List[Any]:
+    ) -> list[Any]:
         items, requests, opts, depth, spider, callback = args
         if opts.pipelines:
             itemproc = self.pcrawler.engine.scraper.itemproc
@@ -345,7 +334,7 @@ class Command(BaseRunSpiderCommand):
     def prepare_request(
         self, spider: Spider, request: Request, opts: argparse.Namespace
     ) -> Request:
-        def callback(response: Response, **cb_kwargs: Any) -> Deferred[List[Any]]:
+        def callback(response: Response, **cb_kwargs: Any) -> Deferred[list[Any]]:
             # memorize first request
             if not self.first_response:
                 self.first_response = response
@@ -376,7 +365,7 @@ class Command(BaseRunSpiderCommand):
         request.callback = callback
         return request
 
-    def process_options(self, args: List[str], opts: argparse.Namespace) -> None:
+    def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
         super().process_options(args, opts)
 
         self.process_request_meta(opts)
@@ -404,7 +393,7 @@ class Command(BaseRunSpiderCommand):
                     print_help=False,
                 )
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # parse arguments
         if not len(args) == 1 or not is_url(args[0]):
             raise UsageError()

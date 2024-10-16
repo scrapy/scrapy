@@ -6,7 +6,6 @@ import subprocess
 import sys
 import warnings
 from pathlib import Path
-from typing import List
 
 import pytest
 from packaging.version import parse as parse_version
@@ -651,7 +650,7 @@ class ScriptRunnerMixin:
     script_dir: Path
     cwd = os.getcwd()
 
-    def get_script_args(self, script_name: str, *script_args: str) -> List[str]:
+    def get_script_args(self, script_name: str, *script_args: str) -> list[str]:
         script_path = self.script_dir / script_name
         return [sys.executable, str(script_path)] + list(script_args)
 

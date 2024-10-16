@@ -9,20 +9,7 @@ from __future__ import annotations
 
 import logging
 from time import time
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Generator,
-    Iterable,
-    Iterator,
-    Optional,
-    Set,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
@@ -42,6 +29,8 @@ from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Iterable, Iterator
+
     from scrapy.core.scheduler import BaseScheduler
     from scrapy.core.scraper import _HandleOutputDeferred
     from scrapy.crawler import Crawler
@@ -63,7 +52,7 @@ class Slot:
         scheduler: BaseScheduler,
     ) -> None:
         self.closing: Optional[Deferred[None]] = None
-        self.inprogress: Set[Request] = set()
+        self.inprogress: set[Request] = set()
         self.start_requests: Optional[Iterator[Request]] = iter(start_requests)
         self.close_if_idle: bool = close_if_idle
         self.nextcall: CallLaterOnce[None] = nextcall
@@ -106,10 +95,10 @@ class ExecutionEngine:
         self.spider: Optional[Spider] = None
         self.running: bool = False
         self.paused: bool = False
-        self.scheduler_cls: Type[BaseScheduler] = self._get_scheduler_class(
+        self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
             crawler.settings
         )
-        downloader_cls: Type[Downloader] = load_object(self.settings["DOWNLOADER"])
+        downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         self.downloader: Downloader = downloader_cls(crawler)
         self.scraper = Scraper(crawler)
         self._spider_closed_callback: Callable[[Spider], Optional[Deferred[None]]] = (
@@ -117,10 +106,10 @@ class ExecutionEngine:
         )
         self.start_time: Optional[float] = None
 
-    def _get_scheduler_class(self, settings: BaseSettings) -> Type[BaseScheduler]:
+    def _get_scheduler_class(self, settings: BaseSettings) -> type[BaseScheduler]:
         from scrapy.core.scheduler import BaseScheduler
 
-        scheduler_cls: Type[BaseScheduler] = load_object(settings["SCHEDULER"])
+        scheduler_cls: type[BaseScheduler] = load_object(settings["SCHEDULER"])
         if not issubclass(scheduler_cls, BaseScheduler):
             raise TypeError(
                 f"The provided scheduler class ({settings['SCHEDULER']})"

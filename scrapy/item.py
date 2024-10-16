@@ -7,27 +7,21 @@ See documentation in docs/topics/item.rst
 from __future__ import annotations
 
 from abc import ABCMeta
+from collections.abc import MutableMapping
 from copy import deepcopy
 from pprint import pformat
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterator,
-    KeysView,
-    MutableMapping,
-    NoReturn,
-    Tuple,
-)
+from typing import TYPE_CHECKING, Any, NoReturn
 
 from scrapy.utils.trackref import object_ref
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator, KeysView
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
 
-class Field(Dict[str, Any]):
+class Field(dict[str, Any]):
     """Container of field metadata"""
 
 
@@ -38,7 +32,7 @@ class ItemMeta(ABCMeta):
     """
 
     def __new__(
-        mcs, class_name: str, bases: Tuple[type, ...], attrs: Dict[str, Any]
+        mcs, class_name: str, bases: tuple[type, ...], attrs: dict[str, Any]
     ) -> ItemMeta:
         classcell = attrs.pop("__classcell__", None)
         new_bases = tuple(base._class for base in bases if hasattr(base, "_class"))
@@ -83,10 +77,10 @@ class Item(MutableMapping[str, Any], object_ref, metaclass=ItemMeta):
     :ref:`tracked <topics-leaks-trackrefs>` to debug memory leaks.
     """
 
-    fields: Dict[str, Field]
+    fields: dict[str, Field]
 
     def __init__(self, *args: Any, **kwargs: Any):
-        self._values: Dict[str, Any] = {}
+        self._values: dict[str, Any] = {}
         if args or kwargs:  # avoid creating dict for most common case
             for k, v in dict(*args, **kwargs).items():
                 self[k] = v

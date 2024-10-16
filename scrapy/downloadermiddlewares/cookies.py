@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, DefaultDict, Iterable, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from tldextract import TLDExtract
 
@@ -13,6 +13,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
     from http.cookiejar import Cookie
 
     # typing.Self requires Python 3.11
@@ -39,7 +40,7 @@ class CookiesMiddleware:
     """This middleware enables working with sites that need cookies"""
 
     def __init__(self, debug: bool = False):
-        self.jars: DefaultDict[Any, CookieJar] = defaultdict(CookieJar)
+        self.jars: defaultdict[Any, CookieJar] = defaultdict(CookieJar)
         self.debug: bool = debug
 
     @classmethod

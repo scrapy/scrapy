@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.conf import build_component_list
@@ -20,7 +20,7 @@ class AddonManager:
 
     def __init__(self, crawler: Crawler) -> None:
         self.crawler: Crawler = crawler
-        self.addons: List[Any] = []
+        self.addons: list[Any] = []
 
     def load_settings(self, settings: Settings) -> None:
         """Load add-ons and configurations from a settings object and apply them.

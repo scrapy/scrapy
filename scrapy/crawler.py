@@ -4,18 +4,7 @@ import logging
 import pprint
 import signal
 import warnings
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Generator,
-    Optional,
-    Set,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 from twisted.internet.defer import (
     Deferred,
@@ -53,6 +42,8 @@ from scrapy.utils.reactor import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from scrapy.utils.request import RequestFingerprinter
 
 
@@ -64,8 +55,8 @@ _T = TypeVar("_T")
 class Crawler:
     def __init__(
         self,
-        spidercls: Type[Spider],
-        settings: Union[None, Dict[str, Any], Settings] = None,
+        spidercls: type[Spider],
+        settings: Union[None, dict[str, Any], Settings] = None,
         init_reactor: bool = False,
     ):
         if isinstance(spidercls, Spider):
@@ -74,7 +65,7 @@ class Crawler:
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
-        self.spidercls: Type[Spider] = spidercls
+        self.spidercls: type[Spider] = spidercls
         self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
         self._update_root_log_handler()
@@ -112,7 +103,7 @@ class Crawler:
         self.__remove_handler = lambda: logging.root.removeHandler(handler)
         self.signals.connect(self.__remove_handler, signals.engine_stopped)
 
-        lf_cls: Type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
+        lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
         self.logformatter = lf_cls.from_crawler(self)
 
         self.request_fingerprinter = build_from_crawler(
@@ -256,18 +247,18 @@ class CrawlerRunner:
         verifyClass(ISpiderLoader, loader_cls)
         return loader_cls.from_settings(settings.frozencopy())
 
-    def __init__(self, settings: Union[Dict[str, Any], Settings, None] = None):
+    def __init__(self, settings: Union[dict[str, Any], Settings, None] = None):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         self.settings = settings
         self.spider_loader = self._get_spider_loader(settings)
-        self._crawlers: Set[Crawler] = set()
-        self._active: Set[Deferred[None]] = set()
+        self._crawlers: set[Crawler] = set()
+        self._active: set[Deferred[None]] = set()
         self.bootstrap_failed = False
 
     def crawl(
         self,
-        crawler_or_spidercls: Union[Type[Spider], str, Crawler],
+        crawler_or_spidercls: Union[type[Spider], str, Crawler],
         *args: Any,
         **kwargs: Any,
     ) -> Deferred[None]:
@@ -314,7 +305,7 @@ class CrawlerRunner:
         return d.addBoth(_done)
 
     def create_crawler(
-        self, crawler_or_spidercls: Union[Type[Spider], str, Crawler]
+        self, crawler_or_spidercls: Union[type[Spider], str, Crawler]
     ) -> Crawler:
         """
         Return a :class:`~scrapy.crawler.Crawler` object.
@@ -335,11 +326,11 @@ class CrawlerRunner:
             return crawler_or_spidercls
         return self._create_crawler(crawler_or_spidercls)
 
-    def _create_crawler(self, spidercls: Union[str, Type[Spider]]) -> Crawler:
+    def _create_crawler(self, spidercls: Union[str, type[Spider]]) -> Crawler:
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
         # temporary cast until self.spider_loader is typed
-        return Crawler(cast(Type[Spider], spidercls), self.settings)
+        return Crawler(cast(type[Spider], spidercls), self.settings)
 
     def stop(self) -> Deferred[Any]:
         """
@@ -387,7 +378,7 @@ class CrawlerProcess(CrawlerRunner):
 
     def __init__(
         self,
-        settings: Union[Dict[str, Any], Settings, None] = None,
+        settings: Union[dict[str, Any], Settings, None] = None,
         install_root_handler: bool = True,
     ):
         super().__init__(settings)
@@ -416,14 +407,14 @@ class CrawlerProcess(CrawlerRunner):
         )
         reactor.callFromThread(self._stop_reactor)
 
-    def _create_crawler(self, spidercls: Union[Type[Spider], str]) -> Crawler:
+    def _create_crawler(self, spidercls: Union[type[Spider], str]) -> Crawler:
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
         init_reactor = not self._initialized_reactor
         self._initialized_reactor = True
         # temporary cast until self.spider_loader is typed
         return Crawler(
-            cast(Type[Spider], spidercls), self.settings, init_reactor=init_reactor
+            cast(type[Spider], spidercls), self.settings, init_reactor=init_reactor
         )
 
     def start(
