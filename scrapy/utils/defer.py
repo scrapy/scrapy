@@ -8,27 +8,10 @@ import asyncio
 import inspect
 import warnings
 from asyncio import Future
+from collections.abc import Awaitable, Coroutine, Iterable, Iterator
 from functools import wraps
 from types import CoroutineType
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AsyncIterable,
-    AsyncIterator,
-    Awaitable,
-    Callable,
-    Coroutine,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, Union, cast, overload
 
 from twisted.internet import defer
 from twisted.internet.defer import Deferred, DeferredList, ensureDeferred
@@ -39,12 +22,15 @@ from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.utils.reactor import _get_asyncio_event_loop, is_asyncio_reactor_installed
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterable, AsyncIterator, Callable
+
     from twisted.python.failure import Failure
 
     # typing.Concatenate and typing.ParamSpec require Python 3.10
     from typing_extensions import Concatenate, ParamSpec
 
     _P = ParamSpec("_P")
+
 
 _T = TypeVar("_T")
 _T2 = TypeVar("_T2")
@@ -133,7 +119,7 @@ def parallel(
     callable: Callable[Concatenate[_T, _P], _T2],
     *args: _P.args,
     **named: _P.kwargs,
-) -> Deferred[List[Tuple[bool, Iterator[_T2]]]]:
+) -> Deferred[list[tuple[bool, Iterator[_T2]]]]:
     """Execute a callable over the objects in the given iterable, in parallel,
     using no more than ``count`` concurrent calls.
 
@@ -144,7 +130,7 @@ def parallel(
     return DeferredList([coop.coiterate(work) for _ in range(count)])
 
 
-class _AsyncCooperatorAdapter(Iterator[Deferred]):
+class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
     """A class that wraps an async iterable into a normal iterator suitable
     for using in Cooperator.coiterate(). As it's only needed for parallel_async(),
     it calls the callable directly in the callback, instead of providing a more
@@ -199,10 +185,10 @@ class _AsyncCooperatorAdapter(Iterator[Deferred]):
     ):
         self.aiterator: AsyncIterator[_T] = aiterable.__aiter__()
         self.callable: Callable[Concatenate[_T, _P], Optional[Deferred[Any]]] = callable
-        self.callable_args: Tuple[Any, ...] = callable_args
-        self.callable_kwargs: Dict[str, Any] = callable_kwargs
+        self.callable_args: tuple[Any, ...] = callable_args
+        self.callable_kwargs: dict[str, Any] = callable_kwargs
         self.finished: bool = False
-        self.waiting_deferreds: List[Deferred[Any]] = []
+        self.waiting_deferreds: list[Deferred[Any]] = []
         self.anext_deferred: Optional[Deferred[_T]] = None
 
     def _callback(self, result: _T) -> None:
@@ -254,13 +240,13 @@ def parallel_async(
     callable: Callable[Concatenate[_T, _P], Optional[Deferred[Any]]],
     *args: _P.args,
     **named: _P.kwargs,
-) -> Deferred[List[Tuple[bool, Iterator[Deferred[Any]]]]]:
+) -> Deferred[list[tuple[bool, Iterator[Deferred[Any]]]]]:
     """Like ``parallel`` but for async iterators"""
     coop = Cooperator()
     work: Iterator[Deferred[Any]] = _AsyncCooperatorAdapter(
         async_iterable, callable, *args, **named
     )
-    dl: Deferred[List[Tuple[bool, Iterator[Deferred[Any]]]]] = DeferredList(
+    dl: Deferred[list[tuple[bool, Iterator[Deferred[Any]]]]] = DeferredList(
         [coop.coiterate(work) for _ in range(count)]
     )
     return dl
@@ -310,15 +296,15 @@ def process_parallel(
     input: _T,
     *a: _P.args,
     **kw: _P.kwargs,
-) -> Deferred[List[_T2]]:
+) -> Deferred[list[_T2]]:
     """Return a Deferred with the output of all successful calls to the given
     callbacks
     """
     dfds = [defer.succeed(input).addCallback(x, *a, **kw) for x in callbacks]
-    d: Deferred[List[Tuple[bool, _T2]]] = DeferredList(
+    d: Deferred[list[tuple[bool, _T2]]] = DeferredList(
         dfds, fireOnOneErrback=True, consumeErrors=True
     )
-    d2: Deferred[List[_T2]] = d.addCallback(lambda r: [x[1] for x in r])
+    d2: Deferred[list[_T2]] = d.addCallback(lambda r: [x[1] for x in r])
     d2.addErrback(lambda f: f.value.subFailure)
     return d2
 

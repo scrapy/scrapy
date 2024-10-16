@@ -9,21 +9,9 @@ from __future__ import annotations
 
 import logging
 from time import time
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Generator,
-    Iterable,
-    Iterator,
-    Optional,
-    Set,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
+from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
 from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
@@ -38,10 +26,11 @@ from scrapy.settings import Settings
 from scrapy.signalmanager import SignalManager
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
-from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Iterable, Iterator
+
     from scrapy.core.scheduler import BaseScheduler
     from scrapy.core.scraper import _HandleOutputDeferred
     from scrapy.crawler import Crawler
@@ -63,7 +52,7 @@ class Slot:
         scheduler: BaseScheduler,
     ) -> None:
         self.closing: Optional[Deferred[None]] = None
-        self.inprogress: Set[Request] = set()
+        self.inprogress: set[Request] = set()
         self.start_requests: Optional[Iterator[Request]] = iter(start_requests)
         self.close_if_idle: bool = close_if_idle
         self.nextcall: CallLaterOnce[None] = nextcall
@@ -106,10 +95,10 @@ class ExecutionEngine:
         self.spider: Optional[Spider] = None
         self.running: bool = False
         self.paused: bool = False
-        self.scheduler_cls: Type[BaseScheduler] = self._get_scheduler_class(
+        self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
             crawler.settings
         )
-        downloader_cls: Type[Downloader] = load_object(self.settings["DOWNLOADER"])
+        downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         self.downloader: Downloader = downloader_cls(crawler)
         self.scraper = Scraper(crawler)
         self._spider_closed_callback: Callable[[Spider], Optional[Deferred[None]]] = (
@@ -117,10 +106,10 @@ class ExecutionEngine:
         )
         self.start_time: Optional[float] = None
 
-    def _get_scheduler_class(self, settings: BaseSettings) -> Type[BaseScheduler]:
+    def _get_scheduler_class(self, settings: BaseSettings) -> type[BaseScheduler]:
         from scrapy.core.scheduler import BaseScheduler
 
-        scheduler_cls: Type[BaseScheduler] = load_object(settings["SCHEDULER"])
+        scheduler_cls: type[BaseScheduler] = load_object(settings["SCHEDULER"])
         if not issubclass(scheduler_cls, BaseScheduler):
             raise TypeError(
                 f"The provided scheduler class ({settings['SCHEDULER']})"
@@ -194,7 +183,7 @@ class ExecutionEngine:
 
         if self.slot.start_requests is not None and not self._needs_backout():
             try:
-                request = next(self.slot.start_requests)
+                request_or_item = next(self.slot.start_requests)
             except StopIteration:
                 self.slot.start_requests = None
             except Exception:
@@ -205,7 +194,16 @@ class ExecutionEngine:
                     extra={"spider": self.spider},
                 )
             else:
-                self.crawl(request)
+                if isinstance(request_or_item, Request):
+                    self.crawl(request_or_item)
+                elif is_item(request_or_item):
+                    self.scraper.start_itemproc(request_or_item, response=None)
+                else:
+                    logger.error(
+                        f"Got {request_or_item!r} among start requests. Only "
+                        f"requests and items are supported. It will be "
+                        f"ignored."
+                    )
 
         if self.spider_is_idle() and self.slot.close_if_idle:
             self._spider_idle()
@@ -315,10 +313,6 @@ class ExecutionEngine:
         )
         for handler, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
-                logger.debug(
-                    f"Signal handler {global_object_name(handler)} dropped "
-                    f"request {request} before it reached the scheduler."
-                )
                 return
         if not self.slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
             self.signals.send_catch_log(

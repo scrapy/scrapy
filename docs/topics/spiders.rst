@@ -203,7 +203,8 @@ scrapy.Spider
 
    .. method:: start_requests()
 
-       This method must return an iterable with the first Requests to crawl for
+       This method must return an iterable with the first Requests to crawl and/or with :ref:`item objects
+       <topics-items>` for
        this spider. It is called by Scrapy when the spider is opened for
        scraping. Scrapy calls it only once, so it is safe to implement
        :meth:`start_requests` as a generator.

@@ -4,7 +4,7 @@ import shutil
 import string
 from importlib import import_module
 from pathlib import Path
-from typing import List, Optional, Union, cast
+from typing import Optional, Union, cast
 from urllib.parse import urlparse
 
 import scrapy
@@ -87,7 +87,7 @@ class Command(ScrapyCommand):
             help="If the spider already exists, overwrite it with the template",
         )
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if opts.list:
             self._list_templates()
             return
@@ -116,6 +116,24 @@ class Command(ScrapyCommand):
             if opts.edit:
                 self.exitcode = os.system(f'scrapy edit "{name}"')  # nosec
 
+    def _generate_template_variables(
+        self,
+        module: str,
+        name: str,
+        url: str,
+        template_name: str,
+    ):
+        capitalized_module = "".join(s.capitalize() for s in module.split("_"))
+        return {
+            "project_name": self.settings.get("BOT_NAME"),
+            "ProjectName": string_camelcase(self.settings.get("BOT_NAME")),
+            "module": module,
+            "name": name,
+            "url": url,
+            "domain": extract_domain(url),
+            "classname": f"{capitalized_module}Spider",
+        }
+
     def _genspider(
         self,
         module: str,
@@ -125,17 +143,7 @@ class Command(ScrapyCommand):
         template_file: Union[str, os.PathLike],
     ) -> None:
         """Generate the spider module, based on the given template"""
-        capitalized_module = "".join(s.capitalize() for s in module.split("_"))
-        domain = extract_domain(url)
-        tvars = {
-            "project_name": self.settings.get("BOT_NAME"),
-            "ProjectName": string_camelcase(self.settings.get("BOT_NAME")),
-            "module": module,
-            "name": name,
-            "url": url,
-            "domain": domain,
-            "classname": f"{capitalized_module}Spider",
-        }
+        tvars = self._generate_template_variables(module, name, url, template_name)
         if self.settings.get("NEWSPIDER_MODULE"):
             spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])
             assert spiders_module.__file__

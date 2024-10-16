@@ -5,23 +5,8 @@ from __future__ import annotations
 
 import logging
 from collections import deque
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AsyncIterable,
-    Deque,
-    Generator,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from collections.abc import AsyncIterable, Iterator
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -47,6 +32,8 @@ from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.spider import iterate_spider_output
 
 if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
+
     from scrapy.crawler import Crawler
 
 
@@ -54,12 +41,12 @@ logger = logging.getLogger(__name__)
 
 
 _T = TypeVar("_T")
-_ParallelResult = List[Tuple[bool, Iterator[Any]]]
+_ParallelResult = list[tuple[bool, Iterator[Any]]]
 
 if TYPE_CHECKING:
     # parameterized Deferreds require Twisted 21.7.0
     _HandleOutputDeferred = Deferred[Union[_ParallelResult, None]]
-    QueueTuple = Tuple[Union[Response, Failure], Request, _HandleOutputDeferred]
+    QueueTuple = tuple[Union[Response, Failure], Request, _HandleOutputDeferred]
 
 
 class Slot:
@@ -69,8 +56,8 @@ class Slot:
 
     def __init__(self, max_active_size: int = 5000000):
         self.max_active_size = max_active_size
-        self.queue: Deque[QueueTuple] = deque()
-        self.active: Set[Request] = set()
+        self.queue: deque[QueueTuple] = deque()
+        self.active: set[Request] = set()
         self.active_size: int = 0
         self.itemproc_size: int = 0
         self.closing: Optional[Deferred[Spider]] = None
@@ -113,7 +100,7 @@ class Scraper:
         self.spidermw: SpiderMiddlewareManager = SpiderMiddlewareManager.from_crawler(
             crawler
         )
-        itemproc_cls: Type[ItemPipelineManager] = load_object(
+        itemproc_cls: type[ItemPipelineManager] = load_object(
             crawler.settings["ITEM_PROCESSOR"]
         )
         self.itemproc: ItemPipelineManager = itemproc_cls.from_crawler(crawler)
@@ -313,15 +300,11 @@ class Scraper:
         """Process each Request/Item (given in the output parameter) returned
         from the given spider
         """
-        assert self.slot is not None  # typing
         if isinstance(output, Request):
             assert self.crawler.engine is not None  # typing
             self.crawler.engine.crawl(request=output)
         elif is_item(output):
-            self.slot.itemproc_size += 1
-            dfd = self.itemproc.process_item(output, spider)
-            dfd.addBoth(self._itemproc_finished, output, response, spider)
-            return dfd
+            return self.start_itemproc(output, response=response)
         elif output is None:
             pass
         else:
@@ -332,6 +315,19 @@ class Scraper:
                 extra={"spider": spider},
             )
         return None
+
+    def start_itemproc(self, item, *, response: Optional[Response]) -> Deferred[Any]:
+        """Send *item* to the item pipelines for processing.
+
+        *response* is the source of the item data. If the item does not come
+        from response data, e.g. it was hard-coded, set it to ``None``.
+        """
+        assert self.slot is not None  # typing
+        assert self.crawler.spider is not None  # typing
+        self.slot.itemproc_size += 1
+        dfd = self.itemproc.process_item(item, self.crawler.spider)
+        dfd.addBoth(self._itemproc_finished, item, response, self.crawler.spider)
+        return dfd
 
     def _log_download_errors(
         self,
@@ -373,7 +369,7 @@ class Scraper:
         return None
 
     def _itemproc_finished(
-        self, output: Any, item: Any, response: Response, spider: Spider
+        self, output: Any, item: Any, response: Optional[Response], spider: Spider
     ) -> Deferred[Any]:
         """ItemProcessor finished for the given ``item`` and returned ``output``"""
         assert self.slot is not None  # typing

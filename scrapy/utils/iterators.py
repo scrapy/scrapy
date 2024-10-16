@@ -1,19 +1,10 @@
+from __future__ import annotations
+
 import csv
 import logging
 import re
 from io import StringIO
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterator,
-    List,
-    Literal,
-    Optional,
-    Union,
-    cast,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast, overload
 from warnings import warn
 
 from lxml import etree  # nosec
@@ -22,6 +13,9 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
 from scrapy.selector import Selector
 from scrapy.utils.python import re_rsearch
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +53,7 @@ def xmliter(obj: Union[Response, str, bytes], nodename: str) -> Iterator[Selecto
     )
     header_end_idx = re_rsearch(HEADER_END_RE, text)
     header_end = text[header_end_idx[1] :].strip() if header_end_idx else ""
-    namespaces: Dict[str, str] = {}
+    namespaces: dict[str, str] = {}
     if header_end:
         for tagname in reversed(re.findall(END_TAG_RE, header_end)):
             assert header_end_idx
@@ -162,10 +156,10 @@ class _StreamReader:
 def csviter(
     obj: Union[Response, str, bytes],
     delimiter: Optional[str] = None,
-    headers: Optional[List[str]] = None,
+    headers: Optional[list[str]] = None,
     encoding: Optional[str] = None,
     quotechar: Optional[str] = None,
-) -> Iterator[Dict[str, str]]:
+) -> Iterator[dict[str, str]]:
     """Returns an iterator of dictionaries from the given csv object
 
     obj can be:
@@ -191,7 +185,7 @@ def csviter(
 
     lines = StringIO(_body_or_str(obj, unicode=True))
 
-    kwargs: Dict[str, Any] = {}
+    kwargs: dict[str, Any] = {}
     if delimiter:
         kwargs["delimiter"] = delimiter
     if quotechar:

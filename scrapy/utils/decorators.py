@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.internet.threads import deferToThread
@@ -10,6 +10,8 @@ from twisted.internet.threads import deferToThread
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     # typing.ParamSpec requires Python 3.10
     from typing_extensions import ParamSpec
 

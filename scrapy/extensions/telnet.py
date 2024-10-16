@@ -10,7 +10,7 @@ import binascii
 import logging
 import os
 import pprint
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet import protocol
 from twisted.internet.tcp import Port
@@ -45,7 +45,7 @@ class TelnetConsole(protocol.ServerFactory):
 
         self.crawler: Crawler = crawler
         self.noisy: bool = False
-        self.portrange: List[int] = [
+        self.portrange: list[int] = [
             int(x) for x in crawler.settings.getlist("TELNETCONSOLE_PORT")
         ]
         self.host: str = crawler.settings["TELNETCONSOLE_HOST"]
@@ -98,10 +98,10 @@ class TelnetConsole(protocol.ServerFactory):
 
         return telnet.TelnetTransport(telnet.AuthenticatingTelnetProtocol, Portal())
 
-    def _get_telnet_vars(self) -> Dict[str, Any]:
+    def _get_telnet_vars(self) -> dict[str, Any]:
         # Note: if you add entries here also update topics/telnetconsole.rst
         assert self.crawler.engine
-        telnet_vars: Dict[str, Any] = {
+        telnet_vars: dict[str, Any] = {
             "engine": self.crawler.engine,
             "spider": self.crawler.engine.spider,
             "slot": self.crawler.engine.slot,
