@@ -38,9 +38,10 @@ _T = TypeVar("_T")
 class Command(BaseRunSpiderCommand):
     requires_project = True
 
-    spider = None
+    spider: Optional[Spider] = None
     items: dict[int, list[Any]] = {}
     requests: dict[int, list[Request]] = {}
+    spidercls: Optional[type[Spider]]
 
     first_response = None
 
@@ -261,10 +262,11 @@ class Command(BaseRunSpiderCommand):
             yield self.prepare_request(spider, Request(url), opts)
 
         if self.spidercls:
-            self.spidercls.start_requests = _start_requests
+            self.spidercls.start_requests = _start_requests  # type: ignore[assignment,method-assign]
 
     def start_parsing(self, url: str, opts: argparse.Namespace) -> None:
         assert self.crawler_process
+        assert self.spidercls
         self.crawler_process.crawl(self.spidercls, **opts.spargs)
         self.pcrawler = list(self.crawler_process.crawlers)[0]
         self.crawler_process.start()

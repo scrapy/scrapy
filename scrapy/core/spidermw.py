@@ -72,7 +72,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     def _process_spider_input(
         self,
-        scrape_func: ScrapeFunc,
+        scrape_func: ScrapeFunc[_T],
         response: Response,
         request: Request,
         spider: Spider,
@@ -306,7 +306,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     def scrape_response(
         self,
-        scrape_func: ScrapeFunc,
+        scrape_func: ScrapeFunc[_T],
         response: Response,
         request: Request,
         spider: Spider,

@@ -100,7 +100,7 @@ class ExecutionEngine:
         )
         downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         self.downloader: Downloader = downloader_cls(crawler)
-        self.scraper = Scraper(crawler)
+        self.scraper: Scraper = Scraper(crawler)
         self._spider_closed_callback: Callable[[Spider], Optional[Deferred[None]]] = (
             spider_closed_callback
         )
@@ -325,7 +325,7 @@ class ExecutionEngine:
             raise RuntimeError(f"No open spider to crawl: {request}")
         d: Deferred[Union[Response, Request]] = self._download(request)
         # Deferred.addBoth() overloads don't seem to support a Union[_T, Deferred[_T]] return type
-        d2: Deferred[Response] = d.addBoth(self._downloaded, request)  # type: ignore[arg-type]
+        d2: Deferred[Response] = d.addBoth(self._downloaded, request)  # type: ignore[call-overload]
         return d2
 
     def _downloaded(

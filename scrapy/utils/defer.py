@@ -305,7 +305,11 @@ def process_parallel(
         dfds, fireOnOneErrback=True, consumeErrors=True
     )
     d2: Deferred[list[_T2]] = d.addCallback(lambda r: [x[1] for x in r])
-    d2.addErrback(lambda f: f.value.subFailure)
+
+    def eb(failure: Failure) -> Failure:
+        return failure.value.subFailure
+
+    d2.addErrback(eb)
     return d2
 
 
