@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 from unittest import TestCase
 from urllib.parse import urlparse
 
@@ -32,10 +32,10 @@ from scrapy.spiders import Spider
 
 
 class TestRefererMiddleware(TestCase):
-    req_meta: Dict[str, Any] = {}
-    resp_headers: Dict[str, str] = {}
-    settings: Dict[str, Any] = {}
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    req_meta: dict[str, Any] = {}
+    resp_headers: dict[str, str] = {}
+    settings: dict[str, Any] = {}
+    scenarii: list[tuple[str, str, Optional[bytes]]] = [
         ("http://scrapytest.org", "http://scrapytest.org/", b"http://scrapytest.org"),
     ]
 
@@ -65,7 +65,7 @@ class MixinDefault:
     with some additional filtering of s3://
     """
 
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, Optional[bytes]]] = [
         ("https://example.com/", "https://scrapy.org/", b"https://example.com/"),
         ("http://example.com/", "http://scrapy.org/", b"http://example.com/"),
         ("http://example.com/", "https://scrapy.org/", b"http://example.com/"),
@@ -86,7 +86,7 @@ class MixinDefault:
 
 
 class MixinNoReferrer:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, Optional[bytes]]] = [
         ("https://example.com/page.html", "https://example.com/", None),
         ("http://www.example.com/", "https://scrapy.org/", None),
         ("http://www.example.com/", "http://scrapy.org/", None),
@@ -96,7 +96,7 @@ class MixinNoReferrer:
 
 
 class MixinNoReferrerWhenDowngrade:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, Optional[bytes]]] = [
         # TLS to TLS: send non-empty referrer
         (
             "https://example.com/page.html",
@@ -178,7 +178,7 @@ class MixinNoReferrerWhenDowngrade:
 
 
 class MixinSameOrigin:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, Optional[bytes]]] = [
         # Same origin (protocol, host, port): send referrer
         (
             "https://example.com/page.html",
@@ -247,7 +247,7 @@ class MixinSameOrigin:
 
 
 class MixinOrigin:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, Optional[bytes]]] = [
         # TLS or non-TLS to TLS or non-TLS: referrer origin is sent (yes, even for downgrades)
         (
             "https://example.com/page.html",
@@ -271,7 +271,7 @@ class MixinOrigin:
 
 
 class MixinStrictOrigin:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, Optional[bytes]]] = [
         # TLS or non-TLS to TLS or non-TLS: referrer origin is sent but not for downgrades
         (
             "https://example.com/page.html",
@@ -299,7 +299,7 @@ class MixinStrictOrigin:
 
 
 class MixinOriginWhenCrossOrigin:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, Optional[bytes]]] = [
         # Same origin (protocol, host, port): send referrer
         (
             "https://example.com/page.html",
@@ -406,7 +406,7 @@ class MixinOriginWhenCrossOrigin:
 
 
 class MixinStrictOriginWhenCrossOrigin:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, Optional[bytes]]] = [
         # Same origin (protocol, host, port): send referrer
         (
             "https://example.com/page.html",
@@ -518,7 +518,7 @@ class MixinStrictOriginWhenCrossOrigin:
 
 
 class MixinUnsafeUrl:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, Optional[bytes]]] = [
         # TLS to TLS: send referrer
         (
             "https://example.com/sekrit.html",
@@ -968,8 +968,8 @@ class TestPolicyHeaderPrecedence004(
 
 class TestReferrerOnRedirect(TestRefererMiddleware):
     settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.UnsafeUrlPolicy"}
-    scenarii: List[
-        Tuple[str, str, Tuple[Tuple[int, str], ...], Optional[bytes], Optional[bytes]]
+    scenarii: list[
+        tuple[str, str, tuple[tuple[int, str], ...], Optional[bytes], Optional[bytes]]
     ] = [  # type: ignore[assignment]
         (
             "http://scrapytest.org/1",  # parent

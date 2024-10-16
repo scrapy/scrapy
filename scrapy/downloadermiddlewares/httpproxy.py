@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import base64
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Union
 from urllib.parse import unquote, urlunparse
 from urllib.request import (  # type: ignore[attr-defined]
     _parse_proxy,
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 class HttpProxyMiddleware:
     def __init__(self, auth_encoding: Optional[str] = "latin-1"):
         self.auth_encoding: Optional[str] = auth_encoding
-        self.proxies: Dict[str, Tuple[Optional[bytes], str]] = {}
+        self.proxies: dict[str, tuple[Optional[bytes], str]] = {}
         for type_, url in getproxies().items():
             try:
                 self.proxies[type_] = self._get_proxy(url, type_)
@@ -47,7 +47,7 @@ class HttpProxyMiddleware:
         )
         return base64.b64encode(user_pass)
 
-    def _get_proxy(self, url: str, orig_type: str) -> Tuple[Optional[bytes], str]:
+    def _get_proxy(self, url: str, orig_type: str) -> tuple[Optional[bytes], str]:
         proxy_type, user, password, hostport = _parse_proxy(url)
         proxy_url = urlunparse((proxy_type or orig_type, hostport, "", "", "", ""))
 

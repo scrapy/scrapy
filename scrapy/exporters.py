@@ -6,9 +6,10 @@ import csv
 import marshal
 import pickle  # nosec
 import pprint
+from collections.abc import Callable, Iterable, Mapping
 from io import BytesIO, TextIOWrapper
 from json import JSONEncoder
-from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Tuple, Union
+from typing import Any, Optional, Union
 from xml.sax.saxutils import XMLGenerator  # nosec
 from xml.sax.xmlreader import AttributesImpl  # nosec
 
@@ -32,10 +33,10 @@ __all__ = [
 
 class BaseItemExporter:
     def __init__(self, *, dont_fail: bool = False, **kwargs: Any):
-        self._kwargs: Dict[str, Any] = kwargs
+        self._kwargs: dict[str, Any] = kwargs
         self._configure(kwargs, dont_fail=dont_fail)
 
-    def _configure(self, options: Dict[str, Any], dont_fail: bool = False) -> None:
+    def _configure(self, options: dict[str, Any], dont_fail: bool = False) -> None:
         """Configure the exporter by popping options from the ``options`` dict.
         If dont_fail is set, it won't raise an exception on unexpected options
         (useful for using with keyword arguments in subclasses ``__init__`` methods)
@@ -66,7 +67,7 @@ class BaseItemExporter:
 
     def _get_serialized_fields(
         self, item: Any, default_value: Any = None, include_empty: Optional[bool] = None
-    ) -> Iterable[Tuple[str, Any]]:
+    ) -> Iterable[tuple[str, Any]]:
         """Return the fields to export as an iterable of tuples
         (name, serialized_value)
         """
@@ -339,7 +340,7 @@ class PythonItemExporter(BaseItemExporter):
     .. _msgpack: https://pypi.org/project/msgpack/
     """
 
-    def _configure(self, options: Dict[str, Any], dont_fail: bool = False) -> None:
+    def _configure(self, options: dict[str, Any], dont_fail: bool = False) -> None:
         super()._configure(options, dont_fail)
         if not self.encoding:
             self.encoding = "utf-8"
@@ -363,10 +364,10 @@ class PythonItemExporter(BaseItemExporter):
             return to_unicode(value, encoding=self.encoding)
         return value
 
-    def _serialize_item(self, item: Any) -> Iterable[Tuple[Union[str, bytes], Any]]:
+    def _serialize_item(self, item: Any) -> Iterable[tuple[Union[str, bytes], Any]]:
         for key, value in ItemAdapter(item).items():
             yield key, self._serialize_value(value)
 
-    def export_item(self, item: Any) -> Dict[Union[str, bytes], Any]:  # type: ignore[override]
-        result: Dict[Union[str, bytes], Any] = dict(self._get_serialized_fields(item))
+    def export_item(self, item: Any) -> dict[Union[str, bytes], Any]:  # type: ignore[override]
+        result: dict[Union[str, bytes], Any] = dict(self._get_serialized_fields(item))
         return result

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, DefaultDict, Dict
+from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured
@@ -30,7 +30,7 @@ class CloseSpider:
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
 
-        self.close_on: Dict[str, Any] = {
+        self.close_on: dict[str, Any] = {
             "timeout": crawler.settings.getfloat("CLOSESPIDER_TIMEOUT"),
             "itemcount": crawler.settings.getint("CLOSESPIDER_ITEMCOUNT"),
             "pagecount": crawler.settings.getint("CLOSESPIDER_PAGECOUNT"),
@@ -44,7 +44,7 @@ class CloseSpider:
         if not any(self.close_on.values()):
             raise NotConfigured
 
-        self.counter: DefaultDict[str, int] = defaultdict(int)
+        self.counter: defaultdict[str, int] = defaultdict(int)
 
         if self.close_on.get("errorcount"):
             crawler.signals.connect(self.error_count, signal=signals.spider_error)

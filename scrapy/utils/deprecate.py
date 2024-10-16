@@ -2,7 +2,7 @@
 
 import inspect
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Type, overload
+from typing import Any, Optional, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
@@ -20,8 +20,8 @@ def attribute(obj: Any, oldattr: str, newattr: str, version: str = "0.12") -> No
 def create_deprecated_class(
     name: str,
     new_class: type,
-    clsdict: Optional[Dict[str, Any]] = None,
-    warn_category: Type[Warning] = ScrapyDeprecationWarning,
+    clsdict: Optional[dict[str, Any]] = None,
+    warn_category: type[Warning] = ScrapyDeprecationWarning,
     warn_once: bool = True,
     old_class_path: Optional[str] = None,
     new_class_path: Optional[str] = None,
@@ -59,14 +59,14 @@ def create_deprecated_class(
         warned_on_subclass: bool = False
 
         def __new__(
-            metacls, name: str, bases: Tuple[type, ...], clsdict_: Dict[str, Any]
+            metacls, name: str, bases: tuple[type, ...], clsdict_: dict[str, Any]
         ) -> type:
             cls = super().__new__(metacls, name, bases, clsdict_)
             if metacls.deprecated_class is None:
                 metacls.deprecated_class = cls
             return cls
 
-        def __init__(cls, name: str, bases: Tuple[type, ...], clsdict_: Dict[str, Any]):
+        def __init__(cls, name: str, bases: tuple[type, ...], clsdict_: dict[str, Any]):
             meta = cls.__class__
             old = meta.deprecated_class
             if old in bases and not (warn_once and meta.warned_on_subclass):
@@ -134,7 +134,7 @@ def _clspath(cls: type, forced: Optional[str] = None) -> str:
     return f"{cls.__module__}.{cls.__name__}"
 
 
-DEPRECATION_RULES: List[Tuple[str, str]] = []
+DEPRECATION_RULES: list[tuple[str, str]] = []
 
 
 @overload

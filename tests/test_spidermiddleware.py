@@ -1,4 +1,4 @@
-import collections.abc
+from collections.abc import AsyncIterator, Iterable
 from typing import Optional, Union
 from unittest import mock
 
@@ -147,7 +147,7 @@ class BaseAsyncSpiderMiddlewareTestCase(SpiderMiddlewareTestCase):
             result = yield self._get_middleware_result(
                 *mw_classes, start_index=start_index
             )
-        self.assertIsInstance(result, collections.abc.Iterable)
+        self.assertIsInstance(result, Iterable)
         result_list = list(result)
         self.assertEqual(len(result_list), self.RESULT_COUNT)
         self.assertIsInstance(result_list[0], self.ITEM_TYPE)
@@ -161,7 +161,7 @@ class BaseAsyncSpiderMiddlewareTestCase(SpiderMiddlewareTestCase):
             result = yield self._get_middleware_result(
                 *mw_classes, start_index=start_index
             )
-        self.assertIsInstance(result, collections.abc.AsyncIterator)
+        self.assertIsInstance(result, AsyncIterator)
         result_list = yield deferred_from_coro(collect_asyncgen(result))
         self.assertEqual(len(result_list), self.RESULT_COUNT)
         self.assertIsInstance(result_list[0], self.ITEM_TYPE)

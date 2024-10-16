@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import inspect
 import json
@@ -13,7 +15,7 @@ from shutil import copytree, rmtree
 from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
 from tempfile import TemporaryFile, mkdtemp
 from threading import Timer
-from typing import Dict, Iterator, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 from unittest import skipIf
 
 from pytest import mark
@@ -26,6 +28,9 @@ from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_testenv
 from tests.test_crawler import ExceptionSpider, NoRequestsSpider
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class CommandSettings(unittest.TestCase):
@@ -194,7 +199,7 @@ class StartprojectTest(ProjectTest):
 
 def get_permissions_dict(
     path: Union[str, os.PathLike], renamings=None, ignore=None
-) -> Dict[str, str]:
+) -> dict[str, str]:
     def get_permissions(path: Path) -> str:
         return oct(path.stat().st_mode)
 

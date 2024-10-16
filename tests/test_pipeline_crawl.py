@@ -1,7 +1,7 @@
 import shutil
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Optional, Set
+from typing import Optional
 
 from testfixtures import LogCapture
 from twisted.internet import defer
@@ -57,7 +57,7 @@ class FileDownloadCrawlTestCase(TestCase):
     store_setting_key = "FILES_STORE"
     media_key = "files"
     media_urls_key = "file_urls"
-    expected_checksums: Optional[Set[str]] = {
+    expected_checksums: Optional[set[str]] = {
         "5547178b89448faf0015a13f904c936e",
         "c2281c83670e31d8aaab7cb642b824db",
         "ed3f6538dc15d4d9179dae57319edc5f",

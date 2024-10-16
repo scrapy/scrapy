@@ -4,7 +4,7 @@ import argparse
 import subprocess  # nosec
 import sys
 import time
-from typing import TYPE_CHECKING, Any, Iterable, List
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlencode
 
 import scrapy
@@ -13,6 +13,8 @@ from scrapy.http import Response, TextResponse
 from scrapy.linkextractors import LinkExtractor
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from scrapy import Request
 
 
@@ -26,7 +28,7 @@ class Command(ScrapyCommand):
     def short_desc(self) -> str:
         return "Run quick benchmark test"
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         with _BenchServer():
             assert self.crawler_process
             self.crawler_process.crawl(_BenchSpider, total=100000)

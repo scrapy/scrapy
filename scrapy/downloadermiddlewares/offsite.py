@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import re
 import warnings
-from typing import TYPE_CHECKING, Set
+from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import IgnoreRequest
@@ -31,7 +31,7 @@ class OffsiteMiddleware:
 
     def __init__(self, stats: StatsCollector):
         self.stats = stats
-        self.domains_seen: Set[str] = set()
+        self.domains_seen: set[str] = set()
 
     def spider_opened(self, spider: Spider) -> None:
         self.host_regex: re.Pattern[str] = self.get_host_regex(spider)
