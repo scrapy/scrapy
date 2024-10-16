@@ -25,12 +25,8 @@ class Base:
         def test_urls_type(self):
             """Test that the resulting urls are str objects"""
             lx = self.extractor_cls()
-            self.assertTrue(
-                all(
-                    isinstance(link.url, str)
-                    for link in lx.extract_links(self.response)
-                )
-            )
+            links = lx.extract_links(self.response)
+            self.assertTrue(all(isinstance(link.url, str) for link in links))
 
         def test_extract_all_links(self):
             lx = self.extractor_cls()
@@ -456,6 +452,8 @@ class Base:
             )
 
         def test_attrs(self):
+
+            # Test #1
             lx = self.extractor_cls(attrs="href")
             page4_url = "http://example.com/page%204.html"
 
@@ -475,6 +473,7 @@ class Base:
                 ],
             )
 
+            # Test #2
             lx = self.extractor_cls(
                 attrs=("href", "src"), tags=("a", "area", "img"), deny_extensions=()
             )
@@ -495,6 +494,7 @@ class Base:
                 ],
             )
 
+            # Test #3
             lx = self.extractor_cls(attrs=None)
             self.assertEqual(lx.extract_links(self.response), [])
 
@@ -505,6 +505,7 @@ class Base:
             )
             response = HtmlResponse("http://example.com/index.html", body=html)
 
+            # Test #4
             lx = self.extractor_cls(tags=None)
             self.assertEqual(lx.extract_links(response), [])
 
@@ -517,6 +518,7 @@ class Base:
                 ],
             )
 
+            # Test #5
             lx = self.extractor_cls(tags="area")
             self.assertEqual(
                 lx.extract_links(response),
@@ -525,6 +527,7 @@ class Base:
                 ],
             )
 
+            # Test #6
             lx = self.extractor_cls(tags="a")
             self.assertEqual(
                 lx.extract_links(response),
@@ -533,6 +536,7 @@ class Base:
                 ],
             )
 
+            # Test #7
             lx = self.extractor_cls(
                 tags=("a", "img"), attrs=("href", "src"), deny_extensions=()
             )
@@ -553,6 +557,7 @@ class Base:
             """
             response = HtmlResponse("http://example.com/index.html", body=html)
 
+            # Test #8
             lx = self.extractor_cls(tags="div", attrs="data-url")
             self.assertEqual(
                 lx.extract_links(response),
@@ -572,6 +577,7 @@ class Base:
                 ],
             )
 
+            # Test #9
             lx = self.extractor_cls(tags=("div",), attrs=("data-url",))
             self.assertEqual(
                 lx.extract_links(response),
@@ -584,6 +590,284 @@ class Base:
                     ),
                     Link(
                         url="http://example.com/get?id=2",
+                        text="Item 2",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                ],
+            )
+
+            # Test #10
+            lx = self.extractor_cls(tags=None, attrs=None)
+            self.assertEqual(lx.extract_links(response), [])
+
+            # Test #11
+            lx = self.extractor_cls(
+                tags=None,
+                attrs=None,
+                tag_inclusion_mode=False,
+                attr_inclusion_mode=False,
+            )
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(
+                        url="http://example.com/item1",
+                        text="Item 1",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/get?id=1",
+                        text="Item 1",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/index.html",
+                        text="Item 1",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/item2",
+                        text="Item 2",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/get?id=2",
+                        text="Item 2",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                ],
+            )
+            # Test #12
+            lx = self.extractor_cls(
+                tags=None,
+                attrs="data-url",
+                tag_inclusion_mode=False,
+                attr_inclusion_mode=False,
+            )
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(
+                        url="http://example.com/item1",
+                        text="Item 1",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/index.html",
+                        text="Item 1",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/item2",
+                        text="Item 2",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                ],
+            )
+
+            # Test #13
+            lx = self.extractor_cls(
+                tags="a",
+                attrs=None,
+                tag_inclusion_mode=False,
+                attr_inclusion_mode=False,
+            )
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(
+                        url="http://example.com/item1",
+                        text="Item 1",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/get?id=1",
+                        text="Item 1",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/item2",
+                        text="Item 2",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/get?id=2",
+                        text="Item 2",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                ],
+            )
+
+            # Test #14
+            lx = self.extractor_cls(
+                tags="a",
+                attrs="data-url",
+                tag_inclusion_mode=False,
+                attr_inclusion_mode=False,
+            )
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(
+                        url="http://example.com/item1",
+                        text="Item 1",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/item2",
+                        text="Item 2",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                ],
+            )
+
+            # Test #15
+            lx = self.extractor_cls(
+                tags=None,
+                attrs=None,
+                tag_inclusion_mode=False,
+                attr_inclusion_mode=True,
+            )
+            self.assertEqual(lx.extract_links(response), [])
+
+            # Test #16
+            lx = self.extractor_cls(
+                tags=None,
+                attrs="href",
+                tag_inclusion_mode=False,
+                attr_inclusion_mode=True,
+            )
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(
+                        url="http://example.com/index.html",
+                        text="Item 1",
+                        fragment="",
+                        nofollow=False,
+                    )
+                ],
+            )
+
+            # Test #17
+            lx = self.extractor_cls(
+                tags="a", attrs=None, tag_inclusion_mode=True, attr_inclusion_mode=True
+            )
+            self.assertEqual(lx.extract_links(response), [])
+
+            # Test #18
+            lx = self.extractor_cls(
+                tags="a",
+                attrs="data-url",
+                tag_inclusion_mode=False,
+                attr_inclusion_mode=True,
+            )
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(
+                        url="http://example.com/get?id=1",
+                        text="Item 1",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/get?id=2",
+                        text="Item 2",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                ],
+            )
+
+            # Test #19
+            lx = self.extractor_cls(
+                tags=None,
+                attrs=None,
+                tag_inclusion_mode=True,
+                attr_inclusion_mode=False,
+            )
+            self.assertEqual(lx.extract_links(response), [])
+
+            # Test #20
+            lx = self.extractor_cls(
+                tags=None,
+                attrs="href",
+                tag_inclusion_mode=True,
+                attr_inclusion_mode=False,
+            )
+            self.assertEqual(lx.extract_links(response), [])
+
+            # Test #21
+            lx = self.extractor_cls(
+                tags="div",
+                attrs=None,
+                tag_inclusion_mode=True,
+                attr_inclusion_mode=False,
+            )
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(
+                        url="http://example.com/item1",
+                        text="Item 1",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/get?id=1",
+                        text="Item 1",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/item2",
+                        text="Item 2",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/get?id=2",
+                        text="Item 2",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                ],
+            )
+
+            # Test #22
+            lx = self.extractor_cls(
+                tags="div",
+                attrs="data-url",
+                tag_inclusion_mode=True,
+                attr_inclusion_mode=False,
+            )
+            self.assertEqual(
+                lx.extract_links(response),
+                [
+                    Link(
+                        url="http://example.com/item1",
+                        text="Item 1",
+                        fragment="",
+                        nofollow=False,
+                    ),
+                    Link(
+                        url="http://example.com/item2",
                         text="Item 2",
                         fragment="",
                         nofollow=False,

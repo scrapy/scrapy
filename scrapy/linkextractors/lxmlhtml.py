@@ -55,6 +55,15 @@ def _canonicalize_link_url(link: Link) -> str:
     return canonicalize_url(link.url, keep_fragments=True)
 
 
+def _is_item_included(sourceList, inclusion, item):
+    if (
+        (not sourceList and not inclusion)
+        or (item in sourceList and inclusion)
+        or (item not in sourceList and not inclusion)
+    ):
+        return True
+
+
 class LxmlParserLinkExtractor:
     def __init__(
         self,
@@ -91,6 +100,8 @@ class LxmlParserLinkExtractor:
         self, document: HtmlElement
     ) -> Iterable[tuple[HtmlElement, str, str]]:
         for el in document.iter(etree.Element):
+
+            # if not self.scan_tag(_nons(el.tag)):
             if not self.scan_tag(_nons(el.tag)):
                 continue
             attribs = el.attrib
@@ -178,11 +189,13 @@ class LxmlLinkExtractor:
         restrict_css: Union[str, Iterable[str]] = (),
         strip: bool = True,
         restrict_text: Optional[_RegexOrSeveralT] = None,
+        tag_inclusion_mode: bool = True,
+        attr_inclusion_mode: bool = True,
     ):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
         self.link_extractor = LxmlParserLinkExtractor(
-            tag=partial(operator.contains, tags),
-            attr=partial(operator.contains, attrs),
+            tag=partial(_is_item_included, tags, tag_inclusion_mode),
+            attr=partial(_is_item_included, attrs, attr_inclusion_mode),
             unique=unique,
             process=process_value,
             strip=strip,
