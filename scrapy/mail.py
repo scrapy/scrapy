@@ -14,18 +14,7 @@ from email.mime.nonmultipart import MIMENonMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
 from io import BytesIO
-from typing import (
-    IO,
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import IO, TYPE_CHECKING, Any, Optional, Union
 
 from twisted import version as twisted_version
 from twisted.internet import ssl
@@ -36,6 +25,8 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
     # imports twisted.internet.reactor
     from twisted.mail.smtp import ESMTPSenderFactory
     from twisted.python.failure import Failure
@@ -95,11 +86,11 @@ class MailSender:
 
     def send(
         self,
-        to: Union[str, List[str]],
+        to: Union[str, list[str]],
         subject: str,
         body: str,
-        cc: Union[str, List[str], None] = None,
-        attachs: Sequence[Tuple[str, str, IO[Any]]] = (),
+        cc: Union[str, list[str], None] = None,
+        attachs: Sequence[tuple[str, str, IO[Any]]] = (),
         mimetype: str = "text/plain",
         charset: Optional[str] = None,
         _callback: Optional[Callable[..., None]] = None,
@@ -164,7 +155,7 @@ class MailSender:
         return dfd
 
     def _sent_ok(
-        self, result: Any, to: List[str], cc: List[str], subject: str, nattachs: int
+        self, result: Any, to: list[str], cc: list[str], subject: str, nattachs: int
     ) -> None:
         logger.info(
             "Mail sent OK: To=%(mailto)s Cc=%(mailcc)s "
@@ -180,8 +171,8 @@ class MailSender:
     def _sent_failed(
         self,
         failure: Failure,
-        to: List[str],
-        cc: List[str],
+        to: list[str],
+        cc: list[str],
         subject: str,
         nattachs: int,
     ) -> Failure:
@@ -200,7 +191,7 @@ class MailSender:
         )
         return failure
 
-    def _sendmail(self, to_addrs: List[str], msg: bytes) -> Deferred[Any]:
+    def _sendmail(self, to_addrs: list[str], msg: bytes) -> Deferred[Any]:
         from twisted.internet import reactor
 
         msg_io = BytesIO(msg)
@@ -218,11 +209,11 @@ class MailSender:
         return d
 
     def _create_sender_factory(
-        self, to_addrs: List[str], msg: IO[bytes], d: Deferred[Any]
+        self, to_addrs: list[str], msg: IO[bytes], d: Deferred[Any]
     ) -> ESMTPSenderFactory:
         from twisted.mail.smtp import ESMTPSenderFactory
 
-        factory_keywords: Dict[str, Any] = {
+        factory_keywords: dict[str, Any] = {
             "heloFallback": True,
             "requireAuthentication": False,
             "requireTransportSecurity": self.smtptls,

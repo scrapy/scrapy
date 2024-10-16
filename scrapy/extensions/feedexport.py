@@ -10,25 +10,11 @@ import logging
 import re
 import sys
 import warnings
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
-from typing import (
-    IO,
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Protocol,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import IO, TYPE_CHECKING, Any, Optional, Protocol, TypeVar, Union, cast
 from urllib.parse import unquote, urlparse
 
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
@@ -50,6 +36,8 @@ from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from _typeshed import OpenBinaryMode
     from twisted.python.failure import Failure
 
@@ -70,7 +58,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-UriParamsCallableT = Callable[[Dict[str, Any], Spider], Optional[Dict[str, Any]]]
+UriParamsCallableT = Callable[[dict[str, Any], Spider], Optional[dict[str, Any]]]
 
 _StorageT = TypeVar("_StorageT", bound="FeedStorageProtocol")
 
@@ -79,7 +67,7 @@ def build_storage(
     builder: Callable[..., _StorageT],
     uri: str,
     *args: Any,
-    feed_options: Optional[Dict[str, Any]] = None,
+    feed_options: Optional[dict[str, Any]] = None,
     preargs: Iterable[Any] = (),
     **kwargs: Any,
 ) -> _StorageT:
@@ -96,10 +84,10 @@ class ItemFilter:
     :type feed_options: dict
     """
 
-    feed_options: Optional[Dict[str, Any]]
-    item_classes: Tuple[type, ...]
+    feed_options: Optional[dict[str, Any]]
+    item_classes: tuple[type, ...]
 
-    def __init__(self, feed_options: Optional[Dict[str, Any]]) -> None:
+    def __init__(self, feed_options: Optional[dict[str, Any]]) -> None:
         self.feed_options = feed_options
         if feed_options is not None:
             self.item_classes = tuple(
@@ -141,7 +129,7 @@ class IFeedStorage(Interface):
 class FeedStorageProtocol(Protocol):
     """Reimplementation of ``IFeedStorage`` that can be used in type hints."""
 
-    def __init__(self, uri: str, *, feed_options: Optional[Dict[str, Any]] = None):
+    def __init__(self, uri: str, *, feed_options: Optional[dict[str, Any]] = None):
         """Initialize the storage with the parameters given in the URI and the
         feed-specific options (see :setting:`FEEDS`)"""
 
@@ -176,7 +164,7 @@ class StdoutFeedStorage:
         uri: str,
         _stdout: Optional[IO[bytes]] = None,
         *,
-        feed_options: Optional[Dict[str, Any]] = None,
+        feed_options: Optional[dict[str, Any]] = None,
     ):
         if not _stdout:
             _stdout = sys.stdout.buffer
@@ -198,7 +186,7 @@ class StdoutFeedStorage:
 
 @implementer(IFeedStorage)
 class FileFeedStorage:
-    def __init__(self, uri: str, *, feed_options: Optional[Dict[str, Any]] = None):
+    def __init__(self, uri: str, *, feed_options: Optional[dict[str, Any]] = None):
         self.path: str = file_uri_to_path(uri)
         feed_options = feed_options or {}
         self.write_mode: OpenBinaryMode = (
@@ -225,7 +213,7 @@ class S3FeedStorage(BlockingFeedStorage):
         acl: Optional[str] = None,
         endpoint_url: Optional[str] = None,
         *,
-        feed_options: Optional[Dict[str, Any]] = None,
+        feed_options: Optional[dict[str, Any]] = None,
         session_token: Optional[str] = None,
         region_name: Optional[str] = None,
     ):
@@ -291,7 +279,7 @@ class S3FeedStorage(BlockingFeedStorage):
         crawler: Crawler,
         uri: str,
         *,
-        feed_options: Optional[Dict[str, Any]] = None,
+        feed_options: Optional[dict[str, Any]] = None,
     ) -> Self:
         return build_storage(
             cls,
@@ -307,7 +295,7 @@ class S3FeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
-        kwargs: Dict[str, Any]
+        kwargs: dict[str, Any]
         if IS_BOTO3_AVAILABLE:
             kwargs = {"ExtraArgs": {"ACL": self.acl}} if self.acl else {}
             self.s3_client.upload_fileobj(
@@ -354,7 +342,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         uri: str,
         use_active_mode: bool = False,
         *,
-        feed_options: Optional[Dict[str, Any]] = None,
+        feed_options: Optional[dict[str, Any]] = None,
     ):
         u = urlparse(uri)
         if not u.hostname:
@@ -373,7 +361,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         crawler: Crawler,
         uri: str,
         *,
-        feed_options: Optional[Dict[str, Any]] = None,
+        feed_options: Optional[dict[str, Any]] = None,
     ) -> Self:
         return build_storage(
             cls,
@@ -405,9 +393,9 @@ class FeedSlot:
         batch_id: int,
         uri_template: str,
         filter: ItemFilter,
-        feed_options: Dict[str, Any],
+        feed_options: dict[str, Any],
         spider: Spider,
-        exporters: Dict[str, Type[BaseItemExporter]],
+        exporters: dict[str, type[BaseItemExporter]],
         settings: BaseSettings,
         crawler: Crawler,
     ):
@@ -422,9 +410,9 @@ class FeedSlot:
         self.uri: str = uri
         self.filter: ItemFilter = filter
         # exporter params
-        self.feed_options: Dict[str, Any] = feed_options
+        self.feed_options: dict[str, Any] = feed_options
         self.spider: Spider = spider
-        self.exporters: Dict[str, Type[BaseItemExporter]] = exporters
+        self.exporters: dict[str, type[BaseItemExporter]] = exporters
         self.settings: BaseSettings = settings
         self.crawler: Crawler = crawler
         # flags
@@ -460,7 +448,7 @@ class FeedSlot:
             self._exporting = True
 
     def _get_instance(
-        self, objcls: Type[BaseItemExporter], *args: Any, **kwargs: Any
+        self, objcls: type[BaseItemExporter], *args: Any, **kwargs: Any
     ) -> BaseItemExporter:
         return build_from_crawler(objcls, self.crawler, *args, **kwargs)
 
@@ -483,7 +471,7 @@ _FeedSlot = create_deprecated_class(
 
 
 class FeedExporter:
-    _pending_deferreds: List[Deferred[None]] = []
+    _pending_deferreds: list[Deferred[None]] = []
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -497,8 +485,8 @@ class FeedExporter:
         self.crawler: Crawler = crawler
         self.settings: Settings = crawler.settings
         self.feeds = {}
-        self.slots: List[FeedSlot] = []
-        self.filters: Dict[str, ItemFilter] = {}
+        self.slots: list[FeedSlot] = []
+        self.filters: dict[str, ItemFilter] = {}
 
         if not self.settings["FEEDS"] and not self.settings["FEED_URI"]:
             raise NotConfigured
@@ -530,10 +518,10 @@ class FeedExporter:
             )
             self.filters[uri] = self._load_filter(feed_options)
 
-        self.storages: Dict[str, Type[FeedStorageProtocol]] = self._load_components(
+        self.storages: dict[str, type[FeedStorageProtocol]] = self._load_components(
             "FEED_STORAGES"
         )
-        self.exporters: Dict[str, Type[BaseItemExporter]] = self._load_components(
+        self.exporters: dict[str, type[BaseItemExporter]] = self._load_components(
             "FEED_EXPORTERS"
         )
         for uri, feed_options in self.feeds.items():
@@ -590,7 +578,7 @@ class FeedExporter:
             return None
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
-        d: Deferred[None] = maybeDeferred(slot.storage.store, get_file(slot))  # type: ignore[arg-type]
+        d: Deferred[None] = maybeDeferred(slot.storage.store, get_file(slot))  # type: ignore[call-overload]
 
         d.addCallback(
             self._handle_store_success, logmsg, spider, type(slot.storage).__name__
@@ -631,7 +619,7 @@ class FeedExporter:
         self,
         batch_id: int,
         uri: str,
-        feed_options: Dict[str, Any],
+        feed_options: dict[str, Any],
         spider: Spider,
         uri_template: str,
     ) -> FeedSlot:
@@ -696,9 +684,9 @@ class FeedExporter:
                 slots.append(slot)
         self.slots = slots
 
-    def _load_components(self, setting_prefix: str) -> Dict[str, Any]:
+    def _load_components(self, setting_prefix: str) -> dict[str, Any]:
         conf = without_none_values(
-            cast(Dict[str, str], self.settings.getwithbase(setting_prefix))
+            cast(dict[str, str], self.settings.getwithbase(setting_prefix))
         )
         d = {}
         for k, v in conf.items():
@@ -732,7 +720,7 @@ class FeedExporter:
                 return False
         return True
 
-    def _storage_supported(self, uri: str, feed_options: Dict[str, Any]) -> bool:
+    def _storage_supported(self, uri: str, feed_options: dict[str, Any]) -> bool:
         scheme = urlparse(uri).scheme
         if scheme in self.storages or PureWindowsPath(uri).drive:
             try:
@@ -748,7 +736,7 @@ class FeedExporter:
         return False
 
     def _get_storage(
-        self, uri: str, feed_options: Dict[str, Any]
+        self, uri: str, feed_options: dict[str, Any]
     ) -> FeedStorageProtocol:
         """Fork of create_instance specific to feed storage classes
 
@@ -759,7 +747,7 @@ class FeedExporter:
         crawler = getattr(self, "crawler", None)
 
         def build_instance(
-            builder: Type[FeedStorageProtocol], *preargs: Any
+            builder: type[FeedStorageProtocol], *preargs: Any
         ) -> FeedStorageProtocol:
             return build_storage(
                 builder, uri, feed_options=feed_options, preargs=preargs
@@ -784,7 +772,7 @@ class FeedExporter:
         spider: Spider,
         uri_params_function: Union[str, UriParamsCallableT, None],
         slot: Optional[FeedSlot] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         params = {}
         for k in dir(spider):
             params[k] = getattr(spider, k)
@@ -800,9 +788,9 @@ class FeedExporter:
         new_params = uripar_function(params, spider)
         return new_params if new_params is not None else params
 
-    def _load_filter(self, feed_options: Dict[str, Any]) -> ItemFilter:
+    def _load_filter(self, feed_options: dict[str, Any]) -> ItemFilter:
         # load the item filter if declared else load the default filter class
-        item_filter_class: Type[ItemFilter] = load_object(
+        item_filter_class: type[ItemFilter] = load_object(
             feed_options.get("item_filter", ItemFilter)
         )
         return item_filter_class(feed_options)

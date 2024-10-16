@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Dict, List, Type
+from typing import TYPE_CHECKING
 
 from w3lib.url import is_url
 
@@ -48,7 +48,7 @@ class Command(ScrapyCommand):
             help="do not handle HTTP 3xx status codes and print response as-is",
         )
 
-    def _print_headers(self, headers: Dict[bytes, List[bytes]], prefix: bytes) -> None:
+    def _print_headers(self, headers: dict[bytes, list[bytes]], prefix: bytes) -> None:
         for key, values in headers.items():
             for value in values:
                 self._print_bytes(prefix + b" " + key + b": " + value)
@@ -65,7 +65,7 @@ class Command(ScrapyCommand):
     def _print_bytes(self, bytes_: bytes) -> None:
         sys.stdout.buffer.write(bytes_ + b"\n")
 
-    def run(self, args: List[str], opts: Namespace) -> None:
+    def run(self, args: list[str], opts: Namespace) -> None:
         if len(args) != 1 or not is_url(args[0]):
             raise UsageError()
         request = Request(
@@ -81,7 +81,7 @@ class Command(ScrapyCommand):
         else:
             request.meta["handle_httpstatus_all"] = True
 
-        spidercls: Type[Spider] = DefaultSpider
+        spidercls: type[Spider] = DefaultSpider
         assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
         if opts.spider:

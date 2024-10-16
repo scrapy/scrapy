@@ -4,7 +4,7 @@ import ipaddress
 import itertools
 import logging
 from collections import deque
-from typing import TYPE_CHECKING, Any, Deque, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
@@ -91,7 +91,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self,
         uri: URI,
         settings: Settings,
-        conn_lost_deferred: Deferred[List[BaseException]],
+        conn_lost_deferred: Deferred[list[BaseException]],
     ) -> None:
         """
         Arguments:
@@ -102,7 +102,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             conn_lost_deferred -- Deferred fires with the reason: Failure to notify
                 that connection was lost
         """
-        self._conn_lost_deferred: Deferred[List[BaseException]] = conn_lost_deferred
+        self._conn_lost_deferred: Deferred[list[BaseException]] = conn_lost_deferred
 
         config = H2Configuration(client_side=True, header_encoding="utf-8")
         self.conn = H2Connection(config=config)
@@ -113,19 +113,19 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self._stream_id_generator = itertools.count(start=1, step=2)
 
         # Streams are stored in a dictionary keyed off their stream IDs
-        self.streams: Dict[int, Stream] = {}
+        self.streams: dict[int, Stream] = {}
 
         # If requests are received before connection is made we keep
         # all requests in a pool and send them as the connection is made
-        self._pending_request_stream_pool: Deque[Stream] = deque()
+        self._pending_request_stream_pool: deque[Stream] = deque()
 
         # Save an instance of errors raised which lead to losing the connection
         # We pass these instances to the streams ResponseFailed() failure
-        self._conn_lost_errors: List[BaseException] = []
+        self._conn_lost_errors: list[BaseException] = []
 
         # Some meta data of this connection
         # initialized when connection is successfully made
-        self.metadata: Dict[str, Any] = {
+        self.metadata: dict[str, Any] = {
             # Peer certificate instance
             "certificate": None,
             # Address of the server we are connected to which
@@ -250,7 +250,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self.conn.initiate_connection()
         self._write_to_transport()
 
-    def _lose_connection_with_error(self, errors: List[BaseException]) -> None:
+    def _lose_connection_with_error(self, errors: list[BaseException]) -> None:
         """Helper function to lose the connection with the error sent as a
         reason"""
         self._conn_lost_errors += errors
@@ -353,7 +353,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self._pending_request_stream_pool.clear()
         self.conn.close_connection()
 
-    def _handle_events(self, events: List[Event]) -> None:
+    def _handle_events(self, events: list[Event]) -> None:
         """Private method which acts as a bridge between the events
         received from the HTTP/2 data and IH2EventsHandler
 
@@ -442,7 +442,7 @@ class H2ClientFactory(Factory):
         self,
         uri: URI,
         settings: Settings,
-        conn_lost_deferred: Deferred[List[BaseException]],
+        conn_lost_deferred: Deferred[list[BaseException]],
     ) -> None:
         self.uri = uri
         self.settings = settings
@@ -451,5 +451,5 @@ class H2ClientFactory(Factory):
     def buildProtocol(self, addr: IAddress) -> H2ClientProtocol:
         return H2ClientProtocol(self.uri, self.settings, self.conn_lost_deferred)
 
-    def acceptableProtocols(self) -> List[bytes]:
+    def acceptableProtocols(self) -> list[bytes]:
         return [PROTOCOL_NAME]

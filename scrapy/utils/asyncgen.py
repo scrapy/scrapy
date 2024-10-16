@@ -1,9 +1,10 @@
-from typing import AsyncGenerator, AsyncIterable, Iterable, List, TypeVar, Union
+from collections.abc import AsyncGenerator, AsyncIterable, Iterable
+from typing import TypeVar, Union
 
 _T = TypeVar("_T")
 
 
-async def collect_asyncgen(result: AsyncIterable[_T]) -> List[_T]:
+async def collect_asyncgen(result: AsyncIterable[_T]) -> list[_T]:
     results = []
     async for x in result:
         results.append(x)

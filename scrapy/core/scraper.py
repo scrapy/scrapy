@@ -5,23 +5,8 @@ from __future__ import annotations
 
 import logging
 from collections import deque
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AsyncIterable,
-    Deque,
-    Generator,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from collections.abc import AsyncIterable, Iterator
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
 
 from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -47,6 +32,8 @@ from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.spider import iterate_spider_output
 
 if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
+
     from scrapy.crawler import Crawler
 
 
@@ -54,12 +41,12 @@ logger = logging.getLogger(__name__)
 
 
 _T = TypeVar("_T")
-_ParallelResult = List[Tuple[bool, Iterator[Any]]]
+_ParallelResult = list[tuple[bool, Iterator[Any]]]
 
 if TYPE_CHECKING:
     # parameterized Deferreds require Twisted 21.7.0
     _HandleOutputDeferred = Deferred[Union[_ParallelResult, None]]
-    QueueTuple = Tuple[Union[Response, Failure], Request, _HandleOutputDeferred]
+    QueueTuple = tuple[Union[Response, Failure], Request, _HandleOutputDeferred]
 
 
 class Slot:
@@ -68,9 +55,9 @@ class Slot:
     MIN_RESPONSE_SIZE = 1024
 
     def __init__(self, max_active_size: int = 5000000):
-        self.max_active_size = max_active_size
-        self.queue: Deque[QueueTuple] = deque()
-        self.active: Set[Request] = set()
+        self.max_active_size: int = max_active_size
+        self.queue: deque[QueueTuple] = deque()
+        self.active: set[Request] = set()
         self.active_size: int = 0
         self.itemproc_size: int = 0
         self.closing: Optional[Deferred[Spider]] = None
@@ -113,7 +100,7 @@ class Scraper:
         self.spidermw: SpiderMiddlewareManager = SpiderMiddlewareManager.from_crawler(
             crawler
         )
-        itemproc_cls: Type[ItemPipelineManager] = load_object(
+        itemproc_cls: type[ItemPipelineManager] = load_object(
             crawler.settings["ITEM_PROCESSOR"]
         )
         self.itemproc: ItemPipelineManager = itemproc_cls.from_crawler(crawler)
@@ -329,7 +316,9 @@ class Scraper:
             )
         return None
 
-    def start_itemproc(self, item, *, response: Optional[Response]) -> Deferred[Any]:
+    def start_itemproc(
+        self, item: Any, *, response: Optional[Response]
+    ) -> Deferred[Any]:
         """Send *item* to the item pipelines for processing.
 
         *response* is the source of the item data. If the item does not come

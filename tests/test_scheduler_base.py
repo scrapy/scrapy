@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Optional
 from unittest import TestCase
 from urllib.parse import urljoin
 
@@ -20,7 +20,7 @@ URLS = [urljoin("https://example.org", p) for p in PATHS]
 
 class MinimalScheduler:
     def __init__(self) -> None:
-        self.requests: Dict[bytes, Request] = {}
+        self.requests: dict[bytes, Request] = {}
 
     def has_pending_requests(self) -> bool:
         return bool(self.requests)

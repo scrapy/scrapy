@@ -4,7 +4,7 @@ import json
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
 from twisted.internet.defer import Deferred  # noqa: TC002
@@ -182,18 +182,18 @@ class Scheduler(BaseScheduler):
         self,
         dupefilter: BaseDupeFilter,
         jobdir: Optional[str] = None,
-        dqclass: Optional[Type[BaseQueue]] = None,
-        mqclass: Optional[Type[BaseQueue]] = None,
+        dqclass: Optional[type[BaseQueue]] = None,
+        mqclass: Optional[type[BaseQueue]] = None,
         logunser: bool = False,
         stats: Optional[StatsCollector] = None,
-        pqclass: Optional[Type[ScrapyPriorityQueue]] = None,
+        pqclass: Optional[type[ScrapyPriorityQueue]] = None,
         crawler: Optional[Crawler] = None,
     ):
         self.df: BaseDupeFilter = dupefilter
         self.dqdir: Optional[str] = self._dqdir(jobdir)
-        self.pqclass: Optional[Type[ScrapyPriorityQueue]] = pqclass
-        self.dqclass: Optional[Type[BaseQueue]] = dqclass
-        self.mqclass: Optional[Type[BaseQueue]] = mqclass
+        self.pqclass: Optional[type[ScrapyPriorityQueue]] = pqclass
+        self.dqclass: Optional[type[BaseQueue]] = dqclass
+        self.mqclass: Optional[type[BaseQueue]] = mqclass
         self.logunser: bool = logunser
         self.stats: Optional[StatsCollector] = stats
         self.crawler: Optional[Crawler] = crawler
@@ -364,13 +364,13 @@ class Scheduler(BaseScheduler):
             return str(dqdir)
         return None
 
-    def _read_dqs_state(self, dqdir: str) -> List[int]:
+    def _read_dqs_state(self, dqdir: str) -> list[int]:
         path = Path(dqdir, "active.json")
         if not path.exists():
             return []
         with path.open(encoding="utf-8") as f:
-            return cast(List[int], json.load(f))
+            return cast(list[int], json.load(f))
 
-    def _write_dqs_state(self, dqdir: str, state: List[int]) -> None:
+    def _write_dqs_state(self, dqdir: str, state: list[int]) -> None:
         with Path(dqdir, "active.json").open("w", encoding="utf-8") as f:
             json.dump(state, f)
