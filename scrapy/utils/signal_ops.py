@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import collections.abc
 import logging
+from collections.abc import Sequence
 from typing import Any as TypingAny
-from typing import List, Tuple
 
 from pydispatch.dispatcher import (
     Anonymous,
@@ -30,19 +29,15 @@ def send_catch_log(
     sender: TypingAny = Anonymous,
     *arguments: TypingAny,
     **named: TypingAny,
-) -> List[Tuple[TypingAny, TypingAny]]:
+) -> list[tuple[TypingAny, TypingAny]]:
     """Like pydispatcher.robust.sendRobust but it also logs errors and returns
     Failures instead of exceptions.
     """
     dont_log = named.pop("dont_log", ())
-    dont_log = (
-        tuple(dont_log)
-        if isinstance(dont_log, collections.abc.Sequence)
-        else (dont_log,)
-    )
+    dont_log = tuple(dont_log) if isinstance(dont_log, Sequence) else (dont_log,)
     dont_log += (StopDownload,)
     spider = named.get("spider", None)
-    responses: List[Tuple[TypingAny, TypingAny]] = []
+    responses: list[tuple[TypingAny, TypingAny]] = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
         result: TypingAny
         try:
@@ -76,7 +71,7 @@ def send_catch_log_deferred(
     sender: TypingAny = Anonymous,
     *arguments: TypingAny,
     **named: TypingAny,
-) -> Deferred[List[Tuple[TypingAny, TypingAny]]]:
+) -> Deferred[list[tuple[TypingAny, TypingAny]]]:
     """Like send_catch_log but supports returning deferreds on signal handlers.
     Returns a deferred that gets fired once all signal handlers deferreds were
     fired.
@@ -94,14 +89,14 @@ def send_catch_log_deferred(
 
     dont_log = named.pop("dont_log", None)
     spider = named.get("spider", None)
-    dfds: List[Deferred[Tuple[TypingAny, TypingAny]]] = []
+    dfds: list[Deferred[tuple[TypingAny, TypingAny]]] = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
         d: Deferred[TypingAny] = maybeDeferred_coro(
             robustApply, receiver, signal=signal, sender=sender, *arguments, **named
         )
         d.addErrback(logerror, receiver)
         # TODO https://pylint.readthedocs.io/en/latest/user_guide/messages/warning/cell-var-from-loop.html
-        d2: Deferred[Tuple[TypingAny, TypingAny]] = d.addBoth(
+        d2: Deferred[tuple[TypingAny, TypingAny]] = d.addBoth(
             lambda result: (
                 receiver,  # pylint: disable=cell-var-from-loop  # noqa: B023
                 result,
@@ -109,7 +104,7 @@ def send_catch_log_deferred(
         )
         dfds.append(d2)
     dl = DeferredList(dfds)
-    d3: Deferred[List[Tuple[TypingAny, TypingAny]]] = dl.addCallback(
+    d3: Deferred[list[tuple[TypingAny, TypingAny]]] = dl.addCallback(
         lambda out: [x[1] for x in out]
     )
     return d3
