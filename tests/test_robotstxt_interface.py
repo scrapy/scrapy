@@ -3,15 +3,6 @@ from twisted.trial import unittest
 from scrapy.robotstxt import decode_robotstxt
 
 
-def reppy_available():
-    # check if reppy parser is installed
-    try:
-        from reppy.robots import Robots  # noqa: F401
-    except ImportError:
-        return False
-    return True
-
-
 def rerp_available():
     # check if robotexclusionrulesparser is installed
     try:
@@ -167,21 +158,6 @@ class PythonRobotParserTest(BaseRobotParserTest, unittest.TestCase):
 
     def test_allowed_wildcards(self):
         raise unittest.SkipTest("RobotFileParser does not support wildcards.")
-
-
-class ReppyRobotParserTest(BaseRobotParserTest, unittest.TestCase):
-    if not reppy_available():
-        skip = "Reppy parser is not installed"
-
-    def setUp(self):
-        from scrapy.robotstxt import ReppyRobotParser
-
-        super()._setUp(ReppyRobotParser)
-
-    def test_order_based_precedence(self):
-        raise unittest.SkipTest(
-            "Reppy does not support order based directives precedence."
-        )
 
 
 class RerpRobotParserTest(BaseRobotParserTest, unittest.TestCase):

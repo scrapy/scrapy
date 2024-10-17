@@ -11,7 +11,7 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
-from tests.test_robotstxt_interface import reppy_available, rerp_available
+from tests.test_robotstxt_interface import rerp_available
 
 
 class RobotsTxtMiddlewareTest(unittest.TestCase):
@@ -253,15 +253,4 @@ class RobotsTxtMiddlewareWithRerpTest(RobotsTxtMiddlewareTest):
         super().setUp()
         self.crawler.settings.set(
             "ROBOTSTXT_PARSER", "scrapy.robotstxt.RerpRobotParser"
-        )
-
-
-class RobotsTxtMiddlewareWithReppyTest(RobotsTxtMiddlewareTest):
-    if not reppy_available():
-        skip = "Reppy parser is not installed"
-
-    def setUp(self):
-        super().setUp()
-        self.crawler.settings.set(
-            "ROBOTSTXT_PARSER", "scrapy.robotstxt.ReppyRobotParser"
         )
