@@ -297,7 +297,9 @@ Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
 
 Direct access to cookiejars from spider
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-On some cases it is required to directly set specific values to existing cookiejar
+
+In some cases it is required to directly set specific values in an existing
+cookiejar.
 
 .. code-block:: python
 

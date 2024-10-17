@@ -307,7 +307,7 @@ Does Scrapy manage cookies automatically?
 Yes, Scrapy receives and keeps track of cookies sent by servers, and sends them
 back on subsequent requests, like any regular web browser does.
 
-For more info see :ref:`topics-request-response` , :ref:`cookies-mw` and :ref:`cookiejars`.
+For more info see :ref:`topics-request-response`, :ref:`cookies-mw` and :ref:`cookiejars`.
 
 How can I see the cookies being sent and received from Scrapy?
 --------------------------------------------------------------
