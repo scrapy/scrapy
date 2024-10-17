@@ -1,0 +1,59 @@
+from typing import Any, Dict
+
+import pytest
+
+from scrapy.http import HtmlResponse, Response, TextResponse
+
+
+@pytest.mark.mypy_testing
+def mypy_test_headers():
+    Response("data:,", headers=1)  # E: Argument "headers" to "Response" has incompatible type "int"; expected "Union[Mapping[str, Any], Iterable[tuple[str, Any]], None]"
+    Response("data:,", headers=None)
+    Response("data:,", headers={})
+    Response("data:,", headers=[])
+    Response("data:,", headers={"foo": "bar"})
+    Response("data:,", headers={b"foo": "bar"})
+    Response("data:,", headers={"foo": b"bar"})
+    Response("data:,", headers=[("foo", "bar")])
+    Response("data:,", headers=[(b"foo", "bar")])
+    Response("data:,", headers=[("foo", b"bar")])
+
+
+@pytest.mark.mypy_testing
+def mypy_test_copy():
+    resp = Response("data:,")
+    reveal_type(resp)  # R: scrapy.http.response.Response
+    resp_copy = resp.copy()
+    reveal_type(resp_copy)  # R: scrapy.http.response.Response
+
+
+@pytest.mark.mypy_testing
+def mypy_test_copy_subclass():
+    resp = HtmlResponse("data:,")
+    reveal_type(resp)  # R: scrapy.http.response.html.HtmlResponse
+    resp_copy = resp.copy()
+    reveal_type(resp_copy)  # R: scrapy.http.response.html.HtmlResponse
+
+
+@pytest.mark.mypy_testing
+def mypy_test_replace():
+    resp = Response("data:,")
+    reveal_type(resp)  # R: scrapy.http.response.Response
+    resp_copy = resp.replace(body=b"a")
+    reveal_type(resp_copy)  # R: scrapy.http.response.Response
+    kwargs: Dict[str, Any] = {}
+    resp_copy2 = resp.replace(body=b"a", **kwargs)
+    reveal_type(resp_copy2)  # R: Any
+
+
+@pytest.mark.mypy_testing
+def mypy_test_replace_subclass():
+    resp = HtmlResponse("data:,")
+    reveal_type(resp)  # R: scrapy.http.response.html.HtmlResponse
+    resp_copy = resp.replace(body=b"a")
+    reveal_type(resp_copy)  # R: scrapy.http.response.html.HtmlResponse
+    resp_copy2 = resp.replace(body=b"a", cls=TextResponse)
+    reveal_type(resp_copy2)  # R: scrapy.http.response.text.TextResponse
+    kwargs: Dict[str, Any] = {}
+    resp_copy3 = resp.replace(body=b"a", cls=TextResponse, **kwargs)
+    reveal_type(resp_copy3)  # R: scrapy.http.response.text.TextResponse

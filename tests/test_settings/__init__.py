@@ -105,9 +105,10 @@ class BaseSettingsTest(unittest.TestCase):
 
     def test_set_calls_settings_attributes_methods_on_update(self):
         attr = SettingsAttribute("value", 10)
-        with mock.patch.object(attr, "__setattr__") as mock_setattr, mock.patch.object(
-            attr, "set"
-        ) as mock_set:
+        with (
+            mock.patch.object(attr, "__setattr__") as mock_setattr,
+            mock.patch.object(attr, "set") as mock_set,
+        ):
             self.settings.attributes = {"TEST_OPTION": attr}
 
             for priority in (0, 10, 20):
@@ -426,7 +427,7 @@ class SettingsTest(unittest.TestCase):
         mydict = settings.get("TEST_DICT")
         self.assertIsInstance(mydict, BaseSettings)
         self.assertIn("key", mydict)
-        self.assertEqual(mydict["key"], "val")
+        self.assertEqual(mydict["key"], "val")  # pylint: disable=unsubscriptable-object
         self.assertEqual(mydict.getpriority("key"), 0)
 
     @mock.patch("scrapy.settings.default_settings", default_settings)

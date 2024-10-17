@@ -3,7 +3,13 @@ from twisted.trial.unittest import TestCase
 
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
-from tests.spiders import ErrorSpider, FollowAllSpider, ItemSpider, SlowSpider
+from tests.spiders import (
+    ErrorSpider,
+    FollowAllSpider,
+    ItemSpider,
+    MaxItemsAndRequestsSpider,
+    SlowSpider,
+)
 
 
 class TestCloseSpider(TestCase):
@@ -33,6 +39,43 @@ class TestCloseSpider(TestCase):
         self.assertEqual(reason, "closespider_pagecount")
         pagecount = crawler.stats.get_value("response_received_count")
         self.assertTrue(pagecount >= close_on)
+
+    @defer.inlineCallbacks
+    def test_closespider_pagecount_no_item(self):
+        close_on = 5
+        max_items = 5
+        max_requests = close_on + max_items
+        crawler = get_crawler(
+            MaxItemsAndRequestsSpider,
+            {
+                "CLOSESPIDER_PAGECOUNT_NO_ITEM": close_on,
+            },
+        )
+        yield crawler.crawl(
+            max_items=max_items, max_requests=max_requests, mockserver=self.mockserver
+        )
+        reason = crawler.spider.meta["close_reason"]
+        self.assertEqual(reason, "closespider_pagecount_no_item")
+        pagecount = crawler.stats.get_value("response_received_count")
+        itemcount = crawler.stats.get_value("item_scraped_count")
+        self.assertLessEqual(pagecount, close_on + itemcount)
+
+    @defer.inlineCallbacks
+    def test_closespider_pagecount_no_item_with_pagecount(self):
+        close_on_pagecount_no_item = 5
+        close_on_pagecount = 20
+        crawler = get_crawler(
+            FollowAllSpider,
+            {
+                "CLOSESPIDER_PAGECOUNT_NO_ITEM": close_on_pagecount_no_item,
+                "CLOSESPIDER_PAGECOUNT": close_on_pagecount,
+            },
+        )
+        yield crawler.crawl(mockserver=self.mockserver)
+        reason = crawler.spider.meta["close_reason"]
+        self.assertEqual(reason, "closespider_pagecount_no_item")
+        pagecount = crawler.stats.get_value("response_received_count")
+        self.assertLess(pagecount, close_on_pagecount)
 
     @defer.inlineCallbacks
     def test_closespider_errorcount(self):

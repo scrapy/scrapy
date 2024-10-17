@@ -3,9 +3,11 @@ Scrapy Shell
 
 See documentation in docs/topics/shell.rst
 """
-from argparse import Namespace
+
+from __future__ import annotations
+
 from threading import Thread
-from typing import List, Type
+from typing import TYPE_CHECKING, Any
 
 from scrapy import Spider
 from scrapy.commands import ScrapyCommand
@@ -13,6 +15,9 @@ from scrapy.http import Request
 from scrapy.shell import Shell
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 from scrapy.utils.url import guess_scheme
+
+if TYPE_CHECKING:
+    from argparse import ArgumentParser, Namespace
 
 
 class Command(ScrapyCommand):
@@ -23,20 +28,20 @@ class Command(ScrapyCommand):
         "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
     }
 
-    def syntax(self):
+    def syntax(self) -> str:
         return "[url|file]"
 
-    def short_desc(self):
+    def short_desc(self) -> str:
         return "Interactive scraping console"
 
-    def long_desc(self):
+    def long_desc(self) -> str:
         return (
             "Interactive console for scraping the given url or file. "
             "Use ./file.html syntax or full path for local file."
         )
 
-    def add_options(self, parser):
-        ScrapyCommand.add_options(self, parser)
+    def add_options(self, parser: ArgumentParser) -> None:
+        super().add_options(parser)
         parser.add_argument(
             "-c",
             dest="code",
@@ -51,13 +56,13 @@ class Command(ScrapyCommand):
             help="do not handle HTTP 3xx status codes and print response as-is",
         )
 
-    def update_vars(self, vars):
+    def update_vars(self, vars: dict[str, Any]) -> None:
         """You can use this function to update the Scrapy objects that will be
         available in the shell
         """
         pass
 
-    def run(self, args: List[str], opts: Namespace) -> None:
+    def run(self, args: list[str], opts: Namespace) -> None:
         url = args[0] if args else None
         if url:
             # first argument may be a local file
@@ -66,7 +71,7 @@ class Command(ScrapyCommand):
         assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
 
-        spidercls: Type[Spider] = DefaultSpider
+        spidercls: type[Spider] = DefaultSpider
         if opts.spider:
             spidercls = spider_loader.load(opts.spider)
         elif url:
@@ -87,7 +92,8 @@ class Command(ScrapyCommand):
         shell = Shell(crawler, update_vars=self.update_vars, code=opts.code)
         shell.start(url=url, redirect=not opts.no_redirect)
 
-    def _start_crawler_thread(self):
+    def _start_crawler_thread(self) -> None:
+        assert self.crawler_process
         t = Thread(
             target=self.crawler_process.start,
             kwargs={"stop_after_crawl": False, "install_signal_handlers": False},

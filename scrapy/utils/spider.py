@@ -2,30 +2,21 @@ from __future__ import annotations
 
 import inspect
 import logging
-from types import CoroutineType, ModuleType
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AsyncGenerator,
-    Generator,
-    Iterable,
-    Literal,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
-from twisted.internet.defer import Deferred
-
-from scrapy import Request
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.misc import arg_to_iter
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Iterable
+    from types import CoroutineType, ModuleType
+
+    from twisted.internet.defer import Deferred
+
+    from scrapy import Request
     from scrapy.spiderloader import SpiderLoader
+
 
 logger = logging.getLogger(__name__)
 
@@ -34,21 +25,20 @@ _T = TypeVar("_T")
 
 # https://stackoverflow.com/questions/60222982
 @overload
-def iterate_spider_output(result: AsyncGenerator) -> AsyncGenerator:  # type: ignore[misc]
-    ...
+def iterate_spider_output(result: AsyncGenerator[_T]) -> AsyncGenerator[_T]: ...  # type: ignore[overload-overlap]
 
 
 @overload
-def iterate_spider_output(result: CoroutineType) -> Deferred:
-    ...
+def iterate_spider_output(result: CoroutineType[Any, Any, _T]) -> Deferred[_T]: ...
 
 
 @overload
-def iterate_spider_output(result: _T) -> Iterable:
-    ...
+def iterate_spider_output(result: _T) -> Iterable[Any]: ...
 
 
-def iterate_spider_output(result: Any) -> Union[Iterable, AsyncGenerator, Deferred]:
+def iterate_spider_output(
+    result: Any,
+) -> Iterable[Any] | AsyncGenerator[_T] | Deferred[_T]:
     if inspect.isasyncgen(result):
         return result
     if inspect.iscoroutine(result):
@@ -58,7 +48,7 @@ def iterate_spider_output(result: Any) -> Union[Iterable, AsyncGenerator, Deferr
     return arg_to_iter(deferred_from_coro(result))
 
 
-def iter_spider_classes(module: ModuleType) -> Generator[Type[Spider], Any, None]:
+def iter_spider_classes(module: ModuleType) -> Iterable[type[Spider]]:
     """Return an iterator over all spider classes defined in the given module
     that can be instantiated (i.e. which have name)
     """
@@ -80,11 +70,10 @@ def iter_spider_classes(module: ModuleType) -> Generator[Type[Spider], Any, None
 def spidercls_for_request(
     spider_loader: SpiderLoader,
     request: Request,
-    default_spidercls: Type[Spider],
+    default_spidercls: type[Spider],
     log_none: bool = ...,
     log_multiple: bool = ...,
-) -> Type[Spider]:
-    ...
+) -> type[Spider]: ...
 
 
 @overload
@@ -94,8 +83,7 @@ def spidercls_for_request(
     default_spidercls: Literal[None],
     log_none: bool = ...,
     log_multiple: bool = ...,
-) -> Optional[Type[Spider]]:
-    ...
+) -> type[Spider] | None: ...
 
 
 @overload
@@ -105,17 +93,16 @@ def spidercls_for_request(
     *,
     log_none: bool = ...,
     log_multiple: bool = ...,
-) -> Optional[Type[Spider]]:
-    ...
+) -> type[Spider] | None: ...
 
 
 def spidercls_for_request(
     spider_loader: SpiderLoader,
     request: Request,
-    default_spidercls: Optional[Type[Spider]] = None,
+    default_spidercls: type[Spider] | None = None,
     log_none: bool = False,
     log_multiple: bool = False,
-) -> Optional[Type[Spider]]:
+) -> type[Spider] | None:
     """Return a spider class that handles the given Request.
 
     This will look for the spiders that can handle the given request (using

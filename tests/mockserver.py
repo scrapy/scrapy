@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import json
 import os
@@ -7,12 +9,11 @@ from pathlib import Path
 from shutil import rmtree
 from subprocess import PIPE, Popen
 from tempfile import mkdtemp
-from typing import Dict
+from typing import TYPE_CHECKING
 from urllib.parse import urlencode
 
 from OpenSSL import SSL
 from twisted.internet import defer, reactor, ssl
-from twisted.internet.protocol import ServerFactory
 from twisted.internet.task import deferLater
 from twisted.names import dns, error
 from twisted.names.server import DNSServerFactory
@@ -22,6 +23,9 @@ from twisted.web.static import File
 from twisted.web.util import redirectTo
 
 from scrapy.utils.python import to_bytes, to_unicode
+
+if TYPE_CHECKING:
+    from twisted.internet.protocol import ServerFactory
 
 
 def getarg(request, name, default=None, type=None):
@@ -33,7 +37,7 @@ def getarg(request, name, default=None, type=None):
     return default
 
 
-def get_mockserver_env() -> Dict[str, str]:
+def get_mockserver_env() -> dict[str, str]:
     """Return a OS environment dict suitable to run mockserver processes."""
 
     tests_path = Path(__file__).parent.parent
@@ -189,10 +193,10 @@ class Raw(LeafResource):
 class Echo(LeafResource):
     def render_GET(self, request):
         output = {
-            "headers": dict(
-                (to_unicode(k), [to_unicode(v) for v in vs])
+            "headers": {
+                to_unicode(k): [to_unicode(v) for v in vs]
                 for k, vs in request.requestHeaders.getAllRawHeaders()
-            ),
+            },
             "body": to_unicode(request.content.read()),
         }
         return to_bytes(json.dumps(output))

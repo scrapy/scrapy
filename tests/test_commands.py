@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import inspect
 import json
@@ -6,15 +8,14 @@ import platform
 import re
 import subprocess
 import sys
-import tempfile
 from contextlib import contextmanager
 from itertools import chain
 from pathlib import Path
 from shutil import copytree, rmtree
 from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
-from tempfile import mkdtemp
+from tempfile import TemporaryFile, mkdtemp
 from threading import Timer
-from typing import Dict, Generator, Optional, Union
+from typing import TYPE_CHECKING
 from unittest import skipIf
 
 from pytest import mark
@@ -27,6 +28,9 @@ from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_testenv
 from tests.test_crawler import ExceptionSpider, NoRequestsSpider
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class CommandSettings(unittest.TestCase):
@@ -82,7 +86,7 @@ class ProjectTest(unittest.TestCase):
         rmtree(self.temp_path)
 
     def call(self, *new_args, **kwargs):
-        with tempfile.TemporaryFile() as out:
+        with TemporaryFile() as out:
             args = (sys.executable, "-m", "scrapy.cmdline") + new_args
             return subprocess.call(
                 args, stdout=out, stderr=out, cwd=self.cwd, env=self.env, **kwargs
@@ -102,7 +106,7 @@ class ProjectTest(unittest.TestCase):
         def kill_proc():
             p.kill()
             p.communicate()
-            assert False, "Command took too much time to complete"
+            raise AssertionError("Command took too much time to complete")
 
         timer = Timer(15, kill_proc)
         try:
@@ -113,9 +117,7 @@ class ProjectTest(unittest.TestCase):
 
         return p, to_unicode(stdout), to_unicode(stderr)
 
-    def find_in_file(
-        self, filename: Union[str, os.PathLike], regex
-    ) -> Optional[re.Match]:
+    def find_in_file(self, filename: str | os.PathLike, regex) -> re.Match | None:
         """Find first pattern occurrence in file"""
         pattern = re.compile(regex)
         with Path(filename).open("r", encoding="utf-8") as f:
@@ -194,14 +196,14 @@ class StartprojectTest(ProjectTest):
 
 
 def get_permissions_dict(
-    path: Union[str, os.PathLike], renamings=None, ignore=None
-) -> Dict[str, str]:
+    path: str | os.PathLike, renamings=None, ignore=None
+) -> dict[str, str]:
     def get_permissions(path: Path) -> str:
         return oct(path.stat().st_mode)
 
     path_obj = Path(path)
 
-    renamings = renamings or tuple()
+    renamings = renamings or ()
     permissions_dict = {
         ".": get_permissions(path_obj),
     }
@@ -675,7 +677,7 @@ class BadSpider(scrapy.Spider):
         """
 
     @contextmanager
-    def _create_file(self, content, name=None) -> Generator[str, None, None]:
+    def _create_file(self, content, name=None) -> Iterator[str]:
         tmpdir = Path(self.mktemp())
         tmpdir.mkdir()
         if name:
@@ -988,41 +990,18 @@ class MySpider(scrapy.Spider):
         self.assertIn("The value of FOO is 42", log)
 
 
-@skipIf(platform.system() != "Windows", "Windows required for .pyw files")
 class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
     spider_filename = "myspider.pyw"
 
     def setUp(self):
-        super().setUp()
+        if platform.system() != "Windows":
+            raise unittest.SkipTest("Windows required for .pyw files")
+        return super().setUp()
 
     def test_start_requests_errors(self):
         log = self.get_log(self.badspider, name="badspider.pyw")
         self.assertIn("start_requests", log)
         self.assertIn("badspider.pyw", log)
-
-    def test_run_good_spider(self):
-        super().test_run_good_spider()
-
-    def test_runspider(self):
-        super().test_runspider()
-
-    def test_runspider_dnscache_disabled(self):
-        super().test_runspider_dnscache_disabled()
-
-    def test_runspider_log_level(self):
-        super().test_runspider_log_level()
-
-    def test_runspider_log_short_names(self):
-        super().test_runspider_log_short_names()
-
-    def test_runspider_no_spider_found(self):
-        super().test_runspider_no_spider_found()
-
-    def test_output(self):
-        super().test_output()
-
-    def test_overwrite_output(self):
-        super().test_overwrite_output()
 
     def test_runspider_unable_to_load(self):
         raise unittest.SkipTest("Already Tested in 'RunSpiderCommandTest' ")

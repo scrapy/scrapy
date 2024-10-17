@@ -674,6 +674,7 @@ Default:
 .. code-block:: python
 
     {
+        "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
         "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 100,
         "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
         "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware": 350,
@@ -835,7 +836,7 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
 .. setting:: DOWNLOAD_SLOTS
 
 DOWNLOAD_SLOTS
-----------------
+--------------
 
 Default: ``{}``
 
@@ -844,7 +845,12 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
     .. code-block:: python
 
         DOWNLOAD_SLOTS = {
-            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "randomize_delay": False},
+            "quotes.toscrape.com": {
+                "concurrency": 1,
+                "delay": 2,
+                "randomize_delay": False,
+                "throttle": False,
+            },
             "books.toscrape.com": {"delay": 3, "randomize_delay": False},
         }
 
@@ -855,6 +861,9 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
     -   :setting:`DOWNLOAD_DELAY`: ``delay``
     -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
     -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
+
+    There is no global setting for ``throttle``, whose default value is
+    ``None``.
 
 
 .. setting:: DOWNLOAD_TIMEOUT
@@ -873,40 +882,42 @@ The amount of time (in secs) that the downloader will wait before timing out.
     Request.meta key.
 
 .. setting:: DOWNLOAD_MAXSIZE
+.. reqmeta:: download_maxsize
 
 DOWNLOAD_MAXSIZE
 ----------------
 
-Default: ``1073741824`` (1024MB)
+Default: ``1073741824`` (1 GiB)
 
-The maximum response size (in bytes) that downloader will download.
+The maximum response body size (in bytes) allowed. Bigger responses are
+aborted and ignored.
 
-If you want to disable it set to 0.
+This applies both before and after compression. If decompressing a response
+body would exceed this limit, decompression is aborted and the response is
+ignored.
 
-.. reqmeta:: download_maxsize
+Use ``0`` to disable this limit.
 
-.. note::
-
-    This size can be set per spider using :attr:`download_maxsize`
-    spider attribute and per-request using :reqmeta:`download_maxsize`
-    Request.meta key.
+This limit can be set per spider using the :attr:`download_maxsize` spider
+attribute and per request using the :reqmeta:`download_maxsize` Request.meta
+key.
 
 .. setting:: DOWNLOAD_WARNSIZE
+.. reqmeta:: download_warnsize
 
 DOWNLOAD_WARNSIZE
 -----------------
 
-Default: ``33554432`` (32MB)
+Default: ``33554432`` (32 MiB)
 
-The response size (in bytes) that downloader will start to warn.
+If the size of a response exceeds this value, before or after compression, a
+warning will be logged about it.
 
-If you want to disable it set to 0.
+Use ``0`` to disable this limit.
 
-.. note::
-
-    This size can be set per spider using :attr:`download_warnsize`
-    spider attribute and per-request using :reqmeta:`download_warnsize`
-    Request.meta key.
+This limit can be set per spider using the :attr:`download_warnsize` spider
+attribute and per request using the :reqmeta:`download_warnsize` Request.meta
+key.
 
 .. setting:: DOWNLOAD_FAIL_ON_DATALOSS
 
@@ -1569,7 +1580,7 @@ SPIDER_LOADER_WARN_ONLY
 Default: ``False``
 
 By default, when Scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
-it will fail loudly if there is any ``ImportError`` exception.
+it will fail loudly if there is any ``ImportError`` or ``SyntaxError`` exception.
 But you can choose to silence this exception and turn it into a simple
 warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
 
@@ -1603,7 +1614,6 @@ Default:
 
     {
         "scrapy.spidermiddlewares.httperror.HttpErrorMiddleware": 50,
-        "scrapy.spidermiddlewares.offsite.OffsiteMiddleware": 500,
         "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
         "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
         "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,

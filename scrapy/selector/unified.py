@@ -1,12 +1,16 @@
 """
 XPath selectors based on lxml
 """
-from typing import Any, Optional, Type, Union
+
+from __future__ import annotations
+
+from typing import Any
 
 from parsel import Selector as _ParselSelector
 
 from scrapy.http import HtmlResponse, TextResponse, XmlResponse
 from scrapy.utils.python import to_bytes
+from scrapy.utils.response import get_base_url
 from scrapy.utils.trackref import object_ref
 
 __all__ = ["Selector", "SelectorList"]
@@ -14,14 +18,14 @@ __all__ = ["Selector", "SelectorList"]
 _NOT_SET = object()
 
 
-def _st(response: Optional[TextResponse], st: Optional[str]) -> str:
+def _st(response: TextResponse | None, st: str | None) -> str:
     if st is None:
         return "xml" if isinstance(response, XmlResponse) else "html"
     return st
 
 
-def _response_from_text(text: Union[str, bytes], st: Optional[str]) -> TextResponse:
-    rt: Type[TextResponse] = XmlResponse if st == "xml" else HtmlResponse
+def _response_from_text(text: str | bytes, st: str | None) -> TextResponse:
+    rt: type[TextResponse] = XmlResponse if st == "xml" else HtmlResponse
     return rt(url="about:blank", encoding="utf-8", body=to_bytes(text, "utf-8"))
 
 
@@ -45,7 +49,7 @@ class Selector(_ParselSelector, object_ref):
     ``response`` isn't available. Using ``text`` and ``response`` together is
     undefined behavior.
 
-    ``type`` defines the selector type, it can be ``"html"``, ``"xml"``
+    ``type`` defines the selector type, it can be ``"html"``, ``"xml"``, ``"json"``
     or ``None`` (default).
 
     If ``type`` is ``None``, the selector automatically chooses the best type
@@ -57,6 +61,7 @@ class Selector(_ParselSelector, object_ref):
 
     * ``"html"`` for :class:`~scrapy.http.HtmlResponse` type
     * ``"xml"`` for :class:`~scrapy.http.XmlResponse` type
+    * ``"json"`` for :class:`~scrapy.http.TextResponse` type
     * ``"html"`` for anything else
 
     Otherwise, if ``type`` is set, the selector type will be forced and no
@@ -68,10 +73,10 @@ class Selector(_ParselSelector, object_ref):
 
     def __init__(
         self,
-        response: Optional[TextResponse] = None,
-        text: Optional[str] = None,
-        type: Optional[str] = None,
-        root: Optional[Any] = _NOT_SET,
+        response: TextResponse | None = None,
+        text: str | None = None,
+        type: str | None = None,
+        root: Any | None = _NOT_SET,
         **kwargs: Any,
     ):
         if response is not None and text is not None:
@@ -87,7 +92,7 @@ class Selector(_ParselSelector, object_ref):
 
         if response is not None:
             text = response.text
-            kwargs.setdefault("base_url", response.url)
+            kwargs.setdefault("base_url", get_base_url(response))
 
         self.response = response
 

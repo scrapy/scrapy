@@ -3,6 +3,9 @@ Mail sending helpers
 
 See documentation in docs/topics/email.rst
 """
+
+from __future__ import annotations
+
 import logging
 from email import encoders as Encoders
 from email.mime.base import MIMEBase
@@ -11,13 +14,28 @@ from email.mime.nonmultipart import MIMENonMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
 from io import BytesIO
+from typing import IO, TYPE_CHECKING, Any
 
 from twisted import version as twisted_version
-from twisted.internet import defer, ssl
+from twisted.internet import ssl
+from twisted.internet.defer import Deferred
 from twisted.python.versions import Version
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
+    # imports twisted.internet.reactor
+    from twisted.mail.smtp import ESMTPSenderFactory
+    from twisted.python.failure import Failure
+
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.settings import BaseSettings
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +45,7 @@ logger = logging.getLogger(__name__)
 COMMASPACE = ", "
 
 
-def _to_bytes_or_none(text):
+def _to_bytes_or_none(text: str | bytes | None) -> bytes | None:
     if text is None:
         return None
     return to_bytes(text)
@@ -36,26 +54,26 @@ def _to_bytes_or_none(text):
 class MailSender:
     def __init__(
         self,
-        smtphost="localhost",
-        mailfrom="scrapy@localhost",
-        smtpuser=None,
-        smtppass=None,
-        smtpport=25,
-        smtptls=False,
-        smtpssl=False,
-        debug=False,
+        smtphost: str = "localhost",
+        mailfrom: str = "scrapy@localhost",
+        smtpuser: str | None = None,
+        smtppass: str | None = None,
+        smtpport: int = 25,
+        smtptls: bool = False,
+        smtpssl: bool = False,
+        debug: bool = False,
     ):
-        self.smtphost = smtphost
-        self.smtpport = smtpport
-        self.smtpuser = _to_bytes_or_none(smtpuser)
-        self.smtppass = _to_bytes_or_none(smtppass)
-        self.smtptls = smtptls
-        self.smtpssl = smtpssl
-        self.mailfrom = mailfrom
-        self.debug = debug
+        self.smtphost: str = smtphost
+        self.smtpport: int = smtpport
+        self.smtpuser: bytes | None = _to_bytes_or_none(smtpuser)
+        self.smtppass: bytes | None = _to_bytes_or_none(smtppass)
+        self.smtptls: bool = smtptls
+        self.smtpssl: bool = smtpssl
+        self.mailfrom: str = mailfrom
+        self.debug: bool = debug
 
     @classmethod
-    def from_settings(cls, settings):
+    def from_settings(cls, settings: BaseSettings) -> Self:
         return cls(
             smtphost=settings["MAIL_HOST"],
             mailfrom=settings["MAIL_FROM"],
@@ -68,17 +86,18 @@ class MailSender:
 
     def send(
         self,
-        to,
-        subject,
-        body,
-        cc=None,
-        attachs=(),
-        mimetype="text/plain",
-        charset=None,
-        _callback=None,
-    ):
+        to: str | list[str],
+        subject: str,
+        body: str,
+        cc: str | list[str] | None = None,
+        attachs: Sequence[tuple[str, str, IO[Any]]] = (),
+        mimetype: str = "text/plain",
+        charset: str | None = None,
+        _callback: Callable[..., None] | None = None,
+    ) -> Deferred[None] | None:
         from twisted.internet import reactor
 
+        msg: MIMEBase
         if attachs:
             msg = MIMEMultipart()
         else:
@@ -125,19 +144,19 @@ class MailSender:
                     "mailattachs": len(attachs),
                 },
             )
-            return
+            return None
 
-        dfd = self._sendmail(rcpts, msg.as_string().encode(charset or "utf-8"))
-        dfd.addCallbacks(
-            callback=self._sent_ok,
-            errback=self._sent_failed,
-            callbackArgs=[to, cc, subject, len(attachs)],
-            errbackArgs=[to, cc, subject, len(attachs)],
+        dfd: Deferred[Any] = self._sendmail(
+            rcpts, msg.as_string().encode(charset or "utf-8")
         )
+        dfd.addCallback(self._sent_ok, to, cc, subject, len(attachs))
+        dfd.addErrback(self._sent_failed, to, cc, subject, len(attachs))
         reactor.addSystemEventTrigger("before", "shutdown", lambda: dfd)
         return dfd
 
-    def _sent_ok(self, result, to, cc, subject, nattachs):
+    def _sent_ok(
+        self, result: Any, to: list[str], cc: list[str], subject: str, nattachs: int
+    ) -> None:
         logger.info(
             "Mail sent OK: To=%(mailto)s Cc=%(mailcc)s "
             'Subject="%(mailsubject)s" Attachs=%(mailattachs)d',
@@ -149,7 +168,14 @@ class MailSender:
             },
         )
 
-    def _sent_failed(self, failure, to, cc, subject, nattachs):
+    def _sent_failed(
+        self,
+        failure: Failure,
+        to: list[str],
+        cc: list[str],
+        subject: str,
+        nattachs: int,
+    ) -> Failure:
         errstr = str(failure.value)
         logger.error(
             "Unable to send mail: To=%(mailto)s Cc=%(mailcc)s "
@@ -165,13 +191,13 @@ class MailSender:
         )
         return failure
 
-    def _sendmail(self, to_addrs, msg):
+    def _sendmail(self, to_addrs: list[str], msg: bytes) -> Deferred[Any]:
         from twisted.internet import reactor
 
-        msg = BytesIO(msg)
-        d = defer.Deferred()
+        msg_io = BytesIO(msg)
+        d: Deferred[Any] = Deferred()
 
-        factory = self._create_sender_factory(to_addrs, msg, d)
+        factory = self._create_sender_factory(to_addrs, msg_io, d)
 
         if self.smtpssl:
             reactor.connectSSL(
@@ -182,10 +208,12 @@ class MailSender:
 
         return d
 
-    def _create_sender_factory(self, to_addrs, msg, d):
+    def _create_sender_factory(
+        self, to_addrs: list[str], msg: IO[bytes], d: Deferred[Any]
+    ) -> ESMTPSenderFactory:
         from twisted.mail.smtp import ESMTPSenderFactory
 
-        factory_keywords = {
+        factory_keywords: dict[str, Any] = {
             "heloFallback": True,
             "requireAuthentication": False,
             "requireTransportSecurity": self.smtptls,
@@ -202,7 +230,7 @@ class MailSender:
             to_addrs,
             msg,
             d,
-            **factory_keywords
+            **factory_keywords,
         )
         factory.noisy = False
         return factory

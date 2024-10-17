@@ -1,20 +1,24 @@
+from __future__ import annotations
+
 import re
 from time import time
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
 from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
 from twisted.web.http import HTTPClient
 
-from scrapy import Request
-from scrapy.http import Headers
+from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
 
+if TYPE_CHECKING:
+    from scrapy import Request
 
-def _parsed_url_args(parsed: ParseResult) -> Tuple[bytes, bytes, bytes, int, bytes]:
+
+def _parsed_url_args(parsed: ParseResult) -> tuple[bytes, bytes, bytes, int, bytes]:
     # Assume parsed is urlparse-d from Request.url,
     # which was passed via safe_url_string and is ascii-only.
     path_str = urlunparse(("", "", parsed.path or "/", parsed.params, parsed.query, ""))
@@ -29,7 +33,7 @@ def _parsed_url_args(parsed: ParseResult) -> Tuple[bytes, bytes, bytes, int, byt
     return scheme, netloc, host, port, path
 
 
-def _parse(url: str) -> Tuple[bytes, bytes, bytes, int, bytes]:
+def _parse(url: str) -> tuple[bytes, bytes, bytes, int, bytes]:
     """Return tuple of (scheme, netloc, host, port, path),
     all in bytes except for port which is int.
     Assume url is from Request.url, which was passed via safe_url_string
@@ -140,12 +144,12 @@ class ScrapyHTTPClientFactory(ClientFactory):
         # converting to bytes to comply to Twisted interface
         self.url: bytes = to_bytes(self._url, encoding="ascii")
         self.method: bytes = to_bytes(request.method, encoding="ascii")
-        self.body: Optional[bytes] = request.body or None
+        self.body: bytes | None = request.body or None
         self.headers: Headers = Headers(request.headers)
-        self.response_headers: Optional[Headers] = None
+        self.response_headers: Headers | None = None
         self.timeout: float = request.meta.get("download_timeout") or timeout
         self.start_time: float = time()
-        self.deferred: defer.Deferred = defer.Deferred().addCallback(
+        self.deferred: defer.Deferred[Response] = defer.Deferred().addCallback(
             self._build_response, request
         )
 
@@ -155,7 +159,7 @@ class ScrapyHTTPClientFactory(ClientFactory):
         # needed to add the callback _waitForDisconnect.
         # Specifically this avoids the AttributeError exception when
         # clientConnectionFailed method is called.
-        self._disconnectedDeferred: defer.Deferred = defer.Deferred()
+        self._disconnectedDeferred: defer.Deferred[None] = defer.Deferred()
 
         self._set_connection_attributes(request)
 

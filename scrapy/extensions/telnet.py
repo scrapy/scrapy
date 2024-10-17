@@ -4,22 +4,16 @@ Scrapy Telnet Console extension
 See documentation in docs/topics/telnetconsole.rst
 """
 
+from __future__ import annotations
+
 import binascii
 import logging
 import os
 import pprint
-import traceback
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet import protocol
-
-try:
-    from twisted.conch import manhole, telnet
-    from twisted.conch.insults import insults
-
-    TWISTED_CONCH_AVAILABLE = True
-except (ImportError, SyntaxError):
-    _TWISTED_CONCH_TRACEBACK = traceback.format_exc()
-    TWISTED_CONCH_AVAILABLE = False
+from twisted.internet.tcp import Port
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
@@ -27,6 +21,15 @@ from scrapy.utils.decorators import defers
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
 from scrapy.utils.trackref import print_live_refs
+
+if TYPE_CHECKING:
+    from twisted.conch import telnet
+
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+
 
 logger = logging.getLogger(__name__)
 
@@ -36,22 +39,18 @@ update_telnet_vars = object()
 
 
 class TelnetConsole(protocol.ServerFactory):
-    def __init__(self, crawler):
+    def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("TELNETCONSOLE_ENABLED"):
             raise NotConfigured
-        if not TWISTED_CONCH_AVAILABLE:
-            raise NotConfigured(
-                "TELNETCONSOLE_ENABLED setting is True but required twisted "
-                "modules failed to import:\n" + _TWISTED_CONCH_TRACEBACK
-            )
-        self.crawler = crawler
-        self.noisy = False
-        self.portrange = [
+
+        self.crawler: Crawler = crawler
+        self.noisy: bool = False
+        self.portrange: list[int] = [
             int(x) for x in crawler.settings.getlist("TELNETCONSOLE_PORT")
         ]
-        self.host = crawler.settings["TELNETCONSOLE_HOST"]
-        self.username = crawler.settings["TELNETCONSOLE_USERNAME"]
-        self.password = crawler.settings["TELNETCONSOLE_PASSWORD"]
+        self.host: str = crawler.settings["TELNETCONSOLE_HOST"]
+        self.username: str = crawler.settings["TELNETCONSOLE_USERNAME"]
+        self.password: str = crawler.settings["TELNETCONSOLE_PASSWORD"]
 
         if not self.password:
             self.password = binascii.hexlify(os.urandom(8)).decode("utf8")
@@ -61,11 +60,11 @@ class TelnetConsole(protocol.ServerFactory):
         self.crawler.signals.connect(self.stop_listening, signals.engine_stopped)
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler)
 
-    def start_listening(self):
-        self.port = listen_tcp(self.portrange, self.host, self)
+    def start_listening(self) -> None:
+        self.port: Port = listen_tcp(self.portrange, self.host, self)
         h = self.port.getHost()
         logger.info(
             "Telnet console listening on %(host)s:%(port)d",
@@ -73,10 +72,14 @@ class TelnetConsole(protocol.ServerFactory):
             extra={"crawler": self.crawler},
         )
 
-    def stop_listening(self):
+    def stop_listening(self) -> None:
         self.port.stopListening()
 
-    def protocol(self):
+    def protocol(self) -> telnet.TelnetTransport:  # type: ignore[override]
+        # these import twisted.internet.reactor
+        from twisted.conch import manhole, telnet
+        from twisted.conch.insults import insults
+
         class Portal:
             """An implementation of IPortal"""
 
@@ -95,9 +98,10 @@ class TelnetConsole(protocol.ServerFactory):
 
         return telnet.TelnetTransport(telnet.AuthenticatingTelnetProtocol, Portal())
 
-    def _get_telnet_vars(self):
+    def _get_telnet_vars(self) -> dict[str, Any]:
         # Note: if you add entries here also update topics/telnetconsole.rst
-        telnet_vars = {
+        assert self.crawler.engine
+        telnet_vars: dict[str, Any] = {
             "engine": self.crawler.engine,
             "spider": self.crawler.engine.spider,
             "slot": self.crawler.engine.slot,

@@ -14,7 +14,6 @@ from scrapy.utils.defer import (
     mustbe_deferred,
     parallel_async,
     process_chain,
-    process_chain_both,
     process_parallel,
 )
 
@@ -79,19 +78,6 @@ class DeferUtilsTest(unittest.TestCase):
         except TypeError:
             gotexc = True
         self.assertTrue(gotexc)
-
-    @defer.inlineCallbacks
-    def test_process_chain_both(self):
-        x = yield process_chain_both(
-            [cb_fail, cb2, cb3], [None, eb1, None], "res", "v1", "v2"
-        )
-        self.assertEqual(x, "(cb3 (eb1 TypeError v1 v2) v1 v2)")
-
-        fail = Failure(ZeroDivisionError())
-        x = yield process_chain_both(
-            [eb1, cb2, cb3], [eb1, None, None], fail, "v1", "v2"
-        )
-        self.assertEqual(x, "(cb3 (cb2 (eb1 ZeroDivisionError v1 v2) v1 v2) v1 v2)")
 
     @defer.inlineCallbacks
     def test_process_parallel(self):

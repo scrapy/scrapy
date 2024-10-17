@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import bz2
 import csv
 import gzip
@@ -14,10 +16,9 @@ from collections import defaultdict
 from contextlib import ExitStack
 from io import BytesIO
 from logging import getLogger
-from os import PathLike
 from pathlib import Path
 from string import ascii_letters, digits
-from typing import Union
+from typing import TYPE_CHECKING
 from unittest import mock
 from urllib.parse import quote, urljoin
 from urllib.request import pathname2url
@@ -53,6 +54,9 @@ from scrapy.utils.test import get_crawler, mock_google_cloud_storage, skip_if_no
 from tests.mockserver import MockFTPServer, MockServer
 from tests.spiders import ItemSpider
 
+if TYPE_CHECKING:
+    from os import PathLike
+
 
 def path_to_url(path):
     return urljoin("file:", pathname2url(str(path)))
@@ -62,7 +66,7 @@ def printf_escape(string):
     return string.replace("%", "%%")
 
 
-def build_url(path: Union[str, PathLike]) -> str:
+def build_url(path: str | PathLike) -> str:
     path_str = str(path)
     if path_str[0] != "/":
         path_str = "/" + path_str
@@ -1356,16 +1360,16 @@ class FeedExportTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_export_encoding(self):
-        items = [dict({"foo": "Test\xd6"})]
+        items = [{"foo": "Test\xd6"}]
 
         formats = {
-            "json": '[{"foo": "Test\\u00d6"}]'.encode("utf-8"),
-            "jsonlines": '{"foo": "Test\\u00d6"}\n'.encode("utf-8"),
+            "json": b'[{"foo": "Test\\u00d6"}]',
+            "jsonlines": b'{"foo": "Test\\u00d6"}\n',
             "xml": (
                 '<?xml version="1.0" encoding="utf-8"?>\n'
                 "<items><item><foo>Test\xd6</foo></item></items>"
-            ).encode("utf-8"),
-            "csv": "foo\r\nTest\xd6\r\n".encode("utf-8"),
+            ).encode(),
+            "csv": "foo\r\nTest\xd6\r\n".encode(),
         }
 
         for fmt, expected in formats.items():
@@ -1379,13 +1383,13 @@ class FeedExportTest(FeedExportTestBase):
             self.assertEqual(expected, data[fmt])
 
         formats = {
-            "json": '[{"foo": "Test\xd6"}]'.encode("latin-1"),
-            "jsonlines": '{"foo": "Test\xd6"}\n'.encode("latin-1"),
+            "json": b'[{"foo": "Test\xd6"}]',
+            "jsonlines": b'{"foo": "Test\xd6"}\n',
             "xml": (
-                '<?xml version="1.0" encoding="latin-1"?>\n'
-                "<items><item><foo>Test\xd6</foo></item></items>"
-            ).encode("latin-1"),
-            "csv": "foo\r\nTest\xd6\r\n".encode("latin-1"),
+                b'<?xml version="1.0" encoding="latin-1"?>\n'
+                b"<items><item><foo>Test\xd6</foo></item></items>"
+            ),
+            "csv": b"foo\r\nTest\xd6\r\n",
         }
 
         for fmt, expected in formats.items():
@@ -1401,15 +1405,15 @@ class FeedExportTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_export_multiple_configs(self):
-        items = [dict({"foo": "FOO", "bar": "BAR"})]
+        items = [{"foo": "FOO", "bar": "BAR"}]
 
         formats = {
-            "json": '[\n{"bar": "BAR"}\n]'.encode("utf-8"),
+            "json": b'[\n{"bar": "BAR"}\n]',
             "xml": (
-                '<?xml version="1.0" encoding="latin-1"?>\n'
-                "<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>"
-            ).encode("latin-1"),
-            "csv": "bar,foo\r\nBAR,FOO\r\n".encode("utf-8"),
+                b'<?xml version="1.0" encoding="latin-1"?>\n'
+                b"<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>"
+            ),
+            "csv": b"bar,foo\r\nBAR,FOO\r\n",
         }
 
         settings = {
@@ -1663,8 +1667,8 @@ class FeedExportTest(FeedExportTestBase):
     def test_extend_kwargs(self):
         items = [{"foo": "FOO", "bar": "BAR"}]
 
-        expected_with_title_csv = "foo,bar\r\nFOO,BAR\r\n".encode("utf-8")
-        expected_without_title_csv = "FOO,BAR\r\n".encode("utf-8")
+        expected_with_title_csv = b"foo,bar\r\nFOO,BAR\r\n"
+        expected_without_title_csv = b"FOO,BAR\r\n"
         test_cases = [
             # with title
             {
@@ -1731,6 +1735,7 @@ class FeedExportTest(FeedExportTestBase):
 
             def store(self, file):
                 Storage.store_file = file
+                Storage.file_was_closed = file.closed
                 file.close()
 
         settings = {
@@ -1746,6 +1751,7 @@ class FeedExportTest(FeedExportTestBase):
         }
         yield self.exported_no_data(settings)
         self.assertIs(Storage.open_file, Storage.store_file)
+        self.assertFalse(Storage.file_was_closed)
 
 
 class FeedPostProcessedExportsTest(FeedExportTestBase):
@@ -2511,28 +2517,28 @@ class BatchDeliveriesTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_export_multiple_configs(self):
         items = [
-            dict({"foo": "FOO", "bar": "BAR"}),
-            dict({"foo": "FOO1", "bar": "BAR1"}),
+            {"foo": "FOO", "bar": "BAR"},
+            {"foo": "FOO1", "bar": "BAR1"},
         ]
 
         formats = {
             "json": [
-                '[\n{"bar": "BAR"}\n]'.encode("utf-8"),
-                '[\n{"bar": "BAR1"}\n]'.encode("utf-8"),
+                b'[\n{"bar": "BAR"}\n]',
+                b'[\n{"bar": "BAR1"}\n]',
             ],
             "xml": [
                 (
-                    '<?xml version="1.0" encoding="latin-1"?>\n'
-                    "<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>"
-                ).encode("latin-1"),
+                    b'<?xml version="1.0" encoding="latin-1"?>\n'
+                    b"<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>"
+                ),
                 (
-                    '<?xml version="1.0" encoding="latin-1"?>\n'
-                    "<items>\n  <item>\n    <foo>FOO1</foo>\n  </item>\n</items>"
-                ).encode("latin-1"),
+                    b'<?xml version="1.0" encoding="latin-1"?>\n'
+                    b"<items>\n  <item>\n    <foo>FOO1</foo>\n  </item>\n</items>"
+                ),
             ],
             "csv": [
-                "foo,bar\r\nFOO,BAR\r\n".encode("utf-8"),
-                "foo,bar\r\nFOO1,BAR1\r\n".encode("utf-8"),
+                b"foo,bar\r\nFOO,BAR\r\n",
+                b"foo,bar\r\nFOO1,BAR1\r\n",
             ],
         }
 
@@ -2572,11 +2578,11 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_batch_item_count_feeds_setting(self):
-        items = [dict({"foo": "FOO"}), dict({"foo": "FOO1"})]
+        items = [{"foo": "FOO"}, {"foo": "FOO1"}]
         formats = {
             "json": [
-                '[{"foo": "FOO"}]'.encode("utf-8"),
-                '[{"foo": "FOO1"}]'.encode("utf-8"),
+                b'[{"foo": "FOO"}]',
+                b'[{"foo": "FOO1"}]',
             ],
         }
         settings = {

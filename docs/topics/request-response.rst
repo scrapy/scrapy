@@ -94,13 +94,14 @@ Request objects
         .. code-block:: python
 
             request_with_cookies = Request(
-                url="http://www.example.com",
+                url="https://www.example.com",
                 cookies=[
                     {
                         "name": "currency",
                         "value": "USD",
                         "domain": "example.com",
                         "path": "/currency",
+                        "secure": True,
                     },
                 ],
             )
@@ -677,6 +678,7 @@ Those are:
 * :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`download_latency`
 * :reqmeta:`download_maxsize`
+* :reqmeta:`download_warnsize`
 * :reqmeta:`download_timeout`
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)

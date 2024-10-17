@@ -6,22 +6,22 @@ version = (Path(__file__).parent / "scrapy/VERSION").read_text("ascii").strip()
 
 
 install_requires = [
-    "Twisted>=18.9.0",
-    "cryptography>=36.0.0",
+    "Twisted>=21.7.0",
+    "cryptography>=37.0.0",
     "cssselect>=0.9.1",
     "itemloaders>=1.0.1",
     "parsel>=1.5.0",
-    "pyOpenSSL>=21.0.0",
+    "pyOpenSSL>=22.0.0",
     "queuelib>=1.4.2",
     "service_identity>=18.1.0",
     "w3lib>=1.17.0",
     "zope.interface>=5.1.0",
     "protego>=0.1.15",
     "itemadapter>=0.1.0",
-    "setuptools",
     "packaging",
     "tldextract",
-    "lxml>=4.4.1",
+    "lxml>=4.6.0",
+    "defusedxml>=0.7.1",
 ]
 extras_require = {
     ':platform_python_implementation == "CPython"': ["PyDispatcher>=2.0.5"],
@@ -58,7 +58,6 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
@@ -69,7 +68,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Application Frameworks",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     install_requires=install_requires,
     extras_require=extras_require,
 )

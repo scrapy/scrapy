@@ -101,6 +101,7 @@ DOWNLOADER_MIDDLEWARES = {}
 
 DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side
+    "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
     "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 100,
     "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
     "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware": 350,
@@ -177,7 +178,7 @@ FILES_STORE_S3_ACL = "private"
 FILES_STORE_GCS_ACL = ""
 
 FTP_USER = "anonymous"
-FTP_PASSWORD = "guest"
+FTP_PASSWORD = "guest"  # nosec
 FTP_PASSIVE_MODE = True
 
 GCS_PROJECT_ID = None
@@ -239,7 +240,7 @@ MEMUSAGE_NOTIFY_MAIL = []
 MEMUSAGE_WARNING_MB = 0
 
 METAREFRESH_ENABLED = True
-METAREFRESH_IGNORE_TAGS = []
+METAREFRESH_IGNORE_TAGS = ["noscript"]
 METAREFRESH_MAXDELAY = 100
 
 NEWSPIDER_MODULE = ""
@@ -301,7 +302,6 @@ SPIDER_MIDDLEWARES = {}
 SPIDER_MIDDLEWARES_BASE = {
     # Engine side
     "scrapy.spidermiddlewares.httperror.HttpErrorMiddleware": 50,
-    "scrapy.spidermiddlewares.offsite.OffsiteMiddleware": 500,
     "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
     "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
     "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
@@ -333,6 +333,7 @@ SPIDER_CONTRACTS = {}
 SPIDER_CONTRACTS_BASE = {
     "scrapy.contracts.default.UrlContract": 1,
     "scrapy.contracts.default.CallbackKeywordArgumentsContract": 1,
+    "scrapy.contracts.default.MetadataContract": 1,
     "scrapy.contracts.default.ReturnsContract": 2,
     "scrapy.contracts.default.ScrapesContract": 3,
 }

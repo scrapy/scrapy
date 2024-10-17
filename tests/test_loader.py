@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import dataclasses
 import unittest
-from typing import Optional
 
 import attr
 from itemadapter import ItemAdapter
@@ -88,7 +89,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
 
 class InitializationTestMixin:
-    item_class: Optional[type] = None
+    item_class: type | None = None
 
     def test_keep_single_value(self):
         """Loaded item should contain values from the initial item"""
@@ -156,7 +157,7 @@ class InitializationTestMixin:
         self.assertEqual(il.get_output_value("name"), ["foo"])
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(ItemAdapter(loaded_item).asdict(), dict({"name": ["foo"]}))
+        self.assertEqual(ItemAdapter(loaded_item).asdict(), {"name": ["foo"]})
 
     def test_get_output_value_list(self):
         """Getting output value must not remove value from item"""
@@ -165,9 +166,7 @@ class InitializationTestMixin:
         self.assertEqual(il.get_output_value("name"), ["foo", "bar"])
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(
-            ItemAdapter(loaded_item).asdict(), dict({"name": ["foo", "bar"]})
-        )
+        self.assertEqual(ItemAdapter(loaded_item).asdict(), {"name": ["foo", "bar"]})
 
     def test_values_single(self):
         """Values from initial item must be added to loader._values"""

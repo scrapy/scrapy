@@ -48,7 +48,7 @@ make it the most feature-complete item type:
     :class:`Item` objects replicate the standard :class:`dict` API, including
     its ``__init__`` method.
 
-    :class:`Item` allows defining field names, so that:
+    :class:`Item` allows the defining of field names, so that:
 
     -   :class:`KeyError` is raised when using undefined field names (i.e.
         prevents typos going unnoticed)
@@ -57,7 +57,7 @@ make it the most feature-complete item type:
         default even if the first scraped object does not have values for all
         of them
 
-    :class:`Item` also allows defining field metadata, which can be used to
+    :class:`Item` also allows the defining of field metadata, which can be used to
     :ref:`customize serialization <topics-exporters-field-serialization>`.
 
     :mod:`trackref` tracks :class:`Item` objects to help find memory leaks
@@ -94,11 +94,11 @@ Dataclass objects
 
 .. versionadded:: 2.2
 
-:func:`~dataclasses.dataclass` allows defining item classes with field names,
+:func:`~dataclasses.dataclass` allows the defining of item classes with field names,
 so that :ref:`item exporters <topics-exporters>` can export all fields by
 default even if the first scraped object does not have values for all of them.
 
-Additionally, ``dataclass`` items also allow to:
+Additionally, ``dataclass`` items also allow you to:
 
 * define the type and default value of each defined field.
 
@@ -126,7 +126,7 @@ attr.s objects
 
 .. versionadded:: 2.2
 
-:func:`attr.s` allows defining item classes with field names,
+:func:`attr.s` allows the defining of item classes with field names,
 so that :ref:`item exporters <topics-exporters>` can export all fields by
 default even if the first scraped object does not have values for all of them.
 
@@ -399,12 +399,7 @@ In code that receives an item, such as methods of :ref:`item pipelines
 <topics-spider-middleware>`, it is a good practice to use the
 :class:`~itemadapter.ItemAdapter` class and the
 :func:`~itemadapter.is_item` function to write code that works for
-any :ref:`supported item type <item-types>`:
-
-.. autoclass:: itemadapter.ItemAdapter
-
-.. autofunction:: itemadapter.is_item
-
+any supported item type.
 
 Other classes related to items
 ==============================

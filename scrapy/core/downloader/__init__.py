@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import random
+import warnings
 from collections import deque
 from datetime import datetime
 from time import time
-from typing import TYPE_CHECKING, Any, Deque, Dict, Set, Tuple, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.internet import task
 from twisted.internet.defer import Deferred
@@ -10,28 +13,40 @@ from twisted.internet.defer import Deferred
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.http import Response
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.resolver import dnscache
-from scrapy.settings import BaseSettings
 from scrapy.signalmanager import SignalManager
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
+    from scrapy.http import Response
+    from scrapy.settings import BaseSettings
+
+
+_T = TypeVar("_T")
 
 
 class Slot:
     """Downloader slot"""
 
-    def __init__(self, concurrency: int, delay: float, randomize_delay: bool):
+    def __init__(
+        self,
+        concurrency: int,
+        delay: float,
+        randomize_delay: bool,
+        *,
+        throttle: bool | None = None,
+    ):
         self.concurrency: int = concurrency
         self.delay: float = delay
         self.randomize_delay: bool = randomize_delay
+        self.throttle = throttle
 
-        self.active: Set[Request] = set()
-        self.queue: Deque[Tuple[Request, Deferred]] = deque()
-        self.transferring: Set[Request] = set()
+        self.active: set[Request] = set()
+        self.queue: deque[tuple[Request, Deferred[Response]]] = deque()
+        self.transferring: set[Request] = set()
         self.lastseen: float = 0
         self.latercall = None
 
@@ -40,7 +55,7 @@ class Slot:
 
     def download_delay(self) -> float:
         if self.randomize_delay:
-            return random.uniform(0.5 * self.delay, 1.5 * self.delay)
+            return random.uniform(0.5 * self.delay, 1.5 * self.delay)  # nosec
         return self.delay
 
     def close(self) -> None:
@@ -52,13 +67,15 @@ class Slot:
         return (
             f"{cls_name}(concurrency={self.concurrency!r}, "
             f"delay={self.delay:.2f}, "
-            f"randomize_delay={self.randomize_delay!r})"
+            f"randomize_delay={self.randomize_delay!r}, "
+            f"throttle={self.throttle!r})"
         )
 
     def __str__(self) -> str:
         return (
             f"<downloader.Slot concurrency={self.concurrency!r} "
             f"delay={self.delay:.2f} randomize_delay={self.randomize_delay!r} "
+            f"throttle={self.throttle!r} "
             f"len(active)={len(self.active)} len(queue)={len(self.queue)} "
             f"len(transferring)={len(self.transferring)} "
             f"lastseen={datetime.fromtimestamp(self.lastseen).isoformat()}>"
@@ -67,7 +84,7 @@ class Slot:
 
 def _get_concurrency_delay(
     concurrency: int, spider: Spider, settings: BaseSettings
-) -> Tuple[int, float]:
+) -> tuple[int, float]:
     delay: float = settings.getfloat("DOWNLOAD_DELAY")
     if hasattr(spider, "download_delay"):
         delay = spider.download_delay
@@ -81,11 +98,11 @@ def _get_concurrency_delay(
 class Downloader:
     DOWNLOAD_SLOT = "download_slot"
 
-    def __init__(self, crawler: "Crawler"):
+    def __init__(self, crawler: Crawler):
         self.settings: BaseSettings = crawler.settings
         self.signals: SignalManager = crawler.signals
-        self.slots: Dict[str, Slot] = {}
-        self.active: Set[Request] = set()
+        self.slots: dict[str, Slot] = {}
+        self.active: set[Request] = set()
         self.handlers: DownloadHandlers = DownloadHandlers(crawler)
         self.total_concurrency: int = self.settings.getint("CONCURRENT_REQUESTS")
         self.domain_concurrency: int = self.settings.getint(
@@ -98,24 +115,26 @@ class Downloader:
         )
         self._slot_gc_loop: task.LoopingCall = task.LoopingCall(self._slot_gc)
         self._slot_gc_loop.start(60)
-        self.per_slot_settings: Dict[str, Dict[str, Any]] = self.settings.getdict(
+        self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS", {}
         )
 
-    def fetch(self, request: Request, spider: Spider) -> Deferred:
-        def _deactivate(response: Response) -> Response:
+    def fetch(self, request: Request, spider: Spider) -> Deferred[Response | Request]:
+        def _deactivate(response: _T) -> _T:
             self.active.remove(request)
             return response
 
         self.active.add(request)
-        dfd = self.middleware.download(self._enqueue_request, request, spider)
+        dfd: Deferred[Response | Request] = self.middleware.download(
+            self._enqueue_request, request, spider
+        )
         return dfd.addBoth(_deactivate)
 
     def needs_backout(self) -> bool:
         return len(self.active) >= self.total_concurrency
 
-    def _get_slot(self, request: Request, spider: Spider) -> Tuple[str, Slot]:
-        key = self._get_slot_key(request, spider)
+    def _get_slot(self, request: Request, spider: Spider) -> tuple[str, Slot]:
+        key = self.get_slot_key(request)
         if key not in self.slots:
             slot_settings = self.per_slot_settings.get(key, {})
             conc = (
@@ -127,12 +146,13 @@ class Downloader:
                 slot_settings.get("delay", delay),
             )
             randomize_delay = slot_settings.get("randomize_delay", self.randomize_delay)
-            new_slot = Slot(conc, delay, randomize_delay)
+            throttle = slot_settings.get("throttle", None)
+            new_slot = Slot(conc, delay, randomize_delay, throttle=throttle)
             self.slots[key] = new_slot
 
         return key, self.slots[key]
 
-    def _get_slot_key(self, request: Request, spider: Spider) -> str:
+    def get_slot_key(self, request: Request) -> str:
         if self.DOWNLOAD_SLOT in request.meta:
             return cast(str, request.meta[self.DOWNLOAD_SLOT])
 
@@ -142,7 +162,15 @@ class Downloader:
 
         return key
 
-    def _enqueue_request(self, request: Request, spider: Spider) -> Deferred:
+    def _get_slot_key(self, request: Request, spider: Spider | None) -> str:
+        warnings.warn(
+            "Use of this protected method is deprecated. Consider using its corresponding public method get_slot_key() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self.get_slot_key(request)
+
+    def _enqueue_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         key, slot = self._get_slot(request, spider)
         request.meta[self.DOWNLOAD_SLOT] = key
 
@@ -154,7 +182,7 @@ class Downloader:
         self.signals.send_catch_log(
             signal=signals.request_reached_downloader, request=request, spider=spider
         )
-        deferred: Deferred = Deferred().addBoth(_deactivate)
+        deferred: Deferred[Response] = Deferred().addBoth(_deactivate)
         slot.queue.append((request, deferred))
         self._process_queue(spider, slot)
         return deferred
@@ -187,11 +215,15 @@ class Downloader:
                 self._process_queue(spider, slot)
                 break
 
-    def _download(self, slot: Slot, request: Request, spider: Spider) -> Deferred:
+    def _download(
+        self, slot: Slot, request: Request, spider: Spider
+    ) -> Deferred[Response]:
         # The order is very important for the following deferreds. Do not change!
 
         # 1. Create the download deferred
-        dfd = mustbe_deferred(self.handlers.download_request, request, spider)
+        dfd: Deferred[Response] = mustbe_deferred(
+            self.handlers.download_request, request, spider
+        )
 
         # 2. Notify response_downloaded listeners about the recent download
         # before querying queue for next request
@@ -212,7 +244,7 @@ class Downloader:
         # middleware itself)
         slot.transferring.add(request)
 
-        def finish_transferring(_: Any) -> Any:
+        def finish_transferring(_: _T) -> _T:
             slot.transferring.remove(request)
             self._process_queue(spider, slot)
             self.signals.send_catch_log(

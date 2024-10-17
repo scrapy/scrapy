@@ -92,7 +92,6 @@ reactor after ``MySpider`` has finished running.
 
 .. code-block:: python
 
-    from twisted.internet import reactor
     import scrapy
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
@@ -107,6 +106,37 @@ reactor after ``MySpider`` has finished running.
     runner = CrawlerRunner()
 
     d = runner.crawl(MySpider)
+
+    from twisted.internet import reactor
+
+    d.addBoth(lambda _: reactor.stop())
+    reactor.run()  # the script will block here until the crawling is finished
+
+Same example but using a non-default reactor, it's only necessary call
+``install_reactor`` if you are using ``CrawlerRunner`` since ``CrawlerProcess`` already does this automatically.
+
+.. code-block:: python
+
+    import scrapy
+    from scrapy.crawler import CrawlerRunner
+    from scrapy.utils.log import configure_logging
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+
+    from scrapy.utils.reactor import install_reactor
+
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    runner = CrawlerRunner()
+    d = runner.crawl(MySpider)
+
+    from twisted.internet import reactor
+
     d.addBoth(lambda _: reactor.stop())
     reactor.run()  # the script will block here until the crawling is finished
 
@@ -151,7 +181,6 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
 .. code-block:: python
 
     import scrapy
-    from twisted.internet import reactor
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
     from scrapy.utils.project import get_project_settings
@@ -173,6 +202,9 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
     runner.crawl(MySpider1)
     runner.crawl(MySpider2)
     d = runner.join()
+
+    from twisted.internet import reactor
+
     d.addBoth(lambda _: reactor.stop())
 
     reactor.run()  # the script will block here until all crawling jobs are finished
@@ -181,7 +213,7 @@ Same example but running the spiders sequentially by chaining the deferreds:
 
 .. code-block:: python
 
-    from twisted.internet import reactor, defer
+    from twisted.internet import defer
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
     from scrapy.utils.project import get_project_settings
@@ -208,6 +240,8 @@ Same example but running the spiders sequentially by chaining the deferreds:
         yield runner.crawl(MySpider2)
         reactor.stop()
 
+
+    from twisted.internet import reactor
 
     crawl()
     reactor.run()  # the script will block here until the last crawl call is finished
@@ -289,7 +323,8 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
   services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
   super proxy that you can attach your own proxies to.
 * use a ban avoidance service, such as `Zyte API`_, which provides a `Scrapy
-  plugin <https://github.com/scrapy-plugins/scrapy-zyte-api>`__
+  plugin <https://github.com/scrapy-plugins/scrapy-zyte-api>`__ and additional 
+  features, like `AI web scraping <https://www.zyte.com/ai-web-scraping/>`__
 
 If you are still unable to prevent your bot getting banned, consider contacting
 `commercial support`_.

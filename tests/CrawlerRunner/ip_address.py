@@ -9,6 +9,7 @@ from twisted.python.runtime import platform
 
 from scrapy import Request, Spider
 from scrapy.crawler import CrawlerRunner
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import configure_logging
 from tests.mockserver import MockDNSServer, MockServer
 
@@ -30,7 +31,7 @@ class LocalhostSpider(Spider):
         yield Request(self.url)
 
     def parse(self, response):
-        netloc = urlparse(response.url).netloc
+        netloc = urlparse_cached(response).netloc
         host = netloc.split(":")[0]
         self.logger.info(f"Host: {host}")
         self.logger.info(f"Type: {type(response.ip_address)}")
