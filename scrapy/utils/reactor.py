@@ -97,10 +97,8 @@ def get_asyncio_event_loop_policy() -> AbstractEventLoopPolicy:
 
 def _get_asyncio_event_loop_policy() -> AbstractEventLoopPolicy:
     policy = asyncio.get_event_loop_policy()
-    if (
-        sys.version_info >= (3, 8)
-        and sys.platform == "win32"
-        and not isinstance(policy, asyncio.WindowsSelectorEventLoopPolicy)
+    if sys.platform == "win32" and not isinstance(
+        policy, asyncio.WindowsSelectorEventLoopPolicy
     ):
         policy = asyncio.WindowsSelectorEventLoopPolicy()
         asyncio.set_event_loop_policy(policy)
