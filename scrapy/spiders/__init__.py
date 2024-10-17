@@ -7,7 +7,7 @@ See documentation in docs/topics/spiders.rst
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from scrapy import signals
 from scrapy.http import Request, Response
@@ -34,9 +34,9 @@ class Spider(object_ref):
     """
 
     name: str
-    custom_settings: Optional[dict[_SettingsKeyT, Any]] = None
+    custom_settings: dict[_SettingsKeyT, Any] | None = None
 
-    def __init__(self, name: Optional[str] = None, **kwargs: Any):
+    def __init__(self, name: str | None = None, **kwargs: Any):
         if name is not None:
             self.name: str = name
         elif not getattr(self, "name", None):
@@ -103,10 +103,10 @@ class Spider(object_ref):
         return url_is_from_spider(request.url, cls)
 
     @staticmethod
-    def close(spider: Spider, reason: str) -> Optional[Deferred[None]]:
+    def close(spider: Spider, reason: str) -> Deferred[None] | None:
         closed = getattr(spider, "closed", None)
         if callable(closed):
-            return cast("Optional[Deferred[None]]", closed(reason))
+            return cast("Deferred[None] | None", closed(reason))
         return None
 
     def __repr__(self) -> str:

@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator, Iterable
 from functools import wraps
 from inspect import getmembers
 from types import CoroutineType
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 from unittest import TestCase, TestResult
 
 from scrapy.http import Request, Response
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 class Contract:
     """Abstract class for contracts"""
 
-    request_cls: Optional[type[Request]] = None
+    request_cls: type[Request] | None = None
     name: str
 
     def __init__(self, method: Callable, *args: Any):
@@ -126,10 +126,8 @@ class ContractsManager:
 
         return contracts
 
-    def from_spider(
-        self, spider: Spider, results: TestResult
-    ) -> list[Optional[Request]]:
-        requests: list[Optional[Request]] = []
+    def from_spider(self, spider: Spider, results: TestResult) -> list[Request | None]:
+        requests: list[Request | None] = []
         for method in self.tested_methods_from_spidercls(type(spider)):
             bound_method = spider.__getattribute__(method)
             try:
@@ -140,7 +138,7 @@ class ContractsManager:
 
         return requests
 
-    def from_method(self, method: Callable, results: TestResult) -> Optional[Request]:
+    def from_method(self, method: Callable, results: TestResult) -> Request | None:
         contracts = self.extract_contracts(method)
         if contracts:
             request_cls = Request

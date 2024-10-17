@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pickle  # nosec
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
@@ -18,8 +18,8 @@ if TYPE_CHECKING:
 class SpiderState:
     """Store and load spider state during a scraping job"""
 
-    def __init__(self, jobdir: Optional[str] = None):
-        self.jobdir: Optional[str] = jobdir
+    def __init__(self, jobdir: str | None = None):
+        self.jobdir: str | None = jobdir
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:

@@ -11,7 +11,7 @@ import hashlib
 import warnings
 from contextlib import suppress
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from itemadapter import ItemAdapter
 
@@ -74,9 +74,9 @@ class ImagesPipeline(FilesPipeline):
 
     def __init__(
         self,
-        store_uri: Union[str, PathLike[str]],
-        download_func: Optional[Callable[[Request, Spider], Response]] = None,
-        settings: Union[Settings, dict[str, Any], None] = None,
+        store_uri: str | PathLike[str],
+        download_func: Callable[[Request, Spider], Response] | None = None,
+        settings: Settings | dict[str, Any] | None = None,
     ):
         try:
             from PIL import Image
@@ -120,7 +120,7 @@ class ImagesPipeline(FilesPipeline):
             resolve("IMAGES_THUMBS"), self.THUMBS
         )
 
-        self._deprecated_convert_image: Optional[bool] = None
+        self._deprecated_convert_image: bool | None = None
 
     @classmethod
     def from_settings(cls, settings: Settings) -> Self:
@@ -168,7 +168,7 @@ class ImagesPipeline(FilesPipeline):
         *,
         item: Any = None,
     ) -> str:
-        checksum: Optional[str] = None
+        checksum: str | None = None
         for path, image, buf in self.get_images(response, request, info, item=item):
             if checksum is None:
                 buf.seek(0)
@@ -235,8 +235,8 @@ class ImagesPipeline(FilesPipeline):
     def convert_image(
         self,
         image: Image.Image,
-        size: Optional[tuple[int, int]] = None,
-        response_body: Optional[BytesIO] = None,
+        size: tuple[int, int] | None = None,
+        response_body: BytesIO | None = None,
     ) -> tuple[Image.Image, BytesIO]:
         if response_body is None:
             warnings.warn(
@@ -291,8 +291,8 @@ class ImagesPipeline(FilesPipeline):
     def file_path(
         self,
         request: Request,
-        response: Optional[Response] = None,
-        info: Optional[MediaPipeline.SpiderInfo] = None,
+        response: Response | None = None,
+        info: MediaPipeline.SpiderInfo | None = None,
         *,
         item: Any = None,
     ) -> str:
@@ -303,8 +303,8 @@ class ImagesPipeline(FilesPipeline):
         self,
         request: Request,
         thumb_id: str,
-        response: Optional[Response] = None,
-        info: Optional[MediaPipeline.SpiderInfo] = None,
+        response: Response | None = None,
+        info: MediaPipeline.SpiderInfo | None = None,
         *,
         item: Any = None,
     ) -> str:

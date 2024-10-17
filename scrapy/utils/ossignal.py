@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import signal
 from collections.abc import Callable
 from types import FrameType

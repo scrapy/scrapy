@@ -6,7 +6,7 @@ See documentation in docs/topics/downloader-middleware.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from scrapy.utils.python import without_none_values
 
@@ -32,7 +32,7 @@ class DefaultHeadersMiddleware:
 
     def process_request(
         self, request: Request, spider: Spider
-    ) -> Union[Request, Response, None]:
+    ) -> Request | Response | None:
         for k, v in self._headers:
             request.headers.setdefault(k, v)
         return None

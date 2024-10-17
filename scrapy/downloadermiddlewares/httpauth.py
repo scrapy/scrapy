@@ -6,7 +6,7 @@ See documentation in docs/topics/downloader-middleware.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from w3lib.http import basic_auth_header
 
@@ -40,7 +40,7 @@ class HttpAuthMiddleware:
 
     def process_request(
         self, request: Request, spider: Spider
-    ) -> Union[Request, Response, None]:
+    ) -> Request | Response | None:
         auth = getattr(self, "auth", None)
         if auth and b"Authorization" not in request.headers:
             if not self.domain or url_is_from_any_domain(request.url, [self.domain]):

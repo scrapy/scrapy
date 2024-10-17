@@ -7,7 +7,7 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from scrapy.exceptions import IgnoreRequest
 
@@ -65,7 +65,7 @@ class HttpErrorMiddleware:
 
     def process_spider_exception(
         self, response: Response, exception: Exception, spider: Spider
-    ) -> Optional[Iterable[Any]]:
+    ) -> Iterable[Any] | None:
         if isinstance(exception, HttpError):
             assert spider.crawler.stats
             spider.crawler.stats.inc_value("httperror/response_ignored_count")

@@ -4,7 +4,7 @@ import ipaddress
 import itertools
 import logging
 from collections import deque
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from h2.config import H2Configuration
 from h2.connection import H2Connection
@@ -63,7 +63,7 @@ class InvalidNegotiatedProtocol(H2Error):
 class RemoteTerminatedConnection(H2Error):
     def __init__(
         self,
-        remote_ip_address: Optional[Union[IPv4Address, IPv6Address]],
+        remote_ip_address: IPv4Address | IPv6Address | None,
         event: ConnectionTerminated,
     ) -> None:
         self.remote_ip_address = remote_ip_address
@@ -74,9 +74,7 @@ class RemoteTerminatedConnection(H2Error):
 
 
 class MethodNotAllowed405(H2Error):
-    def __init__(
-        self, remote_ip_address: Optional[Union[IPv4Address, IPv6Address]]
-    ) -> None:
+    def __init__(self, remote_ip_address: IPv4Address | IPv6Address | None) -> None:
         self.remote_ip_address = remote_ip_address
 
     def __str__(self) -> str:

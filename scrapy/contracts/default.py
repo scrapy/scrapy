@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import json
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from itemadapter import ItemAdapter, is_item
 
@@ -63,7 +65,7 @@ class ReturnsContract(Contract):
     """
 
     name = "returns"
-    object_type_verifiers: dict[Optional[str], Callable[[Any], bool]] = {
+    object_type_verifiers: dict[str | None, Callable[[Any], bool]] = {
         "request": lambda x: isinstance(x, Request),
         "requests": lambda x: isinstance(x, Request),
         "item": is_item,

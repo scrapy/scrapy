@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -100,7 +100,7 @@ DEFAULT_PYTHON_SHELLS: KnownShellsT = {
 
 
 def get_shell_embed_func(
-    shells: Optional[Iterable[str]] = None, known_shells: Optional[KnownShellsT] = None
+    shells: Iterable[str] | None = None, known_shells: KnownShellsT | None = None
 ) -> Any:
     """Return the first acceptable shell-embed function
     from a given list of shell names.
@@ -120,9 +120,9 @@ def get_shell_embed_func(
 
 
 def start_python_console(
-    namespace: Optional[dict[str, Any]] = None,
+    namespace: dict[str, Any] | None = None,
     banner: str = "",
-    shells: Optional[Iterable[str]] = None,
+    shells: Iterable[str] | None = None,
 ) -> None:
     """Start Python console bound to the given namespace.
     Readline support and tab completion will be used on Unix, if available.

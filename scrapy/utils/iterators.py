@@ -4,7 +4,7 @@ import csv
 import logging
 import re
 from io import StringIO
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, cast, overload
 from warnings import warn
 
 from lxml import etree  # nosec
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def xmliter(obj: Union[Response, str, bytes], nodename: str) -> Iterator[Selector]:
+def xmliter(obj: Response | str | bytes, nodename: str) -> Iterator[Selector]:
     """Return a iterator of Selector's over all nodes of a XML document,
        given the name of the node to iterate. Useful for parsing XML feeds.
 
@@ -77,9 +77,9 @@ def xmliter(obj: Union[Response, str, bytes], nodename: str) -> Iterator[Selecto
 
 
 def xmliter_lxml(
-    obj: Union[Response, str, bytes],
+    obj: Response | str | bytes,
     nodename: str,
-    namespace: Optional[str] = None,
+    namespace: str | None = None,
     prefix: str = "x",
 ) -> Iterator[Selector]:
     reader = _StreamReader(obj)
@@ -120,9 +120,9 @@ def xmliter_lxml(
 
 
 class _StreamReader:
-    def __init__(self, obj: Union[Response, str, bytes]):
+    def __init__(self, obj: Response | str | bytes):
         self._ptr: int = 0
-        self._text: Union[str, bytes]
+        self._text: str | bytes
         if isinstance(obj, TextResponse):
             self._text, self.encoding = obj.body, obj.encoding
         elif isinstance(obj, Response):
@@ -154,11 +154,11 @@ class _StreamReader:
 
 
 def csviter(
-    obj: Union[Response, str, bytes],
-    delimiter: Optional[str] = None,
-    headers: Optional[list[str]] = None,
-    encoding: Optional[str] = None,
-    quotechar: Optional[str] = None,
+    obj: Response | str | bytes,
+    delimiter: str | None = None,
+    headers: list[str] | None = None,
+    encoding: str | None = None,
+    quotechar: str | None = None,
 ) -> Iterator[dict[str, str]]:
     """Returns an iterator of dictionaries from the given csv object
 
@@ -214,22 +214,18 @@ def csviter(
 
 
 @overload
-def _body_or_str(obj: Union[Response, str, bytes]) -> str: ...
+def _body_or_str(obj: Response | str | bytes) -> str: ...
 
 
 @overload
-def _body_or_str(obj: Union[Response, str, bytes], unicode: Literal[True]) -> str: ...
+def _body_or_str(obj: Response | str | bytes, unicode: Literal[True]) -> str: ...
 
 
 @overload
-def _body_or_str(
-    obj: Union[Response, str, bytes], unicode: Literal[False]
-) -> bytes: ...
+def _body_or_str(obj: Response | str | bytes, unicode: Literal[False]) -> bytes: ...
 
 
-def _body_or_str(
-    obj: Union[Response, str, bytes], unicode: bool = True
-) -> Union[str, bytes]:
+def _body_or_str(obj: Response | str | bytes, unicode: bool = True) -> str | bytes:
     expected_types = (Response, str, bytes)
     if not isinstance(obj, expected_types):
         expected_types_str = " or ".join(t.__name__ for t in expected_types)

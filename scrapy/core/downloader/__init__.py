@@ -5,7 +5,7 @@ import warnings
 from collections import deque
 from datetime import datetime
 from time import time
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.internet import task
 from twisted.internet.defer import Deferred
@@ -37,7 +37,7 @@ class Slot:
         delay: float,
         randomize_delay: bool,
         *,
-        throttle: Optional[bool] = None,
+        throttle: bool | None = None,
     ):
         self.concurrency: int = concurrency
         self.delay: float = delay
@@ -119,15 +119,13 @@ class Downloader:
             "DOWNLOAD_SLOTS", {}
         )
 
-    def fetch(
-        self, request: Request, spider: Spider
-    ) -> Deferred[Union[Response, Request]]:
+    def fetch(self, request: Request, spider: Spider) -> Deferred[Response | Request]:
         def _deactivate(response: _T) -> _T:
             self.active.remove(request)
             return response
 
         self.active.add(request)
-        dfd: Deferred[Union[Response, Request]] = self.middleware.download(
+        dfd: Deferred[Response | Request] = self.middleware.download(
             self._enqueue_request, request, spider
         )
         return dfd.addBoth(_deactivate)
@@ -164,7 +162,7 @@ class Downloader:
 
         return key
 
-    def _get_slot_key(self, request: Request, spider: Optional[Spider]) -> str:
+    def _get_slot_key(self, request: Request, spider: Spider | None) -> str:
         warnings.warn(
             "Use of this protected method is deprecated. Consider using its corresponding public method get_slot_key() instead.",
             ScrapyDeprecationWarning,

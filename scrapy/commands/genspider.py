@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import argparse
 import os
 import shutil
 import string
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Optional, Union, cast
+from typing import Any, cast
 from urllib.parse import urlparse
 
 import scrapy
@@ -140,7 +142,7 @@ class Command(ScrapyCommand):
         name: str,
         url: str,
         template_name: str,
-        template_file: Union[str, os.PathLike],
+        template_file: str | os.PathLike,
     ) -> None:
         """Generate the spider module, based on the given template"""
         tvars = self._generate_template_variables(module, name, url, template_name)
@@ -161,7 +163,7 @@ class Command(ScrapyCommand):
         if spiders_module:
             print(f"in module:\n  {spiders_module.__name__}.{module}")
 
-    def _find_template(self, template: str) -> Optional[Path]:
+    def _find_template(self, template: str) -> Path | None:
         template_file = Path(self.templates_dir, f"{template}.tmpl")
         if template_file.exists():
             return template_file

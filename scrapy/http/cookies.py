@@ -5,7 +5,7 @@ import time
 from http.cookiejar import Cookie
 from http.cookiejar import CookieJar as _CookieJar
 from http.cookiejar import CookiePolicy, DefaultCookiePolicy
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
@@ -28,7 +28,7 @@ IPV4_RE = re.compile(r"\.\d+$", re.ASCII)
 class CookieJar:
     def __init__(
         self,
-        policy: Optional[CookiePolicy] = None,
+        policy: CookiePolicy | None = None,
         check_expired_frequency: int = 10000,
     ):
         self.policy: CookiePolicy = policy or DefaultCookiePolicy()
@@ -83,9 +83,9 @@ class CookieJar:
 
     def clear(
         self,
-        domain: Optional[str] = None,
-        path: Optional[str] = None,
-        name: Optional[str] = None,
+        domain: str | None = None,
+        path: str | None = None,
+        name: str | None = None,
     ) -> None:
         self.jar.clear(domain, path, name)
 
@@ -188,7 +188,7 @@ class WrappedRequest:
     def has_header(self, name: str) -> bool:
         return name in self.request.headers
 
-    def get_header(self, name: str, default: Optional[str] = None) -> Optional[str]:
+    def get_header(self, name: str, default: str | None = None) -> str | None:
         value = self.request.headers.get(name, default)
         return to_unicode(value, errors="replace") if value is not None else None
 

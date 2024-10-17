@@ -14,7 +14,7 @@ from contextlib import contextmanager
 from functools import partial
 from importlib import import_module
 from pkgutil import iter_modules
-from typing import IO, TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
+from typing import IO, TYPE_CHECKING, Any, TypeVar, cast
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.item import Item
@@ -46,7 +46,7 @@ def arg_to_iter(arg: Any) -> Iterable[Any]:
     return [arg]
 
 
-def load_object(path: Union[str, Callable[..., Any]]) -> Any:
+def load_object(path: str | Callable[..., Any]) -> Any:
     """Load an object given its absolute object path, and return it.
 
     The object can be the import path of a class, function, variable or an
@@ -126,7 +126,7 @@ def md5sum(file: IO[bytes]) -> str:
     return m.hexdigest()
 
 
-def rel_has_nofollow(rel: Optional[str]) -> bool:
+def rel_has_nofollow(rel: str | None) -> bool:
     """Return True if link rel attribute has nofollow type"""
     return rel is not None and "nofollow" in rel.replace(",", " ").split()
 

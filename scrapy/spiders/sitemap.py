@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.http import Request, Response, XmlResponse
 from scrapy.spiders import Spider
@@ -24,10 +24,10 @@ logger = logging.getLogger(__name__)
 
 class SitemapSpider(Spider):
     sitemap_urls: Sequence[str] = ()
-    sitemap_rules: Sequence[
-        tuple[Union[re.Pattern[str], str], Union[str, CallbackT]]
-    ] = [("", "parse")]
-    sitemap_follow: Sequence[Union[re.Pattern[str], str]] = [""]
+    sitemap_rules: Sequence[tuple[re.Pattern[str] | str, str | CallbackT]] = [
+        ("", "parse")
+    ]
+    sitemap_follow: Sequence[re.Pattern[str] | str] = [""]
     sitemap_alternate_links: bool = False
     _max_size: int
     _warn_size: int
@@ -93,7 +93,7 @@ class SitemapSpider(Spider):
                             yield Request(loc, callback=c)
                             break
 
-    def _get_sitemap_body(self, response: Response) -> Optional[bytes]:
+    def _get_sitemap_body(self, response: Response) -> bytes | None:
         """Return the sitemap body contained in the given response,
         or None if the response is not a sitemap.
         """
@@ -127,7 +127,7 @@ class SitemapSpider(Spider):
         return None
 
 
-def regex(x: Union[re.Pattern[str], str]) -> re.Pattern[str]:
+def regex(x: re.Pattern[str] | str) -> re.Pattern[str]:
     if isinstance(x, str):
         return re.compile(x)
     return x

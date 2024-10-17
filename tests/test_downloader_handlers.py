@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import contextlib
 import os
 import shutil
 import sys
 from pathlib import Path
 from tempfile import mkdtemp, mkstemp
-from typing import Optional
 from unittest import SkipTest, mock
 
 from testfixtures import LogCapture
@@ -692,7 +693,7 @@ class Https11CustomCiphers(unittest.TestCase):
 class Http11MockServerTestCase(unittest.TestCase):
     """HTTP 1.1 test case with MockServer"""
 
-    settings_dict: Optional[dict] = None
+    settings_dict: dict | None = None
 
     def setUp(self):
         self.mockserver = MockServer()

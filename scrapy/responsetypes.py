@@ -8,7 +8,7 @@ from __future__ import annotations
 from io import StringIO
 from mimetypes import MimeTypes
 from pkgutil import get_data
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from scrapy.http import Response
 from scrapy.utils.misc import load_object
@@ -58,7 +58,7 @@ class ResponseTypes:
         return self.classes.get(basetype, Response)
 
     def from_content_type(
-        self, content_type: Union[str, bytes], content_encoding: Optional[bytes] = None
+        self, content_type: str | bytes, content_encoding: bytes | None = None
     ) -> type[Response]:
         """Return the most appropriate Response class from an HTTP Content-Type
         header"""
@@ -70,7 +70,7 @@ class ResponseTypes:
         return self.from_mimetype(mimetype)
 
     def from_content_disposition(
-        self, content_disposition: Union[str, bytes]
+        self, content_disposition: str | bytes
     ) -> type[Response]:
         try:
             filename = (
@@ -123,10 +123,10 @@ class ResponseTypes:
 
     def from_args(
         self,
-        headers: Optional[Mapping[bytes, bytes]] = None,
-        url: Optional[str] = None,
-        filename: Optional[str] = None,
-        body: Optional[bytes] = None,
+        headers: Mapping[bytes, bytes] | None = None,
+        url: str | None = None,
+        filename: str | None = None,
+        body: bytes | None = None,
     ) -> type[Response]:
         """Guess the most appropriate Response class based on
         the given arguments."""

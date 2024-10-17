@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 from testfixtures import LogCapture
 from twisted.internet import reactor
@@ -20,7 +20,7 @@ from scrapy.utils.test import get_crawler
 try:
     from PIL import Image  # noqa: imported just to check for the import error
 except ImportError:
-    skip_pillow: Optional[str] = (
+    skip_pillow: str | None = (
         "Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow"
     )
 else:

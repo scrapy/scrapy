@@ -12,7 +12,7 @@ import warnings
 import weakref
 from collections import OrderedDict
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, AnyStr, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, AnyStr, TypeVar
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
@@ -44,7 +44,7 @@ class CaselessDict(dict):
 
     def __init__(
         self,
-        seq: Union[Mapping[AnyStr, Any], Iterable[tuple[AnyStr, Any]], None] = None,
+        seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
     ):
         super().__init__()
         if seq:
@@ -84,7 +84,7 @@ class CaselessDict(dict):
         return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))  # type: ignore[arg-type]
 
     # doesn't fully implement MutableMapping.update()
-    def update(self, seq: Union[Mapping[AnyStr, Any], Iterable[tuple[AnyStr, Any]]]) -> None:  # type: ignore[override]
+    def update(self, seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]]) -> None:  # type: ignore[override]
         seq = seq.items() if isinstance(seq, Mapping) else seq
         iseq = ((self.normkey(k), self.normvalue(v)) for k, v in seq)
         super().update(iseq)
@@ -145,9 +145,9 @@ class LocalCache(OrderedDict[_KT, _VT]):
     Older items expires first.
     """
 
-    def __init__(self, limit: Optional[int] = None):
+    def __init__(self, limit: int | None = None):
         super().__init__()
-        self.limit: Optional[int] = limit
+        self.limit: int | None = limit
 
     def __setitem__(self, key: _KT, value: _VT) -> None:
         if self.limit:
@@ -168,7 +168,7 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
     it cannot be instantiated with an initial dictionary.
     """
 
-    def __init__(self, limit: Optional[int] = None):
+    def __init__(self, limit: int | None = None):
         super().__init__()
         self.data: LocalCache = LocalCache(limit=limit)
 
@@ -178,7 +178,7 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
         except TypeError:
             pass  # key is not weak-referenceable, skip caching
 
-    def __getitem__(self, key: _KT) -> Optional[_VT]:  # type: ignore[override]
+    def __getitem__(self, key: _KT) -> _VT | None:  # type: ignore[override]
         try:
             return super().__getitem__(key)
         except (TypeError, KeyError):

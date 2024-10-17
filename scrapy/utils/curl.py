@@ -4,7 +4,7 @@ import argparse
 import warnings
 from http.cookies import SimpleCookie
 from shlex import split
-from typing import TYPE_CHECKING, Any, NoReturn, Optional, Union
+from typing import TYPE_CHECKING, Any, NoReturn
 from urllib.parse import urlparse
 
 from w3lib.http import basic_auth_header
@@ -18,8 +18,8 @@ class DataAction(argparse.Action):
         self,
         parser: argparse.ArgumentParser,
         namespace: argparse.Namespace,
-        values: Union[str, Sequence[Any], None],
-        option_string: Optional[str] = None,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
     ) -> None:
         value = str(values)
         if value.startswith("$"):

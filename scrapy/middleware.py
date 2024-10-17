@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import pprint
 from collections import defaultdict, deque
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.defer import process_chain, process_parallel
@@ -40,9 +40,9 @@ class MiddlewareManager:
         self.middlewares = middlewares
         # Only process_spider_output and process_spider_exception can be None.
         # Only process_spider_output can be a tuple, and only until _async compatibility methods are removed.
-        self.methods: dict[
-            str, deque[Union[None, Callable, tuple[Callable, Callable]]]
-        ] = defaultdict(deque)
+        self.methods: dict[str, deque[None | Callable | tuple[Callable, Callable]]] = (
+            defaultdict(deque)
+        )
         for mw in middlewares:
             self._add_middleware(mw)
 
@@ -51,9 +51,7 @@ class MiddlewareManager:
         raise NotImplementedError
 
     @classmethod
-    def from_settings(
-        cls, settings: Settings, crawler: Optional[Crawler] = None
-    ) -> Self:
+    def from_settings(cls, settings: Settings, crawler: Crawler | None = None) -> Self:
         mwlist = cls._get_mwlist_from_settings(settings)
         middlewares = []
         enabled = []

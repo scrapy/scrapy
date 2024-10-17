@@ -7,7 +7,7 @@ See documentation in docs/topics/spiders.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from scrapy.exceptions import NotConfigured, NotSupported
 from scrapy.http import Response, TextResponse
@@ -117,13 +117,13 @@ class CSVFeedSpider(Spider):
     and the file's headers.
     """
 
-    delimiter: Optional[str] = (
+    delimiter: str | None = (
         None  # When this is None, python's csv module's default delimiter is used
     )
-    quotechar: Optional[str] = (
+    quotechar: str | None = (
         None  # When this is None, python's csv module's default quotechar is used
     )
-    headers: Optional[list[str]] = None
+    headers: list[str] | None = None
 
     def process_results(
         self, response: Response, results: Iterable[Any]

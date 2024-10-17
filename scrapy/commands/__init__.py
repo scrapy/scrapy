@@ -8,7 +8,7 @@ import argparse
 import builtins
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from twisted.python import failure
 
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 class ScrapyCommand:
     requires_project: bool = False
-    crawler_process: Optional[CrawlerProcess] = None
+    crawler_process: CrawlerProcess | None = None
 
     # default settings to be used for this command instead of global defaults
     default_settings: dict[str, Any] = {}
@@ -195,7 +195,7 @@ class ScrapyHelpFormatter(argparse.HelpFormatter):
         prog: str,
         indent_increment: int = 2,
         max_help_position: int = 24,
-        width: Optional[int] = None,
+        width: int | None = None,
     ):
         super().__init__(
             prog,

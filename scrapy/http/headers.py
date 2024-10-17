@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, AnyStr, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, AnyStr, Union, cast
 
 from w3lib.http import headers_dict_to_raw
 
@@ -25,14 +25,14 @@ class Headers(CaselessDict):
 
     def __init__(
         self,
-        seq: Union[Mapping[AnyStr, Any], Iterable[tuple[AnyStr, Any]], None] = None,
+        seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
         encoding: str = "utf-8",
     ):
         self.encoding: str = encoding
         super().__init__(seq)
 
     def update(  # type: ignore[override]
-        self, seq: Union[Mapping[AnyStr, Any], Iterable[tuple[AnyStr, Any]]]
+        self, seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]]
     ) -> None:
         seq = seq.items() if isinstance(seq, Mapping) else seq
         iseq: dict[bytes, list[bytes]] = {}
@@ -44,7 +44,7 @@ class Headers(CaselessDict):
         """Normalize key to bytes"""
         return self._tobytes(key.title())
 
-    def normvalue(self, value: Union[_RawValueT, Iterable[_RawValueT]]) -> list[bytes]:
+    def normvalue(self, value: _RawValueT | Iterable[_RawValueT]) -> list[bytes]:
         """Normalize values to bytes"""
         _value: Iterable[_RawValueT]
         if value is None:
@@ -67,13 +67,13 @@ class Headers(CaselessDict):
             return str(x).encode(self.encoding)
         raise TypeError(f"Unsupported value type: {type(x)}")
 
-    def __getitem__(self, key: AnyStr) -> Optional[bytes]:
+    def __getitem__(self, key: AnyStr) -> bytes | None:
         try:
             return cast(list[bytes], super().__getitem__(key))[-1]
         except IndexError:
             return None
 
-    def get(self, key: AnyStr, def_val: Any = None) -> Optional[bytes]:
+    def get(self, key: AnyStr, def_val: Any = None) -> bytes | None:
         try:
             return cast(list[bytes], super().get(key, def_val))[-1]
         except IndexError:
@@ -103,7 +103,7 @@ class Headers(CaselessDict):
     def items(self) -> Iterable[tuple[bytes, list[bytes]]]:  # type: ignore[override]
         return ((k, self.getlist(k)) for k in self.keys())
 
-    def values(self) -> list[Optional[bytes]]:  # type: ignore[override]
+    def values(self) -> list[bytes | None]:  # type: ignore[override]
         return [
             self[k] for k in self.keys()  # pylint: disable=consider-using-dict-items
         ]
