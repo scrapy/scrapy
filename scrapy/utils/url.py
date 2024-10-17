@@ -9,7 +9,7 @@ to the w3lib.url module. Always import those from there instead.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Optional, Union, cast
+from typing import TYPE_CHECKING, Union, cast
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this
@@ -50,7 +50,7 @@ def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
     return any(lowercase_path.endswith(ext) for ext in extensions)
 
 
-def parse_url(url: UrlT, encoding: Optional[str] = None) -> ParseResult:
+def parse_url(url: UrlT, encoding: str | None = None) -> ParseResult:
     """Return urlparsed url from the given argument (which could be an already
     parsed url)
     """

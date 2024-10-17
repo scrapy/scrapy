@@ -5,7 +5,7 @@ Extension for collecting core stats like items scraped and start/finish times
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from scrapy import Spider, signals
 
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class CoreStats:
     def __init__(self, stats: StatsCollector):
         self.stats: StatsCollector = stats
-        self.start_time: Optional[datetime] = None
+        self.start_time: datetime | None = None
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from email.utils import formatdate
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from twisted.internet import defer
 from twisted.internet.error import (
@@ -69,7 +69,7 @@ class HttpCacheMiddleware:
 
     def process_request(
         self, request: Request, spider: Spider
-    ) -> Union[Request, Response, None]:
+    ) -> Request | Response | None:
         if request.meta.get("dont_cache", False):
             return None
 
@@ -79,7 +79,7 @@ class HttpCacheMiddleware:
             return None
 
         # Look for cached response and check if expired
-        cachedresponse: Optional[Response] = self.storage.retrieve_response(
+        cachedresponse: Response | None = self.storage.retrieve_response(
             spider, request
         )
         if cachedresponse is None:
@@ -103,7 +103,7 @@ class HttpCacheMiddleware:
 
     def process_response(
         self, request: Request, response: Response, spider: Spider
-    ) -> Union[Request, Response]:
+    ) -> Request | Response:
         if request.meta.get("dont_cache", False):
             return response
 
@@ -118,7 +118,7 @@ class HttpCacheMiddleware:
             response.headers["Date"] = formatdate(usegmt=True)
 
         # Do not validate first-hand responses
-        cachedresponse: Optional[Response] = request.meta.pop("cached_response", None)
+        cachedresponse: Response | None = request.meta.pop("cached_response", None)
         if cachedresponse is None:
             self.stats.inc_value("httpcache/firsthand", spider=spider)
             self._cache_response(spider, response, request, cachedresponse)
@@ -134,8 +134,8 @@ class HttpCacheMiddleware:
 
     def process_exception(
         self, request: Request, exception: Exception, spider: Spider
-    ) -> Union[Request, Response, None]:
-        cachedresponse: Optional[Response] = request.meta.pop("cached_response", None)
+    ) -> Request | Response | None:
+        cachedresponse: Response | None = request.meta.pop("cached_response", None)
         if cachedresponse is not None and isinstance(
             exception, self.DOWNLOAD_EXCEPTIONS
         ):
@@ -148,7 +148,7 @@ class HttpCacheMiddleware:
         spider: Spider,
         response: Response,
         request: Request,
-        cachedresponse: Optional[Response],
+        cachedresponse: Response | None,
     ) -> None:
         if self.policy.should_cache_response(response, request):
             self.stats.inc_value("httpcache/store", spider=spider)

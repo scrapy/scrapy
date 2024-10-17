@@ -30,7 +30,7 @@ repos:
     additional_dependencies:
     - black==24.4.2
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.16.0
+  rev: v3.18.0
   hooks:
   - id: pyupgrade
-    args: [--py39-plus, --keep-runtime-typing]
+    args: [--py39-plus]

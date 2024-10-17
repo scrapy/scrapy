@@ -9,7 +9,7 @@ import os
 from importlib import import_module
 from pathlib import Path
 from posixpath import split
-from typing import TYPE_CHECKING, Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 from unittest import TestCase, mock
 
 from twisted.trial.unittest import SkipTest
@@ -84,8 +84,8 @@ class TestSpider(Spider):
 
 
 def get_crawler(
-    spidercls: Optional[type[Spider]] = None,
-    settings_dict: Optional[dict[str, Any]] = None,
+    spidercls: type[Spider] | None = None,
+    settings_dict: dict[str, Any] | None = None,
     prevent_warnings: bool = True,
 ) -> Crawler:
     """Return an unconfigured Crawler object. If settings_dict is given, it
@@ -120,7 +120,7 @@ def get_testenv() -> dict[str, str]:
 
 
 def assert_samelines(
-    testcase: TestCase, text1: str, text2: str, msg: Optional[str] = None
+    testcase: TestCase, text1: str, text2: str, msg: str | None = None
 ) -> None:
     """Asserts text1 and text2 have the same lines, ignoring differences in
     line endings between platforms

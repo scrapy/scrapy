@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import asyncio
 import sys
-from typing import Optional
 
 from scrapy import Spider
 from scrapy.crawler import CrawlerProcess
@@ -31,7 +32,7 @@ class UrlSpider(Spider):
 
 
 if __name__ == "__main__":
-    ASYNCIO_EVENT_LOOP: Optional[str]
+    ASYNCIO_EVENT_LOOP: str | None
     try:
         ASYNCIO_EVENT_LOOP = sys.argv[1]
     except IndexError:

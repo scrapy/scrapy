@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
@@ -121,8 +121,8 @@ class H2Agent:
         reactor: ReactorBase,
         pool: H2ConnectionPool,
         context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),
-        connect_timeout: Optional[float] = None,
-        bind_address: Optional[bytes] = None,
+        connect_timeout: float | None = None,
+        bind_address: bytes | None = None,
     ) -> None:
         self._reactor = reactor
         self._pool = pool
@@ -165,8 +165,8 @@ class ScrapyProxyH2Agent(H2Agent):
         proxy_uri: URI,
         pool: H2ConnectionPool,
         context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),
-        connect_timeout: Optional[float] = None,
-        bind_address: Optional[bytes] = None,
+        connect_timeout: float | None = None,
+        bind_address: bytes | None = None,
     ) -> None:
         super().__init__(
             reactor=reactor,

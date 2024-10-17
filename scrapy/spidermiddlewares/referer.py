@@ -6,7 +6,7 @@ originated it.
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlparse
 
 from w3lib.url import safe_url_string
@@ -50,20 +50,20 @@ class ReferrerPolicy:
     NOREFERRER_SCHEMES: tuple[str, ...] = LOCAL_SCHEMES
     name: str
 
-    def referrer(self, response_url: str, request_url: str) -> Optional[str]:
+    def referrer(self, response_url: str, request_url: str) -> str | None:
         raise NotImplementedError()
 
-    def stripped_referrer(self, url: str) -> Optional[str]:
+    def stripped_referrer(self, url: str) -> str | None:
         if urlparse(url).scheme not in self.NOREFERRER_SCHEMES:
             return self.strip_url(url)
         return None
 
-    def origin_referrer(self, url: str) -> Optional[str]:
+    def origin_referrer(self, url: str) -> str | None:
         if urlparse(url).scheme not in self.NOREFERRER_SCHEMES:
             return self.origin(url)
         return None
 
-    def strip_url(self, url: str, origin_only: bool = False) -> Optional[str]:
+    def strip_url(self, url: str, origin_only: bool = False) -> str | None:
         """
         https://www.w3.org/TR/referrer-policy/#strip-url
 
@@ -87,7 +87,7 @@ class ReferrerPolicy:
             origin_only=origin_only,
         )
 
-    def origin(self, url: str) -> Optional[str]:
+    def origin(self, url: str) -> str | None:
         """Return serialized origin (scheme, host, path) for a request or response URL."""
         return self.strip_url(url, origin_only=True)
 
@@ -113,7 +113,7 @@ class NoReferrerPolicy(ReferrerPolicy):
 
     name: str = POLICY_NO_REFERRER
 
-    def referrer(self, response_url: str, request_url: str) -> Optional[str]:
+    def referrer(self, response_url: str, request_url: str) -> str | None:
         return None
 
 
@@ -134,7 +134,7 @@ class NoReferrerWhenDowngradePolicy(ReferrerPolicy):
 
     name: str = POLICY_NO_REFERRER_WHEN_DOWNGRADE
 
-    def referrer(self, response_url: str, request_url: str) -> Optional[str]:
+    def referrer(self, response_url: str, request_url: str) -> str | None:
         if not self.tls_protected(response_url) or self.tls_protected(request_url):
             return self.stripped_referrer(response_url)
         return None
@@ -153,7 +153,7 @@ class SameOriginPolicy(ReferrerPolicy):
 
     name: str = POLICY_SAME_ORIGIN
 
-    def referrer(self, response_url: str, request_url: str) -> Optional[str]:
+    def referrer(self, response_url: str, request_url: str) -> str | None:
         if self.origin(response_url) == self.origin(request_url):
             return self.stripped_referrer(response_url)
         return None
@@ -171,7 +171,7 @@ class OriginPolicy(ReferrerPolicy):
 
     name: str = POLICY_ORIGIN
 
-    def referrer(self, response_url: str, request_url: str) -> Optional[str]:
+    def referrer(self, response_url: str, request_url: str) -> str | None:
         return self.origin_referrer(response_url)
 
 
@@ -191,7 +191,7 @@ class StrictOriginPolicy(ReferrerPolicy):
 
     name: str = POLICY_STRICT_ORIGIN
 
-    def referrer(self, response_url: str, request_url: str) -> Optional[str]:
+    def referrer(self, response_url: str, request_url: str) -> str | None:
         if (
             self.tls_protected(response_url)
             and self.potentially_trustworthy(request_url)
@@ -215,7 +215,7 @@ class OriginWhenCrossOriginPolicy(ReferrerPolicy):
 
     name: str = POLICY_ORIGIN_WHEN_CROSS_ORIGIN
 
-    def referrer(self, response_url: str, request_url: str) -> Optional[str]:
+    def referrer(self, response_url: str, request_url: str) -> str | None:
         origin = self.origin(response_url)
         if origin == self.origin(request_url):
             return self.stripped_referrer(response_url)
@@ -242,7 +242,7 @@ class StrictOriginWhenCrossOriginPolicy(ReferrerPolicy):
 
     name: str = POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN
 
-    def referrer(self, response_url: str, request_url: str) -> Optional[str]:
+    def referrer(self, response_url: str, request_url: str) -> str | None:
         origin = self.origin(response_url)
         if origin == self.origin(request_url):
             return self.stripped_referrer(response_url)
@@ -271,7 +271,7 @@ class UnsafeUrlPolicy(ReferrerPolicy):
 
     name: str = POLICY_UNSAFE_URL
 
-    def referrer(self, response_url: str, request_url: str) -> Optional[str]:
+    def referrer(self, response_url: str, request_url: str) -> str | None:
         return self.stripped_referrer(response_url)
 
 
@@ -307,7 +307,7 @@ _policy_classes[""] = NoReferrerWhenDowngradePolicy
 
 def _load_policy_class(
     policy: str, warning_only: bool = False
-) -> Optional[type[ReferrerPolicy]]:
+) -> type[ReferrerPolicy] | None:
     """
     Expect a string for the path to the policy class,
     otherwise try to interpret the string as a standard value
@@ -331,7 +331,7 @@ def _load_policy_class(
 
 
 class RefererMiddleware:
-    def __init__(self, settings: Optional[BaseSettings] = None):
+    def __init__(self, settings: BaseSettings | None = None):
         self.default_policy: type[ReferrerPolicy] = DefaultReferrerPolicy
         if settings is not None:
             settings_policy = _load_policy_class(settings.get("REFERRER_POLICY"))
@@ -349,9 +349,7 @@ class RefererMiddleware:
 
         return mw
 
-    def policy(
-        self, resp_or_url: Union[Response, str], request: Request
-    ) -> ReferrerPolicy:
+    def policy(self, resp_or_url: Response | str, request: Request) -> ReferrerPolicy:
         """
         Determine Referrer-Policy to use from a parent Response (or URL),
         and a Request to be sent.

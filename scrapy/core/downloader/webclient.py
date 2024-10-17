@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from time import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
 from twisted.internet import defer
@@ -144,9 +144,9 @@ class ScrapyHTTPClientFactory(ClientFactory):
         # converting to bytes to comply to Twisted interface
         self.url: bytes = to_bytes(self._url, encoding="ascii")
         self.method: bytes = to_bytes(request.method, encoding="ascii")
-        self.body: Optional[bytes] = request.body or None
+        self.body: bytes | None = request.body or None
         self.headers: Headers = Headers(request.headers)
-        self.response_headers: Optional[Headers] = None
+        self.response_headers: Headers | None = None
         self.timeout: float = request.meta.get("download_timeout") or timeout
         self.start_time: float = time()
         self.deferred: defer.Deferred[Response] = defer.Deferred().addCallback(

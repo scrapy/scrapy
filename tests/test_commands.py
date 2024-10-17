@@ -15,7 +15,7 @@ from shutil import copytree, rmtree
 from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
 from tempfile import TemporaryFile, mkdtemp
 from threading import Timer
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 from unittest import skipIf
 
 from pytest import mark
@@ -117,9 +117,7 @@ class ProjectTest(unittest.TestCase):
 
         return p, to_unicode(stdout), to_unicode(stderr)
 
-    def find_in_file(
-        self, filename: Union[str, os.PathLike], regex
-    ) -> Optional[re.Match]:
+    def find_in_file(self, filename: str | os.PathLike, regex) -> re.Match | None:
         """Find first pattern occurrence in file"""
         pattern = re.compile(regex)
         with Path(filename).open("r", encoding="utf-8") as f:
@@ -198,7 +196,7 @@ class StartprojectTest(ProjectTest):
 
 
 def get_permissions_dict(
-    path: Union[str, os.PathLike], renamings=None, ignore=None
+    path: str | os.PathLike, renamings=None, ignore=None
 ) -> dict[str, str]:
     def get_permissions(path: Path) -> str:
         return oct(path.stat().st_mode)

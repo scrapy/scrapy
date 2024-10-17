@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, cast
 
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ProcessTerminated
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class ProcessTest:
-    command: Optional[str] = None
+    command: str | None = None
     prefix = [sys.executable, "-m", "scrapy.cmdline"]
     cwd = os.getcwd()  # trial chdirs to temp dir
 
@@ -23,7 +23,7 @@ class ProcessTest:
         self,
         args: Iterable[str],
         check_code: bool = True,
-        settings: Optional[str] = None,
+        settings: str | None = None,
     ) -> Deferred[TestProcessProtocol]:
         from twisted.internet import reactor
 
@@ -54,7 +54,7 @@ class TestProcessProtocol(ProcessProtocol):
         self.deferred: Deferred[TestProcessProtocol] = Deferred()
         self.out: bytes = b""
         self.err: bytes = b""
-        self.exitcode: Optional[int] = None
+        self.exitcode: int | None = None
 
     def outReceived(self, data: bytes) -> None:
         self.out += data

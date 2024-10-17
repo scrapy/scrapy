@@ -9,7 +9,7 @@ from importlib import import_module
 from pathlib import Path
 from time import time
 from types import ModuleType
-from typing import IO, TYPE_CHECKING, Any, Optional, Union, cast
+from typing import IO, TYPE_CHECKING, Any, cast
 from weakref import WeakKeyDictionary
 
 from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
@@ -66,16 +66,14 @@ class RFC2616Policy:
         self.always_store: bool = settings.getbool("HTTPCACHE_ALWAYS_STORE")
         self.ignore_schemes: list[str] = settings.getlist("HTTPCACHE_IGNORE_SCHEMES")
         self._cc_parsed: WeakKeyDictionary[
-            Union[Request, Response], dict[bytes, Optional[bytes]]
+            Request | Response, dict[bytes, bytes | None]
         ] = WeakKeyDictionary()
         self.ignore_response_cache_controls: list[bytes] = [
             to_bytes(cc)
             for cc in settings.getlist("HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS")
         ]
 
-    def _parse_cachecontrol(
-        self, r: Union[Request, Response]
-    ) -> dict[bytes, Optional[bytes]]:
+    def _parse_cachecontrol(self, r: Request | Response) -> dict[bytes, bytes | None]:
         if r not in self._cc_parsed:
             cch = r.headers.get(b"Cache-Control", b"")
             assert cch is not None
@@ -191,7 +189,7 @@ class RFC2616Policy:
         if b"ETag" in cachedresponse.headers:
             request.headers[b"If-None-Match"] = cachedresponse.headers[b"ETag"]
 
-    def _get_max_age(self, cc: dict[bytes, Optional[bytes]]) -> Optional[int]:
+    def _get_max_age(self, cc: dict[bytes, bytes | None]) -> int | None:
         try:
             return max(0, int(cc[b"max-age"]))  # type: ignore[arg-type]
         except (KeyError, ValueError):
@@ -275,7 +273,7 @@ class DbmCacheStorage:
     def close_spider(self, spider: Spider) -> None:
         self.db.close()
 
-    def retrieve_response(self, spider: Spider, request: Request) -> Optional[Response]:
+    def retrieve_response(self, spider: Spider, request: Request) -> Response | None:
         data = self._read_data(spider, request)
         if data is None:
             return None  # not cached
@@ -300,7 +298,7 @@ class DbmCacheStorage:
         self.db[f"{key}_data"] = pickle.dumps(data, protocol=4)
         self.db[f"{key}_time"] = str(time())
 
-    def _read_data(self, spider: Spider, request: Request) -> Optional[dict[str, Any]]:
+    def _read_data(self, spider: Spider, request: Request) -> dict[str, Any] | None:
         key = self._fingerprinter.fingerprint(request).hex()
         db = self.db
         tkey = f"{key}_time"
@@ -320,9 +318,7 @@ class FilesystemCacheStorage:
         self.expiration_secs: int = settings.getint("HTTPCACHE_EXPIRATION_SECS")
         self.use_gzip: bool = settings.getbool("HTTPCACHE_GZIP")
         # https://github.com/python/mypy/issues/10740
-        self._open: Callable[
-            Concatenate[Union[str, os.PathLike], str, ...], IO[bytes]
-        ] = (
+        self._open: Callable[Concatenate[str | os.PathLike, str, ...], IO[bytes]] = (
             gzip.open if self.use_gzip else open  # type: ignore[assignment]
         )
 
@@ -339,7 +335,7 @@ class FilesystemCacheStorage:
     def close_spider(self, spider: Spider) -> None:
         pass
 
-    def retrieve_response(self, spider: Spider, request: Request) -> Optional[Response]:
+    def retrieve_response(self, spider: Spider, request: Request) -> Response | None:
         """Return response if present in cache, or None otherwise."""
         metadata = self._read_meta(spider, request)
         if metadata is None:
@@ -387,7 +383,7 @@ class FilesystemCacheStorage:
         key = self._fingerprinter.fingerprint(request).hex()
         return str(Path(self.cachedir, spider.name, key[0:2], key))
 
-    def _read_meta(self, spider: Spider, request: Request) -> Optional[dict[str, Any]]:
+    def _read_meta(self, spider: Spider, request: Request) -> dict[str, Any] | None:
         rpath = Path(self._get_request_path(spider, request))
         metapath = rpath / "pickled_meta"
         if not metapath.exists():
@@ -399,7 +395,7 @@ class FilesystemCacheStorage:
             return cast(dict[str, Any], pickle.load(f))  # nosec
 
 
-def parse_cachecontrol(header: bytes) -> dict[bytes, Optional[bytes]]:
+def parse_cachecontrol(header: bytes) -> dict[bytes, bytes | None]:
     """Parse Cache-Control header
 
     https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9
@@ -419,7 +415,7 @@ def parse_cachecontrol(header: bytes) -> dict[bytes, Optional[bytes]]:
     return directives
 
 
-def rfc1123_to_epoch(date_str: Union[str, bytes, None]) -> Optional[int]:
+def rfc1123_to_epoch(date_str: str | bytes | None) -> int | None:
     try:
         date_str = to_unicode(date_str, encoding="ascii")  # type: ignore[arg-type]
         return mktime_tz(parsedate_tz(date_str))  # type: ignore[arg-type]

@@ -7,7 +7,7 @@ from __future__ import annotations
 import marshal
 import pickle  # nosec
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from queuelib import queue
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 def _with_mkdir(queue_class: type[queue.BaseQueue]) -> type[queue.BaseQueue]:
     class DirectoriesCreated(queue_class):  # type: ignore[valid-type,misc]
-        def __init__(self, path: Union[str, PathLike], *args: Any, **kwargs: Any):
+        def __init__(self, path: str | PathLike, *args: Any, **kwargs: Any):
             dirname = Path(path).parent
             if not dirname.exists():
                 dirname.mkdir(parents=True, exist_ok=True)
@@ -45,13 +45,13 @@ def _serializable_queue(
             s = serialize(obj)
             super().push(s)
 
-        def pop(self) -> Optional[Any]:
+        def pop(self) -> Any | None:
             s = super().pop()
             if s:
                 return deserialize(s)
             return None
 
-        def peek(self) -> Optional[Any]:
+        def peek(self) -> Any | None:
             """Returns the next object to be returned by :meth:`pop`,
             but without removing it from the queue.
 
@@ -89,13 +89,13 @@ def _scrapy_serialization_queue(
             request_dict = request.to_dict(spider=self.spider)
             super().push(request_dict)
 
-        def pop(self) -> Optional[Request]:
+        def pop(self) -> Request | None:
             request = super().pop()
             if not request:
                 return None
             return request_from_dict(request, spider=self.spider)
 
-        def peek(self) -> Optional[Request]:
+        def peek(self) -> Request | None:
             """Returns the next object to be returned by :meth:`pop`,
             but without removing it from the queue.
 
@@ -118,7 +118,7 @@ def _scrapy_non_serialization_queue(
         def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
             return cls()
 
-        def peek(self) -> Optional[Any]:
+        def peek(self) -> Any | None:
             """Returns the next object to be returned by :meth:`pop`,
             but without removing it from the queue.
 

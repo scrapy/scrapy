@@ -1,8 +1,10 @@
 """Some helpers for deprecation messages"""
 
+from __future__ import annotations
+
 import inspect
 import warnings
-from typing import Any, Optional, overload
+from typing import Any, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
@@ -20,11 +22,11 @@ def attribute(obj: Any, oldattr: str, newattr: str, version: str = "0.12") -> No
 def create_deprecated_class(
     name: str,
     new_class: type,
-    clsdict: Optional[dict[str, Any]] = None,
+    clsdict: dict[str, Any] | None = None,
     warn_category: type[Warning] = ScrapyDeprecationWarning,
     warn_once: bool = True,
-    old_class_path: Optional[str] = None,
-    new_class_path: Optional[str] = None,
+    old_class_path: str | None = None,
+    new_class_path: str | None = None,
     subclass_warn_message: str = "{cls} inherits from deprecated class {old}, please inherit from {new}.",
     instance_warn_message: str = "{cls} is deprecated, instantiate {new} instead.",
 ) -> type:
@@ -55,7 +57,7 @@ def create_deprecated_class(
 
     # https://github.com/python/mypy/issues/4177
     class DeprecatedClass(new_class.__class__):  # type: ignore[misc, name-defined]
-        deprecated_class: Optional[type] = None
+        deprecated_class: type | None = None
         warned_on_subclass: bool = False
 
         def __new__(
@@ -128,7 +130,7 @@ def create_deprecated_class(
     return deprecated_cls
 
 
-def _clspath(cls: type, forced: Optional[str] = None) -> str:
+def _clspath(cls: type, forced: str | None = None) -> str:
     if forced is not None:
         return forced
     return f"{cls.__module__}.{cls.__name__}"

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import hashlib
 import io
@@ -5,7 +7,6 @@ import random
 import warnings
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import Optional
 from unittest.mock import patch
 
 import attr
@@ -19,7 +20,7 @@ from scrapy.pipelines.images import ImageException, ImagesPipeline, NoimagesDrop
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
 
-skip_pillow: Optional[str]
+skip_pillow: str | None
 try:
     from PIL import Image
 except ImportError:

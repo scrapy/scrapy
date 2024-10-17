@@ -18,7 +18,7 @@ from io import BytesIO
 from logging import getLogger
 from pathlib import Path
 from string import ascii_letters, digits
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 from unittest import mock
 from urllib.parse import quote, urljoin
 from urllib.request import pathname2url
@@ -66,7 +66,7 @@ def printf_escape(string):
     return string.replace("%", "%%")
 
 
-def build_url(path: Union[str, PathLike]) -> str:
+def build_url(path: str | PathLike) -> str:
     path_str = str(path)
     if path_str[0] != "/":
         path_str = "/" + path_str

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import TYPE_CHECKING, Optional, Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader
@@ -42,7 +42,7 @@ class QueueProtocol(Protocol):
 
     def push(self, request: Request) -> None: ...
 
-    def pop(self) -> Optional[Request]: ...
+    def pop(self) -> Request | None: ...
 
     def close(self) -> None: ...
 
@@ -96,7 +96,7 @@ class ScrapyPriorityQueue:
         self.downstream_queue_cls: type[QueueProtocol] = downstream_queue_cls
         self.key: str = key
         self.queues: dict[int, QueueProtocol] = {}
-        self.curprio: Optional[int] = None
+        self.curprio: int | None = None
         self.init_prios(startprios)
 
     def init_prios(self, startprios: Iterable[int]) -> None:
@@ -127,7 +127,7 @@ class ScrapyPriorityQueue:
         if self.curprio is None or priority < self.curprio:
             self.curprio = priority
 
-    def pop(self) -> Optional[Request]:
+    def pop(self) -> Request | None:
         if self.curprio is None:
             return None
         q = self.queues[self.curprio]
@@ -139,7 +139,7 @@ class ScrapyPriorityQueue:
             self.curprio = min(prios) if prios else None
         return m
 
-    def peek(self) -> Optional[Request]:
+    def peek(self) -> Request | None:
         """Returns the next object to be returned by :meth:`pop`,
         but without removing it from the queue.
 
@@ -193,7 +193,7 @@ class DownloaderAwarePriorityQueue:
         crawler: Crawler,
         downstream_queue_cls: type[QueueProtocol],
         key: str,
-        startprios: Optional[dict[str, Iterable[int]]] = None,
+        startprios: dict[str, Iterable[int]] | None = None,
     ) -> Self:
         return cls(crawler, downstream_queue_cls, key, startprios)
 
@@ -202,7 +202,7 @@ class DownloaderAwarePriorityQueue:
         crawler: Crawler,
         downstream_queue_cls: type[QueueProtocol],
         key: str,
-        slot_startprios: Optional[dict[str, Iterable[int]]] = None,
+        slot_startprios: dict[str, Iterable[int]] | None = None,
     ):
         if crawler.settings.getint("CONCURRENT_REQUESTS_PER_IP") != 0:
             raise ValueError(
@@ -239,7 +239,7 @@ class DownloaderAwarePriorityQueue:
             startprios,
         )
 
-    def pop(self) -> Optional[Request]:
+    def pop(self) -> Request | None:
         stats = self._downloader_interface.stats(self.pqueues)
 
         if not stats:
@@ -259,7 +259,7 @@ class DownloaderAwarePriorityQueue:
         queue = self.pqueues[slot]
         queue.push(request)
 
-    def peek(self) -> Optional[Request]:
+    def peek(self) -> Request | None:
         """Returns the next object to be returned by :meth:`pop`,
         but without removing it from the queue.
 

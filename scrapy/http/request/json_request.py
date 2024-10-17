@@ -10,7 +10,7 @@ from __future__ import annotations
 import copy
 import json
 import warnings
-from typing import TYPE_CHECKING, Any, Optional, overload
+from typing import TYPE_CHECKING, Any, overload
 
 from scrapy.http.request import Request, RequestTypeVar
 
@@ -23,7 +23,7 @@ class JsonRequest(Request):
     attributes: tuple[str, ...] = Request.attributes + ("dumps_kwargs",)
 
     def __init__(
-        self, *args: Any, dumps_kwargs: Optional[dict[str, Any]] = None, **kwargs: Any
+        self, *args: Any, dumps_kwargs: dict[str, Any] | None = None, **kwargs: Any
     ) -> None:
         dumps_kwargs = copy.deepcopy(dumps_kwargs) if dumps_kwargs is not None else {}
         dumps_kwargs.setdefault("sort_keys", True)
@@ -59,7 +59,7 @@ class JsonRequest(Request):
     def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self: ...
 
     def replace(
-        self, *args: Any, cls: Optional[type[Request]] = None, **kwargs: Any
+        self, *args: Any, cls: type[Request] | None = None, **kwargs: Any
     ) -> Request:
         body_passed = kwargs.get("body", None) is not None
         data: Any = kwargs.pop("data", None)

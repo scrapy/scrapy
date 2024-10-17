@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from twisted.python.failure import Failure
 
@@ -31,7 +31,7 @@ DOWNLOADERRORMSG_LONG = "Error downloading %(request)s: %(errmsg)s"
 class LogFormatterResult(TypedDict):
     level: int
     msg: str
-    args: Union[dict[str, Any], tuple[Any, ...]]
+    args: dict[str, Any] | tuple[Any, ...]
 
 
 class LogFormatter:
@@ -93,7 +93,7 @@ class LogFormatter:
         }
 
     def scraped(
-        self, item: Any, response: Union[Response, Failure, None], spider: Spider
+        self, item: Any, response: Response | Failure | None, spider: Spider
     ) -> LogFormatterResult:
         """Logs a message when an item is scraped by a spider."""
         src: Any
@@ -116,7 +116,7 @@ class LogFormatter:
         self,
         item: Any,
         exception: BaseException,
-        response: Optional[Response],
+        response: Response | None,
         spider: Spider,
     ) -> LogFormatterResult:
         """Logs a message when an item is dropped while it is passing through the item pipeline."""
@@ -133,7 +133,7 @@ class LogFormatter:
         self,
         item: Any,
         exception: BaseException,
-        response: Optional[Response],
+        response: Response | None,
         spider: Spider,
     ) -> LogFormatterResult:
         """Logs a message when an item causes an error while it is passing
@@ -153,7 +153,7 @@ class LogFormatter:
         self,
         failure: Failure,
         request: Request,
-        response: Union[Response, Failure],
+        response: Response | Failure,
         spider: Spider,
     ) -> LogFormatterResult:
         """Logs an error message from a spider.
@@ -174,7 +174,7 @@ class LogFormatter:
         failure: Failure,
         request: Request,
         spider: Spider,
-        errmsg: Optional[str] = None,
+        errmsg: str | None = None,
     ) -> LogFormatterResult:
         """Logs a download error message from a spider (typically coming from
         the engine).

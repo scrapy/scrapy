@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urljoin
 
 from w3lib.url import safe_url_string
@@ -144,7 +144,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
     def process_response(
         self, request: Request, response: Response, spider: Spider
-    ) -> Union[Request, Response]:
+    ) -> Request | Response:
         if (
             request.meta.get("dont_redirect", False)
             or response.status in getattr(spider, "handle_httpstatus_list", [])
@@ -185,7 +185,7 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
 
     def process_response(
         self, request: Request, response: Response, spider: Spider
-    ) -> Union[Request, Response]:
+    ) -> Request | Response:
         if (
             request.meta.get("dont_redirect", False)
             or request.method == "HEAD"

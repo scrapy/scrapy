@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import os
 import re
@@ -6,7 +8,6 @@ from importlib.util import find_spec
 from pathlib import Path
 from shutil import copy2, copystat, ignore_patterns, move
 from stat import S_IWUSR as OWNER_WRITE_PERMISSION
-from typing import Union
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -24,7 +25,7 @@ TEMPLATES_TO_RENDER: tuple[tuple[str, ...], ...] = (
 IGNORE = ignore_patterns("*.pyc", "__pycache__", ".svn")
 
 
-def _make_writable(path: Union[str, os.PathLike]) -> None:
+def _make_writable(path: str | os.PathLike) -> None:
     current_permissions = os.stat(path).st_mode
     os.chmod(path, current_permissions | OWNER_WRITE_PERMISSION)
 
