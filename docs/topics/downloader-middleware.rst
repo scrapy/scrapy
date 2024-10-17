@@ -1086,7 +1086,6 @@ RobotsTxtMiddleware
     * :ref:`Protego <protego-parser>` (default)
     * :ref:`RobotFileParser <python-robotfileparser>`
     * :ref:`Robotexclusionrulesparser <rerp-parser>`
-    * :ref:`Reppy <reppy-parser>` (deprecated)
 
     You can change the robots.txt_ parser with the :setting:`ROBOTSTXT_PARSER`
     setting. Or you can also :ref:`implement support for a new parser <support-for-new-robots-parser>`.
@@ -1153,37 +1152,6 @@ It is faster than Protego and backward-compatible with versions of Scrapy before
 In order to use this parser, set:
 
 * :setting:`ROBOTSTXT_PARSER` to ``scrapy.robotstxt.PythonRobotParser``
-
-.. _reppy-parser:
-
-Reppy parser
-~~~~~~~~~~~~
-
-Based on `Reppy <https://github.com/seomoz/reppy/>`_:
-
-* is a Python wrapper around `Robots Exclusion Protocol Parser for C++
-  <https://github.com/seomoz/rep-cpp>`_
-
-* is compliant with `Martijn Koster's 1996 draft specification
-  <https://www.robotstxt.org/norobots-rfc.txt>`_
-
-* supports wildcard matching
-
-* uses the length based rule
-
-Native implementation, provides better speed than Protego.
-
-In order to use this parser:
-
-* Install `Reppy <https://github.com/seomoz/reppy/>`_ by running ``pip install reppy``
-
-    .. warning:: `Upstream issue #122
-        <https://github.com/seomoz/reppy/issues/122>`_ prevents reppy usage in Python 3.9+.
-        Because of this the Reppy parser is deprecated.
-
-* Set :setting:`ROBOTSTXT_PARSER` setting to
-  ``scrapy.robotstxt.ReppyRobotParser``
-
 
 .. _rerp-parser:
 

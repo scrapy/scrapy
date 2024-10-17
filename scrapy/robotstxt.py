@@ -4,9 +4,7 @@ import logging
 import sys
 from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING
-from warnings import warn
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
@@ -88,24 +86,6 @@ class PythonRobotParser(RobotParser):
         user_agent = to_unicode(user_agent)
         url = to_unicode(url)
         return self.rp.can_fetch(user_agent, url)
-
-
-class ReppyRobotParser(RobotParser):
-    def __init__(self, robotstxt_body: bytes, spider: Spider | None):
-        warn("ReppyRobotParser is deprecated.", ScrapyDeprecationWarning, stacklevel=2)
-        from reppy.robots import Robots
-
-        self.spider: Spider | None = spider
-        self.rp = Robots.parse("", robotstxt_body)
-
-    @classmethod
-    def from_crawler(cls, crawler: Crawler, robotstxt_body: bytes) -> Self:
-        spider = None if not crawler else crawler.spider
-        o = cls(robotstxt_body, spider)
-        return o
-
-    def allowed(self, url: str | bytes, user_agent: str | bytes) -> bool:
-        return self.rp.allowed(url, user_agent)
 
 
 class RerpRobotParser(RobotParser):
