@@ -40,7 +40,7 @@ class MiddlewareManager:
         self.middlewares = middlewares
         # Only process_spider_output and process_spider_exception can be None.
         # Only process_spider_output can be a tuple, and only until _async compatibility methods are removed.
-        self.methods: dict[str, deque[None | Callable | tuple[Callable, Callable]]] = (
+        self.methods: dict[str, deque[Callable | tuple[Callable, Callable] | None]] = (
             defaultdict(deque)
         )
         for mw in middlewares:

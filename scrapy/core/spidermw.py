@@ -339,7 +339,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
     @staticmethod
     def _get_async_method_pair(
         mw: Any, methodname: str
-    ) -> None | Callable | tuple[Callable, Callable]:
+    ) -> Callable | tuple[Callable, Callable] | None:
         normal_method: Callable | None = getattr(mw, methodname, None)
         methodname_async = methodname + "_async"
         async_method: Callable | None = getattr(mw, methodname_async, None)

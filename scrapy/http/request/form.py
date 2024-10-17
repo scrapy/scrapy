@@ -197,7 +197,7 @@ def _get_inputs(
 
 def _value(
     ele: InputElement | SelectElement | TextareaElement,
-) -> tuple[str | None, None | str | MultipleSelectOptions]:
+) -> tuple[str | None, str | MultipleSelectOptions | None]:
     n = ele.name
     v = ele.value
     if ele.tag == "select":
@@ -206,8 +206,8 @@ def _value(
 
 
 def _select_value(
-    ele: SelectElement, n: str | None, v: None | str | MultipleSelectOptions
-) -> tuple[str | None, None | str | MultipleSelectOptions]:
+    ele: SelectElement, n: str | None, v: str | MultipleSelectOptions | None
+) -> tuple[str | None, str | MultipleSelectOptions | None]:
     multiple = ele.multiple
     if v is None and not multiple:
         # Match browser behaviour on simple select tag without options selected
