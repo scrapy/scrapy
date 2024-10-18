@@ -278,8 +278,6 @@ Supported options:
 
 * ``--overwrite-output FILE`` or ``-O FILE``: dump scraped items into FILE, overwriting any existing file. To define the output format, set a colon at the end of the output URI (i.e. ``-O FILE:FORMAT``)
 
-* ``--output-format FORMAT`` or ``-t FORMAT``: deprecated way to define format to use for dumping items, does not work in combination with ``-O``
-
 Usage examples::
 
     $ scrapy crawl myspider
@@ -290,9 +288,6 @@ Usage examples::
 
     $ scrapy crawl -O myfile:json myspider
     [ ... myspider starts crawling and saves the result in myfile in json format overwriting the original content... ]
-
-    $ scrapy crawl -o myfile -t csv myspider
-    [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
 
 .. command:: check
 
