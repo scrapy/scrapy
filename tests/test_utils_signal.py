@@ -7,7 +7,7 @@ from twisted.internet import defer, reactor
 from twisted.python.failure import Failure
 from twisted.trial import unittest
 
-from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
+from scrapy.utils.signal_ops import send_catch_log, send_catch_log_deferred
 from scrapy.utils.test import get_from_asyncio_queue
 
 
