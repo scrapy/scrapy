@@ -24,7 +24,10 @@ jobs:
         - python-version: "3.12"
           env:
             TOXENV: py
-        - python-version: "3.12"
+        - python-version: "3.13"
+          env:
+            TOXENV: py
+        - python-version: "3.13"
           env:
             TOXENV: asyncio
         - python-version: pypy3.9
@@ -51,10 +54,10 @@ jobs:
           env:
             TOXENV: botocore-pinned
 
-        - python-version: "3.12"
+        - python-version: "3.13"
           env:
             TOXENV: extra-deps
-        - python-version: "3.12"
+        - python-version: "3.13"
           env:
             TOXENV: botocore
 

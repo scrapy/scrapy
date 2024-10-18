@@ -1,6 +1,7 @@
 import functools
 import operator
 import platform
+import sys
 
 from twisted.trial import unittest
 
@@ -238,15 +239,17 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(get_func_args(str.split, stripself=True), ["sep", "maxsplit"])
         self.assertEqual(get_func_args(" ".join, stripself=True), ["iterable"])
 
-        if platform.python_implementation() == "CPython":
-            # This didn't work on older versions of CPython: https://github.com/python/cpython/issues/86951
+        if sys.version_info >= (3, 13) or platform.python_implementation() == "PyPy":
+            # the correct and correctly extracted signature
+            self.assertEqual(
+                get_func_args(operator.itemgetter(2), stripself=True), ["obj"]
+            )
+        elif platform.python_implementation() == "CPython":
+            # ["args", "kwargs"] is a correct result for the pre-3.13 incorrect function signature
+            # [] is an incorrect result on even older CPython (https://github.com/python/cpython/issues/86951)
             self.assertIn(
                 get_func_args(operator.itemgetter(2), stripself=True),
                 [[], ["args", "kwargs"]],
-            )
-        elif platform.python_implementation() == "PyPy":
-            self.assertEqual(
-                get_func_args(operator.itemgetter(2), stripself=True), ["obj"]
             )
 
     def test_without_none_values(self):
