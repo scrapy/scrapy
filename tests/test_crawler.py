@@ -6,6 +6,7 @@ import subprocess
 import sys
 import warnings
 from pathlib import Path
+from typing import Any
 
 import pytest
 from packaging.version import parse as parse_version
@@ -28,7 +29,7 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer, get_mockserver_env
 
-BASE_SETTINGS = {}
+BASE_SETTINGS: dict[str, Any] = {}
 
 
 def get_raw_crawler(spidercls=None, settings_dict=None):
