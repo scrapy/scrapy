@@ -177,13 +177,29 @@ class HttpCompressionMiddleware:
             to_decode.append(encoding)
         return to_decode, to_keep
 
+   # Define a set of accepted encodings for easy management
+    ACCEPTED_ENCODINGS = {b'gzip', b'x-gzip', b'deflate', b'br', b'zstd'}
+    
     def _decode(self, body: bytes, encoding: bytes, max_size: int) -> bytes:
-        if encoding in {b"gzip", b"x-gzip"}:
+        # Check if the encoding is supported
+        if encoding not in ACCEPTED_ENCODINGS:
+            raise ValueError(f"Unsupported encoding: {encoding.decode('utf-8')}")
+    
+        # Gzip and x-gzip handling
+        if encoding in {b'gzip', b'x-gzip'}:
             return gunzip(body, max_size=max_size)
-        if encoding == b"deflate":
+    
+        # Deflate handling
+        if encoding == b'deflate':
             return _inflate(body, max_size=max_size)
-        if encoding == b"br" and b"br" in ACCEPTED_ENCODINGS:
+    
+        # Brotli (br) handling
+        if encoding == b'br' and b'br' in ACCEPTED_ENCODINGS:
             return _unbrotli(body, max_size=max_size)
-        if encoding == b"zstd" and b"zstd" in ACCEPTED_ENCODINGS:
+    
+        # Zstandard (zstd) handling
+        if encoding == b'zstd' and b'zstd' in ACCEPTED_ENCODINGS:
             return _unzstd(body, max_size=max_size)
+    
+        # If no encoding matches, return the body unchanged
         return body
