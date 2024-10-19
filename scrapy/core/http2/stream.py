@@ -1,23 +1,26 @@
+from __future__ import annotations
+
 import logging
 from enum import Enum
 from io import BytesIO
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 from h2.errors import ErrorCodes
 from h2.exceptions import H2Error, ProtocolError, StreamClosedError
-from hpack import HeaderTuple
 from twisted.internet.defer import CancelledError, Deferred
 from twisted.internet.error import ConnectionClosed
 from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
 
-from scrapy.http import Request
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
+    from hpack import HeaderTuple
+
     from scrapy.core.http2.protocol import H2ClientProtocol
+    from scrapy.http import Request, Response
 
 
 logger = logging.getLogger(__name__)
@@ -87,7 +90,7 @@ class Stream:
         self,
         stream_id: int,
         request: Request,
-        protocol: "H2ClientProtocol",
+        protocol: H2ClientProtocol,
         download_maxsize: int = 0,
         download_warnsize: int = 0,
     ) -> None:
@@ -99,7 +102,7 @@ class Stream:
         """
         self.stream_id: int = stream_id
         self._request: Request = request
-        self._protocol: "H2ClientProtocol" = protocol
+        self._protocol: H2ClientProtocol = protocol
 
         self._download_maxsize = self._request.meta.get(
             "download_maxsize", download_maxsize
@@ -110,7 +113,7 @@ class Stream:
 
         # Metadata of an HTTP/2 connection stream
         # initialized when stream is instantiated
-        self.metadata: Dict = {
+        self.metadata: dict[str, Any] = {
             "request_content_length": (
                 0 if self._request.body is None else len(self._request.body)
             ),
@@ -131,7 +134,7 @@ class Stream:
         # Private variable used to build the response
         # this response is then converted to appropriate Response class
         # passed to the response deferred callback
-        self._response: Dict = {
+        self._response: dict[str, Any] = {
             # Data received frame by frame from the server is appended
             # and passed to the response Deferred when completely received.
             "body": BytesIO(),
@@ -142,7 +145,7 @@ class Stream:
             "headers": Headers({}),
         }
 
-        def _cancel(_) -> None:
+        def _cancel(_: Any) -> None:
             # Close this stream as gracefully as possible
             # If the associated request is initiated we reset this stream
             # else we directly call close() method
@@ -151,7 +154,7 @@ class Stream:
             else:
                 self.close(StreamCloseReason.CANCELLED)
 
-        self._deferred_response: Deferred = Deferred(_cancel)
+        self._deferred_response: Deferred[Response] = Deferred(_cancel)
 
     def __repr__(self) -> str:
         return f"Stream(id={self.stream_id!r})"
@@ -177,7 +180,7 @@ class Stream:
             and not self.metadata["reached_warnsize"]
         )
 
-    def get_response(self) -> Deferred:
+    def get_response(self) -> Deferred[Response]:
         """Simply return a Deferred which fires when response
         from the asynchronous request is available
         """
@@ -193,7 +196,7 @@ class Stream:
             == f'{self._protocol.metadata["ip_address"]}:{self._protocol.metadata["uri"].port}'
         )
 
-    def _get_request_headers(self) -> List[Tuple[str, str]]:
+    def _get_request_headers(self) -> list[tuple[str, str]]:
         url = urlparse_cached(self._request)
 
         path = url.path
@@ -346,7 +349,7 @@ class Stream:
             self._response["flow_controlled_size"], self.stream_id
         )
 
-    def receive_headers(self, headers: List[HeaderTuple]) -> None:
+    def receive_headers(self, headers: list[HeaderTuple]) -> None:
         for name, value in headers:
             self._response["headers"].appendlist(name, value)
 
@@ -379,7 +382,7 @@ class Stream:
     def close(
         self,
         reason: StreamCloseReason,
-        errors: Optional[List[BaseException]] = None,
+        errors: list[BaseException] | None = None,
         from_protocol: bool = False,
     ) -> None:
         """Based on the reason sent we will handle each case."""

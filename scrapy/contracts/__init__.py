@@ -1,32 +1,44 @@
+from __future__ import annotations
+
 import re
 import sys
+from collections.abc import AsyncGenerator, Iterable
 from functools import wraps
 from inspect import getmembers
 from types import CoroutineType
-from typing import AsyncGenerator, Dict, Optional, Type
-from unittest import TestCase
+from typing import TYPE_CHECKING, Any, cast
+from unittest import TestCase, TestResult
 
-from scrapy.http import Request
+from scrapy.http import Request, Response
 from scrapy.utils.python import get_spec
 from scrapy.utils.spider import iterate_spider_output
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from twisted.python.failure import Failure
+
+    from scrapy import Spider
 
 
 class Contract:
     """Abstract class for contracts"""
 
-    request_cls: Optional[Type[Request]] = None
+    request_cls: type[Request] | None = None
+    name: str
 
-    def __init__(self, method, *args):
+    def __init__(self, method: Callable, *args: Any):
         self.testcase_pre = _create_testcase(method, f"@{self.name} pre-hook")
         self.testcase_post = _create_testcase(method, f"@{self.name} post-hook")
-        self.args = args
+        self.args: tuple[Any, ...] = args
 
-    def add_pre_hook(self, request, results):
+    def add_pre_hook(self, request: Request, results: TestResult) -> Request:
         if hasattr(self, "pre_process"):
             cb = request.callback
+            assert cb is not None
 
             @wraps(cb)
-            def wrapper(response, **cb_kwargs):
+            def wrapper(response: Response, **cb_kwargs: Any) -> list[Any]:
                 try:
                     results.startTest(self.testcase_pre)
                     self.pre_process(response)
@@ -42,23 +54,24 @@ class Contract:
                     if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
                         raise TypeError("Contracts don't support async callbacks")
                     return list(  # pylint: disable=return-in-finally
-                        iterate_spider_output(cb_result)
+                        cast(Iterable[Any], iterate_spider_output(cb_result))
                     )
 
             request.callback = wrapper
 
         return request
 
-    def add_post_hook(self, request, results):
+    def add_post_hook(self, request: Request, results: TestResult) -> Request:
         if hasattr(self, "post_process"):
             cb = request.callback
+            assert cb is not None
 
             @wraps(cb)
-            def wrapper(response, **cb_kwargs):
+            def wrapper(response: Response, **cb_kwargs: Any) -> list[Any]:
                 cb_result = cb(response, **cb_kwargs)
                 if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
                     raise TypeError("Contracts don't support async callbacks")
-                output = list(iterate_spider_output(cb_result))
+                output = list(cast(Iterable[Any], iterate_spider_output(cb_result)))
                 try:
                     results.startTest(self.testcase_post)
                     self.post_process(output)
@@ -76,18 +89,18 @@ class Contract:
 
         return request
 
-    def adjust_request_args(self, args):
+    def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
         return args
 
 
 class ContractsManager:
-    contracts: Dict[str, Contract] = {}
+    contracts: dict[str, type[Contract]] = {}
 
-    def __init__(self, contracts):
+    def __init__(self, contracts: Iterable[type[Contract]]):
         for contract in contracts:
             self.contracts[contract.name] = contract
 
-    def tested_methods_from_spidercls(self, spidercls):
+    def tested_methods_from_spidercls(self, spidercls: type[Spider]) -> list[str]:
         is_method = re.compile(r"^\s*@", re.MULTILINE).search
         methods = []
         for key, value in getmembers(spidercls):
@@ -96,21 +109,25 @@ class ContractsManager:
 
         return methods
 
-    def extract_contracts(self, method):
-        contracts = []
+    def extract_contracts(self, method: Callable) -> list[Contract]:
+        contracts: list[Contract] = []
+        assert method.__doc__ is not None
         for line in method.__doc__.split("\n"):
             line = line.strip()
 
             if line.startswith("@"):
-                name, args = re.match(r"@(\w+)\s*(.*)", line).groups()
+                m = re.match(r"@(\w+)\s*(.*)", line)
+                if m is None:
+                    continue
+                name, args = m.groups()
                 args = re.split(r"\s+", args)
 
                 contracts.append(self.contracts[name](method, *args))
 
         return contracts
 
-    def from_spider(self, spider, results):
-        requests = []
+    def from_spider(self, spider: Spider, results: TestResult) -> list[Request | None]:
+        requests: list[Request | None] = []
         for method in self.tested_methods_from_spidercls(type(spider)):
             bound_method = spider.__getattribute__(method)
             try:
@@ -121,7 +138,7 @@ class ContractsManager:
 
         return requests
 
-    def from_method(self, method, results):
+    def from_method(self, method: Callable, results: TestResult) -> Request | None:
         contracts = self.extract_contracts(method)
         if contracts:
             request_cls = Request
@@ -154,22 +171,26 @@ class ContractsManager:
 
                 self._clean_req(request, method, results)
                 return request
+        return None
 
-    def _clean_req(self, request, method, results):
+    def _clean_req(
+        self, request: Request, method: Callable, results: TestResult
+    ) -> None:
         """stop the request from returning objects and records any errors"""
 
         cb = request.callback
+        assert cb is not None
 
         @wraps(cb)
-        def cb_wrapper(response, **cb_kwargs):
+        def cb_wrapper(response: Response, **cb_kwargs: Any) -> None:
             try:
                 output = cb(response, **cb_kwargs)
-                output = list(iterate_spider_output(output))
+                output = list(cast(Iterable[Any], iterate_spider_output(output)))
             except Exception:
                 case = _create_testcase(method, "callback")
                 results.addError(case, sys.exc_info())
 
-        def eb_wrapper(failure):
+        def eb_wrapper(failure: Failure) -> None:
             case = _create_testcase(method, "errback")
             exc_info = failure.type, failure.value, failure.getTracebackObject()
             results.addError(case, exc_info)
@@ -178,11 +199,11 @@ class ContractsManager:
         request.errback = eb_wrapper
 
 
-def _create_testcase(method, desc):
-    spider = method.__self__.name
+def _create_testcase(method: Callable, desc: str) -> TestCase:
+    spider = method.__self__.name  # type: ignore[attr-defined]
 
     class ContractTestCase(TestCase):
-        def __str__(_self):
+        def __str__(_self) -> str:
             return f"[{spider}] {method.__name__} ({desc})"
 
     name = f"{spider}_{method.__name__}"

@@ -115,15 +115,14 @@ Handling different response formats
 Once you have a response with the desired data, how you extract the desired
 data from it depends on the type of response:
 
--   If the response is HTML or XML, use :ref:`selectors
+-   If the response is HTML, XML or JSON, use :ref:`selectors
     <topics-selectors>` as usual.
 
--   If the response is JSON, use :func:`json.loads` to load the desired data from
-    :attr:`response.text <scrapy.http.TextResponse.text>`:
+-   If the response is JSON, use :func:`response.json()` to load the desired data:
 
     .. code-block:: python
 
-        data = json.loads(response.text)
+        data = response.json()
 
     If the desired data is inside HTML or XML code embedded within JSON data,
     you can load that HTML or XML code into a

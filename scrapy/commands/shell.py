@@ -4,9 +4,10 @@ Scrapy Shell
 See documentation in docs/topics/shell.rst
 """
 
-from argparse import ArgumentParser, Namespace
+from __future__ import annotations
+
 from threading import Thread
-from typing import Any, Dict, List, Type
+from typing import TYPE_CHECKING, Any
 
 from scrapy import Spider
 from scrapy.commands import ScrapyCommand
@@ -14,6 +15,9 @@ from scrapy.http import Request
 from scrapy.shell import Shell
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 from scrapy.utils.url import guess_scheme
+
+if TYPE_CHECKING:
+    from argparse import ArgumentParser, Namespace
 
 
 class Command(ScrapyCommand):
@@ -52,13 +56,13 @@ class Command(ScrapyCommand):
             help="do not handle HTTP 3xx status codes and print response as-is",
         )
 
-    def update_vars(self, vars: Dict[str, Any]) -> None:
+    def update_vars(self, vars: dict[str, Any]) -> None:
         """You can use this function to update the Scrapy objects that will be
         available in the shell
         """
         pass
 
-    def run(self, args: List[str], opts: Namespace) -> None:
+    def run(self, args: list[str], opts: Namespace) -> None:
         url = args[0] if args else None
         if url:
             # first argument may be a local file
@@ -67,7 +71,7 @@ class Command(ScrapyCommand):
         assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
 
-        spidercls: Type[Spider] = DefaultSpider
+        spidercls: type[Spider] = DefaultSpider
         if opts.spider:
             spidercls = spider_loader.load(opts.spider)
         elif url:

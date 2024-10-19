@@ -1,33 +1,45 @@
+from __future__ import annotations
+
 import logging
 import re
 import warnings
+from typing import TYPE_CHECKING
 
-from scrapy import signals
+from scrapy import Request, Spider, signals
 from scrapy.exceptions import IgnoreRequest
 from scrapy.utils.httpobj import urlparse_cached
+
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
+
 
 logger = logging.getLogger(__name__)
 
 
 class OffsiteMiddleware:
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        assert crawler.stats
         o = cls(crawler.stats)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.request_scheduled, signal=signals.request_scheduled)
         return o
 
-    def __init__(self, stats):
+    def __init__(self, stats: StatsCollector):
         self.stats = stats
-        self.domains_seen = set()
+        self.domains_seen: set[str] = set()
 
-    def spider_opened(self, spider):
-        self.host_regex = self.get_host_regex(spider)
+    def spider_opened(self, spider: Spider) -> None:
+        self.host_regex: re.Pattern[str] = self.get_host_regex(spider)
 
-    def request_scheduled(self, request, spider):
+    def request_scheduled(self, request: Request, spider: Spider) -> None:
         self.process_request(request, spider)
 
-    def process_request(self, request, spider):
+    def process_request(self, request: Request, spider: Spider) -> None:
         if (
             request.dont_filter
             or request.meta.get("allow_offsite")
@@ -46,13 +58,13 @@ class OffsiteMiddleware:
         self.stats.inc_value("offsite/filtered", spider=spider)
         raise IgnoreRequest
 
-    def should_follow(self, request, spider):
+    def should_follow(self, request: Request, spider: Spider) -> bool:
         regex = self.host_regex
         # hostname can be None for wrong urls (like javascript links)
         host = urlparse_cached(request).hostname or ""
         return bool(regex.search(host))
 
-    def get_host_regex(self, spider):
+    def get_host_regex(self, spider: Spider) -> re.Pattern[str]:
         """Override this method to implement a different offsite policy"""
         allowed_domains = getattr(spider, "allowed_domains", None)
         if not allowed_domains:

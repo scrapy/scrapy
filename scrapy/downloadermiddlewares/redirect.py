@@ -1,22 +1,24 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, List, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urljoin
 
 from w3lib.url import safe_url_string
 
-from scrapy import Request, Spider
-from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import HtmlResponse, Response
-from scrapy.settings import BaseSettings
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.response import get_meta_refresh
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Request, Spider
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,7 @@ def _build_redirect_request(
     redirect_request = source_request.replace(
         url=url,
         **kwargs,
+        cls=None,
         cookies=None,
     )
     if "_scheme_proxy" in redirect_request.meta:
@@ -141,7 +144,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
     def process_response(
         self, request: Request, response: Response, spider: Spider
-    ) -> Union[Request, Response]:
+    ) -> Request | Response:
         if (
             request.meta.get("dont_redirect", False)
             or response.status in getattr(spider, "handle_httpstatus_list", [])
@@ -177,12 +180,12 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
 
     def __init__(self, settings: BaseSettings):
         super().__init__(settings)
-        self._ignore_tags: List[str] = settings.getlist("METAREFRESH_IGNORE_TAGS")
+        self._ignore_tags: list[str] = settings.getlist("METAREFRESH_IGNORE_TAGS")
         self._maxdelay: int = settings.getint("METAREFRESH_MAXDELAY")
 
     def process_response(
         self, request: Request, response: Response, spider: Spider
-    ) -> Union[Request, Response]:
+    ) -> Request | Response:
         if (
             request.meta.get("dont_redirect", False)
             or request.method == "HEAD"

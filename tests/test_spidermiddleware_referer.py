@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import warnings
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from unittest import TestCase
 from urllib.parse import urlparse
 
@@ -32,10 +34,10 @@ from scrapy.spiders import Spider
 
 
 class TestRefererMiddleware(TestCase):
-    req_meta: Dict[str, Any] = {}
-    resp_headers: Dict[str, str] = {}
-    settings: Dict[str, Any] = {}
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    req_meta: dict[str, Any] = {}
+    resp_headers: dict[str, str] = {}
+    settings: dict[str, Any] = {}
+    scenarii: list[tuple[str, str, bytes | None]] = [
         ("http://scrapytest.org", "http://scrapytest.org/", b"http://scrapytest.org"),
     ]
 
@@ -65,7 +67,7 @@ class MixinDefault:
     with some additional filtering of s3://
     """
 
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         ("https://example.com/", "https://scrapy.org/", b"https://example.com/"),
         ("http://example.com/", "http://scrapy.org/", b"http://example.com/"),
         ("http://example.com/", "https://scrapy.org/", b"http://example.com/"),
@@ -86,7 +88,7 @@ class MixinDefault:
 
 
 class MixinNoReferrer:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         ("https://example.com/page.html", "https://example.com/", None),
         ("http://www.example.com/", "https://scrapy.org/", None),
         ("http://www.example.com/", "http://scrapy.org/", None),
@@ -96,7 +98,7 @@ class MixinNoReferrer:
 
 
 class MixinNoReferrerWhenDowngrade:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         # TLS to TLS: send non-empty referrer
         (
             "https://example.com/page.html",
@@ -178,7 +180,7 @@ class MixinNoReferrerWhenDowngrade:
 
 
 class MixinSameOrigin:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         # Same origin (protocol, host, port): send referrer
         (
             "https://example.com/page.html",
@@ -247,7 +249,7 @@ class MixinSameOrigin:
 
 
 class MixinOrigin:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         # TLS or non-TLS to TLS or non-TLS: referrer origin is sent (yes, even for downgrades)
         (
             "https://example.com/page.html",
@@ -271,7 +273,7 @@ class MixinOrigin:
 
 
 class MixinStrictOrigin:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         # TLS or non-TLS to TLS or non-TLS: referrer origin is sent but not for downgrades
         (
             "https://example.com/page.html",
@@ -299,7 +301,7 @@ class MixinStrictOrigin:
 
 
 class MixinOriginWhenCrossOrigin:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         # Same origin (protocol, host, port): send referrer
         (
             "https://example.com/page.html",
@@ -406,7 +408,7 @@ class MixinOriginWhenCrossOrigin:
 
 
 class MixinStrictOriginWhenCrossOrigin:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         # Same origin (protocol, host, port): send referrer
         (
             "https://example.com/page.html",
@@ -518,7 +520,7 @@ class MixinStrictOriginWhenCrossOrigin:
 
 
 class MixinUnsafeUrl:
-    scenarii: List[Tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         # TLS to TLS: send referrer
         (
             "https://example.com/sekrit.html",
@@ -884,6 +886,53 @@ class TestSettingsPolicyByName(TestCase):
         with self.assertRaises(RuntimeError):
             RefererMiddleware(settings)
 
+    def test_multiple_policy_tokens(self):
+        # test parsing without space(s) after the comma
+        settings1 = Settings(
+            {
+                "REFERRER_POLICY": ",".join(
+                    [
+                        "some-custom-unknown-policy",
+                        POLICY_SAME_ORIGIN,
+                        POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+                        "another-custom-unknown-policy",
+                    ]
+                )
+            }
+        )
+        mw1 = RefererMiddleware(settings1)
+        self.assertEqual(mw1.default_policy, StrictOriginWhenCrossOriginPolicy)
+
+        # test parsing with space(s) after the comma
+        settings2 = Settings(
+            {
+                "REFERRER_POLICY": ",    ".join(
+                    [
+                        POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+                        "another-custom-unknown-policy",
+                        POLICY_UNSAFE_URL,
+                    ]
+                )
+            }
+        )
+        mw2 = RefererMiddleware(settings2)
+        self.assertEqual(mw2.default_policy, UnsafeUrlPolicy)
+
+    def test_multiple_policy_tokens_all_invalid(self):
+        settings = Settings(
+            {
+                "REFERRER_POLICY": ",".join(
+                    [
+                        "some-custom-unknown-policy",
+                        "another-custom-unknown-policy",
+                        "yet-another-custom-unknown-policy",
+                    ]
+                )
+            }
+        )
+        with self.assertRaises(RuntimeError):
+            RefererMiddleware(settings)
+
 
 class TestPolicyHeaderPrecedence001(MixinUnsafeUrl, TestRefererMiddleware):
     settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.SameOriginPolicy"}
@@ -921,8 +970,8 @@ class TestPolicyHeaderPrecedence004(
 
 class TestReferrerOnRedirect(TestRefererMiddleware):
     settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.UnsafeUrlPolicy"}
-    scenarii: List[
-        Tuple[str, str, Tuple[Tuple[int, str], ...], Optional[bytes], Optional[bytes]]
+    scenarii: list[
+        tuple[str, str, tuple[tuple[int, str], ...], bytes | None, bytes | None]
     ] = [  # type: ignore[assignment]
         (
             "http://scrapytest.org/1",  # parent

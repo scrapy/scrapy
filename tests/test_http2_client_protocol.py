@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import random
 import re
@@ -6,7 +8,7 @@ import string
 from ipaddress import IPv4Address
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Dict
+from typing import TYPE_CHECKING
 from unittest import mock, skipIf
 from urllib.parse import urlencode
 
@@ -20,7 +22,6 @@ from twisted.internet.defer import (
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.internet.ssl import Certificate, PrivateCertificate, optionsForClientTLS
-from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 from twisted.web.client import URI, ResponseFailed
 from twisted.web.http import H2_ENABLED
@@ -32,6 +33,9 @@ from scrapy.http import JsonRequest, Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from tests.mockserver import LeafResource, Status, ssl_context_factory
+
+if TYPE_CHECKING:
+    from twisted.python.failure import Failure
 
 
 def generate_random_string(size):
@@ -148,7 +152,7 @@ class QueryParams(LeafResource):
         request.setHeader("Content-Type", "application/json; charset=UTF-8")
         request.setHeader("Content-Encoding", "UTF-8")
 
-        query_params: Dict[str, str] = {}
+        query_params: dict[str, str] = {}
         assert request.args is not None
         for k, v in request.args.items():
             query_params[str(k, "utf-8")] = str(v[0], "utf-8")

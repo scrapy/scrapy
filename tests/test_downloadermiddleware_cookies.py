@@ -362,7 +362,7 @@ class CookiesMiddlewareTest(TestCase):
 
     def test_request_cookies_encoding(self):
         # 1) UTF8-encoded bytes
-        req1 = Request("http://example.org", cookies={"a": "á".encode("utf8")})
+        req1 = Request("http://example.org", cookies={"a": "á".encode()})
         assert self.mw.process_request(req1, self.spider) is None
         self.assertCookieValEqual(req1.headers["Cookie"], b"a=\xc3\xa1")
 
@@ -379,7 +379,7 @@ class CookiesMiddlewareTest(TestCase):
     @pytest.mark.xfail(reason="Cookie header is not currently being processed")
     def test_request_headers_cookie_encoding(self):
         # 1) UTF8-encoded bytes
-        req1 = Request("http://example.org", headers={"Cookie": "a=á".encode("utf8")})
+        req1 = Request("http://example.org", headers={"Cookie": "a=á".encode()})
         assert self.mw.process_request(req1, self.spider) is None
         self.assertCookieValEqual(req1.headers["Cookie"], b"a=\xc3\xa1")
 
@@ -784,7 +784,7 @@ class CookiesMiddlewareTest(TestCase):
             from_scheme="https",
             to_scheme="http",
             cookies1=True,
-            cookies2=True,  # xfail, due to a bug in the redirect middleware fixed elsewhere
+            cookies2=False,
             cookies3=False,
         )
 
@@ -804,7 +804,7 @@ class CookiesMiddlewareTest(TestCase):
             from_scheme="https",
             to_scheme="http",
             cookies1=True,
-            cookies2=True,  # xfail, due to a bug in the redirect middleware fixed elsewhere
+            cookies2=False,
             cookies3=True,
         )
 
@@ -824,7 +824,7 @@ class CookiesMiddlewareTest(TestCase):
             from_scheme="https",
             to_scheme="http",
             cookies1=True,
-            cookies2=True,  # xfail, due to a bug in the redirect middleware fixed elsewhere
+            cookies2=False,
             cookies3=False,
         )
 

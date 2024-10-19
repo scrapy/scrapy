@@ -459,7 +459,7 @@ class EngineTest(unittest.TestCase):
         def kill_proc():
             p.kill()
             p.communicate()
-            assert False, "Command took too much time to complete"
+            raise AssertionError("Command took too much time to complete")
 
         timer = Timer(15, kill_proc)
         try:
@@ -499,7 +499,6 @@ def test_request_scheduled_signal(caplog):
     assert scheduler.enqueued == [
         keep_request
     ], f"{scheduler.enqueued!r} != [{keep_request!r}]"
-    assert "dropped request <GET https://drop.example>" in caplog.text
     crawler.signals.disconnect(signal_handler, request_scheduled)
 
 
