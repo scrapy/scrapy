@@ -2940,6 +2940,27 @@ class URIParamsTest:
 
         self.assertEqual(feed_exporter.slots[0].uri, f"file:///tmp/{self.spider_name}")
 
+    def test_custom_param_old_style(self):
+        def uri_params(params, spider):
+            return {**params, "foo": self.spider_name, "bar": "baz"}
+
+        # also contains __PLACEHOLDER__ to test that it is will not be replaced
+        settings = self.build_settings(
+            uri="ftp://__PLACEHOLDER__user:2%23um25%21M%23JZ@ftp.example.com/%(foo)s/%(bar)s/%(aa",
+            uri_params=uri_params,
+        )
+        crawler, feed_exporter = self._crawler_feed_exporter(settings)
+        spider = scrapy.Spider(self.spider_name)
+        spider.crawler = crawler
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ScrapyDeprecationWarning)
+            feed_exporter.open_spider(spider)
+
+        self.assertEqual(
+            feed_exporter.slots[0].uri,
+            f"ftp://__PLACEHOLDER__user:2%23um25%21M%23JZ@ftp.example.com/{self.spider_name}/baz/%(aa",
+        )
+
 
 class URIParamsSettingTest(URIParamsTest, unittest.TestCase):
     deprecated_options = True
