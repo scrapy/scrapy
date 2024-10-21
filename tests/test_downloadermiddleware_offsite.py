@@ -1,3 +1,5 @@
+import warnings
+
 import pytest
 
 from scrapy import Request, Spider
@@ -87,7 +89,9 @@ def test_process_request_invalid_domains():
     allowed_domains = ["a.example", None, "http:////b.example", "//c.example"]
     spider = crawler._create_spider(name="a", allowed_domains=allowed_domains)
     mw = OffsiteMiddleware.from_crawler(crawler)
-    mw.spider_opened(spider)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        mw.spider_opened(spider)
     request = Request("https://a.example")
     assert mw.process_request(request, spider) is None
     for letter in ("b", "c"):
@@ -175,7 +179,9 @@ def test_request_scheduled_invalid_domains():
     allowed_domains = ["a.example", None, "http:////b.example", "//c.example"]
     spider = crawler._create_spider(name="a", allowed_domains=allowed_domains)
     mw = OffsiteMiddleware.from_crawler(crawler)
-    mw.spider_opened(spider)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        mw.spider_opened(spider)
     request = Request("https://a.example")
     assert mw.request_scheduled(request, spider) is None
     for letter in ("b", "c"):
