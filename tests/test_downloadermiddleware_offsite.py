@@ -65,6 +65,37 @@ def test_process_request_dont_filter(value, filtered):
 
 
 @pytest.mark.parametrize(
+    ("allow_offsite", "dont_filter", "filtered"),
+    (
+        (True, UNSET, False),
+        (True, None, False),
+        (True, False, False),
+        (True, True, False),
+        (False, UNSET, True),
+        (False, None, True),
+        (False, False, True),
+        (False, True, False),
+    ),
+)
+def test_process_request_allow_offsite(allow_offsite, dont_filter, filtered):
+    crawler = get_crawler(Spider)
+    spider = crawler._create_spider(name="a", allowed_domains=["a.example"])
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw.spider_opened(spider)
+    kwargs = {"meta": {}}
+    if allow_offsite is not UNSET:
+        kwargs["meta"]["allow_offsite"] = allow_offsite
+    if dont_filter is not UNSET:
+        kwargs["dont_filter"] = dont_filter
+    request = Request("https://b.example", **kwargs)
+    if filtered:
+        with pytest.raises(IgnoreRequest):
+            mw.process_request(request, spider)
+    else:
+        assert mw.process_request(request, spider) is None
+
+
+@pytest.mark.parametrize(
     "value",
     (
         UNSET,
