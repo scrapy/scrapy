@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import copy
 from collections.abc import AsyncIterable, Awaitable, Callable
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 from twisted.python.failure import Failure
 
@@ -39,15 +39,11 @@ def _identity(x: _T) -> _T:
     return x
 
 
-def _identity_process_request(
-    request: Request, response: Response
-) -> Optional[Request]:
+def _identity_process_request(request: Request, response: Response) -> Request | None:
     return request
 
 
-def _get_method(
-    method: Union[Callable, str, None], spider: Spider
-) -> Optional[Callable]:
+def _get_method(method: Callable | str | None, spider: Spider) -> Callable | None:
     if callable(method):
         return method
     if isinstance(method, str):
@@ -61,20 +57,20 @@ _default_link_extractor = LinkExtractor()
 class Rule:
     def __init__(
         self,
-        link_extractor: Optional[LinkExtractor] = None,
-        callback: Union[CallbackT, str, None] = None,
-        cb_kwargs: Optional[dict[str, Any]] = None,
-        follow: Optional[bool] = None,
-        process_links: Union[ProcessLinksT, str, None] = None,
-        process_request: Union[ProcessRequestT, str, None] = None,
-        errback: Union[Callable[[Failure], Any], str, None] = None,
+        link_extractor: LinkExtractor | None = None,
+        callback: CallbackT | str | None = None,
+        cb_kwargs: dict[str, Any] | None = None,
+        follow: bool | None = None,
+        process_links: ProcessLinksT | str | None = None,
+        process_request: ProcessRequestT | str | None = None,
+        errback: Callable[[Failure], Any] | str | None = None,
     ):
         self.link_extractor: LinkExtractor = link_extractor or _default_link_extractor
-        self.callback: Union[CallbackT, str, None] = callback
-        self.errback: Union[Callable[[Failure], Any], str, None] = errback
+        self.callback: CallbackT | str | None = callback
+        self.errback: Callable[[Failure], Any] | str | None = errback
         self.cb_kwargs: dict[str, Any] = cb_kwargs or {}
-        self.process_links: Union[ProcessLinksT, str] = process_links or _identity
-        self.process_request: Union[ProcessRequestT, str] = (
+        self.process_links: ProcessLinksT | str = process_links or _identity
+        self.process_request: ProcessRequestT | str = (
             process_request or _identity_process_request
         )
         self.follow: bool = follow if follow is not None else not callback
@@ -124,7 +120,7 @@ class CrawlSpider(Spider):
             meta={"rule": rule_index, "link_text": link.text},
         )
 
-    def _requests_to_follow(self, response: Response) -> Iterable[Optional[Request]]:
+    def _requests_to_follow(self, response: Response) -> Iterable[Request | None]:
         if not isinstance(response, HtmlResponse):
             return
         seen: set[Link] = set()
@@ -157,7 +153,7 @@ class CrawlSpider(Spider):
     async def _parse_response(
         self,
         response: Response,
-        callback: Optional[CallbackT],
+        callback: CallbackT | None,
         cb_kwargs: dict[str, Any],
         follow: bool = True,
     ) -> AsyncIterable[Any]:
@@ -176,7 +172,7 @@ class CrawlSpider(Spider):
                 yield request_or_item
 
     def _handle_failure(
-        self, failure: Failure, errback: Optional[Callable[[Failure], Any]]
+        self, failure: Failure, errback: Callable[[Failure], Any] | None
     ) -> Iterable[Any]:
         if errback:
             results = errback(failure) or ()

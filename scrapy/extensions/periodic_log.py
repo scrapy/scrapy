@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from json import JSONEncoder
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet import task
 
@@ -36,7 +36,7 @@ class PeriodicLog:
         self.stats: StatsCollector = stats
         self.interval: float = interval
         self.multiplier: float = 60.0 / self.interval
-        self.task: Optional[task.LoopingCall] = None
+        self.task: task.LoopingCall | None = None
         self.encoder: JSONEncoder = ScrapyJSONEncoder(sort_keys=True, indent=4)
         self.ext_stats_enabled: bool = bool(ext_stats)
         self.ext_stats_include: list[str] = ext_stats.get("include", [])
@@ -52,7 +52,7 @@ class PeriodicLog:
         if not interval:
             raise NotConfigured
         try:
-            ext_stats: Optional[dict[str, Any]] = crawler.settings.getdict(
+            ext_stats: dict[str, Any] | None = crawler.settings.getdict(
                 "PERIODIC_LOG_STATS"
             )
         except (TypeError, ValueError):
@@ -62,7 +62,7 @@ class PeriodicLog:
                 else None
             )
         try:
-            ext_delta: Optional[dict[str, Any]] = crawler.settings.getdict(
+            ext_delta: dict[str, Any] | None = crawler.settings.getdict(
                 "PERIODIC_LOG_DELTA"
             )
         except (TypeError, ValueError):
@@ -93,8 +93,8 @@ class PeriodicLog:
 
     def spider_opened(self, spider: Spider) -> None:
         self.time_prev: datetime = datetime.now(tz=timezone.utc)
-        self.delta_prev: dict[str, Union[int, float]] = {}
-        self.stats_prev: dict[str, Union[int, float]] = {}
+        self.delta_prev: dict[str, int | float] = {}
+        self.stats_prev: dict[str, int | float] = {}
 
         self.task = task.LoopingCall(self.log)
         self.task.start(self.interval)
@@ -110,7 +110,7 @@ class PeriodicLog:
         logger.info(self.encoder.encode(data))
 
     def log_delta(self) -> dict[str, Any]:
-        num_stats: dict[str, Union[int, float]] = {
+        num_stats: dict[str, int | float] = {
             k: v
             for k, v in self.stats._stats.items()
             if isinstance(v, (int, float))

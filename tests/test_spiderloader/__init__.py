@@ -103,7 +103,6 @@ class SpiderLoaderTest(unittest.TestCase):
         runner = CrawlerRunner(
             {
                 "SPIDER_MODULES": [module],
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             }
         )
 

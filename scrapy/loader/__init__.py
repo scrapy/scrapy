@@ -6,7 +6,7 @@ See documentation in docs/topics/loaders.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import itemloaders
 
@@ -92,9 +92,9 @@ class ItemLoader(itemloaders.ItemLoader):
     def __init__(
         self,
         item: Any = None,
-        selector: Optional[Selector] = None,
-        response: Optional[TextResponse] = None,
-        parent: Optional[itemloaders.ItemLoader] = None,
+        selector: Selector | None = None,
+        response: TextResponse | None = None,
+        parent: itemloaders.ItemLoader | None = None,
         **context: Any,
     ):
         if selector is None and response is not None:

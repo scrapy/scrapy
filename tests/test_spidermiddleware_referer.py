@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import warnings
-from typing import Any, Optional
+from typing import Any
 from unittest import TestCase
 from urllib.parse import urlparse
 
@@ -35,7 +37,7 @@ class TestRefererMiddleware(TestCase):
     req_meta: dict[str, Any] = {}
     resp_headers: dict[str, str] = {}
     settings: dict[str, Any] = {}
-    scenarii: list[tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         ("http://scrapytest.org", "http://scrapytest.org/", b"http://scrapytest.org"),
     ]
 
@@ -65,7 +67,7 @@ class MixinDefault:
     with some additional filtering of s3://
     """
 
-    scenarii: list[tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         ("https://example.com/", "https://scrapy.org/", b"https://example.com/"),
         ("http://example.com/", "http://scrapy.org/", b"http://example.com/"),
         ("http://example.com/", "https://scrapy.org/", b"http://example.com/"),
@@ -86,7 +88,7 @@ class MixinDefault:
 
 
 class MixinNoReferrer:
-    scenarii: list[tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         ("https://example.com/page.html", "https://example.com/", None),
         ("http://www.example.com/", "https://scrapy.org/", None),
         ("http://www.example.com/", "http://scrapy.org/", None),
@@ -96,7 +98,7 @@ class MixinNoReferrer:
 
 
 class MixinNoReferrerWhenDowngrade:
-    scenarii: list[tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         # TLS to TLS: send non-empty referrer
         (
             "https://example.com/page.html",
@@ -178,7 +180,7 @@ class MixinNoReferrerWhenDowngrade:
 
 
 class MixinSameOrigin:
-    scenarii: list[tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         # Same origin (protocol, host, port): send referrer
         (
             "https://example.com/page.html",
@@ -247,7 +249,7 @@ class MixinSameOrigin:
 
 
 class MixinOrigin:
-    scenarii: list[tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         # TLS or non-TLS to TLS or non-TLS: referrer origin is sent (yes, even for downgrades)
         (
             "https://example.com/page.html",
@@ -271,7 +273,7 @@ class MixinOrigin:
 
 
 class MixinStrictOrigin:
-    scenarii: list[tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         # TLS or non-TLS to TLS or non-TLS: referrer origin is sent but not for downgrades
         (
             "https://example.com/page.html",
@@ -299,7 +301,7 @@ class MixinStrictOrigin:
 
 
 class MixinOriginWhenCrossOrigin:
-    scenarii: list[tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         # Same origin (protocol, host, port): send referrer
         (
             "https://example.com/page.html",
@@ -406,7 +408,7 @@ class MixinOriginWhenCrossOrigin:
 
 
 class MixinStrictOriginWhenCrossOrigin:
-    scenarii: list[tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         # Same origin (protocol, host, port): send referrer
         (
             "https://example.com/page.html",
@@ -518,7 +520,7 @@ class MixinStrictOriginWhenCrossOrigin:
 
 
 class MixinUnsafeUrl:
-    scenarii: list[tuple[str, str, Optional[bytes]]] = [
+    scenarii: list[tuple[str, str, bytes | None]] = [
         # TLS to TLS: send referrer
         (
             "https://example.com/sekrit.html",
@@ -969,7 +971,7 @@ class TestPolicyHeaderPrecedence004(
 class TestReferrerOnRedirect(TestRefererMiddleware):
     settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.UnsafeUrlPolicy"}
     scenarii: list[
-        tuple[str, str, tuple[tuple[int, str], ...], Optional[bytes], Optional[bytes]]
+        tuple[str, str, tuple[tuple[int, str], ...], bytes | None, bytes | None]
     ] = [  # type: ignore[assignment]
         (
             "http://scrapytest.org/1",  # parent

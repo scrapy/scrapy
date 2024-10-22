@@ -3,7 +3,7 @@ from __future__ import annotations
 import warnings
 from itertools import chain
 from logging import getLogger
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import IgnoreRequest, NotConfigured
@@ -54,9 +54,9 @@ class HttpCompressionMiddleware:
 
     def __init__(
         self,
-        stats: Optional[StatsCollector] = None,
+        stats: StatsCollector | None = None,
         *,
-        crawler: Optional[Crawler] = None,
+        crawler: Crawler | None = None,
     ):
         if not crawler:
             self.stats = stats
@@ -88,7 +88,7 @@ class HttpCompressionMiddleware:
             crawler.signals.connect(mw.open_spider, signals.spider_opened)
             return mw
 
-    def open_spider(self, spider):
+    def open_spider(self, spider: Spider) -> None:
         if hasattr(spider, "download_maxsize"):
             self._max_size = spider.download_maxsize
         if hasattr(spider, "download_warnsize"):
@@ -96,13 +96,13 @@ class HttpCompressionMiddleware:
 
     def process_request(
         self, request: Request, spider: Spider
-    ) -> Union[Request, Response, None]:
+    ) -> Request | Response | None:
         request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
         return None
 
     def process_response(
         self, request: Request, response: Response, spider: Spider
-    ) -> Union[Request, Response]:
+    ) -> Request | Response:
         if request.method == "HEAD":
             return response
         if isinstance(response, Response):

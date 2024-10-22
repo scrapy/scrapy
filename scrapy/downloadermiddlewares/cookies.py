@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from tldextract import TLDExtract
 
@@ -70,7 +70,7 @@ class CookiesMiddleware:
 
     def process_request(
         self, request: Request, spider: Spider
-    ) -> Union[Request, Response, None]:
+    ) -> Request | Response | None:
         if request.meta.get("dont_merge_cookies", False):
             return None
 
@@ -87,7 +87,7 @@ class CookiesMiddleware:
 
     def process_response(
         self, request: Request, response: Response, spider: Spider
-    ) -> Union[Request, Response]:
+    ) -> Request | Response:
         if request.meta.get("dont_merge_cookies", False):
             return response
 
@@ -123,7 +123,7 @@ class CookiesMiddleware:
                 msg = f"Received cookies from: {response}\n{cookies}"
                 logger.debug(msg, extra={"spider": spider})
 
-    def _format_cookie(self, cookie: VerboseCookie, request: Request) -> Optional[str]:
+    def _format_cookie(self, cookie: VerboseCookie, request: Request) -> str | None:
         """
         Given a dict consisting of cookie components, return its string representation.
         Decode from bytes if necessary.

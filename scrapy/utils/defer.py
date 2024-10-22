@@ -11,7 +11,7 @@ from asyncio import Future
 from collections.abc import Awaitable, Coroutine, Iterable, Iterator
 from functools import wraps
 from types import CoroutineType
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar, Union, cast, overload
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, Union, cast, overload
 
 from twisted.internet import defer
 from twisted.internet.defer import Deferred, DeferredList, ensureDeferred
@@ -93,7 +93,7 @@ def mustbe_deferred(
 
 
 def mustbe_deferred(
-    f: Callable[_P, Union[Deferred[_T], Coroutine[Deferred[Any], Any, _T], _T]],
+    f: Callable[_P, Deferred[_T] | Coroutine[Deferred[Any], Any, _T] | _T],
     *args: _P.args,
     **kw: _P.kwargs,
 ) -> Deferred[_T]:
@@ -179,17 +179,17 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
     def __init__(
         self,
         aiterable: AsyncIterable[_T],
-        callable: Callable[Concatenate[_T, _P], Optional[Deferred[Any]]],
+        callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],
         *callable_args: _P.args,
         **callable_kwargs: _P.kwargs,
     ):
         self.aiterator: AsyncIterator[_T] = aiterable.__aiter__()
-        self.callable: Callable[Concatenate[_T, _P], Optional[Deferred[Any]]] = callable
+        self.callable: Callable[Concatenate[_T, _P], Deferred[Any] | None] = callable
         self.callable_args: tuple[Any, ...] = callable_args
         self.callable_kwargs: dict[str, Any] = callable_kwargs
         self.finished: bool = False
         self.waiting_deferreds: list[Deferred[Any]] = []
-        self.anext_deferred: Optional[Deferred[_T]] = None
+        self.anext_deferred: Deferred[_T] | None = None
 
     def _callback(self, result: _T) -> None:
         # This gets called when the result from aiterator.__anext__() is available.
@@ -237,7 +237,7 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
 def parallel_async(
     async_iterable: AsyncIterable[_T],
     count: int,
-    callable: Callable[Concatenate[_T, _P], Optional[Deferred[Any]]],
+    callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],
     *args: _P.args,
     **named: _P.kwargs,
 ) -> Deferred[list[tuple[bool, Iterator[Deferred[Any]]]]]:
@@ -305,7 +305,11 @@ def process_parallel(
         dfds, fireOnOneErrback=True, consumeErrors=True
     )
     d2: Deferred[list[_T2]] = d.addCallback(lambda r: [x[1] for x in r])
-    d2.addErrback(lambda f: f.value.subFailure)
+
+    def eb(failure: Failure) -> Failure:
+        return failure.value.subFailure
+
+    d2.addErrback(eb)
     return d2
 
 
@@ -358,7 +362,7 @@ def deferred_from_coro(o: _CT) -> Deferred: ...
 def deferred_from_coro(o: _T) -> _T: ...
 
 
-def deferred_from_coro(o: _T) -> Union[Deferred, _T]:
+def deferred_from_coro(o: _T) -> Deferred | _T:
     """Converts a coroutine into a Deferred, or returns the object as is if it isn't a coroutine"""
     if isinstance(o, Deferred):
         return o
@@ -429,7 +433,7 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
     return d.asFuture(_get_asyncio_event_loop())
 
 
-def maybe_deferred_to_future(d: Deferred[_T]) -> Union[Deferred[_T], Future[_T]]:
+def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
     """
     .. versionadded:: 2.6.0
 

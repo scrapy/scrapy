@@ -14,7 +14,7 @@ from email.mime.nonmultipart import MIMENonMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate
 from io import BytesIO
-from typing import IO, TYPE_CHECKING, Any, Optional, Union
+from typing import IO, TYPE_CHECKING, Any
 
 from twisted import version as twisted_version
 from twisted.internet import ssl
@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 COMMASPACE = ", "
 
 
-def _to_bytes_or_none(text: Union[str, bytes, None]) -> Optional[bytes]:
+def _to_bytes_or_none(text: str | bytes | None) -> bytes | None:
     if text is None:
         return None
     return to_bytes(text)
@@ -56,8 +56,8 @@ class MailSender:
         self,
         smtphost: str = "localhost",
         mailfrom: str = "scrapy@localhost",
-        smtpuser: Optional[str] = None,
-        smtppass: Optional[str] = None,
+        smtpuser: str | None = None,
+        smtppass: str | None = None,
         smtpport: int = 25,
         smtptls: bool = False,
         smtpssl: bool = False,
@@ -65,8 +65,8 @@ class MailSender:
     ):
         self.smtphost: str = smtphost
         self.smtpport: int = smtpport
-        self.smtpuser: Optional[bytes] = _to_bytes_or_none(smtpuser)
-        self.smtppass: Optional[bytes] = _to_bytes_or_none(smtppass)
+        self.smtpuser: bytes | None = _to_bytes_or_none(smtpuser)
+        self.smtppass: bytes | None = _to_bytes_or_none(smtppass)
         self.smtptls: bool = smtptls
         self.smtpssl: bool = smtpssl
         self.mailfrom: str = mailfrom
@@ -86,15 +86,15 @@ class MailSender:
 
     def send(
         self,
-        to: Union[str, list[str]],
+        to: str | list[str],
         subject: str,
         body: str,
-        cc: Union[str, list[str], None] = None,
+        cc: str | list[str] | None = None,
         attachs: Sequence[tuple[str, str, IO[Any]]] = (),
         mimetype: str = "text/plain",
-        charset: Optional[str] = None,
-        _callback: Optional[Callable[..., None]] = None,
-    ) -> Optional[Deferred[None]]:
+        charset: str | None = None,
+        _callback: Callable[..., None] | None = None,
+    ) -> Deferred[None] | None:
         from twisted.internet import reactor
 
         msg: MIMEBase

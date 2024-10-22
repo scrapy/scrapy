@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import OpenSSL._util as pyOpenSSLutil
 import OpenSSL.SSL
@@ -26,7 +26,7 @@ def x509name_to_string(x509name: X509Name) -> str:
     return ffi_buf_to_string(result_buffer)
 
 
-def get_temp_key_info(ssl_object: Any) -> Optional[str]:
+def get_temp_key_info(ssl_object: Any) -> str | None:
     # adapted from OpenSSL apps/s_cb.c::ssl_print_tmp_key()
     if not hasattr(pyOpenSSLutil.lib, "SSL_get_server_tmp_key"):
         # removed in cryptography 40.0.0

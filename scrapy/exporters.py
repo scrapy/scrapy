@@ -2,6 +2,8 @@
 Item Exporters are used to export/serialize items into different formats.
 """
 
+from __future__ import annotations
+
 import csv
 import marshal
 import pickle  # nosec
@@ -9,7 +11,7 @@ import pprint
 from collections.abc import Callable, Iterable, Mapping
 from io import BytesIO, TextIOWrapper
 from json import JSONEncoder
-from typing import Any, Optional, Union
+from typing import Any
 from xml.sax.saxutils import XMLGenerator  # nosec
 from xml.sax.xmlreader import AttributesImpl  # nosec
 
@@ -41,12 +43,12 @@ class BaseItemExporter:
         If dont_fail is set, it won't raise an exception on unexpected options
         (useful for using with keyword arguments in subclasses ``__init__`` methods)
         """
-        self.encoding: Optional[str] = options.pop("encoding", None)
-        self.fields_to_export: Union[Mapping[str, str], Iterable[str], None] = (
-            options.pop("fields_to_export", None)
+        self.encoding: str | None = options.pop("encoding", None)
+        self.fields_to_export: Mapping[str, str] | Iterable[str] | None = options.pop(
+            "fields_to_export", None
         )
         self.export_empty_fields: bool = options.pop("export_empty_fields", False)
-        self.indent: Optional[int] = options.pop("indent", None)
+        self.indent: int | None = options.pop("indent", None)
         if not dont_fail and options:
             raise TypeError(f"Unexpected options: {', '.join(options.keys())}")
 
@@ -54,7 +56,7 @@ class BaseItemExporter:
         raise NotImplementedError
 
     def serialize_field(
-        self, field: Union[Mapping[str, Any], Field], name: str, value: Any
+        self, field: Mapping[str, Any] | Field, name: str, value: Any
     ) -> Any:
         serializer: Callable[[Any], Any] = field.get("serializer", lambda x: x)
         return serializer(value)
@@ -66,7 +68,7 @@ class BaseItemExporter:
         pass
 
     def _get_serialized_fields(
-        self, item: Any, default_value: Any = None, include_empty: Optional[bool] = None
+        self, item: Any, default_value: Any = None, include_empty: bool | None = None
     ) -> Iterable[tuple[str, Any]]:
         """Return the fields to export as an iterable of tuples
         (name, serialized_value)
@@ -225,7 +227,7 @@ class CsvItemExporter(BaseItemExporter):
         file: BytesIO,
         include_headers_line: bool = True,
         join_multivalued: str = ",",
-        errors: Optional[str] = None,
+        errors: str | None = None,
         **kwargs: Any,
     ):
         super().__init__(dont_fail=True, **kwargs)
@@ -245,7 +247,7 @@ class CsvItemExporter(BaseItemExporter):
         self._join_multivalued = join_multivalued
 
     def serialize_field(
-        self, field: Union[Mapping[str, Any], Field], name: str, value: Any
+        self, field: Mapping[str, Any] | Field, name: str, value: Any
     ) -> Any:
         serializer: Callable[[Any], Any] = field.get("serializer", self._join_if_needed)
         return serializer(value)
@@ -346,7 +348,7 @@ class PythonItemExporter(BaseItemExporter):
             self.encoding = "utf-8"
 
     def serialize_field(
-        self, field: Union[Mapping[str, Any], Field], name: str, value: Any
+        self, field: Mapping[str, Any] | Field, name: str, value: Any
     ) -> Any:
         serializer: Callable[[Any], Any] = field.get(
             "serializer", self._serialize_value
@@ -364,10 +366,10 @@ class PythonItemExporter(BaseItemExporter):
             return to_unicode(value, encoding=self.encoding)
         return value
 
-    def _serialize_item(self, item: Any) -> Iterable[tuple[Union[str, bytes], Any]]:
+    def _serialize_item(self, item: Any) -> Iterable[tuple[str | bytes, Any]]:
         for key, value in ItemAdapter(item).items():
             yield key, self._serialize_value(value)
 
-    def export_item(self, item: Any) -> dict[Union[str, bytes], Any]:  # type: ignore[override]
-        result: dict[Union[str, bytes], Any] = dict(self._get_serialized_fields(item))
+    def export_item(self, item: Any) -> dict[str | bytes, Any]:  # type: ignore[override]
+        result: dict[str | bytes, Any] = dict(self._get_serialized_fields(item))
         return result

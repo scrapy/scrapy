@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import (
@@ -31,10 +31,10 @@ class BaseDupeFilter:
     def request_seen(self, request: Request) -> bool:
         return False
 
-    def open(self) -> Optional[Deferred[None]]:
+    def open(self) -> Deferred[None] | None:
         pass
 
-    def close(self, reason: str) -> Optional[Deferred[None]]:
+    def close(self, reason: str) -> Deferred[None] | None:
         pass
 
     def log(self, request: Request, spider: Spider) -> None:
@@ -47,10 +47,10 @@ class RFPDupeFilter(BaseDupeFilter):
 
     def __init__(
         self,
-        path: Optional[str] = None,
+        path: str | None = None,
         debug: bool = False,
         *,
-        fingerprinter: Optional[RequestFingerprinterProtocol] = None,
+        fingerprinter: RequestFingerprinterProtocol | None = None,
     ) -> None:
         self.file = None
         self.fingerprinter: RequestFingerprinterProtocol = (
@@ -70,7 +70,7 @@ class RFPDupeFilter(BaseDupeFilter):
         cls,
         settings: BaseSettings,
         *,
-        fingerprinter: Optional[RequestFingerprinterProtocol] = None,
+        fingerprinter: RequestFingerprinterProtocol | None = None,
     ) -> Self:
         debug = settings.getbool("DUPEFILTER_DEBUG")
         return cls(job_dir(settings), debug, fingerprinter=fingerprinter)

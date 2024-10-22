@@ -4,7 +4,7 @@ import argparse
 import sys
 from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from types import ModuleType
 
 
-def _import_file(filepath: Union[str, PathLike[str]]) -> ModuleType:
+def _import_file(filepath: str | PathLike[str]) -> ModuleType:
     abspath = Path(filepath).resolve()
     if abspath.suffix not in (".py", ".pyw"):
         raise ValueError(f"Not a Python source file: {abspath}")

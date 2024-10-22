@@ -9,7 +9,6 @@ from typing import (
     Any,
     Literal,
     NoReturn,
-    Optional,
     TypedDict,
     TypeVar,
     Union,
@@ -44,7 +43,7 @@ _T = TypeVar("_T")
 class FileInfo(TypedDict):
     url: str
     path: str
-    checksum: Optional[str]
+    checksum: str | None
     status: str
 
 
@@ -64,15 +63,15 @@ class MediaPipeline(ABC):
         def __init__(self, spider: Spider):
             self.spider: Spider = spider
             self.downloading: set[bytes] = set()
-            self.downloaded: dict[bytes, Union[FileInfo, Failure]] = {}
+            self.downloaded: dict[bytes, FileInfo | Failure] = {}
             self.waiting: defaultdict[bytes, list[Deferred[FileInfo]]] = defaultdict(
                 list
             )
 
     def __init__(
         self,
-        download_func: Optional[Callable[[Request, Spider], Response]] = None,
-        settings: Union[Settings, dict[str, Any], None] = None,
+        download_func: Callable[[Request, Spider], Response] | None = None,
+        settings: Settings | dict[str, Any] | None = None,
     ):
         self.download_func = download_func
 
@@ -94,8 +93,8 @@ class MediaPipeline(ABC):
     def _key_for_pipe(
         self,
         key: str,
-        base_class_name: Optional[str] = None,
-        settings: Optional[Settings] = None,
+        base_class_name: str | None = None,
+        settings: Settings | None = None,
     ) -> str:
         class_name = self.__class__.__name__
         formatted_key = f"{class_name.upper()}_{key}"
@@ -161,7 +160,7 @@ class MediaPipeline(ABC):
 
         # Download request checking media_to_download hook output first
         info.downloading.add(fp)
-        dfd: Deferred[Optional[FileInfo]] = mustbe_deferred(
+        dfd: Deferred[FileInfo | None] = mustbe_deferred(
             self.media_to_download, request, info, item=item
         )
         dfd2: Deferred[FileInfo] = dfd.addCallback(
@@ -182,8 +181,8 @@ class MediaPipeline(ABC):
             request.meta["handle_httpstatus_all"] = True
 
     def _check_media_to_download(
-        self, result: Optional[FileInfo], request: Request, info: SpiderInfo, item: Any
-    ) -> Union[FileInfo, Deferred[FileInfo]]:
+        self, result: FileInfo | None, request: Request, info: SpiderInfo, item: Any
+    ) -> FileInfo | Deferred[FileInfo]:
         if result is not None:
             return result
         dfd: Deferred[Response]
@@ -201,7 +200,7 @@ class MediaPipeline(ABC):
         return dfd2
 
     def _cache_result_and_execute_waiters(
-        self, result: Union[FileInfo, Failure], fp: bytes, info: SpiderInfo
+        self, result: FileInfo | Failure, fp: bytes, info: SpiderInfo
     ) -> None:
         if isinstance(result, Failure):
             # minimize cached information for failure
@@ -243,7 +242,7 @@ class MediaPipeline(ABC):
     @abstractmethod
     def media_to_download(
         self, request: Request, info: SpiderInfo, *, item: Any = None
-    ) -> Deferred[Optional[FileInfo]]:
+    ) -> Deferred[FileInfo | None]:
         """Check request before starting download"""
         raise NotImplementedError()
 
@@ -291,8 +290,8 @@ class MediaPipeline(ABC):
     def file_path(
         self,
         request: Request,
-        response: Optional[Response] = None,
-        info: Optional[SpiderInfo] = None,
+        response: Response | None = None,
+        info: SpiderInfo | None = None,
         *,
         item: Any = None,
     ) -> str:

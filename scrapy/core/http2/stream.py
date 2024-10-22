@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from h2.errors import ErrorCodes
 from h2.exceptions import H2Error, ProtocolError, StreamClosedError
@@ -382,7 +382,7 @@ class Stream:
     def close(
         self,
         reason: StreamCloseReason,
-        errors: Optional[list[BaseException]] = None,
+        errors: list[BaseException] | None = None,
         from_protocol: bool = False,
     ) -> None:
         """Based on the reason sent we will handle each case."""

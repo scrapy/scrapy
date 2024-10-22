@@ -12,7 +12,7 @@ import weakref
 from collections.abc import AsyncIterable, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, overload
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 from scrapy.utils.asyncgen import as_async_generator
 
@@ -99,7 +99,7 @@ def unique(list_: Iterable[_T], key: Callable[[_T], Any] = lambda x: x) -> list[
 
 
 def to_unicode(
-    text: Union[str, bytes], encoding: Optional[str] = None, errors: str = "strict"
+    text: str | bytes, encoding: str | None = None, errors: str = "strict"
 ) -> str:
     """Return the unicode representation of a bytes object ``text``. If
     ``text`` is already an unicode object, return it as-is."""
@@ -116,7 +116,7 @@ def to_unicode(
 
 
 def to_bytes(
-    text: Union[str, bytes], encoding: Optional[str] = None, errors: str = "strict"
+    text: str | bytes, encoding: str | None = None, errors: str = "strict"
 ) -> bytes:
     """Return the binary representation of ``text``. If ``text``
     is already a bytes object, return it as-is."""
@@ -132,8 +132,8 @@ def to_bytes(
 
 
 def re_rsearch(
-    pattern: Union[str, Pattern[str]], text: str, chunk_size: int = 1024
-) -> Optional[tuple[int, int]]:
+    pattern: str | Pattern[str], text: str, chunk_size: int = 1024
+) -> tuple[int, int] | None:
     """
     This function does a reverse search in a text using a regular expression
     given in the attribute 'pattern'.
@@ -269,7 +269,7 @@ def get_spec(func: Callable[..., Any]) -> tuple[list[str], dict[str, Any]]:
 
 
 def equal_attributes(
-    obj1: Any, obj2: Any, attributes: Optional[list[Union[str, Callable[[Any], Any]]]]
+    obj1: Any, obj2: Any, attributes: list[str | Callable[[Any], Any]] | None
 ) -> bool:
     """Compare two objects attributes"""
     # not attributes given return False by default
@@ -297,8 +297,8 @@ def without_none_values(iterable: Iterable[_KT]) -> Iterable[_KT]: ...
 
 
 def without_none_values(
-    iterable: Union[Mapping[_KT, _VT], Iterable[_KT]]
-) -> Union[dict[_KT, _VT], Iterable[_KT]]:
+    iterable: Mapping[_KT, _VT] | Iterable[_KT]
+) -> dict[_KT, _VT] | Iterable[_KT]:
     """Return a copy of ``iterable`` with all ``None`` entries removed.
 
     If ``iterable`` is a mapping, return a dictionary where all pairs that have
@@ -354,7 +354,7 @@ class MutableChain(Iterable[_T]):
 
 
 async def _async_chain(
-    *iterables: Union[Iterable[_T], AsyncIterable[_T]]
+    *iterables: Iterable[_T] | AsyncIterable[_T],
 ) -> AsyncIterator[_T]:
     for it in iterables:
         async for o in as_async_generator(it):
@@ -366,10 +366,10 @@ class MutableAsyncChain(AsyncIterable[_T]):
     Similar to MutableChain but for async iterables
     """
 
-    def __init__(self, *args: Union[Iterable[_T], AsyncIterable[_T]]):
+    def __init__(self, *args: Iterable[_T] | AsyncIterable[_T]):
         self.data: AsyncIterator[_T] = _async_chain(*args)
 
-    def extend(self, *iterables: Union[Iterable[_T], AsyncIterable[_T]]) -> None:
+    def extend(self, *iterables: Iterable[_T] | AsyncIterable[_T]) -> None:
         self.data = _async_chain(self.data, _async_chain(*iterables))
 
     def __aiter__(self) -> AsyncIterator[_T]:

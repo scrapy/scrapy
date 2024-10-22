@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, overload
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
 
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
@@ -25,7 +25,7 @@ _T = TypeVar("_T")
 
 # https://stackoverflow.com/questions/60222982
 @overload
-def iterate_spider_output(result: AsyncGenerator[_T, None]) -> AsyncGenerator[_T, None]: ...  # type: ignore[overload-overlap]
+def iterate_spider_output(result: AsyncGenerator[_T]) -> AsyncGenerator[_T]: ...  # type: ignore[overload-overlap]
 
 
 @overload
@@ -38,7 +38,7 @@ def iterate_spider_output(result: _T) -> Iterable[Any]: ...
 
 def iterate_spider_output(
     result: Any,
-) -> Union[Iterable[Any], AsyncGenerator[_T, None], Deferred[_T]]:
+) -> Iterable[Any] | AsyncGenerator[_T] | Deferred[_T]:
     if inspect.isasyncgen(result):
         return result
     if inspect.iscoroutine(result):
@@ -83,7 +83,7 @@ def spidercls_for_request(
     default_spidercls: Literal[None],
     log_none: bool = ...,
     log_multiple: bool = ...,
-) -> Optional[type[Spider]]: ...
+) -> type[Spider] | None: ...
 
 
 @overload
@@ -93,16 +93,16 @@ def spidercls_for_request(
     *,
     log_none: bool = ...,
     log_multiple: bool = ...,
-) -> Optional[type[Spider]]: ...
+) -> type[Spider] | None: ...
 
 
 def spidercls_for_request(
     spider_loader: SpiderLoader,
     request: Request,
-    default_spidercls: Optional[type[Spider]] = None,
+    default_spidercls: type[Spider] | None = None,
     log_none: bool = False,
     log_multiple: bool = False,
-) -> Optional[type[Spider]]:
+) -> type[Spider] | None:
     """Return a spider class that handles the given Request.
 
     This will look for the spiders that can handle the given request (using

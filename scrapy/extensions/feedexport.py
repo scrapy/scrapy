@@ -14,7 +14,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
-from typing import IO, TYPE_CHECKING, Any, Optional, Protocol, TypeVar, Union, cast
+from typing import IO, TYPE_CHECKING, Any, Optional, Protocol, TypeVar, cast
 from urllib.parse import unquote, urlparse
 
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
@@ -67,7 +67,7 @@ def build_storage(
     builder: Callable[..., _StorageT],
     uri: str,
     *args: Any,
-    feed_options: Optional[dict[str, Any]] = None,
+    feed_options: dict[str, Any] | None = None,
     preargs: Iterable[Any] = (),
     **kwargs: Any,
 ) -> _StorageT:
@@ -84,10 +84,10 @@ class ItemFilter:
     :type feed_options: dict
     """
 
-    feed_options: Optional[dict[str, Any]]
+    feed_options: dict[str, Any] | None
     item_classes: tuple[type, ...]
 
-    def __init__(self, feed_options: Optional[dict[str, Any]]) -> None:
+    def __init__(self, feed_options: dict[str, Any] | None) -> None:
         self.feed_options = feed_options
         if feed_options is not None:
             self.item_classes = tuple(
@@ -129,7 +129,7 @@ class IFeedStorage(Interface):
 class FeedStorageProtocol(Protocol):
     """Reimplementation of ``IFeedStorage`` that can be used in type hints."""
 
-    def __init__(self, uri: str, *, feed_options: Optional[dict[str, Any]] = None):
+    def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
         """Initialize the storage with the parameters given in the URI and the
         feed-specific options (see :setting:`FEEDS`)"""
 
@@ -137,7 +137,7 @@ class FeedStorageProtocol(Protocol):
         """Open the storage for the given spider. It must return a file-like
         object that will be used for the exporters"""
 
-    def store(self, file: IO[bytes]) -> Optional[Deferred[None]]:
+    def store(self, file: IO[bytes]) -> Deferred[None] | None:
         """Store the given file stream"""
 
 
@@ -150,7 +150,7 @@ class BlockingFeedStorage:
 
         return NamedTemporaryFile(prefix="feed-", dir=path)
 
-    def store(self, file: IO[bytes]) -> Optional[Deferred[None]]:
+    def store(self, file: IO[bytes]) -> Deferred[None] | None:
         return deferToThread(self._store_in_thread, file)
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
@@ -162,9 +162,9 @@ class StdoutFeedStorage:
     def __init__(
         self,
         uri: str,
-        _stdout: Optional[IO[bytes]] = None,
+        _stdout: IO[bytes] | None = None,
         *,
-        feed_options: Optional[dict[str, Any]] = None,
+        feed_options: dict[str, Any] | None = None,
     ):
         if not _stdout:
             _stdout = sys.stdout.buffer
@@ -180,13 +180,13 @@ class StdoutFeedStorage:
     def open(self, spider: Spider) -> IO[bytes]:
         return self._stdout
 
-    def store(self, file: IO[bytes]) -> Optional[Deferred[None]]:
+    def store(self, file: IO[bytes]) -> Deferred[None] | None:
         pass
 
 
 @implementer(IFeedStorage)
 class FileFeedStorage:
-    def __init__(self, uri: str, *, feed_options: Optional[dict[str, Any]] = None):
+    def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
         self.path: str = file_uri_to_path(uri)
         feed_options = feed_options or {}
         self.write_mode: OpenBinaryMode = (
@@ -199,7 +199,7 @@ class FileFeedStorage:
             dirname.mkdir(parents=True)
         return Path(self.path).open(self.write_mode)
 
-    def store(self, file: IO[bytes]) -> Optional[Deferred[None]]:
+    def store(self, file: IO[bytes]) -> Deferred[None] | None:
         file.close()
         return None
 
@@ -208,27 +208,27 @@ class S3FeedStorage(BlockingFeedStorage):
     def __init__(
         self,
         uri: str,
-        access_key: Optional[str] = None,
-        secret_key: Optional[str] = None,
-        acl: Optional[str] = None,
-        endpoint_url: Optional[str] = None,
+        access_key: str | None = None,
+        secret_key: str | None = None,
+        acl: str | None = None,
+        endpoint_url: str | None = None,
         *,
-        feed_options: Optional[dict[str, Any]] = None,
-        session_token: Optional[str] = None,
-        region_name: Optional[str] = None,
+        feed_options: dict[str, Any] | None = None,
+        session_token: str | None = None,
+        region_name: str | None = None,
     ):
         if not is_botocore_available():
             raise NotConfigured("missing botocore library")
         u = urlparse(uri)
         assert u.hostname
         self.bucketname: str = u.hostname
-        self.access_key: Optional[str] = u.username or access_key
-        self.secret_key: Optional[str] = u.password or secret_key
-        self.session_token: Optional[str] = session_token
+        self.access_key: str | None = u.username or access_key
+        self.secret_key: str | None = u.password or secret_key
+        self.session_token: str | None = session_token
         self.keyname: str = u.path[1:]  # remove first "/"
-        self.acl: Optional[str] = acl
-        self.endpoint_url: Optional[str] = endpoint_url
-        self.region_name: Optional[str] = region_name
+        self.acl: str | None = acl
+        self.endpoint_url: str | None = endpoint_url
+        self.region_name: str | None = region_name
         # It can be either botocore.client.BaseClient or mypy_boto3_s3.S3Client,
         # there seems to be no good way to infer it statically.
         self.s3_client: Any
@@ -279,7 +279,7 @@ class S3FeedStorage(BlockingFeedStorage):
         crawler: Crawler,
         uri: str,
         *,
-        feed_options: Optional[dict[str, Any]] = None,
+        feed_options: dict[str, Any] | None = None,
     ) -> Self:
         return build_storage(
             cls,
@@ -310,9 +310,9 @@ class S3FeedStorage(BlockingFeedStorage):
 
 
 class GCSFeedStorage(BlockingFeedStorage):
-    def __init__(self, uri: str, project_id: Optional[str], acl: Optional[str]):
-        self.project_id: Optional[str] = project_id
-        self.acl: Optional[str] = acl
+    def __init__(self, uri: str, project_id: str | None, acl: str | None):
+        self.project_id: str | None = project_id
+        self.acl: str | None = acl
         u = urlparse(uri)
         assert u.hostname
         self.bucket_name: str = u.hostname
@@ -342,7 +342,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         uri: str,
         use_active_mode: bool = False,
         *,
-        feed_options: Optional[dict[str, Any]] = None,
+        feed_options: dict[str, Any] | None = None,
     ):
         u = urlparse(uri)
         if not u.hostname:
@@ -361,7 +361,7 @@ class FTPFeedStorage(BlockingFeedStorage):
         crawler: Crawler,
         uri: str,
         *,
-        feed_options: Optional[dict[str, Any]] = None,
+        feed_options: dict[str, Any] | None = None,
     ) -> Self:
         return build_storage(
             cls,
@@ -399,8 +399,8 @@ class FeedSlot:
         settings: BaseSettings,
         crawler: Crawler,
     ):
-        self.file: Optional[IO[bytes]] = None
-        self.exporter: Optional[BaseItemExporter] = None
+        self.file: IO[bytes] | None = None
+        self.exporter: BaseItemExporter | None = None
         self.storage: FeedStorageProtocol = storage
         # feed params
         self.batch_id: int = batch_id
@@ -558,7 +558,7 @@ class FeedExporter:
             self.crawler.signals.send_catch_log_deferred(signals.feed_exporter_closed)
         )
 
-    def _close_slot(self, slot: FeedSlot, spider: Spider) -> Optional[Deferred[None]]:
+    def _close_slot(self, slot: FeedSlot, spider: Spider) -> Deferred[None] | None:
         def get_file(slot_: FeedSlot) -> IO[bytes]:
             assert slot_.file
             if isinstance(slot_.file, PostProcessingManager):
@@ -578,7 +578,7 @@ class FeedExporter:
             return None
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
-        d: Deferred[None] = maybeDeferred(slot.storage.store, get_file(slot))  # type: ignore[arg-type]
+        d: Deferred[None] = maybeDeferred(slot.storage.store, get_file(slot))  # type: ignore[call-overload]
 
         d.addCallback(
             self._handle_store_success, logmsg, spider, type(slot.storage).__name__
@@ -770,8 +770,8 @@ class FeedExporter:
     def _get_uri_params(
         self,
         spider: Spider,
-        uri_params_function: Union[str, UriParamsCallableT, None],
-        slot: Optional[FeedSlot] = None,
+        uri_params_function: str | UriParamsCallableT | None,
+        slot: FeedSlot | None = None,
     ) -> dict[str, Any]:
         params = {}
         for k in dir(spider):

@@ -6,7 +6,7 @@ Use STATSMAILER_RCPTS setting to enable and give the recipient mail address
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
@@ -39,7 +39,7 @@ class StatsMailer:
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
 
-    def spider_closed(self, spider: Spider) -> Optional[Deferred[None]]:
+    def spider_closed(self, spider: Spider) -> Deferred[None] | None:
         spider_stats = self.stats.get_stats(spider)
         body = "Global stats\n\n"
         body += "\n".join(f"{k:<50} : {v}" for k, v in self.stats.get_stats().items())

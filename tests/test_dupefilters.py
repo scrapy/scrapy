@@ -50,7 +50,6 @@ class RFPDupeFilterTest(unittest.TestCase):
         settings = {
             "DUPEFILTER_DEBUG": True,
             "DUPEFILTER_CLASS": FromCrawlerRFPDupeFilter,
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
         }
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
@@ -61,7 +60,6 @@ class RFPDupeFilterTest(unittest.TestCase):
         settings = {
             "DUPEFILTER_DEBUG": True,
             "DUPEFILTER_CLASS": FromSettingsRFPDupeFilter,
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
         }
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
@@ -71,7 +69,6 @@ class RFPDupeFilterTest(unittest.TestCase):
     def test_df_direct_scheduler(self):
         settings = {
             "DUPEFILTER_CLASS": DirectDupeFilter,
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
         }
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
@@ -176,7 +173,6 @@ class RFPDupeFilterTest(unittest.TestCase):
             settings = {
                 "DUPEFILTER_DEBUG": False,
                 "DUPEFILTER_CLASS": FromCrawlerRFPDupeFilter,
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             }
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             spider = SimpleSpider.from_crawler(crawler)
@@ -205,7 +201,6 @@ class RFPDupeFilterTest(unittest.TestCase):
             settings = {
                 "DUPEFILTER_DEBUG": True,
                 "DUPEFILTER_CLASS": FromCrawlerRFPDupeFilter,
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             }
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             spider = SimpleSpider.from_crawler(crawler)
@@ -243,7 +238,6 @@ class RFPDupeFilterTest(unittest.TestCase):
         with LogCapture() as log:
             settings = {
                 "DUPEFILTER_DEBUG": True,
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             }
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             spider = SimpleSpider.from_crawler(crawler)

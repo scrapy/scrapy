@@ -6,7 +6,7 @@ See documentation in docs/topics/downloader-middleware.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider, signals
 
@@ -33,7 +33,7 @@ class DownloadTimeoutMiddleware:
 
     def process_request(
         self, request: Request, spider: Spider
-    ) -> Union[Request, Response, None]:
+    ) -> Request | Response | None:
         if self._timeout:
             request.meta.setdefault("download_timeout", self._timeout)
         return None

@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import sys
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 from warnings import catch_warnings, filterwarnings, warn
 
 from twisted.internet import asyncioreactor, error
@@ -54,7 +54,7 @@ class CallLaterOnce(Generic[_T]):
         self._func: Callable[_P, _T] = func
         self._a: tuple[Any, ...] = a
         self._kw: dict[str, Any] = kw
-        self._call: Optional[DelayedCall] = None
+        self._call: DelayedCall | None = None
 
     def schedule(self, delay: float = 0) -> None:
         from twisted.internet import reactor
@@ -97,17 +97,15 @@ def get_asyncio_event_loop_policy() -> AbstractEventLoopPolicy:
 
 def _get_asyncio_event_loop_policy() -> AbstractEventLoopPolicy:
     policy = asyncio.get_event_loop_policy()
-    if (
-        sys.version_info >= (3, 8)
-        and sys.platform == "win32"
-        and not isinstance(policy, asyncio.WindowsSelectorEventLoopPolicy)
+    if sys.platform == "win32" and not isinstance(
+        policy, asyncio.WindowsSelectorEventLoopPolicy
     ):
         policy = asyncio.WindowsSelectorEventLoopPolicy()
         asyncio.set_event_loop_policy(policy)
     return policy
 
 
-def install_reactor(reactor_path: str, event_loop_path: Optional[str] = None) -> None:
+def install_reactor(reactor_path: str, event_loop_path: str | None = None) -> None:
     """Installs the :mod:`~twisted.internet.reactor` with the specified
     import path. Also installs the asyncio event loop with the specified import
     path if the asyncio reactor is enabled"""
@@ -129,7 +127,7 @@ def _get_asyncio_event_loop() -> AbstractEventLoop:
     return set_asyncio_event_loop(None)
 
 
-def set_asyncio_event_loop(event_loop_path: Optional[str]) -> AbstractEventLoop:
+def set_asyncio_event_loop(event_loop_path: str | None) -> AbstractEventLoop:
     """Sets and returns the event loop with specified import path."""
     if event_loop_path is not None:
         event_loop_class: type[AbstractEventLoop] = load_object(event_loop_path)

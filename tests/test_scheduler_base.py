@@ -1,4 +1,5 @@
-from typing import Optional
+from __future__ import annotations
+
 from unittest import TestCase
 from urllib.parse import urljoin
 
@@ -32,7 +33,7 @@ class MinimalScheduler:
             return True
         return False
 
-    def next_request(self) -> Optional[Request]:
+    def next_request(self) -> Request | None:
         if self.has_pending_requests():
             fp, request = self.requests.popitem()
             return request

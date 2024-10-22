@@ -13,8 +13,7 @@ from scrapy.utils.misc import load_object, set_environ
 class TextTestResult(_TextTestResult):
     def printSummary(self, start: float, stop: float) -> None:
         write = self.stream.write
-        # _WritelnDecorator isn't implemented in typeshed yet
-        writeln = self.stream.writeln  # type: ignore[attr-defined]
+        writeln = self.stream.writeln
 
         run = self.testsRun
         plural = "s" if run != 1 else ""
@@ -84,7 +83,7 @@ class Command(ScrapyCommand):
         with set_environ(SCRAPY_CHECK="true"):
             for spidername in args or spider_loader.list():
                 spidercls = spider_loader.load(spidername)
-                spidercls.start_requests = lambda s: conman.from_spider(s, result)
+                spidercls.start_requests = lambda s: conman.from_spider(s, result)  # type: ignore[assignment,method-assign,return-value]
 
                 tested_methods = conman.tested_methods_from_spidercls(spidercls)
                 if opts.list:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.exceptions import NotConfigured
@@ -26,9 +26,9 @@ class S3DownloadHandler:
         settings: BaseSettings,
         *,
         crawler: Crawler,
-        aws_access_key_id: Optional[str] = None,
-        aws_secret_access_key: Optional[str] = None,
-        aws_session_token: Optional[str] = None,
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        aws_session_token: str | None = None,
         httpdownloadhandler: type[HTTPDownloadHandler] = HTTPDownloadHandler,
         **kw: Any,
     ):

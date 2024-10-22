@@ -5,7 +5,7 @@ import functools
 import inspect
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union, overload
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 from itemadapter import ItemAdapter, is_item
 from twisted.internet.defer import Deferred, maybeDeferred
@@ -38,9 +38,10 @@ _T = TypeVar("_T")
 class Command(BaseRunSpiderCommand):
     requires_project = True
 
-    spider = None
+    spider: Spider | None = None
     items: dict[int, list[Any]] = {}
     requests: dict[int, list[Request]] = {}
+    spidercls: type[Spider] | None
 
     first_response = None
 
@@ -136,13 +137,13 @@ class Command(BaseRunSpiderCommand):
 
     @overload
     def iterate_spider_output(
-        self, result: Union[AsyncGenerator[_T, None], Coroutine[Any, Any, _T]]
+        self, result: AsyncGenerator[_T] | Coroutine[Any, Any, _T]
     ) -> Deferred[_T]: ...
 
     @overload
     def iterate_spider_output(self, result: _T) -> Iterable[Any]: ...
 
-    def iterate_spider_output(self, result: Any) -> Union[Iterable[Any], Deferred[Any]]:
+    def iterate_spider_output(self, result: Any) -> Iterable[Any] | Deferred[Any]:
         if inspect.isasyncgen(result):
             d = deferred_from_coro(
                 collect_asyncgen(aiter_errback(result, self.handle_exception))
@@ -163,7 +164,7 @@ class Command(BaseRunSpiderCommand):
         old_reqs = self.requests.get(lvl, [])
         self.requests[lvl] = old_reqs + new_reqs
 
-    def print_items(self, lvl: Optional[int] = None, colour: bool = True) -> None:
+    def print_items(self, lvl: int | None = None, colour: bool = True) -> None:
         if lvl is None:
             items = [item for lst in self.items.values() for item in lst]
         else:
@@ -172,7 +173,7 @@ class Command(BaseRunSpiderCommand):
         print("# Scraped Items ", "-" * 60)
         display.pprint([ItemAdapter(x).asdict() for x in items], colorize=colour)
 
-    def print_requests(self, lvl: Optional[int] = None, colour: bool = True) -> None:
+    def print_requests(self, lvl: int | None = None, colour: bool = True) -> None:
         if lvl is None:
             if self.requests:
                 requests = self.requests[max(self.requests)]
@@ -221,7 +222,7 @@ class Command(BaseRunSpiderCommand):
         self,
         response: Response,
         callback: CallbackT,
-        cb_kwargs: Optional[dict[str, Any]] = None,
+        cb_kwargs: dict[str, Any] | None = None,
     ) -> Deferred[Any]:
         cb_kwargs = cb_kwargs or {}
         d = maybeDeferred(self.iterate_spider_output, callback(response, **cb_kwargs))
@@ -229,7 +230,7 @@ class Command(BaseRunSpiderCommand):
 
     def get_callback_from_rules(
         self, spider: Spider, response: Response
-    ) -> Union[CallbackT, str, None]:
+    ) -> CallbackT | str | None:
         if getattr(spider, "rules", None):
             for rule in spider.rules:  # type: ignore[attr-defined]
                 if rule.link_extractor.matches(response.url):
@@ -261,10 +262,11 @@ class Command(BaseRunSpiderCommand):
             yield self.prepare_request(spider, Request(url), opts)
 
         if self.spidercls:
-            self.spidercls.start_requests = _start_requests
+            self.spidercls.start_requests = _start_requests  # type: ignore[assignment,method-assign]
 
     def start_parsing(self, url: str, opts: argparse.Namespace) -> None:
         assert self.crawler_process
+        assert self.spidercls
         self.crawler_process.crawl(self.spidercls, **opts.spargs)
         self.pcrawler = list(self.crawler_process.crawlers)[0]
         self.crawler_process.start()
@@ -301,9 +303,9 @@ class Command(BaseRunSpiderCommand):
         *,
         spider: Spider,
         opts: argparse.Namespace,
-        response: Optional[Response] = None,
+        response: Response | None = None,
     ) -> CallbackT:
-        cb: Union[str, CallbackT, None] = None
+        cb: str | CallbackT | None = None
         if response:
             cb = response.meta["_callback"]
         if not cb:

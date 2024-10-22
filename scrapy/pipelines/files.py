@@ -17,17 +17,7 @@ from contextlib import suppress
 from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
-from typing import (
-    IO,
-    TYPE_CHECKING,
-    Any,
-    NoReturn,
-    Optional,
-    Protocol,
-    TypedDict,
-    Union,
-    cast,
-)
+from typing import IO, TYPE_CHECKING, Any, NoReturn, Protocol, TypedDict, cast
 from urllib.parse import urlparse
 
 from itemadapter import ItemAdapter
@@ -61,7 +51,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _to_string(path: Union[str, PathLike[str]]) -> str:
+def _to_string(path: str | PathLike[str]) -> str:
     return str(path)  # convert a Path object to string
 
 
@@ -99,17 +89,17 @@ class FilesStoreProtocol(Protocol):
         path: str,
         buf: BytesIO,
         info: MediaPipeline.SpiderInfo,
-        meta: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, str]] = None,
-    ) -> Optional[Deferred[Any]]: ...
+        meta: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> Deferred[Any] | None: ...
 
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
-    ) -> Union[StatInfo, Deferred[StatInfo]]: ...
+    ) -> StatInfo | Deferred[StatInfo]: ...
 
 
 class FSFilesStore:
-    def __init__(self, basedir: Union[str, PathLike[str]]):
+    def __init__(self, basedir: str | PathLike[str]):
         basedir = _to_string(basedir)
         if "://" in basedir:
             basedir = basedir.split("://", 1)[1]
@@ -121,18 +111,18 @@ class FSFilesStore:
 
     def persist_file(
         self,
-        path: Union[str, PathLike[str]],
+        path: str | PathLike[str],
         buf: BytesIO,
         info: MediaPipeline.SpiderInfo,
-        meta: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, str]] = None,
+        meta: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> None:
         absolute_path = self._get_filesystem_path(path)
         self._mkdir(absolute_path.parent, info)
         absolute_path.write_bytes(buf.getvalue())
 
     def stat_file(
-        self, path: Union[str, PathLike[str]], info: MediaPipeline.SpiderInfo
+        self, path: str | PathLike[str], info: MediaPipeline.SpiderInfo
     ) -> StatInfo:
         absolute_path = self._get_filesystem_path(path)
         try:
@@ -145,12 +135,12 @@ class FSFilesStore:
 
         return {"last_modified": last_modified, "checksum": checksum}
 
-    def _get_filesystem_path(self, path: Union[str, PathLike[str]]) -> Path:
+    def _get_filesystem_path(self, path: str | PathLike[str]) -> Path:
         path_comps = _to_string(path).split("/")
         return Path(self.basedir, *path_comps)
 
     def _mkdir(
-        self, dirname: Path, domain: Optional[MediaPipeline.SpiderInfo] = None
+        self, dirname: Path, domain: MediaPipeline.SpiderInfo | None = None
     ) -> None:
         seen: set[str] = self.created_directories[domain] if domain else set()
         if str(dirname) not in seen:
@@ -218,8 +208,8 @@ class S3FilesStore:
         path: str,
         buf: BytesIO,
         info: MediaPipeline.SpiderInfo,
-        meta: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, str]] = None,
+        meta: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> Deferred[Any]:
         """Upload file to S3 storage"""
         key_name = f"{self.prefix}{path}"
@@ -327,7 +317,7 @@ class GCSFilesStore:
             deferToThread(self.bucket.get_blob, blob_path).addCallback(_onsuccess),
         )
 
-    def _get_content_type(self, headers: Optional[dict[str, str]]) -> str:
+    def _get_content_type(self, headers: dict[str, str] | None) -> str:
         if headers and "Content-Type" in headers:
             return headers["Content-Type"]
         return "application/octet-stream"
@@ -340,8 +330,8 @@ class GCSFilesStore:
         path: str,
         buf: BytesIO,
         info: MediaPipeline.SpiderInfo,
-        meta: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, str]] = None,
+        meta: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> Deferred[Any]:
         blob_path = self._get_blob_path(path)
         blob = self.bucket.blob(blob_path)
@@ -356,9 +346,9 @@ class GCSFilesStore:
 
 
 class FTPFilesStore:
-    FTP_USERNAME: Optional[str] = None
-    FTP_PASSWORD: Optional[str] = None
-    USE_ACTIVE_MODE: Optional[bool] = None
+    FTP_USERNAME: str | None = None
+    FTP_PASSWORD: str | None = None
+    USE_ACTIVE_MODE: bool | None = None
 
     def __init__(self, uri: str):
         if not uri.startswith("ftp://"):
@@ -380,8 +370,8 @@ class FTPFilesStore:
         path: str,
         buf: BytesIO,
         info: MediaPipeline.SpiderInfo,
-        meta: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, str]] = None,
+        meta: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> Deferred[Any]:
         path = f"{self.basedir}/{path}"
         return deferToThread(
@@ -450,9 +440,9 @@ class FilesPipeline(MediaPipeline):
 
     def __init__(
         self,
-        store_uri: Union[str, PathLike[str]],
-        download_func: Optional[Callable[[Request, Spider], Response]] = None,
-        settings: Union[Settings, dict[str, Any], None] = None,
+        store_uri: str | PathLike[str],
+        download_func: Callable[[Request, Spider], Response] | None = None,
+        settings: Settings | dict[str, Any] | None = None,
     ):
         store_uri = _to_string(store_uri)
         if not store_uri:
@@ -517,8 +507,8 @@ class FilesPipeline(MediaPipeline):
 
     def media_to_download(
         self, request: Request, info: MediaPipeline.SpiderInfo, *, item: Any = None
-    ) -> Deferred[Optional[FileInfo]]:
-        def _onsuccess(result: StatInfo) -> Optional[FileInfo]:
+    ) -> Deferred[FileInfo | None]:
+        def _onsuccess(result: StatInfo) -> FileInfo | None:
             if not result:
                 return None  # returning None force download
 
@@ -550,8 +540,8 @@ class FilesPipeline(MediaPipeline):
 
         path = self.file_path(request, info=info, item=item)
         # maybeDeferred() overloads don't seem to support a Union[_T, Deferred[_T]] return type
-        dfd: Deferred[StatInfo] = maybeDeferred(self.store.stat_file, path, info)  # type: ignore[arg-type]
-        dfd2: Deferred[Optional[FileInfo]] = dfd.addCallback(_onsuccess)
+        dfd: Deferred[StatInfo] = maybeDeferred(self.store.stat_file, path, info)  # type: ignore[call-overload]
+        dfd2: Deferred[FileInfo | None] = dfd.addCallback(_onsuccess)
         dfd2.addErrback(lambda _: None)
         dfd2.addErrback(
             lambda f: logger.error(
@@ -684,8 +674,8 @@ class FilesPipeline(MediaPipeline):
     def file_path(
         self,
         request: Request,
-        response: Optional[Response] = None,
-        info: Optional[MediaPipeline.SpiderInfo] = None,
+        response: Response | None = None,
+        info: MediaPipeline.SpiderInfo | None = None,
         *,
         item: Any = None,
     ) -> str:
