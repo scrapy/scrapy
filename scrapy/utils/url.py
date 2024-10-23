@@ -189,3 +189,70 @@ def strip_url(
             "" if strip_fragment else parsed_url.fragment,
         )
     )
+
+
+def uri_handle_old_format_style(uri, params):
+    """
+    Formats a URI containing old-style placeholders (%s, %d, etc.) while safely handling named placeholders.
+
+    The function:
+    1. Escapes non-named or invalid named placeholders (e.g., %s, %d, %(missing)s).
+    2. Replaces valid named placeholders using old-style formatting.
+    3. Restores non-named placeholders as they originally appeared in the URI.
+
+    Parameters:
+        uri (str): The URI string potentially containing old-style format specifiers.
+        params (dict): A dictionary containing values to replace named format specifiers.
+
+    Returns:
+        str: The formatted URI with valid named placeholders replaced.
+    """
+    escaped_uri, placeholders = _escape_non_named_placeholders(uri)
+
+    try:
+        # Step 2: Perform old-style formatting using valid named placeholders from `params`
+        formatted_uri = escaped_uri % params
+    except KeyError as error:
+        raise KeyError(f"Error formatting URI: {error}")
+
+    # Step 3: Restore non-named placeholders in the formatted URI
+    return _restore_placeholders(formatted_uri, placeholders)
+
+
+def _escape_non_named_placeholders(uri):
+    """
+    Identifies and replaces non-named placeholders with markers.
+
+    Parameters:
+        uri (str): The URI containing old-style format specifiers.
+
+    Returns:
+        tuple: A tuple containing the escaped URI and a list of original placeholders.
+    """
+    placeholders = []
+    placeholder_marker = "__PLACEHOLDER__"
+
+    def _store_placeholder(match):
+        """Store and replace non-named placeholders."""
+        placeholders.append(match.group(0))
+        return f"{placeholder_marker}{len(placeholders) - 1}___"
+
+    escaped_uri = re.sub(r"%(?!\(\w+\))", _store_placeholder, uri)
+    return escaped_uri, placeholders
+
+
+def _restore_placeholders(uri, placeholders):
+    """
+    Restores the original non-named placeholders into the formatted URI.
+
+    Parameters:
+        uri (str): The formatted URI containing placeholder markers.
+        placeholders (list): List of original placeholders to restore.
+
+    Returns:
+        str: The URI with all placeholders restored.
+    """
+    placeholder_marker = "__PLACEHOLDER__"
+    for index, placeholder in enumerate(placeholders):
+        uri = uri.replace(f"{placeholder_marker}{index}___", placeholder, 1)
+    return uri

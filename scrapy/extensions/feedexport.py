@@ -34,6 +34,7 @@ from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
+from scrapy.utils.url import uri_handle_old_format_style
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -538,7 +539,7 @@ class FeedExporter:
             self.slots.append(
                 self._start_new_batch(
                     batch_id=1,
-                    uri=uri % uri_params,
+                    uri=uri_handle_old_format_style(uri, uri_params),
                     feed_options=feed_options,
                     spider=spider,
                     uri_template=uri,
