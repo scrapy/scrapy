@@ -1,24 +1,19 @@
 from __future__ import annotations
 
 import dataclasses
-import hashlib
 import io
 import random
-import warnings
 from shutil import rmtree
 from tempfile import mkdtemp
-from unittest.mock import patch
 
 import attr
 from itemadapter import ItemAdapter
 from twisted.trial import unittest
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
-from scrapy.pipelines.images import ImageException, ImagesPipeline, NoimagesDrop
+from scrapy.pipelines.images import ImageException, ImagesPipeline
 from scrapy.settings import Settings
-from scrapy.utils.python import to_bytes
 
 skip_pillow: str | None
 try:
@@ -159,7 +154,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
         with self.assertRaises(ImageException):
             next(self.pipeline.get_images(response=resp3, request=req, info=object()))
 
-    def test_get_images_new(self):
+    def test_get_images(self):
         self.pipeline.min_width = 0
         self.pipeline.min_height = 0
         self.pipeline.thumbs = {"small": (20, 20)}
@@ -185,101 +180,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
         self.assertEqual(thumb_img, thumb_img)
         self.assertEqual(orig_thumb_buf.getvalue(), thumb_buf.getvalue())
 
-    def test_get_images_old(self):
-        self.pipeline.thumbs = {"small": (20, 20)}
-        orig_im, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
-        resp = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf.getvalue())
-        req = Request(url="https://dev.mydeco.com/mydeco.gif")
-
-        def overridden_convert_image(image, size=None):
-            im, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
-            return im, buf
-
-        with patch.object(self.pipeline, "convert_image", overridden_convert_image):
-            with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter("always")
-                get_images_gen = self.pipeline.get_images(
-                    response=resp, request=req, info=object()
-                )
-                path, new_im, new_buf = next(get_images_gen)
-                self.assertEqual(
-                    path, "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
-                )
-                self.assertEqual(orig_im.mode, new_im.mode)
-                self.assertEqual(orig_im.getcolors(), new_im.getcolors())
-                self.assertEqual(buf.getvalue(), new_buf.getvalue())
-
-                thumb_path, thumb_img, thumb_buf = next(get_images_gen)
-                self.assertEqual(
-                    thumb_path,
-                    "thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg",
-                )
-                self.assertEqual(orig_im.mode, thumb_img.mode)
-                self.assertEqual(orig_im.getcolors(), thumb_img.getcolors())
-                self.assertEqual(buf.getvalue(), thumb_buf.getvalue())
-
-                expected_warning_msg = (
-                    ".convert_image() method overridden in a deprecated way, "
-                    "overridden method does not accept response_body argument."
-                )
-                self.assertEqual(
-                    len(
-                        [
-                            warning
-                            for warning in w
-                            if expected_warning_msg in str(warning.message)
-                        ]
-                    ),
-                    1,
-                )
-
-    def test_convert_image_old(self):
-        # tests for old API
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            SIZE = (100, 100)
-            # straight forward case: RGB and JPEG
-            COLOUR = (0, 127, 255)
-            im, _ = _create_image("JPEG", "RGB", SIZE, COLOUR)
-            converted, _ = self.pipeline.convert_image(im)
-            self.assertEqual(converted.mode, "RGB")
-            self.assertEqual(converted.getcolors(), [(10000, COLOUR)])
-
-            # check that thumbnail keep image ratio
-            thumbnail, _ = self.pipeline.convert_image(converted, size=(10, 25))
-            self.assertEqual(thumbnail.mode, "RGB")
-            self.assertEqual(thumbnail.size, (10, 10))
-
-            # transparency case: RGBA and PNG
-            COLOUR = (0, 127, 255, 50)
-            im, _ = _create_image("PNG", "RGBA", SIZE, COLOUR)
-            converted, _ = self.pipeline.convert_image(im)
-            self.assertEqual(converted.mode, "RGB")
-            self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
-
-            # transparency case with palette: P and PNG
-            COLOUR = (0, 127, 255, 50)
-            im, _ = _create_image("PNG", "RGBA", SIZE, COLOUR)
-            im = im.convert("P")
-            converted, _ = self.pipeline.convert_image(im)
-            self.assertEqual(converted.mode, "RGB")
-            self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
-
-            # ensure that we received deprecation warnings
-            expected_warning_msg = ".convert_image() method called in a deprecated way"
-            self.assertTrue(
-                len(
-                    [
-                        warning
-                        for warning in w
-                        if expected_warning_msg in str(warning.message)
-                    ]
-                )
-                == 4
-            )
-
-    def test_convert_image_new(self):
-        # tests for new API
+    def test_convert_image(self):
         SIZE = (100, 100)
         # straight forward case: RGB and JPEG
         COLOUR = (0, 127, 255)
@@ -311,19 +212,6 @@ class ImagesPipelineTestCase(unittest.TestCase):
         converted, _ = self.pipeline.convert_image(im, response_body=buf)
         self.assertEqual(converted.mode, "RGB")
         self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
-
-
-class DeprecatedImagesPipeline(ImagesPipeline):
-    def file_key(self, url):
-        return self.image_key(url)
-
-    def image_key(self, url):
-        image_guid = hashlib.sha1(to_bytes(url)).hexdigest()
-        return f"empty/{image_guid}.jpg"
-
-    def thumb_key(self, url, thumb_id):
-        thumb_guid = hashlib.sha1(to_bytes(url)).hexdigest()
-        return f"thumbsup/{thumb_id}/{thumb_guid}.jpg"
 
 
 class ImagesPipelineTestCaseFieldsMixin:
@@ -625,23 +513,6 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_value = settings.get(settings_attr)
             self.assertEqual(getattr(pipeline_cls, pipe_attr.lower()), expected_value)
-
-
-class NoimagesDropTestCase(unittest.TestCase):
-    def test_deprecation_warning(self):
-        arg = ""
-        with warnings.catch_warnings(record=True) as w:
-            NoimagesDrop(arg)
-            self.assertEqual(len(w), 1)
-            self.assertEqual(w[0].category, ScrapyDeprecationWarning)
-        with warnings.catch_warnings(record=True) as w:
-
-            class SubclassedNoimagesDrop(NoimagesDrop):
-                pass
-
-            SubclassedNoimagesDrop(arg)
-            self.assertEqual(len(w), 1)
-            self.assertEqual(w[0].category, ScrapyDeprecationWarning)
 
 
 def _create_image(format, *a, **kw):

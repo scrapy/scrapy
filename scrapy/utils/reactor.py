@@ -4,12 +4,11 @@ import asyncio
 import sys
 from contextlib import suppress
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
-from warnings import catch_warnings, filterwarnings, warn
+from warnings import catch_warnings, filterwarnings
 
 from twisted.internet import asyncioreactor, error
 from twisted.internet.base import DelayedCall
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import load_object
 
 if TYPE_CHECKING:
@@ -77,22 +76,6 @@ def set_asyncio_event_loop_policy() -> None:
     This should only be used to install the reactor.
     """
     _get_asyncio_event_loop_policy()
-
-
-def get_asyncio_event_loop_policy() -> AbstractEventLoopPolicy:
-    warn(
-        "Call to deprecated function "
-        "scrapy.utils.reactor.get_asyncio_event_loop_policy().\n"
-        "\n"
-        "Please use get_event_loop, new_event_loop and set_event_loop"
-        " from asyncio instead, as the corresponding policy methods may lead"
-        " to unexpected behaviour.\n"
-        "This function is replaced by set_asyncio_event_loop_policy and"
-        " is meant to be used only when the reactor is being installed.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    return _get_asyncio_event_loop_policy()
 
 
 def _get_asyncio_event_loop_policy() -> AbstractEventLoopPolicy:

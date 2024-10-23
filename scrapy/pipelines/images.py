@@ -8,14 +8,13 @@ from __future__ import annotations
 
 import functools
 import hashlib
-import warnings
 from contextlib import suppress
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, cast
 
 from itemadapter import ItemAdapter
 
-from scrapy.exceptions import DropItem, NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import (
@@ -27,7 +26,7 @@ from scrapy.pipelines.files import (
     _md5sum,
 )
 from scrapy.settings import Settings
-from scrapy.utils.python import get_func_args, to_bytes
+from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -40,18 +39,6 @@ if TYPE_CHECKING:
 
     from scrapy import Spider
     from scrapy.pipelines.media import FileInfoOrError, MediaPipeline
-
-
-class NoimagesDrop(DropItem):
-    """Product with no images exception"""
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        warnings.warn(
-            "The NoimagesDrop class is deprecated",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(*args, **kwargs)
 
 
 class ImageException(FileException):
@@ -119,8 +106,6 @@ class ImagesPipeline(FilesPipeline):
         self.thumbs: dict[str, tuple[int, int]] = settings.get(
             resolve("IMAGES_THUMBS"), self.THUMBS
         )
-
-        self._deprecated_convert_image: bool | None = None
 
     @classmethod
     def from_settings(cls, settings: Settings) -> Self:
@@ -203,49 +188,25 @@ class ImagesPipeline(FilesPipeline):
                 f"{self.min_width}x{self.min_height})"
             )
 
-        if self._deprecated_convert_image is None:
-            self._deprecated_convert_image = "response_body" not in get_func_args(
-                self.convert_image
-            )
-            if self._deprecated_convert_image:
-                warnings.warn(
-                    f"{self.__class__.__name__}.convert_image() method overridden in a deprecated way, "
-                    "overridden method does not accept response_body argument.",
-                    category=ScrapyDeprecationWarning,
-                )
-
-        if self._deprecated_convert_image:
-            image, buf = self.convert_image(orig_image)
-        else:
-            image, buf = self.convert_image(
-                orig_image, response_body=BytesIO(response.body)
-            )
+        image, buf = self.convert_image(
+            orig_image, response_body=BytesIO(response.body)
+        )
         yield path, image, buf
 
         for thumb_id, size in self.thumbs.items():
             thumb_path = self.thumb_path(
                 request, thumb_id, response=response, info=info, item=item
             )
-            if self._deprecated_convert_image:
-                thumb_image, thumb_buf = self.convert_image(image, size)
-            else:
-                thumb_image, thumb_buf = self.convert_image(image, size, buf)
+            thumb_image, thumb_buf = self.convert_image(image, size, response_body=buf)
             yield thumb_path, thumb_image, thumb_buf
 
     def convert_image(
         self,
         image: Image.Image,
         size: tuple[int, int] | None = None,
-        response_body: BytesIO | None = None,
+        *,
+        response_body: BytesIO,
     ) -> tuple[Image.Image, BytesIO]:
-        if response_body is None:
-            warnings.warn(
-                f"{self.__class__.__name__}.convert_image() method called in a deprecated way, "
-                "method called without response_body argument.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-
         if image.format in ("PNG", "WEBP") and image.mode == "RGBA":
             background = self._Image.new("RGBA", image.size, (255, 255, 255))
             background.paste(image, image)
@@ -268,7 +229,7 @@ class ImagesPipeline(FilesPipeline):
             except AttributeError:
                 resampling_filter = self._Image.ANTIALIAS  # type: ignore[attr-defined]
             image.thumbnail(size, resampling_filter)
-        elif response_body is not None and image.format == "JPEG":
+        elif image.format == "JPEG":
             return image, response_body
 
         buf = BytesIO()
