@@ -889,8 +889,8 @@ DOWNLOAD_MAXSIZE
 
 Default: ``1073741824`` (1 GiB)
 
-The maximum response body size (in bytes) allowed. Bigger responses are
-aborted and ignored.
+The maximum response body size (in bytes) allowed. Bigger responses return
+:exc:`IgnoreRequest`.
 
 This applies both before and after compression. If decompressing a response
 body would exceed this limit, decompression is aborted and the response is
