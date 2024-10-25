@@ -80,19 +80,13 @@ Deprecation removals
     since Scrapy 1.0.0.
     (:issue:`6101`, :issue:`6113`)
 
-New features
-~~~~~~~~~~~~
-
-- If :setting:`SPIDER_LOADER_WARN_ONLY` is set to ``True``,
-  ``SpiderLoader`` does not raise :exc:`SyntaxError` but emits a warning instead.
-
 Deprecations
 ~~~~~~~~~~~~
 
 -   The ``REQUEST_FINGERPRINTER_IMPLEMENTATION`` setting is now deprecated.
     (:issue:`6212`, :issue:`6213`)
 
--   The :ref:`Reppy <reppy-parser>`-based ``robots.txt`` parser,
+-   The Reppy-based ``robots.txt`` parser,
     ``scrapy.robotstxt.ReppyRobotParser``, is now deprecated.
     (:issue:`5230`, :issue:`6099`)
 
@@ -127,6 +121,10 @@ New features
     :meth:`~scrapy.crawler.Crawler.get_spider_middleware`.
     (:issue:`6181`)
 
+-   If :setting:`SPIDER_LOADER_WARN_ONLY` is set to ``True``,
+    ``SpiderLoader`` does not raise :exc:`SyntaxError` but emits a warning
+    instead. (:issue:`6483`, :issue:`6484`)
+
 Improvements
 ~~~~~~~~~~~~
 
@@ -138,23 +136,8 @@ Improvements
 Bug fixes
 ~~~~~~~~~
 
--   Assigning an empty string to the :setting:`JOBDIR` setting no longer
-    triggers the initialization of the disk queue.
-    (:issue:`6121`, :issue:`6124`)
-
--   ``media_to_download`` errors in :ref:`media pipelines
-    <topics-media-pipeline>` are now logged.
-    (:issue:`5067`, :issue:`5068`)
-
--   When using the :command:`parse` command, callbacks specified on the command
-    line no longer see their signature stripped.
-    (:issue:`6182`)
-
 Documentation
 ~~~~~~~~~~~~~
-
--   :ref:`Documented how to create a a blank request <faq-blank-request>`.
-    (:issue:`6203`, :issue:`6208`)
 
 -   Other documentation improvements and fixes.
     (:issue:`6094`,
