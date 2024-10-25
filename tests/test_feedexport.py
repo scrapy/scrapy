@@ -49,7 +49,7 @@ from scrapy.extensions.feedexport import (
 )
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
-from scrapy.utils.test import get_crawler, mock_google_cloud_storage, skip_if_no_boto
+from scrapy.utils.test import get_crawler, mock_google_cloud_storage
 from tests.mockserver import MockFTPServer, MockServer
 from tests.spiders import ItemSpider
 
@@ -239,10 +239,8 @@ class BlockingFeedStorageTest(unittest.TestCase):
         self.assertRaises(OSError, b.open, spider=spider)
 
 
+@pytest.mark.requires_boto3
 class S3FeedStorageTest(unittest.TestCase):
-    def setUp(self):
-        skip_if_no_boto()
-
     def test_parse_credentials(self):
         aws_credentials = {
             "AWS_ACCESS_KEY_ID": "settings_key",
@@ -2614,9 +2612,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
             crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 12
         )
 
+    @pytest.mark.requires_boto3
     @defer.inlineCallbacks
     def test_s3_export(self):
-        skip_if_no_boto()
         bucket = "mybucket"
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
