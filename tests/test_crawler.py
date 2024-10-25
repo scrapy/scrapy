@@ -6,6 +6,7 @@ import subprocess
 import sys
 import warnings
 from pathlib import Path
+from typing import Any
 
 from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
@@ -27,10 +28,7 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer, get_mockserver_env
 
-# To prevent warnings.
-BASE_SETTINGS = {
-    "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
-}
+BASE_SETTINGS: dict[str, Any] = {}
 
 
 def get_raw_crawler(spidercls=None, settings_dict=None):
@@ -476,8 +474,6 @@ class CrawlerLoggingTestCase(unittest.TestCase):
             custom_settings = {
                 "LOG_LEVEL": "INFO",
                 "LOG_FILE": str(log_file),
-                # settings to avoid extra warnings
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             }
 
         configure_logging()
@@ -580,7 +576,7 @@ class NoRequestsSpider(scrapy.Spider):
 @mark.usefixtures("reactor_pytest")
 class CrawlerRunnerHasSpider(unittest.TestCase):
     def _runner(self):
-        return CrawlerRunner({"REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7"})
+        return CrawlerRunner()
 
     @inlineCallbacks
     def test_crawler_runner_bootstrap_successful(self):
@@ -629,7 +625,6 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
             CrawlerRunner(
                 settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                    "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
                 }
             )
         else:
@@ -638,7 +633,6 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
                 runner = CrawlerRunner(
                     settings={
                         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                        "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
                     }
                 )
                 yield runner.crawl(NoRequestsSpider)

@@ -71,7 +71,6 @@ class FileDownloadCrawlTestCase(TestCase):
         # prepare a directory for storing files
         self.tmpmediastore = Path(mkdtemp())
         self.settings = {
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             "ITEM_PIPELINES": {self.pipeline_class: 1},
             self.store_setting_key: str(self.tmpmediastore),
         }

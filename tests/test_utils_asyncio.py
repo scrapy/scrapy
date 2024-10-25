@@ -1,8 +1,8 @@
 import asyncio
 import warnings
-from unittest import TestCase
 
 from pytest import mark
+from twisted.trial.unittest import TestCase
 
 from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.reactor import (
