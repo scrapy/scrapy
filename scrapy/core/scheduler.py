@@ -4,19 +4,23 @@ import json
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Optional, Type, cast
 
 from twisted.internet.defer import Deferred
 
 from scrapy.crawler import Crawler
 from scrapy.dupefilters import BaseDupeFilter
 from scrapy.http.request import Request
+from scrapy.pqueues import ScrapyPriorityQueue
 from scrapy.spiders import Spider
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
+    # requires queuelib >= 1.6.2
+    from queuelib.queue import BaseQueue
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -121,9 +125,6 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         raise NotImplementedError()
 
 
-SchedulerTV = TypeVar("SchedulerTV", bound="Scheduler")
-
-
 class Scheduler(BaseScheduler):
     """
     Default Scrapy scheduler. This implementation also handles duplication
@@ -179,24 +180,24 @@ class Scheduler(BaseScheduler):
         self,
         dupefilter: BaseDupeFilter,
         jobdir: Optional[str] = None,
-        dqclass=None,
-        mqclass=None,
+        dqclass: Optional[Type[BaseQueue]] = None,
+        mqclass: Optional[Type[BaseQueue]] = None,
         logunser: bool = False,
         stats: Optional[StatsCollector] = None,
-        pqclass=None,
+        pqclass: Optional[Type[ScrapyPriorityQueue]] = None,
         crawler: Optional[Crawler] = None,
     ):
         self.df: BaseDupeFilter = dupefilter
         self.dqdir: Optional[str] = self._dqdir(jobdir)
-        self.pqclass = pqclass
-        self.dqclass = dqclass
-        self.mqclass = mqclass
+        self.pqclass: Optional[Type[ScrapyPriorityQueue]] = pqclass
+        self.dqclass: Optional[Type[BaseQueue]] = dqclass
+        self.mqclass: Optional[Type[BaseQueue]] = mqclass
         self.logunser: bool = logunser
         self.stats: Optional[StatsCollector] = stats
         self.crawler: Optional[Crawler] = crawler
 
     @classmethod
-    def from_crawler(cls: Type[SchedulerTV], crawler: Crawler) -> SchedulerTV:
+    def from_crawler(cls, crawler: Crawler) -> Self:
         """
         Factory method, initializes the scheduler with arguments taken from the crawl settings
         """
@@ -221,9 +222,9 @@ class Scheduler(BaseScheduler):
         (2) initialize the disk queue if the ``jobdir`` attribute is a valid directory
         (3) return the result of the dupefilter's ``open`` method
         """
-        self.spider = spider
-        self.mqs = self._mq()
-        self.dqs = self._dq() if self.dqdir else None
+        self.spider: Spider = spider
+        self.mqs: ScrapyPriorityQueue = self._mq()
+        self.dqs: Optional[ScrapyPriorityQueue] = self._dq() if self.dqdir else None
         return self.df.open()
 
     def close(self, reason: str) -> Optional[Deferred]:
@@ -320,8 +321,10 @@ class Scheduler(BaseScheduler):
             return self.dqs.pop()
         return None
 
-    def _mq(self):
+    def _mq(self) -> ScrapyPriorityQueue:
         """Create a new priority queue instance, with in-memory storage"""
+        assert self.crawler
+        assert self.pqclass
         return build_from_crawler(
             self.pqclass,
             self.crawler,
@@ -329,9 +332,11 @@ class Scheduler(BaseScheduler):
             key="",
         )
 
-    def _dq(self):
+    def _dq(self) -> ScrapyPriorityQueue:
         """Create a new priority queue instance, with disk storage"""
+        assert self.crawler
         assert self.dqdir
+        assert self.pqclass
         state = self._read_dqs_state(self.dqdir)
         q = build_from_crawler(
             self.pqclass,

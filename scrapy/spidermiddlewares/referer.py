@@ -2,6 +2,7 @@
 RefererMiddleware: populates Request referer field, based on the Response which
 originated it.
 """
+
 from __future__ import annotations
 
 import warnings

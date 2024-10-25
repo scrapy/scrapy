@@ -18,6 +18,9 @@ jobs:
         - python-version: 3.8
           env:
             TOXENV: typing
+        - python-version: 3.8
+          env:
+            TOXENV: typing-tests
         - python-version: "3.11"  # Keep in sync with .readthedocs.yml
           env:
             TOXENV: docs

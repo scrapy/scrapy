@@ -221,7 +221,7 @@ class FilesPipelineTestCase(unittest.TestCase):
         file_path = CustomFilesPipeline.from_settings(
             Settings({"FILES_STORE": self.tempdir})
         ).file_path
-        item = dict(path="path-to-store-file")
+        item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
         self.assertEqual(file_path(request, item=item), "full/path-to-store-file")
 

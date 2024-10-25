@@ -24,7 +24,11 @@ def install_shutdown_handlers(
     (e.g. Pdb)
     """
     signal.signal(signal.SIGTERM, function)
-    if signal.getsignal(signal.SIGINT) == signal.default_int_handler or override_sigint:
+    if (
+        signal.getsignal(signal.SIGINT)  # pylint: disable=comparison-with-callable
+        == signal.default_int_handler
+        or override_sigint
+    ):
         signal.signal(signal.SIGINT, function)
     # Catch Ctrl-Break in windows
     if hasattr(signal, "SIGBREAK"):

@@ -2,24 +2,28 @@
 This module provides some useful functions for working with
 scrapy.http.Response objects
 """
+
+from __future__ import annotations
+
 import os
 import re
 import tempfile
 import webbrowser
-from typing import Any, Callable, Iterable, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Tuple, Union
 from weakref import WeakKeyDictionary
 
 from twisted.web import http
 from w3lib import html
 
-import scrapy
-from scrapy.http.response import Response
 from scrapy.utils.python import to_bytes, to_unicode
 
-_baseurl_cache: "WeakKeyDictionary[Response, str]" = WeakKeyDictionary()
+if TYPE_CHECKING:
+    from scrapy.http import Response, TextResponse
+
+_baseurl_cache: WeakKeyDictionary[Response, str] = WeakKeyDictionary()
 
 
-def get_base_url(response: "scrapy.http.response.text.TextResponse") -> str:
+def get_base_url(response: TextResponse) -> str:
     """Return the base url of the given response, joined with the response url"""
     if response not in _baseurl_cache:
         text = response.text[0:4096]
@@ -29,13 +33,13 @@ def get_base_url(response: "scrapy.http.response.text.TextResponse") -> str:
     return _baseurl_cache[response]
 
 
-_metaref_cache: "WeakKeyDictionary[Response, Union[Tuple[None, None], Tuple[float, str]]]" = (
-    WeakKeyDictionary()
-)
+_metaref_cache: WeakKeyDictionary[
+    Response, Union[Tuple[None, None], Tuple[float, str]]
+] = WeakKeyDictionary()
 
 
 def get_meta_refresh(
-    response: "scrapy.http.response.text.TextResponse",
+    response: TextResponse,
     ignore_tags: Iterable[str] = ("script", "noscript"),
 ) -> Union[Tuple[None, None], Tuple[float, str]]:
     """Parse the http-equiv refresh parameter from the given response"""
@@ -67,10 +71,7 @@ def _remove_html_comments(body):
 
 
 def open_in_browser(
-    response: Union[
-        "scrapy.http.response.html.HtmlResponse",
-        "scrapy.http.response.text.TextResponse",
-    ],
+    response: TextResponse,
     _openfunc: Callable[[str], Any] = webbrowser.open,
 ) -> Any:
     """Open *response* in a local web browser, adjusting the `base tag`_ for

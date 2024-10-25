@@ -3,8 +3,10 @@
 See documentation in docs/topics/shell.rst
 
 """
+
 import os
 import signal
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 from itemadapter import is_item
 from twisted.internet import defer, threads
@@ -25,18 +27,32 @@ from scrapy.utils.response import open_in_browser
 
 
 class Shell:
-    relevant_classes = (Crawler, Spider, Request, Response, Settings)
+    relevant_classes: Tuple[type, ...] = (Crawler, Spider, Request, Response, Settings)
 
-    def __init__(self, crawler, update_vars=None, code=None):
-        self.crawler = crawler
-        self.update_vars = update_vars or (lambda x: None)
-        self.item_class = load_object(crawler.settings["DEFAULT_ITEM_CLASS"])
-        self.spider = None
-        self.inthread = not threadable.isInIOThread()
-        self.code = code
-        self.vars = {}
+    def __init__(
+        self,
+        crawler: Crawler,
+        update_vars: Optional[Callable[[Dict[str, Any]], None]] = None,
+        code: Optional[str] = None,
+    ):
+        self.crawler: Crawler = crawler
+        self.update_vars: Callable[[Dict[str, Any]], None] = update_vars or (
+            lambda x: None
+        )
+        self.item_class: type = load_object(crawler.settings["DEFAULT_ITEM_CLASS"])
+        self.spider: Optional[Spider] = None
+        self.inthread: bool = not threadable.isInIOThread()
+        self.code: Optional[str] = code
+        self.vars: Dict[str, Any] = {}
 
-    def start(self, url=None, request=None, response=None, spider=None, redirect=True):
+    def start(
+        self,
+        url: Optional[str] = None,
+        request: Optional[Request] = None,
+        response: Optional[Response] = None,
+        spider: Optional[Spider] = None,
+        redirect: bool = True,
+    ) -> None:
         # disable accidental Ctrl-C key press from shutting down the engine
         signal.signal(signal.SIGINT, signal.SIG_IGN)
         if url:
@@ -49,7 +65,7 @@ class Shell:
         else:
             self.populate_vars()
         if self.code:
-            print(eval(self.code, globals(), self.vars))
+            print(eval(self.code, globals(), self.vars))  # nosec
         else:
             """
             Detect interactive shell setting in scrapy.cfg
@@ -76,7 +92,7 @@ class Shell:
                 self.vars, shells=shells, banner=self.vars.pop("banner", "")
             )
 
-    def _schedule(self, request, spider):
+    def _schedule(self, request: Request, spider: Optional[Spider]) -> defer.Deferred:
         if is_asyncio_reactor_installed():
             # set the asyncio event loop for the current thread
             event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
@@ -84,10 +100,11 @@ class Shell:
         spider = self._open_spider(request, spider)
         d = _request_deferred(request)
         d.addCallback(lambda x: (x, spider))
+        assert self.crawler.engine
         self.crawler.engine.crawl(request)
         return d
 
-    def _open_spider(self, request, spider):
+    def _open_spider(self, request: Request, spider: Optional[Spider]) -> Spider:
         if self.spider:
             return self.spider
 
@@ -95,11 +112,18 @@ class Shell:
             spider = self.crawler.spider or self.crawler._create_spider()
 
         self.crawler.spider = spider
+        assert self.crawler.engine
         self.crawler.engine.open_spider(spider, close_if_idle=False)
         self.spider = spider
         return spider
 
-    def fetch(self, request_or_url, spider=None, redirect=True, **kwargs):
+    def fetch(
+        self,
+        request_or_url: Union[Request, str],
+        spider: Optional[Spider] = None,
+        redirect: bool = True,
+        **kwargs: Any,
+    ) -> None:
         from twisted.internet import reactor
 
         if isinstance(request_or_url, Request):
@@ -122,7 +146,12 @@ class Shell:
             pass
         self.populate_vars(response, request, spider)
 
-    def populate_vars(self, response=None, request=None, spider=None):
+    def populate_vars(
+        self,
+        response: Optional[Response] = None,
+        request: Optional[Request] = None,
+        spider: Optional[Spider] = None,
+    ) -> None:
         import scrapy
 
         self.vars["scrapy"] = scrapy
@@ -140,10 +169,10 @@ class Shell:
         if not self.code:
             self.vars["banner"] = self.get_help()
 
-    def print_help(self):
+    def print_help(self) -> None:
         print(self.get_help())
 
-    def get_help(self):
+    def get_help(self) -> str:
         b = []
         b.append("Available Scrapy objects:")
         b.append(
@@ -167,11 +196,11 @@ class Shell:
 
         return "\n".join(f"[s] {line}" for line in b)
 
-    def _is_relevant(self, value):
+    def _is_relevant(self, value: Any) -> bool:
         return isinstance(value, self.relevant_classes) or is_item(value)
 
 
-def inspect_response(response, spider):
+def inspect_response(response: Response, spider: Spider) -> None:
     """Open a shell to inspect the given response"""
     # Shell.start removes the SIGINT handler, so save it and re-add it after
     # the shell has closed
@@ -180,7 +209,7 @@ def inspect_response(response, spider):
     signal.signal(signal.SIGINT, sigint_handler)
 
 
-def _request_deferred(request):
+def _request_deferred(request: Request) -> defer.Deferred:
     """Wrap a request inside a Deferred.
 
     This function is harmful, do not use it until you know what you are doing.
@@ -194,15 +223,17 @@ def _request_deferred(request):
     request_callback = request.callback
     request_errback = request.errback
 
-    def _restore_callbacks(result):
+    def _restore_callbacks(result: Any) -> Any:
         request.callback = request_callback
         request.errback = request_errback
         return result
 
-    d = defer.Deferred()
+    d: defer.Deferred = defer.Deferred()
     d.addBoth(_restore_callbacks)
     if request.callback:
-        d.addCallbacks(request.callback, request.errback)
+        d.addCallback(request.callback)
+    if request.errback:
+        d.addErrback(request.errback)
 
     request.callback, request.errback = d.callback, d.errback
     return d

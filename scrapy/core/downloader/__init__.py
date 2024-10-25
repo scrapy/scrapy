@@ -1,8 +1,9 @@
 import random
+import warnings
 from collections import deque
 from datetime import datetime
 from time import time
-from typing import TYPE_CHECKING, Any, Deque, Dict, Set, Tuple, cast
+from typing import TYPE_CHECKING, Any, Deque, Dict, Optional, Set, Tuple, cast
 
 from twisted.internet import task
 from twisted.internet.defer import Deferred
@@ -10,6 +11,7 @@ from twisted.internet.defer import Deferred
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response
 from scrapy.resolver import dnscache
 from scrapy.settings import BaseSettings
@@ -24,10 +26,18 @@ if TYPE_CHECKING:
 class Slot:
     """Downloader slot"""
 
-    def __init__(self, concurrency: int, delay: float, randomize_delay: bool):
+    def __init__(
+        self,
+        concurrency: int,
+        delay: float,
+        randomize_delay: bool,
+        *,
+        throttle: Optional[bool] = None,
+    ):
         self.concurrency: int = concurrency
         self.delay: float = delay
         self.randomize_delay: bool = randomize_delay
+        self.throttle = throttle
 
         self.active: Set[Request] = set()
         self.queue: Deque[Tuple[Request, Deferred]] = deque()
@@ -40,7 +50,7 @@ class Slot:
 
     def download_delay(self) -> float:
         if self.randomize_delay:
-            return random.uniform(0.5 * self.delay, 1.5 * self.delay)
+            return random.uniform(0.5 * self.delay, 1.5 * self.delay)  # nosec
         return self.delay
 
     def close(self) -> None:
@@ -52,13 +62,15 @@ class Slot:
         return (
             f"{cls_name}(concurrency={self.concurrency!r}, "
             f"delay={self.delay:.2f}, "
-            f"randomize_delay={self.randomize_delay!r})"
+            f"randomize_delay={self.randomize_delay!r}, "
+            f"throttle={self.throttle!r})"
         )
 
     def __str__(self) -> str:
         return (
             f"<downloader.Slot concurrency={self.concurrency!r} "
             f"delay={self.delay:.2f} randomize_delay={self.randomize_delay!r} "
+            f"throttle={self.throttle!r} "
             f"len(active)={len(self.active)} len(queue)={len(self.queue)} "
             f"len(transferring)={len(self.transferring)} "
             f"lastseen={datetime.fromtimestamp(self.lastseen).isoformat()}>"
@@ -115,7 +127,7 @@ class Downloader:
         return len(self.active) >= self.total_concurrency
 
     def _get_slot(self, request: Request, spider: Spider) -> Tuple[str, Slot]:
-        key = self._get_slot_key(request, spider)
+        key = self.get_slot_key(request)
         if key not in self.slots:
             slot_settings = self.per_slot_settings.get(key, {})
             conc = (
@@ -127,12 +139,13 @@ class Downloader:
                 slot_settings.get("delay", delay),
             )
             randomize_delay = slot_settings.get("randomize_delay", self.randomize_delay)
-            new_slot = Slot(conc, delay, randomize_delay)
+            throttle = slot_settings.get("throttle", None)
+            new_slot = Slot(conc, delay, randomize_delay, throttle=throttle)
             self.slots[key] = new_slot
 
         return key, self.slots[key]
 
-    def _get_slot_key(self, request: Request, spider: Spider) -> str:
+    def get_slot_key(self, request: Request) -> str:
         if self.DOWNLOAD_SLOT in request.meta:
             return cast(str, request.meta[self.DOWNLOAD_SLOT])
 
@@ -141,6 +154,14 @@ class Downloader:
             key = dnscache.get(key, key)
 
         return key
+
+    def _get_slot_key(self, request: Request, spider: Optional[Spider]) -> str:
+        warnings.warn(
+            "Use of this protected method is deprecated. Consider using its corresponding public method get_slot_key() instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return self.get_slot_key(request)
 
     def _enqueue_request(self, request: Request, spider: Spider) -> Deferred:
         key, slot = self._get_slot(request, spider)

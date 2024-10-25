@@ -4,6 +4,7 @@ This is the Scrapy engine which controls the Scheduler, Downloader and Spider.
 For more information see docs/topics/architecture.rst
 
 """
+
 import logging
 from time import time
 from typing import (
@@ -27,7 +28,7 @@ from twisted.python.failure import Failure
 from scrapy import signals
 from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper
-from scrapy.exceptions import CloseSpider, DontCloseSpider
+from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.logformatter import LogFormatter
 from scrapy.settings import BaseSettings, Settings
@@ -35,6 +36,7 @@ from scrapy.signalmanager import SignalManager
 from scrapy.spiders import Spider
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
@@ -291,9 +293,19 @@ class ExecutionEngine:
         self.slot.nextcall.schedule()  # type: ignore[union-attr]
 
     def _schedule_request(self, request: Request, spider: Spider) -> None:
-        self.signals.send_catch_log(
-            signals.request_scheduled, request=request, spider=spider
+        request_scheduled_result = self.signals.send_catch_log(
+            signals.request_scheduled,
+            request=request,
+            spider=spider,
+            dont_log=IgnoreRequest,
         )
+        for handler, result in request_scheduled_result:
+            if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
+                logger.debug(
+                    f"Signal handler {global_object_name(handler)} dropped "
+                    f"request {request} before it reached the scheduler."
+                )
+                return
         if not self.slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
             self.signals.send_catch_log(
                 signals.request_dropped, request=request, spider=spider
@@ -346,7 +358,7 @@ class ExecutionEngine:
 
         assert self.spider is not None
         dwld = self.downloader.fetch(request, self.spider)
-        dwld.addCallbacks(_on_success)
+        dwld.addCallback(_on_success)
         dwld.addBoth(_on_complete)
         return dwld
 
@@ -365,7 +377,8 @@ class ExecutionEngine:
         self.slot = Slot(start_requests, close_if_idle, nextcall, scheduler)
         self.spider = spider
         if hasattr(scheduler, "open"):
-            yield scheduler.open(spider)
+            if d := scheduler.open(spider):
+                yield d
         yield self.scraper.open_spider(spider)
         assert self.crawler.stats
         self.crawler.stats.open_spider(spider)

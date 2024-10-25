@@ -353,7 +353,7 @@ class LocalWeakReferencedCacheTest(unittest.TestCase):
         for i, r in enumerate(refs):
             self.assertIn(r, cache)
             self.assertEqual(cache[r], i)
-        del r  # delete reference to the last object in the list
+        del r  # delete reference to the last object in the list  # pylint: disable=undefined-loop-variable
 
         # delete half of the objects, make sure that is reflected in the cache
         for _ in range(max // 2):

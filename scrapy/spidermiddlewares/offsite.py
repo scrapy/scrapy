@@ -3,6 +3,7 @@ Offsite Spider Middleware
 
 See documentation in docs/topics/spider-middleware.rst
 """
+
 from __future__ import annotations
 
 import logging
@@ -12,14 +13,20 @@ from typing import TYPE_CHECKING, Any, AsyncIterable, Iterable, Set
 
 from scrapy import Spider, signals
 from scrapy.crawler import Crawler
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.httpobj import urlparse_cached
 
+warnings.warn(
+    "The scrapy.spidermiddlewares.offsite module is deprecated, use "
+    "scrapy.downloadermiddlewares.offsite instead.",
+    ScrapyDeprecationWarning,
+)
+
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
-
 
 logger = logging.getLogger(__name__)
 

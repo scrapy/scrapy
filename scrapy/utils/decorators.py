@@ -1,21 +1,34 @@
+from __future__ import annotations
+
 import warnings
 from functools import wraps
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, TypeVar
 
 from twisted.internet import defer, threads
 from twisted.internet.defer import Deferred
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
+if TYPE_CHECKING:
+    # typing.ParamSpec requires Python 3.10
+    from typing_extensions import ParamSpec
 
-def deprecated(use_instead: Any = None) -> Callable:
+    _P = ParamSpec("_P")
+
+
+_T = TypeVar("_T")
+
+
+def deprecated(
+    use_instead: Any = None,
+) -> Callable[[Callable[_P, _T]], Callable[_P, _T]]:
     """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emitted
     when the function is used."""
 
-    def deco(func: Callable) -> Callable:
+    def deco(func: Callable[_P, _T]) -> Callable[_P, _T]:
         @wraps(func)
-        def wrapped(*args: Any, **kwargs: Any) -> Any:
+        def wrapped(*args: _P.args, **kwargs: _P.kwargs) -> Any:
             message = f"Call to deprecated function {func.__name__}."
             if use_instead:
                 message += f" Use {use_instead} instead."
@@ -30,23 +43,23 @@ def deprecated(use_instead: Any = None) -> Callable:
     return deco
 
 
-def defers(func: Callable) -> Callable[..., Deferred]:
+def defers(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:
     """Decorator to make sure a function always returns a deferred"""
 
     @wraps(func)
-    def wrapped(*a: Any, **kw: Any) -> Deferred:
+    def wrapped(*a: _P.args, **kw: _P.kwargs) -> Deferred[_T]:
         return defer.maybeDeferred(func, *a, **kw)
 
     return wrapped
 
 
-def inthread(func: Callable) -> Callable[..., Deferred]:
+def inthread(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:
     """Decorator to call a function in a thread and return a deferred with the
     result
     """
 
     @wraps(func)
-    def wrapped(*a: Any, **kw: Any) -> Deferred:
+    def wrapped(*a: _P.args, **kw: _P.kwargs) -> Deferred[_T]:
         return threads.deferToThread(func, *a, **kw)
 
     return wrapped

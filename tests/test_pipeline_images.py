@@ -132,7 +132,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
         thumb_path = CustomImagesPipeline.from_settings(
             Settings({"IMAGES_STORE": self.tempdir})
         ).thumb_path
-        item = dict(path="path-to-store-file")
+        item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
         self.assertEqual(
             thumb_path(request, "small", item=item), "thumb/small/path-to-store-file"
@@ -433,14 +433,14 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
     ]
 
     # This should match what is defined in ImagesPipeline.
-    default_pipeline_settings = dict(
-        MIN_WIDTH=0,
-        MIN_HEIGHT=0,
-        EXPIRES=90,
-        THUMBS={},
-        IMAGES_URLS_FIELD="image_urls",
-        IMAGES_RESULT_FIELD="images",
-    )
+    default_pipeline_settings = {
+        "MIN_WIDTH": 0,
+        "MIN_HEIGHT": 0,
+        "EXPIRES": 90,
+        "THUMBS": {},
+        "IMAGES_URLS_FIELD": "image_urls",
+        "IMAGES_RESULT_FIELD": "images",
+    }
 
     def setUp(self):
         self.tempdir = mkdtemp()

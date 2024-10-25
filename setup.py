@@ -22,6 +22,7 @@ install_requires = [
     "packaging",
     "tldextract",
     "lxml>=4.4.1",
+    "defusedxml>=0.7.1",
 ]
 extras_require = {
     ':platform_python_implementation == "CPython"': ["PyDispatcher>=2.0.5"],

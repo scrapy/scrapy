@@ -1,4 +1,7 @@
 """Helper functions which don't fit anywhere else"""
+
+from __future__ import annotations
+
 import ast
 import hashlib
 import inspect
@@ -21,6 +24,8 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Type,
+    TypeVar,
     Union,
     cast,
 )
@@ -31,9 +36,11 @@ from scrapy.utils.datatypes import LocalWeakReferencedCache
 
 if TYPE_CHECKING:
     from scrapy import Spider
-
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
 
 _ITERABLE_SINGLE_VALUES = dict, Item, str, bytes
+T = TypeVar("T")
 
 
 def arg_to_iter(arg: Any) -> Iterable[Any]:
@@ -112,7 +119,15 @@ def md5sum(file: IO) -> str:
     >>> md5sum(BytesIO(b'file content to hash'))
     '784406af91dd5a54fbb9c84c2236595a'
     """
-    m = hashlib.md5()
+    warnings.warn(
+        (
+            "The scrapy.utils.misc.md5sum function is deprecated, and will be "
+            "removed in a future version of Scrapy."
+        ),
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    m = hashlib.md5()  # nosec
     while True:
         d = file.read(8096)
         if not d:
@@ -168,7 +183,9 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
     return instance
 
 
-def build_from_crawler(objcls, crawler, /, *args, **kwargs):
+def build_from_crawler(
+    objcls: Type[T], crawler: Crawler, /, *args: Any, **kwargs: Any
+) -> T:
     """Construct a class instance using its ``from_crawler`` constructor.
 
     .. versionadded:: 2.12
@@ -178,20 +195,22 @@ def build_from_crawler(objcls, crawler, /, *args, **kwargs):
     Raises ``TypeError`` if the resulting instance is ``None``.
     """
     if hasattr(objcls, "from_crawler"):
-        instance = objcls.from_crawler(crawler, *args, **kwargs)
+        instance = objcls.from_crawler(crawler, *args, **kwargs)  # type: ignore[attr-defined]
         method_name = "from_crawler"
     elif hasattr(objcls, "from_settings"):
-        instance = objcls.from_settings(crawler.settings, *args, **kwargs)
+        instance = objcls.from_settings(crawler.settings, *args, **kwargs)  # type: ignore[attr-defined]
         method_name = "from_settings"
     else:
         instance = objcls(*args, **kwargs)
         method_name = "__new__"
     if instance is None:
         raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
-    return instance
+    return cast(T, instance)
 
 
-def build_from_settings(objcls, settings, /, *args, **kwargs):
+def build_from_settings(
+    objcls: Type[T], settings: BaseSettings, /, *args: Any, **kwargs: Any
+) -> T:
     """Construct a class instance using its ``from_settings`` constructor.
 
     .. versionadded:: 2.12
@@ -201,14 +220,14 @@ def build_from_settings(objcls, settings, /, *args, **kwargs):
     Raises ``TypeError`` if the resulting instance is ``None``.
     """
     if hasattr(objcls, "from_settings"):
-        instance = objcls.from_settings(settings, *args, **kwargs)
+        instance = objcls.from_settings(settings, *args, **kwargs)  # type: ignore[attr-defined]
         method_name = "from_settings"
     else:
         instance = objcls(*args, **kwargs)
         method_name = "__new__"
     if instance is None:
         raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
-    return instance
+    return cast(T, instance)
 
 
 @contextmanager
@@ -285,7 +304,7 @@ def is_generator_with_return_value(callable: Callable) -> bool:
     return bool(_generator_callbacks_cache[callable])
 
 
-def warn_on_generator_with_return_value(spider: "Spider", callable: Callable) -> None:
+def warn_on_generator_with_return_value(spider: Spider, callable: Callable) -> None:
     """
     Logs a warning if a callable is a generator function and includes
     a 'return' statement with a value different than None

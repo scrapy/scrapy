@@ -4,6 +4,7 @@ discovering (through HTTP headers) to base Response class.
 
 See documentation in docs/topics/request-response.rst
 """
+
 from __future__ import annotations
 
 import json
@@ -158,12 +159,12 @@ class TextResponse(Response):
     def jmespath(self, query: str, **kwargs: Any) -> SelectorList:
         from scrapy.selector import SelectorList
 
-        if not hasattr(self.selector, "jmespath"):  # type: ignore[attr-defined]
+        if not hasattr(self.selector, "jmespath"):
             raise AttributeError(
                 "Please install parsel >= 1.8.1 to get jmespath support"
             )
 
-        return cast(SelectorList, self.selector.jmespath(query, **kwargs))  # type: ignore[attr-defined]
+        return cast(SelectorList, self.selector.jmespath(query, **kwargs))
 
     def xpath(self, query: str, **kwargs: Any) -> SelectorList:
         from scrapy.selector import SelectorList
