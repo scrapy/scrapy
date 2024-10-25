@@ -16,6 +16,8 @@ Highlights:
 
 -   Added component getters to :class:`scrapy.crawler.Crawler`
 
+-   Completed type hints and added ``py.typed``
+
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -123,7 +125,22 @@ New features
 
 -   If :setting:`SPIDER_LOADER_WARN_ONLY` is set to ``True``,
     ``SpiderLoader`` does not raise :exc:`SyntaxError` but emits a warning
-    instead. (:issue:`6483`, :issue:`6484`)
+    instead.
+    (:issue:`6483`, :issue:`6484`)
+
+-   Added support for multiple-compressed responses (ones with several
+    encodings in the ``Content-Encoding`` header).
+    (:issue:`5143`, :issue:`5964`, :issue:`6063`)
+
+-   Added support for brotlicffi_ (previously named brotlipy_). brotli_ is
+    still recommended but only brotlicffi_ works on PyPy.
+    (:issue:`6263`, :issue:`6269`)
+
+    .. _brotlicffi: https://github.com/python-hyper/brotlicffi
+
+-   :func:`scrapy.utils.httpobj.urlparse_cached` is now used in more places
+    instead of :func:`urllib.parse.urlparse`.
+    (:issue:`6228`, :issue:`6229`)
 
 Improvements
 ~~~~~~~~~~~~
@@ -139,12 +156,17 @@ Bug fixes
 Documentation
 ~~~~~~~~~~~~~
 
+-   Added ``SECURITY.md`` that documents the security policy.
+    (:issue:`5364`, :issue:`6051`)
+
 -   Other documentation improvements and fixes.
-    (:issue:`6094`,
+    (:issue:`5920`,
+    :issue:`6094`,
     :issue:`6177`,
     :issue:`6200`,
     :issue:`6207`,
-    :issue:`6216`)
+    :issue:`6216`,
+    :issue:`6223`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
@@ -153,20 +175,27 @@ Quality assurance
     <https://peps.python.org/pep-0561/>`_.
     (:issue:`6058`, :issue:`6059`)
 
--   Completed type hints for :class:`~scrapy.http.Request`,
-    :class:`~scrapy.http.Response`, :class:`~scrapy.http.headers.Headers`,
-    :ref:`spider middlewares <topics-spider-middleware>`, :ref:`downloader
-    middlewares <topics-downloader-middleware>`, and more.
+-   Fully covered the code with type hints (except for the most complicated
+    parts, mostly related to ``twisted.web.http`` and other Twisted parts
+    without type hints).
     (:issue:`5989`,
     :issue:`6097`,
     :issue:`6127`,
     :issue:`6129`,
     :issue:`6130`,
     :issue:`6133`,
-    :issue:`6191`)
+    :issue:`6191`,
+    :issue:`6268`,
+    :issue:`6275`,
+    :issue:`6276`,
+    :issue:`6279`)
+
+-   Improved Bandit_ checks.
+    (:issue:`6260`, :issue:`6264`, :issue:`6265`)
 
 -   CI and test improvements and fixes.
-    (:issue:`5454`,
+    (:issue:`5285`,
+    :issue:`5454`,
     :issue:`5997`,
     :issue:`6078`,
     :issue:`6084`,
@@ -174,13 +203,23 @@ Quality assurance
     :issue:`6132`,
     :issue:`6153`,
     :issue:`6154`,
-    :issue:`6201`)
+    :issue:`6201`,
+    :issue:`6232`,
+    :issue:`6235`,
+    :issue:`6236`,
+    :issue:`6245`,
+    :issue:`6253`,
+    :issue:`6258`,
+    :issue:`6259`)
 
 -   Code cleanups.
     (:issue:`6196`,
     :issue:`6197`,
     :issue:`6198`,
-    :issue:`6199`)
+    :issue:`6199`,
+    :issue:`6254`,
+    :issue:`6257`,
+    :issue:`6285`)
 
 Other
 ~~~~~
