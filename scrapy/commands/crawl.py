@@ -1,10 +1,14 @@
-import argparse
-from typing import List, cast
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, cast
 
 from twisted.python.failure import Failure
 
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
+
+if TYPE_CHECKING:
+    import argparse
 
 
 class Command(BaseRunSpiderCommand):
@@ -16,7 +20,7 @@ class Command(BaseRunSpiderCommand):
     def short_desc(self) -> str:
         return "Run a spider"
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) < 1:
             raise UsageError()
         elif len(args) > 1:

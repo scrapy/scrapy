@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import contextlib
 import os
 import shutil
 import sys
 from pathlib import Path
 from tempfile import mkdtemp, mkstemp
-from typing import Optional, Type
 from unittest import SkipTest, mock
 
 from testfixtures import LogCapture
@@ -218,7 +219,7 @@ class DuplicateHeaderResource(resource.Resource):
 
 class HttpTestCase(unittest.TestCase):
     scheme = "http"
-    download_handler_cls: Type = HTTPDownloadHandler
+    download_handler_cls: type = HTTPDownloadHandler
 
     # only used for HTTPS tests
     keyfile = "keys/localhost.key"
@@ -428,7 +429,7 @@ class HttpTestCase(unittest.TestCase):
 class Http10TestCase(HttpTestCase):
     """HTTP 1.0 test case"""
 
-    download_handler_cls: Type = HTTP10DownloadHandler
+    download_handler_cls: type = HTTP10DownloadHandler
 
     def test_protocol(self):
         request = Request(self.getURL("host"), method="GET")
@@ -445,7 +446,7 @@ class Https10TestCase(Http10TestCase):
 class Http11TestCase(HttpTestCase):
     """HTTP 1.1 test case"""
 
-    download_handler_cls: Type = HTTP11DownloadHandler
+    download_handler_cls: type = HTTP11DownloadHandler
 
     def test_download_without_maxsize_limit(self):
         request = Request(self.getURL("file"))
@@ -645,7 +646,7 @@ class Https11InvalidDNSPattern(Https11TestCase):
 
 class Https11CustomCiphers(unittest.TestCase):
     scheme = "https"
-    download_handler_cls: Type = HTTP11DownloadHandler
+    download_handler_cls: type = HTTP11DownloadHandler
 
     keyfile = "keys/localhost.key"
     certfile = "keys/localhost.crt"
@@ -692,7 +693,7 @@ class Https11CustomCiphers(unittest.TestCase):
 class Http11MockServerTestCase(unittest.TestCase):
     """HTTP 1.1 test case with MockServer"""
 
-    settings_dict: Optional[dict] = None
+    settings_dict: dict | None = None
 
     def setUp(self):
         self.mockserver = MockServer()
@@ -740,7 +741,7 @@ class UriResource(resource.Resource):
 
 
 class HttpProxyTestCase(unittest.TestCase):
-    download_handler_cls: Type = HTTPDownloadHandler
+    download_handler_cls: type = HTTPDownloadHandler
     expected_http_proxy_request_body = b"http://example.com"
 
     def setUp(self):
@@ -783,14 +784,14 @@ class HttpProxyTestCase(unittest.TestCase):
 
 
 class Http10ProxyTestCase(HttpProxyTestCase):
-    download_handler_cls: Type = HTTP10DownloadHandler
+    download_handler_cls: type = HTTP10DownloadHandler
 
     def test_download_with_proxy_https_noconnect(self):
         raise unittest.SkipTest("noconnect is not supported in HTTP10DownloadHandler")
 
 
 class Http11ProxyTestCase(HttpProxyTestCase):
-    download_handler_cls: Type = HTTP11DownloadHandler
+    download_handler_cls: type = HTTP11DownloadHandler
 
     @defer.inlineCallbacks
     def test_download_with_proxy_https_timeout(self):
@@ -845,7 +846,7 @@ class S3AnonTestCase(unittest.TestCase):
 
 
 class S3TestCase(unittest.TestCase):
-    download_handler_cls: Type = S3DownloadHandler
+    download_handler_cls: type = S3DownloadHandler
 
     # test use same example keys than amazon developer guide
     # http://s3.amazonaws.com/awsdocs/S3/20060301/s3-dg-20060301.pdf
@@ -892,7 +893,7 @@ class S3TestCase(unittest.TestCase):
         except Exception as e:
             self.assertIsInstance(e, (TypeError, NotConfigured))
         else:
-            assert False
+            raise AssertionError()
 
     def test_request_signing1(self):
         # gets an object from the johnsmith bucket.

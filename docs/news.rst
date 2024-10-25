@@ -80,6 +80,12 @@ Deprecation removals
     since Scrapy 1.0.0.
     (:issue:`6101`, :issue:`6113`)
 
+New features
+~~~~~~~~~~~~
+
+- If :setting:`SPIDER_LOADER_WARN_ONLY` is set to ``True``,
+  ``SpiderLoader`` does not raise :exc:`SyntaxError` but emits a warning instead.
+
 Deprecations
 ~~~~~~~~~~~~
 
@@ -1707,7 +1713,7 @@ Documentation
 -   Provided better context and instructions to disable the
     :setting:`URLLENGTH_LIMIT` setting. (:issue:`5135`, :issue:`5250`)
 
--   Documented that :ref:`reppy-parser` does not support Python 3.9+.
+-   Documented that Reppy parser does not support Python 3.9+.
     (:issue:`5226`, :issue:`5231`)
 
 -   Documented :ref:`the scheduler component <topics-scheduler>`.
@@ -3521,7 +3527,7 @@ New features
 *   A new :setting:`ROBOTSTXT_PARSER` setting allows choosing which robots.txt_
     parser to use. It includes built-in support for
     :ref:`RobotFileParser <python-robotfileparser>`,
-    :ref:`Protego <protego-parser>` (default), :ref:`Reppy <reppy-parser>`, and
+    :ref:`Protego <protego-parser>` (default), Reppy, and
     :ref:`Robotexclusionrulesparser <rerp-parser>`, and allows you to
     :ref:`implement support for additional parsers
     <support-for-new-robots-parser>` (:issue:`754`, :issue:`2669`,

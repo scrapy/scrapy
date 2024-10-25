@@ -29,7 +29,7 @@ class ResponseTypesTest(unittest.TestCase):
         mappings = [
             (b'attachment; filename="data.xml"', XmlResponse),
             (b"attachment; filename=data.xml", XmlResponse),
-            ("attachment;filename=data£.tar.gz".encode("utf-8"), Response),
+            ("attachment;filename=data£.tar.gz".encode(), Response),
             ("attachment;filename=dataµ.tar.gz".encode("latin-1"), Response),
             ("attachment;filename=data高.doc".encode("gbk"), Response),
             ("attachment;filename=دورهdata.html".encode("cp720"), HtmlResponse),

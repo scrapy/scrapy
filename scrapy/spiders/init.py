@@ -1,9 +1,14 @@
-from typing import Any, Iterable, Optional, cast
+from __future__ import annotations
+
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, cast
 
 from scrapy import Request
-from scrapy.http import Response
 from scrapy.spiders import Spider
 from scrapy.utils.spider import iterate_spider_output
+
+if TYPE_CHECKING:
+    from scrapy.http import Response
 
 
 class InitSpider(Spider):
@@ -13,7 +18,7 @@ class InitSpider(Spider):
         self._postinit_reqs: Iterable[Request] = super().start_requests()
         return cast(Iterable[Request], iterate_spider_output(self.init_request()))
 
-    def initialized(self, response: Optional[Response] = None) -> Any:
+    def initialized(self, response: Response | None = None) -> Any:
         """This method must be set as the callback of your last initialization
         request. See self.init_request() docstring for more info.
         """

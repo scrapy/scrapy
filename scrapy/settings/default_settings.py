@@ -333,6 +333,7 @@ SPIDER_CONTRACTS = {}
 SPIDER_CONTRACTS_BASE = {
     "scrapy.contracts.default.UrlContract": 1,
     "scrapy.contracts.default.CallbackKeywordArgumentsContract": 1,
+    "scrapy.contracts.default.MetadataContract": 1,
     "scrapy.contracts.default.ReturnsContract": 2,
     "scrapy.contracts.default.ScrapesContract": 3,
 }

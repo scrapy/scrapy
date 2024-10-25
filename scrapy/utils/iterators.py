@@ -1,20 +1,10 @@
+from __future__ import annotations
+
 import csv
 import logging
 import re
 from io import StringIO
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generator,
-    Iterable,
-    List,
-    Literal,
-    Optional,
-    Union,
-    cast,
-    overload,
-)
+from typing import TYPE_CHECKING, Any, Literal, cast, overload
 from warnings import warn
 
 from lxml import etree  # nosec
@@ -22,14 +12,15 @@ from lxml import etree  # nosec
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
 from scrapy.selector import Selector
-from scrapy.utils.python import re_rsearch, to_unicode
+from scrapy.utils.python import re_rsearch
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
 
 logger = logging.getLogger(__name__)
 
 
-def xmliter(
-    obj: Union[Response, str, bytes], nodename: str
-) -> Generator[Selector, Any, None]:
+def xmliter(obj: Response | str | bytes, nodename: str) -> Iterator[Selector]:
     """Return a iterator of Selector's over all nodes of a XML document,
        given the name of the node to iterate. Useful for parsing XML feeds.
 
@@ -62,7 +53,7 @@ def xmliter(
     )
     header_end_idx = re_rsearch(HEADER_END_RE, text)
     header_end = text[header_end_idx[1] :].strip() if header_end_idx else ""
-    namespaces: Dict[str, str] = {}
+    namespaces: dict[str, str] = {}
     if header_end:
         for tagname in reversed(re.findall(END_TAG_RE, header_end)):
             assert header_end_idx
@@ -86,11 +77,11 @@ def xmliter(
 
 
 def xmliter_lxml(
-    obj: Union[Response, str, bytes],
+    obj: Response | str | bytes,
     nodename: str,
-    namespace: Optional[str] = None,
+    namespace: str | None = None,
     prefix: str = "x",
-) -> Generator[Selector, Any, None]:
+) -> Iterator[Selector]:
     reader = _StreamReader(obj)
     tag = f"{{{namespace}}}{nodename}" if namespace else nodename
     iterable = etree.iterparse(
@@ -129,9 +120,9 @@ def xmliter_lxml(
 
 
 class _StreamReader:
-    def __init__(self, obj: Union[Response, str, bytes]):
+    def __init__(self, obj: Response | str | bytes):
         self._ptr: int = 0
-        self._text: Union[str, bytes]
+        self._text: str | bytes
         if isinstance(obj, TextResponse):
             self._text, self.encoding = obj.body, obj.encoding
         elif isinstance(obj, Response):
@@ -163,12 +154,12 @@ class _StreamReader:
 
 
 def csviter(
-    obj: Union[Response, str, bytes],
-    delimiter: Optional[str] = None,
-    headers: Optional[List[str]] = None,
-    encoding: Optional[str] = None,
-    quotechar: Optional[str] = None,
-) -> Generator[Dict[str, str], Any, None]:
+    obj: Response | str | bytes,
+    delimiter: str | None = None,
+    headers: list[str] | None = None,
+    encoding: str | None = None,
+    quotechar: str | None = None,
+) -> Iterator[dict[str, str]]:
     """Returns an iterator of dictionaries from the given csv object
 
     obj can be:
@@ -184,14 +175,17 @@ def csviter(
     quotechar is the character used to enclosure fields on the given obj.
     """
 
-    encoding = obj.encoding if isinstance(obj, TextResponse) else encoding or "utf-8"
-
-    def row_to_unicode(row_: Iterable) -> List[str]:
-        return [to_unicode(field, encoding) for field in row_]
+    if encoding is not None:
+        warn(
+            "The encoding argument of csviter() is ignored and will be removed"
+            " in a future Scrapy version.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
 
     lines = StringIO(_body_or_str(obj, unicode=True))
 
-    kwargs: Dict[str, Any] = {}
+    kwargs: dict[str, Any] = {}
     if delimiter:
         kwargs["delimiter"] = delimiter
     if quotechar:
@@ -200,13 +194,11 @@ def csviter(
 
     if not headers:
         try:
-            row = next(csv_r)
+            headers = next(csv_r)
         except StopIteration:
             return
-        headers = row_to_unicode(row)
 
     for row in csv_r:
-        row = row_to_unicode(row)
         if len(row) != len(headers):
             logger.warning(
                 "ignoring row %(csvlnum)d (length: %(csvrow)d, "
@@ -222,22 +214,18 @@ def csviter(
 
 
 @overload
-def _body_or_str(obj: Union[Response, str, bytes]) -> str: ...
+def _body_or_str(obj: Response | str | bytes) -> str: ...
 
 
 @overload
-def _body_or_str(obj: Union[Response, str, bytes], unicode: Literal[True]) -> str: ...
+def _body_or_str(obj: Response | str | bytes, unicode: Literal[True]) -> str: ...
 
 
 @overload
-def _body_or_str(
-    obj: Union[Response, str, bytes], unicode: Literal[False]
-) -> bytes: ...
+def _body_or_str(obj: Response | str | bytes, unicode: Literal[False]) -> bytes: ...
 
 
-def _body_or_str(
-    obj: Union[Response, str, bytes], unicode: bool = True
-) -> Union[str, bytes]:
+def _body_or_str(obj: Response | str | bytes, unicode: bool = True) -> str | bytes:
     expected_types = (Response, str, bytes)
     if not isinstance(obj, expected_types):
         expected_types_str = " or ".join(t.__name__ for t in expected_types)

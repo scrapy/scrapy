@@ -1,7 +1,6 @@
 import argparse
 import os
 import sys
-from typing import List
 
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
@@ -27,7 +26,7 @@ class Command(ScrapyCommand):
         sys.stderr.write(msg + os.linesep)
         self.exitcode = 1
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) != 1:
             raise UsageError()
 

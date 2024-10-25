@@ -32,30 +32,32 @@ from __future__ import annotations
 
 import re
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, BinaryIO, Dict, Optional
+from typing import TYPE_CHECKING, Any, BinaryIO
 from urllib.parse import unquote
 
-from twisted.internet.defer import Deferred
 from twisted.internet.protocol import ClientCreator, Protocol
 from twisted.protocols.ftp import CommandFailed, FTPClient
-from twisted.python.failure import Failure
 
-from scrapy import Request, Spider
-from scrapy.crawler import Crawler
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
-from scrapy.settings import BaseSettings
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+    from twisted.python.failure import Failure
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    from scrapy import Request, Spider
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
+
 
 class ReceivedDataProtocol(Protocol):
-    def __init__(self, filename: Optional[str] = None):
-        self.__filename: Optional[str] = filename
+    def __init__(self, filename: str | None = None):
+        self.__filename: str | None = filename
         self.body: BinaryIO = open(filename, "wb") if filename else BytesIO()
         self.size: int = 0
 
@@ -64,7 +66,7 @@ class ReceivedDataProtocol(Protocol):
         self.size += len(data)
 
     @property
-    def filename(self) -> Optional[str]:
+    def filename(self) -> str | None:
         return self.__filename
 
     def close(self) -> None:
@@ -77,7 +79,7 @@ _CODE_RE = re.compile(r"\d+")
 class FTPDownloadHandler:
     lazy = False
 
-    CODE_MAPPING: Dict[str, int] = {
+    CODE_MAPPING: dict[str, int] = {
         "550": 404,
         "default": 503,
     }
@@ -91,7 +93,7 @@ class FTPDownloadHandler:
     def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings)
 
-    def download_request(self, request: Request, spider: Spider) -> Deferred:
+    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         from twisted.internet import reactor
 
         parsed_url = urlparse_cached(request)
@@ -103,10 +105,14 @@ class FTPDownloadHandler:
         creator = ClientCreator(
             reactor, FTPClient, user, password, passive=passive_mode
         )
-        dfd: Deferred = creator.connectTCP(parsed_url.hostname, parsed_url.port or 21)
+        dfd: Deferred[FTPClient] = creator.connectTCP(
+            parsed_url.hostname, parsed_url.port or 21
+        )
         return dfd.addCallback(self.gotClient, request, unquote(parsed_url.path))
 
-    def gotClient(self, client: FTPClient, request: Request, filepath: str) -> Deferred:
+    def gotClient(
+        self, client: FTPClient, request: Request, filepath: str
+    ) -> Deferred[Response]:
         self.client = client
         protocol = ReceivedDataProtocol(request.meta.get("ftp_local_filename"))
         d = client.retrieveFile(filepath, protocol)

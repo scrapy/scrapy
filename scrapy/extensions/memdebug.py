@@ -10,14 +10,15 @@ import gc
 from typing import TYPE_CHECKING
 
 from scrapy import Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
-from scrapy.statscollectors import StatsCollector
 from scrapy.utils.trackref import live_refs
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
 
 
 class MemoryDebugger:

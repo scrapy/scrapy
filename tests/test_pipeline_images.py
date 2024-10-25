@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import hashlib
 import io
@@ -5,7 +7,6 @@ import random
 import warnings
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import Dict, List, Optional
 from unittest.mock import patch
 
 import attr
@@ -19,7 +20,7 @@ from scrapy.pipelines.images import ImageException, ImagesPipeline, NoimagesDrop
 from scrapy.settings import Settings
 from scrapy.utils.python import to_bytes
 
-skip_pillow: Optional[str]
+skip_pillow: str | None
 try:
     from PIL import Image
 except ImportError:
@@ -406,11 +407,11 @@ class ImagesPipelineTestCaseFieldsDataClass(
 class ImagesPipelineTestAttrsItem:
     name = attr.ib(default="")
     # default fields
-    image_urls: List[str] = attr.ib(default=lambda: [])
-    images: List[Dict[str, str]] = attr.ib(default=lambda: [])
+    image_urls: list[str] = attr.ib(default=lambda: [])
+    images: list[dict[str, str]] = attr.ib(default=lambda: [])
     # overridden fields
-    custom_image_urls: List[str] = attr.ib(default=lambda: [])
-    custom_images: List[Dict[str, str]] = attr.ib(default=lambda: [])
+    custom_image_urls: list[str] = attr.ib(default=lambda: [])
+    custom_images: list[dict[str, str]] = attr.ib(default=lambda: [])
 
 
 class ImagesPipelineTestCaseFieldsAttrsItem(
@@ -628,7 +629,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
 
 class NoimagesDropTestCase(unittest.TestCase):
     def test_deprecation_warning(self):
-        arg = str()
+        arg = ""
         with warnings.catch_warnings(record=True) as w:
             NoimagesDrop(arg)
             self.assertEqual(len(w), 1)

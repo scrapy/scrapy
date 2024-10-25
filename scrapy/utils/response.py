@@ -9,7 +9,7 @@ import os
 import re
 import tempfile
 import webbrowser
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Tuple, Union
+from typing import TYPE_CHECKING, Any
 from weakref import WeakKeyDictionary
 
 from twisted.web import http
@@ -18,6 +18,8 @@ from w3lib import html
 from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
     from scrapy.http import Response, TextResponse
 
 _baseurl_cache: WeakKeyDictionary[Response, str] = WeakKeyDictionary()
@@ -33,15 +35,15 @@ def get_base_url(response: TextResponse) -> str:
     return _baseurl_cache[response]
 
 
-_metaref_cache: WeakKeyDictionary[
-    Response, Union[Tuple[None, None], Tuple[float, str]]
-] = WeakKeyDictionary()
+_metaref_cache: WeakKeyDictionary[Response, tuple[None, None] | tuple[float, str]] = (
+    WeakKeyDictionary()
+)
 
 
 def get_meta_refresh(
     response: TextResponse,
     ignore_tags: Iterable[str] = ("script", "noscript"),
-) -> Union[Tuple[None, None], Tuple[float, str]]:
+) -> tuple[None, None] | tuple[float, str]:
     """Parse the http-equiv refresh parameter from the given response"""
     if response not in _metaref_cache:
         text = response.text[0:4096]
@@ -51,14 +53,14 @@ def get_meta_refresh(
     return _metaref_cache[response]
 
 
-def response_status_message(status: Union[bytes, float, int, str]) -> str:
+def response_status_message(status: bytes | float | int | str) -> str:
     """Return status code plus status text descriptive message"""
     status_int = int(status)
     message = http.RESPONSES.get(status_int, "Unknown Status")
     return f"{status_int} {to_unicode(message)}"
 
 
-def _remove_html_comments(body):
+def _remove_html_comments(body: bytes) -> bytes:
     start = body.find(b"<!--")
     while start != -1:
         end = body.find(b"-->", start + 1)

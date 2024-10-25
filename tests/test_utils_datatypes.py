@@ -1,8 +1,9 @@
 import copy
 import unittest
 import warnings
-from collections.abc import Mapping, MutableMapping
-from typing import Iterator
+from collections.abc import Iterator, Mapping, MutableMapping
+
+import pytest
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
@@ -91,12 +92,14 @@ class CaseInsensitiveDictMixin:
         self.assertRaises(KeyError, d.__getitem__, "key_LOWER")
         self.assertRaises(KeyError, d.__getitem__, "key_lower")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_getdefault(self):
         d = CaselessDict()
         self.assertEqual(d.get("c", 5), 5)
         d["c"] = 10
         self.assertEqual(d.get("c", 5), 10)
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_setdefault(self):
         d = CaselessDict({"a": 1, "b": 2})
 
@@ -213,11 +216,13 @@ class CaseInsensitiveDictTest(CaseInsensitiveDictMixin, unittest.TestCase):
         self.assertEqual(list(iterkeys), ["AsDf", "FoO"])
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class CaselessDictTest(CaseInsensitiveDictMixin, unittest.TestCase):
     dict_class = CaselessDict
 
     def test_deprecation_message(self):
         with warnings.catch_warnings(record=True) as caught:
+            warnings.filterwarnings("always", category=ScrapyDeprecationWarning)
             self.dict_class({"foo": "bar"})
 
             self.assertEqual(len(caught), 1)

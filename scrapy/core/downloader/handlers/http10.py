@@ -1,34 +1,35 @@
-"""Download handlers for http and https schemes
-"""
+"""Download handlers for http and https schemes"""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING
 
-from twisted.internet.defer import Deferred
-
-from scrapy import Request, Spider
-from scrapy.crawler import Crawler
-from scrapy.settings import BaseSettings
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+    from twisted.internet.interfaces import IConnector
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    from scrapy import Request, Spider
     from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
     from scrapy.core.downloader.webclient import ScrapyHTTPClientFactory
+    from scrapy.crawler import Crawler
+    from scrapy.http import Response
+    from scrapy.settings import BaseSettings
 
 
 class HTTP10DownloadHandler:
     lazy = False
 
     def __init__(self, settings: BaseSettings, crawler: Crawler):
-        self.HTTPClientFactory: Type[ScrapyHTTPClientFactory] = load_object(
+        self.HTTPClientFactory: type[ScrapyHTTPClientFactory] = load_object(
             settings["DOWNLOADER_HTTPCLIENTFACTORY"]
         )
-        self.ClientContextFactory: Type[ScrapyClientContextFactory] = load_object(
+        self.ClientContextFactory: type[ScrapyClientContextFactory] = load_object(
             settings["DOWNLOADER_CLIENTCONTEXTFACTORY"]
         )
         self._settings: BaseSettings = settings
@@ -38,13 +39,13 @@ class HTTP10DownloadHandler:
     def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings, crawler)
 
-    def download_request(self, request: Request, spider: Spider) -> Deferred:
+    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         """Return a deferred for the HTTP download"""
         factory = self.HTTPClientFactory(request)
         self._connect(factory)
         return factory.deferred
 
-    def _connect(self, factory: ScrapyHTTPClientFactory) -> Deferred:
+    def _connect(self, factory: ScrapyHTTPClientFactory) -> IConnector:
         from twisted.internet import reactor
 
         host, port = to_unicode(factory.host), factory.port

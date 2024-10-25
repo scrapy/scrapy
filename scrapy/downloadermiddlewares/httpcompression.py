@@ -3,14 +3,12 @@ from __future__ import annotations
 import warnings
 from itertools import chain
 from logging import getLogger
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
-from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.statscollectors import StatsCollector
 from scrapy.utils._compression import (
     _DecompressionMaxSizeExceeded,
     _inflate,
@@ -24,9 +22,13 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
+
+
 logger = getLogger(__name__)
 
-ACCEPTED_ENCODINGS: List[bytes] = [b"gzip", b"deflate"]
+ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate"]
 
 try:
     try:
@@ -48,13 +50,13 @@ else:
 
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
-    sent/received from web sites"""
+    sent/received from websites"""
 
     def __init__(
         self,
-        stats: Optional[StatsCollector] = None,
+        stats: StatsCollector | None = None,
         *,
-        crawler: Optional[Crawler] = None,
+        crawler: Crawler | None = None,
     ):
         if not crawler:
             self.stats = stats
@@ -86,7 +88,7 @@ class HttpCompressionMiddleware:
             crawler.signals.connect(mw.open_spider, signals.spider_opened)
             return mw
 
-    def open_spider(self, spider):
+    def open_spider(self, spider: Spider) -> None:
         if hasattr(spider, "download_maxsize"):
             self._max_size = spider.download_maxsize
         if hasattr(spider, "download_warnsize"):
@@ -94,13 +96,13 @@ class HttpCompressionMiddleware:
 
     def process_request(
         self, request: Request, spider: Spider
-    ) -> Union[Request, Response, None]:
+    ) -> Request | Response | None:
         request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
         return None
 
     def process_response(
         self, request: Request, response: Response, spider: Spider
-    ) -> Union[Request, Response]:
+    ) -> Request | Response:
         if request.method == "HEAD":
             return response
         if isinstance(response, Response):
@@ -138,31 +140,35 @@ class HttpCompressionMiddleware:
                 respcls = responsetypes.from_args(
                     headers=response.headers, url=response.url, body=decoded_body
                 )
-                kwargs = {"cls": respcls, "body": decoded_body}
+                kwargs: dict[str, Any] = {"body": decoded_body}
                 if issubclass(respcls, TextResponse):
                     # force recalculating the encoding until we make sure the
                     # responsetypes guessing is reliable
                     kwargs["encoding"] = None
-                response = response.replace(**kwargs)
+                response = response.replace(cls=respcls, **kwargs)
                 if not content_encoding:
                     del response.headers["Content-Encoding"]
 
         return response
 
-    def _handle_encoding(self, body, content_encoding, max_size):
+    def _handle_encoding(
+        self, body: bytes, content_encoding: list[bytes], max_size: int
+    ) -> tuple[bytes, list[bytes]]:
         to_decode, to_keep = self._split_encodings(content_encoding)
         for encoding in to_decode:
             body = self._decode(body, encoding, max_size)
         return body, to_keep
 
-    def _split_encodings(self, content_encoding):
-        to_keep = [
+    def _split_encodings(
+        self, content_encoding: list[bytes]
+    ) -> tuple[list[bytes], list[bytes]]:
+        to_keep: list[bytes] = [
             encoding.strip().lower()
             for encoding in chain.from_iterable(
                 encodings.split(b",") for encodings in content_encoding
             )
         ]
-        to_decode = []
+        to_decode: list[bytes] = []
         while to_keep:
             encoding = to_keep.pop()
             if encoding not in ACCEPTED_ENCODINGS:

@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import pickle
 import re
 import unittest
-from typing import Optional
 
 from packaging.version import Version
 from pytest import mark
@@ -16,7 +17,7 @@ from tests import get_testdata
 # a hack to skip base class tests in pytest
 class Base:
     class LinkExtractorTestCase(unittest.TestCase):
-        extractor_cls: Optional[type] = None
+        extractor_cls: type | None = None
 
         def setUp(self):
             body = get_testdata("link_extractor", "linkextractor.html")
@@ -186,7 +187,7 @@ class Base:
             )
 
         def test_nofollow(self):
-            '''Test the extractor's behaviour for links with rel="nofollow"'''
+            """Test the extractor's behaviour for links with rel='nofollow'"""
 
             html = b"""<html><head><title>Page title<title>
             <body>

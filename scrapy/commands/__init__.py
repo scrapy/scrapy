@@ -2,25 +2,31 @@
 Base class for Scrapy commands
 """
 
+from __future__ import annotations
+
 import argparse
 import builtins
 import os
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from twisted.python import failure
 
-from scrapy.crawler import Crawler, CrawlerProcess
 from scrapy.exceptions import UsageError
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from scrapy.crawler import Crawler, CrawlerProcess
 
 
 class ScrapyCommand:
     requires_project: bool = False
-    crawler_process: Optional[CrawlerProcess] = None
+    crawler_process: CrawlerProcess | None = None
 
     # default settings to be used for this command instead of global defaults
-    default_settings: Dict[str, Any] = {}
+    default_settings: dict[str, Any] = {}
 
     exitcode: int = 0
 
@@ -93,7 +99,7 @@ class ScrapyCommand:
         )
         group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
 
-    def process_options(self, args: List[str], opts: argparse.Namespace) -> None:
+    def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
         try:
             self.settings.setdict(arglist_to_dict(opts.set), priority="cmdline")
         except ValueError:
@@ -118,7 +124,7 @@ class ScrapyCommand:
         if opts.pdb:
             failure.startDebugMode()
 
-    def run(self, args: List[str], opts: argparse.Namespace) -> None:
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         """
         Entry point for running commands
         """
@@ -163,7 +169,7 @@ class BaseRunSpiderCommand(ScrapyCommand):
             help="format to use for dumping items",
         )
 
-    def process_options(self, args: List[str], opts: argparse.Namespace) -> None:
+    def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
         super().process_options(args, opts)
         try:
             opts.spargs = arglist_to_dict(opts.spargs)
@@ -189,7 +195,7 @@ class ScrapyHelpFormatter(argparse.HelpFormatter):
         prog: str,
         indent_increment: int = 2,
         max_help_position: int = 24,
-        width: Optional[int] = None,
+        width: int | None = None,
     ):
         super().__init__(
             prog,
@@ -203,7 +209,7 @@ class ScrapyHelpFormatter(argparse.HelpFormatter):
         parts = self.format_part_strings(builtins.list(part_strings))
         return super()._join_parts(parts)
 
-    def format_part_strings(self, part_strings: List[str]) -> List[str]:
+    def format_part_strings(self, part_strings: list[str]) -> list[str]:
         """
         Underline and title case command line help message headers.
         """
