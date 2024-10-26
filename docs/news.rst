@@ -18,10 +18,19 @@ Highlights:
 
 -   Completed type hints and added ``py.typed``
 
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   User-defined cookies for HTTPS requests will have the ``secure`` flag set
+    to ``True`` unless it's set to ``False`` explictly. This is important when
+    these cookies are reused in HTTP requests, e.g. after a redirect to an HTTP
+    URL.
+    (:issue:`6357`)
+
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
--   Removed the ``scrapy.utils.request.request_fingerprint`` function,
+-   Removed the ``scrapy.utils.request.request_fingerprint()`` function,
     deprecated in Scrapy 2.7.0.
     (:issue:`6212`, :issue:`6213`)
 
@@ -38,7 +47,7 @@ Deprecation removals
     deprecated in Scrapy 2.7.0.
     (:issue:`6100`, :issue:`6113`)
 
--   Removed the :func:`scrapy.utils.response.response_httprepr` function,
+-   Removed the ``scrapy.utils.response.response_httprepr()`` function,
     deprecated in Scrapy 2.6.0.
     (:issue:`6111`, :issue:`6116`)
 
@@ -47,14 +56,14 @@ Deprecation removals
     which was introduced in Scrapy 2.5.1.
     (:issue:`6103`, :issue:`6113`)
 
--   :ref:`Media pipelines <topics-media-pipeline>` methods ``file_path``,
-    ``file_downloaded``, ``get_images``, ``image_downloaded``,
-    ``media_downloaded``, ``media_to_download``, and ``thumb_path`` must now
-    support an ``item`` parameter, added in Scrapy 2.4.0.
+-   :ref:`Media pipelines <topics-media-pipeline>` methods ``file_path()``,
+    ``file_downloaded()``, ``get_images()``, ``image_downloaded()``,
+    ``media_downloaded()``, ``media_to_download()``, and ``thumb_path()`` must
+    now support an ``item`` parameter, added in Scrapy 2.4.0.
     (:issue:`6107`, :issue:`6113`)
 
--   The ``__init__`` and ``from_crawler`` methods of :ref:`feed storage backend
-    classes <topics-feed-storage>` must now support the keyword-only
+-   The ``__init__()`` and ``from_crawler()`` methods of :ref:`feed storage
+    backend classes <topics-feed-storage>` must now support the keyword-only
     ``feed_options`` parameter, introduced in Scrapy 2.4.0.
     (:issue:`6105`, :issue:`6113`)
 
@@ -62,7 +71,7 @@ Deprecation removals
     modules, deprecated in Scrapy 2.3.0.
     (:issue:`6106`, :issue:`6113`)
 
--   Removed the ``scrapy.utils.misc.extract_regex`` function, deprecated in
+-   Removed the ``scrapy.utils.misc.extract_regex()`` function, deprecated in
     Scrapy 2.3.0.
     (:issue:`6106`, :issue:`6113`)
 
@@ -92,15 +101,18 @@ Deprecations
     ``scrapy.robotstxt.ReppyRobotParser``, is now deprecated.
     (:issue:`5230`, :issue:`6099`)
 
--   The ``scrapy.utils.misc.create_instance`` function is now deprecated, it
+-   The ``scrapy.utils.misc.create_instance()`` function is now deprecated, it
     should be replaced with one of its new replacements that provide a cleaner
-    signature: :func:`scrapy.utils.misc.build_from_crawler`,
+    signature: :func:`scrapy.utils.misc.build_from_crawler` or
     :func:`scrapy.utils.misc.build_from_settings`.
     (:issue:`5523`, :issue:`5884`, :issue:`6162`, :issue:`6169`)
 
--   :meth:`scrapy.core.downloader.Downloader._get_slot_key` is deprecated, use
+-   ``scrapy.core.downloader.Downloader._get_slot_key()`` is deprecated, use
     :meth:`scrapy.core.downloader.Downloader.get_slot_key` instead.
-    (:issue:`6340`)
+    (:issue:`6340`, :issue:`6352`)
+
+-   ``scrapy.utils.defer.process_chain_both()`` is now deprecated.
+    (:issue:`6397`)
 
 New features
 ~~~~~~~~~~~~
@@ -115,6 +127,9 @@ New features
     <topics-stats>` when the spider closes.
     (:issue:`4110`, :issue:`4111`)
 
+-   User-defined cookies can now include the ``secure`` field.
+    (:issue:`6357`)
+
 -   Added component getters to :class:`~scrapy.crawler.Crawler`:
     :meth:`~scrapy.crawler.Crawler.get_addon`,
     :meth:`~scrapy.crawler.Crawler.get_downloader_middleware`,
@@ -123,14 +138,21 @@ New features
     :meth:`~scrapy.crawler.Crawler.get_spider_middleware`.
     (:issue:`6181`)
 
+-   :ref:`Automatic throttling <topics-autothrottle>` can now be disabled for a
+    specific slot via its ``throttle`` attribute.
+    (:issue:`6246`)
+
 -   If :setting:`SPIDER_LOADER_WARN_ONLY` is set to ``True``,
-    ``SpiderLoader`` does not raise :exc:`SyntaxError` but emits a warning
-    instead.
+    :class:`~scrapy.spiderloader.SpiderLoader` does not raise
+    :exc:`SyntaxError` but emits a warning instead.
     (:issue:`6483`, :issue:`6484`)
 
 -   Added support for multiple-compressed responses (ones with several
     encodings in the ``Content-Encoding`` header).
     (:issue:`5143`, :issue:`5964`, :issue:`6063`)
+
+-   Added support for multiple standard values in :setting:`REFERRER_POLICY`.
+    (:issue:`6381`)
 
 -   Added support for brotlicffi_ (previously named brotlipy_). brotli_ is
     still recommended but only brotlicffi_ works on PyPy.
@@ -153,11 +175,28 @@ Improvements
 Bug fixes
 ~~~~~~~~~
 
+-   :class:`~scrapy.pipelines.media.MediaPipeline` is now an abstract class and
+    its methods that were expected to be overridden in subclasses are now
+    abstract methods.
+    (:issue:`6365`, :issue:`6368`)
+
+-   Fixed handling of invalid ``@``-prefixed lines in contract extraction.
+    (:issue:`6383`, :issue:`6388`)
+
+-   Importing ``scrapy.extensions.telnet`` no longer installs the default
+    reactor.
+    (:issue:`6432``)
+
 Documentation
 ~~~~~~~~~~~~~
 
 -   Added ``SECURITY.md`` that documents the security policy.
     (:issue:`5364`, :issue:`6051`)
+
+-   Example code for :ref:`running Scrapy from a script <run-from-script>` no
+    longer imports ``twisted.internet.reactor`` at the top level, which caused
+    problems with non-default reactors when this code was used unmodified.
+    (:issue:`6361`, :issue:`6374`)
 
 -   Other documentation improvements and fixes.
     (:issue:`5920`,
@@ -166,7 +205,14 @@ Documentation
     :issue:`6200`,
     :issue:`6207`,
     :issue:`6216`,
-    :issue:`6223`)
+    :issue:`6223`,
+    :issue:`6317`,
+    :issue:`6328`,
+    :issue:`6389`,
+    :issue:`6394`,
+    :issue:`6402`,
+    :issue:`6411`,
+    :issue:`6429`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
@@ -184,14 +230,44 @@ Quality assurance
     :issue:`6129`,
     :issue:`6130`,
     :issue:`6133`,
+    :issue:`6143`,
     :issue:`6191`,
     :issue:`6268`,
+    :issue:`6274`,
     :issue:`6275`,
     :issue:`6276`,
-    :issue:`6279`)
+    :issue:`6279`,
+    :issue:`6325`,
+    :issue:`6326`,
+    :issue:`6333`,
+    :issue:`6335`,
+    :issue:`6336`,
+    :issue:`6337`,
+    :issue:`6341`,
+    :issue:`6353`,
+    :issue:`6356`,
+    :issue:`6370`,
+    :issue:`6371`,
+    :issue:`6384`,
+    :issue:`6385`,
+    :issue:`6387`,
+    :issue:`6391`,
+    :issue:`6395`,
+    :issue:`6414`,
+    :issue:`6422`)
 
 -   Improved Bandit_ checks.
     (:issue:`6260`, :issue:`6264`, :issue:`6265`)
+
+-   Added pyupgrade_ to the ``pre-commit`` configuration.
+    (:issue:`6392`)
+
+    .. _pyupgrade: https://github.com/asottile/pyupgrade
+
+-   Added ``flake8-bugbear``, ``flake8-comprehensions``, ``flake8-debugger``,
+    ``flake8-docstrings``, ``flake8-string-format`` and
+    ``flake8-type-checking`` to the ``pre-commit`` configuration.
+    (:issue:`6406`, :issue:`6413`)
 
 -   CI and test improvements and fixes.
     (:issue:`5285`,
@@ -204,13 +280,25 @@ Quality assurance
     :issue:`6153`,
     :issue:`6154`,
     :issue:`6201`,
+    :issue:`6231`,
     :issue:`6232`,
     :issue:`6235`,
     :issue:`6236`,
+    :issue:`6242`,
     :issue:`6245`,
     :issue:`6253`,
     :issue:`6258`,
-    :issue:`6259`)
+    :issue:`6259`,
+    :issue:`6270`,
+    :issue:`6272`,
+    :issue:`6286`,
+    :issue:`6290`,
+    :issue:`6296`
+    :issue:`6367`,
+    :issue:`6372`,
+    :issue:`6403`,
+    :issue:`6416`,
+    :issue:`6435`)
 
 -   Code cleanups.
     (:issue:`6196`,
@@ -219,7 +307,11 @@ Quality assurance
     :issue:`6199`,
     :issue:`6254`,
     :issue:`6257`,
-    :issue:`6285`)
+    :issue:`6285`,
+    :issue:`6343`,
+    :issue:`6349`,
+    :issue:`6386`,
+    :issue:`6415`)
 
 Other
 ~~~~~

@@ -358,7 +358,7 @@ Acceptable values for REFERRER_POLICY
 
 - either a path to a ``scrapy.spidermiddlewares.referer.ReferrerPolicy``
   subclass — a custom policy or one of the built-in ones (see classes below),
-- or one of the standard W3C-defined string values,
+- or one or more comma-separated standard W3C-defined string values,
 - or the special ``"scrapy-default"``.
 
 =======================================  ========================================================================
