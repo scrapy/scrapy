@@ -28,7 +28,7 @@ __version__ = (pkgutil.get_data(__package__, "VERSION") or b"").decode("ascii").
 version_info = tuple(int(v) if v.isdigit() else v for v in __version__.split("."))
 
 
-def __getattr__(name):
+def __getattr__(name: str):
     if name == "twisted_version":
         import warnings
 
@@ -41,6 +41,8 @@ def __getattr__(name):
             ScrapyDeprecationWarning,
         )
         return _txv.major, _txv.minor, _txv.micro
+
+    raise AttributeError()
 
 
 del pkgutil
