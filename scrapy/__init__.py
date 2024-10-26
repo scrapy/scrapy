@@ -28,7 +28,7 @@ __version__ = (pkgutil.get_data(__package__, "VERSION") or b"").decode("ascii").
 version_info = tuple(int(v) if v.isdigit() else v for v in __version__.split("."))
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> None | tuple:
     if name == "twisted_version":
         import warnings
 
