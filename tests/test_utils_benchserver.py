@@ -1,5 +1,3 @@
-from unittest import mock
-
 from twisted.trial import unittest
 from twisted.web.test.requesthelper import DummyRequest
 
@@ -47,12 +45,3 @@ class TestBenchServer(unittest.TestCase):
         request = DummyRequest(b"/")
         child = self.root.getChild("name", request)
         self.assertEqual(child, self.root)
-
-    @mock.patch("twisted.internet.reactor.callWhenRunning")
-    @mock.patch("twisted.internet.reactor.listenTCP")
-    @mock.patch("twisted.internet.reactor.run")
-    def test_main(self, mock_run, mock_listenTCP, mock_callWhenRunning):
-        benchserver.main()
-        mock_listenTCP.assert_called_once()
-        mock_run.assert_called_once()
-        mock_callWhenRunning.assert_called_once_with(mock.ANY)
