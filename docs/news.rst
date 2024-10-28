@@ -124,6 +124,54 @@ Deprecation removals
     since Scrapy 1.0.0.
     (:issue:`6101`, :issue:`6113`)
 
+-   Removed the ``--output-format``/``-t`` command line option, deprecated in
+    Scrapy 2.1.0. ``-O <URI>:<FORMAT>`` should be used instead.
+    (:issue:`6500`)
+
+-   Running :meth:`~scrapy.crawler.Crawler.crawl` more than once on the same
+    :class:`~scrapy.crawler.Crawler` instance, deprecated in Scrapy 2.11.0, now
+    raises an exception.
+    (:issue:`6500`)
+
+-   Subclassing
+    :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+    without support for the ``crawler`` argument in ``__init__()`` and without
+    a custom ``from_crawler()`` method, deprecated in Scrapy 2.5.0, is no
+    longer allowed.
+    (:issue:`6500`)
+
+-   Removed the ``EXCEPTIONS_TO_RETRY`` attribute of
+    :class:`~scrapy.downloadermiddlewares.retry.RetryMiddleware`, deprecated in
+    Scrapy 2.10.0.
+    (:issue:`6500`)
+
+-   Removed support for :ref:`S3 feed exports <topics-feed-storage-s3>` without
+    the boto3_ package installed, deprecated in Scrapy 2.10.0.
+    (:issue:`6500`)
+
+-   Removed the ``scrapy.extensions.feedexport._FeedSlot`` class, deprecated in
+    Scrapy 2.10.0.
+    (:issue:`6500`)
+
+-   Removed the ``scrapy.pipelines.images.NoimagesDrop`` exception, deprecated
+    in Scrapy 2.8.0.
+    (:issue:`6500`)
+
+-   The ``response_body`` argument of :meth:`ImagesPipeline.convert_image
+    <scrapy.pipelines.images.ImagesPipeline.convert_image>` is now required,
+    not passing it was deprecated in Scrapy 2.8.0.
+    (:issue:`6500`)
+
+-   Removed the ``custom`` argument of
+    :func:`scrapy.utils.conf.build_component_list`, deprecated in Scrapy
+    2.10.0.
+    (:issue:`6500`)
+
+-   Removed the ``scrapy.utils.reactor.get_asyncio_event_loop_policy()``
+    function, deprecated in Scrapy 2.9.0. Use :func:`asyncio.get_event_loop`
+    and related standard library functions instead.
+    (:issue:`6500`)
+
 Deprecations
 ~~~~~~~~~~~~
 
@@ -260,7 +308,8 @@ Documentation
     :issue:`6448`,
     :issue:`6449`,
     :issue:`6462`,
-    :issue:`6497`)
+    :issue:`6497`,
+    :issue:`6507`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
@@ -353,7 +402,9 @@ Quality assurance
     :issue:`6416`,
     :issue:`6435`,
     :issue:`6489`,
-    :issue:`6501`)
+    :issue:`6501`,
+    :issue:`6504`,
+    :issue:`6511`)
 
 -   Code cleanups.
     (:issue:`6196`,
@@ -363,10 +414,12 @@ Quality assurance
     :issue:`6254`,
     :issue:`6257`,
     :issue:`6285`,
+    :issue:`6305`,
     :issue:`6343`,
     :issue:`6349`,
     :issue:`6386`,
     :issue:`6415`,
+    :issue:`6463`,
     :issue:`6470`,
     :issue:`6499`)
 
