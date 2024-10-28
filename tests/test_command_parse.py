@@ -449,3 +449,26 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         self.assertEqual(namespace.depth, 2)
         self.assertEqual(namespace.spider, self.spider_name)
         self.assertTrue(namespace.verbose)
+
+    def test_exporter_disabled(self):
+        with self.assertLogs() as cm:
+            command = parse.Command()
+            settings = Settings()
+            settings.setdict(
+                {"EXTENSIONS": {"scrapy.extensions.feedexport.FeedExporter": None}},
+                priority="project",
+            )
+            command.settings = settings
+            parser = argparse.ArgumentParser(
+                formatter_class=argparse.HelpFormatter, conflict_handler="resolve"
+            )
+            command.add_options(parser)
+            opts, _ = parser.parse_known_args(args=[])
+
+            opts.output = ["example.json"]
+
+            command.validate_feed_exporter(opts)
+            expected = (
+                "'FeedExporter' extension must be enabled for Feed Exports to work."
+            )
+            self.assertTrue(any(expected in str for str in cm.output))
