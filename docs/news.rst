@@ -10,13 +10,41 @@ Scrapy 2.12.0 (unreleased)
 
 Highlights:
 
+-   Dropped support for Python 3.8, added support for Python 3.13
+
+-   :meth:`~scrapy.Spider.start_requests` can now yield items
+
 -   Added :class:`~scrapy.http.JsonResponse`
 
 -   Added ``items_per_minute`` and ``responses_per_minute`` stats
 
+-   Added :setting:`CLOSESPIDER_PAGECOUNT_NO_ITEM`
+
 -   Added component getters to :class:`scrapy.crawler.Crawler`
 
 -   Completed type hints and added ``py.typed``
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   Dropped support for Python 3.8.
+    (:issue:`6466`, :issue:`6472`)
+
+-   Added support for Python 3.13.
+    (:issue:`6166`)
+
+-   Minimum versions increased for these dependencies:
+
+    -   Twisted_: 18.9.0 → 21.7.0
+
+    -   cryptography_: 36.0.0 → 37.0.0
+
+    -   pyOpenSSL_: 21.0.0 → 22.0.0
+
+    -   lxml_: 4.4.1 → 4.6.0
+
+-   Removed ``setuptools`` from the dependency list.
+    (:issue:`6487`)
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,6 +54,11 @@ Backward-incompatible changes
     these cookies are reused in HTTP requests, e.g. after a redirect to an HTTP
     URL.
     (:issue:`6357`)
+
+-   The Reppy-based ``robots.txt`` parser,
+    ``scrapy.robotstxt.ReppyRobotParser``, was removed, as it doesn't support
+    Python 3.9+.
+    (:issue:`5230`, :issue:`6099`, :issue:`6499`)
 
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
@@ -97,10 +130,6 @@ Deprecations
 -   The ``REQUEST_FINGERPRINTER_IMPLEMENTATION`` setting is now deprecated.
     (:issue:`6212`, :issue:`6213`)
 
--   The Reppy-based ``robots.txt`` parser,
-    ``scrapy.robotstxt.ReppyRobotParser``, is now deprecated.
-    (:issue:`5230`, :issue:`6099`)
-
 -   The ``scrapy.utils.misc.create_instance()`` function is now deprecated, it
     should be replaced with one of its new replacements that provide a cleaner
     signature: :func:`scrapy.utils.misc.build_from_crawler` or
@@ -117,6 +146,9 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
+-   :meth:`~scrapy.Spider.start_requests` can now yield items.
+    (:issue:`5289`, :issue:`6417`)
+
 -   Added a new :class:`~scrapy.http.Response` subclass,
     :class:`~scrapy.http.JsonResponse`, for responses with a `JSON MIME type
     <https://mimesniff.spec.whatwg.org/#json-mime-type>`_.
@@ -126,6 +158,10 @@ New features
     ``items_per_minute`` and ``responses_per_minute`` to the :ref:`stats
     <topics-stats>` when the spider closes.
     (:issue:`4110`, :issue:`4111`)
+
+-   Added :setting:`CLOSESPIDER_PAGECOUNT_NO_ITEM` which allows closing the
+    spider if no items were scraped in a set amount of time.
+    (:issue:`6434`)
 
 -   User-defined cookies can now include the ``secure`` field.
     (:issue:`6357`)
@@ -160,6 +196,10 @@ New features
 
     .. _brotlicffi: https://github.com/python-hyper/brotlicffi
 
+-   Added :class:`~scrapy.contracts.default.MetadataContract` that sets the
+    request meta.
+    (:issue:`6468`, :issue:`6469`)
+
 -   :func:`scrapy.utils.httpobj.urlparse_cached` is now used in more places
     instead of :func:`urllib.parse.urlparse`.
     (:issue:`6228`, :issue:`6229`)
@@ -187,6 +227,9 @@ Bug fixes
     reactor.
     (:issue:`6432``)
 
+-   Reduced log verbosity for dropped requests that was increased in 2.11.2.
+    (:issue:`6433`, :issue:`6475`)
+
 Documentation
 ~~~~~~~~~~~~~
 
@@ -212,7 +255,12 @@ Documentation
     :issue:`6394`,
     :issue:`6402`,
     :issue:`6411`,
-    :issue:`6429`)
+    :issue:`6429`,
+    :issue:`6440`,
+    :issue:`6448`,
+    :issue:`6449`,
+    :issue:`6462`,
+    :issue:`6497`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
@@ -254,7 +302,12 @@ Quality assurance
     :issue:`6391`,
     :issue:`6395`,
     :issue:`6414`,
-    :issue:`6422`)
+    :issue:`6422`,
+    :issue:`6460`,
+    :issue:`6466`,
+    :issue:`6472`,
+    :issue:`6494`,
+    :issue:`6498`)
 
 -   Improved Bandit_ checks.
     (:issue:`6260`, :issue:`6264`, :issue:`6265`)
@@ -298,7 +351,9 @@ Quality assurance
     :issue:`6372`,
     :issue:`6403`,
     :issue:`6416`,
-    :issue:`6435`)
+    :issue:`6435`,
+    :issue:`6489`,
+    :issue:`6501`)
 
 -   Code cleanups.
     (:issue:`6196`,
@@ -311,7 +366,9 @@ Quality assurance
     :issue:`6343`,
     :issue:`6349`,
     :issue:`6386`,
-    :issue:`6415`)
+    :issue:`6415`,
+    :issue:`6470`,
+    :issue:`6499`)
 
 Other
 ~~~~~
