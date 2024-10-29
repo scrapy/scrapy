@@ -15,8 +15,10 @@ from typing import (
     cast,
 )
 
+from twisted import version as twisted_version
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python.failure import Failure
+from twisted.python.versions import Version
 
 from scrapy.http.request import NO_CALLBACK, Request
 from scrapy.settings import Settings
@@ -206,8 +208,8 @@ class MediaPipeline(ABC):
             # minimize cached information for failure
             result.cleanFailure()
             result.frames = []
-            result.stack = []
-
+            if twisted_version <= Version("twisted", 24, 10, 0):
+                result.stack = []  # type: ignore[method-assign]
             # This code fixes a memory leak by avoiding to keep references to
             # the Request and Response objects on the Media Pipeline cache.
             #
