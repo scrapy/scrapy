@@ -4,6 +4,7 @@ Scrapy - a web crawling and web scraping framework written for Python
 
 import pkgutil
 import sys
+import warnings
 
 # Declare top-level shortcuts
 from scrapy.http import FormRequest, Request
@@ -32,9 +33,6 @@ def __getattr__(name: str):
     if name == "twisted_version":
         import warnings
 
-        # Ignore noisy twisted deprecation warnings
-        warnings.filterwarnings("ignore", category=DeprecationWarning, module="twisted")
-
         from twisted import version as _txv
 
         from scrapy.exceptions import ScrapyDeprecationWarning
@@ -48,5 +46,9 @@ def __getattr__(name: str):
     raise AttributeError
 
 
+# Ignore noisy twisted deprecation warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="twisted")
+
 del pkgutil
 del sys
+del warnings
