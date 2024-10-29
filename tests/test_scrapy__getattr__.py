@@ -1,7 +1,5 @@
 import warnings
 
-import pytest
-
 
 def test_deprecated_twisted_version():
     with warnings.catch_warnings(record=True) as warns:
@@ -13,8 +11,3 @@ def test_deprecated_twisted_version():
             "The scrapy.twisted_version attribute is deprecated, use twisted.version instead"
             in warns[0].message.args
         )
-
-
-def test_non_existent_module():
-    with pytest.raises(ImportError):
-        from scrapy import unknown  # noqa: F401

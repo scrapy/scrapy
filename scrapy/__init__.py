@@ -42,7 +42,7 @@ def __getattr__(name: str):
         )
         return _txv.major, _txv.minor, _txv.micro
 
-    raise ImportError
+    raise AttributeError
 
 
 del pkgutil
