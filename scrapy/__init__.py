@@ -32,6 +32,9 @@ def __getattr__(name: str):
     if name == "twisted_version":
         import warnings
 
+        # Ignore noisy twisted deprecation warnings
+        warnings.filterwarnings("ignore", category=DeprecationWarning, module="twisted")
+
         from twisted import version as _txv
 
         from scrapy.exceptions import ScrapyDeprecationWarning
