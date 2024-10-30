@@ -149,17 +149,6 @@ class RequestFingerprinter:
         return self._fingerprint(request)
 
 
-def request_authenticate(
-    request: Request,
-    username: str,
-    password: str,
-) -> None:
-    """Authenticate the given request (in place) using the HTTP basic access
-    authentication mechanism (RFC 2617) and the given username and password
-    """
-    request.headers["Authorization"] = basic_auth_header(username, password)
-
-
 def request_httprepr(request: Request) -> bytes:
     """Return the raw HTTP representation (as bytes) of the given request.
     This is provided only for reference since it's not the actual stream of

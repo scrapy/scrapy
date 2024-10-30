@@ -119,15 +119,6 @@ def get_testenv() -> dict[str, str]:
     return env
 
 
-def assert_samelines(
-    testcase: TestCase, text1: str, text2: str, msg: str | None = None
-) -> None:
-    """Asserts text1 and text2 have the same lines, ignoring differences in
-    line endings between platforms
-    """
-    testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
-
-
 def get_from_asyncio_queue(value: _T) -> Awaitable[_T]:
     q: asyncio.Queue[_T] = asyncio.Queue()
     getter = q.get()

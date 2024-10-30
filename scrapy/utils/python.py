@@ -29,38 +29,6 @@ _T = TypeVar("_T")
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
 
-
-def flatten(x: Iterable[Any]) -> list[Any]:
-    """flatten(sequence) -> list
-
-    Returns a single, flat list which contains all elements retrieved
-    from the sequence and all recursively contained sub-sequences
-    (iterables).
-
-    Examples:
-    >>> [1, 2, [3,4], (5,6)]
-    [1, 2, [3, 4], (5, 6)]
-    >>> flatten([[[1,2,3], (42,None)], [4,5], [6], 7, (8,9,10)])
-    [1, 2, 3, 42, None, 4, 5, 6, 7, 8, 9, 10]
-    >>> flatten(["foo", "bar"])
-    ['foo', 'bar']
-    >>> flatten(["foo", ["baz", 42], "bar"])
-    ['foo', 'baz', 42, 'bar']
-    """
-    return list(iflatten(x))
-
-
-def iflatten(x: Iterable[Any]) -> Iterable[Any]:
-    """iflatten(sequence) -> iterator
-
-    Similar to ``.flatten()``, but returns iterator instead"""
-    for el in x:
-        if is_listlike(el):
-            yield from iflatten(el)
-        else:
-            yield el
-
-
 def is_listlike(x: Any) -> bool:
     """
     >>> is_listlike("foo")
