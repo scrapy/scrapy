@@ -139,8 +139,8 @@ class RequestFingerprinter:
 
         if implementation != "SENTINEL":
             message = (
-                "'REQUEST_FINGERPRINTER_IMPLEMENTATION' is a deprecated setting.\n"
-                "And it will be removed in future version of Scrapy."
+                "'REQUEST_FINGERPRINTER_IMPLEMENTATION' is a deprecated setting\n"
+                "and will be removed in a future version of Scrapy."
             )
             warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
         self._fingerprint = fingerprint
@@ -157,6 +157,10 @@ def request_authenticate(
     """Authenticate the given request (in place) using the HTTP basic access
     authentication mechanism (RFC 2617) and the given username and password
     """
+    warnings.warn(
+        "The 'equal_attributes' function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+    )
     request.headers["Authorization"] = basic_auth_header(username, password)
 
 

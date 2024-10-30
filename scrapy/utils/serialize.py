@@ -1,8 +1,10 @@
 import datetime
 import decimal
 import json
+import warnings
 from typing import Any
 
+from exceptions import ScrapyDeprecationWarning
 from itemadapter import ItemAdapter, is_item
 from twisted.internet import defer
 
@@ -14,6 +16,11 @@ class ScrapyJSONEncoder(json.JSONEncoder):
     TIME_FORMAT = "%H:%M:%S"
 
     def default(self, o: Any) -> Any:
+        warnings.warn(
+            "'ScrapyJSONEncoder' is a deprecated setting and will be removed in a future version of Scrapy.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         if isinstance(o, set):
             return list(o)
         if isinstance(o, datetime.datetime):
