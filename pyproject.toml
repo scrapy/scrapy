@@ -1,0 +1,75 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Scrapy"
+version = "{version}"
+description = "A high-level Web Crawling and Web Scraping framework"
+readme = "README.rst"
+authors = [{name = "Scrapy developers", email = "pablo@pablohoffman.com"}]
+maintainers = [{name = "Pablo Hoffman", email = "pablo@pablohoffman.com"}]
+license = {text = "BSD"}
+requires-python = ">=3.9"
+classifiers = [
+    "Framework :: Scrapy",
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://scrapy.org"
+Documentation = "https://docs.scrapy.org/"
+Repository = "https://github.com/scrapy/scrapy"
+Issues = "https://github.com/scrapy/scrapy/issues"
+
+[project.dependencies]
+Twisted = "^21.7.0"
+cryptography = "^37.0.0"
+cssselect = "^0.9.1"
+itemloaders = "^1.0.1"
+parsel = "^1.5.0"
+pyOpenSSL = "^22.0.0"
+queuelib = "^1.4.2"
+service_identity = "^18.1.0"
+w3lib = "^1.17.0"
+zope.interface = "^5.1.0"
+protego = "^0.1.15"
+itemadapter = "^0.1.0"
+packaging = "*"
+tldextract = "*"
+lxml = "^4.6.0"
+defusedxml = "^0.7.1"
+PyDispatcher = ">=2.0.5"
+
+[project.optional-dependencies]
+default = [
+    "PyDispatcher>=2.0.5 ; platform_python_implementation == 'CPython'",
+    "PyPyDispatcher>=2.1.0 ; platform_python_implementation == 'PyPy'",
+]
+
+[project.entry-points]
+scrapy = "scrapy.cmdline:execute"
+
+[tool.setuptools.dynamic]
+version = {file = "scrapy/VERSION"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests", "tests.*"]
