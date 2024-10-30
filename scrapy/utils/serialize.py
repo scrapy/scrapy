@@ -4,10 +4,10 @@ import json
 import warnings
 from typing import Any
 
-from exceptions import ScrapyDeprecationWarning
 from itemadapter import ItemAdapter, is_item
 from twisted.internet import defer
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 
 

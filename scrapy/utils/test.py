@@ -13,11 +13,11 @@ from posixpath import split
 from typing import TYPE_CHECKING, Any, TypeVar
 from unittest import TestCase, mock
 
-from exceptions import ScrapyDeprecationWarning
 from twisted.trial.unittest import SkipTest
 
 from scrapy import Spider
 from scrapy.crawler import Crawler
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.boto import is_botocore_available
 
 if TYPE_CHECKING:
