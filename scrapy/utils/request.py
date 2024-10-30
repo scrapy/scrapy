@@ -139,8 +139,8 @@ class RequestFingerprinter:
 
         if implementation != "SENTINEL":
             message = (
-                "'REQUEST_FINGERPRINTER_IMPLEMENTATION' is a deprecated setting\n"
-                "and will be removed in a future version of Scrapy."
+                "'REQUEST_FINGERPRINTER_IMPLEMENTATION' is a deprecated setting.\n"
+                "It will be removed in a future version of Scrapy."
             )
             warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
         self._fingerprint = fingerprint

@@ -111,7 +111,7 @@ def md5sum(file: IO[bytes]) -> str:
     """
     warnings.warn(
         (
-            "The scrapy.utils.misc.md5sum function is deprecated, and will be "
+            "The scrapy.utils.misc.md5sum function is deprecated and will be "
             "removed in a future version of Scrapy."
         ),
         ScrapyDeprecationWarning,

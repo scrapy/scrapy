@@ -17,7 +17,7 @@ class ScrapyJSONEncoder(json.JSONEncoder):
 
     def default(self, o: Any) -> Any:
         warnings.warn(
-            "'ScrapyJSONEncoder' is a deprecated setting and will be removed in a future version of Scrapy.",
+            "'ScrapyJSONEncoder' is a deprecated setting.\nIt will be removed in a future version of Scrapy.",
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
