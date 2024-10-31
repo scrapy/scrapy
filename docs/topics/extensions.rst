@@ -247,39 +247,25 @@ Spider state extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. module:: scrapy.extensions.spiderstate
-   :synopsis: Close spider extension
+   :synopsis: Spider state extension
 
 .. class:: SpiderState
 
-Stores and loads spider state during a scraping job. It is especially useful when resuming a paused or interrupted job, as it ensures
-that the spider can retain its internal state, allowing for a more seamless continuation of the scraping process.
+Stores and loads spider state during a scraping job.
 
-.. note:: To enable `SpiderState`, ensure that the `JOBDIR` setting is configured in your Scrapy project. Without this setting, the extension will raise a `NotConfigured` exception and will not be activated.
-
-The extension is used while:
-
-- **Opening a Spider**: When a spider is opened, the extension checks if a previous state file exists in the specified `JOBDIR`.
-  If found, it loads the state from the file and assigns it to `spider.state`.
-- **Closing a Spider**: When a spider closes, the extension saves the `spider.state` attribute to a file within `JOBDIR`.
-  This stored state can be reloaded in subsequent sessions, enabling continuity.
-
-
-Implementation of state management in a spider:
-
-.. code-block:: python
-
-    from scrapy import Spider
+Give a value to the :setting:`JOBDIR` setting to enable this extension.
+When enabled, this extension manages the :attr:`~scrapy.Spider.state` 
+attribute of your :class:`~scrapy.Spider` instance:
+    
+-   When your spider closes (:signal:`spider_closed`), the contents of its 
+    :attr:`~scrapy.Spider.state` attribute are serialized into a file named 
+    ``spider.state`` in the :setting:`JOBDIR` folder.
+-   When your spider opens (:signal:`spider_opened`), if a previously-generated 
+    ``spider.state`` file exists in the :setting:`JOBDIR` folder, it is loaded 
+    into the :attr:`~scrapy.Spider.state` attribute.
 
 
-    class MySpider(Spider):
-        name = "my_spider"
-        # Additional setup...
-
-        def parse(self, response):
-            # Use or update spider.state as needed
-            item = {}
-            self.state["last_item"] = item  # Storing state
-            return item
+For an example, see :ref:`topics-keeping-persistent-state-between-batches`.
 
 Close spider extension
 ~~~~~~~~~~~~~~~~~~~~~~
