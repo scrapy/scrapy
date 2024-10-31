@@ -16,11 +16,6 @@ class ScrapyJSONEncoder(json.JSONEncoder):
     TIME_FORMAT = "%H:%M:%S"
 
     def default(self, o: Any) -> Any:
-        warnings.warn(
-            "'ScrapyJSONEncoder' is a deprecated setting.\nIt will be removed in a future version of Scrapy.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         if isinstance(o, set):
             return list(o)
         if isinstance(o, datetime.datetime):
@@ -43,4 +38,10 @@ class ScrapyJSONEncoder(json.JSONEncoder):
 
 
 class ScrapyJSONDecoder(json.JSONDecoder):
-    pass
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "'ScrapyJSONDecoder' is a deprecated setting.\nIt will be removed in a future version of Scrapy.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
