@@ -128,7 +128,7 @@ def assert_samelines(
     line endings between platforms
     """
     warnings.warn(
-        "The 'assert_samelines' is a deprecated function and will be removed in a future version of Scrapy.",
+        "The 'assert_samelines' function is deprecated and will be removed in a future version of Scrapy.",
         category=ScrapyDeprecationWarning,
     )
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
