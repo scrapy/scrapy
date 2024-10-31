@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import pprint
 import signal
-import warnings
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.internet.defer import (
@@ -17,7 +16,6 @@ from zope.interface.verify import verifyClass
 from scrapy import Spider, signals
 from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
 from scrapy.logformatter import LogFormatter
@@ -142,10 +140,8 @@ class Crawler:
         if self.crawling:
             raise RuntimeError("Crawling already taking place")
         if self._started:
-            warnings.warn(
-                "Running Crawler.crawl() more than once is deprecated.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
+            raise RuntimeError(
+                "Cannot run Crawler.crawl() more than once on the same instance."
             )
         self.crawling = self._started = True
 

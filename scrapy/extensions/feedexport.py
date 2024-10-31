@@ -26,10 +26,8 @@ from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
 from scrapy.settings import Settings
-from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import maybe_deferred_to_future
-from scrapy.utils.deprecate import create_deprecated_class
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import build_from_crawler, load_object
@@ -47,13 +45,6 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
     from scrapy.exporters import BaseItemExporter
     from scrapy.settings import BaseSettings
-
-try:
-    import boto3  # noqa: F401
-
-    IS_BOTO3_AVAILABLE = True
-except ImportError:
-    IS_BOTO3_AVAILABLE = False
 
 
 logger = logging.getLogger(__name__)
@@ -217,8 +208,10 @@ class S3FeedStorage(BlockingFeedStorage):
         session_token: str | None = None,
         region_name: str | None = None,
     ):
-        if not is_botocore_available():
-            raise NotConfigured("missing botocore library")
+        try:
+            import boto3.session
+        except ImportError:
+            raise NotConfigured("missing boto3 library")
         u = urlparse(uri)
         assert u.hostname
         self.bucketname: str = u.hostname
@@ -229,42 +222,16 @@ class S3FeedStorage(BlockingFeedStorage):
         self.acl: str | None = acl
         self.endpoint_url: str | None = endpoint_url
         self.region_name: str | None = region_name
-        # It can be either botocore.client.BaseClient or mypy_boto3_s3.S3Client,
-        # there seems to be no good way to infer it statically.
-        self.s3_client: Any
 
-        if IS_BOTO3_AVAILABLE:
-            import boto3.session
-
-            boto3_session = boto3.session.Session()
-
-            self.s3_client = boto3_session.client(
-                "s3",
-                aws_access_key_id=self.access_key,
-                aws_secret_access_key=self.secret_key,
-                aws_session_token=self.session_token,
-                endpoint_url=self.endpoint_url,
-                region_name=self.region_name,
-            )
-        else:
-            warnings.warn(
-                "`botocore` usage has been deprecated for S3 feed "
-                "export, please use `boto3` to avoid problems",
-                category=ScrapyDeprecationWarning,
-            )
-
-            import botocore.session
-
-            botocore_session = botocore.session.get_session()
-
-            self.s3_client = botocore_session.create_client(
-                "s3",
-                aws_access_key_id=self.access_key,
-                aws_secret_access_key=self.secret_key,
-                aws_session_token=self.session_token,
-                endpoint_url=self.endpoint_url,
-                region_name=self.region_name,
-            )
+        boto3_session = boto3.session.Session()
+        self.s3_client = boto3_session.client(
+            "s3",
+            aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key,
+            aws_session_token=self.session_token,
+            endpoint_url=self.endpoint_url,
+            region_name=self.region_name,
+        )
 
         if feed_options and feed_options.get("overwrite", True) is False:
             logger.warning(
@@ -295,17 +262,10 @@ class S3FeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
-        kwargs: dict[str, Any]
-        if IS_BOTO3_AVAILABLE:
-            kwargs = {"ExtraArgs": {"ACL": self.acl}} if self.acl else {}
-            self.s3_client.upload_fileobj(
-                Bucket=self.bucketname, Key=self.keyname, Fileobj=file, **kwargs
-            )
-        else:
-            kwargs = {"ACL": self.acl} if self.acl else {}
-            self.s3_client.put_object(
-                Bucket=self.bucketname, Key=self.keyname, Body=file, **kwargs
-            )
+        kwargs: dict[str, Any] = {"ExtraArgs": {"ACL": self.acl}} if self.acl else {}
+        self.s3_client.upload_fileobj(
+            Bucket=self.bucketname, Key=self.keyname, Fileobj=file, **kwargs
+        )
         file.close()
 
 
@@ -462,12 +422,6 @@ class FeedSlot:
             assert self.exporter
             self.exporter.finish_exporting()
             self._exporting = False
-
-
-_FeedSlot = create_deprecated_class(
-    name="_FeedSlot",
-    new_class=FeedSlot,
-)
 
 
 class FeedExporter:
