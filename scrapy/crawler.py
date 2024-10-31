@@ -141,7 +141,7 @@ class Crawler:
             raise RuntimeError("Crawling already taking place")
         if self._started:
             raise RuntimeError(
-                "Running Crawler.crawl() more than once on the same instance is forbidden."
+                "Cannot run Crawler.crawl() more than once on the same instance."
             )
         self.crawling = self._started = True
 

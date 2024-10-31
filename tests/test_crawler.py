@@ -85,7 +85,8 @@ class CrawlerTestCase(BaseCrawlerTest):
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
         yield crawler.crawl()
         with raises(
-            RuntimeError, match="more than once on the same instance is forbidden"
+            RuntimeError,
+            match="Cannot run Crawler.crawl() more than once on the same instance",
         ):
             yield crawler.crawl()
 
