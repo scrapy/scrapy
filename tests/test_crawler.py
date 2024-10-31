@@ -84,10 +84,7 @@ class CrawlerTestCase(BaseCrawlerTest):
     def test_crawler_crawl_twice_unsupported(self):
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
         yield crawler.crawl()
-        with raises(
-            RuntimeError,
-            match="Cannot run Crawler.crawl() more than once on the same instance",
-        ):
+        with raises(RuntimeError, match="more than once on the same instance"):
             yield crawler.crawl()
 
     def test_get_addon(self):
