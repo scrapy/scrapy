@@ -3,7 +3,6 @@ from io import BytesIO
 from logging import WARNING
 from pathlib import Path
 from unittest import SkipTest, TestCase
-from warnings import catch_warnings
 
 from testfixtures import LogCapture
 from w3lib.encoding import resolve_encoding
@@ -12,7 +11,7 @@ from scrapy.downloadermiddlewares.httpcompression import (
     ACCEPTED_ENCODINGS,
     HttpCompressionMiddleware,
 )
-from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
@@ -700,29 +699,3 @@ class HttpCompressionTest(TestCase):
         except ImportError:
             raise SkipTest("no zstd support (zstandard)")
         self._test_download_warnsize_request_meta("zstd")
-
-
-class HttpCompressionSubclassTest(TestCase):
-    def test_init_missing_stats(self):
-        class HttpCompressionMiddlewareSubclass(HttpCompressionMiddleware):
-            def __init__(self):
-                super().__init__()
-
-        crawler = get_crawler(Spider)
-        with catch_warnings(record=True) as caught_warnings:
-            HttpCompressionMiddlewareSubclass.from_crawler(crawler)
-        messages = tuple(
-            str(warning.message)
-            for warning in caught_warnings
-            if warning.category is ScrapyDeprecationWarning
-        )
-        self.assertEqual(
-            messages,
-            (
-                (
-                    "HttpCompressionMiddleware subclasses must either modify "
-                    "their '__init__' method to support a 'crawler' parameter "
-                    "or reimplement their 'from_crawler' method."
-                ),
-            ),
-        )

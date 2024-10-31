@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from itertools import chain
 from logging import getLogger
 from typing import TYPE_CHECKING, Any
@@ -15,7 +14,6 @@ from scrapy.utils._compression import (
     _unbrotli,
     _unzstd,
 )
-from scrapy.utils.deprecate import ScrapyDeprecationWarning
 from scrapy.utils.gz import gunzip
 
 if TYPE_CHECKING:
@@ -72,21 +70,7 @@ class HttpCompressionMiddleware:
     def from_crawler(cls, crawler: Crawler) -> Self:
         if not crawler.settings.getbool("COMPRESSION_ENABLED"):
             raise NotConfigured
-        try:
-            return cls(crawler=crawler)
-        except TypeError:
-            warnings.warn(
-                "HttpCompressionMiddleware subclasses must either modify "
-                "their '__init__' method to support a 'crawler' parameter or "
-                "reimplement their 'from_crawler' method.",
-                ScrapyDeprecationWarning,
-            )
-            mw = cls()
-            mw.stats = crawler.stats
-            mw._max_size = crawler.settings.getint("DOWNLOAD_MAXSIZE")
-            mw._warn_size = crawler.settings.getint("DOWNLOAD_WARNSIZE")
-            crawler.signals.connect(mw.open_spider, signals.spider_opened)
-            return mw
+        return cls(crawler=crawler)
 
     def open_spider(self, spider: Spider) -> None:
         if hasattr(spider, "download_maxsize"):

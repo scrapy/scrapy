@@ -8,7 +8,6 @@ import warnings
 from pathlib import Path
 from typing import Any
 
-import pytest
 from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
 from pytest import mark, raises
@@ -82,13 +81,10 @@ class CrawlerTestCase(BaseCrawlerTest):
             Crawler(DefaultSpider())
 
     @inlineCallbacks
-    def test_crawler_crawl_twice_deprecated(self):
+    def test_crawler_crawl_twice_unsupported(self):
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
         yield crawler.crawl()
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match=r"Running Crawler.crawl\(\) more than once is deprecated",
-        ):
+        with raises(RuntimeError, match="more than once on the same instance"):
             yield crawler.crawl()
 
     def test_get_addon(self):

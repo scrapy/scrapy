@@ -16,10 +16,8 @@ from email.utils import formatdate
 from io import BytesIO
 from typing import IO, TYPE_CHECKING, Any
 
-from twisted import version as twisted_version
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred
-from twisted.python.versions import Version
 
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
@@ -217,11 +215,8 @@ class MailSender:
             "heloFallback": True,
             "requireAuthentication": False,
             "requireTransportSecurity": self.smtptls,
+            "hostname": self.smtphost,
         }
-
-        # Newer versions of twisted require the hostname to use STARTTLS
-        if twisted_version >= Version("twisted", 21, 2, 0):
-            factory_keywords["hostname"] = self.smtphost
 
         factory = ESMTPSenderFactory(
             self.smtpuser,

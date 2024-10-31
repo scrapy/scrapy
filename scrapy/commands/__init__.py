@@ -162,12 +162,6 @@ class BaseRunSpiderCommand(ScrapyCommand):
             help="dump scraped items into FILE, overwriting any existing file,"
             " to define format set a colon at the end of the output URI (i.e. -O FILE:FORMAT)",
         )
-        parser.add_argument(
-            "-t",
-            "--output-format",
-            metavar="FORMAT",
-            help="format to use for dumping items",
-        )
 
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
         super().process_options(args, opts)
@@ -179,8 +173,7 @@ class BaseRunSpiderCommand(ScrapyCommand):
             feeds = feed_process_params_from_cli(
                 self.settings,
                 opts.output,
-                opts.output_format,
-                opts.overwrite_output,
+                overwrite_output=opts.overwrite_output,
             )
             self.settings.set("FEEDS", feeds, priority="cmdline")
 

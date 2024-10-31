@@ -82,7 +82,7 @@ def _embed_standard_shell(
     else:
         import rlcompleter  # noqa: F401
 
-        readline.parse_and_bind("tab:complete")
+        readline.parse_and_bind("tab:complete")  # type: ignore[attr-defined]
 
     @wraps(_embed_standard_shell)
     def wrapper(namespace: dict[str, Any] = namespace, banner: str = "") -> None:

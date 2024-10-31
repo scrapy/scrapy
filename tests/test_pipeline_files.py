@@ -11,6 +11,7 @@ from unittest import mock
 from urllib.parse import urlparse
 
 import attr
+import pytest
 from itemadapter import ItemAdapter
 from twisted.internet import defer
 from twisted.trial import unittest
@@ -30,7 +31,6 @@ from scrapy.utils.test import (
     get_crawler,
     get_ftp_content_and_delete,
     get_gcs_content_and_delete,
-    skip_if_no_boto,
 )
 from tests.mockserver import MockFTPServer
 
@@ -507,11 +507,10 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         self.assertEqual(fs_store.basedir, str(path))
 
 
+@pytest.mark.requires_botocore
 class TestS3FilesStore(unittest.TestCase):
     @defer.inlineCallbacks
     def test_persist(self):
-        skip_if_no_boto()
-
         bucket = "mybucket"
         key = "export.csv"
         uri = f"s3://{bucket}/{key}"
@@ -557,8 +556,6 @@ class TestS3FilesStore(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_stat(self):
-        skip_if_no_boto()
-
         bucket = "mybucket"
         key = "export.csv"
         uri = f"s3://{bucket}/{key}"
