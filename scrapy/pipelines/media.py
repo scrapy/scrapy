@@ -208,7 +208,7 @@ class MediaPipeline(ABC):
             # minimize cached information for failure
             result.cleanFailure()
             result.frames = []
-            if twisted_version <= Version("twisted", 24, 10, 0):
+            if twisted_version < Version("twisted", 24, 10, 0):
                 result.stack = []  # type: ignore[method-assign]
             # This code fixes a memory leak by avoiding to keep references to
             # the Request and Response objects on the Media Pipeline cache.
@@ -228,9 +228,6 @@ class MediaPipeline(ABC):
             # To avoid keeping references to the Response and therefore Request
             # objects on the Media Pipeline cache, we should wipe the context of
             # the encapsulated exception when it is a StopIteration instance
-            #
-            # This problem does not occur in Python 2.7 since we don't have
-            # Exception Chaining (https://www.python.org/dev/peps/pep-3134/).
             context = getattr(result.value, "__context__", None)
             if isinstance(context, StopIteration):
                 result.value.__context__ = None

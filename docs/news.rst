@@ -60,6 +60,20 @@ Backward-incompatible changes
     Python 3.9+.
     (:issue:`5230`, :issue:`6099`, :issue:`6499`)
 
+-   The ``response_body`` argument of :meth:`ImagesPipeline.convert_image
+    <scrapy.pipelines.images.ImagesPipeline.convert_image>` is now
+    positional-only, as it was changed from optional to required.
+    (:issue:`6500`)
+
+-   The ``convert`` argument of :func:`scrapy.utils.conf.build_component_list`
+    is now positional-only, as the preceding argument (``custom``) was removed.
+    (:issue:`6500`)
+
+-   The ``overwrite_output`` argument of
+    :func:`scrapy.utils.conf.feed_process_params_from_cli` is now
+    positional-only, as the preceding argument (``output_format``) was removed.
+    (:issue:`6500`)
+
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -190,6 +204,11 @@ Deprecations
 
 -   ``scrapy.utils.defer.process_chain_both()`` is now deprecated.
     (:issue:`6397`)
+
+-   ``scrapy.twisted_version`` is now deprecated, you should instead use
+    :attr:`twisted.version` directly (but note that it's an
+    ``incremental.Version`` object, not a tuple).
+    (:issue:`6509`, :issue:`6512`)
 
 New features
 ~~~~~~~~~~~~
@@ -356,7 +375,8 @@ Quality assurance
     :issue:`6466`,
     :issue:`6472`,
     :issue:`6494`,
-    :issue:`6498`)
+    :issue:`6498`,
+    :issue:`6516`)
 
 -   Improved Bandit_ checks.
     (:issue:`6260`, :issue:`6264`, :issue:`6265`)
@@ -421,7 +441,8 @@ Quality assurance
     :issue:`6415`,
     :issue:`6463`,
     :issue:`6470`,
-    :issue:`6499`)
+    :issue:`6499`,
+    :issue:`6510`)
 
 Other
 ~~~~~
