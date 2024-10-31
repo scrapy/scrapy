@@ -243,6 +243,44 @@ An extension for debugging memory usage. It collects information about:
 To enable this extension, turn on the :setting:`MEMDEBUG_ENABLED` setting. The
 info will be stored in the stats.
 
+Spider state extension
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.extensions.spiderstate
+   :synopsis: Close spider extension
+
+.. class:: SpiderState
+
+Stores and loads spider state during a scraping job. It is especially useful when resuming a paused or interrupted job, as it ensures
+that the spider can retain its internal state, allowing for a more seamless continuation of the scraping process.
+
+.. note:: To enable `SpiderState`, ensure that the `JOBDIR` setting is configured in your Scrapy project. Without this setting, the extension will raise a `NotConfigured` exception and will not be activated.
+
+The extension is used while:
+
+- **Opening a Spider**: When a spider is opened, the extension checks if a previous state file exists in the specified `JOBDIR`.
+  If found, it loads the state from the file and assigns it to `spider.state`.
+- **Closing a Spider**: When a spider closes, the extension saves the `spider.state` attribute to a file within `JOBDIR`.
+  This stored state can be reloaded in subsequent sessions, enabling continuity.
+
+
+Implementation of state management in a spider:
+
+.. code-block:: python
+
+    from scrapy import Spider
+
+
+    class MySpider(Spider):
+        name = "my_spider"
+        # Additional setup...
+
+        def parse(self, response):
+            # Use or update spider.state as needed
+            item = {}
+            self.state["last_item"] = item  # Storing state
+            return item
+
 Close spider extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
