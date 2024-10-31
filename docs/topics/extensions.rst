@@ -251,7 +251,7 @@ Spider state extension
 
 .. class:: SpiderState
 
-Stores and loads spider state during a scraping job.
+Manages spider state data by loading it before a crawl and saving it after.
 
 Give a value to the :setting:`JOBDIR` setting to enable this extension.
 When enabled, this extension manages the :attr:`~scrapy.Spider.state` 
