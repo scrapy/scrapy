@@ -158,7 +158,7 @@ def request_authenticate(
     authentication mechanism (RFC 2617) and the given username and password
     """
     warnings.warn(
-        "The 'equal_attributes' function is deprecated and will be removed in a future version of Scrapy.",
+        "The 'request_authenticate' function is deprecated and will be removed in a future version of Scrapy.",
         category=ScrapyDeprecationWarning,
     )
     request.headers["Authorization"] = basic_auth_header(username, password)
