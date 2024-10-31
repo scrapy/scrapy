@@ -30,17 +30,9 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
 
 
-def _serialize_headers(headers: Iterable[bytes], request: Request) -> Iterable[bytes]:
-    for header in headers:
-        if header in request.headers:
-            yield header
-            yield from request.headers.getlist(header)
-
-
 _fingerprint_cache: WeakKeyDictionary[
     Request, dict[tuple[tuple[bytes, ...] | None, bool], bytes]
-]
-_fingerprint_cache = WeakKeyDictionary()
+] = WeakKeyDictionary()
 
 
 def fingerprint(

@@ -267,9 +267,7 @@ def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:
 
     def returns_none(return_node: ast.Return) -> bool:
         value = return_node.value
-        return (
-            value is None or isinstance(value, ast.NameConstant) and value.value is None
-        )
+        return value is None or isinstance(value, ast.Constant) and value.value is None
 
     if inspect.isgeneratorfunction(callable):
         func = callable

@@ -8,6 +8,7 @@ from pathlib import Path
 from tempfile import mkdtemp, mkstemp
 from unittest import SkipTest, mock
 
+import pytest
 from testfixtures import LogCapture
 from twisted.cred import checkers, credentials, portal
 from twisted.internet import defer, error, reactor
@@ -32,7 +33,7 @@ from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
-from scrapy.utils.test import get_crawler, skip_if_no_boto
+from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
 from tests.mockserver import (
     Echo,
@@ -824,9 +825,9 @@ class HttpDownloadHandlerMock:
         return request
 
 
+@pytest.mark.requires_botocore
 class S3AnonTestCase(unittest.TestCase):
     def setUp(self):
-        skip_if_no_boto()
         crawler = get_crawler()
         self.s3reqh = build_from_crawler(
             S3DownloadHandler,
@@ -845,6 +846,7 @@ class S3AnonTestCase(unittest.TestCase):
         self.assertEqual(httpreq.url, "http://aws-publicdatasets.s3.amazonaws.com/")
 
 
+@pytest.mark.requires_botocore
 class S3TestCase(unittest.TestCase):
     download_handler_cls: type = S3DownloadHandler
 
@@ -856,7 +858,6 @@ class S3TestCase(unittest.TestCase):
     AWS_SECRET_ACCESS_KEY = "uV3F3YluFJax1cknvbcGwgjvx4QpvB+leU8dUj2o"
 
     def setUp(self):
-        skip_if_no_boto()
         crawler = get_crawler()
         s3reqh = build_from_crawler(
             S3DownloadHandler,
