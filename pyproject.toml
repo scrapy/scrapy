@@ -1,16 +1,33 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "Scrapy"
-version = "{version}"
 description = "A high-level Web Crawling and Web Scraping framework"
 readme = "README.rst"
 authors = [{name = "Scrapy developers", email = "pablo@pablohoffman.com"}]
 maintainers = [{name = "Pablo Hoffman", email = "pablo@pablohoffman.com"}]
 license = {text = "BSD"}
 requires-python = ">=3.9"
+dependencies = [
+    "Twisted>=21.7.0",
+    "cryptography>=37.0.0",
+    "cssselect>=0.9.1",
+    "itemloaders>=1.0.1",
+    "parsel>=1.5.0",
+    "pyOpenSSL>=22.0.0",
+    "queuelib>=1.4.2",
+    "service_identity>=18.1.0",
+    "w3lib>=1.17.0",
+    "zope.interface>=5.1.0",
+    "protego>=0.1.15",
+    "itemadapter>=0.1.0",
+    "packaging",
+    "tldextract",
+    "lxml>=4.6.0",
+    "defusedxml>=0.7.1",
+]
 classifiers = [
     "Framework :: Scrapy",
     "Development Status :: 5 - Production/Stable",
@@ -39,24 +56,6 @@ Documentation = "https://docs.scrapy.org/"
 Repository = "https://github.com/scrapy/scrapy"
 Issues = "https://github.com/scrapy/scrapy/issues"
 
-[project.dependencies]
-Twisted = "^21.7.0"
-cryptography = "^37.0.0"
-cssselect = "^0.9.1"
-itemloaders = "^1.0.1"
-parsel = "^1.5.0"
-pyOpenSSL = "^22.0.0"
-queuelib = "^1.4.2"
-service_identity = "^18.1.0"
-w3lib = "^1.17.0"
-zope.interface = "^5.1.0"
-protego = "^0.1.15"
-itemadapter = "^0.1.0"
-packaging = "*"
-tldextract = "*"
-lxml = "^4.6.0"
-defusedxml = "^0.7.1"
-PyDispatcher = ">=2.0.5"
 
 [project.optional-dependencies]
 default = [
@@ -64,12 +63,43 @@ default = [
     "PyPyDispatcher>=2.1.0 ; platform_python_implementation == 'PyPy'",
 ]
 
-[project.entry-points]
+[project.scripts]
 scrapy = "scrapy.cmdline:execute"
 
+
 [tool.setuptools.dynamic]
-version = {file = "scrapy/VERSION"}
+version = {file = "./scrapy/VERSION"}
 
 [tool.setuptools.packages.find]
 where = ["."]
 exclude = ["tests", "tests.*"]
+
+
+[tool.distutils.bdist_wheel]
+universal = true
+
+[tool.distutils.bdist_rpm]
+doc_files = "docs AUTHORS INSTALL LICENSE README.rst"
+
+
+[tool.mypy]
+ignore_missing_imports = true
+
+# Interface classes are hard to support
+
+[[tool.mypy.overrides]]
+module = "twisted.internet.interfaces"
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "scrapy.interfaces"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "twisted.internet.reactor"
+follow_imports = "skip"
+
+# FIXME: remove the following section once the issues are solved
+[[tool.mypy.overrides]]
+module = "scrapy.settings.default_settings"
+ignore_errors = true
