@@ -876,7 +876,7 @@ REDIRECT_MAX_TIMES
 Default: ``20``
 
 The maximum number of redirections that will be followed for a single request.
-After this maximum, the request returns :exc:`IgnoreRequest`.
+After this maximum, the request is ignored.
 
 MetaRefreshMiddleware
 ---------------------
