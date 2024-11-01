@@ -243,6 +243,8 @@ An extension for debugging memory usage. It collects information about:
 To enable this extension, turn on the :setting:`MEMDEBUG_ENABLED` setting. The
 info will be stored in the stats.
 
+.. _topics-extensions-ref-spiderstate:
+
 Spider state extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
