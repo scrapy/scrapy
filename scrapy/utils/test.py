@@ -130,6 +130,7 @@ def assert_samelines(
     warnings.warn(
         "The 'assert_samelines' function is deprecated and will be removed in a future version of Scrapy.",
         category=ScrapyDeprecationWarning,
+        stacklevel=2,
     )
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
 

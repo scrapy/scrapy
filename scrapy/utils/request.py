@@ -160,6 +160,7 @@ def request_authenticate(
     warnings.warn(
         "The 'request_authenticate' function is deprecated and will be removed in a future version of Scrapy.",
         category=ScrapyDeprecationWarning,
+        stacklevel=2,
     )
     request.headers["Authorization"] = basic_auth_header(username, password)
 

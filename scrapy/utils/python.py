@@ -52,6 +52,7 @@ def flatten(x: Iterable[Any]) -> list[Any]:
     warnings.warn(
         "The 'flatten' function is deprecated and will be removed in a future version of Scrapy.",
         category=ScrapyDeprecationWarning,
+        stacklevel=2,
     )
     return list(iflatten(x))
 
@@ -63,6 +64,7 @@ def iflatten(x: Iterable[Any]) -> Iterable[Any]:
     warnings.warn(
         "The 'iflatten' function is deprecated and will be removed in a future version of Scrapy.",
         category=ScrapyDeprecationWarning,
+        stacklevel=2,
     )
     for el in x:
         if is_listlike(el):
@@ -285,6 +287,7 @@ def equal_attributes(
     warnings.warn(
         "The 'equal_attributes' function is deprecated and will be removed in a future version of Scrapy.",
         category=ScrapyDeprecationWarning,
+        stacklevel=2,
     )
     # not attributes given return False by default
     if not attributes:
