@@ -2,22 +2,10 @@ from __future__ import annotations
 
 import copy
 import json
+from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 from importlib import import_module
 from pprint import pformat
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    MutableMapping,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Union, cast
 
 from scrapy.settings import default_settings
 
@@ -37,7 +25,7 @@ if TYPE_CHECKING:
     _SettingsInputT = Union[SupportsItems[_SettingsKeyT, Any], str, None]
 
 
-SETTINGS_PRIORITIES: Dict[str, int] = {
+SETTINGS_PRIORITIES: dict[str, int] = {
     "default": 0,
     "command": 10,
     "addon": 15,
@@ -47,7 +35,7 @@ SETTINGS_PRIORITIES: Dict[str, int] = {
 }
 
 
-def get_settings_priority(priority: Union[int, str]) -> int:
+def get_settings_priority(priority: int | str) -> int:
     """
     Small helper function that looks up a given string priority in the
     :attr:`~scrapy.settings.SETTINGS_PRIORITIES` dictionary and returns its
@@ -109,9 +97,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
 
     __default = object()
 
-    def __init__(
-        self, values: _SettingsInputT = None, priority: Union[int, str] = "project"
-    ):
+    def __init__(self, values: _SettingsInputT = None, priority: int | str = "project"):
         self.frozen: bool = False
         self.attributes: dict[_SettingsKeyT, SettingsAttribute] = {}
         if values:
@@ -192,8 +178,8 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         return float(self.get(name, default))
 
     def getlist(
-        self, name: _SettingsKeyT, default: Optional[List[Any]] = None
-    ) -> List[Any]:
+        self, name: _SettingsKeyT, default: list[Any] | None = None
+    ) -> list[Any]:
         """
         Get a setting value as a list. If the setting original type is a list, a
         copy of it will be returned. If it's a string it will be split by ",".
@@ -213,8 +199,8 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         return list(value)
 
     def getdict(
-        self, name: _SettingsKeyT, default: Optional[Dict[Any, Any]] = None
-    ) -> Dict[Any, Any]:
+        self, name: _SettingsKeyT, default: dict[Any, Any] | None = None
+    ) -> dict[Any, Any]:
         """
         Get a setting value as a dictionary. If the setting original type is a
         dictionary, a copy of it will be returned. If it is a string it will be
@@ -238,8 +224,8 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
     def getdictorlist(
         self,
         name: _SettingsKeyT,
-        default: Union[Dict[Any, Any], List[Any], Tuple[Any], None] = None,
-    ) -> Union[Dict[Any, Any], List[Any]]:
+        default: dict[Any, Any] | list[Any] | tuple[Any] | None = None,
+    ) -> dict[Any, Any] | list[Any]:
         """Get a setting value as either a :class:`dict` or a :class:`list`.
 
         If the setting is already a dict or a list, a copy of it will be
@@ -290,7 +276,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         compbs.update(self[name])
         return compbs
 
-    def getpriority(self, name: _SettingsKeyT) -> Optional[int]:
+    def getpriority(self, name: _SettingsKeyT) -> int | None:
         """
         Return the current numerical priority value of a setting, or ``None`` if
         the given ``name`` does not exist.
@@ -317,7 +303,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         self.set(name, value)
 
     def set(
-        self, name: _SettingsKeyT, value: Any, priority: Union[int, str] = "project"
+        self, name: _SettingsKeyT, value: Any, priority: int | str = "project"
     ) -> None:
         """
         Store a key/value attribute with a given priority.
@@ -350,7 +336,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         self,
         name: _SettingsKeyT,
         default: Any = None,
-        priority: Union[int, str] = "project",
+        priority: int | str = "project",
     ) -> Any:
         if name not in self:
             self.set(name, default, priority)
@@ -358,13 +344,11 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
 
         return self.attributes[name].value
 
-    def setdict(
-        self, values: _SettingsInputT, priority: Union[int, str] = "project"
-    ) -> None:
+    def setdict(self, values: _SettingsInputT, priority: int | str = "project") -> None:
         self.update(values, priority)
 
     def setmodule(
-        self, module: Union[ModuleType, str], priority: Union[int, str] = "project"
+        self, module: ModuleType | str, priority: int | str = "project"
     ) -> None:
         """
         Store settings from a module with a given priority.
@@ -388,7 +372,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
                 self.set(key, getattr(module, key), priority)
 
     # BaseSettings.update() doesn't support all inputs that MutableMapping.update() supports
-    def update(self, values: _SettingsInputT, priority: Union[int, str] = "project") -> None:  # type: ignore[override]
+    def update(self, values: _SettingsInputT, priority: int | str = "project") -> None:  # type: ignore[override]
         """
         Store key/value pairs with a given priority.
 
@@ -412,7 +396,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """
         self._assert_mutability()
         if isinstance(values, str):
-            values = cast(Dict[_SettingsKeyT, Any], json.loads(values))
+            values = cast(dict[_SettingsKeyT, Any], json.loads(values))
         if values is not None:
             if isinstance(values, BaseSettings):
                 for name, value in values.items():
@@ -421,9 +405,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
                 for name, value in values.items():
                     self.set(name, value, priority)
 
-    def delete(
-        self, name: _SettingsKeyT, priority: Union[int, str] = "project"
-    ) -> None:
+    def delete(self, name: _SettingsKeyT, priority: int | str = "project") -> None:
         if name not in self:
             raise KeyError(name)
         self._assert_mutability()
@@ -477,7 +459,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
     def __len__(self) -> int:
         return len(self.attributes)
 
-    def _to_dict(self) -> Dict[_SettingsKeyT, Any]:
+    def _to_dict(self) -> dict[_SettingsKeyT, Any]:
         return {
             self._get_key(k): (v._to_dict() if isinstance(v, BaseSettings) else v)
             for k, v in self.items()
@@ -490,7 +472,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
             else str(key_value)
         )
 
-    def copy_to_dict(self) -> Dict[_SettingsKeyT, Any]:
+    def copy_to_dict(self) -> dict[_SettingsKeyT, Any]:
         """
         Make a copy of current settings and convert to a dict.
 
@@ -537,9 +519,7 @@ class Settings(BaseSettings):
     described on :ref:`topics-settings-ref` already populated.
     """
 
-    def __init__(
-        self, values: _SettingsInputT = None, priority: Union[int, str] = "project"
-    ):
+    def __init__(self, values: _SettingsInputT = None, priority: int | str = "project"):
         # Do not pass kwarg values here. We don't want to promote user-defined
         # dicts, and we want to update, not replace, default dicts with the
         # values given by the user
@@ -553,7 +533,7 @@ class Settings(BaseSettings):
         self.update(values, priority)
 
 
-def iter_default_settings() -> Iterable[Tuple[str, Any]]:
+def iter_default_settings() -> Iterable[tuple[str, Any]]:
     """Return the default settings as an iterator of (name, value) tuples"""
     for name in dir(default_settings):
         if name.isupper():
@@ -562,7 +542,7 @@ def iter_default_settings() -> Iterable[Tuple[str, Any]]:
 
 def overridden_settings(
     settings: Mapping[_SettingsKeyT, Any]
-) -> Iterable[Tuple[str, Any]]:
+) -> Iterable[tuple[str, Any]]:
     """Return an iterable of the settings that have been overridden"""
     for name, defvalue in iter_default_settings():
         value = settings[name]

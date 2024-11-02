@@ -6,7 +6,8 @@ See documentation in docs/topics/downloader-middleware.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Generator, List, Union, cast
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 
@@ -17,6 +18,8 @@ from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import deferred_from_coro, mustbe_deferred
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from twisted.python.failure import Failure
 
     from scrapy import Spider
@@ -27,7 +30,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
     component_name = "downloader middleware"
 
     @classmethod
-    def _get_mwlist_from_settings(cls, settings: BaseSettings) -> List[Any]:
+    def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
         return build_component_list(settings.getwithbase("DOWNLOADER_MIDDLEWARES"))
 
     def _add_middleware(self, mw: Any) -> None:
@@ -43,11 +46,11 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         download_func: Callable[[Request, Spider], Deferred[Response]],
         request: Request,
         spider: Spider,
-    ) -> Deferred[Union[Response, Request]]:
+    ) -> Deferred[Response | Request]:
         @inlineCallbacks
         def process_request(
             request: Request,
-        ) -> Generator[Deferred[Any], Any, Union[Response, Request]]:
+        ) -> Generator[Deferred[Any], Any, Response | Request]:
             for method in self.methods["process_request"]:
                 method = cast(Callable, method)
                 response = yield deferred_from_coro(
@@ -66,8 +69,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):
 
         @inlineCallbacks
         def process_response(
-            response: Union[Response, Request]
-        ) -> Generator[Deferred[Any], Any, Union[Response, Request]]:
+            response: Response | Request,
+        ) -> Generator[Deferred[Any], Any, Response | Request]:
             if response is None:
                 raise TypeError("Received None in process_response")
             elif isinstance(response, Request):
@@ -90,7 +93,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         @inlineCallbacks
         def process_exception(
             failure: Failure,
-        ) -> Generator[Deferred[Any], Any, Union[Failure, Response, Request]]:
+        ) -> Generator[Deferred[Any], Any, Failure | Response | Request]:
             exception = failure.value
             for method in self.methods["process_exception"]:
                 method = cast(Callable, method)
@@ -108,7 +111,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     return response
             return failure
 
-        deferred: Deferred[Union[Response, Request]] = mustbe_deferred(
+        deferred: Deferred[Response | Request] = mustbe_deferred(
             process_request, request
         )
         deferred.addErrback(process_exception)

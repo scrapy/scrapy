@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured
@@ -90,8 +90,8 @@ class AutoThrottle:
 
     def _get_slot(
         self, request: Request, spider: Spider
-    ) -> Tuple[Optional[str], Optional[Slot]]:
-        key: Optional[str] = request.meta.get("download_slot")
+    ) -> tuple[str | None, Slot | None]:
+        key: str | None = request.meta.get("download_slot")
         if key is None:
             return None, None
         assert self.crawler.engine

@@ -1,18 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AnyStr,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, AnyStr, Union, cast
 
 from w3lib.http import headers_dict_to_raw
 
@@ -20,6 +9,8 @@ from scrapy.utils.datatypes import CaseInsensitiveDict, CaselessDict
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -34,17 +25,17 @@ class Headers(CaselessDict):
 
     def __init__(
         self,
-        seq: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
+        seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
         encoding: str = "utf-8",
     ):
         self.encoding: str = encoding
         super().__init__(seq)
 
     def update(  # type: ignore[override]
-        self, seq: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]]]
+        self, seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]]
     ) -> None:
         seq = seq.items() if isinstance(seq, Mapping) else seq
-        iseq: Dict[bytes, List[bytes]] = {}
+        iseq: dict[bytes, list[bytes]] = {}
         for k, v in seq:
             iseq.setdefault(self.normkey(k), []).extend(self.normvalue(v))
         super().update(iseq)
@@ -53,7 +44,7 @@ class Headers(CaselessDict):
         """Normalize key to bytes"""
         return self._tobytes(key.title())
 
-    def normvalue(self, value: Union[_RawValueT, Iterable[_RawValueT]]) -> List[bytes]:
+    def normvalue(self, value: _RawValueT | Iterable[_RawValueT]) -> list[bytes]:
         """Normalize values to bytes"""
         _value: Iterable[_RawValueT]
         if value is None:
@@ -76,21 +67,21 @@ class Headers(CaselessDict):
             return str(x).encode(self.encoding)
         raise TypeError(f"Unsupported value type: {type(x)}")
 
-    def __getitem__(self, key: AnyStr) -> Optional[bytes]:
+    def __getitem__(self, key: AnyStr) -> bytes | None:
         try:
-            return cast(List[bytes], super().__getitem__(key))[-1]
+            return cast(list[bytes], super().__getitem__(key))[-1]
         except IndexError:
             return None
 
-    def get(self, key: AnyStr, def_val: Any = None) -> Optional[bytes]:
+    def get(self, key: AnyStr, def_val: Any = None) -> bytes | None:
         try:
-            return cast(List[bytes], super().get(key, def_val))[-1]
+            return cast(list[bytes], super().get(key, def_val))[-1]
         except IndexError:
             return None
 
-    def getlist(self, key: AnyStr, def_val: Any = None) -> List[bytes]:
+    def getlist(self, key: AnyStr, def_val: Any = None) -> list[bytes]:
         try:
-            return cast(List[bytes], super().__getitem__(key))
+            return cast(list[bytes], super().__getitem__(key))
         except KeyError:
             if def_val is not None:
                 return self.normvalue(def_val)
@@ -109,10 +100,10 @@ class Headers(CaselessDict):
         lst.extend(self.normvalue(value))
         self[key] = lst
 
-    def items(self) -> Iterable[Tuple[bytes, List[bytes]]]:  # type: ignore[override]
+    def items(self) -> Iterable[tuple[bytes, list[bytes]]]:  # type: ignore[override]
         return ((k, self.getlist(k)) for k in self.keys())
 
-    def values(self) -> List[Optional[bytes]]:  # type: ignore[override]
+    def values(self) -> list[bytes | None]:  # type: ignore[override]
         return [
             self[k] for k in self.keys()  # pylint: disable=consider-using-dict-items
         ]

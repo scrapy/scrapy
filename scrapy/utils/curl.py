@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 import argparse
 import warnings
 from http.cookies import SimpleCookie
 from shlex import split
-from typing import Any, Dict, List, NoReturn, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Any, NoReturn
 from urllib.parse import urlparse
 
 from w3lib.http import basic_auth_header
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class DataAction(argparse.Action):
@@ -13,8 +18,8 @@ class DataAction(argparse.Action):
         self,
         parser: argparse.ArgumentParser,
         namespace: argparse.Namespace,
-        values: Union[str, Sequence[Any], None],
-        option_string: Optional[str] = None,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
     ) -> None:
         value = str(values)
         if value.startswith("$"):
@@ -51,9 +56,9 @@ for argument in safe_to_ignore_arguments:
 
 def _parse_headers_and_cookies(
     parsed_args: argparse.Namespace,
-) -> Tuple[List[Tuple[str, bytes]], Dict[str, str]]:
-    headers: List[Tuple[str, bytes]] = []
-    cookies: Dict[str, str] = {}
+) -> tuple[list[tuple[str, bytes]], dict[str, str]]:
+    headers: list[tuple[str, bytes]] = []
+    cookies: dict[str, str] = {}
     for header in parsed_args.headers or ():
         name, val = header.split(":", 1)
         name = name.strip()
@@ -73,7 +78,7 @@ def _parse_headers_and_cookies(
 
 def curl_to_request_kwargs(
     curl_command: str, ignore_unknown_options: bool = True
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Convert a cURL command syntax to Request kwargs.
 
     :param str curl_command: string containing the curl command
@@ -107,7 +112,7 @@ def curl_to_request_kwargs(
 
     method = parsed_args.method or "GET"
 
-    result: Dict[str, Any] = {"method": method.upper(), "url": url}
+    result: dict[str, Any] = {"method": method.upper(), "url": url}
 
     headers, cookies = _parse_headers_and_cookies(parsed_args)
 

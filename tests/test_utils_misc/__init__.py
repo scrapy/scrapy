@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 from scrapy.item import Field, Item
 from scrapy.utils.misc import (
     arg_to_iter,
@@ -97,6 +99,7 @@ class UtilsMiscTestCase(unittest.TestCase):
             list(arg_to_iter(TestItem(name="john"))), [TestItem(name="john")]
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_create_instance(self):
         settings = mock.MagicMock()
         crawler = mock.MagicMock(spec_set=["settings"])

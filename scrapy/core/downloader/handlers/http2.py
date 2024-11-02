@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from time import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
 from twisted.internet.error import TimeoutError
@@ -60,8 +60,8 @@ class ScrapyH2Agent:
         context_factory: IPolicyForHTTPS,
         pool: H2ConnectionPool,
         connect_timeout: int = 10,
-        bind_address: Optional[bytes] = None,
-        crawler: Optional[Crawler] = None,
+        bind_address: bytes | None = None,
+        crawler: Crawler | None = None,
     ) -> None:
         self._context_factory = context_factory
         self._connect_timeout = connect_timeout
@@ -69,7 +69,7 @@ class ScrapyH2Agent:
         self._pool = pool
         self._crawler = crawler
 
-    def _get_agent(self, request: Request, timeout: Optional[float]) -> H2Agent:
+    def _get_agent(self, request: Request, timeout: float | None) -> H2Agent:
         from twisted.internet import reactor
 
         bind_address = request.meta.get("bindaddress") or self._bind_address

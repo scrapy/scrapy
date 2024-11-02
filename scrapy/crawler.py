@@ -3,19 +3,7 @@ from __future__ import annotations
 import logging
 import pprint
 import signal
-import warnings
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Generator,
-    Optional,
-    Set,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.internet.defer import (
     Deferred,
@@ -28,7 +16,6 @@ from zope.interface.verify import verifyClass
 from scrapy import Spider, signals
 from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
 from scrapy.logformatter import LogFormatter
@@ -53,6 +40,9 @@ from scrapy.utils.reactor import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Generator, Iterable
+
+    from scrapy.spiderloader import SpiderLoader
     from scrapy.utils.request import RequestFingerprinter
 
 
@@ -64,8 +54,8 @@ _T = TypeVar("_T")
 class Crawler:
     def __init__(
         self,
-        spidercls: Type[Spider],
-        settings: Union[None, Dict[str, Any], Settings] = None,
+        spidercls: type[Spider],
+        settings: dict[str, Any] | Settings | None = None,
         init_reactor: bool = False,
     ):
         if isinstance(spidercls, Spider):
@@ -74,7 +64,7 @@ class Crawler:
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
-        self.spidercls: Type[Spider] = spidercls
+        self.spidercls: type[Spider] = spidercls
         self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
         self._update_root_log_handler()
@@ -86,12 +76,12 @@ class Crawler:
         self.crawling: bool = False
         self._started: bool = False
 
-        self.extensions: Optional[ExtensionManager] = None
-        self.stats: Optional[StatsCollector] = None
-        self.logformatter: Optional[LogFormatter] = None
-        self.request_fingerprinter: Optional[RequestFingerprinter] = None
-        self.spider: Optional[Spider] = None
-        self.engine: Optional[ExecutionEngine] = None
+        self.extensions: ExtensionManager | None = None
+        self.stats: StatsCollector | None = None
+        self.logformatter: LogFormatter | None = None
+        self.request_fingerprinter: RequestFingerprinter | None = None
+        self.spider: Spider | None = None
+        self.engine: ExecutionEngine | None = None
 
     def _update_root_log_handler(self) -> None:
         if get_scrapy_root_handler() is not None:
@@ -112,7 +102,7 @@ class Crawler:
         self.__remove_handler = lambda: logging.root.removeHandler(handler)
         self.signals.connect(self.__remove_handler, signals.engine_stopped)
 
-        lf_cls: Type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
+        lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
         self.logformatter = lf_cls.from_crawler(self)
 
         self.request_fingerprinter = build_from_crawler(
@@ -150,10 +140,8 @@ class Crawler:
         if self.crawling:
             raise RuntimeError("Crawling already taking place")
         if self._started:
-            warnings.warn(
-                "Running Crawler.crawl() more than once is deprecated.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
+            raise RuntimeError(
+                "Cannot run Crawler.crawl() more than once on the same instance."
             )
         self.crawling = self._started = True
 
@@ -187,16 +175,18 @@ class Crawler:
             yield maybeDeferred(self.engine.stop)
 
     @staticmethod
-    def _get_component(component_class, components):
+    def _get_component(
+        component_class: type[_T], components: Iterable[Any]
+    ) -> _T | None:
         for component in components:
             if isinstance(component, component_class):
                 return component
         return None
 
-    def get_addon(self, cls):
+    def get_addon(self, cls: type[_T]) -> _T | None:
         return self._get_component(cls, self.addons.addons)
 
-    def get_downloader_middleware(self, cls):
+    def get_downloader_middleware(self, cls: type[_T]) -> _T | None:
         if not self.engine:
             raise RuntimeError(
                 "Crawler.get_downloader_middleware() can only be called after "
@@ -204,7 +194,7 @@ class Crawler:
             )
         return self._get_component(cls, self.engine.downloader.middleware.middlewares)
 
-    def get_extension(self, cls):
+    def get_extension(self, cls: type[_T]) -> _T | None:
         if not self.extensions:
             raise RuntimeError(
                 "Crawler.get_extension() can only be called after the "
@@ -212,7 +202,7 @@ class Crawler:
             )
         return self._get_component(cls, self.extensions.middlewares)
 
-    def get_item_pipeline(self, cls):
+    def get_item_pipeline(self, cls: type[_T]) -> _T | None:
         if not self.engine:
             raise RuntimeError(
                 "Crawler.get_item_pipeline() can only be called after the "
@@ -220,7 +210,7 @@ class Crawler:
             )
         return self._get_component(cls, self.engine.scraper.itemproc.middlewares)
 
-    def get_spider_middleware(self, cls):
+    def get_spider_middleware(self, cls: type[_T]) -> _T | None:
         if not self.engine:
             raise RuntimeError(
                 "Crawler.get_spider_middleware() can only be called after the "
@@ -249,25 +239,25 @@ class CrawlerRunner:
     )
 
     @staticmethod
-    def _get_spider_loader(settings: BaseSettings):
+    def _get_spider_loader(settings: BaseSettings) -> SpiderLoader:
         """Get SpiderLoader instance from settings"""
         cls_path = settings.get("SPIDER_LOADER_CLASS")
         loader_cls = load_object(cls_path)
         verifyClass(ISpiderLoader, loader_cls)
-        return loader_cls.from_settings(settings.frozencopy())
+        return cast("SpiderLoader", loader_cls.from_settings(settings.frozencopy()))
 
-    def __init__(self, settings: Union[Dict[str, Any], Settings, None] = None):
+    def __init__(self, settings: dict[str, Any] | Settings | None = None):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
-        self.settings = settings
-        self.spider_loader = self._get_spider_loader(settings)
-        self._crawlers: Set[Crawler] = set()
-        self._active: Set[Deferred[None]] = set()
+        self.settings: Settings = settings
+        self.spider_loader: SpiderLoader = self._get_spider_loader(settings)
+        self._crawlers: set[Crawler] = set()
+        self._active: set[Deferred[None]] = set()
         self.bootstrap_failed = False
 
     def crawl(
         self,
-        crawler_or_spidercls: Union[Type[Spider], str, Crawler],
+        crawler_or_spidercls: type[Spider] | str | Crawler,
         *args: Any,
         **kwargs: Any,
     ) -> Deferred[None]:
@@ -314,7 +304,7 @@ class CrawlerRunner:
         return d.addBoth(_done)
 
     def create_crawler(
-        self, crawler_or_spidercls: Union[Type[Spider], str, Crawler]
+        self, crawler_or_spidercls: type[Spider] | str | Crawler
     ) -> Crawler:
         """
         Return a :class:`~scrapy.crawler.Crawler` object.
@@ -335,11 +325,10 @@ class CrawlerRunner:
             return crawler_or_spidercls
         return self._create_crawler(crawler_or_spidercls)
 
-    def _create_crawler(self, spidercls: Union[str, Type[Spider]]) -> Crawler:
+    def _create_crawler(self, spidercls: str | type[Spider]) -> Crawler:
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
-        # temporary cast until self.spider_loader is typed
-        return Crawler(cast(Type[Spider], spidercls), self.settings)
+        return Crawler(spidercls, self.settings)
 
     def stop(self) -> Deferred[Any]:
         """
@@ -387,13 +376,13 @@ class CrawlerProcess(CrawlerRunner):
 
     def __init__(
         self,
-        settings: Union[Dict[str, Any], Settings, None] = None,
+        settings: dict[str, Any] | Settings | None = None,
         install_root_handler: bool = True,
     ):
         super().__init__(settings)
         configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
-        self._initialized_reactor = False
+        self._initialized_reactor: bool = False
 
     def _signal_shutdown(self, signum: int, _: Any) -> None:
         from twisted.internet import reactor
@@ -416,15 +405,13 @@ class CrawlerProcess(CrawlerRunner):
         )
         reactor.callFromThread(self._stop_reactor)
 
-    def _create_crawler(self, spidercls: Union[Type[Spider], str]) -> Crawler:
+    def _create_crawler(self, spidercls: type[Spider] | str) -> Crawler:
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
         init_reactor = not self._initialized_reactor
         self._initialized_reactor = True
         # temporary cast until self.spider_loader is typed
-        return Crawler(
-            cast(Type[Spider], spidercls), self.settings, init_reactor=init_reactor
-        )
+        return Crawler(spidercls, self.settings, init_reactor=init_reactor)
 
     def start(
         self, stop_after_crawl: bool = True, install_signal_handlers: bool = True

@@ -3,26 +3,15 @@ from __future__ import annotations
 import logging
 import pprint
 from collections import defaultdict, deque
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Deque,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.defer import process_chain, process_parallel
 from scrapy.utils.misc import build_from_crawler, build_from_settings, load_object
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
     from twisted.internet.defer import Deferred
 
     # typing.Concatenate and typing.ParamSpec require Python 3.10
@@ -51,20 +40,18 @@ class MiddlewareManager:
         self.middlewares = middlewares
         # Only process_spider_output and process_spider_exception can be None.
         # Only process_spider_output can be a tuple, and only until _async compatibility methods are removed.
-        self.methods: Dict[
-            str, Deque[Union[None, Callable, Tuple[Callable, Callable]]]
-        ] = defaultdict(deque)
+        self.methods: dict[str, deque[Callable | tuple[Callable, Callable] | None]] = (
+            defaultdict(deque)
+        )
         for mw in middlewares:
             self._add_middleware(mw)
 
     @classmethod
-    def _get_mwlist_from_settings(cls, settings: Settings) -> List[Any]:
+    def _get_mwlist_from_settings(cls, settings: Settings) -> list[Any]:
         raise NotImplementedError
 
     @classmethod
-    def from_settings(
-        cls, settings: Settings, crawler: Optional[Crawler] = None
-    ) -> Self:
+    def from_settings(cls, settings: Settings, crawler: Crawler | None = None) -> Self:
         mwlist = cls._get_mwlist_from_settings(settings)
         middlewares = []
         enabled = []
@@ -107,7 +94,7 @@ class MiddlewareManager:
 
     def _process_parallel(
         self, methodname: str, obj: _T, *args: Any
-    ) -> Deferred[List[_T2]]:
+    ) -> Deferred[list[_T2]]:
         methods = cast(
             "Iterable[Callable[Concatenate[_T, _P], _T2]]", self.methods[methodname]
         )
@@ -119,8 +106,8 @@ class MiddlewareManager:
         )
         return process_chain(methods, obj, *args)
 
-    def open_spider(self, spider: Spider) -> Deferred[List[None]]:
+    def open_spider(self, spider: Spider) -> Deferred[list[None]]:
         return self._process_parallel("open_spider", spider)
 
-    def close_spider(self, spider: Spider) -> Deferred[List[None]]:
+    def close_spider(self, spider: Spider) -> Deferred[list[None]]:
         return self._process_parallel("close_spider", spider)

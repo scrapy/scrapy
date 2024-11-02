@@ -89,6 +89,30 @@ def requires_uvloop(request):
         pytest.skip("uvloop is not installed")
 
 
+@pytest.fixture(autouse=True)
+def requires_botocore(request):
+    if not request.node.get_closest_marker("requires_botocore"):
+        return
+    try:
+        import botocore
+
+        del botocore
+    except ImportError:
+        pytest.skip("botocore is not installed")
+
+
+@pytest.fixture(autouse=True)
+def requires_boto3(request):
+    if not request.node.get_closest_marker("requires_boto3"):
+        return
+    try:
+        import boto3
+
+        del boto3
+    except ImportError:
+        pytest.skip("boto3 is not installed")
+
+
 def pytest_configure(config):
     if config.getoption("--reactor") == "asyncio":
         install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")

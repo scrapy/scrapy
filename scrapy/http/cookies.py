@@ -5,22 +5,14 @@ import time
 from http.cookiejar import Cookie
 from http.cookiejar import CookieJar as _CookieJar
 from http.cookiejar import CookiePolicy, DefaultCookiePolicy
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator, Sequence
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -36,7 +28,7 @@ IPV4_RE = re.compile(r"\.\d+$", re.ASCII)
 class CookieJar:
     def __init__(
         self,
-        policy: Optional[CookiePolicy] = None,
+        policy: CookiePolicy | None = None,
         check_expired_frequency: int = 10000,
     ):
         self.policy: CookiePolicy = policy or DefaultCookiePolicy()
@@ -83,7 +75,7 @@ class CookieJar:
             self.jar.clear_expired_cookies()
 
     @property
-    def _cookies(self) -> Dict[str, Dict[str, Dict[str, Cookie]]]:
+    def _cookies(self) -> dict[str, dict[str, dict[str, Cookie]]]:
         return self.jar._cookies  # type: ignore[attr-defined,no-any-return]
 
     def clear_session_cookies(self) -> None:
@@ -91,9 +83,9 @@ class CookieJar:
 
     def clear(
         self,
-        domain: Optional[str] = None,
-        path: Optional[str] = None,
-        name: Optional[str] = None,
+        domain: str | None = None,
+        path: str | None = None,
+        name: str | None = None,
     ) -> None:
         self.jar.clear(domain, path, name)
 
@@ -118,7 +110,7 @@ class CookieJar:
         self.jar.set_cookie_if_ok(cookie, WrappedRequest(request))  # type: ignore[arg-type]
 
 
-def potential_domain_matches(domain: str) -> List[str]:
+def potential_domain_matches(domain: str) -> list[str]:
     """Potential domain matches for a cookie
 
     >>> potential_domain_matches('www.example.com')
@@ -196,11 +188,11 @@ class WrappedRequest:
     def has_header(self, name: str) -> bool:
         return name in self.request.headers
 
-    def get_header(self, name: str, default: Optional[str] = None) -> Optional[str]:
+    def get_header(self, name: str, default: str | None = None) -> str | None:
         value = self.request.headers.get(name, default)
         return to_unicode(value, errors="replace") if value is not None else None
 
-    def header_items(self) -> List[Tuple[str, List[str]]]:
+    def header_items(self) -> list[tuple[str, list[str]]]:
         return [
             (
                 to_unicode(k, errors="replace"),
@@ -220,7 +212,7 @@ class WrappedResponse:
     def info(self) -> Self:
         return self
 
-    def get_all(self, name: str, default: Any = None) -> List[str]:
+    def get_all(self, name: str, default: Any = None) -> list[str]:
         return [
             to_unicode(v, errors="replace") for v in self.response.headers.getlist(name)
         ]

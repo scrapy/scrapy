@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import collections
 import shutil
 import tempfile
 import unittest
-from typing import Optional
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
@@ -52,7 +53,6 @@ class MockCrawler(Crawler):
             "SCHEDULER_PRIORITY_QUEUE": priority_queue_cls,
             "JOBDIR": jobdir,
             "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
         }
         super().__init__(Spider, settings)
         self.engine = MockEngine(downloader=MockDownloader())
@@ -60,7 +60,7 @@ class MockCrawler(Crawler):
 
 
 class SchedulerHandler:
-    priority_queue_cls: Optional[str] = None
+    priority_queue_cls: str | None = None
     jobdir = None
 
     def create_scheduler(self):
@@ -254,7 +254,7 @@ def _is_scheduling_fair(enqueued_slots, dequeued_slots):
 
 
 class DownloaderAwareSchedulerTestMixin:
-    priority_queue_cls: Optional[str] = "scrapy.pqueues.DownloaderAwarePriorityQueue"
+    priority_queue_cls: str | None = "scrapy.pqueues.DownloaderAwarePriorityQueue"
     reopen = False
 
     def test_logic(self):

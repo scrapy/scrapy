@@ -10,7 +10,7 @@ from __future__ import annotations
 import copy
 import json
 import warnings
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, overload
+from typing import TYPE_CHECKING, Any, overload
 
 from scrapy.http.request import Request, RequestTypeVar
 
@@ -20,14 +20,14 @@ if TYPE_CHECKING:
 
 
 class JsonRequest(Request):
-    attributes: Tuple[str, ...] = Request.attributes + ("dumps_kwargs",)
+    attributes: tuple[str, ...] = Request.attributes + ("dumps_kwargs",)
 
     def __init__(
-        self, *args: Any, dumps_kwargs: Optional[Dict[str, Any]] = None, **kwargs: Any
+        self, *args: Any, dumps_kwargs: dict[str, Any] | None = None, **kwargs: Any
     ) -> None:
         dumps_kwargs = copy.deepcopy(dumps_kwargs) if dumps_kwargs is not None else {}
         dumps_kwargs.setdefault("sort_keys", True)
-        self._dumps_kwargs: Dict[str, Any] = dumps_kwargs
+        self._dumps_kwargs: dict[str, Any] = dumps_kwargs
 
         body_passed = kwargs.get("body", None) is not None
         data: Any = kwargs.pop("data", None)
@@ -47,19 +47,19 @@ class JsonRequest(Request):
         )
 
     @property
-    def dumps_kwargs(self) -> Dict[str, Any]:
+    def dumps_kwargs(self) -> dict[str, Any]:
         return self._dumps_kwargs
 
     @overload
     def replace(
-        self, *args: Any, cls: Type[RequestTypeVar], **kwargs: Any
+        self, *args: Any, cls: type[RequestTypeVar], **kwargs: Any
     ) -> RequestTypeVar: ...
 
     @overload
     def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self: ...
 
     def replace(
-        self, *args: Any, cls: Optional[Type[Request]] = None, **kwargs: Any
+        self, *args: Any, cls: type[Request] | None = None, **kwargs: Any
     ) -> Request:
         body_passed = kwargs.get("body", None) is not None
         data: Any = kwargs.pop("data", None)

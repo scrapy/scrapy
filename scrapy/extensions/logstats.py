@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional, Tuple, Union
+from typing import TYPE_CHECKING
 
 from twisted.internet import task
 
@@ -29,7 +29,7 @@ class LogStats:
         self.stats: StatsCollector = stats
         self.interval: float = interval
         self.multiplier: float = 60.0 / self.interval
-        self.task: Optional[task.LoopingCall] = None
+        self.task: task.LoopingCall | None = None
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -81,7 +81,7 @@ class LogStats:
 
     def calculate_final_stats(
         self, spider: Spider
-    ) -> Union[Tuple[None, None], Tuple[float, float]]:
+    ) -> tuple[None, None] | tuple[float, float]:
         start_time = self.stats.get_value("start_time")
         finished_time = self.stats.get_value("finished_time")
 

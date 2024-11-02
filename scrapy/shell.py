@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import os
 import signal
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 from itemadapter import is_item
 from twisted.internet import defer, threads
@@ -27,32 +27,35 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
 from scrapy.utils.response import open_in_browser
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 
 class Shell:
-    relevant_classes: Tuple[type, ...] = (Crawler, Spider, Request, Response, Settings)
+    relevant_classes: tuple[type, ...] = (Crawler, Spider, Request, Response, Settings)
 
     def __init__(
         self,
         crawler: Crawler,
-        update_vars: Optional[Callable[[Dict[str, Any]], None]] = None,
-        code: Optional[str] = None,
+        update_vars: Callable[[dict[str, Any]], None] | None = None,
+        code: str | None = None,
     ):
         self.crawler: Crawler = crawler
-        self.update_vars: Callable[[Dict[str, Any]], None] = update_vars or (
+        self.update_vars: Callable[[dict[str, Any]], None] = update_vars or (
             lambda x: None
         )
         self.item_class: type = load_object(crawler.settings["DEFAULT_ITEM_CLASS"])
-        self.spider: Optional[Spider] = None
+        self.spider: Spider | None = None
         self.inthread: bool = not threadable.isInIOThread()
-        self.code: Optional[str] = code
-        self.vars: Dict[str, Any] = {}
+        self.code: str | None = code
+        self.vars: dict[str, Any] = {}
 
     def start(
         self,
-        url: Optional[str] = None,
-        request: Optional[Request] = None,
-        response: Optional[Response] = None,
-        spider: Optional[Spider] = None,
+        url: str | None = None,
+        request: Request | None = None,
+        response: Response | None = None,
+        spider: Spider | None = None,
         redirect: bool = True,
     ) -> None:
         # disable accidental Ctrl-C key press from shutting down the engine
@@ -94,9 +97,7 @@ class Shell:
                 self.vars, shells=shells, banner=self.vars.pop("banner", "")
             )
 
-    def _schedule(
-        self, request: Request, spider: Optional[Spider]
-    ) -> defer.Deferred[Any]:
+    def _schedule(self, request: Request, spider: Spider | None) -> defer.Deferred[Any]:
         if is_asyncio_reactor_installed():
             # set the asyncio event loop for the current thread
             event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
@@ -108,7 +109,7 @@ class Shell:
         self.crawler.engine.crawl(request)
         return d
 
-    def _open_spider(self, request: Request, spider: Optional[Spider]) -> Spider:
+    def _open_spider(self, request: Request, spider: Spider | None) -> Spider:
         if self.spider:
             return self.spider
 
@@ -123,8 +124,8 @@ class Shell:
 
     def fetch(
         self,
-        request_or_url: Union[Request, str],
-        spider: Optional[Spider] = None,
+        request_or_url: Request | str,
+        spider: Spider | None = None,
         redirect: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -152,9 +153,9 @@ class Shell:
 
     def populate_vars(
         self,
-        response: Optional[Response] = None,
-        request: Optional[Request] = None,
-        spider: Optional[Spider] = None,
+        response: Response | None = None,
+        request: Request | None = None,
+        spider: Spider | None = None,
     ) -> None:
         import scrapy
 

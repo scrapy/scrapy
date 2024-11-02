@@ -1,9 +1,8 @@
-"""Download handlers for http and https schemes
-"""
+"""Download handlers for http and https schemes"""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING
 
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import to_unicode
@@ -27,10 +26,10 @@ class HTTP10DownloadHandler:
     lazy = False
 
     def __init__(self, settings: BaseSettings, crawler: Crawler):
-        self.HTTPClientFactory: Type[ScrapyHTTPClientFactory] = load_object(
+        self.HTTPClientFactory: type[ScrapyHTTPClientFactory] = load_object(
             settings["DOWNLOADER_HTTPCLIENTFACTORY"]
         )
-        self.ClientContextFactory: Type[ScrapyClientContextFactory] = load_object(
+        self.ClientContextFactory: type[ScrapyClientContextFactory] = load_object(
             settings["DOWNLOADER_CLIENTCONTEXTFACTORY"]
         )
         self._settings: BaseSettings = settings

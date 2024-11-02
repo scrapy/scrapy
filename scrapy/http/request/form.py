@@ -7,17 +7,8 @@ See documentation in docs/topics/request-response.rst
 
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 
 from lxml.html import FormElement  # nosec
@@ -31,6 +22,7 @@ from scrapy.http.request import Request
 from scrapy.utils.python import is_listlike, to_bytes
 
 if TYPE_CHECKING:
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -38,8 +30,8 @@ if TYPE_CHECKING:
 
 
 FormdataVType = Union[str, Iterable[str]]
-FormdataKVType = Tuple[str, FormdataVType]
-FormdataType = Optional[Union[Dict[str, FormdataVType], List[FormdataKVType]]]
+FormdataKVType = tuple[str, FormdataVType]
+FormdataType = Optional[Union[dict[str, FormdataVType], list[FormdataKVType]]]
 
 
 class FormRequest(Request):
@@ -70,14 +62,14 @@ class FormRequest(Request):
     def from_response(
         cls,
         response: TextResponse,
-        formname: Optional[str] = None,
-        formid: Optional[str] = None,
+        formname: str | None = None,
+        formid: str | None = None,
         formnumber: int = 0,
         formdata: FormdataType = None,
-        clickdata: Optional[Dict[str, Union[str, int]]] = None,
+        clickdata: dict[str, str | int] | None = None,
         dont_click: bool = False,
-        formxpath: Optional[str] = None,
-        formcss: Optional[str] = None,
+        formxpath: str | None = None,
+        formcss: str | None = None,
         **kwargs: Any,
     ) -> Self:
         kwargs.setdefault("encoding", response.encoding)
@@ -100,7 +92,7 @@ class FormRequest(Request):
         return cls(url=url, method=method, formdata=formdata, **kwargs)
 
 
-def _get_form_url(form: FormElement, url: Optional[str]) -> str:
+def _get_form_url(form: FormElement, url: str | None) -> str:
     assert form.base_url is not None  # typing
     if url is None:
         action = form.get("action")
@@ -121,10 +113,10 @@ def _urlencode(seq: Iterable[FormdataKVType], enc: str) -> str:
 
 def _get_form(
     response: TextResponse,
-    formname: Optional[str],
-    formid: Optional[str],
+    formname: str | None,
+    formid: str | None,
     formnumber: int,
-    formxpath: Optional[str],
+    formxpath: str | None,
 ) -> FormElement:
     """Find the wanted form element within the given response."""
     root = response.selector.root
@@ -168,8 +160,8 @@ def _get_inputs(
     form: FormElement,
     formdata: FormdataType,
     dont_click: bool,
-    clickdata: Optional[Dict[str, Union[str, int]]],
-) -> List[FormdataKVType]:
+    clickdata: dict[str, str | int] | None,
+) -> list[FormdataKVType]:
     """Return a list of key-value pairs for the inputs found in the given form."""
     try:
         formdata_keys = dict(formdata or ()).keys()
@@ -187,7 +179,7 @@ def _get_inputs(
         '  not(re:test(., "^(?:checkbox|radio)$", "i")))]]',
         namespaces={"re": "http://exslt.org/regular-expressions"},
     )
-    values: List[FormdataKVType] = [
+    values: list[FormdataKVType] = [
         (k, "" if v is None else v)
         for k, v in (_value(e) for e in inputs)
         if k and k not in formdata_keys
@@ -204,8 +196,8 @@ def _get_inputs(
 
 
 def _value(
-    ele: Union[InputElement, SelectElement, TextareaElement]
-) -> Tuple[Optional[str], Union[None, str, MultipleSelectOptions]]:
+    ele: InputElement | SelectElement | TextareaElement,
+) -> tuple[str | None, str | MultipleSelectOptions | None]:
     n = ele.name
     v = ele.value
     if ele.tag == "select":
@@ -214,8 +206,8 @@ def _value(
 
 
 def _select_value(
-    ele: SelectElement, n: Optional[str], v: Union[None, str, MultipleSelectOptions]
-) -> Tuple[Optional[str], Union[None, str, MultipleSelectOptions]]:
+    ele: SelectElement, n: str | None, v: str | MultipleSelectOptions | None
+) -> tuple[str | None, str | MultipleSelectOptions | None]:
     multiple = ele.multiple
     if v is None and not multiple:
         # Match browser behaviour on simple select tag without options selected
@@ -226,8 +218,8 @@ def _select_value(
 
 
 def _get_clickable(
-    clickdata: Optional[Dict[str, Union[str, int]]], form: FormElement
-) -> Optional[Tuple[str, str]]:
+    clickdata: dict[str, str | int] | None, form: FormElement
+) -> tuple[str, str] | None:
     """
     Returns the clickable element specified in clickdata,
     if the latter is given. If not, it returns the first

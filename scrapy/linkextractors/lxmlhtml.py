@@ -6,20 +6,10 @@ from __future__ import annotations
 
 import logging
 import operator
+import re
+from collections.abc import Callable, Iterable
 from functools import partial
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Iterable,
-    List,
-    Optional,
-    Pattern,
-    Set,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Union, cast
 from urllib.parse import urljoin, urlparse
 
 from lxml import etree  # nosec
@@ -28,13 +18,14 @@ from w3lib.html import strip_html5_whitespace
 from w3lib.url import canonicalize_url, safe_url_string
 
 from scrapy.link import Link
-from scrapy.linkextractors import IGNORED_EXTENSIONS, _is_valid_url, _matches, re
+from scrapy.linkextractors import IGNORED_EXTENSIONS, _is_valid_url, _matches
 from scrapy.utils.misc import arg_to_iter, rel_has_nofollow
 from scrapy.utils.python import unique as unique_list
 from scrapy.utils.response import get_base_url
 from scrapy.utils.url import url_has_any_extension, url_is_from_any_domain
 
 if TYPE_CHECKING:
+
     from lxml.html import HtmlElement  # nosec
 
     from scrapy import Selector
@@ -67,9 +58,9 @@ def _canonicalize_link_url(link: Link) -> str:
 class LxmlParserLinkExtractor:
     def __init__(
         self,
-        tag: Union[str, Callable[[str], bool]] = "a",
-        attr: Union[str, Callable[[str], bool]] = "href",
-        process: Optional[Callable[[Any], Any]] = None,
+        tag: str | Callable[[str], bool] = "a",
+        attr: str | Callable[[str], bool] = "href",
+        process: Callable[[Any], Any] | None = None,
         unique: bool = False,
         strip: bool = True,
         canonicalized: bool = False,
@@ -98,7 +89,7 @@ class LxmlParserLinkExtractor:
 
     def _iter_links(
         self, document: HtmlElement
-    ) -> Iterable[Tuple[HtmlElement, str, str]]:
+    ) -> Iterable[tuple[HtmlElement, str, str]]:
         for el in document.iter(etree.Element):
             if not self.scan_tag(_nons(el.tag)):
                 continue
@@ -114,8 +105,8 @@ class LxmlParserLinkExtractor:
         response_url: str,
         response_encoding: str,
         base_url: str,
-    ) -> List[Link]:
-        links: List[Link] = []
+    ) -> list[Link]:
+        links: list[Link] = []
         # hacky way to get the underlying lxml parsed document
         for el, attr, attr_val in self._iter_links(selector.root):
             # pseudo lxml.html.HtmlElement.make_links_absolute(base_url)
@@ -145,26 +136,26 @@ class LxmlParserLinkExtractor:
             links.append(link)
         return self._deduplicate_if_needed(links)
 
-    def extract_links(self, response: TextResponse) -> List[Link]:
+    def extract_links(self, response: TextResponse) -> list[Link]:
         base_url = get_base_url(response)
         return self._extract_links(
             response.selector, response.url, response.encoding, base_url
         )
 
-    def _process_links(self, links: List[Link]) -> List[Link]:
+    def _process_links(self, links: list[Link]) -> list[Link]:
         """Normalize and filter extracted links
 
         The subclass should override it if necessary
         """
         return self._deduplicate_if_needed(links)
 
-    def _deduplicate_if_needed(self, links: List[Link]) -> List[Link]:
+    def _deduplicate_if_needed(self, links: list[Link]) -> list[Link]:
         if self.unique:
             return unique_list(links, key=self.link_key)
         return links
 
 
-_RegexT = Union[str, Pattern[str]]
+_RegexT = Union[str, re.Pattern[str]]
 _RegexOrSeveralT = Union[_RegexT, Iterable[_RegexT]]
 
 
@@ -175,18 +166,18 @@ class LxmlLinkExtractor:
         self,
         allow: _RegexOrSeveralT = (),
         deny: _RegexOrSeveralT = (),
-        allow_domains: Union[str, Iterable[str]] = (),
-        deny_domains: Union[str, Iterable[str]] = (),
-        restrict_xpaths: Union[str, Iterable[str]] = (),
-        tags: Union[str, Iterable[str]] = ("a", "area"),
-        attrs: Union[str, Iterable[str]] = ("href",),
+        allow_domains: str | Iterable[str] = (),
+        deny_domains: str | Iterable[str] = (),
+        restrict_xpaths: str | Iterable[str] = (),
+        tags: str | Iterable[str] = ("a", "area"),
+        attrs: str | Iterable[str] = ("href",),
         canonicalize: bool = False,
         unique: bool = True,
-        process_value: Optional[Callable[[Any], Any]] = None,
-        deny_extensions: Union[str, Iterable[str], None] = None,
-        restrict_css: Union[str, Iterable[str]] = (),
+        process_value: Callable[[Any], Any] | None = None,
+        deny_extensions: str | Iterable[str] | None = None,
+        restrict_css: str | Iterable[str] = (),
         strip: bool = True,
-        restrict_text: Optional[_RegexOrSeveralT] = None,
+        restrict_text: _RegexOrSeveralT | None = None,
     ):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
         self.link_extractor = LxmlParserLinkExtractor(
@@ -197,13 +188,13 @@ class LxmlLinkExtractor:
             strip=strip,
             canonicalized=not canonicalize,
         )
-        self.allow_res: List[Pattern[str]] = self._compile_regexes(allow)
-        self.deny_res: List[Pattern[str]] = self._compile_regexes(deny)
+        self.allow_res: list[re.Pattern[str]] = self._compile_regexes(allow)
+        self.deny_res: list[re.Pattern[str]] = self._compile_regexes(deny)
 
-        self.allow_domains: Set[str] = set(arg_to_iter(allow_domains))
-        self.deny_domains: Set[str] = set(arg_to_iter(deny_domains))
+        self.allow_domains: set[str] = set(arg_to_iter(allow_domains))
+        self.deny_domains: set[str] = set(arg_to_iter(deny_domains))
 
-        self.restrict_xpaths: Tuple[str, ...] = tuple(arg_to_iter(restrict_xpaths))
+        self.restrict_xpaths: tuple[str, ...] = tuple(arg_to_iter(restrict_xpaths))
         self.restrict_xpaths += tuple(
             map(self._csstranslator.css_to_xpath, arg_to_iter(restrict_css))
         )
@@ -211,11 +202,11 @@ class LxmlLinkExtractor:
         if deny_extensions is None:
             deny_extensions = IGNORED_EXTENSIONS
         self.canonicalize: bool = canonicalize
-        self.deny_extensions: Set[str] = {"." + e for e in arg_to_iter(deny_extensions)}
-        self.restrict_text: List[Pattern[str]] = self._compile_regexes(restrict_text)
+        self.deny_extensions: set[str] = {"." + e for e in arg_to_iter(deny_extensions)}
+        self.restrict_text: list[re.Pattern[str]] = self._compile_regexes(restrict_text)
 
     @staticmethod
-    def _compile_regexes(value: Optional[_RegexOrSeveralT]) -> List[Pattern[str]]:
+    def _compile_regexes(value: _RegexOrSeveralT | None) -> list[re.Pattern[str]]:
         return [
             x if isinstance(x, re.Pattern) else re.compile(x)
             for x in arg_to_iter(value)
@@ -257,7 +248,7 @@ class LxmlLinkExtractor:
         denied = (regex.search(url) for regex in self.deny_res) if self.deny_res else []
         return any(allowed) and not any(denied)
 
-    def _process_links(self, links: List[Link]) -> List[Link]:
+    def _process_links(self, links: list[Link]) -> list[Link]:
         links = [x for x in links if self._link_allowed(x)]
         if self.canonicalize:
             for link in links:
@@ -265,10 +256,10 @@ class LxmlLinkExtractor:
         links = self.link_extractor._process_links(links)
         return links
 
-    def _extract_links(self, *args: Any, **kwargs: Any) -> List[Link]:
+    def _extract_links(self, *args: Any, **kwargs: Any) -> list[Link]:
         return self.link_extractor._extract_links(*args, **kwargs)
 
-    def extract_links(self, response: TextResponse) -> List[Link]:
+    def extract_links(self, response: TextResponse) -> list[Link]:
         """Returns a list of :class:`~scrapy.link.Link` objects from the
         specified :class:`response <scrapy.http.Response>`.
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
-from typing import TYPE_CHECKING, Deque, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from scrapy.spiders import Spider
 
 
-ConnectionKeyT = Tuple[bytes, bytes, int]
+ConnectionKeyT = tuple[bytes, bytes, int]
 
 
 class H2ConnectionPool:
@@ -36,11 +36,11 @@ class H2ConnectionPool:
 
         # Store a dictionary which is used to get the respective
         # H2ClientProtocolInstance using the  key as Tuple(scheme, hostname, port)
-        self._connections: Dict[ConnectionKeyT, H2ClientProtocol] = {}
+        self._connections: dict[ConnectionKeyT, H2ClientProtocol] = {}
 
         # Save all requests that arrive before the connection is established
-        self._pending_requests: Dict[
-            ConnectionKeyT, Deque[Deferred[H2ClientProtocol]]
+        self._pending_requests: dict[
+            ConnectionKeyT, deque[Deferred[H2ClientProtocol]]
         ] = {}
 
     def get_connection(
@@ -68,7 +68,7 @@ class H2ConnectionPool:
     ) -> Deferred[H2ClientProtocol]:
         self._pending_requests[key] = deque()
 
-        conn_lost_deferred: Deferred[List[BaseException]] = Deferred()
+        conn_lost_deferred: Deferred[list[BaseException]] = Deferred()
         conn_lost_deferred.addCallback(self._remove_connection, key)
 
         factory = H2ClientFactory(uri, self.settings, conn_lost_deferred)
@@ -94,7 +94,7 @@ class H2ConnectionPool:
         return conn
 
     def _remove_connection(
-        self, errors: List[BaseException], key: ConnectionKeyT
+        self, errors: list[BaseException], key: ConnectionKeyT
     ) -> None:
         self._connections.pop(key)
 
@@ -121,8 +121,8 @@ class H2Agent:
         reactor: ReactorBase,
         pool: H2ConnectionPool,
         context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),
-        connect_timeout: Optional[float] = None,
-        bind_address: Optional[bytes] = None,
+        connect_timeout: float | None = None,
+        bind_address: bytes | None = None,
     ) -> None:
         self._reactor = reactor
         self._pool = pool
@@ -165,8 +165,8 @@ class ScrapyProxyH2Agent(H2Agent):
         proxy_uri: URI,
         pool: H2ConnectionPool,
         context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),
-        connect_timeout: Optional[float] = None,
-        bind_address: Optional[bytes] = None,
+        connect_timeout: float | None = None,
+        bind_address: bytes | None = None,
     ) -> None:
         super().__init__(
             reactor=reactor,

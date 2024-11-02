@@ -12,7 +12,7 @@ import sys
 import threading
 import traceback
 from pdb import Pdb
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from scrapy.utils.engine import format_engine_status
 from scrapy.utils.trackref import format_live_refs
@@ -33,8 +33,8 @@ class StackTraceDump:
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
         try:
-            signal.signal(signal.SIGUSR2, self.dump_stacktrace)
-            signal.signal(signal.SIGQUIT, self.dump_stacktrace)
+            signal.signal(signal.SIGUSR2, self.dump_stacktrace)  # type: ignore[attr-defined]
+            signal.signal(signal.SIGQUIT, self.dump_stacktrace)  # type: ignore[attr-defined]
         except AttributeError:
             # win32 platforms don't support SIGUSR signals
             pass
@@ -43,7 +43,7 @@ class StackTraceDump:
     def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler)
 
-    def dump_stacktrace(self, signum: int, frame: Optional[FrameType]) -> None:
+    def dump_stacktrace(self, signum: int, frame: FrameType | None) -> None:
         assert self.crawler.engine
         log_args = {
             "stackdumps": self._thread_stacks(),
@@ -70,11 +70,11 @@ class StackTraceDump:
 class Debugger:
     def __init__(self) -> None:
         try:
-            signal.signal(signal.SIGUSR2, self._enter_debugger)
+            signal.signal(signal.SIGUSR2, self._enter_debugger)  # type: ignore[attr-defined]
         except AttributeError:
             # win32 platforms don't support SIGUSR signals
             pass
 
-    def _enter_debugger(self, signum: int, frame: Optional[FrameType]) -> None:
+    def _enter_debugger(self, signum: int, frame: FrameType | None) -> None:
         assert frame
         Pdb().set_trace(frame.f_back)  # noqa: T100

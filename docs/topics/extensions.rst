@@ -243,6 +243,32 @@ An extension for debugging memory usage. It collects information about:
 To enable this extension, turn on the :setting:`MEMDEBUG_ENABLED` setting. The
 info will be stored in the stats.
 
+.. _topics-extensions-ref-spiderstate:
+
+Spider state extension
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.extensions.spiderstate
+   :synopsis: Spider state extension
+
+.. class:: SpiderState
+
+Manages spider state data by loading it before a crawl and saving it after.
+
+Give a value to the :setting:`JOBDIR` setting to enable this extension.
+When enabled, this extension manages the :attr:`~scrapy.Spider.state` 
+attribute of your :class:`~scrapy.Spider` instance:
+    
+-   When your spider closes (:signal:`spider_closed`), the contents of its 
+    :attr:`~scrapy.Spider.state` attribute are serialized into a file named 
+    ``spider.state`` in the :setting:`JOBDIR` folder.
+-   When your spider opens (:signal:`spider_opened`), if a previously-generated 
+    ``spider.state`` file exists in the :setting:`JOBDIR` folder, it is loaded 
+    into the :attr:`~scrapy.Spider.state` attribute.
+
+
+For an example, see :ref:`topics-keeping-persistent-state-between-batches`.
+
 Close spider extension
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -316,6 +342,19 @@ An integer which specifies the maximum number of responses to crawl. If the spid
 crawls more than that, the spider will be closed with the reason
 ``closespider_pagecount``. If zero (or non set), spiders won't be closed by
 number of crawled responses.
+
+.. setting:: CLOSESPIDER_PAGECOUNT_NO_ITEM
+
+CLOSESPIDER_PAGECOUNT_NO_ITEM
+"""""""""""""""""""""""""""""
+
+Default: ``0``
+
+An integer which specifies the maximum number of consecutive responses to crawl
+without items scraped. If the spider crawls more consecutive responses than that
+and no items are scraped in the meantime, the spider will be closed with the
+reason ``closespider_pagecount_no_item``. If zero (or not set), spiders won't be
+closed by number of crawled responses with no items.
 
 .. setting:: CLOSESPIDER_ERRORCOUNT
 

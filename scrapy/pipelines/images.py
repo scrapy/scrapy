@@ -8,26 +8,13 @@ from __future__ import annotations
 
 import functools
 import hashlib
-import warnings
 from contextlib import suppress
 from io import BytesIO
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, cast
 
 from itemadapter import ItemAdapter
 
-from scrapy.exceptions import DropItem, NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import (
@@ -39,9 +26,10 @@ from scrapy.pipelines.files import (
     _md5sum,
 )
 from scrapy.settings import Settings
-from scrapy.utils.python import get_func_args, to_bytes
+from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
     from os import PathLike
 
     from PIL import Image
@@ -51,18 +39,6 @@ if TYPE_CHECKING:
 
     from scrapy import Spider
     from scrapy.pipelines.media import FileInfoOrError, MediaPipeline
-
-
-class NoimagesDrop(DropItem):
-    """Product with no images exception"""
-
-    def __init__(self, *args: Any, **kwargs: Any):
-        warnings.warn(
-            "The NoimagesDrop class is deprecated",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(*args, **kwargs)
 
 
 class ImageException(FileException):
@@ -79,15 +55,15 @@ class ImagesPipeline(FilesPipeline):
     MIN_WIDTH: int = 0
     MIN_HEIGHT: int = 0
     EXPIRES: int = 90
-    THUMBS: Dict[str, Tuple[int, int]] = {}
+    THUMBS: dict[str, tuple[int, int]] = {}
     DEFAULT_IMAGES_URLS_FIELD = "image_urls"
     DEFAULT_IMAGES_RESULT_FIELD = "images"
 
     def __init__(
         self,
-        store_uri: Union[str, PathLike[str]],
-        download_func: Optional[Callable[[Request, Spider], Response]] = None,
-        settings: Union[Settings, Dict[str, Any], None] = None,
+        store_uri: str | PathLike[str],
+        download_func: Callable[[Request, Spider], Response] | None = None,
+        settings: Settings | dict[str, Any] | None = None,
     ):
         try:
             from PIL import Image
@@ -127,15 +103,13 @@ class ImagesPipeline(FilesPipeline):
         self.min_height: int = settings.getint(
             resolve("IMAGES_MIN_HEIGHT"), self.MIN_HEIGHT
         )
-        self.thumbs: Dict[str, Tuple[int, int]] = settings.get(
+        self.thumbs: dict[str, tuple[int, int]] = settings.get(
             resolve("IMAGES_THUMBS"), self.THUMBS
         )
 
-        self._deprecated_convert_image: Optional[bool] = None
-
     @classmethod
     def from_settings(cls, settings: Settings) -> Self:
-        s3store: Type[S3FilesStore] = cast(Type[S3FilesStore], cls.STORE_SCHEMES["s3"])
+        s3store: type[S3FilesStore] = cast(type[S3FilesStore], cls.STORE_SCHEMES["s3"])
         s3store.AWS_ACCESS_KEY_ID = settings["AWS_ACCESS_KEY_ID"]
         s3store.AWS_SECRET_ACCESS_KEY = settings["AWS_SECRET_ACCESS_KEY"]
         s3store.AWS_SESSION_TOKEN = settings["AWS_SESSION_TOKEN"]
@@ -145,14 +119,14 @@ class ImagesPipeline(FilesPipeline):
         s3store.AWS_VERIFY = settings["AWS_VERIFY"]
         s3store.POLICY = settings["IMAGES_STORE_S3_ACL"]
 
-        gcs_store: Type[GCSFilesStore] = cast(
-            Type[GCSFilesStore], cls.STORE_SCHEMES["gs"]
+        gcs_store: type[GCSFilesStore] = cast(
+            type[GCSFilesStore], cls.STORE_SCHEMES["gs"]
         )
         gcs_store.GCS_PROJECT_ID = settings["GCS_PROJECT_ID"]
         gcs_store.POLICY = settings["IMAGES_STORE_GCS_ACL"] or None
 
-        ftp_store: Type[FTPFilesStore] = cast(
-            Type[FTPFilesStore], cls.STORE_SCHEMES["ftp"]
+        ftp_store: type[FTPFilesStore] = cast(
+            type[FTPFilesStore], cls.STORE_SCHEMES["ftp"]
         )
         ftp_store.FTP_USERNAME = settings["FTP_USER"]
         ftp_store.FTP_PASSWORD = settings["FTP_PASSWORD"]
@@ -179,7 +153,7 @@ class ImagesPipeline(FilesPipeline):
         *,
         item: Any = None,
     ) -> str:
-        checksum: Optional[str] = None
+        checksum: str | None = None
         for path, image, buf in self.get_images(response, request, info, item=item):
             if checksum is None:
                 buf.seek(0)
@@ -202,7 +176,7 @@ class ImagesPipeline(FilesPipeline):
         info: MediaPipeline.SpiderInfo,
         *,
         item: Any = None,
-    ) -> Iterable[Tuple[str, Image.Image, BytesIO]]:
+    ) -> Iterable[tuple[str, Image.Image, BytesIO]]:
         path = self.file_path(request, response=response, info=info, item=item)
         orig_image = self._Image.open(BytesIO(response.body))
 
@@ -214,49 +188,25 @@ class ImagesPipeline(FilesPipeline):
                 f"{self.min_width}x{self.min_height})"
             )
 
-        if self._deprecated_convert_image is None:
-            self._deprecated_convert_image = "response_body" not in get_func_args(
-                self.convert_image
-            )
-            if self._deprecated_convert_image:
-                warnings.warn(
-                    f"{self.__class__.__name__}.convert_image() method overridden in a deprecated way, "
-                    "overridden method does not accept response_body argument.",
-                    category=ScrapyDeprecationWarning,
-                )
-
-        if self._deprecated_convert_image:
-            image, buf = self.convert_image(orig_image)
-        else:
-            image, buf = self.convert_image(
-                orig_image, response_body=BytesIO(response.body)
-            )
+        image, buf = self.convert_image(
+            orig_image, response_body=BytesIO(response.body)
+        )
         yield path, image, buf
 
         for thumb_id, size in self.thumbs.items():
             thumb_path = self.thumb_path(
                 request, thumb_id, response=response, info=info, item=item
             )
-            if self._deprecated_convert_image:
-                thumb_image, thumb_buf = self.convert_image(image, size)
-            else:
-                thumb_image, thumb_buf = self.convert_image(image, size, buf)
+            thumb_image, thumb_buf = self.convert_image(image, size, response_body=buf)
             yield thumb_path, thumb_image, thumb_buf
 
     def convert_image(
         self,
         image: Image.Image,
-        size: Optional[Tuple[int, int]] = None,
-        response_body: Optional[BytesIO] = None,
-    ) -> Tuple[Image.Image, BytesIO]:
-        if response_body is None:
-            warnings.warn(
-                f"{self.__class__.__name__}.convert_image() method called in a deprecated way, "
-                "method called without response_body argument.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-
+        size: tuple[int, int] | None = None,
+        *,
+        response_body: BytesIO,
+    ) -> tuple[Image.Image, BytesIO]:
         if image.format in ("PNG", "WEBP") and image.mode == "RGBA":
             background = self._Image.new("RGBA", image.size, (255, 255, 255))
             background.paste(image, image)
@@ -279,7 +229,7 @@ class ImagesPipeline(FilesPipeline):
             except AttributeError:
                 resampling_filter = self._Image.ANTIALIAS  # type: ignore[attr-defined]
             image.thumbnail(size, resampling_filter)
-        elif response_body is not None and image.format == "JPEG":
+        elif image.format == "JPEG":
             return image, response_body
 
         buf = BytesIO()
@@ -288,12 +238,12 @@ class ImagesPipeline(FilesPipeline):
 
     def get_media_requests(
         self, item: Any, info: MediaPipeline.SpiderInfo
-    ) -> List[Request]:
+    ) -> list[Request]:
         urls = ItemAdapter(item).get(self.images_urls_field, [])
         return [Request(u, callback=NO_CALLBACK) for u in urls]
 
     def item_completed(
-        self, results: List[FileInfoOrError], item: Any, info: MediaPipeline.SpiderInfo
+        self, results: list[FileInfoOrError], item: Any, info: MediaPipeline.SpiderInfo
     ) -> Any:
         with suppress(KeyError):
             ItemAdapter(item)[self.images_result_field] = [x for ok, x in results if ok]
@@ -302,8 +252,8 @@ class ImagesPipeline(FilesPipeline):
     def file_path(
         self,
         request: Request,
-        response: Optional[Response] = None,
-        info: Optional[MediaPipeline.SpiderInfo] = None,
+        response: Response | None = None,
+        info: MediaPipeline.SpiderInfo | None = None,
         *,
         item: Any = None,
     ) -> str:
@@ -314,8 +264,8 @@ class ImagesPipeline(FilesPipeline):
         self,
         request: Request,
         thumb_id: str,
-        response: Optional[Response] = None,
-        info: Optional[MediaPipeline.SpiderInfo] = None,
+        response: Response | None = None,
+        info: MediaPipeline.SpiderInfo | None = None,
         *,
         item: Any = None,
     ) -> str:

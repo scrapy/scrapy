@@ -5,18 +5,7 @@ import warnings
 from collections import deque
 from datetime import datetime
 from time import time
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Deque,
-    Dict,
-    Optional,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.internet import task
 from twisted.internet.defer import Deferred
@@ -48,16 +37,16 @@ class Slot:
         delay: float,
         randomize_delay: bool,
         *,
-        throttle: Optional[bool] = None,
+        throttle: bool | None = None,
     ):
         self.concurrency: int = concurrency
         self.delay: float = delay
         self.randomize_delay: bool = randomize_delay
         self.throttle = throttle
 
-        self.active: Set[Request] = set()
-        self.queue: Deque[Tuple[Request, Deferred[Response]]] = deque()
-        self.transferring: Set[Request] = set()
+        self.active: set[Request] = set()
+        self.queue: deque[tuple[Request, Deferred[Response]]] = deque()
+        self.transferring: set[Request] = set()
         self.lastseen: float = 0
         self.latercall = None
 
@@ -95,7 +84,7 @@ class Slot:
 
 def _get_concurrency_delay(
     concurrency: int, spider: Spider, settings: BaseSettings
-) -> Tuple[int, float]:
+) -> tuple[int, float]:
     delay: float = settings.getfloat("DOWNLOAD_DELAY")
     if hasattr(spider, "download_delay"):
         delay = spider.download_delay
@@ -112,8 +101,8 @@ class Downloader:
     def __init__(self, crawler: Crawler):
         self.settings: BaseSettings = crawler.settings
         self.signals: SignalManager = crawler.signals
-        self.slots: Dict[str, Slot] = {}
-        self.active: Set[Request] = set()
+        self.slots: dict[str, Slot] = {}
+        self.active: set[Request] = set()
         self.handlers: DownloadHandlers = DownloadHandlers(crawler)
         self.total_concurrency: int = self.settings.getint("CONCURRENT_REQUESTS")
         self.domain_concurrency: int = self.settings.getint(
@@ -126,19 +115,17 @@ class Downloader:
         )
         self._slot_gc_loop: task.LoopingCall = task.LoopingCall(self._slot_gc)
         self._slot_gc_loop.start(60)
-        self.per_slot_settings: Dict[str, Dict[str, Any]] = self.settings.getdict(
+        self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS", {}
         )
 
-    def fetch(
-        self, request: Request, spider: Spider
-    ) -> Deferred[Union[Response, Request]]:
+    def fetch(self, request: Request, spider: Spider) -> Deferred[Response | Request]:
         def _deactivate(response: _T) -> _T:
             self.active.remove(request)
             return response
 
         self.active.add(request)
-        dfd: Deferred[Union[Response, Request]] = self.middleware.download(
+        dfd: Deferred[Response | Request] = self.middleware.download(
             self._enqueue_request, request, spider
         )
         return dfd.addBoth(_deactivate)
@@ -146,7 +133,7 @@ class Downloader:
     def needs_backout(self) -> bool:
         return len(self.active) >= self.total_concurrency
 
-    def _get_slot(self, request: Request, spider: Spider) -> Tuple[str, Slot]:
+    def _get_slot(self, request: Request, spider: Spider) -> tuple[str, Slot]:
         key = self.get_slot_key(request)
         if key not in self.slots:
             slot_settings = self.per_slot_settings.get(key, {})
@@ -175,7 +162,7 @@ class Downloader:
 
         return key
 
-    def _get_slot_key(self, request: Request, spider: Optional[Spider]) -> str:
+    def _get_slot_key(self, request: Request, spider: Spider | None) -> str:
         warnings.warn(
             "Use of this protected method is deprecated. Consider using its corresponding public method get_slot_key() instead.",
             ScrapyDeprecationWarning,

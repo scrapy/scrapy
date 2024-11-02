@@ -269,7 +269,7 @@ To dump into a CSV file::
 
     scrapy crawl myspider -O items.csv
 
-To dump into a XML file::
+To dump into an XML file::
 
     scrapy crawl myspider -O items.xml
 
@@ -417,8 +417,8 @@ How can I make a blank request?
 
     blank_request = Request("data:,")
 
-In this case, the URL is set to a data URI scheme. Data URLs allow you to include data 
-in-line in web pages as if they were external resources. The "data:" scheme with an empty 
+In this case, the URL is set to a data URI scheme. Data URLs allow you to include data
+inline within web pages, similar to external resources. The "data:" scheme with an empty
 content (",") essentially creates a request to a data URL without any specific content.
 
 

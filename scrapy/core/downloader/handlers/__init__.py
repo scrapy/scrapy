@@ -3,18 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    Generator,
-    Optional,
-    Protocol,
-    Type,
-    Union,
-    cast,
-)
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from twisted.internet import defer
 
@@ -25,6 +15,8 @@ from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from twisted.internet.defer import Deferred
 
     from scrapy.crawler import Crawler
@@ -43,16 +35,16 @@ class DownloadHandlerProtocol(Protocol):
 class DownloadHandlers:
     def __init__(self, crawler: Crawler):
         self._crawler: Crawler = crawler
-        self._schemes: Dict[str, Union[str, Callable[..., Any]]] = (
+        self._schemes: dict[str, str | Callable[..., Any]] = (
             {}
         )  # stores acceptable schemes on instancing
-        self._handlers: Dict[str, DownloadHandlerProtocol] = (
+        self._handlers: dict[str, DownloadHandlerProtocol] = (
             {}
         )  # stores instanced handlers for schemes
-        self._notconfigured: Dict[str, str] = {}  # remembers failed handlers
-        handlers: Dict[str, Union[str, Callable[..., Any]]] = without_none_values(
+        self._notconfigured: dict[str, str] = {}  # remembers failed handlers
+        handlers: dict[str, str | Callable[..., Any]] = without_none_values(
             cast(
-                Dict[str, Union[str, Callable[..., Any]]],
+                "dict[str, str | Callable[..., Any]]",
                 crawler.settings.getwithbase("DOWNLOAD_HANDLERS"),
             )
         )
@@ -62,7 +54,7 @@ class DownloadHandlers:
 
         crawler.signals.connect(self._close, signals.engine_stopped)
 
-    def _get_handler(self, scheme: str) -> Optional[DownloadHandlerProtocol]:
+    def _get_handler(self, scheme: str) -> DownloadHandlerProtocol | None:
         """Lazy-load the downloadhandler for a scheme
         only on the first request for that scheme.
         """
@@ -78,10 +70,10 @@ class DownloadHandlers:
 
     def _load_handler(
         self, scheme: str, skip_lazy: bool = False
-    ) -> Optional[DownloadHandlerProtocol]:
+    ) -> DownloadHandlerProtocol | None:
         path = self._schemes[scheme]
         try:
-            dhcls: Type[DownloadHandlerProtocol] = load_object(path)
+            dhcls: type[DownloadHandlerProtocol] = load_object(path)
             if skip_lazy and getattr(dhcls, "lazy", True):
                 return None
             dh = build_from_crawler(

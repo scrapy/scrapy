@@ -8,7 +8,7 @@ import re
 from contextlib import suppress
 from io import BytesIO
 from time import time
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, TypedDict, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypedDict, TypeVar
 from urllib.parse import urldefrag, urlunparse
 
 from twisted.internet import ssl
@@ -52,10 +52,10 @@ _T = TypeVar("_T")
 class _ResultT(TypedDict):
     txresponse: TxResponse
     body: bytes
-    flags: Optional[List[str]]
-    certificate: Optional[ssl.Certificate]
-    ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address, None]
-    failure: NotRequired[Optional[Failure]]
+    flags: list[str] | None
+    certificate: ssl.Certificate | None
+    ip_address: ipaddress.IPv4Address | ipaddress.IPv6Address | None
+    failure: NotRequired[Failure | None]
 
 
 class HTTP11DownloadHandler:
@@ -143,10 +143,10 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         reactor: ReactorBase,
         host: str,
         port: int,
-        proxyConf: Tuple[str, int, Optional[bytes]],
+        proxyConf: tuple[str, int, bytes | None],
         contextFactory: IPolicyForHTTPS,
         timeout: float = 30,
-        bindAddress: Optional[Tuple[str, int]] = None,
+        bindAddress: tuple[str, int] | None = None,
     ):
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
         super().__init__(reactor, proxyHost, proxyPort, timeout, bindAddress)
@@ -220,7 +220,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
 
 
 def tunnel_request_data(
-    host: str, port: int, proxy_auth_header: Optional[bytes] = None
+    host: str, port: int, proxy_auth_header: bytes | None = None
 ) -> bytes:
     r"""
     Return binary content of a CONNECT request.
@@ -254,14 +254,14 @@ class TunnelingAgent(Agent):
         self,
         *,
         reactor: ReactorBase,
-        proxyConf: Tuple[str, int, Optional[bytes]],
+        proxyConf: tuple[str, int, bytes | None],
         contextFactory: IPolicyForHTTPS,
-        connectTimeout: Optional[float] = None,
-        bindAddress: Optional[bytes] = None,
-        pool: Optional[HTTPConnectionPool] = None,
+        connectTimeout: float | None = None,
+        bindAddress: bytes | None = None,
+        pool: HTTPConnectionPool | None = None,
     ):
         super().__init__(reactor, contextFactory, connectTimeout, bindAddress, pool)
-        self._proxyConf: Tuple[str, int, Optional[bytes]] = proxyConf
+        self._proxyConf: tuple[str, int, bytes | None] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
 
     def _getEndpoint(self, uri: URI) -> TunnelingTCP4ClientEndpoint:
@@ -281,8 +281,8 @@ class TunnelingAgent(Agent):
         endpoint: TCP4ClientEndpoint,
         method: bytes,
         parsedURI: bytes,
-        headers: Optional[TxHeaders],
-        bodyProducer: Optional[IBodyProducer],
+        headers: TxHeaders | None,
+        bodyProducer: IBodyProducer | None,
         requestPath: bytes,
     ) -> Deferred[TxResponse]:
         # proxy host and port are required for HTTP pool `key`
@@ -305,9 +305,9 @@ class ScrapyProxyAgent(Agent):
         self,
         reactor: ReactorBase,
         proxyURI: bytes,
-        connectTimeout: Optional[float] = None,
-        bindAddress: Optional[bytes] = None,
-        pool: Optional[HTTPConnectionPool] = None,
+        connectTimeout: float | None = None,
+        bindAddress: bytes | None = None,
+        pool: HTTPConnectionPool | None = None,
     ):
         super().__init__(
             reactor=reactor,
@@ -321,8 +321,8 @@ class ScrapyProxyAgent(Agent):
         self,
         method: bytes,
         uri: bytes,
-        headers: Optional[TxHeaders] = None,
-        bodyProducer: Optional[IBodyProducer] = None,
+        headers: TxHeaders | None = None,
+        bodyProducer: IBodyProducer | None = None,
     ) -> Deferred[TxResponse]:
         """
         Issue a new request via the configured proxy.
@@ -350,8 +350,8 @@ class ScrapyAgent:
         *,
         contextFactory: IPolicyForHTTPS,
         connectTimeout: float = 10,
-        bindAddress: Optional[bytes] = None,
-        pool: Optional[HTTPConnectionPool] = None,
+        bindAddress: bytes | None = None,
+        pool: HTTPConnectionPool | None = None,
         maxsize: int = 0,
         warnsize: int = 0,
         fail_on_dataloss: bool = True,
@@ -359,12 +359,12 @@ class ScrapyAgent:
     ):
         self._contextFactory: IPolicyForHTTPS = contextFactory
         self._connectTimeout: float = connectTimeout
-        self._bindAddress: Optional[bytes] = bindAddress
-        self._pool: Optional[HTTPConnectionPool] = pool
+        self._bindAddress: bytes | None = bindAddress
+        self._pool: HTTPConnectionPool | None = pool
         self._maxsize: int = maxsize
         self._warnsize: int = warnsize
         self._fail_on_dataloss: bool = fail_on_dataloss
-        self._txresponse: Optional[TxResponse] = None
+        self._txresponse: TxResponse | None = None
         self._crawler: Crawler = crawler
 
     def _get_agent(self, request: Request, timeout: float) -> Agent:
@@ -462,7 +462,7 @@ class ScrapyAgent:
 
     def _cb_bodyready(
         self, txresponse: TxResponse, request: Request
-    ) -> Union[_ResultT, Deferred[_ResultT]]:
+    ) -> _ResultT | Deferred[_ResultT]:
         headers_received_result = self._crawler.signals.send_catch_log(
             signal=signals.headers_received,
             headers=self._headers_from_twisted_response(txresponse),
@@ -551,7 +551,7 @@ class ScrapyAgent:
 
     def _cb_bodydone(
         self, result: _ResultT, request: Request, url: str
-    ) -> Union[Response, Failure]:
+    ) -> Response | Failure:
         headers = self._headers_from_twisted_response(result["txresponse"])
         respcls = responsetypes.from_args(headers=headers, url=url, body=result["body"])
         try:
@@ -614,14 +614,12 @@ class _ResponseReader(Protocol):
         self._fail_on_dataloss_warned: bool = False
         self._reached_warnsize: bool = False
         self._bytes_received: int = 0
-        self._certificate: Optional[ssl.Certificate] = None
-        self._ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address, None] = (
-            None
-        )
+        self._certificate: ssl.Certificate | None = None
+        self._ip_address: ipaddress.IPv4Address | ipaddress.IPv6Address | None = None
         self._crawler: Crawler = crawler
 
     def _finish_response(
-        self, flags: Optional[List[str]] = None, failure: Optional[Failure] = None
+        self, flags: list[str] | None = None, failure: Failure | None = None
     ) -> None:
         self._finished.callback(
             {

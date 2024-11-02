@@ -1,4 +1,5 @@
-from typing import Dict, Optional
+from __future__ import annotations
+
 from unittest import TestCase
 from urllib.parse import urljoin
 
@@ -20,7 +21,7 @@ URLS = [urljoin("https://example.org", p) for p in PATHS]
 
 class MinimalScheduler:
     def __init__(self) -> None:
-        self.requests: Dict[bytes, Request] = {}
+        self.requests: dict[bytes, Request] = {}
 
     def has_pending_requests(self) -> bool:
         return bool(self.requests)
@@ -32,7 +33,7 @@ class MinimalScheduler:
             return True
         return False
 
-    def next_request(self) -> Optional[Request]:
+    def next_request(self) -> Request | None:
         if self.has_pending_requests():
             fp, request = self.requests.popitem()
             return request

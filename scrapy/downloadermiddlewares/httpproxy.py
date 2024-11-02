@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import base64
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING
 from urllib.parse import unquote, urlunparse
 from urllib.request import (  # type: ignore[attr-defined]
     _parse_proxy,
@@ -23,9 +23,9 @@ if TYPE_CHECKING:
 
 
 class HttpProxyMiddleware:
-    def __init__(self, auth_encoding: Optional[str] = "latin-1"):
-        self.auth_encoding: Optional[str] = auth_encoding
-        self.proxies: Dict[str, Tuple[Optional[bytes], str]] = {}
+    def __init__(self, auth_encoding: str | None = "latin-1"):
+        self.auth_encoding: str | None = auth_encoding
+        self.proxies: dict[str, tuple[bytes | None, str]] = {}
         for type_, url in getproxies().items():
             try:
                 self.proxies[type_] = self._get_proxy(url, type_)
@@ -38,7 +38,7 @@ class HttpProxyMiddleware:
     def from_crawler(cls, crawler: Crawler) -> Self:
         if not crawler.settings.getbool("HTTPPROXY_ENABLED"):
             raise NotConfigured
-        auth_encoding: Optional[str] = crawler.settings.get("HTTPPROXY_AUTH_ENCODING")
+        auth_encoding: str | None = crawler.settings.get("HTTPPROXY_AUTH_ENCODING")
         return cls(auth_encoding)
 
     def _basic_auth_header(self, username: str, password: str) -> bytes:
@@ -47,7 +47,7 @@ class HttpProxyMiddleware:
         )
         return base64.b64encode(user_pass)
 
-    def _get_proxy(self, url: str, orig_type: str) -> Tuple[Optional[bytes], str]:
+    def _get_proxy(self, url: str, orig_type: str) -> tuple[bytes | None, str]:
         proxy_type, user, password, hostport = _parse_proxy(url)
         proxy_url = urlunparse((proxy_type or orig_type, hostport, "", "", "", ""))
 
@@ -60,7 +60,7 @@ class HttpProxyMiddleware:
 
     def process_request(
         self, request: Request, spider: Spider
-    ) -> Union[Request, Response, None]:
+    ) -> Request | Response | None:
         creds, proxy_url, scheme = None, None, None
         if "proxy" in request.meta:
             if request.meta["proxy"] is not None:
@@ -82,9 +82,9 @@ class HttpProxyMiddleware:
     def _set_proxy_and_creds(
         self,
         request: Request,
-        proxy_url: Optional[str],
-        creds: Optional[bytes],
-        scheme: Optional[str],
+        proxy_url: str | None,
+        creds: bytes | None,
+        scheme: str | None,
     ) -> None:
         if scheme:
             request.meta["_scheme_proxy"] = True

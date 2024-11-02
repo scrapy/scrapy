@@ -1,8 +1,10 @@
 """Some helpers for deprecation messages"""
 
+from __future__ import annotations
+
 import inspect
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, Type, overload
+from typing import Any, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
@@ -20,11 +22,11 @@ def attribute(obj: Any, oldattr: str, newattr: str, version: str = "0.12") -> No
 def create_deprecated_class(
     name: str,
     new_class: type,
-    clsdict: Optional[Dict[str, Any]] = None,
-    warn_category: Type[Warning] = ScrapyDeprecationWarning,
+    clsdict: dict[str, Any] | None = None,
+    warn_category: type[Warning] = ScrapyDeprecationWarning,
     warn_once: bool = True,
-    old_class_path: Optional[str] = None,
-    new_class_path: Optional[str] = None,
+    old_class_path: str | None = None,
+    new_class_path: str | None = None,
     subclass_warn_message: str = "{cls} inherits from deprecated class {old}, please inherit from {new}.",
     instance_warn_message: str = "{cls} is deprecated, instantiate {new} instead.",
 ) -> type:
@@ -55,18 +57,18 @@ def create_deprecated_class(
 
     # https://github.com/python/mypy/issues/4177
     class DeprecatedClass(new_class.__class__):  # type: ignore[misc, name-defined]
-        deprecated_class: Optional[type] = None
+        deprecated_class: type | None = None
         warned_on_subclass: bool = False
 
         def __new__(
-            metacls, name: str, bases: Tuple[type, ...], clsdict_: Dict[str, Any]
+            metacls, name: str, bases: tuple[type, ...], clsdict_: dict[str, Any]
         ) -> type:
             cls = super().__new__(metacls, name, bases, clsdict_)
             if metacls.deprecated_class is None:
                 metacls.deprecated_class = cls
             return cls
 
-        def __init__(cls, name: str, bases: Tuple[type, ...], clsdict_: Dict[str, Any]):
+        def __init__(cls, name: str, bases: tuple[type, ...], clsdict_: dict[str, Any]):
             meta = cls.__class__
             old = meta.deprecated_class
             if old in bases and not (warn_once and meta.warned_on_subclass):
@@ -128,13 +130,13 @@ def create_deprecated_class(
     return deprecated_cls
 
 
-def _clspath(cls: type, forced: Optional[str] = None) -> str:
+def _clspath(cls: type, forced: str | None = None) -> str:
     if forced is not None:
         return forced
     return f"{cls.__module__}.{cls.__name__}"
 
 
-DEPRECATION_RULES: List[Tuple[str, str]] = []
+DEPRECATION_RULES: list[tuple[str, str]] = []
 
 
 @overload

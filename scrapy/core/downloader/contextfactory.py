@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from OpenSSL import SSL
 from twisted.internet._sslverify import _setAcceptableProtocols
@@ -49,7 +49,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         self,
         method: int = SSL.SSLv23_METHOD,
         tls_verbose_logging: bool = False,
-        tls_ciphers: Optional[str] = None,
+        tls_ciphers: str | None = None,
         *args: Any,
         **kwargs: Any,
     ):
@@ -73,7 +73,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         tls_verbose_logging: bool = settings.getbool(
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
-        tls_ciphers: Optional[str] = settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
+        tls_ciphers: str | None = settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
         return cls(  # type: ignore[misc]
             method=method,
             tls_verbose_logging=tls_verbose_logging,
@@ -154,10 +154,10 @@ class AcceptableProtocolsContextFactory:
     negotiation.
     """
 
-    def __init__(self, context_factory: Any, acceptable_protocols: List[bytes]):
+    def __init__(self, context_factory: Any, acceptable_protocols: list[bytes]):
         verifyObject(IPolicyForHTTPS, context_factory)
         self._wrapped_context_factory: Any = context_factory
-        self._acceptable_protocols: List[bytes] = acceptable_protocols
+        self._acceptable_protocols: list[bytes] = acceptable_protocols
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
         options: ClientTLSOptions = self._wrapped_context_factory.creatorForNetloc(

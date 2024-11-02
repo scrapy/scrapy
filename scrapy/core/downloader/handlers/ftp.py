@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import re
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, BinaryIO, Dict, Optional
+from typing import TYPE_CHECKING, Any, BinaryIO
 from urllib.parse import unquote
 
 from twisted.internet.protocol import ClientCreator, Protocol
@@ -56,8 +56,8 @@ if TYPE_CHECKING:
 
 
 class ReceivedDataProtocol(Protocol):
-    def __init__(self, filename: Optional[str] = None):
-        self.__filename: Optional[str] = filename
+    def __init__(self, filename: str | None = None):
+        self.__filename: str | None = filename
         self.body: BinaryIO = open(filename, "wb") if filename else BytesIO()
         self.size: int = 0
 
@@ -66,7 +66,7 @@ class ReceivedDataProtocol(Protocol):
         self.size += len(data)
 
     @property
-    def filename(self) -> Optional[str]:
+    def filename(self) -> str | None:
         return self.__filename
 
     def close(self) -> None:
@@ -79,7 +79,7 @@ _CODE_RE = re.compile(r"\d+")
 class FTPDownloadHandler:
     lazy = False
 
-    CODE_MAPPING: Dict[str, int] = {
+    CODE_MAPPING: dict[str, int] = {
         "550": 404,
         "default": 503,
     }

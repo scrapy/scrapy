@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from json import JSONEncoder
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet import task
 
@@ -29,21 +29,21 @@ class PeriodicLog:
         self,
         stats: StatsCollector,
         interval: float = 60.0,
-        ext_stats: Dict[str, Any] = {},
-        ext_delta: Dict[str, Any] = {},
+        ext_stats: dict[str, Any] = {},
+        ext_delta: dict[str, Any] = {},
         ext_timing_enabled: bool = False,
     ):
         self.stats: StatsCollector = stats
         self.interval: float = interval
         self.multiplier: float = 60.0 / self.interval
-        self.task: Optional[task.LoopingCall] = None
+        self.task: task.LoopingCall | None = None
         self.encoder: JSONEncoder = ScrapyJSONEncoder(sort_keys=True, indent=4)
         self.ext_stats_enabled: bool = bool(ext_stats)
-        self.ext_stats_include: List[str] = ext_stats.get("include", [])
-        self.ext_stats_exclude: List[str] = ext_stats.get("exclude", [])
+        self.ext_stats_include: list[str] = ext_stats.get("include", [])
+        self.ext_stats_exclude: list[str] = ext_stats.get("exclude", [])
         self.ext_delta_enabled: bool = bool(ext_delta)
-        self.ext_delta_include: List[str] = ext_delta.get("include", [])
-        self.ext_delta_exclude: List[str] = ext_delta.get("exclude", [])
+        self.ext_delta_include: list[str] = ext_delta.get("include", [])
+        self.ext_delta_exclude: list[str] = ext_delta.get("exclude", [])
         self.ext_timing_enabled: bool = ext_timing_enabled
 
     @classmethod
@@ -52,7 +52,7 @@ class PeriodicLog:
         if not interval:
             raise NotConfigured
         try:
-            ext_stats: Optional[Dict[str, Any]] = crawler.settings.getdict(
+            ext_stats: dict[str, Any] | None = crawler.settings.getdict(
                 "PERIODIC_LOG_STATS"
             )
         except (TypeError, ValueError):
@@ -62,7 +62,7 @@ class PeriodicLog:
                 else None
             )
         try:
-            ext_delta: Optional[Dict[str, Any]] = crawler.settings.getdict(
+            ext_delta: dict[str, Any] | None = crawler.settings.getdict(
                 "PERIODIC_LOG_DELTA"
             )
         except (TypeError, ValueError):
@@ -93,14 +93,14 @@ class PeriodicLog:
 
     def spider_opened(self, spider: Spider) -> None:
         self.time_prev: datetime = datetime.now(tz=timezone.utc)
-        self.delta_prev: Dict[str, Union[int, float]] = {}
-        self.stats_prev: Dict[str, Union[int, float]] = {}
+        self.delta_prev: dict[str, int | float] = {}
+        self.stats_prev: dict[str, int | float] = {}
 
         self.task = task.LoopingCall(self.log)
         self.task.start(self.interval)
 
     def log(self) -> None:
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         if self.ext_timing_enabled:
             data.update(self.log_timing())
         if self.ext_delta_enabled:
@@ -109,8 +109,8 @@ class PeriodicLog:
             data.update(self.log_crawler_stats())
         logger.info(self.encoder.encode(data))
 
-    def log_delta(self) -> Dict[str, Any]:
-        num_stats: Dict[str, Union[int, float]] = {
+    def log_delta(self) -> dict[str, Any]:
+        num_stats: dict[str, int | float] = {
             k: v
             for k, v in self.stats._stats.items()
             if isinstance(v, (int, float))
@@ -120,7 +120,7 @@ class PeriodicLog:
         self.delta_prev = num_stats
         return {"delta": delta}
 
-    def log_timing(self) -> Dict[str, Any]:
+    def log_timing(self) -> dict[str, Any]:
         now = datetime.now(tz=timezone.utc)
         time = {
             "log_interval": self.interval,
@@ -132,7 +132,7 @@ class PeriodicLog:
         self.time_prev = now
         return {"time": time}
 
-    def log_crawler_stats(self) -> Dict[str, Any]:
+    def log_crawler_stats(self) -> dict[str, Any]:
         stats = {
             k: v
             for k, v in self.stats._stats.items()
@@ -141,7 +141,7 @@ class PeriodicLog:
         return {"stats": stats}
 
     def param_allowed(
-        self, stat_name: str, include: List[str], exclude: List[str]
+        self, stat_name: str, include: list[str], exclude: list[str]
     ) -> bool:
         if not include and not exclude:
             return True

@@ -1,11 +1,11 @@
 repos:
 - repo: https://github.com/PyCQA/bandit
-  rev: 1.7.7
+  rev: 1.7.9
   hooks:
   - id: bandit
     args: [-r, -c, .bandit.yml]
 - repo: https://github.com/PyCQA/flake8
-  rev: 7.0.0
+  rev: 7.1.0
   hooks:
   - id: flake8
     additional_dependencies:
@@ -16,7 +16,7 @@ repos:
     - flake8-string-format
     - flake8-type-checking
 - repo: https://github.com/psf/black.git
-  rev: 24.2.0
+  rev: 24.4.2
   hooks:
   - id: black
 - repo: https://github.com/pycqa/isort
@@ -24,13 +24,13 @@ repos:
   hooks:
   - id: isort
 - repo: https://github.com/adamchainz/blacken-docs
-  rev: 1.16.0
+  rev: 1.18.0
   hooks:
   - id: blacken-docs
     additional_dependencies:
-    - black==24.2.0
+    - black==24.4.2
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.15.2
+  rev: v3.18.0
   hooks:
   - id: pyupgrade
-    args: [--py38-plus, --keep-runtime-typing]
+    args: [--py39-plus]

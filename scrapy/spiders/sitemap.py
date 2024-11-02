@@ -2,18 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.http import Request, Response, XmlResponse
 from scrapy.spiders import Spider
@@ -22,6 +11,8 @@ from scrapy.utils.gz import gunzip, gzip_magic_number
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -33,10 +24,10 @@ logger = logging.getLogger(__name__)
 
 class SitemapSpider(Spider):
     sitemap_urls: Sequence[str] = ()
-    sitemap_rules: Sequence[
-        Tuple[Union[re.Pattern[str], str], Union[str, CallbackT]]
-    ] = [("", "parse")]
-    sitemap_follow: Sequence[Union[re.Pattern[str], str]] = [""]
+    sitemap_rules: Sequence[tuple[re.Pattern[str] | str, str | CallbackT]] = [
+        ("", "parse")
+    ]
+    sitemap_follow: Sequence[re.Pattern[str] | str] = [""]
     sitemap_alternate_links: bool = False
     _max_size: int
     _warn_size: int
@@ -54,20 +45,20 @@ class SitemapSpider(Spider):
 
     def __init__(self, *a: Any, **kw: Any):
         super().__init__(*a, **kw)
-        self._cbs: List[Tuple[re.Pattern[str], CallbackT]] = []
+        self._cbs: list[tuple[re.Pattern[str], CallbackT]] = []
         for r, c in self.sitemap_rules:
             if isinstance(c, str):
                 c = cast("CallbackT", getattr(self, c))
             self._cbs.append((regex(r), c))
-        self._follow: List[re.Pattern[str]] = [regex(x) for x in self.sitemap_follow]
+        self._follow: list[re.Pattern[str]] = [regex(x) for x in self.sitemap_follow]
 
     def start_requests(self) -> Iterable[Request]:
         for url in self.sitemap_urls:
             yield Request(url, self._parse_sitemap)
 
     def sitemap_filter(
-        self, entries: Iterable[Dict[str, Any]]
-    ) -> Iterable[Dict[str, Any]]:
+        self, entries: Iterable[dict[str, Any]]
+    ) -> Iterable[dict[str, Any]]:
         """This method can be used to filter sitemap entries by their
         attributes, for example, you can filter locs with lastmod greater
         than a given date (see docs).
@@ -102,7 +93,7 @@ class SitemapSpider(Spider):
                             yield Request(loc, callback=c)
                             break
 
-    def _get_sitemap_body(self, response: Response) -> Optional[bytes]:
+    def _get_sitemap_body(self, response: Response) -> bytes | None:
         """Return the sitemap body contained in the given response,
         or None if the response is not a sitemap.
         """
@@ -136,13 +127,13 @@ class SitemapSpider(Spider):
         return None
 
 
-def regex(x: Union[re.Pattern[str], str]) -> re.Pattern[str]:
+def regex(x: re.Pattern[str] | str) -> re.Pattern[str]:
     if isinstance(x, str):
         return re.compile(x)
     return x
 
 
-def iterloc(it: Iterable[Dict[str, Any]], alt: bool = False) -> Iterable[str]:
+def iterloc(it: Iterable[dict[str, Any]], alt: bool = False) -> Iterable[str]:
     for d in it:
         yield d["loc"]
 

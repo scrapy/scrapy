@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, DefaultDict, Iterable, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any
 
 from tldextract import TLDExtract
 
@@ -13,6 +13,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
     from http.cookiejar import Cookie
 
     # typing.Self requires Python 3.11
@@ -39,7 +40,7 @@ class CookiesMiddleware:
     """This middleware enables working with sites that need cookies"""
 
     def __init__(self, debug: bool = False):
-        self.jars: DefaultDict[Any, CookieJar] = defaultdict(CookieJar)
+        self.jars: defaultdict[Any, CookieJar] = defaultdict(CookieJar)
         self.debug: bool = debug
 
     @classmethod
@@ -69,7 +70,7 @@ class CookiesMiddleware:
 
     def process_request(
         self, request: Request, spider: Spider
-    ) -> Union[Request, Response, None]:
+    ) -> Request | Response | None:
         if request.meta.get("dont_merge_cookies", False):
             return None
 
@@ -86,7 +87,7 @@ class CookiesMiddleware:
 
     def process_response(
         self, request: Request, response: Response, spider: Spider
-    ) -> Union[Request, Response]:
+    ) -> Request | Response:
         if request.meta.get("dont_merge_cookies", False):
             return response
 
@@ -122,7 +123,7 @@ class CookiesMiddleware:
                 msg = f"Received cookies from: {response}\n{cookies}"
                 logger.debug(msg, extra={"spider": spider})
 
-    def _format_cookie(self, cookie: VerboseCookie, request: Request) -> Optional[str]:
+    def _format_cookie(self, cookie: VerboseCookie, request: Request) -> str | None:
         """
         Given a dict consisting of cookie components, return its string representation.
         Decode from bytes if necessary.
