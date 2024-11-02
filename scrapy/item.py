@@ -76,6 +76,10 @@ class Item(MutableMapping[str, Any], object_ref, metaclass=ItemMeta):
     .. _itemadapter: https://github.com/scrapy/itemadapter
     """
 
+    #: A dictionary containing *all declared fields* for this Item, not only
+    #: those populated. The keys are the field names and the values are the
+    #: :class:`Field` objects used in the :ref:`Item declaration
+    #: <topics-items-declaring>`.
     fields: dict[str, Field]
 
     def __init__(self, *args: Any, **kwargs: Any):

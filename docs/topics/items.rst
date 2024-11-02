@@ -42,39 +42,27 @@ Item objects
 :class:`Item` provides a :class:`dict`-like API plus additional features that
 make it the most feature-complete item type:
 
-.. class:: scrapy.item.Item([arg])
-.. class:: scrapy.Item([arg])
+.. autoclass:: scrapy.Item
+   :members: copy, deepcopy, fields
+   :undoc-members:
 
-    :class:`Item` objects replicate the standard :class:`dict` API, including
-    its ``__init__`` method.
+:class:`Item` objects replicate the standard :class:`dict` API, including
+its ``__init__`` method.
 
-    :class:`Item` allows the defining of field names, so that:
+:class:`Item` allows the defining of field names, so that:
 
-    -   :class:`KeyError` is raised when using undefined field names (i.e.
-        prevents typos going unnoticed)
+-   :class:`KeyError` is raised when using undefined field names (i.e.
+    prevents typos going unnoticed)
 
-    -   :ref:`Item exporters <topics-exporters>` can export all fields by
-        default even if the first scraped object does not have values for all
-        of them
+-   :ref:`Item exporters <topics-exporters>` can export all fields by
+    default even if the first scraped object does not have values for all
+    of them
 
-    :class:`Item` also allows the defining of field metadata, which can be used to
-    :ref:`customize serialization <topics-exporters-field-serialization>`.
+:class:`Item` also allows the defining of field metadata, which can be used to
+:ref:`customize serialization <topics-exporters-field-serialization>`.
 
-    :mod:`trackref` tracks :class:`Item` objects to help find memory leaks
-    (see :ref:`topics-leaks-trackrefs`).
-
-    :class:`Item` objects also provide the following additional API members:
-
-    .. automethod:: copy
-
-    .. automethod:: deepcopy
-
-    .. attribute:: fields
-
-        A dictionary containing *all declared fields* for this Item, not only
-        those populated. The keys are the field names and the values are the
-        :class:`Field` objects used in the :ref:`Item declaration
-        <topics-items-declaring>`.
+:mod:`trackref` tracks :class:`Item` objects to help find memory leaks
+(see :ref:`topics-leaks-trackrefs`).
 
 Example:
 
@@ -205,10 +193,9 @@ documentation to see which metadata keys are used by each component.
 
 It's important to note that the :class:`Field` objects used to declare the item
 do not stay assigned as class attributes. Instead, they can be accessed through
-the :attr:`Item.fields` attribute.
+the :attr:`~scrapy.Item.fields` attribute.
 
-.. class:: scrapy.item.Field([arg])
-.. class:: scrapy.Field([arg])
+.. autoclass:: scrapy.Field
 
     The :class:`Field` class is just an alias to the built-in :class:`dict` class and
     doesn't provide any extra functionality or attributes. In other words,
