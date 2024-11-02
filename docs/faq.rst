@@ -23,7 +23,7 @@ comparing `jinja2`_ to `Django`_.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: https://lxml.de/
-.. _jinja2: https://palletsprojects.com/p/jinja/
+.. _jinja2: https://palletsprojects.com/projects/jinja/
 .. _Django: https://www.djangoproject.com/
 
 Can I use Scrapy with BeautifulSoup?
@@ -148,7 +148,7 @@ middleware with a :ref:`custom downloader middleware
     instead joining the strings in :attr:`~scrapy.Spider.allowed_domains` into
     a complex regular expression.
 
--   If you can `meet the installation requirements`_, use pyre2_ instead of
+-   If you can meet the installation requirements, use pyre2_ instead of
     Python’s re_ to compile your URL-filtering regular expression. See
     :issue:`1908`.
 
@@ -166,9 +166,8 @@ See also `other suggestions at StackOverflow
            "myproject.middlewares.CustomOffsiteMiddleware": 50,
        }
 
-.. _meet the installation requirements: https://github.com/andreasvc/pyre2#installation
 .. _pyre2: https://github.com/andreasvc/pyre2
-.. _re: https://docs.python.org/library/re.html
+.. _re: https://docs.python.org/3/library/re.html
 
 Can I use Basic HTTP Authentication in my spiders?
 --------------------------------------------------
@@ -282,7 +281,7 @@ The ``__VIEWSTATE`` parameter is used in sites built with ASP.NET/VB.NET. For
 more info on how it works see `this page`_. Also, here's an `example spider`_
 which scrapes one of these sites.
 
-.. _this page: https://metacpan.org/pod/release/ECARROLL/HTML-TreeBuilderX-ASP_NET-0.09/lib/HTML/TreeBuilderX/ASP_NET.pm
+.. _this page: https://metacpan.org/release/ECARROLL/HTML-TreeBuilderX-ASP_NET-0.09/view/lib/HTML/TreeBuilderX/ASP_NET.pm
 .. _example spider: https://github.com/AmbientLighter/rpn-fas/blob/master/fas/spiders/rnp.py
 
 What's the best way to parse big XML/CSV data feeds?
@@ -432,7 +431,7 @@ See :issue:`2680`.
 
 
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905
-.. _Python standard library modules: https://docs.python.org/py-modindex.html
+.. _Python standard library modules: https://docs.python.org/3/py-modindex.html
 .. _Python package: https://pypi.org/
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
 .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)

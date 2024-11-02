@@ -546,8 +546,4 @@ Invokes a :doc:`Python debugger <library/pdb>` inside a running Scrapy process w
 signal is received. After the debugger is exited, the Scrapy process continues
 running normally.
 
-For more info see `Debugging in Python`_.
-
 This extension only works on POSIX-compliant platforms (i.e. not Windows).
-
-.. _Debugging in Python: https://pythonconquerstheuniverse.wordpress.com/2009/09/10/debugging-in-python/

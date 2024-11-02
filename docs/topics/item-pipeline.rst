@@ -175,7 +175,7 @@ method and how to clean up the resources properly.
             return item
 
 .. _MongoDB: https://www.mongodb.com/
-.. _pymongo: https://api.mongodb.com/python/current/
+.. _pymongo: https://pymongo.readthedocs.io/en/stable/
 
 
 .. _ScreenshotPipeline:

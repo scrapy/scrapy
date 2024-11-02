@@ -213,7 +213,7 @@ passed through the following settings:
 -   :setting:`AWS_SECRET_ACCESS_KEY`
 -   :setting:`AWS_SESSION_TOKEN` (only needed for `temporary security credentials`_)
 
-.. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
+.. _temporary security credentials: https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html
 
 You can also define a custom ACL, custom endpoint, and region name for exported
 feeds using these settings:
@@ -248,7 +248,7 @@ The feeds are stored on `Google Cloud Storage`_.
 
 -   Required external libraries: `google-cloud-storage`_.
 
-For more information about authentication, please refer to `Google Cloud documentation <https://cloud.google.com/docs/authentication/production>`_.
+For more information about authentication, please refer to `Google Cloud documentation <https://cloud.google.com/docs/authentication>`_.
 
 You can set a *Project ID* and *Access Control List (ACL)* through the following settings:
 
@@ -516,8 +516,7 @@ as a fallback value if that key is not provided for a specific feed definition:
         .. note:: Some FTP servers may not support appending to files (the
                   ``APPE`` FTP command).
 
-    -   :ref:`topics-feed-storage-s3`: ``True`` (appending `is not supported
-        <https://forums.aws.amazon.com/message.jspa?messageID=540395>`_)
+    -   :ref:`topics-feed-storage-s3`: ``True`` (appending is not supported)
 
     -   :ref:`topics-feed-storage-gcs`: ``True`` (appending is not supported)
 
@@ -816,5 +815,5 @@ source spider in the feed URI:
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: https://aws.amazon.com/s3/
 .. _boto3: https://github.com/boto/boto3
-.. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
+.. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Google Cloud Storage: https://cloud.google.com/storage/

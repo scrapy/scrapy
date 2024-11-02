@@ -288,7 +288,7 @@ The AWS security token used by code that requires access to `Amazon Web services
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`, when using
 `temporary security credentials`_.
 
-.. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
+.. _temporary security credentials: https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html
 
 .. setting:: AWS_ENDPOINT_URL
 
@@ -617,7 +617,7 @@ necessary to access certain HTTPS websites: for example, you may need to use
 ``'DEFAULT:!DH'`` for a website with weak DH parameters or enable a
 specific cipher that is not included in ``DEFAULT`` if a website requires it.
 
-.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/openssl-ciphers.html#CIPHER-LIST-FORMAT
+.. _OpenSSL cipher list format: https://docs.openssl.org/master/man1/openssl-ciphers/#cipher-list-format
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
@@ -829,9 +829,9 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
     -   No support for the :signal:`bytes_received` and
         :signal:`headers_received` signals.
 
-.. _frame size: https://tools.ietf.org/html/rfc7540#section-4.2
+.. _frame size: https://datatracker.ietf.org/doc/html/rfc7540#section-4.2
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
-.. _server pushes: https://tools.ietf.org/html/rfc7540#section-8.2
+.. _server pushes: https://datatracker.ietf.org/doc/html/rfc7540#section-8.2
 
 .. setting:: DOWNLOAD_SLOTS
 
@@ -1074,7 +1074,7 @@ in ``Request`` meta.
     some FTP servers explicitly ask for the user's e-mail address
     and will not allow login with the "guest" password.
 
-.. _RFC 1635: https://tools.ietf.org/html/rfc1635
+.. _RFC 1635: https://datatracker.ietf.org/doc/html/rfc1635
 
 .. reqmeta:: ftp_user
 .. setting:: FTP_USER
