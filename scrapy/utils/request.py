@@ -46,17 +46,15 @@ def fingerprint(
 
     The request fingerprint is a hash that uniquely identifies the resource the
     request points to. For example, take the following two urls:
-
-    http://www.example.com/query?id=111&cat=222
-    http://www.example.com/query?cat=222&id=111
+    ``http://www.example.com/query?id=111&cat=222``,
+    ``http://www.example.com/query?cat=222&id=111``.
 
     Even though those are two different URLs both point to the same resource
     and are equivalent (i.e. they should return the same response).
 
     Another example are cookies used to store session ids. Suppose the
     following page is only accessible to authenticated users:
-
-    http://www.example.com/members/offers.html
+    ``http://www.example.com/members/offers.html``.
 
     Lots of sites use a cookie to store the session id, which adds a random
     component to the HTTP Request and thus should be ignored when calculating
@@ -132,7 +130,7 @@ class RequestFingerprinter:
         if implementation != "SENTINEL":
             message = (
                 "'REQUEST_FINGERPRINTER_IMPLEMENTATION' is a deprecated setting.\n"
-                "And it will be removed in future version of Scrapy."
+                "It will be removed in a future version of Scrapy."
             )
             warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
         self._fingerprint = fingerprint
@@ -149,6 +147,11 @@ def request_authenticate(
     """Authenticate the given request (in place) using the HTTP basic access
     authentication mechanism (RFC 2617) and the given username and password
     """
+    warnings.warn(
+        "The request_authenticate function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     request.headers["Authorization"] = basic_auth_header(username, password)
 
 

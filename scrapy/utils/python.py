@@ -8,12 +8,14 @@ import gc
 import inspect
 import re
 import sys
+import warnings
 import weakref
 from collections.abc import AsyncIterable, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator
 
 if TYPE_CHECKING:
@@ -47,6 +49,11 @@ def flatten(x: Iterable[Any]) -> list[Any]:
     >>> flatten(["foo", ["baz", 42], "bar"])
     ['foo', 'baz', 42, 'bar']
     """
+    warnings.warn(
+        "The flatten function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     return list(iflatten(x))
 
 
@@ -54,6 +61,11 @@ def iflatten(x: Iterable[Any]) -> Iterable[Any]:
     """iflatten(sequence) -> iterator
 
     Similar to ``.flatten()``, but returns iterator instead"""
+    warnings.warn(
+        "The iflatten function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     for el in x:
         if is_listlike(el):
             yield from iflatten(el)
@@ -272,6 +284,11 @@ def equal_attributes(
     obj1: Any, obj2: Any, attributes: list[str | Callable[[Any], Any]] | None
 ) -> bool:
     """Compare two objects attributes"""
+    warnings.warn(
+        "The equal_attributes function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     # not attributes given return False by default
     if not attributes:
         return False

@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 class AjaxCrawlMiddleware:
     """
     Handle 'AJAX crawlable' pages marked as crawlable via meta tag.
-    For more info see https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
     """
 
     def __init__(self, settings: BaseSettings):
@@ -70,8 +69,7 @@ class AjaxCrawlMiddleware:
 
     def _has_ajax_crawlable_variant(self, response: Response) -> bool:
         """
-        Return True if a page without hash fragment could be "AJAX crawlable"
-        according to https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
+        Return True if a page without hash fragment could be "AJAX crawlable".
         """
         body = response.text[: self.lookup_bytes]
         return _has_ajaxcrawlable_meta(body)

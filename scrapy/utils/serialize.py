@@ -1,11 +1,13 @@
 import datetime
 import decimal
 import json
+import warnings
 from typing import Any
 
 from itemadapter import ItemAdapter, is_item
 from twisted.internet import defer
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 
 
@@ -36,4 +38,10 @@ class ScrapyJSONEncoder(json.JSONEncoder):
 
 
 class ScrapyJSONDecoder(json.JSONDecoder):
-    pass
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "The ScrapyJSONDecoder class is deprecated and will be removed in a future version of Scrapy.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)

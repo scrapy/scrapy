@@ -267,10 +267,10 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _lxml: https://lxml.de/index.html
 .. _parsel: https://pypi.org/project/parsel/
 .. _w3lib: https://pypi.org/project/w3lib/
-.. _twisted: https://twistedmatrix.com/trac/
+.. _twisted: https://twisted.org/
 .. _cryptography: https://cryptography.io/en/latest/
 .. _pyOpenSSL: https://pypi.org/project/pyOpenSSL/
-.. _setuptools: https://pypi.python.org/pypi/setuptools
+.. _setuptools: https://pypi.org/pypi/setuptools
 .. _homebrew: https://brew.sh/
 .. _zsh: https://www.zsh.org/
 .. _Anaconda: https://docs.anaconda.com/anaconda/

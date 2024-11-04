@@ -143,7 +143,7 @@ class RequestTest(unittest.TestCase):
         # percent-escaping sequences that do not match valid UTF-8 sequences
         # should be kept untouched (just upper-cased perhaps)
         #
-        # See https://tools.ietf.org/html/rfc3987#section-3.2
+        # See https://datatracker.ietf.org/doc/html/rfc3987#section-3.2
         #
         # "Conversions from URIs to IRIs MUST NOT use any character encoding
         # other than UTF-8 in steps 3 and 4, even if it might be possible to
