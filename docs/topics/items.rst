@@ -221,7 +221,7 @@ the :attr:`Item.fields` attribute.
     `attr.ib`_ for additional information.
 
     .. _dataclasses.field: https://docs.python.org/3/library/dataclasses.html#dataclasses.field
-    .. _attr.ib: https://www.attrs.org/en/stable/api.html#attr.ib
+    .. _attr.ib: https://www.attrs.org/en/stable/api-attr.html#attr.ib
 
 
 Working with Item objects

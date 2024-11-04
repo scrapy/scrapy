@@ -222,7 +222,7 @@ class Request(object_ref):
         **kwargs: Any,
     ) -> Self:
         """Create a Request object from a string containing a `cURL
-        <https://curl.haxx.se/>`_ command. It populates the HTTP method, the
+        <https://curl.se/>`_ command. It populates the HTTP method, the
         URL, the headers, the cookies and the body. It accepts the same
         arguments as the :class:`Request` class, taking preference and
         overriding the values of the same arguments contained in the cURL

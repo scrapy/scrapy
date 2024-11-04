@@ -369,7 +369,7 @@ recommend `this tutorial to learn XPath through examples
 <http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this tutorial to learn "how
 to think in XPath" <http://plasmasturm.org/log/xpath101/>`_.
 
-.. _XPath: https://www.w3.org/TR/xpath/all/
+.. _XPath: https://www.w3.org/TR/xpath-10/
 .. _CSS: https://www.w3.org/TR/selectors
 
 Extracting quotes and authors
@@ -541,7 +541,7 @@ for Item Pipelines has been set up for you when the project is created, in
 ``tutorial/pipelines.py``. Though you don't need to implement any item
 pipelines if you just want to store the scraped items.
 
-.. _JSON Lines: http://jsonlines.org
+.. _JSON Lines: https://jsonlines.org
 .. _JQ: https://stedolan.github.io/jq
 
 

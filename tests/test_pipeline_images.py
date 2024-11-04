@@ -19,9 +19,7 @@ skip_pillow: str | None
 try:
     from PIL import Image
 except ImportError:
-    skip_pillow = (
-        "Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow"
-    )
+    skip_pillow = "Missing Python Imaging Library, install https://pypi.org/pypi/Pillow"
 else:
     encoders = {"jpeg_encoder", "jpeg_decoder"}
     if not encoders.issubset(set(Image.core.__dict__)):  # type: ignore[attr-defined]
