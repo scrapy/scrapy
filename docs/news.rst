@@ -103,7 +103,7 @@ Bug fixes
     exception if ``default`` is ``None``.
     (:issue:`6308`, :issue:`6310`)
 
--   :class:`~scrapy.selector.Selector` now uses
+-   :class:`~scrapy.Selector` now uses
     :func:`scrapy.utils.response.get_base_url` to determine the base URL of a
     given :class:`~scrapy.http.Response`. (:issue:`6265`)
 
@@ -121,7 +121,7 @@ Documentation
 -   Add a FAQ entry about :ref:`creating blank requests <faq-blank-request>`.
     (:issue:`6203`, :issue:`6208`)
 
--   Document that :attr:`scrapy.selector.Selector.type` can be ``"json"``.
+-   Document that :attr:`scrapy.Selector.type` can be ``"json"``.
     (:issue:`6328`, :issue:`6334`)
 
 Quality assurance
@@ -3740,13 +3740,13 @@ The following deprecated APIs have been removed (:issue:`3578`):
 
 *   From both ``scrapy.selector`` and ``scrapy.selector.lxmlsel``:
 
-    *   ``HtmlXPathSelector`` (use :class:`~scrapy.selector.Selector`)
+    *   ``HtmlXPathSelector`` (use :class:`~scrapy.Selector`)
 
-    *   ``XmlXPathSelector`` (use :class:`~scrapy.selector.Selector`)
+    *   ``XmlXPathSelector`` (use :class:`~scrapy.Selector`)
 
-    *   ``XPathSelector`` (use :class:`~scrapy.selector.Selector`)
+    *   ``XPathSelector`` (use :class:`~scrapy.Selector`)
 
-    *   ``XPathSelectorList`` (use :class:`~scrapy.selector.Selector`)
+    *   ``XPathSelectorList`` (use :class:`~scrapy.Selector`)
 
 *   From ``scrapy.selector.csstranslator``:
 
@@ -3756,7 +3756,7 @@ The following deprecated APIs have been removed (:issue:`3578`):
 
     *   ``ScrapyXPathExpr`` (use parsel.csstranslator.XPathExpr_)
 
-*   From :class:`~scrapy.selector.Selector`:
+*   From :class:`~scrapy.Selector`:
 
     *   ``_root`` (both the ``__init__`` method argument and the object property, use
         ``root``)
@@ -5837,7 +5837,7 @@ Scrapy 0.18.0 (released 2013-08-09)
 - Moved persistent (on disk) queues to a separate project (queuelib_) which Scrapy now depends on
 - Add Scrapy commands using external libraries (:issue:`260`)
 - Added ``--pdb`` option to ``scrapy`` command line tool
-- Added :meth:`XPathSelector.remove_namespaces <scrapy.selector.Selector.remove_namespaces>` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
+- Added :meth:`XPathSelector.remove_namespaces <scrapy.Selector.remove_namespaces>` which allows to remove all namespaces from XML documents for convenience (to work with namespace-less XPaths). Documented in :ref:`topics-selectors`.
 - Several improvements to spider contracts
 - New default middleware named MetaRefreshMiddleware that handles meta-refresh html tag redirections,
 - MetaRefreshMiddleware and RedirectMiddleware have different priorities to address #62
