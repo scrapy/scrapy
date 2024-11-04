@@ -40,7 +40,7 @@ class ScrapyJSONEncoder(json.JSONEncoder):
 class ScrapyJSONDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
         warnings.warn(
-            "'ScrapyJSONDecoder' class is deprecated and will be removed in a future version of Scrapy.",
+            "The ScrapyJSONDecoder class is deprecated and will be removed in a future version of Scrapy.",
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )

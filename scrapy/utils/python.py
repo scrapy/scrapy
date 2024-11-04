@@ -50,7 +50,7 @@ def flatten(x: Iterable[Any]) -> list[Any]:
     ['foo', 'baz', 42, 'bar']
     """
     warnings.warn(
-        "The 'flatten' function is deprecated and will be removed in a future version of Scrapy.",
+        "The flatten function is deprecated and will be removed in a future version of Scrapy.",
         category=ScrapyDeprecationWarning,
         stacklevel=2,
     )
@@ -62,7 +62,7 @@ def iflatten(x: Iterable[Any]) -> Iterable[Any]:
 
     Similar to ``.flatten()``, but returns iterator instead"""
     warnings.warn(
-        "The 'iflatten' function is deprecated and will be removed in a future version of Scrapy.",
+        "The iflatten function is deprecated and will be removed in a future version of Scrapy.",
         category=ScrapyDeprecationWarning,
         stacklevel=2,
     )
@@ -285,7 +285,7 @@ def equal_attributes(
 ) -> bool:
     """Compare two objects attributes"""
     warnings.warn(
-        "The 'equal_attributes' function is deprecated and will be removed in a future version of Scrapy.",
+        "The equal_attributes function is deprecated and will be removed in a future version of Scrapy.",
         category=ScrapyDeprecationWarning,
         stacklevel=2,
     )
