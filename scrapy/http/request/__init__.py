@@ -58,7 +58,7 @@ RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 
 def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
     """When assigned to the ``callback`` parameter of
-    :class:`~scrapy.http.Request`, it indicates that the request is not meant
+    :class:`~scrapy.Request`, it indicates that the request is not meant
     to have a spider callback at all.
 
     For example:
@@ -82,7 +82,7 @@ def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
 
 class Request(object_ref):
     """Represents an HTTP request, which is usually generated in a Spider and
-    executed by the Downloader, thus generating a :class:`Response`.
+    executed by the Downloader, thus generating a :class:`scrapy.http.Response`.
     """
 
     attributes: tuple[str, ...] = (
@@ -104,7 +104,7 @@ class Request(object_ref):
     attributes of the class that are also keyword parameters of the
     ``__init__`` method.
 
-    Currently used by :meth:`Request.replace`, :meth:`Request.to_dict` and
+    Currently used by :meth:`scrapy.Request.replace`, :meth:`scrapy.Request.to_dict` and
     :func:`~scrapy.utils.request.request_from_dict`.
     """
 
@@ -232,7 +232,7 @@ class Request(object_ref):
         finding unknown options call this method by passing
         ``ignore_unknown_options=False``.
 
-        .. caution:: Using :meth:`from_curl` from :class:`~scrapy.http.Request`
+        .. caution:: Using :meth:`from_curl` from :class:`~scrapy.Request`
                      subclasses, such as :class:`~scrapy.http.JsonRequest`, or
                      :class:`~scrapy.http.XmlRpcRequest`, as well as having
                      :ref:`downloader middlewares <topics-downloader-middleware>`
@@ -243,7 +243,7 @@ class Request(object_ref):
                      :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`,
                      or
                      :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`,
-                     may modify the :class:`~scrapy.http.Request` object.
+                     may modify the :class:`~scrapy.Request` object.
 
         To translate a cURL command into a Scrapy request,
         you may use `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_.

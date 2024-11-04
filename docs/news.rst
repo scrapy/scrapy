@@ -202,7 +202,7 @@ Documentation
 -   Improved documentation for :class:`~scrapy.crawler.Crawler` initialization
     changes made in the 2.11.0 release. (:issue:`6057`, :issue:`6147`)
 
--   Extended documentation for :attr:`Request.meta <scrapy.http.Request.meta>`.
+-   Extended documentation for :attr:`Request.meta <scrapy.Request.meta>`.
     (:issue:`5565`)
 
 -   Fixed the :reqmeta:`dont_merge_cookies` documentation. (:issue:`5936`,
@@ -743,7 +743,7 @@ New features
     avoid confusion.
     (:issue:`5717`, :issue:`5722`, :issue:`5727`)
 
--   The ``callback`` parameter of :class:`~scrapy.http.Request` can now be set
+-   The ``callback`` parameter of :class:`~scrapy.Request` can now be set
     to :func:`scrapy.http.request.NO_CALLBACK`, to distinguish it from
     ``None``, as the latter indicates that the default spider callback
     (:meth:`~scrapy.Spider.parse`) is to be used.
@@ -1240,17 +1240,17 @@ Highlights:
 Security bug fixes
 ~~~~~~~~~~~~~~~~~~
 
--   When a :class:`~scrapy.http.Request` object with cookies defined gets a
-    redirect response causing a new :class:`~scrapy.http.Request` object to be
+-   When a :class:`~scrapy.Request` object with cookies defined gets a
+    redirect response causing a new :class:`~scrapy.Request` object to be
     scheduled, the cookies defined in the original
-    :class:`~scrapy.http.Request` object are no longer copied into the new
-    :class:`~scrapy.http.Request` object.
+    :class:`~scrapy.Request` object are no longer copied into the new
+    :class:`~scrapy.Request` object.
 
     If you manually set the ``Cookie`` header on a
-    :class:`~scrapy.http.Request` object and the domain name of the redirect
+    :class:`~scrapy.Request` object and the domain name of the redirect
     URL is not an exact match for the domain of the URL of the original
-    :class:`~scrapy.http.Request` object, your ``Cookie`` header is now dropped
-    from the new :class:`~scrapy.http.Request` object.
+    :class:`~scrapy.Request` object, your ``Cookie`` header is now dropped
+    from the new :class:`~scrapy.Request` object.
 
     The old behavior could be exploited by an attacker to gain access to your
     cookies. Please, see the `cjvr-mfj7-j4j8 security advisory`_ for more
@@ -1263,10 +1263,10 @@ Security bug fixes
               ``example.com`` and any subdomain) by defining the shared domain
               suffix (e.g. ``example.com``) as the cookie domain when defining
               your cookies. See the documentation of the
-              :class:`~scrapy.http.Request` class for more information.
+              :class:`~scrapy.Request` class for more information.
 
 -   When the domain of a cookie, either received in the ``Set-Cookie`` header
-    of a response or defined in a :class:`~scrapy.http.Request` object, is set
+    of a response or defined in a :class:`~scrapy.Request` object, is set
     to a `public suffix <https://publicsuffix.org/>`_, the cookie is now
     ignored unless the cookie domain is the same as the request domain.
 
@@ -1317,7 +1317,7 @@ Backward-incompatible changes
     meet expectations, :exc:`TypeError` is now raised at startup time. Before,
     other exceptions would be raised at run time. (:issue:`3559`)
 
--   The ``_encoding`` field of serialized :class:`~scrapy.http.Request` objects
+-   The ``_encoding`` field of serialized :class:`~scrapy.Request` objects
     is now named ``encoding``, in line with all other fields (:issue:`5130`)
 
 
@@ -1347,7 +1347,7 @@ Deprecations
 -   :mod:`scrapy.utils.reqser` is deprecated. (:issue:`5130`)
 
     -   Instead of :func:`~scrapy.utils.reqser.request_to_dict`, use the new
-        :meth:`Request.to_dict <scrapy.http.Request.to_dict>` method.
+        :meth:`Request.to_dict <scrapy.Request.to_dict>` method.
 
     -   Instead of :func:`~scrapy.utils.reqser.request_from_dict`, use the new
         :func:`scrapy.utils.request.request_from_dict` function.
@@ -1452,9 +1452,9 @@ New features
     using ``queuelib`` 1.6.1 or later), the ``peek`` method raises
     :exc:`NotImplementedError`.
 
--   :class:`~scrapy.http.Request` and :class:`~scrapy.http.Response` now have
+-   :class:`~scrapy.Request` and :class:`~scrapy.http.Response` now have
     an ``attributes`` attribute that makes subclassing easier. For
-    :class:`~scrapy.http.Request`, it also allows subclasses to work with
+    :class:`~scrapy.Request`, it also allows subclasses to work with
     :func:`scrapy.utils.request.request_from_dict`. (:issue:`1877`,
     :issue:`5130`, :issue:`5218`)
 
@@ -1921,13 +1921,13 @@ Backward-incompatible changes
 
 *   :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` once again
     discards cookies defined in :attr:`Request.headers
-    <scrapy.http.Request.headers>`.
+    <scrapy.Request.headers>`.
 
     We decided to revert this bug fix, introduced in Scrapy 2.2.0, because it
     was reported that the current implementation could break existing code.
 
     If you need to set cookies for a request, use the :class:`Request.cookies
-    <scrapy.http.Request>` parameter.
+    <scrapy.Request>` parameter.
 
     A future version of Scrapy will include a new, better implementation of the
     reverted bug fix.
@@ -2048,16 +2048,16 @@ New features
     :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`
     or
     :meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_exception`
-    with a custom :class:`~scrapy.http.Request` object assigned to
+    with a custom :class:`~scrapy.Request` object assigned to
     :class:`response.request <scrapy.http.Response.request>`:
 
     -   The response is handled by the callback of that custom
-        :class:`~scrapy.http.Request` object, instead of being handled by the
-        callback of the original :class:`~scrapy.http.Request` object
+        :class:`~scrapy.Request` object, instead of being handled by the
+        callback of the original :class:`~scrapy.Request` object
 
-    -   That custom :class:`~scrapy.http.Request` object is now sent as the
+    -   That custom :class:`~scrapy.Request` object is now sent as the
         ``request`` argument to the :signal:`response_received` signal, instead
-        of the original :class:`~scrapy.http.Request` object
+        of the original :class:`~scrapy.Request` object
 
     (:issue:`4529`, :issue:`4632`)
 
@@ -2228,7 +2228,7 @@ New features
 *   The :command:`parse` command now allows specifying an output file
     (:issue:`4317`, :issue:`4377`)
 
-*   :meth:`Request.from_curl <scrapy.http.Request.from_curl>` and
+*   :meth:`Request.from_curl <scrapy.Request.from_curl>` and
     :func:`~scrapy.utils.curl.curl_to_request_kwargs` now also support
     ``--data-raw`` (:issue:`4612`)
 
@@ -2244,7 +2244,7 @@ Bug fixes
     :ref:`dataclass items <dataclass-items>` and :ref:`attr.s items
     <attrs-items>` (:issue:`4667`, :issue:`4668`)
 
-*   :meth:`Request.from_curl <scrapy.http.Request.from_curl>` and
+*   :meth:`Request.from_curl <scrapy.Request.from_curl>` and
     :func:`~scrapy.utils.curl.curl_to_request_kwargs` now set the request
     method to ``POST`` when a request body is specified and no request method
     is specified (:issue:`4612`)
@@ -2370,8 +2370,8 @@ New features
 *   :ref:`Link extractors <topics-link-extractors>` are now serializable,
     as long as you do not use :ref:`lambdas <lambda>` for parameters; for
     example, you can now pass link extractors in :attr:`Request.cb_kwargs
-    <scrapy.http.Request.cb_kwargs>` or
-    :attr:`Request.meta <scrapy.http.Request.meta>` when :ref:`persisting
+    <scrapy.Request.cb_kwargs>` or
+    :attr:`Request.meta <scrapy.Request.meta>` when :ref:`persisting
     scheduled requests <topics-jobs>` (:issue:`4554`)
 
 *   Upgraded the :ref:`pickle protocol <pickle-protocols>` that Scrapy uses
@@ -2390,11 +2390,11 @@ Bug fixes
 
 *   :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` no longer
     discards cookies defined in :attr:`Request.headers
-    <scrapy.http.Request.headers>` (:issue:`1992`, :issue:`2400`)
+    <scrapy.Request.headers>` (:issue:`1992`, :issue:`2400`)
 
 *   :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` no longer
     re-encodes cookies defined as :class:`bytes` in the ``cookies`` parameter
-    of the ``__init__`` method of :class:`~scrapy.http.Request`
+    of the ``__init__`` method of :class:`~scrapy.Request`
     (:issue:`2400`, :issue:`3575`)
 
 *   When :setting:`FEEDS` defines multiple URIs, :setting:`FEED_STORE_EMPTY` is
@@ -2403,7 +2403,7 @@ Bug fixes
 
 *   :class:`~scrapy.spiders.Spider` callbacks defined using :doc:`coroutine
     syntax <topics/coroutines>` no longer need to return an iterable, and may
-    instead return a :class:`~scrapy.http.Request` object, an
+    instead return a :class:`~scrapy.Request` object, an
     :ref:`item <topics-items>`, or ``None`` (:issue:`4609`)
 
 *   The :command:`startproject` command now ensures that the generated project
@@ -2445,7 +2445,7 @@ Documentation
 
 *   The display-on-hover behavior of internal documentation references now also
     covers links to :ref:`commands <topics-commands>`, :attr:`Request.meta
-    <scrapy.http.Request.meta>` keys, :ref:`settings <topics-settings>` and
+    <scrapy.Request.meta>` keys, :ref:`settings <topics-settings>` and
     :ref:`signals <topics-signals>` (:issue:`4495`, :issue:`4563`)
 
 *   It is again possible to download the documentation for offline reading
@@ -2800,10 +2800,10 @@ New features
 
 *   The new :attr:`Response.cb_kwargs <scrapy.http.Response.cb_kwargs>`
     attribute serves as a shortcut for :attr:`Response.request.cb_kwargs
-    <scrapy.http.Request.cb_kwargs>` (:issue:`4331`)
+    <scrapy.Request.cb_kwargs>` (:issue:`4331`)
 
 *   :meth:`Response.follow <scrapy.http.Response.follow>` now supports a
-    ``flags`` parameter, for consistency with :class:`~scrapy.http.Request`
+    ``flags`` parameter, for consistency with :class:`~scrapy.Request`
     (:issue:`4277`, :issue:`4279`)
 
 *   :ref:`Item loader processors <topics-loaders-processors>` can now be
@@ -2812,7 +2812,7 @@ New features
 *   :class:`~scrapy.spiders.Rule` now accepts an ``errback`` parameter
     (:issue:`4000`)
 
-*   :class:`~scrapy.http.Request` no longer requires a ``callback`` parameter
+*   :class:`~scrapy.Request` no longer requires a ``callback`` parameter
     when an ``errback`` parameter is specified (:issue:`3586`, :issue:`4008`)
 
 *   :class:`~scrapy.logformatter.LogFormatter` now supports some additional
@@ -2884,7 +2884,7 @@ Bug fixes
 *   Redirects to URLs starting with 3 slashes (``///``) are now supported
     (:issue:`4032`, :issue:`4042`)
 
-*   :class:`~scrapy.http.Request` no longer accepts strings as ``url`` simply
+*   :class:`~scrapy.Request` no longer accepts strings as ``url`` simply
     because they have a colon (:issue:`2552`, :issue:`4094`)
 
 *   The correct encoding is now used for attach names in
@@ -2930,7 +2930,7 @@ Documentation
     using :class:`~scrapy.crawler.CrawlerProcess` (:issue:`2149`,
     :issue:`2352`, :issue:`3146`, :issue:`3960`)
 
-*   Clarified the requirements for :class:`~scrapy.http.Request` objects
+*   Clarified the requirements for :class:`~scrapy.Request` objects
     :ref:`when using persistence <request-serialization>` (:issue:`4124`,
     :issue:`4139`)
 
@@ -3199,17 +3199,17 @@ Scrapy 1.8.2 (2022-03-01)
 
 **Security bug fixes:**
 
--   When a :class:`~scrapy.http.Request` object with cookies defined gets a
-    redirect response causing a new :class:`~scrapy.http.Request` object to be
+-   When a :class:`~scrapy.Request` object with cookies defined gets a
+    redirect response causing a new :class:`~scrapy.Request` object to be
     scheduled, the cookies defined in the original
-    :class:`~scrapy.http.Request` object are no longer copied into the new
-    :class:`~scrapy.http.Request` object.
+    :class:`~scrapy.Request` object are no longer copied into the new
+    :class:`~scrapy.Request` object.
 
     If you manually set the ``Cookie`` header on a
-    :class:`~scrapy.http.Request` object and the domain name of the redirect
+    :class:`~scrapy.Request` object and the domain name of the redirect
     URL is not an exact match for the domain of the URL of the original
-    :class:`~scrapy.http.Request` object, your ``Cookie`` header is now dropped
-    from the new :class:`~scrapy.http.Request` object.
+    :class:`~scrapy.Request` object, your ``Cookie`` header is now dropped
+    from the new :class:`~scrapy.Request` object.
 
     The old behavior could be exploited by an attacker to gain access to your
     cookies. Please, see the `cjvr-mfj7-j4j8 security advisory`_ for more
@@ -3222,10 +3222,10 @@ Scrapy 1.8.2 (2022-03-01)
               ``example.com`` and any subdomain) by defining the shared domain
               suffix (e.g. ``example.com``) as the cookie domain when defining
               your cookies. See the documentation of the
-              :class:`~scrapy.http.Request` class for more information.
+              :class:`~scrapy.Request` class for more information.
 
 -   When the domain of a cookie, either received in the ``Set-Cookie`` header
-    of a response or defined in a :class:`~scrapy.http.Request` object, is set
+    of a response or defined in a :class:`~scrapy.Request` object, is set
     to a `public suffix <https://publicsuffix.org/>`_, the cookie is now
     ignored unless the cookie domain is the same as the request domain.
 
@@ -3283,7 +3283,7 @@ Highlights:
 
 * Dropped Python 3.4 support and updated minimum requirements; made Python 3.8
   support official
-* New :meth:`Request.from_curl <scrapy.http.Request.from_curl>` class method
+* New :meth:`Request.from_curl <scrapy.Request.from_curl>` class method
 * New :setting:`ROBOTSTXT_PARSER` and :setting:`ROBOTSTXT_USER_AGENT` settings
 * New :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS` and
   :setting:`DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING` settings
@@ -3337,7 +3337,7 @@ See also :ref:`1.8-deprecation-removals` below.
 New features
 ~~~~~~~~~~~~
 
-*   A new :meth:`Request.from_curl <scrapy.http.Request.from_curl>` class
+*   A new :meth:`Request.from_curl <scrapy.Request.from_curl>` class
     method allows :ref:`creating a request from a cURL command
     <requests-from-curl>` (:issue:`2985`, :issue:`3862`)
 
@@ -3367,7 +3367,7 @@ New features
     after establishing HTTPS connections (:issue:`2111`, :issue:`3450`)
 
 *   Callbacks that receive keyword arguments
-    (see :attr:`Request.cb_kwargs <scrapy.http.Request.cb_kwargs>`) can now be
+    (see :attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>`) can now be
     tested using the new :class:`@cb_kwargs
     <scrapy.contracts.default.CallbackKeywordArgumentsContract>`
     :ref:`spider contract <topics-contracts>` (:issue:`3985`, :issue:`3988`)
@@ -3557,7 +3557,7 @@ Backward-incompatible changes
 
 *   Non-default values for the :setting:`SCHEDULER_PRIORITY_QUEUE` setting
     may stop working. Scheduler priority queue classes now need to handle
-    :class:`~scrapy.http.Request` objects instead of arbitrary Python data
+    :class:`~scrapy.Request` objects instead of arbitrary Python data
     structures.
 
 *   An additional ``crawler`` parameter has been added to the ``__init__``
@@ -3579,7 +3579,7 @@ New features
     scheduling improvement on crawls targeting multiple web domains, at the
     cost of no :setting:`CONCURRENT_REQUESTS_PER_IP` support (:issue:`3520`)
 
-*   A new :attr:`Request.cb_kwargs <scrapy.http.Request.cb_kwargs>` attribute
+*   A new :attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>` attribute
     provides a cleaner way to pass keyword arguments to callback methods
     (:issue:`1138`, :issue:`3563`)
 
@@ -4286,7 +4286,7 @@ New Features
   (:issue:`2535`)
 - New :ref:`response.follow <response-follow-example>` shortcut
   for creating requests (:issue:`1940`)
-- Added ``flags`` argument and attribute to :class:`Request <scrapy.http.Request>`
+- Added ``flags`` argument and attribute to :class:`~scrapy.Request`
   objects (:issue:`2047`)
 - Support Anonymous FTP (:issue:`2342`)
 - Added ``retry/count``, ``retry/max_reached`` and ``retry/reason_count/<reason>``
