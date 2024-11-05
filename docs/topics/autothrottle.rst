@@ -57,6 +57,8 @@ request metadata key to ``True``:
 
 .. code-block:: python
 
+    from scrapy import Request
+
     Request("https://example.com", meta={"dont_throttle": True})
 
 Note, however, that AutoThrottle still determines the starting delay of every
