@@ -675,6 +675,7 @@ Those are:
 * :reqmeta:`dont_obey_robotstxt`
 * :reqmeta:`dont_redirect`
 * :reqmeta:`dont_retry`
+* :reqmeta:`dont_throttle`
 * :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`download_latency`
 * :reqmeta:`download_maxsize`

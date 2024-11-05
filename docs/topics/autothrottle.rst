@@ -47,12 +47,17 @@ effect, but there are some important differences:
 
 AutoThrottle doesn't have these issues.
 
-Disabling throttling on a downloader slot
-=========================================
+.. reqmeta:: dont_throttle
 
-It is possible to disable AutoThrottle for a specific download slot at run time
-by setting its ``throttle`` attribute to ``False``, e.g. using
-:setting:`DOWNLOAD_SLOTS`.
+Disabling the throttling of a request
+=====================================
+
+To disable AutoThrottle for a specific request, set the ``dont_throttle``
+request metadata key to ``True``:
+
+.. code-block:: python
+
+    yield Request("https://example.com", meta={"dont_throttle": True})
 
 Note, however, that AutoThrottle still determines the starting delay of every
 slot by setting the ``download_delay`` attribute on the running spider. You

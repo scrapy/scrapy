@@ -36,13 +36,10 @@ class Slot:
         concurrency: int,
         delay: float,
         randomize_delay: bool,
-        *,
-        throttle: bool | None = None,
     ):
         self.concurrency: int = concurrency
         self.delay: float = delay
         self.randomize_delay: bool = randomize_delay
-        self.throttle = throttle
 
         self.active: set[Request] = set()
         self.queue: deque[tuple[Request, Deferred[Response]]] = deque()
@@ -67,15 +64,13 @@ class Slot:
         return (
             f"{cls_name}(concurrency={self.concurrency!r}, "
             f"delay={self.delay:.2f}, "
-            f"randomize_delay={self.randomize_delay!r}, "
-            f"throttle={self.throttle!r})"
+            f"randomize_delay={self.randomize_delay!r})"
         )
 
     def __str__(self) -> str:
         return (
             f"<downloader.Slot concurrency={self.concurrency!r} "
             f"delay={self.delay:.2f} randomize_delay={self.randomize_delay!r} "
-            f"throttle={self.throttle!r} "
             f"len(active)={len(self.active)} len(queue)={len(self.queue)} "
             f"len(transferring)={len(self.transferring)} "
             f"lastseen={datetime.fromtimestamp(self.lastseen).isoformat()}>"
@@ -146,8 +141,7 @@ class Downloader:
                 slot_settings.get("delay", delay),
             )
             randomize_delay = slot_settings.get("randomize_delay", self.randomize_delay)
-            throttle = slot_settings.get("throttle", None)
-            new_slot = Slot(conc, delay, randomize_delay, throttle=throttle)
+            new_slot = Slot(conc, delay, randomize_delay)
             self.slots[key] = new_slot
 
         return key, self.slots[key]

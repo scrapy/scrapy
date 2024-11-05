@@ -157,17 +157,20 @@ def test_startdelay_definition(min_spider, min_setting, start_setting, expected)
 
 
 @pytest.mark.parametrize(
-    ("meta", "slot", "throttle"),
+    ("meta", "slot"),
     (
-        ({}, None, None),
-        ({"download_latency": 1.0}, None, None),
-        ({"download_slot": "foo"}, None, None),
-        ({"download_slot": "foo"}, "foo", None),
-        ({"download_latency": 1.0, "download_slot": "foo"}, None, None),
-        ({"download_latency": 1.0, "download_slot": "foo"}, "foo", False),
+        ({}, None),
+        ({"download_latency": 1.0}, None),
+        ({"download_slot": "foo"}, None),
+        ({"download_slot": "foo"}, "foo"),
+        ({"download_latency": 1.0, "download_slot": "foo"}, None),
+        (
+            {"download_latency": 1.0, "download_slot": "foo", "dont_throttle": True},
+            "foo",
+        ),
     ),
 )
-def test_skipped(meta, slot, throttle):
+def test_skipped(meta, slot):
     crawler = get_crawler()
     at = build_from_crawler(AutoThrottle, crawler)
     spider = TestSpider()
@@ -178,9 +181,7 @@ def test_skipped(meta, slot, throttle):
     crawler.engine.downloader = Mock()
     crawler.engine.downloader.slots = {}
     if slot is not None:
-        _slot = Mock()
-        _slot.throttle = throttle
-        crawler.engine.downloader.slots[slot] = _slot
+        crawler.engine.downloader.slots[slot] = object()
     at._adjust_delay = None  # Raise exception if called.
 
     at._response_downloaded(None, request, spider)
