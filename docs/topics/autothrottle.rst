@@ -57,7 +57,7 @@ request metadata key to ``True``:
 
 .. code-block:: python
 
-    yield Request("https://example.com", meta={"dont_throttle": True})
+    Request("https://example.com", meta={"dont_throttle": True})
 
 Note, however, that AutoThrottle still determines the starting delay of every
 slot by setting the ``download_delay`` attribute on the running spider. You
