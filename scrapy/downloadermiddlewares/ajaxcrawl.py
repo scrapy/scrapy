@@ -3,10 +3,11 @@ from __future__ import annotations
 import logging
 import re
 from typing import TYPE_CHECKING
+from warnings import warn
 
 from w3lib import html
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Response
 
 if TYPE_CHECKING:
@@ -29,6 +30,13 @@ class AjaxCrawlMiddleware:
     def __init__(self, settings: BaseSettings):
         if not settings.getbool("AJAXCRAWL_ENABLED"):
             raise NotConfigured
+
+        warn(
+            "scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware is deprecated"
+            " and will be removed in a future Scrapy version.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
 
         # XXX: Google parses at least first 100k bytes; scrapy's redirect
         # middleware parses first 4k. 4k turns out to be insufficient
@@ -75,7 +83,6 @@ class AjaxCrawlMiddleware:
         return _has_ajaxcrawlable_meta(body)
 
 
-# XXX: move it to w3lib?
 _ajax_crawlable_re: re.Pattern[str] = re.compile(
     r'<meta\s+name=["\']fragment["\']\s+content=["\']!["\']/?>'
 )
