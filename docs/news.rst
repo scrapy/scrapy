@@ -210,6 +210,24 @@ Deprecations
     ``incremental.Version`` object, not a tuple).
     (:issue:`6509`, :issue:`6512`)
 
+-   ``scrapy.utils.python.flatten()`` and ``scrapy.utils.python.iflatten()``
+    are now deprecated.
+    (:issue:`6517`, :issue:`6519`)
+
+-   ``scrapy.utils.python.equal_attributes()`` is now deprecated.
+    (:issue:`6517`, :issue:`6519`)
+
+-   ``scrapy.utils.request.request_authenticate()`` is now deprecated, you
+    should instead just set the ``Authorization`` header directly.
+    (:issue:`6517`, :issue:`6519`)
+
+-   ``scrapy.utils.serialize.ScrapyJSONDecoder`` is now deprecated, it didn't
+    contain any code since Scrapy 1.0.0.
+    (:issue:`6517`, :issue:`6519`)
+
+-   ``scrapy.utils.test.assert_samelines()`` is now deprecated.
+    (:issue:`6517`, :issue:`6519`)
+
 New features
 ~~~~~~~~~~~~
 
@@ -308,6 +326,10 @@ Documentation
     problems with non-default reactors when this code was used unmodified.
     (:issue:`6361`, :issue:`6374`)
 
+-   Documented the :class:`~scrapy.extensions.spiderstate.SpiderState`
+    extension.
+    (:issue:`6278`, :issue:`6522`)
+
 -   Other documentation improvements and fixes.
     (:issue:`5920`,
     :issue:`6094`,
@@ -322,13 +344,15 @@ Documentation
     :issue:`6394`,
     :issue:`6402`,
     :issue:`6411`,
+    :issue:`6427`,
     :issue:`6429`,
     :issue:`6440`,
     :issue:`6448`,
     :issue:`6449`,
     :issue:`6462`,
     :issue:`6497`,
-    :issue:`6507`)
+    :issue:`6507`,
+    :issue:`6524`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
