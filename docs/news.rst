@@ -1521,7 +1521,7 @@ Documentation
     (:issue:`3582`, :issue:`5432`).
 
     .. _Common Crawl: https://commoncrawl.org/
-    .. _Google cache: http://www.googleguide.com/cached_pages.html
+    .. _Google cache: https://www.googleguide.com/cached_pages.html
 
 -   The new :ref:`topics-components` topic covers enforcing requirements on
     Scrapy components, like :ref:`downloader middlewares
@@ -1878,7 +1878,7 @@ New features
     (:setting:`AWS_SESSION_TOKEN`) and endpoint customization
     (:setting:`AWS_ENDPOINT_URL`). (:issue:`4998`, :issue:`5210`)
 
-    .. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
+    .. _temporary security credentials: https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html
 
 -   New :setting:`LOG_FILE_APPEND` setting to allow truncating the log file.
     (:issue:`5279`)
@@ -2024,7 +2024,7 @@ Documentation
 -   ``quotes.toscrape.com`` references now use HTTPS instead of HTTP.
     (:issue:`5395`, :issue:`5396`)
 
--   Added a link to `our Discord server <https://discord.gg/mv3yErfpvq>`_
+-   Added a link to `our Discord server <https://discord.com/invite/mv3yErfpvq>`_
     to :ref:`getting-help`. (:issue:`5421`, :issue:`5422`)
 
 -   The pronunciation of the project name is now :ref:`officially
@@ -2215,7 +2215,7 @@ Bug fixes
     with lower indentation than the following code.
     (:issue:`4477`, :issue:`4935`)
 
--   The `Content-Length <https://tools.ietf.org/html/rfc2616#section-14.13>`_
+-   The `Content-Length <https://datatracker.ietf.org/doc/html/rfc2616#section-14.13>`_
     header is no longer omitted from responses when using the default, HTTP/1.1
     download handler (see :setting:`DOWNLOAD_HANDLERS`).
     (:issue:`5009`, :issue:`5034`, :issue:`5045`, :issue:`5057`, :issue:`5062`)
@@ -2715,7 +2715,7 @@ Documentation
 *   Simplified the code example in :ref:`topics-loaders-dataclass`
     (:issue:`4652`)
 
-.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/openssl-ciphers.html#CIPHER-LIST-FORMAT
+.. _OpenSSL cipher list format: https://docs.openssl.org/master/man1/openssl-ciphers/#cipher-list-format
 
 
 Quality assurance
@@ -2942,7 +2942,7 @@ Quality assurance
 *   Added a `Pylint <https://www.pylint.org/>`_ job to Travis CI
     (:issue:`3727`)
 
-*   Added a `Mypy <http://mypy-lang.org/>`_ job to Travis CI (:issue:`4637`)
+*   Added a `Mypy <https://mypy-lang.org/>`_ job to Travis CI (:issue:`4637`)
 
 *   Made use of set literals in tests (:issue:`4573`)
 
@@ -3449,7 +3449,7 @@ Quality assurance
 *   Cleaned up code (:issue:`3937`, :issue:`4208`, :issue:`4209`,
     :issue:`4210`, :issue:`4212`, :issue:`4369`, :issue:`4376`, :issue:`4378`)
 
-.. _Bandit: https://bandit.readthedocs.io/
+.. _Bandit: https://bandit.readthedocs.io/en/latest/
 .. _Flake8: https://flake8.pycqa.org/en/latest/
 
 
@@ -4624,7 +4624,7 @@ Docs
 - Update Contributing docs, document new support channels
   (:issue:`2762`, issue:`3038`)
 - Include references to Scrapy subreddit in the docs
-- Fix broken links; use https:// for external links
+- Fix broken links; use ``https://`` for external links
   (:issue:`2978`, :issue:`2982`, :issue:`2958`)
 - Document CloseSpider extension better (:issue:`2759`)
 - Use ``pymongo.collection.Collection.insert_one()`` in MongoDB example
@@ -5225,7 +5225,7 @@ This 1.1 release brings a lot of interesting features and bug fixes:
   - Don't retry bad requests (HTTP 400) by default (:issue:`1289`).
     If you need the old behavior, add ``400`` to :setting:`RETRY_HTTP_CODES`.
   - Fix shell files argument handling (:issue:`1710`, :issue:`1550`).
-    If you try ``scrapy shell index.html`` it will try to load the URL http://index.html,
+    If you try ``scrapy shell index.html`` it will try to load the URL ``http://index.html``,
     use ``scrapy shell ./index.html`` to load a local file.
   - Robots.txt compliance is now enabled by default for newly-created projects
     (:issue:`1724`). Scrapy will also wait for robots.txt to be downloaded
@@ -5901,7 +5901,7 @@ Scrapy 0.24.5 (2015-02-25)
 Scrapy 0.24.4 (2014-08-09)
 --------------------------
 
-- pem file is used by mockserver and required by scrapy bench (:commit:`5eddc68`)
+- pem file is used by mockserver and required by scrapy bench (:commit:`5eddc68b63`)
 - scrapy bench needs scrapy.tests* (:commit:`d6cb999`)
 
 Scrapy 0.24.3 (2014-08-09)
@@ -6422,7 +6422,7 @@ Scrapy changes:
 - nested items now fully supported in JSON and JSONLines exporters
 - added :reqmeta:`cookiejar` Request meta key to support multiple cookie sessions per spider
 - decoupled encoding detection code to `w3lib.encoding`_, and ported Scrapy code to use that module
-- dropped support for Python 2.5. See https://blog.scrapinghub.com/2012/02/27/scrapy-0-15-dropping-support-for-python-2-5/
+- dropped support for Python 2.5. See https://www.zyte.com/blog/scrapy-0-15-dropping-support-for-python-2-5/
 - dropped support for Twisted 2.5
 - added :setting:`REFERER_ENABLED` setting, to control referer middleware
 - changed default user agent to: ``Scrapy/VERSION (+http://scrapy.org)``
@@ -6500,7 +6500,7 @@ Scrapy 0.14
 New features and settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Support for `AJAX crawlable urls`_
+- Support for AJAX crawlable urls
 - New persistent scheduler that stores requests on disk, allowing to suspend and resume crawls (:rev:`2737`)
 - added ``-o`` option to ``scrapy crawl``, a shortcut for dumping scraped items into a file (or standard output using ``-``)
 - Added support for passing custom settings to Scrapyd ``schedule.json`` api (:rev:`2779`, :rev:`2783`)
@@ -6771,11 +6771,10 @@ Scrapy 0.7
 First release of Scrapy.
 
 
-.. _AJAX crawlable urls: https://developers.google.com/search/docs/ajax-crawling/docs/getting-started?csw=1
 .. _boto3: https://github.com/boto/boto3
 .. _botocore: https://github.com/boto/botocore
 .. _chunked transfer encoding: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
-.. _ClientForm: http://wwwsearch.sourceforge.net/old/ClientForm/
+.. _ClientForm: https://pypi.org/project/ClientForm/
 .. _Creating a pull request: https://help.github.com/en/articles/creating-a-pull-request
 .. _cryptography: https://cryptography.io/en/latest/
 .. _docstrings: https://docs.python.org/3/glossary.html#term-docstring
@@ -6787,7 +6786,7 @@ First release of Scrapy.
 .. _parsel.csstranslator.GenericTranslator: https://parsel.readthedocs.io/en/latest/parsel.html#parsel.csstranslator.GenericTranslator
 .. _parsel.csstranslator.HTMLTranslator: https://parsel.readthedocs.io/en/latest/parsel.html#parsel.csstranslator.HTMLTranslator
 .. _parsel.csstranslator.XPathExpr: https://parsel.readthedocs.io/en/latest/parsel.html#parsel.csstranslator.XPathExpr
-.. _PEP 257: https://www.python.org/dev/peps/pep-0257/
+.. _PEP 257: https://peps.python.org/pep-0257/
 .. _Pillow: https://python-pillow.org/
 .. _pyOpenSSL: https://www.pyopenssl.org/en/stable/
 .. _queuelib: https://github.com/scrapy/queuelib
@@ -6799,7 +6798,7 @@ First release of Scrapy.
 .. _service_identity: https://service-identity.readthedocs.io/en/stable/
 .. _six: https://six.readthedocs.io/
 .. _tox: https://pypi.org/project/tox/
-.. _Twisted: https://twistedmatrix.com/trac/
+.. _Twisted: https://twisted.org/
 .. _w3lib: https://github.com/scrapy/w3lib
 .. _w3lib.encoding: https://github.com/scrapy/w3lib/blob/master/w3lib/encoding.py
 .. _What is cacheable: https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1

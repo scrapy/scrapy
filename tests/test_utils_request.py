@@ -6,6 +6,8 @@ import warnings
 from hashlib import sha1
 from weakref import WeakKeyDictionary
 
+import pytest
+
 from scrapy.http import Request
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import (
@@ -19,6 +21,7 @@ from scrapy.utils.test import get_crawler
 
 
 class UtilsRequestTest(unittest.TestCase):
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_request_authenticate(self):
         r = Request("http://www.example.com")
         request_authenticate(r, "someuser", "somepass")

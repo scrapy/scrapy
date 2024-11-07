@@ -6,11 +6,11 @@ Scrapy
 ======
 
 .. image:: https://img.shields.io/pypi/v/Scrapy.svg
-   :target: https://pypi.python.org/pypi/Scrapy
+   :target: https://pypi.org/pypi/Scrapy
    :alt: PyPI Version
 
 .. image:: https://img.shields.io/pypi/pyversions/Scrapy.svg
-   :target: https://pypi.python.org/pypi/Scrapy
+   :target: https://pypi.org/pypi/Scrapy
    :alt: Supported Python Versions
 
 .. image:: https://github.com/scrapy/scrapy/workflows/Ubuntu/badge.svg
@@ -27,7 +27,7 @@ Scrapy
    :alt: Windows
 
 .. image:: https://img.shields.io/badge/wheel-yes-brightgreen.svg
-   :target: https://pypi.python.org/pypi/Scrapy
+   :target: https://pypi.org/pypi/Scrapy
    :alt: Wheel Status
 
 .. image:: https://img.shields.io/codecov/c/github/scrapy/scrapy/master.svg

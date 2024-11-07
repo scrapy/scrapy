@@ -231,6 +231,7 @@ linkcheck_ignore = [
     r"http://localhost:\d+",
     "http://hg.scrapy.org",
     "http://directory.google.com/",
+    r"https://github.com/scrapy/scrapy/issues/\d+",
 ]
 
 

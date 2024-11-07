@@ -1101,7 +1101,7 @@ Parsers vary in several aspects:
 
 * Support for wildcard matching
 
-* Usage of `length based rule <https://developers.google.com/search/reference/robots_txt#order-of-precedence-for-group-member-lines>`_:
+* Usage of `length based rule <https://developers.google.com/search/docs/crawling-indexing/robots/robots_txt#order-of-precedence-for-rules>`_:
   in particular for ``Allow`` and ``Disallow`` directives, where the most
   specific rule based on the length of the path trumps the less specific
   (shorter) rule
@@ -1119,7 +1119,7 @@ Based on `Protego <https://github.com/scrapy/protego>`_:
 * implemented in Python
 
 * is compliant with `Google's Robots.txt Specification
-  <https://developers.google.com/search/reference/robots_txt>`_
+  <https://developers.google.com/search/docs/crawling-indexing/robots/robots_txt>`_
 
 * supports wildcard matching
 
@@ -1154,7 +1154,7 @@ In order to use this parser, set:
 Robotexclusionrulesparser
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
+Based on `Robotexclusionrulesparser <https://pypi.org/project/robotexclusionrulesparser/>`_:
 
 * implemented in Python
 
@@ -1167,7 +1167,7 @@ Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
 
 In order to use this parser:
 
-* Install `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_ by running
+* Install ``Robotexclusionrulesparser`` by running
   ``pip install robotexclusionrulesparser``
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
@@ -1227,9 +1227,7 @@ AjaxCrawlMiddleware
 .. class:: AjaxCrawlMiddleware
 
    Middleware that finds 'AJAX crawlable' page variants based
-   on meta-fragment html tag. See
-   https://developers.google.com/search/docs/ajax-crawling/docs/getting-started
-   for more info.
+   on meta-fragment html tag.
 
    .. note::
 

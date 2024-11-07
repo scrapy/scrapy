@@ -3,6 +3,7 @@ import operator
 import platform
 import sys
 
+import pytest
 from twisted.trial import unittest
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
@@ -151,6 +152,7 @@ class BinaryIsTextTest(unittest.TestCase):
 
 
 class UtilsPythonTestCase(unittest.TestCase):
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_equal_attributes(self):
         class Obj:
             pass

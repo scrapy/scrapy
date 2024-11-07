@@ -21,7 +21,7 @@ try:
     from PIL import Image  # noqa: imported just to check for the import error
 except ImportError:
     skip_pillow: str | None = (
-        "Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow"
+        "Missing Python Imaging Library, install https://pypi.org/pypi/Pillow"
     )
 else:
     skip_pillow = None
