@@ -67,7 +67,7 @@ class AutoThrottle:
         if (
             latency is None
             or slot is None
-            or request.meta.get("dont_throttle", False) is True
+            or request.meta.get("autothrottle_dont_adjust_delay", False) is True
         ):
             return
 

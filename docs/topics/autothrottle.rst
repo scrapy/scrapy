@@ -47,19 +47,19 @@ effect, but there are some important differences:
 
 AutoThrottle doesn't have these issues.
 
-.. reqmeta:: dont_throttle
+.. reqmeta:: autothrottle_dont_adjust_delay
 
 Disabling the throttling of a request
 =====================================
 
-To disable AutoThrottle for a specific request, set the ``dont_throttle``
-request metadata key to ``True``:
+To disable AutoThrottle for a specific request, set the
+``autothrottle_dont_adjust_delay`` request metadata key to ``True``:
 
 .. code-block:: python
 
     from scrapy import Request
 
-    Request("https://example.com", meta={"dont_throttle": True})
+    Request("https://example.com", meta={"autothrottle_dont_adjust_delay": True})
 
 Note, however, that AutoThrottle still determines the starting delay of every
 slot by setting the ``download_delay`` attribute on the running spider. You

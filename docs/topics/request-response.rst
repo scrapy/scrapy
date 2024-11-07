@@ -668,6 +668,7 @@ are some special keys recognized by Scrapy and its built-in extensions.
 
 Those are:
 
+* :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
 * :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`
@@ -675,7 +676,6 @@ Those are:
 * :reqmeta:`dont_obey_robotstxt`
 * :reqmeta:`dont_redirect`
 * :reqmeta:`dont_retry`
-* :reqmeta:`dont_throttle`
 * :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`download_latency`
 * :reqmeta:`download_maxsize`

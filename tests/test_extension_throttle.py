@@ -165,7 +165,11 @@ def test_startdelay_definition(min_spider, min_setting, start_setting, expected)
         ({"download_slot": "foo"}, "foo"),
         ({"download_latency": 1.0, "download_slot": "foo"}, None),
         (
-            {"download_latency": 1.0, "download_slot": "foo", "dont_throttle": True},
+            {
+                "download_latency": 1.0,
+                "download_slot": "foo",
+                "autothrottle_dont_adjust_delay": True,
+            },
             "foo",
         ),
     ),
