@@ -242,6 +242,44 @@ Documentation about deprecated features must be removed as those features are
 deprecated, so that new readers do not run into it. New deprecations and
 deprecation removals are documented in the :ref:`release notes <news>`.
 
+.. _ai-generated-content-policy:
+
+AI-generated content policies
+==========================
+
+As AI-generated content becomes increasingly prevalent, we want to ensure that 
+contributions to scrapy are accurate, reliable, and trustworthy.
+To achieve this, we have established the following policies for AI-generated content:
+
+What is considered AI-generated content?
+------------------------------------
+
+For the purposes of this policies, AI-generated content refers to any text, 
+code, or other materials created with the assistance of artificial intelligence tools, 
+such as language models, code generators, or other machine learning-based software.
+
+Acceptable use of AI-generated content
+--------------------------------------
+
+We recognize that AI-generated content can be a useful tool for assisting with coding, 
+writing documentation, or enhancing existing materials. However, we require that 
+contributors exercise caution and follow these guidelines when using 
+AI-generated content:
+
+* **Review and edit carefully**: Any AI-generated content must be thoroughly reviewed 
+  and edited by a human contributor to ensure accuracy, clarity, and relevance.
+* **Clearly disclose AI-generated content**: Contributors must clearly indicate in 
+  the commit message or pull request description which parts of the contribution 
+  were generated using AI tools and specify the AI tools or models used to generate
+  the content.
+
+Feedback
+----------------------
+
+By following these guidelines, we can ensure that scrapy's documentation and
+codebase remain accurate, reliable, and trustworthy, while also embracing the benefits
+of AI-generated content. Contributors are encouraged to engage in discussions about 
+these policies and suggest improvements.
 
 Tests
 =====
