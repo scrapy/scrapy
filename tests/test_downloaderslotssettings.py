@@ -80,7 +80,6 @@ def test_params():
         "concurrency": 1,
         "delay": 2,
         "randomize_delay": False,
-        "throttle": False,
     }
     settings = {
         "DOWNLOAD_SLOTS": {
