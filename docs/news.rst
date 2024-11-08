@@ -260,8 +260,9 @@ New features
     (:issue:`6181`)
 
 -   :ref:`Automatic throttling <topics-autothrottle>` can now be disabled for a
-    specific slot via its ``throttle`` attribute.
-    (:issue:`6246`)
+    specific request via its :reqmeta:`autothrottle_dont_adjust_delay` meta
+    key.
+    (:issue:`6246`, :issue:`6527`)
 
 -   If :setting:`SPIDER_LOADER_WARN_ONLY` is set to ``True``,
     :class:`~scrapy.spiderloader.SpiderLoader` does not raise
