@@ -57,7 +57,7 @@ def pytest_addoption(parser):
 def reactor_pytest(request):
     if not request.cls:
         # doctests
-        return
+        return None
     request.cls.reactor_pytest = request.config.getoption("--reactor")
     return request.cls.reactor_pytest
 

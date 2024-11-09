@@ -152,8 +152,7 @@ def _get_form(
         form = forms[formnumber]
     except IndexError:
         raise IndexError(f"Form number {formnumber} not found in {response}")
-    else:
-        return cast(FormElement, form)
+    return cast(FormElement, form)
 
 
 def _get_inputs(
@@ -264,5 +263,4 @@ def _get_clickable(
             f"Multiple elements found ({el!r}) matching the "
             f"criteria in clickdata: {clickdata!r}"
         )
-    else:
-        raise ValueError(f"No clickable element matching clickdata: {clickdata!r}")
+    raise ValueError(f"No clickable element matching clickdata: {clickdata!r}")

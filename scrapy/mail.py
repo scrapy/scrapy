@@ -117,8 +117,8 @@ class MailSender:
             if charset:
                 msg.set_charset(charset)
             msg.attach(MIMEText(body, "plain", charset or "us-ascii"))
-            for attach_name, mimetype, f in attachs:
-                part = MIMEBase(*mimetype.split("/"))
+            for attach_name, attach_mimetype, f in attachs:
+                part = MIMEBase(*attach_mimetype.split("/"))
                 part.set_payload(f.read())
                 Encoders.encode_base64(part)
                 part.add_header(

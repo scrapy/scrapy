@@ -109,8 +109,7 @@ def mustbe_deferred(
         return defer_fail(failure.Failure(e))
     except Exception:
         return defer_fail(failure.Failure())
-    else:
-        return defer_result(result)
+    return defer_result(result)
 
 
 def parallel(

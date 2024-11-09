@@ -174,14 +174,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 # _process_spider_exception too, which complicates the architecture
                 msg = f"Async iterable returned from {method.__qualname__} cannot be downgraded"
                 raise _InvalidOutput(msg)
-            elif result is None:
+            if result is None:
                 continue
-            else:
-                msg = (
-                    f"{method.__qualname__} must return None "
-                    f"or an iterable, got {type(result)}"
-                )
-                raise _InvalidOutput(msg)
+            msg = (
+                f"{method.__qualname__} must return None "
+                f"or an iterable, got {type(result)}"
+            )
+            raise _InvalidOutput(msg)
         return _failure
 
     # This method cannot be made async def, as _process_spider_exception relies on the Deferred result
