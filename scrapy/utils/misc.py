@@ -26,7 +26,6 @@ if TYPE_CHECKING:
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
-    from scrapy.settings import BaseSettings
 
 
 _ITERABLE_SINGLE_VALUES = dict, Item, str, bytes
@@ -150,7 +149,7 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
     """
     warnings.warn(
         "The create_instance() function is deprecated. "
-        "Please use build_from_crawler() or build_from_settings() instead.",
+        "Please use build_from_crawler() instead.",
         category=ScrapyDeprecationWarning,
         stacklevel=2,
     )
@@ -176,7 +175,7 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
 def build_from_crawler(
     objcls: type[T], crawler: Crawler, /, *args: Any, **kwargs: Any
 ) -> T:
-    """Construct a class instance using its ``from_crawler`` constructor.
+    """Construct a class instance using its ``from_crawler`` or ``from_settings`` constructor.
 
     ``*args`` and ``**kwargs`` are forwarded to the constructor.
 
@@ -187,26 +186,6 @@ def build_from_crawler(
         method_name = "from_crawler"
     elif hasattr(objcls, "from_settings"):
         instance = objcls.from_settings(crawler.settings, *args, **kwargs)  # type: ignore[attr-defined]
-        method_name = "from_settings"
-    else:
-        instance = objcls(*args, **kwargs)
-        method_name = "__new__"
-    if instance is None:
-        raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
-    return cast(T, instance)
-
-
-def build_from_settings(
-    objcls: type[T], settings: BaseSettings, /, *args: Any, **kwargs: Any
-) -> T:
-    """Construct a class instance using its ``from_settings`` constructor.
-
-    ``*args`` and ``**kwargs`` are forwarded to the constructor.
-
-    Raises ``TypeError`` if the resulting instance is ``None``.
-    """
-    if hasattr(objcls, "from_settings"):
-        instance = objcls.from_settings(settings, *args, **kwargs)  # type: ignore[attr-defined]
         method_name = "from_settings"
     else:
         instance = objcls(*args, **kwargs)

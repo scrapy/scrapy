@@ -9,25 +9,18 @@ from tempfile import mkdtemp
 
 import OpenSSL.SSL
 from twisted.internet import defer, reactor
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet.testing import StringTransport
+from twisted.protocols.policies import WrappingFactory
 from twisted.trial import unittest
 from twisted.web import resource, server, static, util
-
-try:
-    from twisted.internet.testing import StringTransport
-except ImportError:
-    # deprecated in Twisted 19.7.0
-    # (remove once we bump our requirement past that version)
-    from twisted.test.proto_helpers import StringTransport
-
-from twisted.internet.defer import inlineCallbacks
-from twisted.protocols.policies import WrappingFactory
 
 from scrapy.core.downloader import webclient as client
 from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
 from scrapy.http import Headers, Request
-from scrapy.settings import Settings
-from scrapy.utils.misc import build_from_settings
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.test import get_crawler
 from tests.mockserver import (
     BrokenDownloadResource,
     ErrorResource,
@@ -469,22 +462,22 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
 
     def testPayload(self):
         s = "0123456789" * 10
-        settings = Settings({"DOWNLOADER_CLIENT_TLS_CIPHERS": self.custom_ciphers})
-        client_context_factory = build_from_settings(
-            ScrapyClientContextFactory, settings
+        crawler = get_crawler(
+            settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": self.custom_ciphers}
         )
+        client_context_factory = build_from_crawler(ScrapyClientContextFactory, crawler)
         return getPage(
             self.getURL("payload"), body=s, contextFactory=client_context_factory
         ).addCallback(self.assertEqual, to_bytes(s))
 
     def testPayloadDisabledCipher(self):
         s = "0123456789" * 10
-        settings = Settings(
-            {"DOWNLOADER_CLIENT_TLS_CIPHERS": "ECDHE-RSA-AES256-GCM-SHA384"}
+        crawler = get_crawler(
+            settings_dict={
+                "DOWNLOADER_CLIENT_TLS_CIPHERS": "ECDHE-RSA-AES256-GCM-SHA384"
+            }
         )
-        client_context_factory = build_from_settings(
-            ScrapyClientContextFactory, settings
-        )
+        client_context_factory = build_from_crawler(ScrapyClientContextFactory, crawler)
         d = getPage(
             self.getURL("payload"), body=s, contextFactory=client_context_factory
         )

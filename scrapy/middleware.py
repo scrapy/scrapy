@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import logging
 import pprint
+import warnings
 from collections import defaultdict, deque
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.defer import process_chain, process_parallel
-from scrapy.utils.misc import build_from_crawler, build_from_settings, load_object
+from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -20,7 +21,7 @@ if TYPE_CHECKING:
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
-    from scrapy.settings import Settings
+    from scrapy.settings import BaseSettings, Settings
 
     _P = ParamSpec("_P")
 
@@ -50,8 +51,27 @@ class MiddlewareManager:
     def _get_mwlist_from_settings(cls, settings: Settings) -> list[Any]:
         raise NotImplementedError
 
+    @staticmethod
+    def _build_from_settings(objcls: type[_T], settings: BaseSettings) -> _T:
+        if hasattr(objcls, "from_settings"):
+            instance = objcls.from_settings(settings)  # type: ignore[attr-defined]
+            method_name = "from_settings"
+        else:
+            instance = objcls()
+            method_name = "__new__"
+        if instance is None:
+            raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
+        return cast(_T, instance)
+
     @classmethod
     def from_settings(cls, settings: Settings, crawler: Crawler | None = None) -> Self:
+        if crawler is None:
+            warnings.warn(
+                "Calling MiddlewareManager.from_settings() without a Crawler instance is deprecated."
+                " As this method will be deprecated in the future, please switch to from_crawler().",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         mwlist = cls._get_mwlist_from_settings(settings)
         middlewares = []
         enabled = []
@@ -61,7 +81,7 @@ class MiddlewareManager:
                 if crawler is not None:
                     mw = build_from_crawler(mwcls, crawler)
                 else:
-                    mw = build_from_settings(mwcls, settings)
+                    mw = MiddlewareManager._build_from_settings(mwcls, settings)
                 middlewares.append(mw)
                 enabled.append(clspath)
             except NotConfigured as e:
