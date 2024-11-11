@@ -22,7 +22,7 @@ from pytest import mark
 from twisted.trial import unittest
 
 import scrapy
-from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
+from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, edit, view
 from scrapy.commands.startproject import IGNORE
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
@@ -1030,6 +1030,19 @@ class ViewCommandTest(CommandTest):
         self.assertEqual(command.short_desc(), "Open URL in browser, as seen by Scrapy")
         self.assertIn(
             "URL using the Scrapy downloader and show its", command.long_desc()
+        )
+
+
+class EditCommandTest(CommandTest):
+    def test_methods(self):
+        command = edit.Command()
+        command.settings = Settings()
+
+        self.assertEqual(command.short_desc(), "Edit spider")
+        self.assertEqual(
+            "Edit a spider using the editor defined in the EDITOR environment"
+            " variable or else the EDITOR setting",
+            command.long_desc(),
         )
 
 
