@@ -62,6 +62,11 @@ def build_storage(
     preargs: Iterable[Any] = (),
     **kwargs: Any,
 ) -> _StorageT:
+    warnings.warn(
+        "scrapy.extensions.feedexport.build_storage() is deprecated, call the builder directly.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     kwargs["feed_options"] = feed_options
     return builder(*preargs, uri, *args, **kwargs)
 
@@ -248,8 +253,7 @@ class S3FeedStorage(BlockingFeedStorage):
         *,
         feed_options: dict[str, Any] | None = None,
     ) -> Self:
-        return build_storage(
-            cls,
+        return cls(
             uri,
             access_key=crawler.settings["AWS_ACCESS_KEY_ID"],
             secret_key=crawler.settings["AWS_SECRET_ACCESS_KEY"],
@@ -323,10 +327,9 @@ class FTPFeedStorage(BlockingFeedStorage):
         *,
         feed_options: dict[str, Any] | None = None,
     ) -> Self:
-        return build_storage(
-            cls,
+        return cls(
             uri,
-            crawler.settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
+            use_active_mode=crawler.settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
             feed_options=feed_options,
         )
 
@@ -407,15 +410,12 @@ class FeedSlot:
             self.exporter.start_exporting()
             self._exporting = True
 
-    def _get_instance(
-        self, objcls: type[BaseItemExporter], *args: Any, **kwargs: Any
-    ) -> BaseItemExporter:
-        return build_from_crawler(objcls, self.crawler, *args, **kwargs)
-
     def _get_exporter(
         self, file: IO[bytes], format: str, *args: Any, **kwargs: Any
     ) -> BaseItemExporter:
-        return self._get_instance(self.exporters[format], file, *args, **kwargs)
+        return build_from_crawler(
+            self.exporters[format], self.crawler, file, *args, **kwargs
+        )
 
     def finish_exporting(self) -> None:
         if self._exporting:
@@ -692,34 +692,8 @@ class FeedExporter:
     def _get_storage(
         self, uri: str, feed_options: dict[str, Any]
     ) -> FeedStorageProtocol:
-        """Fork of create_instance specific to feed storage classes
-
-        It supports not passing the *feed_options* parameters to classes that
-        do not support it, and issuing a deprecation warning instead.
-        """
         feedcls = self.storages.get(urlparse(uri).scheme, self.storages["file"])
-        crawler = getattr(self, "crawler", None)
-
-        def build_instance(
-            builder: type[FeedStorageProtocol], *preargs: Any
-        ) -> FeedStorageProtocol:
-            return build_storage(
-                builder, uri, feed_options=feed_options, preargs=preargs
-            )
-
-        instance: FeedStorageProtocol
-        if crawler and hasattr(feedcls, "from_crawler"):
-            instance = build_instance(feedcls.from_crawler, crawler)
-            method_name = "from_crawler"
-        elif hasattr(feedcls, "from_settings"):
-            instance = build_instance(feedcls.from_settings, self.settings)
-            method_name = "from_settings"
-        else:
-            instance = build_instance(feedcls)
-            method_name = "__new__"
-        if instance is None:
-            raise TypeError(f"{feedcls.__qualname__}.{method_name} returned None")
-        return instance
+        return build_from_crawler(feedcls, self.crawler, uri, feed_options=feed_options)
 
     def _get_uri_params(
         self,
