@@ -23,7 +23,7 @@ class Command(BaseRunSpiderCommand):
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) < 1:
             raise UsageError()
-        elif len(args) > 1:
+        if len(args) > 1:
             raise UsageError(
                 "running 'scrapy crawl' with more than one spider is not supported"
             )

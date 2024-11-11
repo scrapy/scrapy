@@ -312,8 +312,7 @@ class Scheduler(BaseScheduler):
             assert self.stats is not None
             self.stats.inc_value("scheduler/unserializable", spider=self.spider)
             return False
-        else:
-            return True
+        return True
 
     def _mqpush(self, request: Request) -> None:
         self.mqs.push(request)

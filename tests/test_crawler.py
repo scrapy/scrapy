@@ -143,7 +143,8 @@ class CrawlerTestCase(BaseCrawlerTest):
             def from_crawler(cls, crawler):
                 return cls(crawler=crawler)
 
-            def __init__(self, crawler):
+            def __init__(self, crawler, **kwargs: Any):
+                super().__init__(**kwargs)
                 self.crawler = crawler
 
             def start_requests(self):
@@ -223,7 +224,8 @@ class CrawlerTestCase(BaseCrawlerTest):
             def from_crawler(cls, crawler):
                 return cls(crawler=crawler)
 
-            def __init__(self, crawler):
+            def __init__(self, crawler, **kwargs: Any):
+                super().__init__(**kwargs)
                 self.crawler = crawler
 
             def start_requests(self):
@@ -301,7 +303,8 @@ class CrawlerTestCase(BaseCrawlerTest):
             def from_crawler(cls, crawler):
                 return cls(crawler=crawler)
 
-            def __init__(self, crawler):
+            def __init__(self, crawler, **kwargs: Any):
+                super().__init__(**kwargs)
                 self.crawler = crawler
 
             def start_requests(self):
@@ -379,7 +382,8 @@ class CrawlerTestCase(BaseCrawlerTest):
             def from_crawler(cls, crawler):
                 return cls(crawler=crawler)
 
-            def __init__(self, crawler):
+            def __init__(self, crawler, **kwargs: Any):
+                super().__init__(**kwargs)
                 self.crawler = crawler
 
             def start_requests(self):

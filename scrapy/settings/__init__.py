@@ -501,11 +501,9 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         except KeyError:
             if default is self.__default:
                 raise
-
             return default
-        else:
-            self.__delitem__(name)
-            return value
+        self.__delitem__(name)
+        return value
 
 
 class Settings(BaseSettings):

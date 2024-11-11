@@ -35,7 +35,8 @@ class Command(ScrapyCommand):
         try:
             spidercls = self.crawler_process.spider_loader.load(args[0])
         except KeyError:
-            return self._err(f"Spider not found: {args[0]}")
+            self._err(f"Spider not found: {args[0]}")
+            return
 
         sfile = sys.modules[spidercls.__module__].__file__
         assert sfile

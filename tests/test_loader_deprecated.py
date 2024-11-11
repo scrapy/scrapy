@@ -69,8 +69,7 @@ class BasicItemLoaderTest(unittest.TestCase):
     def test_load_item_ignore_none_field_values(self):
         def validate_sku(value):
             # Let's assume a SKU is only digits.
-            if value.isdigit():
-                return value
+            return value if value.isdigit() else None
 
         class MyLoader(ItemLoader):
             name_out = Compose(lambda vs: vs[0])  # take first which allows empty values

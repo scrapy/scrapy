@@ -325,9 +325,8 @@ def _load_policy_class(
         msg = f"Could not load referrer policy {policy!r}"
         if not warning_only:
             raise RuntimeError(msg)
-        else:
-            warnings.warn(msg, RuntimeWarning)
-            return None
+        warnings.warn(msg, RuntimeWarning)
+        return None
 
 
 class RefererMiddleware:
