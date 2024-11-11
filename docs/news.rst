@@ -16,13 +16,7 @@ Highlights:
 
 -   Added :class:`~scrapy.http.JsonResponse`
 
--   Added ``items_per_minute`` and ``responses_per_minute`` stats
-
 -   Added :setting:`CLOSESPIDER_PAGECOUNT_NO_ITEM`
-
--   Added component getters to :class:`scrapy.crawler.Crawler`
-
--   Completed type hints and added ``py.typed``
 
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
@@ -259,8 +253,9 @@ New features
     :meth:`~scrapy.crawler.Crawler.get_spider_middleware`.
     (:issue:`6181`)
 
--   :ref:`Automatic throttling <topics-autothrottle>` can now be disabled for a
-    specific request via its :reqmeta:`autothrottle_dont_adjust_delay` meta
+-   Slot delay updates by the :ref:`AutoThrottle extension
+    <topics-autothrottle>` based on response latencies can now be disabled for
+    specific requests via the :reqmeta:`autothrottle_dont_adjust_delay` meta
     key.
     (:issue:`6246`, :issue:`6527`)
 
