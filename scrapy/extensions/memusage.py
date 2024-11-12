@@ -48,7 +48,7 @@ class MemoryUsage:
         self.check_interval: float = crawler.settings.getfloat(
             "MEMUSAGE_CHECK_INTERVAL_SECONDS"
         )
-        self.mail: MailSender = MailSender.from_settings(crawler.settings)
+        self.mail: MailSender = MailSender.from_crawler(crawler)
         crawler.signals.connect(self.engine_started, signal=signals.engine_started)
         crawler.signals.connect(self.engine_stopped, signal=signals.engine_stopped)
 
