@@ -2,6 +2,7 @@ import dataclasses
 import os
 import random
 import time
+import warnings
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -16,6 +17,7 @@ from itemadapter import ItemAdapter
 from twisted.internet import defer
 from twisted.trial import unittest
 
+from scrapy import Spider
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import (
@@ -687,3 +689,63 @@ def _prepare_request_object(item_url, flags=None):
         item_url,
         meta={"response": Response(item_url, status=200, body=b"data", flags=flags)},
     )
+
+
+# this is separate from the one in test_pipeline_media.py to specifically test FilesPipeline subclasses
+class BuildFromCrawlerTestCase(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = mkdtemp()
+        self.crawler = get_crawler(Spider, {"FILES_STORE": self.tempdir})
+
+    def tearDown(self):
+        rmtree(self.tempdir)
+
+    def test_simple(self):
+        class Pipeline(FilesPipeline):
+            pass
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 0)
+            assert pipe.store
+
+    def test_has_from_settings(self):
+        class Pipeline(FilesPipeline):
+            @classmethod
+            def from_settings(cls, settings):
+                o = super().from_settings(settings)
+                o._from_settings_called = True
+                return o
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 0)
+            assert pipe.store
+            assert pipe._from_settings_called
+
+    @pytest.mark.xfail(
+        reason="No way to override MediaPipeline.from_crawler having non-trivial __init__"
+    )
+    def test_has_from_crawler_and_init(self):
+        class Pipeline(FilesPipeline):
+            @classmethod
+            def from_crawler(cls, crawler):
+                settings = crawler.settings
+                store_uri = settings["FILES_STORE"]
+                # you can either call super().from_crawler() or cls.__init__() but you need both
+                o = cls(store_uri, settings=settings)
+                o._from_crawler_called = True
+                return o
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            # this and the next assert will fail as MediaPipeline.from_crawler() wasn't called
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 0)
+            assert pipe.store
+            assert pipe._from_crawler_called

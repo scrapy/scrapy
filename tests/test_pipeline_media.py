@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import warnings
+
+import pytest
 from testfixtures import LogCapture
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -410,3 +413,99 @@ class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):
         self._assert_request_no3xx(
             UserDefinedPipeline, {"USERDEFINEDPIPELINE_MEDIA_ALLOW_REDIRECTS": True}
         )
+
+
+class BuildFromCrawlerTestCase(unittest.TestCase):
+    def setUp(self):
+        self.crawler = get_crawler(Spider, {"FILES_STORE": "/foo"})
+
+    def test_simple(self):
+        class Pipeline(UserDefinedPipeline):
+            pass
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 0)
+
+    def test_has_from_settings(self):
+        class Pipeline(UserDefinedPipeline):
+            @classmethod
+            def from_settings(cls, settings):
+                o = cls()
+                o._from_settings_called = True
+                return o
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 0)
+            assert pipe._from_settings_called
+
+    def test_has_from_settings_and_init(self):
+        class Pipeline(UserDefinedPipeline):
+            def __init__(self, store_uri, settings):
+                super().__init__()
+                self._init_called = True
+
+            @classmethod
+            def from_settings(cls, settings):
+                store_uri = settings["FILES_STORE"]
+                o = cls(store_uri, settings=settings)
+                o._from_settings_called = True
+                return o
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 0)
+            assert pipe._from_settings_called
+            assert pipe._init_called
+
+    @pytest.mark.xfail(
+        reason="No way to override MediaPipeline.from_crawler having non-trivial __init__"
+    )
+    def test_has_from_crawler_and_init(self):
+        class Pipeline(UserDefinedPipeline):
+            def __init__(self, store_uri, settings):
+                super().__init__()
+                self._init_called = True
+
+            @classmethod
+            def from_crawler(cls, crawler):
+                settings = crawler.settings
+                store_uri = settings["FILES_STORE"]
+                # you can either call super().from_crawler() or cls.__init__() but you need both
+                o = cls(store_uri, settings=settings)
+                o._from_crawler_called = True
+                return o
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            # this and the next assert will fail as super().from_crawler() wasn't called
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 0)
+            assert pipe._from_crawler_called
+            assert pipe._init_called
+
+    def test_has_from_crawler(self):
+        class Pipeline(UserDefinedPipeline):
+            @classmethod
+            def from_crawler(cls, crawler):
+                settings = crawler.settings
+                o = super().from_crawler(crawler)
+                o._from_crawler_called = True
+                o.store_uri = settings["FILES_STORE"]
+                return o
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            # this and the next assert will fail as MediaPipeline.from_crawler() wasn't called
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 0)
+            assert pipe._from_crawler_called
