@@ -65,13 +65,19 @@ class MiddlewareManager:
 
     @classmethod
     def from_settings(cls, settings: Settings, crawler: Crawler | None = None) -> Self:
-        if crawler is None:
-            warnings.warn(
-                "Calling MiddlewareManager.from_settings() without a Crawler instance is deprecated."
-                " As this method will be deprecated in the future, please switch to from_crawler().",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
+        warnings.warn(
+            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return cls._from_settings(settings, crawler)
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        return cls._from_settings(crawler.settings, crawler)
+
+    @classmethod
+    def _from_settings(cls, settings: Settings, crawler: Crawler | None = None) -> Self:
         mwlist = cls._get_mwlist_from_settings(settings)
         middlewares = []
         enabled = []
@@ -101,10 +107,6 @@ class MiddlewareManager:
             extra={"crawler": crawler},
         )
         return cls(*middlewares)
-
-    @classmethod
-    def from_crawler(cls, crawler: Crawler) -> Self:
-        return cls.from_settings(crawler.settings, crawler)
 
     def _add_middleware(self, mw: Any) -> None:
         if hasattr(mw, "open_spider"):
