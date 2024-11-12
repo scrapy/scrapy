@@ -30,7 +30,13 @@ class Command(ScrapyCommand):
         if len(args) != 1:
             raise UsageError()
 
-        editor = self.settings["EDITOR"]
+        editor = os.environ.get("EDITOR") or self.settings.get("EDITOR")
+        if not editor:
+            self._err(
+                "No editor specified. Please set the EDITOR environment variable or the EDITOR setting."
+            )
+            return
+
         assert self.crawler_process
         try:
             spidercls = self.crawler_process.spider_loader.load(args[0])
