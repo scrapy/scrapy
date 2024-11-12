@@ -20,6 +20,7 @@ test-output.*
 .mypy_cache/
 /tests/keys/localhost.crt
 /tests/keys/localhost.key
+/tests/keys/mitmproxy-dhparam.pem
 
 # Windows
 Thumbs.db
