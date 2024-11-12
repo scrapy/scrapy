@@ -82,7 +82,8 @@ class StatInfo(TypedDict, total=False):
 
 
 class FilesStoreProtocol(Protocol):
-    def __init__(self, basedir: str): ...
+    def __init__(self, basedir: str):
+        ...
 
     def persist_file(
         self,
@@ -91,11 +92,13 @@ class FilesStoreProtocol(Protocol):
         info: MediaPipeline.SpiderInfo,
         meta: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
-    ) -> Deferred[Any] | None: ...
+    ) -> Deferred[Any] | None:
+        ...
 
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
-    ) -> StatInfo | Deferred[StatInfo]: ...
+    ) -> StatInfo | Deferred[StatInfo]:
+        ...
 
 
 class FSFilesStore:

@@ -199,10 +199,12 @@ class Request(object_ref):
     @overload
     def replace(
         self, *args: Any, cls: type[RequestTypeVar], **kwargs: Any
-    ) -> RequestTypeVar: ...
+    ) -> RequestTypeVar:
+        ...
 
     @overload
-    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self: ...
+    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self:
+        ...
 
     def replace(
         self, *args: Any, cls: type[Request] | None = None, **kwargs: Any
@@ -216,10 +218,7 @@ class Request(object_ref):
 
     @classmethod
     def from_curl(
-        cls,
-        curl_command: str,
-        ignore_unknown_options: bool = True,
-        **kwargs: Any,
+        cls, curl_command: str, ignore_unknown_options: bool = True, **kwargs: Any,
     ) -> Self:
         """Create a Request object from a string containing a `cURL
         <https://curl.se/>`_ command. It populates the HTTP method, the

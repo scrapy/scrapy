@@ -27,10 +27,7 @@ def _build_redirect_request(
     source_request: Request, *, url: str, **kwargs: Any
 ) -> Request:
     redirect_request = source_request.replace(
-        url=url,
-        **kwargs,
-        cls=None,
-        cookies=None,
+        url=url, **kwargs, cls=None, cookies=None,
     )
     if "_scheme_proxy" in redirect_request.meta:
         source_request_scheme = urlparse_cached(source_request).scheme
@@ -126,10 +123,7 @@ class BaseRedirectMiddleware:
         self, request: Request, redirect_url: str
     ) -> Request:
         redirect_request = _build_redirect_request(
-            request,
-            url=redirect_url,
-            method="GET",
-            body="",
+            request, url=redirect_url, method="GET", body="",
         )
         redirect_request.headers.pop("Content-Type", None)
         redirect_request.headers.pop("Content-Length", None)

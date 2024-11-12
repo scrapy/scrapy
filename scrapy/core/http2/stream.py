@@ -476,9 +476,7 @@ class Stream:
 
         body = self._response["body"].getvalue()
         response_cls = responsetypes.from_args(
-            headers=self._response["headers"],
-            url=self._request.url,
-            body=body,
+            headers=self._response["headers"], url=self._request.url, body=body,
         )
 
         response = response_cls(

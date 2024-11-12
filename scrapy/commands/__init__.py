@@ -171,9 +171,7 @@ class BaseRunSpiderCommand(ScrapyCommand):
             raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
         if opts.output or opts.overwrite_output:
             feeds = feed_process_params_from_cli(
-                self.settings,
-                opts.output,
-                overwrite_output=opts.overwrite_output,
+                self.settings, opts.output, overwrite_output=opts.overwrite_output,
             )
             self.settings.set("FEEDS", feeds, priority="cmdline")
 

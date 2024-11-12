@@ -242,11 +242,7 @@ class S3FeedStorage(BlockingFeedStorage):
 
     @classmethod
     def from_crawler(
-        cls,
-        crawler: Crawler,
-        uri: str,
-        *,
-        feed_options: dict[str, Any] | None = None,
+        cls, crawler: Crawler, uri: str, *, feed_options: dict[str, Any] | None = None,
     ) -> Self:
         return build_storage(
             cls,
@@ -317,11 +313,7 @@ class FTPFeedStorage(BlockingFeedStorage):
 
     @classmethod
     def from_crawler(
-        cls,
-        crawler: Crawler,
-        uri: str,
-        *,
-        feed_options: dict[str, Any] | None = None,
+        cls, crawler: Crawler, uri: str, *, feed_options: dict[str, Any] | None = None,
     ) -> Self:
         return build_storage(
             cls,

@@ -458,9 +458,7 @@ class ExecutionEngine:
 
         dfd.addBoth(
             lambda _: self.signals.send_catch_log_deferred(
-                signal=signals.spider_closed,
-                spider=spider,
-                reason=reason,
+                signal=signals.spider_closed, spider=spider, reason=reason,
             )
         )
         dfd.addErrback(log_failure("Error while sending spider_close signal"))

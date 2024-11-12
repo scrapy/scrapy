@@ -99,7 +99,8 @@ def fingerprint(
 
 
 class RequestFingerprinterProtocol(Protocol):
-    def fingerprint(self, request: Request) -> bytes: ...
+    def fingerprint(self, request: Request) -> bytes:
+        ...
 
 
 class RequestFingerprinter:
@@ -139,11 +140,7 @@ class RequestFingerprinter:
         return self._fingerprint(request)
 
 
-def request_authenticate(
-    request: Request,
-    username: str,
-    password: str,
-) -> None:
+def request_authenticate(request: Request, username: str, password: str,) -> None:
     """Authenticate the given request (in place) using the HTTP basic access
     authentication mechanism (RFC 2617) and the given username and password
     """

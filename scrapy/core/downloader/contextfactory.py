@@ -175,16 +175,11 @@ def load_context_factory_from_settings(
     # try method-aware context factory
     try:
         context_factory = build_from_crawler(
-            context_factory_cls,
-            crawler,
-            method=ssl_method,
+            context_factory_cls, crawler, method=ssl_method,
         )
     except TypeError:
         # use context factory defaults
-        context_factory = build_from_crawler(
-            context_factory_cls,
-            crawler,
-        )
+        context_factory = build_from_crawler(context_factory_cls, crawler,)
         msg = (
             f"{settings['DOWNLOADER_CLIENTCONTEXTFACTORY']} does not accept "
             "a `method` argument (type OpenSSL.SSL method, e.g. "

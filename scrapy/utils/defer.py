@@ -75,21 +75,22 @@ def defer_result(result: Any) -> Deferred[Any]:
 @overload
 def mustbe_deferred(
     f: Callable[_P, Deferred[_T]], *args: _P.args, **kw: _P.kwargs
-) -> Deferred[_T]: ...
+) -> Deferred[_T]:
+    ...
 
 
 @overload
 def mustbe_deferred(
-    f: Callable[_P, Coroutine[Deferred[Any], Any, _T]],
-    *args: _P.args,
-    **kw: _P.kwargs,
-) -> Deferred[_T]: ...
+    f: Callable[_P, Coroutine[Deferred[Any], Any, _T]], *args: _P.args, **kw: _P.kwargs,
+) -> Deferred[_T]:
+    ...
 
 
 @overload
 def mustbe_deferred(
     f: Callable[_P, _T], *args: _P.args, **kw: _P.kwargs
-) -> Deferred[_T]: ...
+) -> Deferred[_T]:
+    ...
 
 
 def mustbe_deferred(
@@ -354,11 +355,13 @@ _CT = TypeVar("_CT", bound=Union[Awaitable, CoroutineType, Future])
 
 
 @overload
-def deferred_from_coro(o: _CT) -> Deferred: ...
+def deferred_from_coro(o: _CT) -> Deferred:
+    ...
 
 
 @overload
-def deferred_from_coro(o: _T) -> _T: ...
+def deferred_from_coro(o: _T) -> _T:
+    ...
 
 
 def deferred_from_coro(o: _T) -> Deferred | _T:

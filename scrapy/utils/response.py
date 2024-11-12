@@ -41,8 +41,7 @@ _metaref_cache: WeakKeyDictionary[Response, tuple[None, None] | tuple[float, str
 
 
 def get_meta_refresh(
-    response: TextResponse,
-    ignore_tags: Iterable[str] = ("script", "noscript"),
+    response: TextResponse, ignore_tags: Iterable[str] = ("script", "noscript"),
 ) -> tuple[None, None] | tuple[float, str]:
     """Parse the http-equiv refresh parameter from the given response"""
     if response not in _metaref_cache:
@@ -72,8 +71,7 @@ def _remove_html_comments(body: bytes) -> bytes:
 
 
 def open_in_browser(
-    response: TextResponse,
-    _openfunc: Callable[[str], Any] = webbrowser.open,
+    response: TextResponse, _openfunc: Callable[[str], Any] = webbrowser.open,
 ) -> Any:
     """Open *response* in a local web browser, adjusting the `base tag`_ for
     external links to work, e.g. so that images and styles are displayed.

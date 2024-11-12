@@ -40,13 +40,17 @@ def _path_safe(text: str) -> str:
 class QueueProtocol(Protocol):
     """Protocol for downstream queues of ``ScrapyPriorityQueue``."""
 
-    def push(self, request: Request) -> None: ...
+    def push(self, request: Request) -> None:
+        ...
 
-    def pop(self) -> Request | None: ...
+    def pop(self) -> Request | None:
+        ...
 
-    def close(self) -> None: ...
+    def close(self) -> None:
+        ...
 
-    def __len__(self) -> int: ...
+    def __len__(self) -> int:
+        ...
 
 
 class ScrapyPriorityQueue:
@@ -110,9 +114,7 @@ class ScrapyPriorityQueue:
 
     def qfactory(self, key: int) -> QueueProtocol:
         return build_from_crawler(
-            self.downstream_queue_cls,
-            self.crawler,
-            self.key + "/" + str(key),
+            self.downstream_queue_cls, self.crawler, self.key + "/" + str(key),
         )
 
     def priority(self, request: Request) -> int:

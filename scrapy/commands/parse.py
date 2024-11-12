@@ -138,10 +138,12 @@ class Command(BaseRunSpiderCommand):
     @overload
     def iterate_spider_output(
         self, result: AsyncGenerator[_T] | Coroutine[Any, Any, _T]
-    ) -> Deferred[_T]: ...
+    ) -> Deferred[_T]:
+        ...
 
     @overload
-    def iterate_spider_output(self, result: _T) -> Iterable[Any]: ...
+    def iterate_spider_output(self, result: _T) -> Iterable[Any]:
+        ...
 
     def iterate_spider_output(self, result: Any) -> Iterable[Any] | Deferred[Any]:
         if inspect.isasyncgen(result):

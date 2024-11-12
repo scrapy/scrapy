@@ -106,10 +106,7 @@ class LogFormatter:
         return {
             "level": logging.DEBUG,
             "msg": SCRAPEDMSG,
-            "args": {
-                "src": src,
-                "item": item,
-            },
+            "args": {"src": src, "item": item,},
         }
 
     def dropped(
@@ -123,10 +120,7 @@ class LogFormatter:
         return {
             "level": logging.WARNING,
             "msg": DROPPEDMSG,
-            "args": {
-                "exception": exception,
-                "item": item,
-            },
+            "args": {"exception": exception, "item": item,},
         }
 
     def item_error(
@@ -144,9 +138,7 @@ class LogFormatter:
         return {
             "level": logging.ERROR,
             "msg": ITEMERRORMSG,
-            "args": {
-                "item": item,
-            },
+            "args": {"item": item,},
         }
 
     def spider_error(
@@ -163,10 +155,7 @@ class LogFormatter:
         return {
             "level": logging.ERROR,
             "msg": SPIDERERRORMSG,
-            "args": {
-                "request": request,
-                "referer": referer_str(request),
-            },
+            "args": {"request": request, "referer": referer_str(request),},
         }
 
     def download_error(

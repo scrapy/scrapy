@@ -20,10 +20,7 @@ class ProcessTest:
     cwd = os.getcwd()  # trial chdirs to temp dir
 
     def execute(
-        self,
-        args: Iterable[str],
-        check_code: bool = True,
-        settings: str | None = None,
+        self, args: Iterable[str], check_code: bool = True, settings: str | None = None,
     ) -> Deferred[TestProcessProtocol]:
         from twisted.internet import reactor
 

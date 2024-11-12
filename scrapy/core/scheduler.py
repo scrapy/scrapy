@@ -327,10 +327,7 @@ class Scheduler(BaseScheduler):
         assert self.crawler
         assert self.pqclass
         return build_from_crawler(
-            self.pqclass,
-            self.crawler,
-            downstream_queue_cls=self.mqclass,
-            key="",
+            self.pqclass, self.crawler, downstream_queue_cls=self.mqclass, key="",
         )
 
     def _dq(self) -> ScrapyPriorityQueue:

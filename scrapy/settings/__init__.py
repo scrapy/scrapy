@@ -333,10 +333,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
             self.attributes[name].set(value, priority)
 
     def setdefault(
-        self,
-        name: _SettingsKeyT,
-        default: Any = None,
-        priority: int | str = "project",
+        self, name: _SettingsKeyT, default: Any = None, priority: int | str = "project",
     ) -> Any:
         if name not in self:
             self.set(name, default, priority)

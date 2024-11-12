@@ -47,8 +47,6 @@ class AddonManager:
                     )
         logger.info(
             "Enabled addons:\n%(addons)s",
-            {
-                "addons": self.addons,
-            },
+            {"addons": self.addons,},
             extra={"crawler": self.crawler},
         )

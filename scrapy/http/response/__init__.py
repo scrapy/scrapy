@@ -136,10 +136,12 @@ class Response(object_ref):
     @overload
     def replace(
         self, *args: Any, cls: type[ResponseTypeVar], **kwargs: Any
-    ) -> ResponseTypeVar: ...
+    ) -> ResponseTypeVar:
+        ...
 
     @overload
-    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self: ...
+    def replace(self, *args: Any, cls: None = None, **kwargs: Any) -> Self:
+        ...
 
     def replace(
         self, *args: Any, cls: type[Response] | None = None, **kwargs: Any

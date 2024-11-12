@@ -140,11 +140,13 @@ DEPRECATION_RULES: list[tuple[str, str]] = []
 
 
 @overload
-def update_classpath(path: str) -> str: ...
+def update_classpath(path: str) -> str:
+    ...
 
 
 @overload
-def update_classpath(path: Any) -> Any: ...
+def update_classpath(path: Any) -> Any:
+    ...
 
 
 def update_classpath(path: Any) -> Any:

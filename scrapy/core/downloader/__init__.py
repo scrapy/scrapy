@@ -32,10 +32,7 @@ class Slot:
     """Downloader slot"""
 
     def __init__(
-        self,
-        concurrency: int,
-        delay: float,
-        randomize_delay: bool,
+        self, concurrency: int, delay: float, randomize_delay: bool,
     ):
         self.concurrency: int = concurrency
         self.delay: float = delay

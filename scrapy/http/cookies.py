@@ -27,9 +27,7 @@ IPV4_RE = re.compile(r"\.\d+$", re.ASCII)
 
 class CookieJar:
     def __init__(
-        self,
-        policy: CookiePolicy | None = None,
-        check_expired_frequency: int = 10000,
+        self, policy: CookiePolicy | None = None, check_expired_frequency: int = 10000,
     ):
         self.policy: CookiePolicy = policy or DefaultCookiePolicy()
         self.jar: _CookieJar = _CookieJar(self.policy)

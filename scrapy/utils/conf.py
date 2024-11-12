@@ -71,8 +71,7 @@ def arglist_to_dict(arglist: list[str]) -> dict[str, str]:
 
 
 def closest_scrapy_cfg(
-    path: str | os.PathLike = ".",
-    prevpath: str | os.PathLike | None = None,
+    path: str | os.PathLike = ".", prevpath: str | os.PathLike | None = None,
 ) -> str:
     """Return the path to the closest scrapy.cfg file by traversing the current
     directory and its parents

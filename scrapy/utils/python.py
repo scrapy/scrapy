@@ -306,11 +306,13 @@ def equal_attributes(
 
 
 @overload
-def without_none_values(iterable: Mapping[_KT, _VT]) -> dict[_KT, _VT]: ...
+def without_none_values(iterable: Mapping[_KT, _VT]) -> dict[_KT, _VT]:
+    ...
 
 
 @overload
-def without_none_values(iterable: Iterable[_KT]) -> Iterable[_KT]: ...
+def without_none_values(iterable: Iterable[_KT]) -> Iterable[_KT]:
+    ...
 
 
 def without_none_values(
@@ -344,6 +346,7 @@ if hasattr(sys, "pypy_version_info"):
         # Collecting weakreferences can take two collections on PyPy.
         gc.collect()
         gc.collect()
+
 
 else:
 

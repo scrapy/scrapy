@@ -80,13 +80,7 @@ class PeriodicLog:
         assert crawler.stats
         assert ext_stats is not None
         assert ext_delta is not None
-        o = cls(
-            crawler.stats,
-            interval,
-            ext_stats,
-            ext_delta,
-            ext_timing_enabled,
-        )
+        o = cls(crawler.stats, interval, ext_stats, ext_delta, ext_timing_enabled,)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o

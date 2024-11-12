@@ -79,8 +79,7 @@ class RFPDupeFilter(BaseDupeFilter):
     def from_crawler(cls, crawler: Crawler) -> Self:
         assert crawler.request_fingerprinter
         return cls.from_settings(
-            crawler.settings,
-            fingerprinter=crawler.request_fingerprinter,
+            crawler.settings, fingerprinter=crawler.request_fingerprinter,
         )
 
     def request_seen(self, request: Request) -> bool:

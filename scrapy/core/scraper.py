@@ -355,8 +355,7 @@ class Scraper:
                         download_failure, request, spider, errmsg
                     )
                     logger.log(
-                        *logformatter_adapter(logkws),
-                        extra={"spider": spider},
+                        *logformatter_adapter(logkws), extra={"spider": spider},
                     )
 
         if spider_failure is not download_failure:

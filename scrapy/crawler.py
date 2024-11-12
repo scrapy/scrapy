@@ -106,8 +106,7 @@ class Crawler:
         self.logformatter = lf_cls.from_crawler(self)
 
         self.request_fingerprinter = build_from_crawler(
-            load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
-            self,
+            load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]), self,
         )
 
         reactor_class: str = self.settings["TWISTED_REACTOR"]

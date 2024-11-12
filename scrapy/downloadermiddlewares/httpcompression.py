@@ -51,10 +51,7 @@ class HttpCompressionMiddleware:
     sent/received from websites"""
 
     def __init__(
-        self,
-        stats: StatsCollector | None = None,
-        *,
-        crawler: Crawler | None = None,
+        self, stats: StatsCollector | None = None, *, crawler: Crawler | None = None,
     ):
         if not crawler:
             self.stats = stats

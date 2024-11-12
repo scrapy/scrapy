@@ -27,9 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 class DownloadHandlerProtocol(Protocol):
-    def download_request(
-        self, request: Request, spider: Spider
-    ) -> Deferred[Response]: ...
+    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
+        ...
 
 
 class DownloadHandlers:
@@ -76,10 +75,7 @@ class DownloadHandlers:
             dhcls: type[DownloadHandlerProtocol] = load_object(path)
             if skip_lazy and getattr(dhcls, "lazy", True):
                 return None
-            dh = build_from_crawler(
-                dhcls,
-                self._crawler,
-            )
+            dh = build_from_crawler(dhcls, self._crawler,)
         except NotConfigured as ex:
             self._notconfigured[scheme] = str(ex)
             return None

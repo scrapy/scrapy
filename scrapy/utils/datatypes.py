@@ -43,8 +43,7 @@ class CaselessDict(dict):
         return super().__new__(cls, *args, **kwargs)
 
     def __init__(
-        self,
-        seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
+        self, seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
     ):
         super().__init__()
         if seq:

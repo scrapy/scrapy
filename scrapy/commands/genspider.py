@@ -119,11 +119,7 @@ class Command(ScrapyCommand):
                 self.exitcode = os.system(f'scrapy edit "{name}"')  # nosec
 
     def _generate_template_variables(
-        self,
-        module: str,
-        name: str,
-        url: str,
-        template_name: str,
+        self, module: str, name: str, url: str, template_name: str,
     ) -> dict[str, Any]:
         capitalized_module = "".join(s.capitalize() for s in module.split("_"))
         return {
