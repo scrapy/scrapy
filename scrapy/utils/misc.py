@@ -185,6 +185,14 @@ def build_from_crawler(
         instance = objcls.from_crawler(crawler, *args, **kwargs)  # type: ignore[attr-defined]
         method_name = "from_crawler"
     elif hasattr(objcls, "from_settings"):
+        warnings.warn(
+            f"{objcls.__qualname__} has from_settings() but not from_crawler()."
+            " This is deprecated and calling from_settings() will be removed in a future"
+            " Scrapy version. You can implement a simple from_crawler() that calls"
+            " from_settings() with crawler.settings.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         instance = objcls.from_settings(crawler.settings, *args, **kwargs)  # type: ignore[attr-defined]
         method_name = "from_settings"
     else:
