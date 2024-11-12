@@ -1,6 +1,9 @@
+from twisted.internet import reactor
+
 from scrapy import Spider
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.log import configure_logging
+from scrapy.utils.reactor import install_reactor
 
 
 class NoRequestsSpider(Spider):
@@ -16,16 +19,11 @@ class NoRequestsSpider(Spider):
 
 configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s", "LOG_LEVEL": "DEBUG"})
 
-
-from scrapy.utils.reactor import install_reactor
-
 install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
 
 runner = CrawlerRunner()
 
 d = runner.crawl(NoRequestsSpider)
-
-from twisted.internet import reactor
 
 d.addBoth(callback=lambda _: reactor.stop())
 reactor.run()
