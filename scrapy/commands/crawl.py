@@ -24,9 +24,11 @@ class Command(BaseRunSpiderCommand):
     requires_project = True
 
     def syntax(self) -> str:
+
         return "[options] <spider>"
 
     def short_desc(self) -> str:
+
         return "Run a spider"
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:

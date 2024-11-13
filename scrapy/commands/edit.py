@@ -7,8 +7,12 @@ from scrapy.exceptions import UsageError
 
 
 class Command(ScrapyCommand):
-    """Command to open a spider in an editor for editing within a Scrapy project."""
+    """
+    Command to open a spider file in the system editor.
 
+    Uses the editor defined in the EDITOR environment variable or the Scrapy 
+    EDITOR setting.
+    """
     requires_project = True
     default_settings = {"LOG_ENABLED": False}
 
@@ -24,7 +28,7 @@ class Command(ScrapyCommand):
 
         return (
             "Edit a spider using the editor defined in the EDITOR environment"
-            " variable or else the EDITOR setting."
+            " variable or else the EDITOR setting"
         )
 
     def _err(self, msg: str) -> None:
@@ -33,14 +37,18 @@ class Command(ScrapyCommand):
         self.exitcode = 1
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
-        """Run the command to open a spider file for editing.
-        
+        """
+        Runs the command to open the specified spider in an editor.
+
+        Validates the spider name, checks for the editor setting, and attempts
+        to open the spider file. Raises UsageError if no spider name is provided.
+
         Args:
-            args (list[str]): List containing the name of the spider to edit.
+            args (list[str]): Command-line arguments.
             opts (argparse.Namespace): Parsed command-line options.
-        
+
         Raises:
-            UsageError: If the number of arguments is not equal to one.
+            UsageError: If an incorrect number of arguments is provided.
         """
         if len(args) != 1:
             raise UsageError()
