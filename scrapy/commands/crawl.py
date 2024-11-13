@@ -24,21 +24,9 @@ class Command(BaseRunSpiderCommand):
     requires_project = True
 
     def syntax(self) -> str:
-        """
-        Returns the command-line syntax for running the spider.
-
-        Returns:
-            str: The expected syntax for the command, including options and arguments.
-        """
         return "[options] <spider>"
 
     def short_desc(self) -> str:
-        """
-        Provides a brief description of the command.
-
-        Returns:
-            str: A short description of what the command does.
-        """
         return "Run a spider"
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
