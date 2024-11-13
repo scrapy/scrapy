@@ -26,22 +26,58 @@ IGNORE = ignore_patterns("*.pyc", "__pycache__", ".svn")
 
 
 def _make_writable(path: str | os.PathLike) -> None:
+    """Ensure the given path has write permissions for the owner.
+
+    Args:
+        path (str | os.PathLike): The file or directory path.
+    """
     current_permissions = os.stat(path).st_mode
     os.chmod(path, current_permissions | OWNER_WRITE_PERMISSION)
 
 
 class Command(ScrapyCommand):
+    """Scrapy command to create a new project structure using templates.
+
+    This command sets up the necessary directory structure and template files for
+    a new Scrapy project.
+    """
     requires_project = False
     default_settings = {"LOG_ENABLED": False, "SPIDER_LOADER_WARN_ONLY": True}
 
     def syntax(self) -> str:
+        """Return the syntax for using the command.
+
+        Returns:
+            str: The command syntax.
+        """
         return "<project_name> [project_dir]"
 
     def short_desc(self) -> str:
+        """Provide a short description of the command.
+
+        Returns:
+            str: A brief description of the command's purpose.
+        """
         return "Create new project"
 
     def _is_valid_name(self, project_name: str) -> bool:
+        """Check if the given project name is valid.
+
+        Args:
+            project_name (str): The project name to validate.
+
+        Returns:
+            bool: True if the project name is valid, False otherwise.
+        """
         def _module_exists(module_name: str) -> bool:
+            """Check if a Python module with the given name already exists.
+
+            Args:
+                module_name (str): The module name to check.
+
+            Returns:
+                bool: True if the module exists, False otherwise.
+            """
             spec = find_spec(module_name)
             return spec is not None and spec.loader is not None
 
@@ -57,13 +93,15 @@ class Command(ScrapyCommand):
         return False
 
     def _copytree(self, src: Path, dst: Path) -> None:
-        """
-        Since the original function always creates the directory, to resolve
-        the issue a new function had to be created. It's a simple copy and
-        was reduced for this case.
+        """Copy the contents of the source directory to the destination directory.
 
-        More info at:
-        https://github.com/scrapy/scrapy/pull/2005
+        Args:
+            src (Path): The source directory.
+            dst (Path): The destination directory.
+
+        This function creates the destination directory if it doesn't exist
+        and copies all files and subdirectories from the source while ignoring
+        specified patterns.
         """
         ignore = IGNORE
         names = [x.name for x in src.iterdir()]
@@ -88,6 +126,15 @@ class Command(ScrapyCommand):
         _make_writable(dst)
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
+        """Execute the command to create a new Scrapy project.
+
+        Args:
+            args (list[str]): Command-line arguments passed to the command.
+            opts (argparse.Namespace): Parsed command-line options.
+
+        Raises:
+            UsageError: If the number of arguments is incorrect or the project directory already exists.
+        """
         if len(args) not in (1, 2):
             raise UsageError()
 
@@ -133,6 +180,11 @@ class Command(ScrapyCommand):
 
     @property
     def templates_dir(self) -> str:
+        """Return the path to the templates directory.
+
+        Returns:
+            str: The path to the templates directory used for creating projects.
+        """
         return str(
             Path(
                 self.settings["TEMPLATES_DIR"] or Path(scrapy.__path__[0], "templates"),
