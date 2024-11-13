@@ -755,7 +755,7 @@ class BuildFromCrawlerTestCase(unittest.TestCase):
             def from_crawler(cls, crawler):
                 settings = crawler.settings
                 store_uri = settings["FILES_STORE"]
-                o = cls(store_uri, settings=settings, crawler=crawler)
+                o = cls(store_uri, crawler=crawler)
                 o._from_crawler_called = True
                 return o
 

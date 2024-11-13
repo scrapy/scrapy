@@ -13,7 +13,6 @@ from twisted.trial import unittest
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.images import ImageException, ImagesPipeline
-from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler
 
 skip_pillow: str | None
@@ -392,10 +391,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         have different settings.
         """
         custom_settings = self._generate_fake_settings()
-        default_settings = Settings()
-        default_sts_pipe = ImagesPipeline(
-            self.tempdir, settings=default_settings, crawler=get_crawler(None)  # TODO
-        )
+        default_sts_pipe = ImagesPipeline(self.tempdir, crawler=get_crawler(None))
         user_sts_pipe = ImagesPipeline.from_crawler(get_crawler(None, custom_settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_default_value = self.default_pipeline_settings.get(pipe_attr)

@@ -453,7 +453,17 @@ class FilesPipeline(MediaPipeline):
         if not store_uri:
             raise NotConfigured
 
-        if isinstance(settings, dict) or settings is None:
+        if crawler is not None:
+            if settings is not None:
+                warnings.warn(
+                    f"FilesPipeline.__init__() was called with a crawler instance and a settings instance"
+                    f" when creating {self.__class__.__qualname__}. The settings instance will be ignored"
+                    f" and crawler.settings will be used. The settings argument will be removed in a future Scrapy version.",
+                    category=ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+            settings = crawler.settings
+        elif isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         cls_name = "FilesPipeline"
         self.store: FilesStoreProtocol = self._get_store(store_uri)
@@ -473,7 +483,9 @@ class FilesPipeline(MediaPipeline):
         )
 
         super().__init__(
-            download_func=download_func, settings=settings, crawler=crawler
+            download_func=download_func,
+            settings=settings if not crawler else None,
+            crawler=crawler,
         )
 
     @classmethod
@@ -526,7 +538,7 @@ class FilesPipeline(MediaPipeline):
 
         store_uri = settings["FILES_STORE"]
         if "crawler" in get_func_args(cls.__init__):
-            o = cls(store_uri, settings=settings, crawler=crawler)
+            o = cls(store_uri, crawler=crawler)
         else:
             o = cls(store_uri, settings=settings)
             if crawler:

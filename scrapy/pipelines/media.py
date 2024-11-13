@@ -81,7 +81,17 @@ class MediaPipeline(ABC):
     ):
         self.download_func = download_func
 
-        if isinstance(settings, dict) or settings is None:
+        if crawler is not None:
+            if settings is not None:
+                warnings.warn(
+                    f"MediaPipeline.__init__() was called with a crawler instance and a settings instance"
+                    f" when creating {self.__class__.__qualname__}. The settings instance will be ignored"
+                    f" and crawler.settings will be used. The settings argument will be removed in a future Scrapy version.",
+                    category=ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+            settings = crawler.settings
+        elif isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         resolve = functools.partial(
             self._key_for_pipe, base_class_name="MediaPipeline", settings=settings
@@ -92,7 +102,6 @@ class MediaPipeline(ABC):
         self._handle_statuses(self.allow_redirects)
 
         if crawler:
-            # TODO use crawler.settings
             self._finish_init(crawler)
             self._modern_init = True
         else:

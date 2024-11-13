@@ -79,10 +79,23 @@ class ImagesPipeline(FilesPipeline):
             )
 
         super().__init__(
-            store_uri, settings=settings, download_func=download_func, crawler=crawler
+            store_uri,
+            settings=settings if not crawler else None,
+            download_func=download_func,
+            crawler=crawler,
         )
 
-        if isinstance(settings, dict) or settings is None:
+        if crawler is not None:
+            if settings is not None:
+                warnings.warn(
+                    f"ImagesPipeline.__init__() was called with a crawler instance and a settings instance"
+                    f" when creating {self.__class__.__qualname__}. The settings instance will be ignored"
+                    f" and crawler.settings will be used. The settings argument will be removed in a future Scrapy version.",
+                    category=ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+            settings = crawler.settings
+        elif isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
         resolve = functools.partial(
@@ -140,7 +153,7 @@ class ImagesPipeline(FilesPipeline):
 
         store_uri = settings["IMAGES_STORE"]
         if "crawler" in get_func_args(cls.__init__):
-            o = cls(store_uri, settings=settings, crawler=crawler)
+            o = cls(store_uri, crawler=crawler)
         else:
             o = cls(store_uri, settings=settings)
             if crawler:

@@ -378,8 +378,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
 class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):
 
     def _assert_request_no3xx(self, pipeline_class, settings):
-        crawler = get_crawler(None, settings)
-        pipe = pipeline_class(settings=settings, crawler=crawler)  # TODO
+        pipe = pipeline_class(crawler=get_crawler(None, settings))
         request = Request("http://url")
         pipe._modify_media_request(request)
 
