@@ -12,39 +12,61 @@ if TYPE_CHECKING:
 
 
 class Command(BaseRunSpiderCommand):
-    """Command to run a spider within a Scrapy project."""
+    """
+    Command class for running a spider from the command line.
 
+    This class provides the functionality to start a spider via the command line, ensuring
+    correct arguments are passed and handling any errors that may arise during the crawl process.
+
+    Attributes:
+        requires_project (bool): Flag indicating whether the command requires a project.
+    """
     requires_project = True
 
     def syntax(self) -> str:
-        """Return the syntax for using the command."""
+        """
+        Returns the command-line syntax for running the spider.
+
+        Returns:
+            str: The expected syntax for the command, including options and arguments.
+        """
         return "[options] <spider>"
 
     def short_desc(self) -> str:
-        """Return a short description of the command."""
+        """
+        Provides a brief description of the command.
+
+        Returns:
+            str: A short description of what the command does.
+        """
         return "Run a spider"
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
-        """Execute the command to run the specified spider.
-        
+        """
+        Runs the spider with the specified arguments and options.
+
+        Validates the input arguments and starts the crawl process. If an error occurs, 
+        the process is stopped, and an appropriate exit code is set.
+
         Args:
-            args (list[str]): List containing the name of the spider to run.
-            opts (argparse.Namespace): Parsed command-line options.
-        
+            args (list[str]): The command-line arguments passed to the command.
+            opts (argparse.Namespace): The parsed command-line options.
+
         Raises:
-            UsageError: If no spider name is provided or if more than one spider is specified.
+            UsageError: If invalid arguments are provided (e.g., more than one spider).
         """
         if len(args) < 1:
-            raise UsageError("No spider specified.")
-        elif len(args) > 1:
+            raise UsageError("Spider name is required.")
+        if len(args) > 1:
             raise UsageError(
-                "running 'scrapy crawl' with more than one spider is not supported"
+                "Running 'scrapy crawl' with more than one spider is not supported"
             )
         spname = args[0]
 
         assert self.crawler_process
         crawl_defer = self.crawler_process.crawl(spname, **opts.spargs)
 
+        # If there was an exception during crawl, set exit code to 1
         if getattr(crawl_defer, "result", None) is not None and issubclass(
             cast(Failure, crawl_defer.result).type, Exception
         ):
@@ -52,6 +74,7 @@ class Command(BaseRunSpiderCommand):
         else:
             self.crawler_process.start()
 
+            # If the crawler process has failed to bootstrap or encountered an exception
             if (
                 self.crawler_process.bootstrap_failed
                 or hasattr(self.crawler_process, "has_exception")
