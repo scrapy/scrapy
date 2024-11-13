@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 _T = TypeVar("_T")
 
 
-def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]
+def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]  # pylint: disable=inconsistent-return-statements
     """Like reactor.listenTCP but tries different ports in a range."""
     from twisted.internet import reactor
 

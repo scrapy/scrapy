@@ -265,8 +265,7 @@ class S3FilesStore:
                 kwarg = mapping[key]
             except KeyError:
                 raise TypeError(f'Header "{key}" is not supported by botocore')
-            else:
-                extra[kwarg] = value
+            extra[kwarg] = value
         return extra
 
 

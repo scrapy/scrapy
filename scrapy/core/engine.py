@@ -172,7 +172,7 @@ class ExecutionEngine:
         assert self.spider is not None  # typing
 
         if self.paused:
-            return None
+            return
 
         while (
             not self._needs_backout()
@@ -418,7 +418,7 @@ class ExecutionEngine:
             if isinstance(x, Failure) and isinstance(x.value, ex)
         }
         if DontCloseSpider in detected_ex:
-            return None
+            return
         if self.spider_is_idle():
             ex = detected_ex.get(CloseSpider, CloseSpider(reason="finished"))
             assert isinstance(ex, CloseSpider)  # typing

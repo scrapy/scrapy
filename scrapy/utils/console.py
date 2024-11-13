@@ -101,7 +101,7 @@ DEFAULT_PYTHON_SHELLS: KnownShellsT = {
 
 def get_shell_embed_func(
     shells: Iterable[str] | None = None, known_shells: KnownShellsT | None = None
-) -> Any:
+) -> EmbedFuncT | None:
     """Return the first acceptable shell-embed function
     from a given list of shell names.
     """
@@ -117,6 +117,7 @@ def get_shell_embed_func(
                 return known_shells[shell]()
             except ImportError:
                 continue
+    return None
 
 
 def start_python_console(

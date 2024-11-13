@@ -70,7 +70,10 @@ class ReceivedDataProtocol(Protocol):
         return self.__filename
 
     def close(self) -> None:
-        self.body.close() if self.filename else self.body.seek(0)
+        if self.filename:
+            self.body.close()
+        else:
+            self.body.seek(0)
 
 
 _CODE_RE = re.compile(r"\d+")

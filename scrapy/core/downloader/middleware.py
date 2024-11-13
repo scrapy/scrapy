@@ -73,7 +73,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         ) -> Generator[Deferred[Any], Any, Response | Request]:
             if response is None:
                 raise TypeError("Received None in process_response")
-            elif isinstance(response, Request):
+            if isinstance(response, Request):
                 return response
 
             for method in self.methods["process_response"]:

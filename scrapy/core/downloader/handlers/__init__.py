@@ -92,9 +92,8 @@ class DownloadHandlers:
             )
             self._notconfigured[scheme] = str(ex)
             return None
-        else:
-            self._handlers[scheme] = dh
-            return dh
+        self._handlers[scheme] = dh
+        return dh
 
     def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         scheme = urlparse_cached(request).scheme
