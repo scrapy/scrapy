@@ -14,6 +14,7 @@ from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.images import ImageException, ImagesPipeline
 from scrapy.settings import Settings
+from scrapy.utils.test import get_crawler
 
 skip_pillow: str | None
 try:
@@ -33,7 +34,8 @@ class ImagesPipelineTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tempdir = mkdtemp()
-        self.pipeline = ImagesPipeline(self.tempdir)
+        crawler = get_crawler()
+        self.pipeline = ImagesPipeline(self.tempdir, crawler=crawler)
 
     def tearDown(self):
         rmtree(self.tempdir)
@@ -123,8 +125,8 @@ class ImagesPipelineTestCase(unittest.TestCase):
             ):
                 return f"thumb/{thumb_id}/{item.get('path')}"
 
-        thumb_path = CustomImagesPipeline.from_settings(
-            Settings({"IMAGES_STORE": self.tempdir})
+        thumb_path = CustomImagesPipeline.from_crawler(
+            get_crawler(None, {"IMAGES_STORE": self.tempdir})
         ).thumb_path
         item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
@@ -218,8 +220,8 @@ class ImagesPipelineTestCaseFieldsMixin:
     def test_item_fields_default(self):
         url = "http://www.example.com/images/1.jpg"
         item = self.item_class(name="item1", image_urls=[url])
-        pipeline = ImagesPipeline.from_settings(
-            Settings({"IMAGES_STORE": "s3://example/images/"})
+        pipeline = ImagesPipeline.from_crawler(
+            get_crawler(None, {"IMAGES_STORE": "s3://example/images/"})
         )
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
@@ -232,13 +234,14 @@ class ImagesPipelineTestCaseFieldsMixin:
     def test_item_fields_override_settings(self):
         url = "http://www.example.com/images/1.jpg"
         item = self.item_class(name="item1", custom_image_urls=[url])
-        pipeline = ImagesPipeline.from_settings(
-            Settings(
+        pipeline = ImagesPipeline.from_crawler(
+            get_crawler(
+                None,
                 {
                     "IMAGES_STORE": "s3://example/images/",
                     "IMAGES_URLS_FIELD": "custom_image_urls",
                     "IMAGES_RESULT_FIELD": "custom_images",
-                }
+                },
             )
         )
         requests = list(pipeline.get_media_requests(item, None))
@@ -390,8 +393,10 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         """
         custom_settings = self._generate_fake_settings()
         default_settings = Settings()
-        default_sts_pipe = ImagesPipeline(self.tempdir, settings=default_settings)
-        user_sts_pipe = ImagesPipeline.from_settings(Settings(custom_settings))
+        default_sts_pipe = ImagesPipeline(
+            self.tempdir, settings=default_settings, crawler=get_crawler(None)  # TODO
+        )
+        user_sts_pipe = ImagesPipeline.from_crawler(get_crawler(None, custom_settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_default_value = self.default_pipeline_settings.get(pipe_attr)
             custom_value = custom_settings.get(settings_attr)
@@ -407,7 +412,9 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         from class attributes.
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
-        pipeline = pipeline_cls.from_settings(Settings({"IMAGES_STORE": self.tempdir}))
+        pipeline = pipeline_cls.from_crawler(
+            get_crawler(None, {"IMAGES_STORE": self.tempdir})
+        )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to class attribute (uppercase).
             attr_value = getattr(pipeline, pipe_attr.lower())
@@ -421,7 +428,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
         settings = self._generate_fake_settings()
-        pipeline = pipeline_cls.from_settings(Settings(settings))
+        pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to
             # value defined in settings.
@@ -439,8 +446,8 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         class UserDefinedImagePipeline(ImagesPipeline):
             pass
 
-        user_pipeline = UserDefinedImagePipeline.from_settings(
-            Settings({"IMAGES_STORE": self.tempdir})
+        user_pipeline = UserDefinedImagePipeline.from_crawler(
+            get_crawler(None, {"IMAGES_STORE": self.tempdir})
         )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
@@ -458,7 +465,9 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
 
         prefix = UserDefinedImagePipeline.__name__.upper()
         settings = self._generate_fake_settings(prefix=prefix)
-        user_pipeline = UserDefinedImagePipeline.from_settings(Settings(settings))
+        user_pipeline = UserDefinedImagePipeline.from_crawler(
+            get_crawler(None, settings)
+        )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = settings.get(prefix + "_" + settings_attr)
@@ -473,7 +482,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         pipeline_cls = self._generate_fake_pipeline_subclass()
         prefix = pipeline_cls.__name__.upper()
         settings = self._generate_fake_settings(prefix=prefix)
-        user_pipeline = pipeline_cls.from_settings(Settings(settings))
+        user_pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             custom_value = settings.get(prefix + "_" + settings_attr)
             self.assertNotEqual(custom_value, self.default_pipeline_settings[pipe_attr])
@@ -484,8 +493,8 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             DEFAULT_IMAGES_URLS_FIELD = "something"
             DEFAULT_IMAGES_RESULT_FIELD = "something_else"
 
-        pipeline = UserDefinedImagePipeline.from_settings(
-            Settings({"IMAGES_STORE": self.tempdir})
+        pipeline = UserDefinedImagePipeline.from_crawler(
+            get_crawler(None, {"IMAGES_STORE": self.tempdir})
         )
         self.assertEqual(
             pipeline.images_result_field,
@@ -506,7 +515,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         class UserPipe(ImagesPipeline):
             pass
 
-        pipeline_cls = UserPipe.from_settings(Settings(settings))
+        pipeline_cls = UserPipe.from_crawler(get_crawler(None, settings))
 
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_value = settings.get(settings_attr)

@@ -12,6 +12,7 @@ import hashlib
 import logging
 import mimetypes
 import time
+import warnings
 from collections import defaultdict
 from contextlib import suppress
 from ftplib import FTP
@@ -24,16 +25,17 @@ from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.internet.threads import deferToThread
 
-from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
 from scrapy.settings import Settings
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
+from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import to_bytes
+from scrapy.utils.python import get_func_args, to_bytes
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:
@@ -46,6 +48,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy import Spider
+    from scrapy.crawler import Crawler
 
 
 logger = logging.getLogger(__name__)
@@ -443,6 +446,8 @@ class FilesPipeline(MediaPipeline):
         store_uri: str | PathLike[str],
         download_func: Callable[[Request, Spider], Response] | None = None,
         settings: Settings | dict[str, Any] | None = None,
+        *,
+        crawler: Crawler | None = None,
     ):
         store_uri = _to_string(store_uri)
         if not store_uri:
@@ -467,10 +472,35 @@ class FilesPipeline(MediaPipeline):
             resolve("FILES_RESULT_FIELD"), self.FILES_RESULT_FIELD
         )
 
-        super().__init__(download_func=download_func, settings=settings)
+        super().__init__(
+            download_func=download_func, settings=settings, crawler=crawler
+        )
 
     @classmethod
     def from_settings(cls, settings: Settings) -> Self:
+        warnings.warn(
+            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return cls._from_settings(settings, None)
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        if method_is_overridden(cls, FilesPipeline, "from_settings"):
+            warnings.warn(
+                f"{cls.__name__} overrides FilesPipeline.from_settings()."
+                f" This method is deprecated and won't be called in future Scrapy versions,"
+                f" please update your code so that it overrides from_crawler() instead.",
+                category=ScrapyDeprecationWarning,
+            )
+            o = cls.from_settings(crawler.settings)
+            o._finish_init(crawler)
+            return o
+        return cls._from_settings(crawler.settings, crawler)
+
+    @classmethod
+    def _from_settings(cls, settings: Settings, crawler: Crawler | None) -> Self:
         s3store: type[S3FilesStore] = cast(type[S3FilesStore], cls.STORE_SCHEMES["s3"])
         s3store.AWS_ACCESS_KEY_ID = settings["AWS_ACCESS_KEY_ID"]
         s3store.AWS_SECRET_ACCESS_KEY = settings["AWS_SECRET_ACCESS_KEY"]
@@ -495,7 +525,18 @@ class FilesPipeline(MediaPipeline):
         ftp_store.USE_ACTIVE_MODE = settings.getbool("FEED_STORAGE_FTP_ACTIVE")
 
         store_uri = settings["FILES_STORE"]
-        return cls(store_uri, settings=settings)
+        if "crawler" in get_func_args(cls.__init__):
+            o = cls(store_uri, settings=settings, crawler=crawler)
+        else:
+            o = cls(store_uri, settings=settings)
+            if crawler:
+                o._finish_init(crawler)
+            warnings.warn(
+                f"{cls.__qualname__}.__init__() doesn't take a crawler argument."
+                " This is deprecated and the argument will be required in future Scrapy versions.",
+                category=ScrapyDeprecationWarning,
+            )
+        return o
 
     def _get_store(self, uri: str) -> FilesStoreProtocol:
         if Path(uri).is_absolute():  # to support win32 paths like: C:\\some\dir

@@ -17,7 +17,6 @@ from itemadapter import ItemAdapter
 from twisted.internet import defer
 from twisted.trial import unittest
 
-from scrapy import Spider
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import (
@@ -27,7 +26,6 @@ from scrapy.pipelines.files import (
     GCSFilesStore,
     S3FilesStore,
 )
-from scrapy.settings import Settings
 from scrapy.utils.test import (
     assert_gcs_environ,
     get_crawler,
@@ -219,8 +217,8 @@ class FilesPipelineTestCase(unittest.TestCase):
             def file_path(self, request, response=None, info=None, item=None):
                 return f'full/{item.get("path")}'
 
-        file_path = CustomFilesPipeline.from_settings(
-            Settings({"FILES_STORE": self.tempdir})
+        file_path = CustomFilesPipeline.from_crawler(
+            get_crawler(None, {"FILES_STORE": self.tempdir})
         ).file_path
         item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
@@ -237,7 +235,9 @@ class FilesPipelineTestCaseFieldsMixin:
     def test_item_fields_default(self):
         url = "http://www.example.com/files/1.txt"
         item = self.item_class(name="item1", file_urls=[url])
-        pipeline = FilesPipeline.from_settings(Settings({"FILES_STORE": self.tempdir}))
+        pipeline = FilesPipeline.from_crawler(
+            get_crawler(None, {"FILES_STORE": self.tempdir})
+        )
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
         results = [(True, {"url": url})]
@@ -249,13 +249,14 @@ class FilesPipelineTestCaseFieldsMixin:
     def test_item_fields_override_settings(self):
         url = "http://www.example.com/files/1.txt"
         item = self.item_class(name="item1", custom_file_urls=[url])
-        pipeline = FilesPipeline.from_settings(
-            Settings(
+        pipeline = FilesPipeline.from_crawler(
+            get_crawler(
+                None,
                 {
                     "FILES_STORE": self.tempdir,
                     "FILES_URLS_FIELD": "custom_file_urls",
                     "FILES_RESULT_FIELD": "custom_files",
-                }
+                },
             )
         )
         requests = list(pipeline.get_media_requests(item, None))
@@ -373,8 +374,10 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         different settings.
         """
         custom_settings = self._generate_fake_settings()
-        another_pipeline = FilesPipeline.from_settings(Settings(custom_settings))
-        one_pipeline = FilesPipeline(self.tempdir)
+        another_pipeline = FilesPipeline.from_crawler(
+            get_crawler(None, custom_settings)
+        )
+        one_pipeline = FilesPipeline(self.tempdir, crawler=get_crawler(None))
         for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
             default_value = self.default_cls_settings[pipe_attr]
             self.assertEqual(getattr(one_pipeline, pipe_attr), default_value)
@@ -387,7 +390,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         If subclasses override class attributes and there are no special settings those values should be kept.
         """
         pipe_cls = self._generate_fake_pipeline()
-        pipe = pipe_cls.from_settings(Settings({"FILES_STORE": self.tempdir}))
+        pipe = pipe_cls.from_crawler(get_crawler(None, {"FILES_STORE": self.tempdir}))
         for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
             custom_value = getattr(pipe, pipe_ins_attr)
             self.assertNotEqual(custom_value, self.default_cls_settings[pipe_attr])
@@ -400,7 +403,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         """
         pipeline_cls = self._generate_fake_pipeline()
         settings = self._generate_fake_settings()
-        pipeline = pipeline_cls.from_settings(Settings(settings))
+        pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
         for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
             value = getattr(pipeline, pipe_ins_attr)
             setting_value = settings.get(settings_attr)
@@ -416,8 +419,8 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         class UserDefinedFilesPipeline(FilesPipeline):
             pass
 
-        user_pipeline = UserDefinedFilesPipeline.from_settings(
-            Settings({"FILES_STORE": self.tempdir})
+        user_pipeline = UserDefinedFilesPipeline.from_crawler(
+            get_crawler(None, {"FILES_STORE": self.tempdir})
         )
         for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
             # Values from settings for custom pipeline should be set on pipeline instance.
@@ -435,7 +438,9 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
 
         prefix = UserDefinedFilesPipeline.__name__.upper()
         settings = self._generate_fake_settings(prefix=prefix)
-        user_pipeline = UserDefinedFilesPipeline.from_settings(Settings(settings))
+        user_pipeline = UserDefinedFilesPipeline.from_crawler(
+            get_crawler(None, settings)
+        )
         for pipe_attr, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = settings.get(prefix + "_" + settings_attr)
@@ -450,7 +455,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         pipeline_cls = self._generate_fake_pipeline()
         prefix = pipeline_cls.__name__.upper()
         settings = self._generate_fake_settings(prefix=prefix)
-        user_pipeline = pipeline_cls.from_settings(Settings(settings))
+        user_pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
         for (
             pipe_cls_attr,
             settings_attr,
@@ -465,8 +470,8 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
             DEFAULT_FILES_RESULT_FIELD = "this"
             DEFAULT_FILES_URLS_FIELD = "that"
 
-        pipeline = UserDefinedFilesPipeline.from_settings(
-            Settings({"FILES_STORE": self.tempdir})
+        pipeline = UserDefinedFilesPipeline.from_crawler(
+            get_crawler(None, {"FILES_STORE": self.tempdir})
         )
         self.assertEqual(
             pipeline.files_result_field,
@@ -486,7 +491,7 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
         class UserPipe(FilesPipeline):
             pass
 
-        pipeline_cls = UserPipe.from_settings(Settings(settings))
+        pipeline_cls = UserPipe.from_crawler(get_crawler(None, settings))
 
         for pipe_attr, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
             expected_value = settings.get(settings_attr)
@@ -497,8 +502,8 @@ class FilesPipelineTestCaseCustomSettings(unittest.TestCase):
             def file_path(self, request, response=None, info=None, *, item=None):
                 return Path("subdir") / Path(request.url).name
 
-        pipeline = CustomFilesPipelineWithPathLikeDir.from_settings(
-            Settings({"FILES_STORE": Path("./Temp")})
+        pipeline = CustomFilesPipelineWithPathLikeDir.from_crawler(
+            get_crawler(None, {"FILES_STORE": Path("./Temp")})
         )
         request = Request("http://example.com/image01.jpg")
         self.assertEqual(pipeline.file_path(request), Path("subdir/image01.jpg"))
@@ -695,7 +700,7 @@ def _prepare_request_object(item_url, flags=None):
 class BuildFromCrawlerTestCase(unittest.TestCase):
     def setUp(self):
         self.tempdir = mkdtemp()
-        self.crawler = get_crawler(Spider, {"FILES_STORE": self.tempdir})
+        self.crawler = get_crawler(None, {"FILES_STORE": self.tempdir})
 
     def tearDown(self):
         rmtree(self.tempdir)
@@ -711,8 +716,23 @@ class BuildFromCrawlerTestCase(unittest.TestCase):
             self.assertEqual(len(w), 0)
             assert pipe.store
 
+    def test_has_old_init(self):
+        class Pipeline(FilesPipeline):
+            def __init__(self, store_uri, download_func=None, settings=None):
+                super().__init__(store_uri, download_func, settings)
+                self._init_called = True
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 2)
+            assert pipe._init_called
+
     def test_has_from_settings(self):
         class Pipeline(FilesPipeline):
+            _from_settings_called = False
+
             @classmethod
             def from_settings(cls, settings):
                 o = super().from_settings(settings)
@@ -723,27 +743,24 @@ class BuildFromCrawlerTestCase(unittest.TestCase):
             pipe = Pipeline.from_crawler(self.crawler)
             assert pipe.crawler == self.crawler
             assert pipe._fingerprinter
-            self.assertEqual(len(w), 0)
+            self.assertEqual(len(w), 3)
             assert pipe.store
             assert pipe._from_settings_called
 
-    @pytest.mark.xfail(
-        reason="No way to override MediaPipeline.from_crawler having non-trivial __init__"
-    )
     def test_has_from_crawler_and_init(self):
         class Pipeline(FilesPipeline):
+            _from_crawler_called = False
+
             @classmethod
             def from_crawler(cls, crawler):
                 settings = crawler.settings
                 store_uri = settings["FILES_STORE"]
-                # you can either call super().from_crawler() or cls.__init__() but you need both
-                o = cls(store_uri, settings=settings)
+                o = cls(store_uri, settings=settings, crawler=crawler)
                 o._from_crawler_called = True
                 return o
 
         with warnings.catch_warnings(record=True) as w:
             pipe = Pipeline.from_crawler(self.crawler)
-            # this and the next assert will fail as MediaPipeline.from_crawler() wasn't called
             assert pipe.crawler == self.crawler
             assert pipe._fingerprinter
             self.assertEqual(len(w), 0)

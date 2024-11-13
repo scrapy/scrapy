@@ -8,13 +8,14 @@ from __future__ import annotations
 
 import functools
 import hashlib
+import warnings
 from contextlib import suppress
 from io import BytesIO
 from typing import TYPE_CHECKING, Any, cast
 
 from itemadapter import ItemAdapter
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import (
@@ -26,7 +27,7 @@ from scrapy.pipelines.files import (
     _md5sum,
 )
 from scrapy.settings import Settings
-from scrapy.utils.python import to_bytes
+from scrapy.utils.python import get_func_args, to_bytes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -38,6 +39,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy import Spider
+    from scrapy.crawler import Crawler
     from scrapy.pipelines.media import FileInfoOrError, MediaPipeline
 
 
@@ -64,6 +66,8 @@ class ImagesPipeline(FilesPipeline):
         store_uri: str | PathLike[str],
         download_func: Callable[[Request, Spider], Response] | None = None,
         settings: Settings | dict[str, Any] | None = None,
+        *,
+        crawler: Crawler | None = None,
     ):
         try:
             from PIL import Image
@@ -74,7 +78,9 @@ class ImagesPipeline(FilesPipeline):
                 "ImagesPipeline requires installing Pillow 4.0.0 or later"
             )
 
-        super().__init__(store_uri, settings=settings, download_func=download_func)
+        super().__init__(
+            store_uri, settings=settings, download_func=download_func, crawler=crawler
+        )
 
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
@@ -108,7 +114,7 @@ class ImagesPipeline(FilesPipeline):
         )
 
     @classmethod
-    def from_settings(cls, settings: Settings) -> Self:
+    def _from_settings(cls, settings: Settings, crawler: Crawler | None) -> Self:
         s3store: type[S3FilesStore] = cast(type[S3FilesStore], cls.STORE_SCHEMES["s3"])
         s3store.AWS_ACCESS_KEY_ID = settings["AWS_ACCESS_KEY_ID"]
         s3store.AWS_SECRET_ACCESS_KEY = settings["AWS_SECRET_ACCESS_KEY"]
@@ -133,7 +139,18 @@ class ImagesPipeline(FilesPipeline):
         ftp_store.USE_ACTIVE_MODE = settings.getbool("FEED_STORAGE_FTP_ACTIVE")
 
         store_uri = settings["IMAGES_STORE"]
-        return cls(store_uri, settings=settings)
+        if "crawler" in get_func_args(cls.__init__):
+            o = cls(store_uri, settings=settings, crawler=crawler)
+        else:
+            o = cls(store_uri, settings=settings)
+            if crawler:
+                o._finish_init(crawler)
+            warnings.warn(
+                f"{cls.__qualname__}.__init__() doesn't take a crawler argument."
+                " This is deprecated and the argument will be required in future Scrapy versions.",
+                category=ScrapyDeprecationWarning,
+            )
+        return o
 
     def file_downloaded(
         self,
