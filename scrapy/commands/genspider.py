@@ -16,9 +16,18 @@ from scrapy.utils.template import render_templatefile, string_camelcase
 
 
 def sanitize_module_name(module_name: str) -> str:
-    """Sanitize the given module name, by replacing dashes and points
-    with underscores and prefixing it with a letter if it doesn't start
-    with one
+    """Sanitize the given module name by replacing dashes and periods with underscores,
+    and prefixing it with a letter if it doesn't start with one.
+
+    Args:
+        module_name (str): The module name to sanitize.
+
+    Returns:
+        str: The sanitized module name.
+
+    Example:
+        >>> sanitize_module_name('1-test.module')
+        'a1_test_module'
     """
     module_name = module_name.replace("-", "_").replace(".", "_")
     if module_name[0] not in string.ascii_letters:
@@ -27,7 +36,18 @@ def sanitize_module_name(module_name: str) -> str:
 
 
 def extract_domain(url: str) -> str:
-    """Extract domain name from URL string"""
+    """Extract the domain name from a given URL.
+
+    Args:
+        url (str): The URL to extract the domain from.
+
+    Returns:
+        str: The domain name extracted from the URL.
+
+    Example:
+        >>> extract_domain('https://www.example.com/path')
+        'www.example.com'
+    """
     o = urlparse(url)
     if o.scheme == "" and o.netloc == "":
         o = urlparse("//" + url.lstrip("/"))
@@ -35,7 +55,18 @@ def extract_domain(url: str) -> str:
 
 
 def verify_url_scheme(url: str) -> str:
-    """Check url for scheme and insert https if none found."""
+    """Ensure the URL has a scheme and insert 'https' if none is found.
+
+    Args:
+        url (str): The URL to verify.
+
+    Returns:
+        str: The URL with a scheme.
+
+    Example:
+        >>> verify_url_scheme('example.com/path')
+        'https://example.com/path'
+    """
     parsed = urlparse(url)
     if parsed.scheme == "" and parsed.netloc == "":
         parsed = urlparse("//" + url)._replace(scheme="https")
@@ -43,16 +74,38 @@ def verify_url_scheme(url: str) -> str:
 
 
 class Command(ScrapyCommand):
+    """Scrapy command to generate a new spider using pre-defined templates.
+
+    This command helps automate the creation of spider modules by rendering templates 
+    and saving them to the appropriate directory. It can also list available templates 
+    and edit created spiders.
+    """
+
     requires_project = False
     default_settings = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
+        """Return the syntax for using the command.
+
+        Returns:
+            str: The syntax string.
+        """
         return "[options] <name> <domain>"
 
     def short_desc(self) -> str:
+        """Return a brief description of the command.
+
+        Returns:
+            str: A short description of the command.
+        """
         return "Generate new spider using pre-defined templates"
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:
+        """Add custom command-line options for the command.
+
+        Args:
+            parser (argparse.ArgumentParser): The argument parser instance.
+        """
         super().add_options(parser)
         parser.add_argument(
             "-l",
@@ -90,6 +143,15 @@ class Command(ScrapyCommand):
         )
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
+        """Execute the command to generate a new spider.
+
+        Args:
+            args (list[str]): List containing the name and domain for the spider.
+            opts (argparse.Namespace): Parsed command-line options.
+
+        Raises:
+            UsageError: If the number of arguments is incorrect.
+        """
         if opts.list:
             self._list_templates()
             return
@@ -99,7 +161,7 @@ class Command(ScrapyCommand):
                 print(template_file.read_text(encoding="utf-8"))
             return
         if len(args) != 2:
-            raise UsageError()
+            raise UsageError("A spider name and domain must be provided.")
 
         name, url = args[0:2]
         url = verify_url_scheme(url)
@@ -125,6 +187,17 @@ class Command(ScrapyCommand):
         url: str,
         template_name: str,
     ) -> dict[str, Any]:
+        """Generate template variables for rendering the spider template.
+
+        Args:
+            module (str): The module name.
+            name (str): The spider name.
+            url (str): The target URL.
+            template_name (str): The template being used.
+
+        Returns:
+            dict[str, Any]: A dictionary of template variables.
+        """
         capitalized_module = "".join(s.capitalize() for s in module.split("_"))
         return {
             "project_name": self.settings.get("BOT_NAME"),
@@ -144,7 +217,15 @@ class Command(ScrapyCommand):
         template_name: str,
         template_file: str | os.PathLike,
     ) -> None:
-        """Generate the spider module, based on the given template"""
+        """Generate the spider file from the specified template.
+
+        Args:
+            module (str): The module name.
+            name (str): The spider name.
+            url (str): The target URL.
+            template_name (str): The template being used.
+            template_file (str | os.PathLike): The path to the template file.
+        """
         tvars = self._generate_template_variables(module, name, url, template_name)
         if self.settings.get("NEWSPIDER_MODULE"):
             spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])
@@ -164,6 +245,14 @@ class Command(ScrapyCommand):
             print(f"in module:\n  {spiders_module.__name__}.{module}")
 
     def _find_template(self, template: str) -> Path | None:
+        """Find the specified template file.
+
+        Args:
+            template (str): The template name.
+
+        Returns:
+            Path | None: The path to the template file, or None if not found.
+        """
         template_file = Path(self.templates_dir, f"{template}.tmpl")
         if template_file.exists():
             return template_file
@@ -172,12 +261,21 @@ class Command(ScrapyCommand):
         return None
 
     def _list_templates(self) -> None:
+        """List all available spider templates."""
         print("Available templates:")
         for file in sorted(Path(self.templates_dir).iterdir()):
             if file.suffix == ".tmpl":
                 print(f"  {file.stem}")
 
     def _spider_exists(self, name: str) -> bool:
+        """Check if a spider with the specified name already exists.
+
+        Args:
+            name (str): The name of the spider.
+
+        Returns:
+            bool: True if the spider exists, False otherwise.
+        """
         if not self.settings.get("NEWSPIDER_MODULE"):
             # if run as a standalone command and file with same filename already exists
             path = Path(name + ".py")
@@ -195,7 +293,6 @@ class Command(ScrapyCommand):
         except KeyError:
             pass
         else:
-            # if spider with same name exists
             print(f"Spider {name!r} already exists in module:")
             print(f"  {spidercls.__module__}")
             return True
@@ -213,6 +310,11 @@ class Command(ScrapyCommand):
 
     @property
     def templates_dir(self) -> str:
+        """Return the path to the directory containing spider templates.
+
+        Returns:
+            str: The path to the templates directory.
+        """
         return str(
             Path(
                 self.settings["TEMPLATES_DIR"] or Path(scrapy.__path__[0], "templates"),

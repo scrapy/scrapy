@@ -12,17 +12,30 @@ if TYPE_CHECKING:
 
 
 class Command(BaseRunSpiderCommand):
+    """Command to run a spider within a Scrapy project."""
+
     requires_project = True
 
     def syntax(self) -> str:
+        """Return the syntax for using the command."""
         return "[options] <spider>"
 
     def short_desc(self) -> str:
+        """Return a short description of the command."""
         return "Run a spider"
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
+        """Execute the command to run the specified spider.
+        
+        Args:
+            args (list[str]): List containing the name of the spider to run.
+            opts (argparse.Namespace): Parsed command-line options.
+        
+        Raises:
+            UsageError: If no spider name is provided or if more than one spider is specified.
+        """
         if len(args) < 1:
-            raise UsageError()
+            raise UsageError("No spider specified.")
         elif len(args) > 1:
             raise UsageError(
                 "running 'scrapy crawl' with more than one spider is not supported"

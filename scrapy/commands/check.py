@@ -9,9 +9,16 @@ from scrapy.contracts import ContractsManager
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.misc import load_object, set_environ
 
-
 class TextTestResult(_TextTestResult):
+    """Custom test result class for printing a summary of contract test results."""
+
     def printSummary(self, start: float, stop: float) -> None:
+        """Print a summary of the test results, including run duration and status.
+        
+        Args:
+            start (float): The start time of the test run.
+            stop (float): The stop time of the test run.
+        """
         write = self.stream.write
         writeln = self.stream.writeln
 
@@ -38,18 +45,26 @@ class TextTestResult(_TextTestResult):
         else:
             write("\n")
 
-
 class Command(ScrapyCommand):
+    """Scrapy command to check spider contracts for a project."""
+
     requires_project = True
     default_settings = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
+        """Return the syntax for the command."""
         return "[options] <spider>"
 
     def short_desc(self) -> str:
+        """Return a short description of the command."""
         return "Check spider contracts"
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:
+        """Add custom command-line options for the command.
+        
+        Args:
+            parser (argparse.ArgumentParser): The argument parser instance.
+        """
         super().add_options(parser)
         parser.add_argument(
             "-l",
@@ -68,13 +83,17 @@ class Command(ScrapyCommand):
         )
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
-        # load contracts
+        """Run the command to check spider contracts.
+        
+        Args:
+            args (list[str]): List of spider names to check.
+            opts (argparse.Namespace): Parsed command-line options.
+        """
         contracts = build_component_list(self.settings.getwithbase("SPIDER_CONTRACTS"))
         conman = ContractsManager(load_object(c) for c in contracts)
         runner = TextTestRunner(verbosity=2 if opts.verbose else 1)
         result = TextTestResult(runner.stream, runner.descriptions, runner.verbosity)
 
-        # contract requests
         contract_reqs = defaultdict(list)
 
         assert self.crawler_process
@@ -92,7 +111,6 @@ class Command(ScrapyCommand):
                 elif tested_methods:
                     self.crawler_process.crawl(spidercls)
 
-            # start checks
             if opts.list:
                 for spider, methods in sorted(contract_reqs.items()):
                     if not methods and not opts.verbose:
