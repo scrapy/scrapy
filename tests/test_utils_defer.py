@@ -182,6 +182,7 @@ class AsyncCooperatorTest(unittest.TestCase):
             return dfd
         # simulate trivial sync processing
         results.append(o)
+        return None
 
     @staticmethod
     def get_async_iterable(length):

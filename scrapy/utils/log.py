@@ -51,6 +51,7 @@ class TopLevelFormatter(logging.Filter):
     """
 
     def __init__(self, loggers: list[str] | None = None):
+        super().__init__()
         self.loggers: list[str] = loggers or []
 
     def filter(self, record: logging.LogRecord) -> bool:

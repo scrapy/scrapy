@@ -66,9 +66,8 @@ def _remove_html_comments(body: bytes) -> bytes:
         end = body.find(b"-->", start + 1)
         if end == -1:
             return body[:start]
-        else:
-            body = body[:start] + body[end + 3 :]
-            start = body.find(b"<!--")
+        body = body[:start] + body[end + 3 :]
+        start = body.find(b"<!--")
     return body
 
 

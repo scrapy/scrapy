@@ -436,8 +436,7 @@ class Base:
 
             def process_value(value):
                 m = re.search(r"javascript:goToPage\('(.*?)'", value)
-                if m:
-                    return m.group(1)
+                return m.group(1) if m else None
 
             lx = self.extractor_cls(process_value=process_value)
             self.assertEqual(

@@ -686,6 +686,7 @@ class CustomPythonOrgPolicy(ReferrerPolicy):
             return b"https://python.org/"
         if scheme == "http":
             return b"http://python.org/"
+        return None
 
 
 class TestSettingsCustomPolicy(TestRefererMiddleware):

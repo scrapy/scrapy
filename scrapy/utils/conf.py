@@ -44,8 +44,7 @@ def build_component_list(
                         "convert to the same "
                         "object, please update your settings"
                     )
-                else:
-                    compbs.set(convert(k), v, priority=prio)
+                compbs.set(convert(k), v, priority=prio)
             return compbs
         _check_components(compdict)
         return {convert(k): v for k, v in compdict.items()}

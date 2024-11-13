@@ -36,11 +36,10 @@ def _colorize(text: str, colorize: bool = True) -> str:
         from pygments import highlight
     except ImportError:
         return text
-    else:
-        from pygments.formatters import TerminalFormatter
-        from pygments.lexers import PythonLexer
+    from pygments.formatters import TerminalFormatter
+    from pygments.lexers import PythonLexer
 
-        return highlight(text, PythonLexer(), TerminalFormatter())
+    return highlight(text, PythonLexer(), TerminalFormatter())
 
 
 def pformat(obj: Any, *args: Any, **kwargs: Any) -> str:
