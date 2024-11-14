@@ -38,9 +38,7 @@ class Contract:
             assert cb is not None
 
             @wraps(cb)
-            def wrapper(  # pylint: disable=inconsistent-return-statements
-                response: Response, **cb_kwargs: Any
-            ) -> list[Any]:
+            def wrapper(response: Response, **cb_kwargs: Any) -> list[Any]:
                 try:
                     results.startTest(self.testcase_pre)
                     self.pre_process(response)
@@ -51,13 +49,10 @@ class Contract:
                     results.addError(self.testcase_pre, sys.exc_info())
                 else:
                     results.addSuccess(self.testcase_pre)
-                finally:
-                    cb_result = cb(response, **cb_kwargs)
-                    if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
-                        raise TypeError("Contracts don't support async callbacks")
-                    return list(  # pylint: disable=return-in-finally
-                        cast(Iterable[Any], iterate_spider_output(cb_result))
-                    )
+                cb_result = cb(response, **cb_kwargs)
+                if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
+                    raise TypeError("Contracts don't support async callbacks")
+                return list(cast(Iterable[Any], iterate_spider_output(cb_result)))
 
             request.callback = wrapper
 
@@ -69,9 +64,7 @@ class Contract:
             assert cb is not None
 
             @wraps(cb)
-            def wrapper(  # pylint: disable=inconsistent-return-statements
-                response: Response, **cb_kwargs: Any
-            ) -> list[Any]:
+            def wrapper(response: Response, **cb_kwargs: Any) -> list[Any]:
                 cb_result = cb(response, **cb_kwargs)
                 if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
                     raise TypeError("Contracts don't support async callbacks")
@@ -86,8 +79,7 @@ class Contract:
                     results.addError(self.testcase_post, sys.exc_info())
                 else:
                     results.addSuccess(self.testcase_post)
-                finally:
-                    return output  # pylint: disable=return-in-finally
+                return output
 
             request.callback = wrapper
 
