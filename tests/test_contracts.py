@@ -556,3 +556,61 @@ class ContractsManagerTest(unittest.TestCase):
 
         requests = self.conman.from_spider(spider, self.results)
         self.assertTrue(requests)
+
+
+class CustomFailContractPreProcess(Contract):
+    name = "test_contract"
+
+    def pre_process(self, response):
+        raise KeyboardInterrupt("Pre-process exception")
+
+
+class CustomFailContractPostProcess(Contract):
+    name = "test_contract"
+
+    def post_process(self, response):
+        raise KeyboardInterrupt("Post-process exception")
+
+
+class CustomContractPrePostProcess(unittest.TestCase):
+
+    def setUp(self):
+        self.results = TextTestResult(stream=None, descriptions=False, verbosity=0)
+
+    def test_pre_hook_keyboard_interrupt(self):
+        spider = TestSpider()
+        response = ResponseMock()
+        contract = CustomFailContractPreProcess(spider.returns_request)
+        conman = ContractsManager([contract])
+
+        try:
+            request = conman.from_method(spider.returns_request, self.results)
+            contract.add_pre_hook(request, self.results)
+            # Expect this to raise a KeyboardInterrupt
+            request.callback(response, **request.cb_kwargs)
+        except KeyboardInterrupt as e:
+            self.assertEqual(str(e), "Pre-process exception")
+        else:
+            self.fail("KeyboardInterrupt not raised")
+
+        self.assertFalse(self.results.failures)
+        self.assertFalse(self.results.errors)
+
+    def test_post_hook_keyboard_interrupt(self):
+        spider = TestSpider()
+        response = ResponseMock()
+        contract = CustomFailContractPostProcess(spider.returns_request)
+        conman = ContractsManager([contract])
+
+        try:
+            request = conman.from_method(spider.returns_request, self.results)
+            contract.add_post_hook(request, self.results)
+            # Expect this to raise a KeyboardInterrupt
+            request.callback(response, **request.cb_kwargs)
+        except KeyboardInterrupt as e:
+            self.assertEqual(str(e), "Post-process exception")
+        else:
+            self.fail("KeyboardInterrupt not raised")
+
+        self.assertFalse(self.results.failures)
+        self.assertFalse(self.results.errors)
