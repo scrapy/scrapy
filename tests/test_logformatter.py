@@ -198,8 +198,7 @@ class DropSomeItemsPipeline:
         if self.drop:
             self.drop = False
             raise DropItem("Ignoring item")
-        else:
-            self.drop = True
+        self.drop = True
 
 
 class ShowOrSkipMessagesTestCase(TwistedTestCase):

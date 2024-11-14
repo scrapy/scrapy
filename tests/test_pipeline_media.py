@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import warnings
+
 from testfixtures import LogCapture
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -11,7 +13,6 @@ from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException
 from scrapy.pipelines.media import MediaPipeline
-from scrapy.settings import Settings
 from scrapy.spiders import Spider
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
@@ -175,8 +176,8 @@ class BaseMediaPipelineTestCase(unittest.TestCase):
 
 
 class MockedMediaPipeline(UserDefinedPipeline):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, crawler=None, **kwargs):
+        super().__init__(*args, crawler=crawler, **kwargs)
         self._mockcalled = []
 
     def download(self, request, info):
@@ -377,7 +378,7 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
 class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):
 
     def _assert_request_no3xx(self, pipeline_class, settings):
-        pipe = pipeline_class(settings=Settings(settings))
+        pipe = pipeline_class(crawler=get_crawler(None, settings))
         request = Request("http://url")
         pipe._modify_media_request(request)
 
@@ -410,3 +411,115 @@ class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):
         self._assert_request_no3xx(
             UserDefinedPipeline, {"USERDEFINEDPIPELINE_MEDIA_ALLOW_REDIRECTS": True}
         )
+
+
+class BuildFromCrawlerTestCase(unittest.TestCase):
+    def setUp(self):
+        self.crawler = get_crawler(None, {"FILES_STORE": "/foo"})
+
+    def test_simple(self):
+        class Pipeline(UserDefinedPipeline):
+            pass
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 0)
+
+    def test_has_old_init(self):
+        class Pipeline(UserDefinedPipeline):
+            def __init__(self):
+                super().__init__()
+                self._init_called = True
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 2)
+            assert pipe._init_called
+
+    def test_has_from_settings(self):
+        class Pipeline(UserDefinedPipeline):
+            _from_settings_called = False
+
+            @classmethod
+            def from_settings(cls, settings):
+                o = cls()
+                o._from_settings_called = True
+                return o
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 1)
+            assert pipe._from_settings_called
+
+    def test_has_from_settings_and_init(self):
+        class Pipeline(UserDefinedPipeline):
+            _from_settings_called = False
+
+            def __init__(self, store_uri, settings):
+                super().__init__()
+                self._init_called = True
+
+            @classmethod
+            def from_settings(cls, settings):
+                store_uri = settings["FILES_STORE"]
+                o = cls(store_uri, settings=settings)
+                o._from_settings_called = True
+                return o
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 1)
+            assert pipe._from_settings_called
+            assert pipe._init_called
+
+    def test_has_from_crawler_and_init(self):
+        class Pipeline(UserDefinedPipeline):
+            _from_crawler_called = False
+
+            def __init__(self, store_uri, settings, *, crawler):
+                super().__init__(crawler=crawler)
+                self._init_called = True
+
+            @classmethod
+            def from_crawler(cls, crawler):
+                settings = crawler.settings
+                store_uri = settings["FILES_STORE"]
+                o = cls(store_uri, settings=settings, crawler=crawler)
+                o._from_crawler_called = True
+                return o
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 0)
+            assert pipe._from_crawler_called
+            assert pipe._init_called
+
+    def test_has_from_crawler(self):
+        class Pipeline(UserDefinedPipeline):
+            _from_crawler_called = False
+
+            @classmethod
+            def from_crawler(cls, crawler):
+                settings = crawler.settings
+                o = super().from_crawler(crawler)
+                o._from_crawler_called = True
+                o.store_uri = settings["FILES_STORE"]
+                return o
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            # this and the next assert will fail as MediaPipeline.from_crawler() wasn't called
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 0)
+            assert pipe._from_crawler_called

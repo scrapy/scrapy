@@ -399,8 +399,7 @@ class Command(BaseRunSpiderCommand):
         # parse arguments
         if not len(args) == 1 or not is_url(args[0]):
             raise UsageError()
-        else:
-            url = args[0]
+        url = args[0]
 
         # prepare spidercls
         self.set_spidercls(url, opts)

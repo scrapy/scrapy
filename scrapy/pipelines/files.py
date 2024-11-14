@@ -12,6 +12,7 @@ import hashlib
 import logging
 import mimetypes
 import time
+import warnings
 from collections import defaultdict
 from contextlib import suppress
 from ftplib import FTP
@@ -24,16 +25,17 @@ from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.internet.threads import deferToThread
 
-from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
-from scrapy.settings import Settings
+from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
+from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import to_bytes
+from scrapy.utils.python import get_func_args, global_object_name, to_bytes
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:
@@ -46,6 +48,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy import Spider
+    from scrapy.crawler import Crawler
 
 
 logger = logging.getLogger(__name__)
@@ -265,8 +268,7 @@ class S3FilesStore:
                 kwarg = mapping[key]
             except KeyError:
                 raise TypeError(f'Header "{key}" is not supported by botocore')
-            else:
-                extra[kwarg] = value
+            extra[kwarg] = value
         return extra
 
 
@@ -443,12 +445,24 @@ class FilesPipeline(MediaPipeline):
         store_uri: str | PathLike[str],
         download_func: Callable[[Request, Spider], Response] | None = None,
         settings: Settings | dict[str, Any] | None = None,
+        *,
+        crawler: Crawler | None = None,
     ):
         store_uri = _to_string(store_uri)
         if not store_uri:
             raise NotConfigured
 
-        if isinstance(settings, dict) or settings is None:
+        if crawler is not None:
+            if settings is not None:
+                warnings.warn(
+                    f"FilesPipeline.__init__() was called with a crawler instance and a settings instance"
+                    f" when creating {global_object_name(self.__class__)}. The settings instance will be ignored"
+                    f" and crawler.settings will be used. The settings argument will be removed in a future Scrapy version.",
+                    category=ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+            settings = crawler.settings
+        elif isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         cls_name = "FilesPipeline"
         self.store: FilesStoreProtocol = self._get_store(store_uri)
@@ -467,10 +481,54 @@ class FilesPipeline(MediaPipeline):
             resolve("FILES_RESULT_FIELD"), self.FILES_RESULT_FIELD
         )
 
-        super().__init__(download_func=download_func, settings=settings)
+        super().__init__(
+            download_func=download_func,
+            settings=settings if not crawler else None,
+            crawler=crawler,
+        )
 
     @classmethod
     def from_settings(cls, settings: Settings) -> Self:
+        warnings.warn(
+            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return cls._from_settings(settings, None)
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        if method_is_overridden(cls, FilesPipeline, "from_settings"):
+            warnings.warn(
+                f"{global_object_name(cls)} overrides FilesPipeline.from_settings()."
+                f" This method is deprecated and won't be called in future Scrapy versions,"
+                f" please update your code so that it overrides from_crawler() instead.",
+                category=ScrapyDeprecationWarning,
+            )
+            o = cls.from_settings(crawler.settings)
+            o._finish_init(crawler)
+            return o
+        return cls._from_settings(crawler.settings, crawler)
+
+    @classmethod
+    def _from_settings(cls, settings: Settings, crawler: Crawler | None) -> Self:
+        cls._update_stores(settings)
+        store_uri = settings["FILES_STORE"]
+        if "crawler" in get_func_args(cls.__init__):
+            o = cls(store_uri, crawler=crawler)
+        else:
+            o = cls(store_uri, settings=settings)
+            if crawler:
+                o._finish_init(crawler)
+            warnings.warn(
+                f"{global_object_name(cls)}.__init__() doesn't take a crawler argument."
+                " This is deprecated and the argument will be required in future Scrapy versions.",
+                category=ScrapyDeprecationWarning,
+            )
+        return o
+
+    @classmethod
+    def _update_stores(cls, settings: BaseSettings) -> None:
         s3store: type[S3FilesStore] = cast(type[S3FilesStore], cls.STORE_SCHEMES["s3"])
         s3store.AWS_ACCESS_KEY_ID = settings["AWS_ACCESS_KEY_ID"]
         s3store.AWS_SECRET_ACCESS_KEY = settings["AWS_SECRET_ACCESS_KEY"]
@@ -493,9 +551,6 @@ class FilesPipeline(MediaPipeline):
         ftp_store.FTP_USERNAME = settings["FTP_USER"]
         ftp_store.FTP_PASSWORD = settings["FTP_PASSWORD"]
         ftp_store.USE_ACTIVE_MODE = settings.getbool("FEED_STORAGE_FTP_ACTIVE")
-
-        store_uri = settings["FILES_STORE"]
-        return cls(store_uri, settings=settings)
 
     def _get_store(self, uri: str) -> FilesStoreProtocol:
         if Path(uri).is_absolute():  # to support win32 paths like: C:\\some\dir

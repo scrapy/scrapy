@@ -323,9 +323,8 @@ def without_none_values(
     """
     if isinstance(iterable, Mapping):
         return {k: v for k, v in iterable.items() if v is not None}
-    else:
-        # the iterable __init__ must take another iterable
-        return type(iterable)(v for v in iterable if v is not None)  # type: ignore[call-arg]
+    # the iterable __init__ must take another iterable
+    return type(iterable)(v for v in iterable if v is not None)  # type: ignore[call-arg]
 
 
 def global_object_name(obj: Any) -> str:

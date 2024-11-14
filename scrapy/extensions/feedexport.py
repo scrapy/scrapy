@@ -62,6 +62,11 @@ def build_storage(
     preargs: Iterable[Any] = (),
     **kwargs: Any,
 ) -> _StorageT:
+    warnings.warn(
+        "scrapy.extensions.feedexport.build_storage() is deprecated, call the builder directly.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     kwargs["feed_options"] = feed_options
     return builder(*preargs, uri, *args, **kwargs)
 
@@ -105,7 +110,7 @@ class ItemFilter:
 class IFeedStorage(Interface):
     """Interface that all Feed Storages must implement"""
 
-    def __init__(uri, *, feed_options=None):
+    def __init__(uri, *, feed_options=None):  # pylint: disable=super-init-not-called
         """Initialize the storage with the parameters given in the URI and the
         feed-specific options (see :setting:`FEEDS`)"""
 
@@ -248,8 +253,7 @@ class S3FeedStorage(BlockingFeedStorage):
         *,
         feed_options: dict[str, Any] | None = None,
     ) -> Self:
-        return build_storage(
-            cls,
+        return cls(
             uri,
             access_key=crawler.settings["AWS_ACCESS_KEY_ID"],
             secret_key=crawler.settings["AWS_SECRET_ACCESS_KEY"],
@@ -323,10 +327,9 @@ class FTPFeedStorage(BlockingFeedStorage):
         *,
         feed_options: dict[str, Any] | None = None,
     ) -> Self:
-        return build_storage(
-            cls,
+        return cls(
             uri,
-            crawler.settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
+            use_active_mode=crawler.settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
             feed_options=feed_options,
         )
 
@@ -407,15 +410,12 @@ class FeedSlot:
             self.exporter.start_exporting()
             self._exporting = True
 
-    def _get_instance(
-        self, objcls: type[BaseItemExporter], *args: Any, **kwargs: Any
-    ) -> BaseItemExporter:
-        return build_from_crawler(objcls, self.crawler, *args, **kwargs)
-
     def _get_exporter(
         self, file: IO[bytes], format: str, *args: Any, **kwargs: Any
     ) -> BaseItemExporter:
-        return self._get_instance(self.exporters[format], file, *args, **kwargs)
+        return build_from_crawler(
+            self.exporters[format], self.crawler, file, *args, **kwargs
+        )
 
     def finish_exporting(self) -> None:
         if self._exporting:

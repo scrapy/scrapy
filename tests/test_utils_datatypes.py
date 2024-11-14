@@ -158,6 +158,7 @@ class CaseInsensitiveDictMixin:
             def _normvalue(self, value):
                 if value is not None:
                     return value + 1
+                return None
 
             normvalue = _normvalue  # deprecated CaselessDict class
 

@@ -3,7 +3,6 @@ from unittest import TestCase
 from testfixtures import LogCapture
 
 from scrapy.http import Request, Response
-from scrapy.settings import Settings
 from scrapy.spidermiddlewares.urllength import UrlLengthMiddleware
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
@@ -12,12 +11,10 @@ from scrapy.utils.test import get_crawler
 class TestUrlLengthMiddleware(TestCase):
     def setUp(self):
         self.maxlength = 25
-        settings = Settings({"URLLENGTH_LIMIT": self.maxlength})
-
-        crawler = get_crawler(Spider)
+        crawler = get_crawler(Spider, {"URLLENGTH_LIMIT": self.maxlength})
         self.spider = crawler._create_spider("foo")
         self.stats = crawler.stats
-        self.mw = UrlLengthMiddleware.from_settings(settings)
+        self.mw = UrlLengthMiddleware.from_crawler(crawler)
 
         self.response = Response("http://scrapytest.org")
         self.short_url_req = Request("http://scrapytest.org/")

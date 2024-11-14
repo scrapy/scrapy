@@ -21,6 +21,7 @@ from scrapy.core.downloader.tls import (
     ScrapyClientTLSOptions,
     openssl_methods,
 )
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
@@ -64,6 +65,31 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     @classmethod
     def from_settings(
+        cls,
+        settings: BaseSettings,
+        method: int = SSL.SSLv23_METHOD,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Self:
+        warnings.warn(
+            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return cls._from_settings(settings, method, *args, **kwargs)
+
+    @classmethod
+    def from_crawler(
+        cls,
+        crawler: Crawler,
+        method: int = SSL.SSLv23_METHOD,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Self:
+        return cls._from_settings(crawler.settings, method, *args, **kwargs)
+
+    @classmethod
+    def _from_settings(
         cls,
         settings: BaseSettings,
         method: int = SSL.SSLv23_METHOD,

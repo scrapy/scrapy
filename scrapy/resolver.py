@@ -141,9 +141,8 @@ class CachingHostnameResolver:
                 addressTypes,
                 transportSemantics,
             )
-        else:
-            resolutionReceiver.resolutionBegan(HostResolution(hostName))
-            for addr in addresses:
-                resolutionReceiver.addressResolved(addr)
-            resolutionReceiver.resolutionComplete()
-            return resolutionReceiver
+        resolutionReceiver.resolutionBegan(HostResolution(hostName))
+        for addr in addresses:
+            resolutionReceiver.addressResolved(addr)
+        resolutionReceiver.resolutionComplete()
+        return resolutionReceiver
