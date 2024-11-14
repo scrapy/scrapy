@@ -29,7 +29,7 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWar
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
-from scrapy.settings import Settings
+from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.deprecate import method_is_overridden
@@ -513,6 +513,23 @@ class FilesPipeline(MediaPipeline):
 
     @classmethod
     def _from_settings(cls, settings: Settings, crawler: Crawler | None) -> Self:
+        cls._update_stores(settings)
+        store_uri = settings["FILES_STORE"]
+        if "crawler" in get_func_args(cls.__init__):
+            o = cls(store_uri, crawler=crawler)
+        else:
+            o = cls(store_uri, settings=settings)
+            if crawler:
+                o._finish_init(crawler)
+            warnings.warn(
+                f"{cls.__qualname__}.__init__() doesn't take a crawler argument."
+                " This is deprecated and the argument will be required in future Scrapy versions.",
+                category=ScrapyDeprecationWarning,
+            )
+        return o
+
+    @classmethod
+    def _update_stores(cls, settings: BaseSettings) -> None:
         s3store: type[S3FilesStore] = cast(type[S3FilesStore], cls.STORE_SCHEMES["s3"])
         s3store.AWS_ACCESS_KEY_ID = settings["AWS_ACCESS_KEY_ID"]
         s3store.AWS_SECRET_ACCESS_KEY = settings["AWS_SECRET_ACCESS_KEY"]
@@ -535,20 +552,6 @@ class FilesPipeline(MediaPipeline):
         ftp_store.FTP_USERNAME = settings["FTP_USER"]
         ftp_store.FTP_PASSWORD = settings["FTP_PASSWORD"]
         ftp_store.USE_ACTIVE_MODE = settings.getbool("FEED_STORAGE_FTP_ACTIVE")
-
-        store_uri = settings["FILES_STORE"]
-        if "crawler" in get_func_args(cls.__init__):
-            o = cls(store_uri, crawler=crawler)
-        else:
-            o = cls(store_uri, settings=settings)
-            if crawler:
-                o._finish_init(crawler)
-            warnings.warn(
-                f"{cls.__qualname__}.__init__() doesn't take a crawler argument."
-                " This is deprecated and the argument will be required in future Scrapy versions.",
-                category=ScrapyDeprecationWarning,
-            )
-        return o
 
     def _get_store(self, uri: str) -> FilesStoreProtocol:
         if Path(uri).is_absolute():  # to support win32 paths like: C:\\some\dir

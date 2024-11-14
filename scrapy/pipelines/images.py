@@ -11,21 +11,14 @@ import hashlib
 import warnings
 from contextlib import suppress
 from io import BytesIO
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from itemadapter import ItemAdapter
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
-from scrapy.pipelines.files import (
-    FileException,
-    FilesPipeline,
-    FTPFilesStore,
-    GCSFilesStore,
-    S3FilesStore,
-    _md5sum,
-)
+from scrapy.pipelines.files import FileException, FilesPipeline, _md5sum
 from scrapy.settings import Settings
 from scrapy.utils.python import get_func_args, to_bytes
 
@@ -128,29 +121,7 @@ class ImagesPipeline(FilesPipeline):
 
     @classmethod
     def _from_settings(cls, settings: Settings, crawler: Crawler | None) -> Self:
-        s3store: type[S3FilesStore] = cast(type[S3FilesStore], cls.STORE_SCHEMES["s3"])
-        s3store.AWS_ACCESS_KEY_ID = settings["AWS_ACCESS_KEY_ID"]
-        s3store.AWS_SECRET_ACCESS_KEY = settings["AWS_SECRET_ACCESS_KEY"]
-        s3store.AWS_SESSION_TOKEN = settings["AWS_SESSION_TOKEN"]
-        s3store.AWS_ENDPOINT_URL = settings["AWS_ENDPOINT_URL"]
-        s3store.AWS_REGION_NAME = settings["AWS_REGION_NAME"]
-        s3store.AWS_USE_SSL = settings["AWS_USE_SSL"]
-        s3store.AWS_VERIFY = settings["AWS_VERIFY"]
-        s3store.POLICY = settings["IMAGES_STORE_S3_ACL"]
-
-        gcs_store: type[GCSFilesStore] = cast(
-            type[GCSFilesStore], cls.STORE_SCHEMES["gs"]
-        )
-        gcs_store.GCS_PROJECT_ID = settings["GCS_PROJECT_ID"]
-        gcs_store.POLICY = settings["IMAGES_STORE_GCS_ACL"] or None
-
-        ftp_store: type[FTPFilesStore] = cast(
-            type[FTPFilesStore], cls.STORE_SCHEMES["ftp"]
-        )
-        ftp_store.FTP_USERNAME = settings["FTP_USER"]
-        ftp_store.FTP_PASSWORD = settings["FTP_PASSWORD"]
-        ftp_store.USE_ACTIVE_MODE = settings.getbool("FEED_STORAGE_FTP_ACTIVE")
-
+        cls._update_stores(settings)
         store_uri = settings["IMAGES_STORE"]
         if "crawler" in get_func_args(cls.__init__):
             o = cls(store_uri, crawler=crawler)
