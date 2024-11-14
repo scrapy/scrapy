@@ -54,14 +54,6 @@ class MiddlewareManager:
     @staticmethod
     def _build_from_settings(objcls: type[_T], settings: BaseSettings) -> _T:
         if hasattr(objcls, "from_settings"):
-            warnings.warn(
-                f"{objcls.__qualname__} has from_settings() but not from_crawler()."
-                " This is deprecated and calling from_settings() will be removed in a future"
-                " Scrapy version. You can implement a simple from_crawler() that calls"
-                " from_settings() with crawler.settings.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
             instance = objcls.from_settings(settings)  # type: ignore[attr-defined]
             method_name = "from_settings"
         else:

@@ -20,7 +20,7 @@ from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException, FilesPipeline, _md5sum
 from scrapy.settings import Settings
-from scrapy.utils.python import get_func_args, to_bytes
+from scrapy.utils.python import get_func_args, global_object_name, to_bytes
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -82,7 +82,7 @@ class ImagesPipeline(FilesPipeline):
             if settings is not None:
                 warnings.warn(
                     f"ImagesPipeline.__init__() was called with a crawler instance and a settings instance"
-                    f" when creating {self.__class__.__qualname__}. The settings instance will be ignored"
+                    f" when creating {global_object_name(self.__class__)}. The settings instance will be ignored"
                     f" and crawler.settings will be used. The settings argument will be removed in a future Scrapy version.",
                     category=ScrapyDeprecationWarning,
                     stacklevel=2,
@@ -130,7 +130,7 @@ class ImagesPipeline(FilesPipeline):
             if crawler:
                 o._finish_init(crawler)
             warnings.warn(
-                f"{cls.__qualname__}.__init__() doesn't take a crawler argument."
+                f"{global_object_name(cls)}.__init__() doesn't take a crawler argument."
                 " This is deprecated and the argument will be required in future Scrapy versions.",
                 category=ScrapyDeprecationWarning,
             )

@@ -28,7 +28,7 @@ from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.defer import defer_result, mustbe_deferred
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.python import get_func_args
+from scrapy.utils.python import get_func_args, global_object_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -85,7 +85,7 @@ class MediaPipeline(ABC):
             if settings is not None:
                 warnings.warn(
                     f"MediaPipeline.__init__() was called with a crawler instance and a settings instance"
-                    f" when creating {self.__class__.__qualname__}. The settings instance will be ignored"
+                    f" when creating {global_object_name(self.__class__)}. The settings instance will be ignored"
                     f" and crawler.settings will be used. The settings argument will be removed in a future Scrapy version.",
                     category=ScrapyDeprecationWarning,
                     stacklevel=2,
@@ -107,7 +107,7 @@ class MediaPipeline(ABC):
         else:
             warnings.warn(
                 f"MediaPipeline.__init__() was called without the crawler argument"
-                f" when creating {self.__class__.__qualname__}."
+                f" when creating {global_object_name(self.__class__)}."
                 f" This is deprecated and the argument will be required in future Scrapy versions.",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
@@ -154,7 +154,7 @@ class MediaPipeline(ABC):
         else:
             pipe = cls()
             warnings.warn(
-                f"{cls.__qualname__}.__init__() doesn't take a crawler argument."
+                f"{global_object_name(cls)}.__init__() doesn't take a crawler argument."
                 " This is deprecated and the argument will be required in future Scrapy versions.",
                 category=ScrapyDeprecationWarning,
             )
