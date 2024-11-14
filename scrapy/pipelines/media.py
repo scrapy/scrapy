@@ -149,6 +149,15 @@ class MediaPipeline(ABC):
         pipe: Self
         if hasattr(cls, "from_settings"):
             pipe = cls.from_settings(crawler.settings)  # type: ignore[attr-defined]
+            warnings.warn(
+                f"{cls.__qualname__} has from_settings() and either doesn't have"
+                " from_crawler() or calls MediaPipeline.from_crawler() from it,"
+                " so from_settings() was used to create the instance of it."
+                " This is deprecated and calling from_settings() will be removed"
+                " in a future Scrapy version. Please move the initialization code into"
+                " from_crawler() or __init__().",
+                category=ScrapyDeprecationWarning,
+            )
         elif "crawler" in get_func_args(cls.__init__):
             pipe = cls(crawler=crawler)
         else:

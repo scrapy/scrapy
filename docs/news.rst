@@ -54,6 +54,43 @@ Backward-incompatible changes
     Python 3.9+.
     (:issue:`5230`, :issue:`6099`, :issue:`6499`)
 
+-   The initialization API of :class:`scrapy.pipelines.media.MediaPipeline` and
+    its subclasses was improved and it's possible that some previously working
+    usage scenarios will no longer work. It can only affect you if you define
+    custom subclasses of ``MediaPipeline`` or create instances of these
+    pipelines via ``from_settings()`` or ``__init__()`` calls instead of
+    ``from_crawler()`` calls.
+
+    Previously, ``MediaPipeline.from_crawler()`` called the ``from_settings()``
+    method if it existed or the ``__init__()`` method otherwise, and then did
+    some additional initialization using the ``crawler`` instance. If the
+    ``from_settings()`` method existed (like in ``FilesPipeline``) it called
+    ``__init__()`` to create the instance. It wasn't possible to override
+    ``from_crawler()`` without calling ``MediaPipeline.from_crawler()`` from it
+    which, in turn, couldn't be called in some cases (including subclasses of
+    ``FilesPipeline``).
+
+    Now, in line with the general usage of ``from_crawler()`` and
+    ``from_settings()`` and the deprecation of the latter the recommended
+    initialization order is the following one:
+
+    - All ``__init__()`` methods should take a ``crawler`` argument. If they
+      also take a ``settings`` argument they should ignore it, using
+      ``crawler.settings`` instead. When they call ``__init__()`` of the base
+      class they should pass the ``crawler`` argument to it too.
+    - A ``from_settings()`` method shouldn't be defined. Class-specific
+      initialization code should go into either an overriden ``from_crawler()``
+      method or into ``__init__()``.
+    - It's now possible to override ``from_crawler()`` and it's not necessary
+      to call ``MediaPipeline.from_crawler()`` in it if other recommendations
+      were followed.
+    - If pipeline instances were created with ``from_settings()`` or
+      ``__init__()`` calls (which wasn't supported even before, as it missed
+      important initialization code), they should now be created with
+      ``from_crawler()`` calls.
+
+    (:issue:`6540`)
+
 -   The ``response_body`` argument of :meth:`ImagesPipeline.convert_image
     <scrapy.pipelines.images.ImagesPipeline.convert_image>` is now
     positional-only, as it was changed from optional to required.
@@ -183,14 +220,51 @@ Deprecation removals
 Deprecations
 ~~~~~~~~~~~~
 
+-   The ``from_settings()`` methods of the :ref:`Scrapy components
+    <topics-components>` that have them are now deprecated. ``from_crawler()``
+    should now be used instead. Affected components:
+
+    - :class:`scrapy.dupefilters.RFPDupeFilter`
+    - :class:`scrapy.mail.MailSender`
+    - :class:`scrapy.middleware.MiddlewareManager`
+    - :class:`scrapy.core.downloader.contextfactory.ScrapyClientContextFactory`
+    - :class:`scrapy.pipelines.files.FilesPipeline`
+    - :class:`scrapy.pipelines.images.ImagesPipeline`
+    - :class:`scrapy.spidermiddlewares.urllength.UrlLengthMiddleware`
+
+    (:issue:`6540`)
+
+-   It's now deprecated to have a ``from_settings()`` method but no
+    ``from_crawler()`` method in 3rd-party :ref:`Scrapy components
+    <topics-components>`. You can define a simple ``from_crawler()`` method
+    that calls ``cls.from_settings(crawler.settings)`` to fix this if you don't
+    want to refactor the code. Note that if you have a ``from_crawler()``
+    method Scrapy will not call the ``from_settings()`` method so the latter
+    can be removed.
+    (:issue:`6540`)
+
+-   The initialization API of :class:`scrapy.pipelines.media.MediaPipeline` and
+    its subclasses was improved and some old usage scenarios are now deprecated
+    (see also the "Backward-incompatible changes" section). Specifically:
+
+    - It's deprecated to define an ``__init__()`` method that doesn't take a
+      ``crawler`` argument.
+    - It's deprecated to call an ``__init__()`` method without passing a
+      ``crawler`` argument. If it's passed, it's also deprecated to pass a
+      ``settings`` argument, which will be ignored anyway.
+    - Calling ``from_settings()`` is deprecated, use ``from_crawler()``
+      instead.
+    - Overriding ``from_settings()`` is deprecated, override ``from_crawler()``
+      instead.
+
+    (:issue:`6540`)
+
 -   The ``REQUEST_FINGERPRINTER_IMPLEMENTATION`` setting is now deprecated.
     (:issue:`6212`, :issue:`6213`)
 
--   The ``scrapy.utils.misc.create_instance()`` function is now deprecated, it
-    should be replaced with one of its new replacements that provide a cleaner
-    signature: :func:`scrapy.utils.misc.build_from_crawler` or
-    :func:`scrapy.utils.misc.build_from_settings`.
-    (:issue:`5523`, :issue:`5884`, :issue:`6162`, :issue:`6169`)
+-   The ``scrapy.utils.misc.create_instance()`` function is now deprecated, use
+    :func:`scrapy.utils.misc.build_from_crawler` instead.
+    (:issue:`5523`, :issue:`5884`, :issue:`6162`, :issue:`6169`, :issue:`6540`)
 
 -   ``scrapy.core.downloader.Downloader._get_slot_key()`` is deprecated, use
     :meth:`scrapy.core.downloader.Downloader.get_slot_key` instead.
@@ -221,6 +295,10 @@ Deprecations
 
 -   ``scrapy.utils.test.assert_samelines()`` is now deprecated.
     (:issue:`6517`, :issue:`6519`)
+
+-   ``scrapy.extensions.feedexport.build_storage()`` is now deprecated. You can
+    instead call the builder callable directly.
+    (:issue:`6540`)
 
 New features
 ~~~~~~~~~~~~
@@ -281,10 +359,6 @@ New features
     request meta.
     (:issue:`6468`, :issue:`6469`)
 
--   :func:`scrapy.utils.httpobj.urlparse_cached` is now used in more places
-    instead of :func:`urllib.parse.urlparse`.
-    (:issue:`6228`, :issue:`6229`)
-
 Improvements
 ~~~~~~~~~~~~
 
@@ -292,6 +366,10 @@ Improvements
     :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
     ignores by default.
     (:issue:`6074`, :issue:`6125`)
+
+-   :func:`scrapy.utils.httpobj.urlparse_cached` is now used in more places
+    instead of :func:`urllib.parse.urlparse`.
+    (:issue:`6228`, :issue:`6229`)
 
 Bug fixes
 ~~~~~~~~~
@@ -347,6 +425,7 @@ Documentation
     :issue:`6449`,
     :issue:`6462`,
     :issue:`6497`,
+    :issue:`6506`,
     :issue:`6507`,
     :issue:`6524`)
 
@@ -462,7 +541,8 @@ Quality assurance
     :issue:`6463`,
     :issue:`6470`,
     :issue:`6499`,
-    :issue:`6510`)
+    :issue:`6510`,
+    :issue:`6531`)
 
 Other
 ~~~~~
