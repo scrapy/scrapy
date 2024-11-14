@@ -37,6 +37,14 @@ def _is_public_domain(domain: str) -> bool:
     return not parts.domain
 
 
+def get_cookiejar(self, response_or_request):
+    try:
+        cookiejarkey = response_or_request.request.meta.get("cookiejar")
+    except Exception:
+        cookiejarkey = response_or_request.meta.get("cookiejar")
+    return self.cookie_jars[cookiejarkey]
+
+
 class CookiesMiddleware:
     """This middleware enables working with sites that need cookies"""
 
@@ -54,6 +62,8 @@ class CookiesMiddleware:
 
     def spider_opened(self, spider: Spider) -> None:
         spider.cookie_jars = self.jars
+        attribute_name = "get_cookiejar"
+        setattr(spider.__class__, attribute_name, get_cookiejar)
 
     def _process_cookies(
         self, cookies: Iterable[Cookie], *, jar: CookieJar, request: Request
