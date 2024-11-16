@@ -93,8 +93,9 @@ DOWNLOADER_CLIENTCONTEXTFACTORY = (
     "scrapy.core.downloader.contextfactory.ScrapyClientContextFactory"
 )
 DOWNLOADER_CLIENT_TLS_CIPHERS = "DEFAULT"
-# Use highest TLS/SSL protocol version supported by the platform, also allowing negotiation:
+DOWNLOADER_CLIENT_TLS_MAX_VERSION = None
 DOWNLOADER_CLIENT_TLS_METHOD = "TLS"
+DOWNLOADER_CLIENT_TLS_MIN_VERSION = "TLSv1_0"
 DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING = False
 
 DOWNLOADER_MIDDLEWARES = {}
