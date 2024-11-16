@@ -3,7 +3,8 @@ repos:
   rev: 1.7.9
   hooks:
   - id: bandit
-    args: [-r, -c, .bandit.yml]
+    args: ["-c", "pyproject.toml"]
+    additional_dependencies: ["bandit[toml]"]
 - repo: https://github.com/PyCQA/flake8
   rev: 7.1.0
   hooks:

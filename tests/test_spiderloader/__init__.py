@@ -144,9 +144,10 @@ class SpiderLoaderTest(unittest.TestCase):
             self.assertRaises(SyntaxError, SpiderLoader.from_settings, settings)
 
     def test_syntax_error_warning(self):
-        with warnings.catch_warnings(record=True) as w, mock.patch.object(
-            SpiderLoader, "_load_spiders"
-        ) as m:
+        with (
+            warnings.catch_warnings(record=True) as w,
+            mock.patch.object(SpiderLoader, "_load_spiders") as m,
+        ):
             m.side_effect = SyntaxError
             module = "tests.test_spiderloader.test_spiders.spider1"
             settings = Settings(
