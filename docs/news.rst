@@ -384,7 +384,7 @@ Bug fixes
 
 -   Importing ``scrapy.extensions.telnet`` no longer installs the default
     reactor.
-    (:issue:`6432``)
+    (:issue:`6432`)
 
 -   Reduced log verbosity for dropped requests that was increased in 2.11.2.
     (:issue:`6433`, :issue:`6475`)
