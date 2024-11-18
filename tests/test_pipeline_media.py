@@ -454,8 +454,33 @@ class BuildFromCrawlerTestCase(unittest.TestCase):
             pipe = Pipeline.from_crawler(self.crawler)
             assert pipe.crawler == self.crawler
             assert pipe._fingerprinter
-            self.assertEqual(len(w), 1)
+            self.assertEqual(len(w), 2)
             assert pipe._from_settings_called
+
+    def test_has_from_settings_and_from_crawler(self):
+        class Pipeline(UserDefinedPipeline):
+            _from_settings_called = False
+            _from_crawler_called = False
+
+            @classmethod
+            def from_settings(cls, settings):
+                o = cls()
+                o._from_settings_called = True
+                return o
+
+            @classmethod
+            def from_crawler(cls, crawler):
+                o = super().from_crawler(crawler)
+                o._from_crawler_called = True
+                return o
+
+        with warnings.catch_warnings(record=True) as w:
+            pipe = Pipeline.from_crawler(self.crawler)
+            assert pipe.crawler == self.crawler
+            assert pipe._fingerprinter
+            self.assertEqual(len(w), 2)
+            assert pipe._from_settings_called
+            assert pipe._from_crawler_called
 
     def test_has_from_settings_and_init(self):
         class Pipeline(UserDefinedPipeline):
@@ -476,7 +501,7 @@ class BuildFromCrawlerTestCase(unittest.TestCase):
             pipe = Pipeline.from_crawler(self.crawler)
             assert pipe.crawler == self.crawler
             assert pipe._fingerprinter
-            self.assertEqual(len(w), 1)
+            self.assertEqual(len(w), 2)
             assert pipe._from_settings_called
             assert pipe._init_called
 
