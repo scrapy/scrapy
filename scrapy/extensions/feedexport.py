@@ -692,8 +692,10 @@ class FeedExporter:
     def _get_storage(
         self, uri: str, feed_options: dict[str, Any]
     ) -> FeedStorageProtocol:
-        feedcls = self.storages.get(urlparse(uri).scheme, self.storages["file"])
-        return build_from_crawler(feedcls, self.crawler, uri, feed_options=feed_options)
+        """Build a storage object for the specified *uri* with the specified
+        *feed_options*."""
+        cls = self.storages.get(urlparse(uri).scheme, self.storages["file"])
+        return build_from_crawler(cls, self.crawler, uri, feed_options=feed_options)
 
     def _get_uri_params(
         self,

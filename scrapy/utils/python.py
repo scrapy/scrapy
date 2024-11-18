@@ -328,8 +328,7 @@ def without_none_values(
 
 
 def global_object_name(obj: Any) -> str:
-    """
-    Return full name of a global object.
+    """Return the full import path of the given class.
 
     >>> from scrapy import Request
     >>> global_object_name(Request)
