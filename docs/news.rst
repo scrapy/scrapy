@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.12.0:
 
-Scrapy 2.12.0 (unreleased)
+Scrapy 2.12.0 (2024-11-18)
 --------------------------
 
 Highlights:
@@ -523,7 +523,9 @@ Quality assurance
     :issue:`6489`,
     :issue:`6501`,
     :issue:`6504`,
-    :issue:`6511`)
+    :issue:`6511`,
+    :issue:`6543`,
+    :issue:`6545`)
 
 -   Code cleanups.
     (:issue:`6196`,
@@ -541,8 +543,10 @@ Quality assurance
     :issue:`6463`,
     :issue:`6470`,
     :issue:`6499`,
+    :issue:`6505`,
     :issue:`6510`,
-    :issue:`6531`)
+    :issue:`6531`,
+    :issue:`6542`)
 
 Other
 ~~~~~

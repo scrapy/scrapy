@@ -150,7 +150,7 @@ class MediaPipeline(ABC):
         if hasattr(cls, "from_settings"):
             pipe = cls.from_settings(crawler.settings)  # type: ignore[attr-defined]
             warnings.warn(
-                f"{cls.__qualname__} has from_settings() and either doesn't have"
+                f"{global_object_name(cls)} has from_settings() and either doesn't have"
                 " from_crawler() or calls MediaPipeline.from_crawler() from it,"
                 " so from_settings() was used to create the instance of it."
                 " This is deprecated and calling from_settings() will be removed"
