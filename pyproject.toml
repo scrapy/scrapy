@@ -1,0 +1,235 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Scrapy"
+dynamic = ["version"]
+description = "A high-level Web Crawling and Web Scraping framework"
+dependencies = [
+    "Twisted>=21.7.0",
+    "cryptography>=37.0.0",
+    "cssselect>=0.9.1",
+    "itemloaders>=1.0.1",
+    "parsel>=1.5.0",
+    "pyOpenSSL>=22.0.0",
+    "queuelib>=1.4.2",
+    "service_identity>=18.1.0",
+    "w3lib>=1.17.0",
+    "zope.interface>=5.1.0",
+    "protego>=0.1.15",
+    "itemadapter>=0.1.0",
+    "packaging",
+    "tldextract",
+    "lxml>=4.6.0",
+    "defusedxml>=0.7.1",
+    # Platform-specific dependencies
+    'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
+    'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
+]
+classifiers = [
+    "Framework :: Scrapy",
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+readme = "README.rst"
+requires-python = ">=3.9"
+authors = [{ name = "Scrapy developers", email = "pablo@pablohoffman.com" }]
+maintainers = [{ name = "Pablo Hoffman", email = "pablo@pablohoffman.com" }]
+
+[project.urls]
+Homepage = "https://scrapy.org/"
+Documentation = "https://docs.scrapy.org/"
+Source = "https://github.com/scrapy/scrapy"
+Tracker = "https://github.com/scrapy/scrapy/issues"
+Changelog = "https://github.com/scrapy/scrapy/commits/master/"
+releasenotes = "https://docs.scrapy.org/en/latest/news.html"
+
+[project.scripts]
+scrapy = "scrapy.cmdline:execute"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["scrapy", "scrapy.*",]
+
+[tool.setuptools.dynamic]
+version = {file = "./scrapy/VERSION"}
+
+[tool.mypy]
+ignore_missing_imports = true
+
+# Interface classes are hard to support
+
+[[tool.mypy.overrides]]
+module = "twisted.internet.interfaces"
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "scrapy.interfaces"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "twisted.internet.reactor"
+follow_imports = "skip"
+
+# FIXME: remove the following section once the issues are solved
+[[tool.mypy.overrides]]
+module = "scrapy.settings.default_settings"
+ignore_errors = true
+
+[tool.bandit]
+skips = [
+    "B101", # assert_used, needed for mypy
+    "B321", # ftplib, https://github.com/scrapy/scrapy/issues/4180
+    "B402", # import_ftplib, https://github.com/scrapy/scrapy/issues/4180
+    "B411", # import_xmlrpclib, https://github.com/PyCQA/bandit/issues/1082
+    "B503", # ssl_with_bad_defaults
+]
+exclude_dirs = ["tests"]
+
+[tool.bumpversion]
+current_version = "2.12.0"
+commit = true
+tag = true
+tag_name = "{new_version}"
+
+[[tool.bumpversion.files]]
+filename = "scrapy/VERSION"
+
+[[tool.bumpversion.files]]
+filename = "SECURITY.md"
+parse = """(?P<major>0|[1-9]\\d*)\\.(?P<minor>0|[1-9]\\d*)"""
+serialize = ["{major}.{minor}"]
+
+[tool.coverage.run]
+branch = true
+include = ["scrapy/*"]
+omit = ["tests/*"]
+disable_warnings = ["include-ignored"]
+
+[tool.coverage.report]
+# https://github.com/nedbat/coveragepy/issues/831#issuecomment-517778185
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
+
+[tool.isort]
+profile = "black"
+
+[tool.pylint.MASTER]
+persistent = "no"
+jobs = 1          # >1 hides results
+
+[tool.pylint."MESSAGES CONTROL"]
+disable = [
+    "abstract-method",
+    "arguments-differ",
+    "arguments-renamed",
+    "attribute-defined-outside-init",
+    "bad-classmethod-argument",
+    "bare-except",
+    "broad-except",
+    "broad-exception-raised",
+    "c-extension-no-member",
+    "consider-using-with",
+    "cyclic-import",
+    "dangerous-default-value",
+    "disallowed-name",
+    "duplicate-code",                            # https://github.com/PyCQA/pylint/issues/214
+    "eval-used",
+    "fixme",
+    "function-redefined",
+    "global-statement",
+    "implicit-str-concat",
+    "import-error",
+    "import-outside-toplevel",
+    "inherit-non-class",
+    "invalid-name",
+    "invalid-overridden-method",
+    "isinstance-second-argument-not-valid-type",
+    "keyword-arg-before-vararg",
+    "line-too-long",
+    "logging-format-interpolation",
+    "logging-fstring-interpolation",
+    "logging-not-lazy",
+    "lost-exception",
+    "missing-docstring",
+    "no-member",
+    "no-method-argument",
+    "no-name-in-module",
+    "no-self-argument",
+    "no-value-for-parameter",                    # https://github.com/pylint-dev/pylint/issues/3268
+    "not-callable",
+    "pointless-statement",
+    "pointless-string-statement",
+    "protected-access",
+    "raise-missing-from",
+    "redefined-builtin",
+    "redefined-outer-name",
+    "reimported",
+    "signature-differs",
+    "too-few-public-methods",
+    "too-many-ancestors",
+    "too-many-arguments",
+    "too-many-branches",
+    "too-many-format-args",
+    "too-many-function-args",
+    "too-many-instance-attributes",
+    "too-many-lines",
+    "too-many-locals",
+    "too-many-public-methods",
+    "too-many-return-statements",
+    "unbalanced-tuple-unpacking",
+    "unnecessary-dunder-call",
+    "unnecessary-pass",
+    "unreachable",
+    "unused-argument",
+    "unused-import",
+    "unused-variable",
+    "used-before-assignment",
+    "useless-return",
+    "wildcard-import",
+    "wrong-import-position",
+]
+
+[tool.pytest.ini_options]
+xfail_strict = true
+usefixtures = "chdir"
+python_files = ["test_*.py", "__init__.py"]
+python_classes = []
+addopts = [
+    "--assert=plain",
+    "--ignore=docs/_ext",
+    "--ignore=docs/conf.py",
+    "--ignore=docs/news.rst",
+    "--ignore=docs/topics/dynamic-content.rst",
+    "--ignore=docs/topics/items.rst",
+    "--ignore=docs/topics/leaks.rst",
+    "--ignore=docs/topics/loaders.rst",
+    "--ignore=docs/topics/selectors.rst",
+    "--ignore=docs/topics/shell.rst",
+    "--ignore=docs/topics/stats.rst",
+    "--ignore=docs/topics/telnetconsole.rst",
+    "--ignore=docs/utils",
+]
+markers = [
+    "only_asyncio: marks tests as only enabled when --reactor=asyncio is passed",
+    "only_not_asyncio: marks tests as only enabled when --reactor=asyncio is not passed",
+    "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
+    "requires_botocore: marks tests that need botocore (but not boto3)",
+    "requires_boto3: marks tests that need botocore and boto3",
+]
+filterwarnings = []

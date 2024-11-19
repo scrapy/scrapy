@@ -1,7 +1,0 @@
-skips:
-- B101  # assert_used, needed for mypy
-- B321  # ftplib, https://github.com/scrapy/scrapy/issues/4180
-- B402  # import_ftplib, https://github.com/scrapy/scrapy/issues/4180
-- B411  # import_xmlrpclib, https://github.com/PyCQA/bandit/issues/1082
-- B503  # ssl_with_bad_defaults
-exclude_dirs: ['tests']

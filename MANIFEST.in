@@ -10,7 +10,6 @@ include scrapy/py.typed
 
 include codecov.yml
 include conftest.py
-include pytest.ini
 include tox.ini
 
 recursive-include scrapy/templates *
