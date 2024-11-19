@@ -70,9 +70,6 @@ include = ["scrapy", "scrapy.*",]
 [tool.setuptools.dynamic]
 version = {file = "./scrapy/VERSION"}
 
-[tool.distutils.bdist_rpm]
-doc_files = "docs AUTHORS INSTALL LICENSE README.rst"
-
 [tool.mypy]
 ignore_missing_imports = true
 
