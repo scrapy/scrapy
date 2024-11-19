@@ -53,9 +53,12 @@ authors = [{ name = "Scrapy developers", email = "pablo@pablohoffman.com" }]
 maintainers = [{ name = "Pablo Hoffman", email = "pablo@pablohoffman.com" }]
 
 [project.urls]
+Homepage = "https://scrapy.org/"
 Documentation = "https://docs.scrapy.org/"
 Source = "https://github.com/scrapy/scrapy"
 Tracker = "https://github.com/scrapy/scrapy/issues"
+Changelog = "https://github.com/scrapy/scrapy/commits/master/"
+releasenotes = "https://docs.scrapy.org/en/latest/news.html"
 
 [project.scripts]
 scrapy = "scrapy.cmdline:execute"
