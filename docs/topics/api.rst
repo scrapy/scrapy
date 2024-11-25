@@ -26,7 +26,9 @@ contains a dictionary of all available extensions and their order similar to
 how you :ref:`configure the downloader middlewares
 <topics-downloader-middleware-setting>`.
 
-.. class:: Crawler(spidercls, settings)
+.. autoclass:: Crawler
+    :members: get_addon, get_downloader_middleware, get_extension,
+        get_item_pipeline, get_spider_middleware
 
     The Crawler object must be instantiated with a
     :class:`scrapy.Spider` subclass and a

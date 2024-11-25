@@ -25,7 +25,6 @@ from scrapy.core.downloader.tls import (
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import build_from_crawler, load_object
-from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     from twisted.internet._sslverify import ClientTLSOptions
@@ -166,47 +165,20 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     def getCertificateOptions(self) -> CertificateOptions:
         # setting verify=True will require you to provide CAs
         # to verify against; in other words: it's not that simple
-
-        # TODO update the following comment
-        # backward-compatible SSL/TLS method:
-        #
-        # * this will respect `method` attribute in often recommended
-        #   `ScrapyClientContextFactory` subclass
-        #   (https://github.com/scrapy/scrapy/issues/1429#issuecomment-131782133)
-        #
-        # * getattr() for `_ssl_method` attribute for context factories
-        #   not calling super().__init__
-        if not hasattr(self, "tls_min_version") and not getattr(
-            self, "_bad_init_warned", False
-        ):
-            warnings.warn(
-                f"{global_object_name(self.__class__)} was initialized"
-                f" without calling ScrapyClientContextFactory.__init__(), this is deprecated.",
-                category=ScrapyDeprecationWarning,
-            )
-            self._bad_init_warned = True
-            method = getattr(self, "method", getattr(self, "_ssl_method", None))
-            tls_min_version = None
-            tls_max_version = None
-        else:
-            method = self._ssl_method
-            tls_min_version = self.tls_min_version
-            tls_max_version = self.tls_max_version
-
         kwargs: dict[str, Any] = {}
-        if tls_min_version or tls_max_version:
-            if tls_max_version:
-                kwargs["lowerMaximumSecurityTo"] = tls_max_version
-            if tls_min_version:
+        if self.tls_min_version or self.tls_max_version:
+            if self.tls_max_version:
+                kwargs["lowerMaximumSecurityTo"] = self.tls_max_version
+            if self.tls_min_version:
                 # we cannot pass both insecurelyLowerMinimumTo and raiseMinimumTo,
                 # so we need to know the direction
                 default_min = CertificateOptions._defaultMinimumTLSVersion
-                if tls_min_version < default_min:
-                    kwargs["insecurelyLowerMinimumTo"] = tls_min_version
-                elif tls_min_version > default_min:
-                    kwargs["raiseMinimumTo"] = tls_min_version
+                if self.tls_min_version < default_min:
+                    kwargs["insecurelyLowerMinimumTo"] = self.tls_min_version
+                elif self.tls_min_version > default_min:
+                    kwargs["raiseMinimumTo"] = self.tls_min_version
         else:
-            kwargs["method"] = method
+            kwargs["method"] = self._ssl_method
 
         return CertificateOptions(
             verify=False,
