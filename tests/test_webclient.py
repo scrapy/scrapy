@@ -6,6 +6,7 @@ Tests borrowed from the twisted.web.client tests.
 from __future__ import annotations
 
 import shutil
+import warnings
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import Any
@@ -517,13 +518,19 @@ class WebClientTLSMethodTestCase(WebClientSSLTestCase):
     def test_setting_bad(self):
         crawler = get_crawler()
         settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": "bad"})
-        with raises(KeyError):
-            load_context_factory_from_settings(settings, crawler)
+        with warnings.catch_warnings(record=True) as w:
+            with raises(KeyError):
+                load_context_factory_from_settings(settings, crawler)
+            self.assertEqual(len(w), 1)
 
     def test_setting_explicit(self):
         crawler = get_crawler()
         settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": "TLSv1.2"})
-        client_context_factory = load_context_factory_from_settings(settings, crawler)
+        with warnings.catch_warnings(record=True) as w:
+            client_context_factory = load_context_factory_from_settings(
+                settings, crawler
+            )
+            self.assertEqual(len(w), 2)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         return self._assert_factory_works(client_context_factory)
 
@@ -535,6 +542,10 @@ class WebClientTLSMethodTestCase(WebClientSSLTestCase):
         return self._assert_factory_works(client_context_factory)
 
     def test_direct_init(self):
-        client_context_factory = ScrapyClientContextFactory(OpenSSL.SSL.TLSv1_2_METHOD)
+        with warnings.catch_warnings(record=True) as w:
+            client_context_factory = ScrapyClientContextFactory(
+                OpenSSL.SSL.TLSv1_2_METHOD
+            )
+            self.assertEqual(len(w), 1)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         return self._assert_factory_works(client_context_factory)

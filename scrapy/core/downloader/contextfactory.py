@@ -73,7 +73,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             else:
                 warnings.warn(
                     "Passing a non-default TLS method value to ScrapyClientContextFactory is deprecated,"
-                    "the 'method' argument will be removed in a future Scrapy version. Please use"
+                    " the 'method' argument will be removed in a future Scrapy version. Please use"
                     " 'tls_min_version' and/or 'tls_max_version' arguments if you want"
                     " to change the supported TLS versions.",
                     ScrapyDeprecationWarning,
