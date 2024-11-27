@@ -117,7 +117,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
     @abstractmethod
     def next_request(self) -> Request | None:
         """
-        Return the next :class:`~scrapy.http.Request` to be processed, or ``None``
+        Return the next :class:`~scrapy.Request` to be processed, or ``None``
         to indicate that there are no requests to be considered ready at the moment.
 
         Returning ``None`` implies that no request from the scheduler will be sent
@@ -265,7 +265,7 @@ class Scheduler(BaseScheduler):
 
     def next_request(self) -> Request | None:
         """
-        Return a :class:`~scrapy.http.Request` object from the memory queue,
+        Return a :class:`~scrapy.Request` object from the memory queue,
         falling back to the disk queue if the memory queue is empty.
         Return ``None`` if there are no more enqueued requests.
 
