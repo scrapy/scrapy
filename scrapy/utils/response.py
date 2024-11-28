@@ -17,6 +17,9 @@ from w3lib import html
 
 from scrapy.utils.python import to_bytes, to_unicode
 
+# Needed for open_in_browser
+from bs4 import BeautifulSoup
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
@@ -71,41 +74,30 @@ def _remove_html_comments(body: bytes) -> bytes:
     return body
 
 
-def open_in_browser(
-    response: TextResponse,
-    _openfunc: Callable[[str], Any] = webbrowser.open,
-) -> Any:
-    """Open *response* in a local web browser, adjusting the `base tag`_ for
-    external links to work, e.g. so that images and styles are displayed.
-
-    .. _base tag: https://www.w3schools.com/tags/tag_base.asp
-
-    For example:
-
-    .. code-block:: python
-
-        from scrapy.utils.response import open_in_browser
-
-
-        def parse_details(self, response):
-            if "item name" not in response.body:
-                open_in_browser(response)
+def open_in_browser(html_content, base_url):
     """
-    from scrapy.http import HtmlResponse, TextResponse
+    Opens HTML content in default web browser, ensures proper handling of relative
+    URLs by injecting <base> tag with given base_url.
+    """
+    soup = BeautifulSoup(html_content, 'html.parser')
 
-    # XXX: this implementation is a bit dirty and could be improved
-    body = response.body
-    if isinstance(response, HtmlResponse):
-        if b"<base" not in body:
-            _remove_html_comments(body)
-            repl = rf'\0<base href="{response.url}">'
-            body = re.sub(rb"<head(?:[^<>]*?>)", to_bytes(repl), body, count=1)
-        ext = ".html"
-    elif isinstance(response, TextResponse):
-        ext = ".txt"
-    else:
-        raise TypeError("Unsupported response type: " f"{response.__class__.__name__}")
-    fd, fname = tempfile.mkstemp(ext)
-    os.write(fd, body)
-    os.close(fd)
-    return _openfunc(f"file://{fname}")
+    # If <head> does not exist, create tag
+    head_tag = soup.head
+    if head_tag is None:
+        head_tag = soup.new_tag('head')
+        # Place new <head> tag before <body> tag, or place at start if <body> is not there
+        if soup.body:
+            soup.body.insert_before(head_tag)
+        else:
+            soup.insert(0, head_tag)
+
+    # Place <base> tag into <head> section
+    base_tag = soup.new_tag('base', href=base_url)
+    head_tag.insert(0, base_tag)
+
+    # Save this HTML to temporary file and then open it in the browser
+    with open("temp.html", "w", encoding="utf-8") as temp_file:
+        temp_file.write(str(soup))
+    
+    import webbrowser
+    webbrowser.open("temp.html")
