@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
+from warnings import warn
 
 from lxml.html import FormElement  # nosec
 from lxml.html import InputElement  # nosec
@@ -18,6 +19,7 @@ from lxml.html import SelectElement  # nosec
 from lxml.html import TextareaElement  # nosec
 from w3lib.html import strip_html5_whitespace
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import Request
 from scrapy.utils.python import is_listlike, to_bytes
 
@@ -28,6 +30,12 @@ if TYPE_CHECKING:
 
     from scrapy.http.response.text import TextResponse
 
+warn(
+    "The entire scrapy.http.request.form module is deprecated. Use the "
+    "form2request library instead.",
+    ScrapyDeprecationWarning,
+    stacklevel=2,
+)
 
 FormdataVType = Union[str, Iterable[str]]
 FormdataKVType = tuple[str, FormdataVType]
