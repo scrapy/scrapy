@@ -233,3 +233,24 @@ markers = [
     "requires_boto3: marks tests that need botocore and boto3",
 ]
 filterwarnings = []
+
+[tool.ruff.lint]
+extend-select = [
+]
+ignore = [
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Exclude files that are meant to provide top-level imports
+"scrapy/__init__.py" = ["E402"]
+"scrapy/core/downloader/handlers/http.py" = ["F401"]
+"scrapy/http/__init__.py" = ["F401"]
+"scrapy/linkextractors/__init__.py" = ["E402", "F401"]
+"scrapy/selector/__init__.py" = ["F401"]
+"scrapy/spiders/__init__.py" = ["E402", "F401"]
+
+# Issues pending a review:
+"docs/conf.py" = ["E402"]
+"scrapy/utils/url.py" = ["F403", "F405"]
+"tests/CrawlerRunner/change_reactor.py" = ["E402"]
+"tests/test_loader.py" = ["E741"]

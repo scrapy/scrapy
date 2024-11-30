@@ -218,7 +218,7 @@ class FileDownloadCrawlTestCase(TestCase):
 
 skip_pillow: str | None
 try:
-    from PIL import Image  # noqa: imported just to check for the import error
+    from PIL import Image  # noqa: F401
 except ImportError:
     skip_pillow = "Missing Python Imaging Library, install https://pypi.org/pypi/Pillow"
 else:
