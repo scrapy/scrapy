@@ -19,7 +19,7 @@ from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
 
 try:
-    from PIL import Image  # noqa: imported just to check for the import error
+    from PIL import Image  # noqa: F401
 except ImportError:
     skip_pillow: str | None = (
         "Missing Python Imaging Library, install https://pypi.org/pypi/Pillow"
