@@ -236,8 +236,26 @@ filterwarnings = []
 
 [tool.ruff.lint]
 extend-select = [
+    # flake8-bugbear
+    "B",
 ]
 ignore = [
+    # Assigning to `os.environ` doesn't clear the environment.
+    "B003",
+    # Do not use mutable data structures for argument defaults.
+    "B006",
+    # Loop control variable not used within the loop body.
+    "B007",
+    # Do not perform function calls in argument defaults.
+    "B008",
+    # Star-arg unpacking after a keyword argument is strongly discouraged.
+    "B026",
+    # Found useless expression.
+    "B018",
+    # No explicit stacklevel argument found.
+    "B028",
+    # Within an `except` clause, raise exceptions with `raise ... from`
+    "B904",
 ]
 
 [tool.ruff.lint.per-file-ignores]
