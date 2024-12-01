@@ -244,6 +244,8 @@ extend-select = [
     "D",
     # flake8-debugger
     "T10",
+    # flake8-type-checking
+    "TC",
 ]
 ignore = [
     # Assigning to `os.environ` doesn't clear the environment.

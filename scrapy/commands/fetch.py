@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 
 from w3lib.url import is_url
 
-from scrapy import Spider
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
@@ -14,6 +13,8 @@ from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 
 if TYPE_CHECKING:
     from argparse import ArgumentParser, Namespace
+
+    from scrapy import Spider
 
 
 class Command(ScrapyCommand):

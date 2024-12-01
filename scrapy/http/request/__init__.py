@@ -21,7 +21,6 @@ from typing import (
 
 from w3lib.url import safe_url_string
 
-import scrapy
 from scrapy.http.headers import Headers
 from scrapy.utils.curl import curl_to_request_kwargs
 from scrapy.utils.python import to_bytes
@@ -37,6 +36,7 @@ if TYPE_CHECKING:
     # typing.NotRequired and typing.Self require Python 3.11
     from typing_extensions import Concatenate, NotRequired, Self
 
+    from scrapy import Spider
     from scrapy.http import Response
 
     CallbackT = Callable[Concatenate[Response, ...], Any]
@@ -252,7 +252,7 @@ class Request(object_ref):
         request_kwargs.update(kwargs)
         return cls(**request_kwargs)
 
-    def to_dict(self, *, spider: scrapy.Spider | None = None) -> dict[str, Any]:
+    def to_dict(self, *, spider: Spider | None = None) -> dict[str, Any]:
         """Return a dictionary containing the Request's data.
 
         Use :func:`~scrapy.utils.request.request_from_dict` to convert back into a :class:`~scrapy.Request` object.

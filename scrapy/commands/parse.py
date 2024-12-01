@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import functools
 import inspect
 import json
@@ -22,6 +21,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.spider import spidercls_for_request
 
 if TYPE_CHECKING:
+    import argparse
     from collections.abc import AsyncGenerator, Coroutine, Iterable
 
     from twisted.python.failure import Failure
