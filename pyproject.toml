@@ -238,6 +238,10 @@ filterwarnings = []
 extend-select = [
     # flake8-bugbear
     "B",
+    # flake8-comprehensions
+    "C4",
+    # flake8-debugger
+    "T10",
 ]
 ignore = [
     # Assigning to `os.environ` doesn't clear the environment.
