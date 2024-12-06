@@ -819,6 +819,60 @@ will only visit URLs from the ``humor`` tag, such as
 
 You can :ref:`learn more about handling spider arguments here <spiderargs>`.
 
+
+Common Errors and Troubleshooting Tips
+======================================
+
+**Creating Your First Scrapy Project**
+
+Error: ``Command 'scrapy startproject' not found``
+
+* Cause: Scrapy might not be installed or properly configured in your environment.
+* Solution: Ensure that Scrapy is installed. You can install it via pip by running 
+  ``pip install scrapy``. If you're working in a virtual environment, make sure the 
+  environment is activated before running the command.
+
+Error: ``Permission Denied`` when creating a project
+
+* Cause: You might not have the necessary write permissions in the directory where 
+  you're trying to create the project.
+* Solution: Make sure that you have the appropriate permissions or create the project 
+  in a directory where you have full access.
+
+**Creating Your First Spider**
+
+Error: ``Spider 'myspider' not found`` 
+
+* Cause: The spider file might not have been created correctly, or the spider 
+  class might not be named properly.
+* Solution: Make sure that the spider class is within the ``spiders`` directory of the 
+  project. Also confirm that it inherits from ``scrapy.Spider``. 
+
+Error: ``AttributeError: 'Spider' object has no attribute 'start_urls'`` 
+
+* Cause: The ``start_urls`` attribute is missing from the spider 
+* Solution: Be sure you define ``start_urls`` as a list of URLs. This is where your spider 
+  will begin scraping. If you're using ``start_requests`` instead, make sure it's implemented
+  properly.
+
+**Using Spider Arguments**
+
+Error: ``TypeError: 'NoneType' object is not callable`` when passing arguments 
+
+* Cause: Occurs when passing arguments incorrectly to the spider  
+* Solution: Make you are passing arguments correctly when running the spider. For example,
+  from the command line::
+
+    scrapy crawl myspider -a arg1=value1 -a arg2=value2
+
+Error: ``Error: ValueError: too many values to unpack``
+
+* Cause: You might be trying to pass too many arguments or incorrectly formatted 
+  arguments.
+* Solution: Double-check the number and format of arguments you're passing in. 
+  Ensure you match the spider's ``__init__`` method signature.
+
+
 Next steps
 ==========
 
