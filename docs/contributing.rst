@@ -162,13 +162,10 @@ prefer "Fix hanging when exception occurs in start_requests (#411)"
 instead of "Fix for #411". Complete titles make it easy to skim through
 the issue tracker.
 
-All issues marked as Open are still open to work, unless the “discuss” tag is used.
-Sometimes there is on-going work, which you can tell by inspecting issues with mentions
-to the corresponding issue, which appear in the issue thread as “ mentioned
-this issue on ”. You can start work on an issue even if there is an on-going PR,
-although it is usually best to focus on issues with no recent on-going work.
-Mentioned PRs, even if closed, can help you work on your own PR for a given issue;
-you can read the proposed solution, and specially the feedback it got, to inform your own choices.
+All issues marked as open is available for anyone to work on.
+Unless the issue is marked with a discuss tag. This would indicate that the issue has ongoing pull request.
+Although we ask for you to only work on open issues, it is encouraged to look at similar closed pull requests.
+This could help you make informed decisions on the current open issue you are working on.
 
 Finally, try to keep aesthetic changes (:pep:`8` compliance, unused imports
 removal, etc) in separate commits from functional changes. This will make pull
