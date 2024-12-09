@@ -118,6 +118,10 @@ Well-written patches should:
   (12 months) has passed since the release that introduced the deprecation.
   See :ref:`deprecation-policy`.
 
+Note: Any issues marked as Open are open to work, unless the "dicuss" tag is used. 
+Any issues currently being worked on can be identified by related issue mentions in the 
+thread. Issues with active PRs can be worked on, but it's best to focus on issues that 
+have no recent activity. Closed PRs can be used to help focus your own PR for any issues. 
 
 .. _submitting-patches:
 
