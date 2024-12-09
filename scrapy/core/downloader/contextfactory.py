@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import warnings
 from typing import TYPE_CHECKING, Any
 
@@ -8,6 +9,7 @@ from twisted.internet._sslverify import _setAcceptableProtocols
 from twisted.internet.ssl import (
     AcceptableCiphers,
     CertificateOptions,
+    TLSVersion,
     optionsForClientTLS,
     platformTrust,
 )
@@ -34,10 +36,15 @@ if TYPE_CHECKING:
     from scrapy.settings import BaseSettings
 
 
+logger = logging.getLogger(__name__)
+
+
 @implementer(IPolicyForHTTPS)
 class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     """
-    Non-peer-certificate verifying HTTPS context factory
+    Non-peer-certificate verifying HTTPS context factory.
+
+    TODO update the docstring
 
     Default OpenSSL method is TLS_METHOD (also called SSLv23_METHOD)
     which allows TLS protocol negotiation
@@ -48,14 +55,35 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
 
     def __init__(
         self,
-        method: int = SSL.SSLv23_METHOD,
+        method: int | None = SSL.SSLv23_METHOD,
         tls_verbose_logging: bool = False,
         tls_ciphers: str | None = None,
         *args: Any,
+        tls_min_version: TLSVersion | None = None,
+        tls_max_version: TLSVersion | None = None,
         **kwargs: Any,
     ):
         super().__init__(*args, **kwargs)
-        self._ssl_method: int = method
+        if method not in {SSL.SSLv23_METHOD, None}:
+            if tls_min_version or tls_max_version:
+                logger.warning(
+                    "Using both 'method' and 'tls_min_version'/'tls_max_version' arguments"
+                    " to set the TLS version is unsupported, the 'method' argument will be ignored."
+                )
+            else:
+                warnings.warn(
+                    "Passing a non-default TLS method value to ScrapyClientContextFactory is deprecated,"
+                    " the 'method' argument will be removed in a future Scrapy version. Please use"
+                    " 'tls_min_version' and/or 'tls_max_version' arguments if you want"
+                    " to change the supported TLS versions.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+        if method is not None and (tls_min_version or tls_max_version):
+            method = None
+        self._ssl_method: int | None = method
+        self.tls_min_version: TLSVersion | None = tls_min_version
+        self.tls_max_version: TLSVersion | None = tls_max_version
         self.tls_verbose_logging: bool = tls_verbose_logging
         self.tls_ciphers: AcceptableCiphers
         if tls_ciphers:
@@ -67,7 +95,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     def from_settings(
         cls,
         settings: BaseSettings,
-        method: int = SSL.SSLv23_METHOD,
+        method: int | None = SSL.SSLv23_METHOD,
         *args: Any,
         **kwargs: Any,
     ) -> Self:
@@ -82,7 +110,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     def from_crawler(
         cls,
         crawler: Crawler,
-        method: int = SSL.SSLv23_METHOD,
+        method: int | None = SSL.SSLv23_METHOD,
         *args: Any,
         **kwargs: Any,
     ) -> Self:
@@ -92,7 +120,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     def _from_settings(
         cls,
         settings: BaseSettings,
-        method: int = SSL.SSLv23_METHOD,
+        method: int | None = SSL.SSLv23_METHOD,
         *args: Any,
         **kwargs: Any,
     ) -> Self:
@@ -100,10 +128,36 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
         tls_ciphers: str | None = settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
+
+        tls_min_ver: TLSVersion | None = None
+        tls_max_ver: TLSVersion | None = None
+        tls_min_ver_setting: str | None = settings.get(
+            "DOWNLOADER_CLIENT_TLS_MIN_VERSION"
+        )
+        if tls_min_ver_setting:
+            try:
+                tls_min_ver = TLSVersion.lookupByName(tls_min_ver_setting)
+            except ValueError:
+                logger.error(
+                    f"Unknown DOWNLOADER_CLIENT_TLS_MIN_VERSION value: {tls_min_ver_setting}"
+                )
+        tls_max_ver_setting: str | None = settings.get(
+            "DOWNLOADER_CLIENT_TLS_MAX_VERSION"
+        )
+        if tls_max_ver_setting:
+            try:
+                tls_max_ver = TLSVersion.lookupByName(tls_max_ver_setting)
+            except ValueError:
+                logger.error(
+                    f"Unknown DOWNLOADER_CLIENT_TLS_MAX_VERSION value: {tls_max_ver_setting}"
+                )
+
         return cls(  # type: ignore[misc]
             method=method,
             tls_verbose_logging=tls_verbose_logging,
             tls_ciphers=tls_ciphers,
+            tls_min_version=tls_min_ver,
+            tls_max_version=tls_max_ver,
             *args,
             **kwargs,
         )
@@ -111,11 +165,26 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     def getCertificateOptions(self) -> CertificateOptions:
         # setting verify=True will require you to provide CAs
         # to verify against; in other words: it's not that simple
+        kwargs: dict[str, Any] = {}
+        if self.tls_min_version or self.tls_max_version:
+            if self.tls_max_version:
+                kwargs["lowerMaximumSecurityTo"] = self.tls_max_version
+            if self.tls_min_version:
+                # we cannot pass both insecurelyLowerMinimumTo and raiseMinimumTo,
+                # so we need to know the direction
+                default_min = CertificateOptions._defaultMinimumTLSVersion
+                if self.tls_min_version < default_min:
+                    kwargs["insecurelyLowerMinimumTo"] = self.tls_min_version
+                elif self.tls_min_version > default_min:
+                    kwargs["raiseMinimumTo"] = self.tls_min_version
+        else:
+            kwargs["method"] = self._ssl_method
+
         return CertificateOptions(
             verify=False,
-            method=self._ssl_method,
             fixBrokenPeers=True,
             acceptableCiphers=self.tls_ciphers,
+            **kwargs,
         )
 
     # kept for old-style HTTP/1.0 downloader context twisted calls,
@@ -160,7 +229,7 @@ class BrowserLikeContextFactory(ScrapyClientContextFactory):
         return optionsForClientTLS(
             hostname=hostname.decode("ascii"),
             trustRoot=platformTrust(),
-            extraCertificateOptions={"method": self._ssl_method},
+            extraCertificateOptions={"method": self._ssl_method},  # TODO
         )
 
 
@@ -187,7 +256,17 @@ class AcceptableProtocolsContextFactory:
 def load_context_factory_from_settings(
     settings: BaseSettings, crawler: Crawler
 ) -> IPolicyForHTTPS:
-    ssl_method = openssl_methods[settings.get("DOWNLOADER_CLIENT_TLS_METHOD")]
+    # TODO: this function should be deprecated in favor of simple build_from_crawler()
+    # when the method handling is removed
+    ssl_method_setting = settings.get("DOWNLOADER_CLIENT_TLS_METHOD")
+    if ssl_method_setting not in {"TLS", None}:
+        warnings.warn(
+            "Setting DOWNLOADER_CLIENT_TLS_METHOD to a non-default value is"
+            " deprecated, please use DOWNLOADER_CLIENT_TLS_MIN_VERSION and/or"
+            " DOWNLOADER_CLIENT_TLS_MAX_VERSION instead.",
+            ScrapyDeprecationWarning,
+        )
+    ssl_method = openssl_methods[ssl_method_setting]
     context_factory_cls = load_object(settings["DOWNLOADER_CLIENTCONTEXTFACTORY"])
     # try method-aware context factory
     try:
