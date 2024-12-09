@@ -21,7 +21,8 @@ from typing import (
 
 from w3lib.url import safe_url_string
 
-import scrapy
+# a workaround for the docs "more than one target found" problem
+import scrapy  # noqa: TC001
 from scrapy.http.headers import Headers
 from scrapy.utils.curl import curl_to_request_kwargs
 from scrapy.utils.python import to_bytes

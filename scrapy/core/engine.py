@@ -17,13 +17,9 @@ from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
 
 from scrapy import signals
-from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper, _HandleOutputDeferred
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.logformatter import LogFormatter
-from scrapy.settings import Settings
-from scrapy.signalmanager import SignalManager
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.reactor import CallLaterOnce
@@ -31,9 +27,12 @@ from scrapy.utils.reactor import CallLaterOnce
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Iterator
 
+    from scrapy.core.downloader import Downloader
     from scrapy.core.scheduler import BaseScheduler
     from scrapy.crawler import Crawler
-    from scrapy.settings import BaseSettings
+    from scrapy.logformatter import LogFormatter
+    from scrapy.settings import BaseSettings, Settings
+    from scrapy.signalmanager import SignalManager
     from scrapy.spiders import Spider
 
 

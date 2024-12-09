@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 from warnings import catch_warnings, filterwarnings
 
 from twisted.internet import asyncioreactor, error
-from twisted.internet.base import DelayedCall
 
 from scrapy.utils.misc import load_object
 
@@ -15,6 +14,7 @@ if TYPE_CHECKING:
     from asyncio import AbstractEventLoop, AbstractEventLoopPolicy
     from collections.abc import Callable
 
+    from twisted.internet.base import DelayedCall
     from twisted.internet.protocol import ServerFactory
     from twisted.internet.tcp import Port
 

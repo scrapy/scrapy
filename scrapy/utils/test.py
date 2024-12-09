@@ -16,7 +16,6 @@ from unittest import TestCase, mock
 from twisted.trial.unittest import SkipTest
 
 from scrapy import Spider
-from scrapy.crawler import Crawler
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.boto import is_botocore_available
 
@@ -25,6 +24,8 @@ if TYPE_CHECKING:
 
     from twisted.internet.defer import Deferred
     from twisted.web.client import Response as TxResponse
+
+    from scrapy.crawler import Crawler
 
 
 _T = TypeVar("_T")

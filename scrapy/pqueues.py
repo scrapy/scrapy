@@ -5,7 +5,6 @@ import logging
 from typing import TYPE_CHECKING, Protocol, cast
 
 from scrapy import Request
-from scrapy.core.downloader import Downloader
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
@@ -14,6 +13,7 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    from scrapy.core.downloader import Downloader
     from scrapy.crawler import Crawler
 
 logger = logging.getLogger(__name__)

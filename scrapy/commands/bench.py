@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import subprocess  # nosec
 import sys
 import time
@@ -13,6 +12,7 @@ from scrapy.http import Response, TextResponse
 from scrapy.linkextractors import LinkExtractor
 
 if TYPE_CHECKING:
+    import argparse
     from collections.abc import Iterable
 
     from scrapy import Request

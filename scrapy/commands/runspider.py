@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import sys
 from importlib import import_module
 from pathlib import Path
@@ -11,6 +10,7 @@ from scrapy.exceptions import UsageError
 from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
+    import argparse
     from os import PathLike
     from types import ModuleType
 
