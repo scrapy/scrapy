@@ -86,6 +86,11 @@ or testing-related issues, as they are always useful and can help you get
 more familiar with the project. You can also check Scrapy's `test coverage`_
 to see which areas may benefit from more tests.
 
+All issues marked as open is available for anyone to work on.
+Unless the issue is marked with a discuss tag. This would indicate that the issue has ongoing pull request.
+Although we ask for you to only work on open issues, it is encouraged to look at similar closed pull requests.
+This could help you make informed decisions on the current open issue you are working on.
+
 The better a patch is written, the higher the chances that it'll get accepted and the sooner it will be merged.
 
 Well-written patches should:
