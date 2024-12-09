@@ -194,6 +194,14 @@ Remember to explain what was fixed or the new functionality (what it is, why
 it's needed, etc). The more info you include, the easier will be for core
 developers to understand and accept your patch.
 
+If your pull request aims to resolve an open issue, `link it accordingly
+<https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword>`__,
+e.g.:
+
+.. code-block:: none
+
+    Resolves #123
+
 You can also discuss the new functionality (or bug fix) before creating the
 patch, but it's always good to have a patch ready to illustrate your arguments
 and show that you have put some additional thought into the subject. A good
