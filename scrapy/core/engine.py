@@ -80,11 +80,24 @@ class Slot:
 
 
 class ExecutionEngine:
+        """
+        The ExecutionEngine orchestrates the crawling process by managing
+        the scheduler, downloader, and spiders. It handles request execution,
+        response processing, and error handling.
+        """
+
     def __init__(
         self,
         crawler: Crawler,
         spider_closed_callback: Callable[[Spider], Deferred[None] | None],
     ) -> None:
+        """
+        Initializes the ExecutionEngine with a given crawler.
+
+        Args:
+            crawler (Crawler): The crawler instance for which this engine is created.
+        """
+    
         self.crawler: Crawler = crawler
         self.settings: Settings = crawler.settings
         self.signals: SignalManager = crawler.signals
@@ -106,6 +119,21 @@ class ExecutionEngine:
         self.start_time: float | None = None
 
     def _get_scheduler_class(self, settings: BaseSettings) -> type[BaseScheduler]:
+        """
+        Retrieves the scheduler class to be used by the Scrapy engine.
+
+        If a scheduler class is explicitly provided, it is returned. Otherwise, the method 
+        falls back to the default scheduler class defined in the settings.
+
+        Args:
+            scheduler_cls (type or None): The scheduler class explicitly provided, or None 
+                                        to use the default scheduler.
+        Returns:
+            type: The scheduler class to be used by the engine.
+        Raises:
+            ImportError: If the specified scheduler class cannot be imported.
+        """
+
         from scrapy.core.scheduler import BaseScheduler
 
         scheduler_cls: type[BaseScheduler] = load_object(settings["SCHEDULER"])
@@ -118,6 +146,15 @@ class ExecutionEngine:
 
     @inlineCallbacks
     def start(self) -> Generator[Deferred[Any], Any, None]:
+         """
+        Starts the crawling process by initializing components and scheduling the 
+        first requests.
+
+        Returns:
+            Deferred: A Twisted Deferred object that will be fired when the engine 
+                      has finished running.
+        """
+
         if self.running:
             raise RuntimeError("Engine already running")
         self.start_time = time()
@@ -166,6 +203,17 @@ class ExecutionEngine:
         self.paused = False
 
     def _next_request(self) -> None:
+        """
+        Requests the next item from the scheduler and sends it to the downloader.
+
+        This method is called repeatedly during the crawling process to fetch the 
+        next request, send it to the downloader, and handle the response.
+
+        Returns:
+            bool: True if a new request was processed, False if no more requests 
+                  are available.
+        """
+
         if self.slot is None:
             return
 
