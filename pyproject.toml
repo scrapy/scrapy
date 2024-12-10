@@ -240,6 +240,8 @@ extend-select = [
     "ISC",
     # flake8-logging
     "LOG",
+    # pygrep-hooks
+    "PGH",
     # flake8-quotes
     "Q",
     # flake8-bandit
