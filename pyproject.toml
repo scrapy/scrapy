@@ -232,14 +232,24 @@ extend-select = [
     "C4",
     # pydocstyle
     "D",
+    # flake8-future-annotations
+    "FA",
+    # flake8-logging
+    "LOG",
+    # flake8-quotes
+    "Q",
     # flake8-bandit
     "S",
+    # flake8-slots
+    "SLOT",
     # flake8-debugger
     "T10",
     # flake8-type-checking
     "TC",
     # pyupgrade
     "UP",
+    # flake8-2020
+    "YTT",
 ]
 ignore = [
     # Assigning to `os.environ` doesn't clear the environment.
