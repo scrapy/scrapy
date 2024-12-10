@@ -7,7 +7,7 @@ from io import StringIO
 from typing import TYPE_CHECKING, Any, Literal, cast, overload
 from warnings import warn
 
-from lxml import etree  # nosec
+from lxml import etree
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse

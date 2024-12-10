@@ -66,7 +66,7 @@ def _md5sum(file: IO[bytes]) -> str:
     >>> _md5sum(BytesIO(b'file content to hash'))
     '784406af91dd5a54fbb9c84c2236595a'
     """
-    m = hashlib.md5()  # nosec
+    m = hashlib.md5()  # noqa: S324
     while True:
         d = file.read(8096)
         if not d:
@@ -399,7 +399,7 @@ class FTPFilesStore:
                     ftp.set_pasv(False)
                 file_path = f"{self.basedir}/{path}"
                 last_modified = float(ftp.voidcmd(f"MDTM {file_path}")[4:].strip())
-                m = hashlib.md5()  # nosec
+                m = hashlib.md5()  # noqa: S324
                 ftp.retrbinary(f"RETR {file_path}", m.update)
                 return {"last_modified": last_modified, "checksum": m.hexdigest()}
             # The file doesn't exist
@@ -734,7 +734,7 @@ class FilesPipeline(MediaPipeline):
         *,
         item: Any = None,
     ) -> str:
-        media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # nosec
+        media_guid = hashlib.sha1(to_bytes(request.url)).hexdigest()  # noqa: S324
         media_ext = Path(request.url).suffix
         # Handles empty and wild extensions by trying to guess the
         # mime type then extension or default to empty string otherwise

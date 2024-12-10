@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import subprocess  # nosec
+import subprocess
 import sys
 import time
 from typing import TYPE_CHECKING, Any
@@ -40,9 +40,9 @@ class _BenchServer:
         from scrapy.utils.test import get_testenv
 
         pargs = [sys.executable, "-u", "-m", "scrapy.utils.benchserver"]
-        self.proc = subprocess.Popen(
+        self.proc = subprocess.Popen(  # noqa: S603
             pargs, stdout=subprocess.PIPE, env=get_testenv()
-        )  # nosec
+        )
         assert self.proc.stdout
         self.proc.stdout.readline()
 

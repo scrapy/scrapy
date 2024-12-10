@@ -11,11 +11,13 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 
-from lxml.html import FormElement  # nosec
-from lxml.html import InputElement  # nosec
-from lxml.html import MultipleSelectOptions  # nosec
-from lxml.html import SelectElement  # nosec
-from lxml.html import TextareaElement  # nosec
+from lxml.html import (
+    FormElement,
+    InputElement,
+    MultipleSelectOptions,
+    SelectElement,
+    TextareaElement,
+)
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.request import Request

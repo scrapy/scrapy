@@ -3,12 +3,6 @@ repos:
   rev: v0.8.1
   hooks:
     - id: ruff
-- repo: https://github.com/PyCQA/bandit
-  rev: 1.7.9
-  hooks:
-  - id: bandit
-    args: ["-c", "pyproject.toml"]
-    additional_dependencies: ["bandit[toml]"]
 - repo: https://github.com/psf/black.git
   rev: 24.4.2
   hooks:

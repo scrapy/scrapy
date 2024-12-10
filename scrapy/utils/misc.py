@@ -116,7 +116,7 @@ def md5sum(file: IO[bytes]) -> str:
         ScrapyDeprecationWarning,
         stacklevel=2,
     )
-    m = hashlib.md5()  # nosec
+    m = hashlib.md5()  # noqa: S324
     while True:
         d = file.read(8096)
         if not d:
