@@ -89,7 +89,7 @@ def escape_ajax(url: str) -> str:
 
 def add_http_if_no_scheme(url: str) -> str:
     """Add http as the default scheme if it is missing from the url."""
-    match = re.match(r"^\w+://", url, flags=re.I)
+    match = re.match(r"^\w+://", url, flags=re.IGNORECASE)
     if not match:
         parts = urlparse(url)
         scheme = "http:" if parts.netloc else "http://"

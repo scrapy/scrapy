@@ -234,6 +234,8 @@ extend-select = [
     "D",
     # flake8-future-annotations
     "FA",
+    # refurb
+    "FURB",
     # flake8-logging
     "LOG",
     # flake8-quotes

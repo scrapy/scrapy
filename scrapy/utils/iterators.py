@@ -41,10 +41,10 @@ def xmliter(obj: Response | str | bytes, nodename: str) -> Iterator[Selector]:
 
     nodename_patt = re.escape(nodename)
 
-    DOCUMENT_HEADER_RE = re.compile(r"<\?xml[^>]+>\s*", re.S)
-    HEADER_END_RE = re.compile(rf"<\s*/{nodename_patt}\s*>", re.S)
-    END_TAG_RE = re.compile(r"<\s*/([^\s>]+)\s*>", re.S)
-    NAMESPACE_RE = re.compile(r"((xmlns[:A-Za-z]*)=[^>\s]+)", re.S)
+    DOCUMENT_HEADER_RE = re.compile(r"<\?xml[^>]+>\s*", re.DOTALL)
+    HEADER_END_RE = re.compile(rf"<\s*/{nodename_patt}\s*>", re.DOTALL)
+    END_TAG_RE = re.compile(r"<\s*/([^\s>]+)\s*>", re.DOTALL)
+    NAMESPACE_RE = re.compile(r"((xmlns[:A-Za-z]*)=[^>\s]+)", re.DOTALL)
     text = _body_or_str(obj)
 
     document_header_match = re.search(DOCUMENT_HEADER_RE, text)
@@ -58,7 +58,9 @@ def xmliter(obj: Response | str | bytes, nodename: str) -> Iterator[Selector]:
         for tagname in reversed(re.findall(END_TAG_RE, header_end)):
             assert header_end_idx
             tag = re.search(
-                rf"<\s*{tagname}.*?xmlns[:=][^>]*>", text[: header_end_idx[1]], re.S
+                rf"<\s*{tagname}.*?xmlns[:=][^>]*>",
+                text[: header_end_idx[1]],
+                re.DOTALL,
             )
             if tag:
                 for x in re.findall(NAMESPACE_RE, tag.group()):
