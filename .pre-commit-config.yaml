@@ -9,17 +9,6 @@ repos:
   - id: bandit
     args: ["-c", "pyproject.toml"]
     additional_dependencies: ["bandit[toml]"]
-- repo: https://github.com/PyCQA/flake8
-  rev: 7.1.0
-  hooks:
-  - id: flake8
-    additional_dependencies:
-    - flake8-bugbear
-    - flake8-comprehensions
-    - flake8-debugger
-    - flake8-docstrings
-    - flake8-string-format
-    - flake8-type-checking
 - repo: https://github.com/psf/black.git
   rev: 24.4.2
   hooks:
