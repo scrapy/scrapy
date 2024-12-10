@@ -236,6 +236,8 @@ extend-select = [
     "FA",
     # refurb
     "FURB",
+    # flake8-implicit-str-concat
+    "ISC",
     # flake8-logging
     "LOG",
     # flake8-quotes
