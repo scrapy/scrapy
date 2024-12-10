@@ -246,6 +246,8 @@ extend-select = [
     "T10",
     # flake8-type-checking
     "TC",
+    # pyupgrade
+    "UP",
 ]
 ignore = [
     # Assigning to `os.environ` doesn't clear the environment.
