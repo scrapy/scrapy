@@ -3,7 +3,7 @@ import sys
 
 import cryptography
 import cssselect
-import lxml.etree  # nosec
+import lxml.etree
 import parsel
 import twisted
 import w3lib

@@ -631,7 +631,7 @@ class TestGCSFilesStore(unittest.TestCase):
         """
         assert_gcs_environ()
         try:
-            import google.cloud.storage  # noqa
+            import google.cloud.storage  # noqa: F401
         except ModuleNotFoundError:
             raise unittest.SkipTest("google-cloud-storage is not installed")
         with mock.patch("google.cloud.storage") as _:

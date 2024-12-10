@@ -161,7 +161,7 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
 
         # test minimal sent headers
         factory = client.ScrapyHTTPClientFactory(Request("http://foo/bar"))
-        self._test(factory, b"GET /bar HTTP/1.0\r\n" b"Host: foo\r\n" b"\r\n")
+        self._test(factory, b"GET /bar HTTP/1.0\r\nHost: foo\r\n\r\n")
 
         # test a simple POST with body and content-type
         factory = client.ScrapyHTTPClientFactory(
@@ -191,7 +191,7 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
 
         self._test(
             factory,
-            b"POST /bar HTTP/1.0\r\n" b"Host: foo\r\n" b"Content-Length: 0\r\n" b"\r\n",
+            b"POST /bar HTTP/1.0\r\nHost: foo\r\nContent-Length: 0\r\n\r\n",
         )
 
         # test with single and multivalued headers

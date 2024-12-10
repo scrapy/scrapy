@@ -6,13 +6,13 @@ from __future__ import annotations
 
 import csv
 import marshal
-import pickle  # nosec
+import pickle
 import pprint
 from collections.abc import Callable, Iterable, Mapping
 from io import BytesIO, TextIOWrapper
 from typing import TYPE_CHECKING, Any
-from xml.sax.saxutils import XMLGenerator  # nosec
-from xml.sax.xmlreader import AttributesImpl  # nosec
+from xml.sax.saxutils import XMLGenerator
+from xml.sax.xmlreader import AttributesImpl
 
 from itemadapter import ItemAdapter, is_item
 

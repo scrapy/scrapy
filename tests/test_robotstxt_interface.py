@@ -66,14 +66,14 @@ class BaseRobotParserTest:
         self.assertTrue(rp.allowed("https://www.site.local/is_allowed_too", "second"))
 
     def test_length_based_precedence(self):
-        robotstxt_robotstxt_body = b"User-agent: * \n" b"Disallow: / \n" b"Allow: /page"
+        robotstxt_robotstxt_body = b"User-agent: * \nDisallow: / \nAllow: /page"
         rp = self.parser_cls.from_crawler(
             crawler=None, robotstxt_body=robotstxt_robotstxt_body
         )
         self.assertTrue(rp.allowed("https://www.site.local/page", "*"))
 
     def test_order_based_precedence(self):
-        robotstxt_robotstxt_body = b"User-agent: * \n" b"Disallow: / \n" b"Allow: /page"
+        robotstxt_robotstxt_body = b"User-agent: * \nDisallow: / \nAllow: /page"
         rp = self.parser_cls.from_crawler(
             crawler=None, robotstxt_body=robotstxt_robotstxt_body
         )

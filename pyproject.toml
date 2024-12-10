@@ -92,16 +92,6 @@ follow_imports = "skip"
 module = "scrapy.settings.default_settings"
 ignore_errors = true
 
-[tool.bandit]
-skips = [
-    "B101", # assert_used, needed for mypy
-    "B321", # ftplib, https://github.com/scrapy/scrapy/issues/4180
-    "B402", # import_ftplib, https://github.com/scrapy/scrapy/issues/4180
-    "B411", # import_xmlrpclib, https://github.com/PyCQA/bandit/issues/1082
-    "B503", # ssl_with_bad_defaults
-]
-exclude_dirs = ["tests"]
-
 [tool.bumpversion]
 current_version = "2.12.0"
 commit = true
@@ -242,10 +232,30 @@ extend-select = [
     "C4",
     # pydocstyle
     "D",
+    # flake8-future-annotations
+    "FA",
+    # refurb
+    "FURB",
+    # flake8-implicit-str-concat
+    "ISC",
+    # flake8-logging
+    "LOG",
+    # pygrep-hooks
+    "PGH",
+    # flake8-quotes
+    "Q",
+    # flake8-bandit
+    "S",
+    # flake8-slots
+    "SLOT",
     # flake8-debugger
     "T10",
     # flake8-type-checking
     "TC",
+    # pyupgrade
+    "UP",
+    # flake8-2020
+    "YTT",
 ]
 ignore = [
     # Assigning to `os.environ` doesn't clear the environment.
@@ -296,6 +306,12 @@ ignore = [
     "D402",
     # First word of the first line should be properly capitalized
     "D403",
+    # Use of `assert` detected; needed for mypy
+    "S101",
+    # FTP-related functions are being called; https://github.com/scrapy/scrapy/issues/4180
+    "S321",
+    # Argument default set to insecure SSL protocol
+    "S503",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -306,6 +322,9 @@ ignore = [
 "scrapy/linkextractors/__init__.py" = ["E402", "F401"]
 "scrapy/selector/__init__.py" = ["F401"]
 "scrapy/spiders/__init__.py" = ["E402", "F401"]
+
+# Skip bandit in tests
+"tests/**" = ["S"]
 
 # Issues pending a review:
 "docs/conf.py" = ["E402"]

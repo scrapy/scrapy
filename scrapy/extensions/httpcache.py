@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import gzip
 import logging
-import pickle  # nosec
+import pickle
 from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from pathlib import Path
@@ -309,7 +309,7 @@ class DbmCacheStorage:
         if 0 < self.expiration_secs < time() - float(ts):
             return None  # expired
 
-        return cast(dict[str, Any], pickle.loads(db[f"{key}_data"]))  # nosec
+        return cast(dict[str, Any], pickle.loads(db[f"{key}_data"]))  # noqa: S301
 
 
 class FilesystemCacheStorage:
@@ -392,7 +392,7 @@ class FilesystemCacheStorage:
         if 0 < self.expiration_secs < time() - mtime:
             return None  # expired
         with self._open(metapath, "rb") as f:
-            return cast(dict[str, Any], pickle.load(f))  # nosec
+            return cast(dict[str, Any], pickle.load(f))  # noqa: S301
 
 
 def parse_cachecontrol(header: bytes) -> dict[bytes, bytes | None]:

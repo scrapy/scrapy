@@ -136,7 +136,7 @@ def to_bytes(
         return text
     if not isinstance(text, str):
         raise TypeError(
-            "to_bytes must receive a str or bytes " f"object, got {type(text).__name__}"
+            f"to_bytes must receive a str or bytes object, got {type(text).__name__}"
         )
     if encoding is None:
         encoding = "utf-8"

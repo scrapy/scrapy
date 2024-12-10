@@ -118,7 +118,7 @@ class Command(ScrapyCommand):
         if template_file:
             self._genspider(module, name, url, opts.template, template_file)
             if opts.edit:
-                self.exitcode = os.system(f'scrapy edit "{name}"')  # nosec
+                self.exitcode = os.system(f'scrapy edit "{name}"')  # noqa: S605
 
     def _generate_template_variables(
         self,
