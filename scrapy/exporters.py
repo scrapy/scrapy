@@ -10,8 +10,7 @@ import pickle  # nosec
 import pprint
 from collections.abc import Callable, Iterable, Mapping
 from io import BytesIO, TextIOWrapper
-from json import JSONEncoder
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from xml.sax.saxutils import XMLGenerator  # nosec
 from xml.sax.xmlreader import AttributesImpl  # nosec
 
@@ -20,6 +19,9 @@ from itemadapter import ItemAdapter, is_item
 from scrapy.item import Field, Item
 from scrapy.utils.python import is_listlike, to_bytes, to_unicode
 from scrapy.utils.serialize import ScrapyJSONEncoder
+
+if TYPE_CHECKING:
+    from json import JSONEncoder
 
 __all__ = [
     "BaseItemExporter",

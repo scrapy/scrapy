@@ -236,8 +236,66 @@ filterwarnings = []
 
 [tool.ruff.lint]
 extend-select = [
+    # flake8-bugbear
+    "B",
+    # flake8-comprehensions
+    "C4",
+    # pydocstyle
+    "D",
+    # flake8-debugger
+    "T10",
+    # flake8-type-checking
+    "TC",
 ]
 ignore = [
+    # Assigning to `os.environ` doesn't clear the environment.
+    "B003",
+    # Do not use mutable data structures for argument defaults.
+    "B006",
+    # Loop control variable not used within the loop body.
+    "B007",
+    # Do not perform function calls in argument defaults.
+    "B008",
+    # Star-arg unpacking after a keyword argument is strongly discouraged.
+    "B026",
+    # Found useless expression.
+    "B018",
+    # No explicit stacklevel argument found.
+    "B028",
+    # Within an `except` clause, raise exceptions with `raise ... from`
+    "B904",
+    # Missing docstring in public module
+    "D100",
+    # Missing docstring in public class
+    "D101",
+    # Missing docstring in public method
+    "D102",
+    # Missing docstring in public function
+    "D103",
+    # Missing docstring in public package
+    "D104",
+    # Missing docstring in magic method
+    "D105",
+    # Missing docstring in public nested class
+    "D106",
+    # Missing docstring in __init__
+    "D107",
+    # One-line docstring should fit on one line with quotes
+    "D200",
+    # No blank lines allowed after function docstring
+    "D202",
+    # 1 blank line required between summary line and description
+    "D205",
+    # Multi-line docstring closing quotes should be on a separate line
+    "D209",
+    # First line should end with a period
+    "D400",
+    # First line should be in imperative mood; try rephrasing
+    "D401",
+    # First line should not be the function's "signature"
+    "D402",
+    # First word of the first line should be properly capitalized
+    "D403",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -252,5 +310,7 @@ ignore = [
 # Issues pending a review:
 "docs/conf.py" = ["E402"]
 "scrapy/utils/url.py" = ["F403", "F405"]
-"tests/CrawlerRunner/change_reactor.py" = ["E402"]
 "tests/test_loader.py" = ["E741"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"

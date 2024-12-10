@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import gzip
 import logging
-import os
 import pickle  # nosec
 from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from pathlib import Path
 from time import time
-from types import ModuleType
 from typing import IO, TYPE_CHECKING, Any, cast
 from weakref import WeakKeyDictionary
 
@@ -19,10 +17,11 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.utils.request import RequestFingerprinter
 
 if TYPE_CHECKING:
+    import os
     from collections.abc import Callable
+    from types import ModuleType
 
     # typing.Concatenate requires Python 3.10
     from typing_extensions import Concatenate
@@ -30,6 +29,7 @@ if TYPE_CHECKING:
     from scrapy.http.request import Request
     from scrapy.settings import BaseSettings
     from scrapy.spiders import Spider
+    from scrapy.utils.request import RequestFingerprinter
 
 
 logger = logging.getLogger(__name__)

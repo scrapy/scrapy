@@ -18,10 +18,8 @@ from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
 from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
-from scrapy.logformatter import LogFormatter
 from scrapy.settings import BaseSettings, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
-from scrapy.statscollectors import StatsCollector
 from scrapy.utils.log import (
     LogCounterHandler,
     configure_logging,
@@ -42,7 +40,9 @@ from scrapy.utils.reactor import (
 if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
 
+    from scrapy.logformatter import LogFormatter
     from scrapy.spiderloader import SpiderLoader
+    from scrapy.statscollectors import StatsCollector
     from scrapy.utils.request import RequestFingerprinter
 
 
