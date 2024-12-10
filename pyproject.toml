@@ -310,7 +310,6 @@ ignore = [
 # Issues pending a review:
 "docs/conf.py" = ["E402"]
 "scrapy/utils/url.py" = ["F403", "F405"]
-"tests/CrawlerRunner/change_reactor.py" = ["E402"]
 "tests/test_loader.py" = ["E741"]
 
 [tool.ruff.lint.pydocstyle]

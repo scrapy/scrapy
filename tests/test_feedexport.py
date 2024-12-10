@@ -473,7 +473,7 @@ class S3FeedStorageTest(unittest.TestCase):
 class GCSFeedStorageTest(unittest.TestCase):
     def test_parse_settings(self):
         try:
-            from google.cloud.storage import Client  # noqa
+            from google.cloud.storage import Client  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
@@ -487,7 +487,7 @@ class GCSFeedStorageTest(unittest.TestCase):
 
     def test_parse_empty_acl(self):
         try:
-            from google.cloud.storage import Client  # noqa
+            from google.cloud.storage import Client  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
@@ -504,7 +504,7 @@ class GCSFeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store(self):
         try:
-            from google.cloud.storage import Client  # noqa
+            from google.cloud.storage import Client  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
