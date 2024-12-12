@@ -68,7 +68,7 @@ class Command(ScrapyCommand):
 
     def run(self, args: list[str], opts: Namespace) -> None:
         if len(args) != 1 or not is_url(args[0]):
-            raise UsageError()
+            raise UsageError
         request = Request(
             args[0],
             callback=self._print_response,

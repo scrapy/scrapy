@@ -59,7 +59,7 @@ class HttpCompressionTest(TestCase):
 
     def _getresponse(self, coding):
         if coding not in FORMAT:
-            raise ValueError()
+            raise ValueError
 
         samplefile, contentencoding = FORMAT[coding]
 

@@ -246,6 +246,8 @@ extend-select = [
     "Q",
     # flake8-return
     "RET",
+    # flake8-raise
+    "RSE",
     # flake8-bandit
     "S",
     # flake8-slots

@@ -178,7 +178,7 @@ class ProcessExceptionInvalidOutput(ManagerTestCase):
 
         class InvalidProcessExceptionMiddleware:
             def process_request(self, request, spider):
-                raise Exception()
+                raise Exception
 
             def process_exception(self, request, exception, spider):
                 return 1

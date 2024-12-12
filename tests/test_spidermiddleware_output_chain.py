@@ -43,7 +43,7 @@ class RecoverySpider(Spider):
         yield {"test": 1}
         self.logger.info("DONT_FAIL: %s", response.meta.get("dont_fail"))
         if not response.meta.get("dont_fail"):
-            raise TabError()
+            raise TabError
 
 
 class RecoveryAsyncGenSpider(RecoverySpider):
@@ -59,7 +59,7 @@ class RecoveryAsyncGenSpider(RecoverySpider):
 class FailProcessSpiderInputMiddleware:
     def process_spider_input(self, response, spider):
         spider.logger.info("Middleware: will raise IndexError")
-        raise IndexError()
+        raise IndexError
 
 
 class ProcessSpiderInputSpiderWithoutErrback(Spider):
@@ -109,14 +109,14 @@ class GeneratorCallbackSpider(Spider):
     def parse(self, response):
         yield {"test": 1}
         yield {"test": 2}
-        raise ImportError()
+        raise ImportError
 
 
 class AsyncGeneratorCallbackSpider(GeneratorCallbackSpider):
     async def parse(self, response):
         yield {"test": 1}
         yield {"test": 2}
-        raise ImportError()
+        raise ImportError
 
 
 # ================================================================================
@@ -176,7 +176,7 @@ class GeneratorFailMiddleware:
         for r in result:
             r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             yield r
-            raise LookupError()
+            raise LookupError
 
     def process_spider_exception(self, response, exception, spider):
         method = f"{self.__class__.__name__}.process_spider_exception"
@@ -246,7 +246,7 @@ class NotGeneratorFailMiddleware:
         for r in result:
             r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             out.append(r)
-        raise ReferenceError()
+        raise ReferenceError
         return out
 
     def process_spider_exception(self, response, exception, spider):

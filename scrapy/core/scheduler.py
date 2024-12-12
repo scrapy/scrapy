@@ -98,7 +98,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         """
         ``True`` if the scheduler has enqueued requests, ``False`` otherwise
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def enqueue_request(self, request: Request) -> bool:
@@ -112,7 +112,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         For reference, the default Scrapy scheduler returns ``False`` when the
         request is rejected by the dupefilter.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def next_request(self) -> Request | None:
@@ -124,7 +124,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         to the downloader in the current reactor cycle. The engine will continue
         calling ``next_request`` until ``has_pending_requests`` is ``False``.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class Scheduler(BaseScheduler):

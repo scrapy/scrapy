@@ -92,7 +92,7 @@ class Command(ScrapyCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) not in (1, 2):
-            raise UsageError()
+            raise UsageError
 
         project_name = args[0]
 

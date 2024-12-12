@@ -10,7 +10,7 @@ from scrapy.utils.misc import (
 
 
 def _indentation_error(*args, **kwargs):
-    raise IndentationError()
+    raise IndentationError
 
 
 def top_level_return_something():

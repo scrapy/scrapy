@@ -78,7 +78,7 @@ class ProcessSpiderExceptionInvalidOutput(SpiderMiddlewareTestCase):
 
         class RaiseExceptionProcessSpiderOutputMiddleware:
             def process_spider_output(self, response, result, spider):
-                raise Exception()
+                raise Exception
 
         self.mwman._add_middleware(InvalidProcessSpiderOutputExceptionMiddleware())
         self.mwman._add_middleware(RaiseExceptionProcessSpiderOutputMiddleware())
