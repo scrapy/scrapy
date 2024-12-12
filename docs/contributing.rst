@@ -101,8 +101,8 @@ to contribute, you have a few options to find pending work:
     increasing our `test coverage`_.
 
 -   If you enjoy code cleanup, we welcome fixes for issues detected by our
-    static analysis tools. See ``.flake8`` and ``pyproject.toml`` for silenced
-    issues that may need addressing.
+    static analysis tools. See ``pyproject.toml`` for silenced issues that may
+    need addressing.
 
     Mind that some issues we do not aim to address at all, and usually include
     a comment on them explaining the reason; not to confuse with comments that
@@ -133,7 +133,7 @@ If you decide to work on something without an open issue, please:
     will be easier over your code.
 
 -   Do not add docstrings for the sake of adding docstrings, or only to address
-    silenced Flake8 issues. We expect docstrings to exist only when they add
+    silenced Ruff issues. We expect docstrings to exist only when they add
     something significant to readers, such as explaining something that is not
     easier to understand from reading the corresponding code, summarizing a
     long, hard-to-read implementation, providing context about calling code, or
