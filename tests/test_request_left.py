@@ -18,8 +18,7 @@ class SignalCatcherSpider(Spider):
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        spider = cls(crawler, *args, **kwargs)
-        return spider
+        return cls(crawler, *args, **kwargs)
 
     def on_request_left(self, request, spider):
         self.caught_times += 1

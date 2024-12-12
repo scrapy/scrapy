@@ -36,7 +36,7 @@ def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:
         return reactor.listenTCP(0, factory, interface=host)
     if len(portrange) == 1:
         return reactor.listenTCP(portrange[0], factory, interface=host)
-    for x in range(portrange[0], portrange[1] + 1):
+    for x in range(portrange[0], portrange[1] + 1):  # noqa: RET503
         try:
             return reactor.listenTCP(x, factory, interface=host)
         except error.CannotListenError:

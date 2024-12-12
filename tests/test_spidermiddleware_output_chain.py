@@ -12,7 +12,6 @@ class LogExceptionMiddleware:
         spider.logger.info(
             "Middleware: %s exception caught", exception.__class__.__name__
         )
-        return None
 
 
 # ================================================================================
@@ -170,7 +169,6 @@ class _GeneratorDoNothingMiddleware:
     def process_spider_exception(self, response, exception, spider):
         method = f"{self.__class__.__name__}.process_spider_exception"
         spider.logger.info("%s: %s caught", method, exception.__class__.__name__)
-        return None
 
 
 class GeneratorFailMiddleware:
@@ -240,7 +238,6 @@ class _NotGeneratorDoNothingMiddleware:
     def process_spider_exception(self, response, exception, spider):
         method = f"{self.__class__.__name__}.process_spider_exception"
         spider.logger.info("%s: %s caught", method, exception.__class__.__name__)
-        return None
 
 
 class NotGeneratorFailMiddleware:

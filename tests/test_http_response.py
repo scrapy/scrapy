@@ -342,13 +342,11 @@ class BaseResponseTest(unittest.TestCase):
 
     def _links_response(self):
         body = get_testdata("link_extractor", "linkextractor.html")
-        resp = self.response_class("http://example.com/index", body=body)
-        return resp
+        return self.response_class("http://example.com/index", body=body)
 
     def _links_response_no_href(self):
         body = get_testdata("link_extractor", "linkextractor_no_href.html")
-        resp = self.response_class("http://example.com/index", body=body)
-        return resp
+        return self.response_class("http://example.com/index", body=body)
 
 
 class TextResponseTest(BaseResponseTest):

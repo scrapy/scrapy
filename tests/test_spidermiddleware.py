@@ -37,8 +37,7 @@ class SpiderMiddlewareTestCase(TestCase):
         results = []
         dfd.addBoth(results.append)
         self._wait(dfd)
-        ret = results[0]
-        return ret
+        return results[0]
 
 
 class ProcessSpiderInputInvalidOutput(SpiderMiddlewareTestCase):

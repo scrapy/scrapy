@@ -225,8 +225,9 @@ class Command(BaseRunSpiderCommand):
         cb_kwargs: dict[str, Any] | None = None,
     ) -> Deferred[Any]:
         cb_kwargs = cb_kwargs or {}
-        d = maybeDeferred(self.iterate_spider_output, callback(response, **cb_kwargs))
-        return d
+        return maybeDeferred(
+            self.iterate_spider_output, callback(response, **cb_kwargs)
+        )
 
     def get_callback_from_rules(
         self, spider: Spider, response: Response

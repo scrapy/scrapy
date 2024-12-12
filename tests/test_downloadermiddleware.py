@@ -250,8 +250,7 @@ class MiddlewareUsingCoro(ManagerTestCase):
         class CoroMiddleware:
             async def process_request(self, request, spider):
                 await asyncio.sleep(0.1)
-                result = await get_from_asyncio_queue(resp)
-                return result
+                return await get_from_asyncio_queue(resp)
 
         self.mwman._add_middleware(CoroMiddleware())
         req = Request("http://example.com/index.html")

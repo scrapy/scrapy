@@ -244,6 +244,8 @@ extend-select = [
     "PGH",
     # flake8-quotes
     "Q",
+    # flake8-return
+    "RET",
     # flake8-bandit
     "S",
     # flake8-slots

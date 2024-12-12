@@ -157,8 +157,7 @@ class PostProcessingManager(IOBase):
         return True
 
     def _load_plugins(self, plugins: list[Any]) -> list[Any]:
-        plugins = [load_object(plugin) for plugin in plugins]
-        return plugins
+        return [load_object(plugin) for plugin in plugins]
 
     def _get_head_plugin(self) -> Any:
         prev = self.file

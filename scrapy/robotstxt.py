@@ -79,8 +79,7 @@ class PythonRobotParser(RobotParser):
     @classmethod
     def from_crawler(cls, crawler: Crawler, robotstxt_body: bytes) -> Self:
         spider = None if not crawler else crawler.spider
-        o = cls(robotstxt_body, spider)
-        return o
+        return cls(robotstxt_body, spider)
 
     def allowed(self, url: str | bytes, user_agent: str | bytes) -> bool:
         user_agent = to_unicode(user_agent)
@@ -100,8 +99,7 @@ class RerpRobotParser(RobotParser):
     @classmethod
     def from_crawler(cls, crawler: Crawler, robotstxt_body: bytes) -> Self:
         spider = None if not crawler else crawler.spider
-        o = cls(robotstxt_body, spider)
-        return o
+        return cls(robotstxt_body, spider)
 
     def allowed(self, url: str | bytes, user_agent: str | bytes) -> bool:
         user_agent = to_unicode(user_agent)
@@ -120,8 +118,7 @@ class ProtegoRobotParser(RobotParser):
     @classmethod
     def from_crawler(cls, crawler: Crawler, robotstxt_body: bytes) -> Self:
         spider = None if not crawler else crawler.spider
-        o = cls(robotstxt_body, spider)
-        return o
+        return cls(robotstxt_body, spider)
 
     def allowed(self, url: str | bytes, user_agent: str | bytes) -> bool:
         user_agent = to_unicode(user_agent)
