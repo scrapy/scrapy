@@ -264,6 +264,8 @@ extend-select = [
     "TC",
     # pyupgrade
     "UP",
+    # pycodestyle warnings
+    "W",
     # flake8-2020
     "YTT",
 ]
