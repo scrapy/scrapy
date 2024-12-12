@@ -5,16 +5,7 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Literal,
-    NoReturn,
-    TypedDict,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, TypedDict, Union, cast
 
 from twisted import version as twisted_version
 from twisted.internet.defer import Deferred, DeferredList
@@ -40,8 +31,6 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
     from scrapy.http import Response
     from scrapy.utils.request import RequestFingerprinter
-
-_T = TypeVar("_T")
 
 
 class FileInfo(TypedDict):
