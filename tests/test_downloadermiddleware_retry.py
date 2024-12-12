@@ -265,7 +265,7 @@ class MaxRetryTimesTest(unittest.TestCase):
         spider = spider or self.spider
         middleware = middleware or self.mw
 
-        for i in range(0, max_retry_times):
+        for i in range(max_retry_times):
             req = middleware.process_exception(req, exception, spider)
             assert isinstance(req, Request)
 

@@ -81,7 +81,6 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         :param spider: the spider object for the current crawl
         :type spider: :class:`~scrapy.spiders.Spider`
         """
-        pass
 
     def close(self, reason: str) -> Deferred[None] | None:
         """
@@ -91,7 +90,6 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         :param reason: a string which describes the reason why the spider was closed
         :type reason: :class:`str`
         """
-        pass
 
     @abstractmethod
     def has_pending_requests(self) -> bool:

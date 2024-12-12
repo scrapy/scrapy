@@ -311,11 +311,11 @@ class FilesPipelineTestCaseFieldsDataClass(
 class FilesPipelineTestAttrsItem:
     name = attr.ib(default="")
     # default fields
-    file_urls: list[str] = attr.ib(default=lambda: [])
-    files: list[dict[str, str]] = attr.ib(default=lambda: [])
+    file_urls: list[str] = attr.ib(default=list)
+    files: list[dict[str, str]] = attr.ib(default=list)
     # overridden fields
-    custom_file_urls: list[str] = attr.ib(default=lambda: [])
-    custom_files: list[dict[str, str]] = attr.ib(default=lambda: [])
+    custom_file_urls: list[str] = attr.ib(default=list)
+    custom_files: list[dict[str, str]] = attr.ib(default=list)
 
 
 class FilesPipelineTestCaseFieldsAttrsItem(

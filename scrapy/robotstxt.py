@@ -52,7 +52,6 @@ class RobotParser(metaclass=ABCMeta):
         :param robotstxt_body: content of a robots.txt_ file.
         :type robotstxt_body: bytes
         """
-        pass
 
     @abstractmethod
     def allowed(self, url: str | bytes, user_agent: str | bytes) -> bool:
@@ -64,7 +63,6 @@ class RobotParser(metaclass=ABCMeta):
         :param user_agent: User agent
         :type user_agent: str or bytes
         """
-        pass
 
 
 class PythonRobotParser(RobotParser):

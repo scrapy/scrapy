@@ -61,7 +61,6 @@ class Command(ScrapyCommand):
         """You can use this function to update the Scrapy objects that will be
         available in the shell
         """
-        pass
 
     def run(self, args: list[str], opts: Namespace) -> None:
         url = args[0] if args else None
