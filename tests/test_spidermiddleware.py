@@ -289,10 +289,7 @@ class ProcessSpiderOutputNonIterableMiddleware:
 
 class ProcessSpiderOutputCoroutineMiddleware:
     async def process_spider_output(self, response, result, spider):
-        results = []
-        for r in result:
-            results.append(r)
-        return results
+        return result
 
 
 class ProcessSpiderOutputInvalidResult(BaseAsyncSpiderMiddlewareTestCase):

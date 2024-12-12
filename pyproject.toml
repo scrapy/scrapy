@@ -240,6 +240,8 @@ extend-select = [
     "ISC",
     # flake8-logging
     "LOG",
+    # Perflint
+    "PERF",
     # pygrep-hooks
     "PGH",
     # flake8-pie
@@ -314,6 +316,8 @@ ignore = [
     "D402",
     # First word of the first line should be properly capitalized
     "D403",
+    # `try`-`except` within a loop incurs performance overhead
+    "PERF203",
     # Use of `assert` detected; needed for mypy
     "S101",
     # FTP-related functions are being called; https://github.com/scrapy/scrapy/issues/4180

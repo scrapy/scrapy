@@ -1757,13 +1757,13 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
                 crawler = get_crawler(spider_cls, settings)
                 yield crawler.crawl()
 
-            for file_path, feed_options in FEEDS.items():
+            for file_path in FEEDS:
                 content[str(file_path)] = (
                     Path(file_path).read_bytes() if Path(file_path).exists() else None
                 )
 
         finally:
-            for file_path in FEEDS.keys():
+            for file_path in FEEDS:
                 if not Path(file_path).exists():
                     continue
 
