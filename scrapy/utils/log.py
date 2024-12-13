@@ -174,10 +174,11 @@ def log_scrapy_info(settings: Settings) -> None:
         "Scrapy %(version)s started (bot: %(bot)s)",
         {"version": scrapy.__version__, "bot": settings["BOT_NAME"]},
     )
+    components = settings.getlist("LOG_VERSIONS")
+    if not components:
+        return
     versions = [
-        f"{name} {version}"
-        for name, version in scrapy_components_versions()
-        if name != "Scrapy"
+        f"{name} {version}" for name, version in scrapy_components_versions(components)
     ]
     logger.info("Versions: %(versions)s", {"versions": ", ".join(versions)})
 
