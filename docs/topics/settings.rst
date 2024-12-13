@@ -1243,9 +1243,9 @@ The following special items are also supported:
 
 -   ``libxml2``
 
--   ``Python``
-
 -   ``Platform`` (:func:`platform.platform`)
+
+-   ``Python``
 
 .. setting:: LOGSTATS_INTERVAL
 
