@@ -37,8 +37,7 @@ class SpiderMiddlewareTestCase(TestCase):
         results = []
         dfd.addBoth(results.append)
         self._wait(dfd)
-        ret = results[0]
-        return ret
+        return results[0]
 
 
 class ProcessSpiderInputInvalidOutput(SpiderMiddlewareTestCase):
@@ -79,7 +78,7 @@ class ProcessSpiderExceptionInvalidOutput(SpiderMiddlewareTestCase):
 
         class RaiseExceptionProcessSpiderOutputMiddleware:
             def process_spider_output(self, response, result, spider):
-                raise Exception()
+                raise Exception
 
         self.mwman._add_middleware(InvalidProcessSpiderOutputExceptionMiddleware())
         self.mwman._add_middleware(RaiseExceptionProcessSpiderOutputMiddleware())
@@ -290,10 +289,7 @@ class ProcessSpiderOutputNonIterableMiddleware:
 
 class ProcessSpiderOutputCoroutineMiddleware:
     async def process_spider_output(self, response, result, spider):
-        results = []
-        for r in result:
-            results.append(r)
-        return results
+        return result
 
 
 class ProcessSpiderOutputInvalidResult(BaseAsyncSpiderMiddlewareTestCase):

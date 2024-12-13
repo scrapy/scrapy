@@ -134,8 +134,7 @@ class FTPFeedStorageTest(unittest.TestCase):
             name = "test_spider"
 
         crawler = get_crawler(settings_dict=settings)
-        spider = TestSpider.from_crawler(crawler)
-        return spider
+        return TestSpider.from_crawler(crawler)
 
     def _store(self, uri, content, feed_options=None, settings=None):
         crawler = get_crawler(settings_dict=settings or {})
@@ -210,8 +209,7 @@ class BlockingFeedStorageTest(unittest.TestCase):
             name = "test_spider"
 
         crawler = get_crawler(settings_dict=settings)
-        spider = TestSpider.from_crawler(crawler)
-        return spider
+        return TestSpider.from_crawler(crawler)
 
     def test_default_temp_dir(self):
         b = BlockingFeedStorage()
@@ -1759,13 +1757,13 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
                 crawler = get_crawler(spider_cls, settings)
                 yield crawler.crawl()
 
-            for file_path, feed_options in FEEDS.items():
+            for file_path in FEEDS:
                 content[str(file_path)] = (
                     Path(file_path).read_bytes() if Path(file_path).exists() else None
                 )
 
         finally:
-            for file_path in FEEDS.keys():
+            for file_path in FEEDS:
                 if not Path(file_path).exists():
                     continue
 

@@ -7,10 +7,7 @@ _T = TypeVar("_T")
 
 
 async def collect_asyncgen(result: AsyncIterable[_T]) -> list[_T]:
-    results = []
-    async for x in result:
-        results.append(x)
-    return results
+    return [x async for x in result]
 
 
 async def as_async_generator(

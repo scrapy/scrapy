@@ -76,7 +76,7 @@ class HostResolution:
         self.name: str = name
 
     def cancel(self) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 @provider(IResolutionReceiver)

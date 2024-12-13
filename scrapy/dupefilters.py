@@ -50,7 +50,6 @@ class BaseDupeFilter:
 
     def log(self, request: Request, spider: Spider) -> None:
         """Log that a request has been filtered"""
-        pass
 
 
 class RFPDupeFilter(BaseDupeFilter):

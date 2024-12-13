@@ -64,7 +64,7 @@ class AddonManagerTest(unittest.TestCase):
     def test_notconfigured(self):
         class NotConfiguredAddon:
             def update_settings(self, settings):
-                raise NotConfigured()
+                raise NotConfigured
 
         settings_dict = {
             "ADDONS": {NotConfiguredAddon: 0},

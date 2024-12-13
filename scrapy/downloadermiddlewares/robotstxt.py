@@ -7,7 +7,7 @@ enable this middleware and enable the ROBOTSTXT_OBEY setting.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 
 from twisted.internet.defer import Deferred, maybeDeferred
 
@@ -30,8 +30,6 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-
-_T = TypeVar("_T")
 
 
 class RobotsTxtMiddleware:

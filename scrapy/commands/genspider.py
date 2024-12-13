@@ -101,7 +101,7 @@ class Command(ScrapyCommand):
                 print(template_file.read_text(encoding="utf-8"))
             return
         if len(args) != 2:
-            raise UsageError()
+            raise UsageError
 
         name, url = args[0:2]
         url = verify_url_scheme(url)

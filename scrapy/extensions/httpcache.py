@@ -282,8 +282,7 @@ class DbmCacheStorage:
         headers = Headers(data["headers"])
         body = data["body"]
         respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        response = respcls(url=url, headers=headers, status=status, body=body)
-        return response
+        return respcls(url=url, headers=headers, status=status, body=body)
 
     def store_response(
         self, spider: Spider, request: Request, response: Response
@@ -349,8 +348,7 @@ class FilesystemCacheStorage:
         status = metadata["status"]
         headers = Headers(headers_raw_to_dict(rawheaders))
         respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        response = respcls(url=url, headers=headers, status=status, body=body)
-        return response
+        return respcls(url=url, headers=headers, status=status, body=body)
 
     def store_response(
         self, spider: Spider, request: Request, response: Response

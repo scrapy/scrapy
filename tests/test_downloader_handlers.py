@@ -894,7 +894,7 @@ class S3TestCase(unittest.TestCase):
         except Exception as e:
             self.assertIsInstance(e, (TypeError, NotConfigured))
         else:
-            raise AssertionError()
+            raise AssertionError
 
     def test_request_signing1(self):
         # gets an object from the johnsmith bucket.

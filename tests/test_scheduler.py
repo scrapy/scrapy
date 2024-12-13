@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import collections
 import shutil
 import tempfile
 import unittest
+from typing import Any, NamedTuple
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
@@ -18,8 +18,13 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 
-MockEngine = collections.namedtuple("MockEngine", ["downloader"])
-MockSlot = collections.namedtuple("MockSlot", ["active"])
+
+class MockEngine(NamedTuple):
+    downloader: MockDownloader
+
+
+class MockSlot(NamedTuple):
+    active: list[Any]
 
 
 class MockDownloader:

@@ -58,13 +58,6 @@ class MutableAsyncChainTest(unittest.TestCase):
         for i in range(5, 7):
             yield i
 
-    @staticmethod
-    async def collect_asyncgen_exc(asyncgen):
-        results = []
-        async for x in asyncgen:
-            results.append(x)
-        return results
-
     @deferred_f_from_coro_f
     async def test_mutableasyncchain(self):
         m = MutableAsyncChain(self.g1(), as_async_generator(range(3, 7)))
