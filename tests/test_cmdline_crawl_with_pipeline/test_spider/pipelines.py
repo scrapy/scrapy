@@ -8,7 +8,7 @@ class TestSpiderPipeline:
 
 class TestSpiderExceptionPipeline:
     def open_spider(self, spider):
-        raise Exception("exception")
+        raise RuntimeError("exception")
 
     def process_item(self, item, spider):
         return item

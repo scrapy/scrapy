@@ -122,6 +122,9 @@ profile = "black"
 [tool.pylint.MASTER]
 persistent = "no"
 jobs = 1          # >1 hides results
+extension-pkg-allow-list=[
+    "lxml",
+]
 
 [tool.pylint."MESSAGES CONTROL"]
 disable = [
@@ -129,11 +132,7 @@ disable = [
     "arguments-differ",
     "arguments-renamed",
     "attribute-defined-outside-init",
-    "bad-classmethod-argument",
-    "bare-except",
-    "broad-except",
-    "broad-exception-raised",
-    "c-extension-no-member",
+    "broad-exception-caught",
     "consider-using-with",
     "cyclic-import",
     "dangerous-default-value",
@@ -141,9 +140,6 @@ disable = [
     "duplicate-code",                            # https://github.com/PyCQA/pylint/issues/214
     "eval-used",
     "fixme",
-    "function-redefined",
-    "global-statement",
-    "implicit-str-concat",
     "import-error",
     "import-outside-toplevel",
     "inherit-non-class",
@@ -155,7 +151,6 @@ disable = [
     "logging-format-interpolation",
     "logging-fstring-interpolation",
     "logging-not-lazy",
-    "lost-exception",
     "missing-docstring",
     "no-member",
     "no-method-argument",
@@ -169,13 +164,11 @@ disable = [
     "raise-missing-from",
     "redefined-builtin",
     "redefined-outer-name",
-    "reimported",
     "signature-differs",
     "too-few-public-methods",
     "too-many-ancestors",
     "too-many-arguments",
     "too-many-branches",
-    "too-many-format-args",
     "too-many-function-args",
     "too-many-instance-attributes",
     "too-many-lines",
@@ -184,14 +177,11 @@ disable = [
     "too-many-return-statements",
     "unbalanced-tuple-unpacking",
     "unnecessary-dunder-call",
-    "unnecessary-pass",
-    "unreachable",
     "unused-argument",
     "unused-import",
     "unused-variable",
     "used-before-assignment",
     "useless-return",
-    "wildcard-import",
     "wrong-import-position",
 ]
 
