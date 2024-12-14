@@ -92,11 +92,10 @@ class BaseItemExporter:
                 field_iter = (
                     (x, y) for x, y in self.fields_to_export.items() if x in item
                 )
+        elif include_empty:
+            field_iter = self.fields_to_export
         else:
-            if include_empty:
-                field_iter = self.fields_to_export
-            else:
-                field_iter = (x for x in self.fields_to_export if x in item)
+            field_iter = (x for x in self.fields_to_export if x in item)
 
         for field_name in field_iter:
             if isinstance(field_name, str):

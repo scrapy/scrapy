@@ -32,7 +32,6 @@ def top_level_return_none():
 https://example.org
 """
     yield url
-    return
 
 
 def generator_that_returns_stuff():
@@ -103,11 +102,9 @@ https://example.org
     def test_generators_return_none(self):
         def f2():
             yield 1
-            return None
 
         def g2():
             yield 1
-            return
 
         def h2():
             yield 1
@@ -132,7 +129,6 @@ https://example.org
 https://example.org
         """
             yield url
-            return
 
         def l2():
             return
@@ -181,12 +177,10 @@ https://example.org
         @decorator
         def f3():
             yield 1
-            return None
 
         @decorator
         def g3():
             yield 1
-            return
 
         @decorator
         def h3():
@@ -215,7 +209,6 @@ https://example.org
 https://example.org
         """
             yield url
-            return
 
         @decorator
         def l3():
