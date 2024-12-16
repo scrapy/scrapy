@@ -43,4 +43,4 @@ def scrapy_components_versions() -> list[tuple[str, str]]:
         ScrapyDeprecationWarning,
         stacklevel=2,
     )
-    return get_versions(_DEFAULT_SOFTWARE)
+    return get_versions()
