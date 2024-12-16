@@ -1,4 +1,5 @@
 import unittest
+import warnings
 
 from scrapy.linkextractors import IGNORED_EXTENSIONS
 from scrapy.spiders import Spider
@@ -6,7 +7,10 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import (
     _is_filesystem_path,
     add_http_if_no_scheme,
+    add_or_replace_parameter,
+    any_to_uri,
     guess_scheme,
+    parse_url,
     strip_url,
     url_has_any_extension,
     url_is_from_any_domain,
@@ -605,6 +609,25 @@ class IsPathTestCase(unittest.TestCase):
             self.assertEqual(
                 _is_filesystem_path(input_value), output_value, input_value
             )
+
+
+def test_deprecated_calls_to_w3lib_methods():
+    with warnings.catch_warnings(record=True) as warns:
+        add_or_replace_parameter("https://example.com?id=1", "id", "2")
+        assert (
+            "Call to deprecated function add_or_replace_parameter. Use w3lib.url.add_or_replace_parameter instead."
+            in warns[0].message.args
+        )
+        any_to_uri("/tmp/example.txt")
+        assert (
+            "Call to deprecated function any_to_uri. Use w3lib.url.any_to_uri instead."
+            in warns[1].message.args
+        )
+        parse_url("https://example.com")
+        assert (
+            "Call to deprecated function parse_url. Use w3lib.url.parse_url instead."
+            in warns[2].message.args
+        )
 
 
 if __name__ == "__main__":

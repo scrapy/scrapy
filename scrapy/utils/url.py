@@ -31,7 +31,7 @@ UrlT = Union[str, bytes, ParseResult]
 
 def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
     """Return True if the url belongs to any of the given domains"""
-    host = parse_url(url).netloc.lower()
+    host = _parse_url(url).netloc.lower()
     if not host:
         return False
     domains = [d.lower() for d in domains]
@@ -47,7 +47,7 @@ def url_is_from_spider(url: UrlT, spider: type[Spider]) -> bool:
 
 def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
     """Return True if the url ends with one of the extensions provided"""
-    lowercase_path = parse_url(url).path.lower()
+    lowercase_path = _parse_url(url).path.lower()
     return any(lowercase_path.endswith(ext) for ext in extensions)
 
 
@@ -76,7 +76,7 @@ def escape_ajax(url: str) -> str:
     defrag, frag = urldefrag(url)
     if not frag.startswith("!"):
         return url
-    return add_or_replace_parameter(defrag, "_escaped_fragment_", frag[1:])
+    return _add_or_replace_parameter(defrag, "_escaped_fragment_", frag[1:])
 
 
 def add_http_if_no_scheme(url: str) -> str:
@@ -136,7 +136,7 @@ def guess_scheme(url: str) -> str:
     """Add an URL scheme if missing: file:// for filepath-like input or
     http:// otherwise."""
     if _is_filesystem_path(url):
-        return any_to_uri(url)
+        return _any_to_uri(url)
     return add_http_if_no_scheme(url)
 
 
