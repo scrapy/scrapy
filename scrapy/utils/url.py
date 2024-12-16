@@ -20,11 +20,11 @@ if TYPE_CHECKING:
 
     from scrapy import Spider
 
-parse_url = deprecated("w3lib.url.parse_url")(_parse_url)
 add_or_replace_parameter = deprecated("w3lib.url.add_or_replace_parameter")(
     _add_or_replace_parameter
 )
 any_to_uri = deprecated("w3lib.url.any_to_uri")(_any_to_uri)
+parse_url = deprecated("w3lib.url.parse_url")(_parse_url)
 
 UrlT = Union[str, bytes, ParseResult]
 
