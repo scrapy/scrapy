@@ -689,8 +689,8 @@ def test_deprecated_calls_to_w3lib_methods():
 
 
 @unittest.skipIf(
-    parse_version(version("w3lib")) < parse_version("1.22.0"),
-    "w3lib.url.add_or_replace_parameters is available until version 1.22",
+    parse_version(version("w3lib")) < parse_version("1.20.0"),
+    "w3lib.url.add_or_replace_parameters is available until version 1.20.0",
 )
 def test_deprecated_call_to_w3lib_add_or_replace_parameters():
     with warnings.catch_warnings(record=True) as warns:
