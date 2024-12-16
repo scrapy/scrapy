@@ -14,17 +14,17 @@ from scrapy.utils.ssl import get_openssl_version
 _DEFAULT_SOFTWARE = ["Scrapy"] + LOG_VERSIONS
 
 
-def _version(component):
-    lowercase_component = component.lower()
-    if lowercase_component == "libxml2":
+def _version(item):
+    lowercase_item = item.lower()
+    if lowercase_item == "libxml2":
         return ".".join(map(str, lxml.etree.LIBXML_VERSION))
-    if lowercase_component == "platform":
+    if lowercase_item == "platform":
         return platform.platform()
-    if lowercase_component == "pyopenssl":
+    if lowercase_item == "pyopenssl":
         return get_openssl_version()
-    if lowercase_component == "python":
+    if lowercase_item == "python":
         return sys.version.replace("\n", "- ")
-    return version(component)
+    return version(item)
 
 
 def get_versions(
