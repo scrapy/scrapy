@@ -656,7 +656,7 @@ def test_deprecated_calls_to_w3lib_methods():
             "Call to deprecated function parse_data_uri. Use w3lib.url.parse_data_uri instead."
             in warns[5].message.args
         )
-        path_to_file_uri("file://tmp/example.txt")
+        path_to_file_uri("tmp/example.txt")
         assert (
             "Call to deprecated function path_to_file_uri. Use w3lib.url.path_to_file_uri instead."
             in warns[6].message.args
