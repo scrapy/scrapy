@@ -13,7 +13,7 @@ from twisted.python.failure import Failure
 
 import scrapy
 from scrapy.settings import Settings, _SettingsKeyT
-from scrapy.utils.versions import scrapy_components_versions
+from scrapy.utils.versions import get_versions
 
 if TYPE_CHECKING:
 
@@ -178,9 +178,7 @@ def log_scrapy_info(settings: Settings) -> None:
     components = settings.getlist("LOG_VERSIONS")
     if not components:
         return
-    versions = pprint.pformat(
-        dict(scrapy_components_versions(components)), sort_dicts=False
-    )
+    versions = pprint.pformat(dict(get_versions(components)), sort_dicts=False)
     logger.info(f"Versions:\n{versions}")
 
 
