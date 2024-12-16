@@ -10,8 +10,18 @@ from typing import TYPE_CHECKING, Union
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
 from w3lib.url import add_or_replace_parameter as _add_or_replace_parameter
+from w3lib.url import add_or_replace_parameters as _add_or_replace_parameters
 from w3lib.url import any_to_uri as _any_to_uri
+from w3lib.url import canonicalize_url as _canonicalize_url
+from w3lib.url import file_uri_to_path as _file_uri_to_path
+from w3lib.url import is_url as _is_url
+from w3lib.url import parse_data_uri as _parse_data_uri
 from w3lib.url import parse_url as _parse_url
+from w3lib.url import path_to_file_uri as _path_to_file_uri
+from w3lib.url import safe_download_url as _safe_download_url
+from w3lib.url import safe_url_string as _safe_url_string
+from w3lib.url import url_query_cleaner as _url_query_cleaner
+from w3lib.url import url_query_parameter as _url_query_parameter
 
 from scrapy.utils.decorators import deprecated
 
@@ -23,7 +33,21 @@ if TYPE_CHECKING:
 add_or_replace_parameter = deprecated("w3lib.url.add_or_replace_parameter")(
     _add_or_replace_parameter
 )
+add_or_replace_parameters = deprecated("w3lib.url.add_or_replace_parameters")(
+    _add_or_replace_parameters
+)
 any_to_uri = deprecated("w3lib.url.any_to_uri")(_any_to_uri)
+canonicalize_url = deprecated("w3lib.url.canonicalize_url")(_canonicalize_url)
+file_uri_to_path = deprecated("w3lib.url.file_uri_to_path")(_file_uri_to_path)
+is_url = deprecated("w3lib.url.is_url")(_is_url)
+parse_data_uri = deprecated("w3lib.url.parse_data_uri")(_parse_data_uri)
+path_to_file_uri = deprecated("w3lib.url.path_to_file_uri")(_path_to_file_uri)
+safe_download_url = deprecated("w3lib.url.safe_download_url")(_safe_download_url)
+safe_url_string = deprecated("w3lib.url.safe_url_string")(_safe_url_string)
+url_query_cleaner = deprecated("w3lib.url.url_query_cleaner")(_url_query_cleaner)
+url_query_parameter = deprecated("w3lib.url.url_query_parameter")(_url_query_parameter)
+
+
 parse_url = deprecated("w3lib.url.parse_url")(_parse_url)
 
 UrlT = Union[str, bytes, ParseResult]
