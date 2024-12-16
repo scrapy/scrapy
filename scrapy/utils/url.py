@@ -1,29 +1,30 @@
 """
 This module contains general purpose URL functions not found in the standard
 library.
-
-Some of the functions that used to be imported from this module have been moved
-to the w3lib.url module. Always import those from there instead.
 """
 
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Union, cast
+from typing import TYPE_CHECKING, Union
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
-# scrapy.utils.url was moved to w3lib.url and import * ensures this
-# move doesn't break old code
-from w3lib.url import *  # pylint: disable=unused-wildcard-import,wildcard-import
-from w3lib.url import _safe_chars, _unquotepath  # noqa: F401
+from w3lib.url import add_or_replace_parameter as _add_or_replace_parameter
+from w3lib.url import any_to_uri as _any_to_uri
+from w3lib.url import parse_url as _parse_url
 
-from scrapy.utils.python import to_unicode
+from scrapy.utils.decorators import deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from scrapy import Spider
 
+parse_url = deprecated("w3lib.url.parse_url")(_parse_url)
+add_or_replace_parameter = deprecated("w3lib.url.add_or_replace_parameter")(
+    _add_or_replace_parameter
+)
+any_to_uri = deprecated("w3lib.url.any_to_uri")(_any_to_uri)
 
 UrlT = Union[str, bytes, ParseResult]
 
@@ -48,17 +49,6 @@ def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
     """Return True if the url ends with one of the extensions provided"""
     lowercase_path = parse_url(url).path.lower()
     return any(lowercase_path.endswith(ext) for ext in extensions)
-
-
-def parse_url(  # pylint: disable=function-redefined
-    url: UrlT, encoding: str | None = None
-) -> ParseResult:
-    """Return urlparsed url from the given argument (which could be an already
-    parsed url)
-    """
-    if isinstance(url, ParseResult):
-        return url
-    return cast(ParseResult, urlparse(to_unicode(url, encoding)))
 
 
 def escape_ajax(url: str) -> str:
