@@ -2,6 +2,7 @@ import unittest
 import warnings
 from importlib.metadata import version
 
+import pytest
 from packaging.version import Version as parse_version
 
 from scrapy.linkextractors import IGNORED_EXTENSIONS
@@ -686,21 +687,17 @@ def test_deprecated_calls_to_w3lib_methods():
             "Call to deprecated function url_query_parameter. Use w3lib.url.url_query_parameter instead."
             in warns[11].message.args
         )
+        if parse_version(version("w3lib")) >= parse_version("1.20.0"):
+            from scrapy.utils.url import add_or_replace_parameters
 
-
-@unittest.skipIf(
-    parse_version(version("w3lib")) < parse_version("1.20.0"),
-    "w3lib.url.add_or_replace_parameters is available until version 1.20.0",
-)
-def test_deprecated_call_to_w3lib_add_or_replace_parameters():
-    with warnings.catch_warnings(record=True) as warns:
-        from scrapy.utils.url import add_or_replace_parameters
-
-        add_or_replace_parameters("https://example.com?id=1", {"id": "2"})
-        assert (
-            "Call to deprecated function add_or_replace_parameters. Use w3lib.url.add_or_replace_parameters instead."
-            in warns[0].message.args
-        )
+            add_or_replace_parameters("https://example.com?id=1", {"id": "2"})
+            assert (
+                "Call to deprecated function add_or_replace_parameters. Use w3lib.url.add_or_replace_parameters instead."
+                in warns[12].message.args
+            )
+        else:
+            with pytest.raises(ImportError):
+                from scrapy.utils.url import add_or_replace_parameters
 
 
 if __name__ == "__main__":
