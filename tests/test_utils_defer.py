@@ -153,7 +153,7 @@ class AsyncDefTestsuiteTest(unittest.TestCase):
     @mark.xfail(reason="Checks that the test is actually executed", strict=True)
     @deferred_f_from_coro_f
     async def test_deferred_f_from_coro_f_xfail(self):
-        raise Exception("This is expected to be raised")
+        raise RuntimeError("This is expected to be raised")
 
 
 class AsyncCooperatorTest(unittest.TestCase):

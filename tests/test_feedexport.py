@@ -727,7 +727,7 @@ class ExceptionJsonItemExporter(JsonItemExporter):
     """JsonItemExporter that throws an exception every time export_item is called."""
 
     def export_item(self, _):
-        raise Exception("foo")
+        raise RuntimeError("foo")
 
 
 class FeedExportTest(FeedExportTestBase):

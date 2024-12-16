@@ -31,7 +31,7 @@ version_info = tuple(int(v) if v.isdigit() else v for v in __version__.split("."
 
 def __getattr__(name: str):
     if name == "twisted_version":
-        import warnings
+        import warnings  # pylint: disable=reimported
 
         from twisted import version as _txv
 

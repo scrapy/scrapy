@@ -330,10 +330,10 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.add_value("name", ["mar", "ta"])
         self.assertEqual(il.get_output_value("name"), "Mar Ta")
 
-        class TakeFirstItemLoader(TestItemLoader):
+        class TakeFirstItemLoader2(TestItemLoader):
             name_out = Join("<br>")
 
-        il = TakeFirstItemLoader()
+        il = TakeFirstItemLoader2()
         il.add_value("name", ["mar", "ta"])
         self.assertEqual(il.get_output_value("name"), "Mar<br>Ta")
 

@@ -398,7 +398,7 @@ def maybeDeferred_coro(
     """Copy of defer.maybeDeferred that also converts coroutines to Deferreds."""
     try:
         result = f(*args, **kw)
-    except:  # noqa: E722,B001
+    except:  # noqa: E722  # pylint: disable=bare-except
         return defer.fail(failure.Failure(captureVars=Deferred.debug))
 
     if isinstance(result, Deferred):

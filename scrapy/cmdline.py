@@ -74,7 +74,7 @@ def _get_commands_from_entry_points(
         if inspect.isclass(obj):
             cmds[entry_point.name] = obj()
         else:
-            raise Exception(f"Invalid entry point {entry_point.name}")
+            raise ValueError(f"Invalid entry point {entry_point.name}")
     return cmds
 
 

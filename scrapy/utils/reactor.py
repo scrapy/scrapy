@@ -149,12 +149,11 @@ def verify_installed_reactor(reactor_path: str) -> None:
 
     reactor_class = load_object(reactor_path)
     if not reactor.__class__ == reactor_class:
-        msg = (
+        raise RuntimeError(
             "The installed reactor "
             f"({reactor.__module__}.{reactor.__class__.__name__}) does not "
             f"match the requested one ({reactor_path})"
         )
-        raise Exception(msg)
 
 
 def verify_installed_asyncio_event_loop(loop_path: str) -> None:
@@ -168,7 +167,7 @@ def verify_installed_asyncio_event_loop(loop_path: str) -> None:
         f".{reactor._asyncioEventloop.__class__.__qualname__}"
     )
     specified = f"{loop_class.__module__}.{loop_class.__qualname__}"
-    raise Exception(
+    raise RuntimeError(
         "Scrapy found an asyncio Twisted reactor already "
         f"installed, and its event loop class ({installed}) does "
         "not match the one specified in the ASYNCIO_EVENT_LOOP "

@@ -14,7 +14,7 @@ from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
 # scrapy.utils.url was moved to w3lib.url and import * ensures this
 # move doesn't break old code
-from w3lib.url import *  # pylint: disable=unused-wildcard-import
+from w3lib.url import *  # pylint: disable=unused-wildcard-import,wildcard-import
 from w3lib.url import _safe_chars, _unquotepath  # noqa: F401
 
 from scrapy.utils.python import to_unicode
@@ -50,7 +50,9 @@ def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
     return any(lowercase_path.endswith(ext) for ext in extensions)
 
 
-def parse_url(url: UrlT, encoding: str | None = None) -> ParseResult:
+def parse_url(  # pylint: disable=function-redefined
+    url: UrlT, encoding: str | None = None
+) -> ParseResult:
     """Return urlparsed url from the given argument (which could be an already
     parsed url)
     """

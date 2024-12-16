@@ -130,7 +130,7 @@ _scrapy_root_handler: logging.Handler | None = None
 
 
 def install_scrapy_root_handler(settings: Settings) -> None:
-    global _scrapy_root_handler
+    global _scrapy_root_handler  # noqa: PLW0603  # pylint: disable=global-statement
 
     if (
         _scrapy_root_handler is not None

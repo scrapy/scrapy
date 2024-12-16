@@ -349,11 +349,6 @@ class HttpTestCase(unittest.TestCase):
         request = Request(self.getURL("host"), headers={"Host": host})
         return self.download_request(request, Spider("foo")).addCallback(_test)
 
-        d = self.download_request(request, Spider("foo"))
-        d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEqual, b"localhost")
-        return d
-
     def test_content_length_zero_bodyless_post_request_headers(self):
         """Tests if "Content-Length: 0" is sent for bodyless POST requests.
 

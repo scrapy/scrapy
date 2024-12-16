@@ -60,7 +60,7 @@ def create_deprecated_class(
         deprecated_class: type | None = None
         warned_on_subclass: bool = False
 
-        def __new__(
+        def __new__(  # pylint: disable=bad-classmethod-argument
             metacls, name: str, bases: tuple[type, ...], clsdict_: dict[str, Any]
         ) -> type:
             cls = super().__new__(metacls, name, bases, clsdict_)

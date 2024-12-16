@@ -247,7 +247,6 @@ class NotGeneratorFailMiddleware:
             r["processed"].append(f"{self.__class__.__name__}.process_spider_output")
             out.append(r)
         raise ReferenceError
-        return out
 
     def process_spider_exception(self, response, exception, spider):
         method = f"{self.__class__.__name__}.process_spider_exception"
