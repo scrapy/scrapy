@@ -1,6 +1,7 @@
 import logging
 import os
 import platform
+import re
 import signal
 import subprocess
 import sys
@@ -923,3 +924,28 @@ class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
             log,
         )
         self.assertIn("DEBUG: Using asyncio event loop", log)
+
+
+@mark.parametrize(
+    ["settings", "items"],
+    (
+        ({}, default_settings.LOG_VERSIONS),
+        ({"LOG_VERSIONS": ["itemadapter"]}, ["itemadapter"]),
+        ({"LOG_VERSIONS": []}, None),
+    ),
+)
+def test_log_scrapy_info(settings, items, caplog):
+    with caplog.at_level("INFO"):
+        CrawlerProcess(settings)
+    assert (
+        caplog.records[0].getMessage()
+        == f"Scrapy {scrapy.__version__} started (bot: scrapybot)"
+    ), repr(caplog.records[0].msg)
+    if not items:
+        assert len(caplog.records) == 1
+        return
+    version_string = caplog.records[1].getMessage()
+    expected_items_pattern = "',\n '".join(
+        f"{item}': '[^']+('\n +'[^']+)*" for item in items
+    )
+    assert re.search(r"^Versions:\n{'" + expected_items_pattern + "'}$", version_string)
