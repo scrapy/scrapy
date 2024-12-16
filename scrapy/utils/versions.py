@@ -37,8 +37,8 @@ def get_versions(
 def scrapy_components_versions() -> list[tuple[str, str]]:
     warn(
         (
-            "scrapy.utils.versions.scrapy_components_versions is deprecated, "
-            "use scrapy.utils.versions.get_versions instead."
+            "scrapy.utils.versions.scrapy_components_versions() is deprecated, "
+            "use scrapy.utils.versions.get_versions() instead."
         ),
         ScrapyDeprecationWarning,
         stacklevel=2,
