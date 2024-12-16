@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Union
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
 from w3lib.url import add_or_replace_parameter as _add_or_replace_parameter
-from w3lib.url import add_or_replace_parameters as _add_or_replace_parameters
 from w3lib.url import any_to_uri as _any_to_uri
 from w3lib.url import canonicalize_url as _canonicalize_url
 from w3lib.url import file_uri_to_path as _file_uri_to_path
@@ -33,9 +32,14 @@ if TYPE_CHECKING:
 add_or_replace_parameter = deprecated("w3lib.url.add_or_replace_parameter")(
     _add_or_replace_parameter
 )
-add_or_replace_parameters = deprecated("w3lib.url.add_or_replace_parameters")(
-    _add_or_replace_parameters
-)
+try:
+    from w3lib.url import add_or_replace_parameters as _add_or_replace_parameters
+
+    add_or_replace_parameters = deprecated("w3lib.url.add_or_replace_parameters")(
+        _add_or_replace_parameters
+    )
+except ImportError:
+    pass
 any_to_uri = deprecated("w3lib.url.any_to_uri")(_any_to_uri)
 canonicalize_url = deprecated("w3lib.url.canonicalize_url")(_canonicalize_url)
 file_uri_to_path = deprecated("w3lib.url.file_uri_to_path")(_file_uri_to_path)

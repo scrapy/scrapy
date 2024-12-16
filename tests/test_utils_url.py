@@ -1,5 +1,8 @@
 import unittest
 import warnings
+from importlib.metadata import version
+
+from packaging.version import Version as parse_version
 
 from scrapy.linkextractors import IGNORED_EXTENSIONS
 from scrapy.spiders import Spider
@@ -8,7 +11,6 @@ from scrapy.utils.url import (
     _is_filesystem_path,
     add_http_if_no_scheme,
     add_or_replace_parameter,
-    add_or_replace_parameters,
     any_to_uri,
     canonicalize_url,
     file_uri_to_path,
@@ -629,65 +631,75 @@ def test_deprecated_calls_to_w3lib_methods():
             "Call to deprecated function add_or_replace_parameter. Use w3lib.url.add_or_replace_parameter instead."
             in warns[0].message.args
         )
-        add_or_replace_parameters(test_url, {"id": "2"})
-        assert (
-            "Call to deprecated function add_or_replace_parameters. Use w3lib.url.add_or_replace_parameters instead."
-            in warns[1].message.args
-        )
         any_to_uri("/tmp/example.txt")
         assert (
             "Call to deprecated function any_to_uri. Use w3lib.url.any_to_uri instead."
-            in warns[2].message.args
+            in warns[1].message.args
         )
         canonicalize_url(test_url)
         assert (
             "Call to deprecated function canonicalize_url. Use w3lib.url.canonicalize_url instead."
-            in warns[3].message.args
+            in warns[2].message.args
         )
         file_uri_to_path("file://tmp/example.txt")
         assert (
             "Call to deprecated function file_uri_to_path. Use w3lib.url.file_uri_to_path instead."
-            in warns[4].message.args
+            in warns[3].message.args
         )
         is_url(test_url)
         assert (
             "Call to deprecated function is_url. Use w3lib.url.is_url instead."
-            in warns[5].message.args
+            in warns[4].message.args
         )
         parse_data_uri("data:,")
         assert (
             "Call to deprecated function parse_data_uri. Use w3lib.url.parse_data_uri instead."
-            in warns[6].message.args
+            in warns[5].message.args
         )
         path_to_file_uri("file://tmp/example.txt")
         assert (
             "Call to deprecated function path_to_file_uri. Use w3lib.url.path_to_file_uri instead."
-            in warns[7].message.args
+            in warns[6].message.args
         )
         parse_url(test_url)
         assert (
             "Call to deprecated function parse_url. Use w3lib.url.parse_url instead."
-            in warns[8].message.args
+            in warns[7].message.args
         )
         safe_download_url(test_url)
         assert (
             "Call to deprecated function safe_download_url. Use w3lib.url.safe_download_url instead."
-            in warns[9].message.args
+            in warns[8].message.args
         )
         safe_url_string(test_url)
         assert (
             "Call to deprecated function safe_url_string. Use w3lib.url.safe_url_string instead."
-            in warns[10].message.args
+            in warns[9].message.args
         )
         url_query_cleaner(test_url)
         assert (
             "Call to deprecated function url_query_cleaner. Use w3lib.url.url_query_cleaner instead."
-            in warns[11].message.args
+            in warns[10].message.args
         )
         url_query_parameter(test_url, "id")
         assert (
             "Call to deprecated function url_query_parameter. Use w3lib.url.url_query_parameter instead."
-            in warns[12].message.args
+            in warns[11].message.args
+        )
+
+
+@unittest.skipIf(
+    parse_version(version("w3lib")) < parse_version("1.22.0"),
+    "w3lib.url.add_or_replace_parameters is available until version 1.22",
+)
+def test_deprecated_call_to_w3lib_add_or_replace_parameters():
+    with warnings.catch_warnings(record=True) as warns:
+        from scrapy.utils.url import add_or_replace_parameters
+
+        add_or_replace_parameters("https://example.com?id=1", {"id": "2"})
+        assert (
+            "Call to deprecated function add_or_replace_parameters. Use w3lib.url.add_or_replace_parameters instead."
+            in warns[0].message.args
         )
 
 
