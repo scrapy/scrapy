@@ -945,5 +945,5 @@ def test_log_scrapy_info(settings, items, caplog):
         assert len(caplog.records) == 1
         return
     version_string = caplog.records[1].getMessage()
-    expected_items_pattern = ", ".join(f"{item} .*?" for item in items)
-    assert re.search(f"^Versions: {expected_items_pattern}$", version_string)
+    expected_items_pattern = "',\n '".join(f"{item}': '[^']+" for item in items)
+    assert re.search(r"^Versions:\n{'" + expected_items_pattern + "'}$", version_string)

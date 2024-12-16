@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import pprint
 import sys
 from collections.abc import MutableMapping
 from logging.config import dictConfig
@@ -177,10 +178,10 @@ def log_scrapy_info(settings: Settings) -> None:
     components = settings.getlist("LOG_VERSIONS")
     if not components:
         return
-    versions = [
-        f"{name} {version}" for name, version in scrapy_components_versions(components)
-    ]
-    logger.info("Versions: %(versions)s", {"versions": ", ".join(versions)})
+    versions = pprint.pformat(
+        dict(scrapy_components_versions(components)), sort_dicts=False
+    )
+    logger.info(f"Versions:\n{versions}")
 
 
 def log_reactor_info() -> None:
