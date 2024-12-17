@@ -11,7 +11,7 @@ from importlib import import_module
 from typing import TYPE_CHECKING, Union
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
-from w3lib.url import __all__ as public_w3lib_objects
+from w3lib.url import __all__ as _public_w3lib_objects
 from w3lib.url import add_or_replace_parameter as _add_or_replace_parameter
 from w3lib.url import any_to_uri as _any_to_uri
 from w3lib.url import parse_url as _parse_url
@@ -20,7 +20,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 def __getattr__(name: str):
-    if name in ("_unquotepath", "_safe_chars", "parse_url", *public_w3lib_objects):
+    if name in ("_unquotepath", "_safe_chars", "parse_url", *_public_w3lib_objects):
         obj_type = "attribute" if name == "_safe_chars" else "function"
         warnings.warn(
             f"The scrapy.utils.url.{name} {obj_type} is deprecated, use w3lib.url.{name} instead.",

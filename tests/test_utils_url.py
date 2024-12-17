@@ -8,9 +8,9 @@ from scrapy.spiders import Spider
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import (
     _is_filesystem_path,
+    _public_w3lib_objects,
     add_http_if_no_scheme,
     guess_scheme,
-    public_w3lib_objects,
     strip_url,
     url_has_any_extension,
     url_is_from_any_domain,
@@ -617,7 +617,7 @@ class IsPathTestCase(unittest.TestCase):
         "_unquotepath",
         "_safe_chars",
         "parse_url",
-        *public_w3lib_objects,
+        *_public_w3lib_objects,
     ],
 )
 def test_deprecated_imports_from_w3lib(obj_name):
