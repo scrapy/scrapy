@@ -6,6 +6,7 @@ library.
 from __future__ import annotations
 
 import re
+import warnings
 from typing import TYPE_CHECKING, Union
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 
@@ -22,7 +23,41 @@ from w3lib.url import safe_url_string as _safe_url_string
 from w3lib.url import url_query_cleaner as _url_query_cleaner
 from w3lib.url import url_query_parameter as _url_query_parameter
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.decorators import deprecated
+
+
+def __getattr__(name: str):
+    if name == "_safe_chars":
+        warnings.warn(
+            "The scrapy.utils.url._safe_chars attribute is deprecated, use w3lib.url._safe_chars instead.",
+            ScrapyDeprecationWarning,
+        )
+        from w3lib.url import _safe_chars
+
+        return _safe_chars
+    if name == "_unquotepath":
+        warnings.warn(
+            "The scrapy.utils.url._unquotepath function is deprecated, use w3lib.url._unquotepath instead.",
+            ScrapyDeprecationWarning,
+        )
+        from w3lib.url import _unquotepath
+
+        return _unquotepath
+    if name == "add_or_replace_parameters":
+        try:
+            warnings.warn(
+                "The scrapy.utils.url.add_or_replace_parameters function is deprecated, use w3lib.url.add_or_replace_parameters instead.",
+                ScrapyDeprecationWarning,
+            )
+            from w3lib.url import add_or_replace_parameters
+
+            return add_or_replace_parameters
+        except ImportError:
+            raise AttributeError
+
+    raise AttributeError
+
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -32,14 +67,6 @@ if TYPE_CHECKING:
 add_or_replace_parameter = deprecated("w3lib.url.add_or_replace_parameter")(
     _add_or_replace_parameter
 )
-try:
-    from w3lib.url import add_or_replace_parameters as _add_or_replace_parameters
-
-    add_or_replace_parameters = deprecated("w3lib.url.add_or_replace_parameters")(
-        _add_or_replace_parameters
-    )
-except ImportError:
-    pass
 any_to_uri = deprecated("w3lib.url.any_to_uri")(_any_to_uri)
 canonicalize_url = deprecated("w3lib.url.canonicalize_url")(_canonicalize_url)
 file_uri_to_path = deprecated("w3lib.url.file_uri_to_path")(_file_uri_to_path)

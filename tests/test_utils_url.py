@@ -687,17 +687,27 @@ def test_deprecated_calls_to_w3lib_methods():
             "Call to deprecated function url_query_parameter. Use w3lib.url.url_query_parameter instead."
             in warns[11].message.args
         )
-        if parse_version(version("w3lib")) >= parse_version("1.20.0"):
-            from scrapy.utils.url import add_or_replace_parameters
 
-            add_or_replace_parameters("https://example.com?id=1", {"id": "2"})
+
+def test_deprecated_imports_from_w3lib():
+    with warnings.catch_warnings(record=True) as warns:
+        assert (
+            "The scrapy.utils.url._safe_chars attribute is deprecated, use w3lib.url._safe_chars instead."
+            in warns[0].message.args
+        )
+        assert (
+            "The scrapy.utils.url._unquotepath function is deprecated, use w3lib.url._unquotepath instead."
+            in warns[1].message.args
+        )
+
+        if parse_version(version("w3lib")) >= parse_version("1.20.0"):
             assert (
-                "Call to deprecated function add_or_replace_parameters. Use w3lib.url.add_or_replace_parameters instead."
-                in warns[12].message.args
+                "The scrapy.utils.url.add_or_replace_parameters function is deprecated, use w3lib.url.add_or_replace_parameters instead."
+                in warns[2].message.args
             )
         else:
             with pytest.raises(ImportError):
-                from scrapy.utils.url import add_or_replace_parameters
+                pass
 
 
 if __name__ == "__main__":
