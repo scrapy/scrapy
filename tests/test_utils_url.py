@@ -11,23 +11,11 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import (
     _is_filesystem_path,
     add_http_if_no_scheme,
-    add_or_replace_parameter,
-    any_to_uri,
-    canonicalize_url,
-    file_uri_to_path,
     guess_scheme,
-    is_url,
-    parse_data_uri,
-    parse_url,
-    path_to_file_uri,
-    safe_download_url,
-    safe_url_string,
     strip_url,
     url_has_any_extension,
     url_is_from_any_domain,
     url_is_from_spider,
-    url_query_cleaner,
-    url_query_parameter,
 )
 
 __doctests__ = ["scrapy.utils.url"]
@@ -624,90 +612,47 @@ class IsPathTestCase(unittest.TestCase):
             )
 
 
-def test_deprecated_calls_to_w3lib_methods():
+@pytest.mark.parametrize(
+    "obj_name",
+    [
+        "_safe_chars",
+        "_unquotepath",
+        "add_or_replace_parameter",
+        "any_to_uri",
+        "canonicalize_url",
+        "file_uri_to_path",
+        "is_url",
+        "parse_data_uri",
+        "parse_url",
+        "path_to_file_uri",
+        "safe_download_url",
+        "safe_url_string",
+        "url_query_cleaner",
+        "url_query_parameter",
+    ],
+)
+def test_deprecated_imports_from_w3lib(obj_name):
     with warnings.catch_warnings(record=True) as warns:
-        test_url = "https://example.com?id=1"
-        add_or_replace_parameter(test_url, "id", "2")
-        assert (
-            "Call to deprecated function add_or_replace_parameter. Use w3lib.url.add_or_replace_parameter instead."
-            in warns[0].message.args
-        )
-        any_to_uri("/tmp/example.txt")
-        assert (
-            "Call to deprecated function any_to_uri. Use w3lib.url.any_to_uri instead."
-            in warns[1].message.args
-        )
-        canonicalize_url(test_url)
-        assert (
-            "Call to deprecated function canonicalize_url. Use w3lib.url.canonicalize_url instead."
-            in warns[2].message.args
-        )
-        file_uri_to_path("file://tmp/example.txt")
-        assert (
-            "Call to deprecated function file_uri_to_path. Use w3lib.url.file_uri_to_path instead."
-            in warns[3].message.args
-        )
-        is_url(test_url)
-        assert (
-            "Call to deprecated function is_url. Use w3lib.url.is_url instead."
-            in warns[4].message.args
-        )
-        parse_data_uri("data:,")
-        assert (
-            "Call to deprecated function parse_data_uri. Use w3lib.url.parse_data_uri instead."
-            in warns[5].message.args
-        )
-        path_to_file_uri("tmp/example.txt")
-        assert (
-            "Call to deprecated function path_to_file_uri. Use w3lib.url.path_to_file_uri instead."
-            in warns[6].message.args
-        )
-        parse_url(test_url)
-        assert (
-            "Call to deprecated function parse_url. Use w3lib.url.parse_url instead."
-            in warns[7].message.args
-        )
-        safe_download_url(test_url)
-        assert (
-            "Call to deprecated function safe_download_url. Use w3lib.url.safe_download_url instead."
-            in warns[8].message.args
-        )
-        safe_url_string(test_url)
-        assert (
-            "Call to deprecated function safe_url_string. Use w3lib.url.safe_url_string instead."
-            in warns[9].message.args
-        )
-        url_query_cleaner(test_url)
-        assert (
-            "Call to deprecated function url_query_cleaner. Use w3lib.url.url_query_cleaner instead."
-            in warns[10].message.args
-        )
-        url_query_parameter(test_url, "id")
-        assert (
-            "Call to deprecated function url_query_parameter. Use w3lib.url.url_query_parameter instead."
-            in warns[11].message.args
-        )
+        obj_type = "attribute" if obj_name == "_safe_chars" else "function"
+        message = f"The scrapy.utils.url.{obj_name} {obj_type} is deprecated, use w3lib.url.{obj_name} instead."
+
+        from importlib import import_module
+
+        getattr(import_module("scrapy.utils.url"), obj_name)
+
+        assert message in warns[0].message.args
 
 
-def test_deprecated_imports_from_w3lib():
-    with warnings.catch_warnings(record=True) as warns:
-        assert (
-            "The scrapy.utils.url._safe_chars attribute is deprecated, use w3lib.url._safe_chars instead."
-            in warns[0].message.args
-        )
-        assert (
-            "The scrapy.utils.url._unquotepath function is deprecated, use w3lib.url._unquotepath instead."
-            in warns[1].message.args
-        )
-
-        if parse_version(version("w3lib")) >= parse_version("1.20.0"):
+def test_deprecated_add_or_replace_parameters_import_from_w3lib():
+    if parse_version(version("w3lib")) >= parse_version("1.20.0"):
+        with warnings.catch_warnings(record=True) as warns:
             assert (
                 "The scrapy.utils.url.add_or_replace_parameters function is deprecated, use w3lib.url.add_or_replace_parameters instead."
-                in warns[2].message.args
+                in warns[0].message.args
             )
-        else:
-            with pytest.raises(ImportError):
-                pass
+    else:
+        with pytest.raises(ImportError):
+            pass
 
 
 if __name__ == "__main__":
