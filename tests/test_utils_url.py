@@ -1,9 +1,7 @@
 import unittest
 import warnings
-from importlib.metadata import version
 
 import pytest
-from packaging.version import Version as parse_version
 
 from scrapy.linkextractors import IGNORED_EXTENSIONS
 from scrapy.spiders import Spider
@@ -12,6 +10,7 @@ from scrapy.utils.url import (
     _is_filesystem_path,
     add_http_if_no_scheme,
     guess_scheme,
+    public_w3lib_objects,
     strip_url,
     url_has_any_extension,
     url_is_from_any_domain,
@@ -615,20 +614,10 @@ class IsPathTestCase(unittest.TestCase):
 @pytest.mark.parametrize(
     "obj_name",
     [
-        "_safe_chars",
         "_unquotepath",
-        "add_or_replace_parameter",
-        "any_to_uri",
-        "canonicalize_url",
-        "file_uri_to_path",
-        "is_url",
-        "parse_data_uri",
+        "_safe_chars",
         "parse_url",
-        "path_to_file_uri",
-        "safe_download_url",
-        "safe_url_string",
-        "url_query_cleaner",
-        "url_query_parameter",
+        *public_w3lib_objects,
     ],
 )
 def test_deprecated_imports_from_w3lib(obj_name):
@@ -641,18 +630,6 @@ def test_deprecated_imports_from_w3lib(obj_name):
         getattr(import_module("scrapy.utils.url"), obj_name)
 
         assert message in warns[0].message.args
-
-
-def test_deprecated_add_or_replace_parameters_import_from_w3lib():
-    if parse_version(version("w3lib")) >= parse_version("1.20.0"):
-        with warnings.catch_warnings(record=True) as warns:
-            assert (
-                "The scrapy.utils.url.add_or_replace_parameters function is deprecated, use w3lib.url.add_or_replace_parameters instead."
-                in warns[0].message.args
-            )
-    else:
-        with pytest.raises(ImportError):
-            pass
 
 
 if __name__ == "__main__":

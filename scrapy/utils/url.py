@@ -20,16 +20,13 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 
 
 def __getattr__(name: str):
-    if name in (*public_w3lib_objects, "_unquotepath", "_safe_chars", "parse_url"):
+    if name in ("_unquotepath", "_safe_chars", "parse_url", *public_w3lib_objects):
         obj_type = "attribute" if name == "_safe_chars" else "function"
         warnings.warn(
             f"The scrapy.utils.url.{name} {obj_type} is deprecated, use w3lib.url.{name} instead.",
             ScrapyDeprecationWarning,
         )
-        try:
-            return getattr(import_module("w3lib.url"), name)
-        except ImportError:
-            raise AttributeError
+        return getattr(import_module("w3lib.url"), name)
 
     raise AttributeError
 
