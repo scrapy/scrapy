@@ -117,3 +117,12 @@ class Spider(object_ref):
 from scrapy.spiders.crawl import CrawlSpider, Rule
 from scrapy.spiders.feed import CSVFeedSpider, XMLFeedSpider
 from scrapy.spiders.sitemap import SitemapSpider
+
+__all__ = [
+    "CSVFeedSpider",
+    "CrawlSpider",
+    "Rule",
+    "SitemapSpider",
+    "Spider",
+    "XMLFeedSpider",
+]

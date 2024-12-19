@@ -1,7 +1,8 @@
 import unittest
+from abc import ABCMeta
 from unittest import mock
 
-from scrapy.item import ABCMeta, Field, Item, ItemMeta
+from scrapy.item import Field, Item, ItemMeta
 
 
 class ItemTest(unittest.TestCase):
