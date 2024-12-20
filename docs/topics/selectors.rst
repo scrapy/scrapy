@@ -777,7 +777,7 @@ Removing namespaces
 When dealing with scraping projects, it is often quite convenient to get rid of
 namespaces altogether and just work with element names, to write more
 simple/convenient XPaths. You can use the
-:meth:`Selector.remove_namespaces` method for that.
+:meth:`scrapy.Selector.remove_namespaces` method for that.
 
 Let's show an example that illustrates this with the Python Insider blog atom feed.
 
@@ -814,7 +814,7 @@ doesn't work (because the Atom XML namespace is obfuscating those nodes):
     >>> response.xpath("//link")
     []
 
-But once we call the :meth:`Selector.remove_namespaces` method, all
+But once we call the :meth:`scrapy.Selector.remove_namespaces` method, all
 nodes can be accessed directly by their names:
 
 .. code-block:: pycon
@@ -1046,7 +1046,7 @@ Built-in Selectors reference
 Selector objects
 ----------------
 
-.. autoclass:: Selector
+.. autoclass:: scrapy.Selector
 
   .. automethod:: xpath
 
@@ -1126,8 +1126,8 @@ Examples
 Selector examples on HTML response
 ----------------------------------
 
-Here are some :class:`Selector` examples to illustrate several concepts.
-In all cases, we assume there is already a :class:`Selector` instantiated with
+Here are some :class:`scrapy.Selector` examples to illustrate several concepts.
+In all cases, we assume there is already a :class:`scrapy.Selector` instantiated with
 a :class:`~scrapy.http.HtmlResponse` object like this:
 
 .. code-block:: python
@@ -1135,7 +1135,7 @@ a :class:`~scrapy.http.HtmlResponse` object like this:
       sel = Selector(html_response)
 
 1. Select all ``<h1>`` elements from an HTML response body, returning a list of
-   :class:`Selector` objects (i.e. a :class:`SelectorList` object):
+   :class:`scrapy.Selector` objects (i.e. a :class:`SelectorList` object):
 
    .. code-block:: python
 
@@ -1165,7 +1165,7 @@ Selector examples on XML response
 
 .. skip: start
 
-Here are some examples to illustrate concepts for :class:`Selector` objects
+Here are some examples to illustrate concepts for :class:`scrapy.Selector` objects
 instantiated with an :class:`~scrapy.http.XmlResponse` object:
 
 .. code-block:: python
@@ -1173,7 +1173,7 @@ instantiated with an :class:`~scrapy.http.XmlResponse` object:
       sel = Selector(xml_response)
 
 1. Select all ``<product>`` elements from an XML response body, returning a list
-   of :class:`Selector` objects (i.e. a :class:`SelectorList` object):
+   of :class:`scrapy.Selector` objects (i.e. a :class:`SelectorList` object):
 
    .. code-block:: python
 
