@@ -147,6 +147,32 @@ class FilesPipelineTestCase(unittest.TestCase):
             p.stop()
 
     @defer.inlineCallbacks
+    def test_media_download_201(self):
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        patchers = [
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[
+                    Request(
+                        item_url,
+                        meta={"response": Response(item_url, status=201, body=b"data")},
+                    )
+                ],
+            )
+        ]
+
+        for p in patchers:
+            p.start()
+
+        result = yield self.pipeline.process_item(item, None)
+        self.assertEqual(result["file_urls"], ("http://example.com/file.pdf",))
+
+        for p in patchers:
+            p.stop()
+
+    @defer.inlineCallbacks
     def test_file_expired(self):
         item_url = "http://example.com/file2.pdf"
         item = _create_item_with_files(item_url)

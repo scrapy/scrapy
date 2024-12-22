@@ -636,7 +636,7 @@ class FilesPipeline(MediaPipeline):
     ) -> FileInfo:
         referer = referer_str(request)
 
-        if response.status != 200:
+        if response.status not in [200, 201]:
             logger.warning(
                 "File (code: %(status)s): Error downloading file from "
                 "%(request)s referred in <%(referer)s>",
@@ -646,6 +646,18 @@ class FilesPipeline(MediaPipeline):
             raise FileException("download-error")
 
         if not response.body:
+            if response.status == 201 and response.headers["Location"]:
+                new_request = Request(
+                    response.headers["Location"],
+                    callback=self.file_downloaded,
+                    meta={"info": info, "item": item},
+                )
+                dfd = self.crawler.engine.download(new_request)
+                dfd2: Deferred[FileInfo] = dfd.addCallback(
+                    self.media_downloaded, request, info, item=item
+                )
+                dfd2.addErrback(self.media_failed, request, info)
+                return dfd2
             logger.warning(
                 "File (empty-content): Empty file from %(request)s referred "
                 "in <%(referer)s>: no-content",
