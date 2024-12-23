@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING
 
 from zope.interface import implementer
 
+from scrapy import Spider
+from scrapy.addons import AddonManager
+from scrapy.crawler import Crawler
 from scrapy.interfaces import ISpiderLoader
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.spider import iter_spider_classes
@@ -17,7 +20,7 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy import Request, Spider
+    from scrapy import Request
     from scrapy.settings import BaseSettings
 
 
@@ -29,6 +32,10 @@ class SpiderLoader:
     """
 
     def __init__(self, settings: BaseSettings):
+        settings.frozen = False
+        AddonManager(Crawler(Spider)).load_settings(settings)
+        settings.frozen = True
+
         self.spider_modules: list[str] = settings.getlist("SPIDER_MODULES")
         self.warn_only: bool = settings.getbool("SPIDER_LOADER_WARN_ONLY")
         self._spiders: dict[str, type[Spider]] = {}

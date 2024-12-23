@@ -174,7 +174,7 @@ class AddonManagerTest(unittest.TestCase):
                 addon = LoggedAddon()
                 build_from_crawler_mock.return_value = addon
                 crawler = get_crawler(settings_dict=settings_dict)
-                logger_mock.info.assert_called_once_with(
+                logger_mock.info.assert_called_with(
                     "Enabled addons:\n%(addons)s",
                     {"addons": [addon]},
                     extra={"crawler": crawler},

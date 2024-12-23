@@ -94,11 +94,16 @@ class CrawlerTestCase(BaseCrawlerTest):
         class TrackingAddon(ParentAddon):
             instances = []
 
-            def __init__(self):
+            def __init__(self, crawler):
                 TrackingAddon.instances.append(self)
+                self.crawler = crawler
 
             def update_settings(self, settings):
                 pass
+
+            @classmethod
+            def from_crawler(cls, crawler):
+                return cls(crawler)
 
         settings = {
             **BASE_SETTINGS,
@@ -107,7 +112,10 @@ class CrawlerTestCase(BaseCrawlerTest):
             },
         }
         crawler = get_crawler(settings_dict=settings)
-        self.assertEqual(len(TrackingAddon.instances), 1)
+        this_crawler_addon_instances = [
+            i for i in TrackingAddon.instances if i.crawler is crawler
+        ]
+        self.assertEqual(len(this_crawler_addon_instances), 1)
         expected = TrackingAddon.instances[-1]
 
         addon = crawler.get_addon(TrackingAddon)

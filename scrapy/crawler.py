@@ -286,7 +286,6 @@ class CrawlerRunner:
         cls_path = settings.get("SPIDER_LOADER_CLASS")
         loader_cls = load_object(cls_path)
         verifyClass(ISpiderLoader, loader_cls)
-        AddonManager(Crawler(Spider)).load_settings(settings)
         return cast("SpiderLoader", loader_cls.from_settings(settings.frozencopy()))
 
     def __init__(self, settings: dict[str, Any] | Settings | None = None):
