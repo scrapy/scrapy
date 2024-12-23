@@ -115,7 +115,7 @@ def get_retry_request(
         return new_request
     stats.inc_value(f"{stats_base_key}/max_reached")
     logger.error(
-        "Gave up retrying %(request)s (failed %(retry_times)d times): " "%(reason)s",
+        "Gave up retrying %(request)s (failed %(retry_times)d times): %(reason)s",
         {"request": request, "retry_times": retry_times, "reason": reason},
         extra={"spider": spider},
     )

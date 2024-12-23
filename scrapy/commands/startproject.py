@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import os
 import re
 import string
@@ -8,11 +7,15 @@ from importlib.util import find_spec
 from pathlib import Path
 from shutil import copy2, copystat, ignore_patterns, move
 from stat import S_IWUSR as OWNER_WRITE_PERMISSION
+from typing import TYPE_CHECKING
 
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.template import render_templatefile, string_camelcase
+
+if TYPE_CHECKING:
+    import argparse
 
 TEMPLATES_TO_RENDER: tuple[tuple[str, ...], ...] = (
     ("scrapy.cfg",),
@@ -89,7 +92,7 @@ class Command(ScrapyCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) not in (1, 2):
-            raise UsageError()
+            raise UsageError
 
         project_name = args[0]
 

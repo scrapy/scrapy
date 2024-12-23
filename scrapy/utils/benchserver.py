@@ -15,7 +15,7 @@ class Root(Resource):
     def render(self, request: Request) -> bytes:
         total = _getarg(request, b"total", 100, int)
         show = _getarg(request, b"show", 10, int)
-        nlist = [random.randint(1, total) for _ in range(show)]  # nosec
+        nlist = [random.randint(1, total) for _ in range(show)]  # noqa: S311
         request.write(b"<html><head></head><body>")
         assert request.args is not None
         args = request.args.copy()

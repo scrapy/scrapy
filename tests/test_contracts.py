@@ -178,27 +178,23 @@ class TestSpider(Spider):
         """method with no url
         @returns items 1 1
         """
-        pass
 
     def custom_form(self, response):
         """
         @url http://scrapy.org
         @custom_form
         """
-        pass
 
     def invalid_regex(self, response):
         """method with invalid regex
         @ Scrapy is awsome
         """
-        pass
 
     def invalid_regex_with_valid_contract(self, response):
         """method with invalid regex
         @ scrapy is awsome
         @url http://scrapy.org
         """
-        pass
 
     def returns_request_meta(self, response):
         """method which returns request
@@ -235,7 +231,6 @@ class CustomContractSuccessSpider(Spider):
         """
         @custom_success_contract
         """
-        pass
 
 
 class CustomContractFailSpider(Spider):
@@ -245,7 +240,6 @@ class CustomContractFailSpider(Spider):
         """
         @custom_fail_contract
         """
-        pass
 
 
 class InheritsTestSpider(TestSpider):

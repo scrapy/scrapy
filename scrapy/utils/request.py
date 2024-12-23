@@ -94,7 +94,9 @@ def fingerprint(
             "headers": headers,
         }
         fingerprint_json = json.dumps(fingerprint_data, sort_keys=True)
-        cache[cache_key] = hashlib.sha1(fingerprint_json.encode()).digest()  # nosec
+        cache[cache_key] = hashlib.sha1(  # noqa: S324
+            fingerprint_json.encode()
+        ).digest()
     return cache[cache_key]
 
 

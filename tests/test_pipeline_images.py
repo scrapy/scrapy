@@ -295,11 +295,11 @@ class ImagesPipelineTestCaseFieldsDataClass(
 class ImagesPipelineTestAttrsItem:
     name = attr.ib(default="")
     # default fields
-    image_urls: list[str] = attr.ib(default=lambda: [])
-    images: list[dict[str, str]] = attr.ib(default=lambda: [])
+    image_urls: list[str] = attr.ib(default=list)
+    images: list[dict[str, str]] = attr.ib(default=list)
     # overridden fields
-    custom_image_urls: list[str] = attr.ib(default=lambda: [])
-    custom_images: list[dict[str, str]] = attr.ib(default=lambda: [])
+    custom_image_urls: list[str] = attr.ib(default=list)
+    custom_images: list[dict[str, str]] = attr.ib(default=list)
 
 
 class ImagesPipelineTestCaseFieldsAttrsItem(

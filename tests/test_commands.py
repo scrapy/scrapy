@@ -238,7 +238,7 @@ class StartprojectTemplatesTest(ProjectTest):
         args = ["--set", f"TEMPLATES_DIR={self.tmpl}"]
         p, out, err = self.proc("startproject", self.project_name, *args)
         self.assertIn(
-            f"New Scrapy project '{self.project_name}', " "using template directory",
+            f"New Scrapy project '{self.project_name}', using template directory",
             out,
         )
         self.assertIn(self.tmpl_proj, out)

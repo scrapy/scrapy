@@ -9,7 +9,6 @@ from __future__ import annotations
 from threading import Thread
 from typing import TYPE_CHECKING, Any
 
-from scrapy import Spider
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
 from scrapy.shell import Shell
@@ -18,6 +17,8 @@ from scrapy.utils.url import guess_scheme
 
 if TYPE_CHECKING:
     from argparse import ArgumentParser, Namespace
+
+    from scrapy import Spider
 
 
 class Command(ScrapyCommand):
@@ -60,7 +61,6 @@ class Command(ScrapyCommand):
         """You can use this function to update the Scrapy objects that will be
         available in the shell
         """
-        pass
 
     def run(self, args: list[str], opts: Namespace) -> None:
         url = args[0] if args else None

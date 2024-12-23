@@ -12,7 +12,7 @@ from functools import partial
 from typing import TYPE_CHECKING, Any, Union, cast
 from urllib.parse import urljoin, urlparse
 
-from lxml import etree  # nosec
+from lxml import etree
 from parsel.csstranslator import HTMLTranslator
 from w3lib.html import strip_html5_whitespace
 from w3lib.url import canonicalize_url, safe_url_string
@@ -26,7 +26,7 @@ from scrapy.utils.url import url_has_any_extension, url_is_from_any_domain
 
 if TYPE_CHECKING:
 
-    from lxml.html import HtmlElement  # nosec
+    from lxml.html import HtmlElement
 
     from scrapy import Selector
     from scrapy.http import TextResponse
@@ -253,8 +253,7 @@ class LxmlLinkExtractor:
         if self.canonicalize:
             for link in links:
                 link.url = canonicalize_url(link.url)
-        links = self.link_extractor._process_links(links)
-        return links
+        return self.link_extractor._process_links(links)
 
     def _extract_links(self, *args: Any, **kwargs: Any) -> list[Link]:
         return self.link_extractor._extract_links(*args, **kwargs)

@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import gzip
 import logging
-import os
-import pickle  # nosec
+import pickle
 from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from pathlib import Path
 from time import time
-from types import ModuleType
 from typing import IO, TYPE_CHECKING, Any, cast
 from weakref import WeakKeyDictionary
 
@@ -19,10 +17,11 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode
-from scrapy.utils.request import RequestFingerprinter
 
 if TYPE_CHECKING:
+    import os
     from collections.abc import Callable
+    from types import ModuleType
 
     # typing.Concatenate requires Python 3.10
     from typing_extensions import Concatenate
@@ -30,6 +29,7 @@ if TYPE_CHECKING:
     from scrapy.http.request import Request
     from scrapy.settings import BaseSettings
     from scrapy.spiders import Spider
+    from scrapy.utils.request import RequestFingerprinter
 
 
 logger = logging.getLogger(__name__)
@@ -282,8 +282,7 @@ class DbmCacheStorage:
         headers = Headers(data["headers"])
         body = data["body"]
         respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        response = respcls(url=url, headers=headers, status=status, body=body)
-        return response
+        return respcls(url=url, headers=headers, status=status, body=body)
 
     def store_response(
         self, spider: Spider, request: Request, response: Response
@@ -309,7 +308,7 @@ class DbmCacheStorage:
         if 0 < self.expiration_secs < time() - float(ts):
             return None  # expired
 
-        return cast(dict[str, Any], pickle.loads(db[f"{key}_data"]))  # nosec
+        return cast(dict[str, Any], pickle.loads(db[f"{key}_data"]))  # noqa: S301
 
 
 class FilesystemCacheStorage:
@@ -349,8 +348,7 @@ class FilesystemCacheStorage:
         status = metadata["status"]
         headers = Headers(headers_raw_to_dict(rawheaders))
         respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        response = respcls(url=url, headers=headers, status=status, body=body)
-        return response
+        return respcls(url=url, headers=headers, status=status, body=body)
 
     def store_response(
         self, spider: Spider, request: Request, response: Response
@@ -392,7 +390,7 @@ class FilesystemCacheStorage:
         if 0 < self.expiration_secs < time() - mtime:
             return None  # expired
         with self._open(metapath, "rb") as f:
-            return cast(dict[str, Any], pickle.load(f))  # nosec
+            return cast(dict[str, Any], pickle.load(f))  # noqa: S301
 
 
 def parse_cachecontrol(header: bytes) -> dict[bytes, bytes | None]:

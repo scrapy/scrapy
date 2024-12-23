@@ -11,11 +11,13 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 
-from lxml.html import FormElement  # nosec
-from lxml.html import InputElement  # nosec
-from lxml.html import MultipleSelectOptions  # nosec
-from lxml.html import SelectElement  # nosec
-from lxml.html import TextareaElement  # nosec
+from lxml.html import (
+    FormElement,
+    InputElement,
+    MultipleSelectOptions,
+    SelectElement,
+    TextareaElement,
+)
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.request import Request
@@ -186,7 +188,7 @@ def _get_inputs(
 
     if not dont_click:
         clickable = _get_clickable(clickdata, form)
-        if clickable and clickable[0] not in formdata and not clickable[0] is None:
+        if clickable and clickable[0] not in formdata and clickable[0] is not None:
             values.append(clickable)
 
     formdata_items = formdata.items() if isinstance(formdata, dict) else formdata

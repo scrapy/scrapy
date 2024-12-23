@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
-import lxml.etree  # nosec
+import lxml.etree
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -24,7 +24,7 @@ class Sitemap:
         xmlp = lxml.etree.XMLParser(
             recover=True, remove_comments=True, resolve_entities=False
         )
-        self._root = lxml.etree.fromstring(xmltext, parser=xmlp)  # nosec
+        self._root = lxml.etree.fromstring(xmltext, parser=xmlp)  # noqa: S320
         rt = self._root.tag
         self.type = self._root.tag.split("}", 1)[1] if "}" in rt else rt
 

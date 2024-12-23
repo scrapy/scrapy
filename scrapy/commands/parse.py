@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import functools
 import inspect
 import json
@@ -22,6 +21,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.spider import spidercls_for_request
 
 if TYPE_CHECKING:
+    import argparse
     from collections.abc import AsyncGenerator, Coroutine, Iterable
 
     from twisted.python.failure import Failure
@@ -225,8 +225,9 @@ class Command(BaseRunSpiderCommand):
         cb_kwargs: dict[str, Any] | None = None,
     ) -> Deferred[Any]:
         cb_kwargs = cb_kwargs or {}
-        d = maybeDeferred(self.iterate_spider_output, callback(response, **cb_kwargs))
-        return d
+        return maybeDeferred(
+            self.iterate_spider_output, callback(response, **cb_kwargs)
+        )
 
     def get_callback_from_rules(
         self, spider: Spider, response: Response
@@ -398,7 +399,7 @@ class Command(BaseRunSpiderCommand):
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # parse arguments
         if not len(args) == 1 or not is_url(args[0]):
-            raise UsageError()
+            raise UsageError
         url = args[0]
 
         # prepare spidercls

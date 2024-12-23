@@ -13,7 +13,6 @@ import pprint
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet import protocol
-from twisted.internet.tcp import Port
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
@@ -24,6 +23,7 @@ from scrapy.utils.trackref import print_live_refs
 
 if TYPE_CHECKING:
     from twisted.conch import telnet
+    from twisted.internet.tcp import Port
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self

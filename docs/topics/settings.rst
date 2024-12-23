@@ -1228,6 +1228,25 @@ Default: ``False``
 If ``True``, the logs will just contain the root path. If it is set to ``False``
 then it displays the component responsible for the log output
 
+.. setting:: LOG_VERSIONS
+
+LOG_VERSIONS
+------------
+
+Default: ``["lxml", "libxml2", "cssselect", "parsel", "w3lib", "Twisted", "Python", "pyOpenSSL", "cryptography", "Platform"]``
+
+Logs the installed versions of the specified items.
+
+An item can be any installed Python package.
+
+The following special items are also supported:
+
+-   ``libxml2``
+
+-   ``Platform`` (:func:`platform.platform`)
+
+-   ``Python``
+
 .. setting:: LOGSTATS_INTERVAL
 
 LOGSTATS_INTERVAL

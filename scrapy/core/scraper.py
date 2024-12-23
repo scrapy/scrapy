@@ -16,9 +16,6 @@ from scrapy import Spider, signals
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import CloseSpider, DropItem, IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.logformatter import LogFormatter
-from scrapy.pipelines import ItemPipelineManager
-from scrapy.signalmanager import SignalManager
 from scrapy.utils.defer import (
     aiter_errback,
     defer_fail,
@@ -35,6 +32,9 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
 
     from scrapy.crawler import Crawler
+    from scrapy.logformatter import LogFormatter
+    from scrapy.pipelines import ItemPipelineManager
+    from scrapy.signalmanager import SignalManager
 
 
 logger = logging.getLogger(__name__)

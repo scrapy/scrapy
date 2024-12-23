@@ -25,7 +25,6 @@ from zope.interface import Interface, implementer
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
-from scrapy.settings import Settings
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.ftp import ftp_store_file
@@ -44,7 +43,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.exporters import BaseItemExporter
-    from scrapy.settings import BaseSettings
+    from scrapy.settings import BaseSettings, Settings
 
 
 logger = logging.getLogger(__name__)
@@ -587,7 +586,7 @@ class FeedExporter:
         :param uri_template: template of uri which contains %(batch_time)s or %(batch_id)d to create new uri
         """
         storage = self._get_storage(uri, feed_options)
-        slot = FeedSlot(
+        return FeedSlot(
             storage=storage,
             uri=uri,
             format=feed_options["format"],
@@ -601,7 +600,6 @@ class FeedExporter:
             settings=self.settings,
             crawler=self.crawler,
         )
-        return slot
 
     def item_scraped(self, item: Any, spider: Spider) -> None:
         slots = []
@@ -682,7 +680,7 @@ class FeedExporter:
                 return True
             except NotConfigured as e:
                 logger.error(
-                    "Disabled feed storage scheme: %(scheme)s. " "Reason: %(reason)s",
+                    "Disabled feed storage scheme: %(scheme)s. Reason: %(reason)s",
                     {"scheme": scheme, "reason": str(e)},
                 )
         else:

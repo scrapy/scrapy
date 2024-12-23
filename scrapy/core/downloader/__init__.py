@@ -15,7 +15,6 @@ from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.resolver import dnscache
-from scrapy.signalmanager import SignalManager
 from scrapy.utils.defer import mustbe_deferred
 from scrapy.utils.httpobj import urlparse_cached
 
@@ -23,6 +22,7 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
     from scrapy.http import Response
     from scrapy.settings import BaseSettings
+    from scrapy.signalmanager import SignalManager
 
 
 _T = TypeVar("_T")
@@ -52,7 +52,7 @@ class Slot:
 
     def download_delay(self) -> float:
         if self.randomize_delay:
-            return random.uniform(0.5 * self.delay, 1.5 * self.delay)  # nosec
+            return random.uniform(0.5 * self.delay, 1.5 * self.delay)  # noqa: S311
         return self.delay
 
     def close(self) -> None:

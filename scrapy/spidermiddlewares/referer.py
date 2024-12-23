@@ -51,7 +51,7 @@ class ReferrerPolicy:
     name: str
 
     def referrer(self, response_url: str, request_url: str) -> str | None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def stripped_referrer(self, url: str) -> str | None:
         if urlparse(url).scheme not in self.NOREFERRER_SCHEMES:

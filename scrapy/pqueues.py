@@ -5,7 +5,6 @@ import logging
 from typing import TYPE_CHECKING, Protocol, cast
 
 from scrapy import Request
-from scrapy.core.downloader import Downloader
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
@@ -14,6 +13,7 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    from scrapy.core.downloader import Downloader
     from scrapy.crawler import Crawler
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ def _path_safe(text: str) -> str:
     pathable_slot = "".join([c if c.isalnum() or c in "-._" else "_" for c in text])
     # as we replace some letters we can get collision for different slots
     # add we add unique part
-    unique_slot = hashlib.md5(text.encode("utf8")).hexdigest()  # nosec
+    unique_slot = hashlib.md5(text.encode("utf8")).hexdigest()  # noqa: S324
     return "-".join([pathable_slot, unique_slot])
 
 

@@ -178,7 +178,7 @@ FILES_STORE_S3_ACL = "private"
 FILES_STORE_GCS_ACL = ""
 
 FTP_USER = "anonymous"
-FTP_PASSWORD = "guest"  # nosec
+FTP_PASSWORD = "guest"  # noqa: S105
 FTP_PASSIVE_MODE = True
 
 GCS_PROJECT_ID = None
@@ -219,6 +219,18 @@ LOG_LEVEL = "DEBUG"
 LOG_FILE = None
 LOG_FILE_APPEND = True
 LOG_SHORT_NAMES = False
+LOG_VERSIONS = [
+    "lxml",
+    "libxml2",
+    "cssselect",
+    "parsel",
+    "w3lib",
+    "Twisted",
+    "Python",
+    "pyOpenSSL",
+    "cryptography",
+    "Platform",
+]
 
 SCHEDULER_DEBUG = False
 

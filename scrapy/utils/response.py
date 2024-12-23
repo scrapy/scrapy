@@ -53,7 +53,7 @@ def get_meta_refresh(
     return _metaref_cache[response]
 
 
-def response_status_message(status: bytes | float | int | str) -> str:
+def response_status_message(status: bytes | float | str) -> str:
     """Return status code plus status text descriptive message"""
     status_int = int(status)
     message = http.RESPONSES.get(status_int, "Unknown Status")
@@ -104,7 +104,7 @@ def open_in_browser(
     elif isinstance(response, TextResponse):
         ext = ".txt"
     else:
-        raise TypeError("Unsupported response type: " f"{response.__class__.__name__}")
+        raise TypeError(f"Unsupported response type: {response.__class__.__name__}")
     fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)

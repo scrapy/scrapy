@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import sys
 from importlib import import_module
 from pathlib import Path
@@ -11,6 +10,7 @@ from scrapy.exceptions import UsageError
 from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
+    import argparse
     from os import PathLike
     from types import ModuleType
 
@@ -43,7 +43,7 @@ class Command(BaseRunSpiderCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) != 1:
-            raise UsageError()
+            raise UsageError
         filename = Path(args[0])
         if not filename.exists():
             raise UsageError(f"File not found: {filename}\n")

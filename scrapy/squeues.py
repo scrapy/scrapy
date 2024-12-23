@@ -5,7 +5,7 @@ Scheduler queues
 from __future__ import annotations
 
 import marshal
-import pickle  # nosec
+import pickle
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 

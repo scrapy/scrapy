@@ -28,7 +28,7 @@ class Command(ScrapyCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) != 1:
-            raise UsageError()
+            raise UsageError
 
         editor = self.settings["EDITOR"]
         assert self.crawler_process
@@ -41,4 +41,4 @@ class Command(ScrapyCommand):
         sfile = sys.modules[spidercls.__module__].__file__
         assert sfile
         sfile = sfile.replace(".pyc", ".py")
-        self.exitcode = os.system(f'{editor} "{sfile}"')  # nosec
+        self.exitcode = os.system(f'{editor} "{sfile}"')  # noqa: S605

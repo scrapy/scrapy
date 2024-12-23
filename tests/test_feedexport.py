@@ -134,8 +134,7 @@ class FTPFeedStorageTest(unittest.TestCase):
             name = "test_spider"
 
         crawler = get_crawler(settings_dict=settings)
-        spider = TestSpider.from_crawler(crawler)
-        return spider
+        return TestSpider.from_crawler(crawler)
 
     def _store(self, uri, content, feed_options=None, settings=None):
         crawler = get_crawler(settings_dict=settings or {})
@@ -210,8 +209,7 @@ class BlockingFeedStorageTest(unittest.TestCase):
             name = "test_spider"
 
         crawler = get_crawler(settings_dict=settings)
-        spider = TestSpider.from_crawler(crawler)
-        return spider
+        return TestSpider.from_crawler(crawler)
 
     def test_default_temp_dir(self):
         b = BlockingFeedStorage()
@@ -473,7 +471,7 @@ class S3FeedStorageTest(unittest.TestCase):
 class GCSFeedStorageTest(unittest.TestCase):
     def test_parse_settings(self):
         try:
-            from google.cloud.storage import Client  # noqa
+            from google.cloud.storage import Client  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
@@ -487,7 +485,7 @@ class GCSFeedStorageTest(unittest.TestCase):
 
     def test_parse_empty_acl(self):
         try:
-            from google.cloud.storage import Client  # noqa
+            from google.cloud.storage import Client  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
@@ -504,7 +502,7 @@ class GCSFeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store(self):
         try:
-            from google.cloud.storage import Client  # noqa
+            from google.cloud.storage import Client  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
@@ -729,7 +727,7 @@ class ExceptionJsonItemExporter(JsonItemExporter):
     """JsonItemExporter that throws an exception every time export_item is called."""
 
     def export_item(self, _):
-        raise Exception("foo")
+        raise RuntimeError("foo")
 
 
 class FeedExportTest(FeedExportTestBase):
@@ -1759,13 +1757,13 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
                 crawler = get_crawler(spider_cls, settings)
                 yield crawler.crawl()
 
-            for file_path, feed_options in FEEDS.items():
+            for file_path in FEEDS:
                 content[str(file_path)] = (
                     Path(file_path).read_bytes() if Path(file_path).exists() else None
                 )
 
         finally:
-            for file_path in FEEDS.keys():
+            for file_path in FEEDS:
                 if not Path(file_path).exists():
                     continue
 
