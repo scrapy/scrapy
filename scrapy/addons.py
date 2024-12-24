@@ -9,7 +9,7 @@ from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
-    from scrapy.settings import Settings
+    from scrapy.settings import BaseSettings, Settings
 
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ class AddonManager:
         self.crawler: Crawler = crawler
         self.addons: list[Any] = []
 
-    def load_settings(self, settings: Settings) -> None:
+    def load_settings(self, settings: Settings | BaseSettings) -> None:
         """Load add-ons and configurations from a settings object and apply them.
 
         This will load the add-on for every add-on path in the

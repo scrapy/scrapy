@@ -945,15 +945,24 @@ class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
 def test_log_scrapy_info(settings, items, caplog):
     with caplog.at_level("INFO"):
         CrawlerProcess(settings)
+    scrapy_version_msg = next(
+        record for record in caplog.records if record.getMessage().startswith("Scrapy ")
+    ).getMessage()
+    expected_scrapy_version_msg = (
+        f"Scrapy {scrapy.__version__} started (bot: scrapybot)"
+    )
+
     assert (
-        caplog.records[0].getMessage()
-        == f"Scrapy {scrapy.__version__} started (bot: scrapybot)"
-    ), repr(caplog.records[0].msg)
+        scrapy_version_msg == expected_scrapy_version_msg
+    ), f"Got: {scrapy_version_msg}, Expected: {expected_scrapy_version_msg}"
     if not items:
-        assert len(caplog.records) == 1
+        # we expect the logs to consist of the scrapy version
+        # and the enabled addons
+        assert len(caplog.records) == 2
         return
-    version_string = caplog.records[1].getMessage()
+    version_records = [record.getMessage() for record in caplog.records]
     expected_items_pattern = "',\n '".join(
         f"{item}': '[^']+('\n +'[^']+)*" for item in items
     )
-    assert re.search(r"^Versions:\n{'" + expected_items_pattern + "'}$", version_string)
+    version_pattern = r"^Versions:\n{'" + expected_items_pattern + "'}$"
+    assert any(re.search(version_pattern, record) for record in version_records)
