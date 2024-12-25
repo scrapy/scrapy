@@ -648,16 +648,11 @@ class FilesPipeline(MediaPipeline):
         if not response.body:
             if response.status == 201 and response.headers["Location"]:
                 new_request = Request(
-                    response.headers["Location"],
+                    response.headers["Location"].decode(),
                     callback=self.file_downloaded,
                     meta={"info": info, "item": item},
                 )
-                dfd = self.crawler.engine.download(new_request)
-                dfd2: Deferred[FileInfo] = dfd.addCallback(
-                    self.media_downloaded, request, info, item=item
-                )
-                dfd2.addErrback(self.media_failed, request, info)
-                return dfd2
+                return self._process_request(new_request)
             logger.warning(
                 "File (empty-content): Empty file from %(request)s referred "
                 "in <%(referer)s>: no-content",
