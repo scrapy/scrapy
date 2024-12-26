@@ -20,9 +20,11 @@ test-output.*
 .mypy_cache/
 /tests/keys/localhost.crt
 /tests/keys/localhost.key
-
+scraped_content_www_computerweekly_com
+scraped_content
+scraped_content_acceleratelearning_stanford_edu
 # Windows
 Thumbs.db
-
+scraped_content_resources_github_com
 # OSX miscellaneous
 .DS_Store
