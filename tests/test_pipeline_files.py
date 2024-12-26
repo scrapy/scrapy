@@ -151,6 +151,12 @@ class FilesPipelineTestCase(unittest.TestCase):
         item_url = "http://example.com/file.pdf"
         item = _create_item_with_files(item_url)
         patchers = [
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FSFilesStore,
+                "stat_file",
+                return_value={"checksum": "abc", "last_modified": time.time()},
+            ),
             mock.patch.object(
                 FilesPipeline,
                 "get_media_requests",
@@ -160,14 +166,14 @@ class FilesPipelineTestCase(unittest.TestCase):
                         meta={"response": Response(item_url, status=201, body=b"data")},
                     )
                 ],
-            )
+            ),
         ]
 
         for p in patchers:
             p.start()
 
         result = yield self.pipeline.process_item(item, None)
-        self.assertEqual(result["file_urls"], ("http://example.com/file.pdf",))
+        self.assertEqual(result["files"][0]["checksum"], "abc")
 
         for p in patchers:
             p.stop()
