@@ -1,4 +1,5 @@
 from unittest import TextTestResult
+from warnings import catch_warnings, filterwarnings
 
 from twisted.internet import defer
 from twisted.python import failure
@@ -13,6 +14,7 @@ from scrapy.contracts.default import (
     ScrapesContract,
     UrlContract,
 )
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.item import Field, Item
 from scrapy.spidermiddlewares.httperror import HttpError
@@ -541,14 +543,18 @@ class ContractsManagerTest(unittest.TestCase):
 
     def test_form_contract(self):
         spider = TestSpider()
-        request = self.conman.from_method(spider.custom_form, self.results)
+        with catch_warnings():
+            filterwarnings("ignore", category=ScrapyDeprecationWarning)
+            request = self.conman.from_method(spider.custom_form, self.results)
         self.assertEqual(request.method, "POST")
         self.assertIsInstance(request, FormRequest)
 
     def test_inherited_contracts(self):
         spider = InheritsTestSpider()
 
-        requests = self.conman.from_spider(spider, self.results)
+        with catch_warnings():
+            filterwarnings("ignore", category=ScrapyDeprecationWarning)
+            requests = self.conman.from_spider(spider, self.results)
         self.assertTrue(requests)
 
 
