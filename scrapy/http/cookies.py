@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import re
 import time
-from http.cookiejar import Cookie
+from http.cookiejar import Cookie, CookiePolicy, DefaultCookiePolicy
 from http.cookiejar import CookieJar as _CookieJar
-from http.cookiejar import CookiePolicy, DefaultCookiePolicy
 from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.utils.httpobj import urlparse_cached
