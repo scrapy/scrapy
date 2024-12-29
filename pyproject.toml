@@ -170,6 +170,7 @@ disable = [
     "too-many-instance-attributes",
     "too-many-lines",
     "too-many-locals",
+    "too-many-positional-arguments",
     "too-many-public-methods",
     "too-many-return-statements",
     "unbalanced-tuple-unpacking",
