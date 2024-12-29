@@ -75,7 +75,7 @@ class TelnetConsole(protocol.ServerFactory):
     def stop_listening(self) -> None:
         self.port.stopListening()
 
-    def protocol(self) -> telnet.TelnetTransport:  # type: ignore[override]
+    def protocol(self) -> telnet.TelnetTransport:
         # these import twisted.internet.reactor
         from twisted.conch import manhole, telnet
         from twisted.conch.insults import insults
