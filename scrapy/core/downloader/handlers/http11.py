@@ -17,9 +17,14 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
-from twisted.web.client import URI, Agent, HTTPConnectionPool
+from twisted.web.client import (
+    URI,
+    Agent,
+    HTTPConnectionPool,
+    ResponseDone,
+    ResponseFailed,
+)
 from twisted.web.client import Response as TxResponse
-from twisted.web.client import ResponseDone, ResponseFailed
 from twisted.web.http import PotentialDataLoss, _DataLoss
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS

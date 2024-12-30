@@ -116,9 +116,6 @@ disable_warnings = ["include-ignored"]
 # https://github.com/nedbat/coveragepy/issues/831#issuecomment-517778185
 exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
 
-[tool.isort]
-profile = "black"
-
 [tool.pylint.MASTER]
 persistent = "no"
 jobs = 1          # >1 hides results
@@ -173,6 +170,7 @@ disable = [
     "too-many-instance-attributes",
     "too-many-lines",
     "too-many-locals",
+    "too-many-positional-arguments",
     "too-many-public-methods",
     "too-many-return-statements",
     "unbalanced-tuple-unpacking",
@@ -226,6 +224,8 @@ extend-select = [
     "FA",
     # refurb
     "FURB",
+    # isort
+    "I",
     # flake8-implicit-str-concat
     "ISC",
     # flake8-logging
