@@ -69,8 +69,7 @@ class BasicItemLoaderTest(unittest.TestCase):
     def test_load_item_ignore_none_field_values(self):
         def validate_sku(value):
             # Let's assume a SKU is only digits.
-            if value.isdigit():
-                return value
+            return value if value.isdigit() else None
 
         class MyLoader(ItemLoader):
             name_out = Compose(lambda vs: vs[0])  # take first which allows empty values
@@ -331,10 +330,10 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.add_value("name", ["mar", "ta"])
         self.assertEqual(il.get_output_value("name"), "Mar Ta")
 
-        class TakeFirstItemLoader(TestItemLoader):
+        class TakeFirstItemLoader2(TestItemLoader):
             name_out = Join("<br>")
 
-        il = TakeFirstItemLoader()
+        il = TakeFirstItemLoader2()
         il.add_value("name", ["mar", "ta"])
         self.assertEqual(il.get_output_value("name"), "Mar<br>Ta")
 
@@ -526,7 +525,7 @@ class InitializationFromDictTest(unittest.TestCase):
         self.assertEqual(il.get_output_value("name"), ["foo"])
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(loaded_item, dict({"name": ["foo"]}))
+        self.assertEqual(loaded_item, {"name": ["foo"]})
 
     def test_get_output_value_list(self):
         """Getting output value must not remove value from item"""
@@ -535,7 +534,7 @@ class InitializationFromDictTest(unittest.TestCase):
         self.assertEqual(il.get_output_value("name"), ["foo", "bar"])
         loaded_item = il.load_item()
         self.assertIsInstance(loaded_item, self.item_class)
-        self.assertEqual(loaded_item, dict({"name": ["foo", "bar"]}))
+        self.assertEqual(loaded_item, {"name": ["foo", "bar"]})
 
     def test_values_single(self):
         """Values from initial item must be added to loader._values"""
@@ -565,37 +564,37 @@ class NoInputReprocessingFromDictTest(unittest.TestCase):
     """
 
     def test_avoid_reprocessing_with_initial_values_single(self):
-        il = NoInputReprocessingDictLoader(item=dict(title="foo"))
+        il = NoInputReprocessingDictLoader(item={"title": "foo"})
         il_loaded = il.load_item()
-        self.assertEqual(il_loaded, dict(title="foo"))
+        self.assertEqual(il_loaded, {"title": "foo"})
         self.assertEqual(
-            NoInputReprocessingDictLoader(item=il_loaded).load_item(), dict(title="foo")
+            NoInputReprocessingDictLoader(item=il_loaded).load_item(), {"title": "foo"}
         )
 
     def test_avoid_reprocessing_with_initial_values_list(self):
-        il = NoInputReprocessingDictLoader(item=dict(title=["foo", "bar"]))
+        il = NoInputReprocessingDictLoader(item={"title": ["foo", "bar"]})
         il_loaded = il.load_item()
-        self.assertEqual(il_loaded, dict(title="foo"))
+        self.assertEqual(il_loaded, {"title": "foo"})
         self.assertEqual(
-            NoInputReprocessingDictLoader(item=il_loaded).load_item(), dict(title="foo")
+            NoInputReprocessingDictLoader(item=il_loaded).load_item(), {"title": "foo"}
         )
 
     def test_avoid_reprocessing_without_initial_values_single(self):
         il = NoInputReprocessingDictLoader()
         il.add_value("title", "foo")
         il_loaded = il.load_item()
-        self.assertEqual(il_loaded, dict(title="FOO"))
+        self.assertEqual(il_loaded, {"title": "FOO"})
         self.assertEqual(
-            NoInputReprocessingDictLoader(item=il_loaded).load_item(), dict(title="FOO")
+            NoInputReprocessingDictLoader(item=il_loaded).load_item(), {"title": "FOO"}
         )
 
     def test_avoid_reprocessing_without_initial_values_list(self):
         il = NoInputReprocessingDictLoader()
         il.add_value("title", ["foo", "bar"])
         il_loaded = il.load_item()
-        self.assertEqual(il_loaded, dict(title="FOO"))
+        self.assertEqual(il_loaded, {"title": "FOO"})
         self.assertEqual(
-            NoInputReprocessingDictLoader(item=il_loaded).load_item(), dict(title="FOO")
+            NoInputReprocessingDictLoader(item=il_loaded).load_item(), {"title": "FOO"}
         )
 
 
@@ -678,11 +677,11 @@ class SelectJmesTestCase(unittest.TestCase):
     }
 
     def test_output(self):
-        for tl in self.test_list_equals:
-            expr, test_list, expected = self.test_list_equals[tl]
+        for k, v in self.test_list_equals.items():
+            expr, test_list, expected = v
             test = SelectJmes(expr)(test_list)
             self.assertEqual(
-                test, expected, msg=f'test "{tl}" got {test} expected {expected}'
+                test, expected, msg=f'test "{k}" got {test} expected {expected}'
             )
 
 

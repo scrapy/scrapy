@@ -9,7 +9,7 @@ Installation guide
 Supported Python versions
 =========================
 
-Scrapy requires Python 3.8+, either the CPython implementation (default) or
+Scrapy requires Python 3.9+, either the CPython implementation (default) or
 the PyPy implementation (see :ref:`python:implementations`).
 
 .. _intro-install-scrapy:
@@ -37,7 +37,7 @@ Note that sometimes this may require solving compilation issues for some Scrapy
 dependencies depending on your operating system, so be sure to check the
 :ref:`intro-install-platform-notes`.
 
-For more detailed and platform specifics instructions, as well as
+For more detailed and platform-specific instructions, as well as
 troubleshooting information, read on.
 
 
@@ -101,7 +101,7 @@ Windows
 -------
 
 Though it's possible to install Scrapy on Windows using pip, we recommend you
-to install `Anaconda`_ or `Miniconda`_ and use the package from the
+install `Anaconda`_ or `Miniconda`_ and use the package from the
 `conda-forge`_ channel, which will avoid most installation issues.
 
 Once you've installed `Anaconda`_ or `Miniconda`_, install Scrapy with::
@@ -141,7 +141,7 @@ But it should support older versions of Ubuntu too, like Ubuntu 14.04,
 albeit with potential issues with TLS connections.
 
 **Don't** use the ``python-scrapy`` package provided by Ubuntu, they are
-typically too old and slow to catch up with latest Scrapy.
+typically too old and slow to catch up with the latest Scrapy release.
 
 
 To install Scrapy on Ubuntu (or Ubuntu-based) systems, you need to install
@@ -170,7 +170,7 @@ macOS
 
 Building Scrapy's dependencies requires the presence of a C compiler and
 development headers. On macOS this is typically provided by Apple’s Xcode
-development tools. To install the Xcode command line tools open a terminal
+development tools. To install the Xcode command-line tools, open a terminal
 window and run::
 
     xcode-select --install
@@ -199,11 +199,6 @@ solutions:
   * Install python::
 
       brew install python
-
-  * Latest versions of python have ``pip`` bundled with them so you won't need
-    to install it separately. If this is not the case, upgrade python::
-
-      brew update; brew upgrade python
 
 *   *(Optional)* :ref:`Install Scrapy inside a Python virtual environment
     <intro-using-virtualenv>`.
@@ -272,10 +267,10 @@ For details, see `Issue #2473 <https://github.com/scrapy/scrapy/issues/2473>`_.
 .. _lxml: https://lxml.de/index.html
 .. _parsel: https://pypi.org/project/parsel/
 .. _w3lib: https://pypi.org/project/w3lib/
-.. _twisted: https://twistedmatrix.com/trac/
+.. _twisted: https://twisted.org/
 .. _cryptography: https://cryptography.io/en/latest/
 .. _pyOpenSSL: https://pypi.org/project/pyOpenSSL/
-.. _setuptools: https://pypi.python.org/pypi/setuptools
+.. _setuptools: https://pypi.org/pypi/setuptools
 .. _homebrew: https://brew.sh/
 .. _zsh: https://www.zsh.org/
 .. _Anaconda: https://docs.anaconda.com/anaconda/

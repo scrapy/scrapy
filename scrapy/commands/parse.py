@@ -1,15 +1,18 @@
+from __future__ import annotations
+
+import functools
 import inspect
 import json
 import logging
-from typing import Dict
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 from itemadapter import ItemAdapter, is_item
-from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import Deferred, maybeDeferred
 from w3lib.url import is_url
 
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
-from scrapy.http import Request
+from scrapy.http import Request, Response
 from scrapy.utils import display
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.defer import aiter_errback, deferred_from_coro
@@ -17,26 +20,39 @@ from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.spider import spidercls_for_request
 
+if TYPE_CHECKING:
+    import argparse
+    from collections.abc import AsyncGenerator, Coroutine, Iterable
+
+    from twisted.python.failure import Failure
+
+    from scrapy.http.request import CallbackT
+    from scrapy.spiders import Spider
+
+
 logger = logging.getLogger(__name__)
+
+_T = TypeVar("_T")
 
 
 class Command(BaseRunSpiderCommand):
     requires_project = True
 
-    spider = None
-    items: Dict[int, list] = {}
-    requests: Dict[int, list] = {}
+    spider: Spider | None = None
+    items: dict[int, list[Any]] = {}
+    requests: dict[int, list[Request]] = {}
+    spidercls: type[Spider] | None
 
     first_response = None
 
-    def syntax(self):
+    def syntax(self) -> str:
         return "[options] <url>"
 
-    def short_desc(self):
+    def short_desc(self) -> str:
         return "Parse URL (using its spider) and print the results"
 
-    def add_options(self, parser):
-        BaseRunSpiderCommand.add_options(self, parser)
+    def add_options(self, parser: argparse.ArgumentParser) -> None:
+        super().add_options(parser)
         parser.add_argument(
             "--spider",
             dest="spider",
@@ -105,7 +121,7 @@ class Command(BaseRunSpiderCommand):
         )
 
     @property
-    def max_level(self):
+    def max_level(self) -> int:
         max_items, max_requests = 0, 0
         if self.items:
             max_items = max(self.items)
@@ -113,13 +129,21 @@ class Command(BaseRunSpiderCommand):
             max_requests = max(self.requests)
         return max(max_items, max_requests)
 
-    def handle_exception(self, _failure):
+    def handle_exception(self, _failure: Failure) -> None:
         logger.error(
             "An error is caught while iterating the async iterable",
             exc_info=failure_to_exc_info(_failure),
         )
 
-    def iterate_spider_output(self, result):
+    @overload
+    def iterate_spider_output(
+        self, result: AsyncGenerator[_T] | Coroutine[Any, Any, _T]
+    ) -> Deferred[_T]: ...
+
+    @overload
+    def iterate_spider_output(self, result: _T) -> Iterable[Any]: ...
+
+    def iterate_spider_output(self, result: Any) -> Iterable[Any] | Deferred[Any]:
         if inspect.isasyncgen(result):
             d = deferred_from_coro(
                 collect_asyncgen(aiter_errback(result, self.handle_exception))
@@ -132,15 +156,15 @@ class Command(BaseRunSpiderCommand):
             return d
         return arg_to_iter(deferred_from_coro(result))
 
-    def add_items(self, lvl, new_items):
+    def add_items(self, lvl: int, new_items: list[Any]) -> None:
         old_items = self.items.get(lvl, [])
         self.items[lvl] = old_items + new_items
 
-    def add_requests(self, lvl, new_reqs):
+    def add_requests(self, lvl: int, new_reqs: list[Request]) -> None:
         old_reqs = self.requests.get(lvl, [])
         self.requests[lvl] = old_reqs + new_reqs
 
-    def print_items(self, lvl=None, colour=True):
+    def print_items(self, lvl: int | None = None, colour: bool = True) -> None:
         if lvl is None:
             items = [item for lst in self.items.values() for item in lst]
         else:
@@ -149,7 +173,7 @@ class Command(BaseRunSpiderCommand):
         print("# Scraped Items ", "-" * 60)
         display.pprint([ItemAdapter(x).asdict() for x in items], colorize=colour)
 
-    def print_requests(self, lvl=None, colour=True):
+    def print_requests(self, lvl: int | None = None, colour: bool = True) -> None:
         if lvl is None:
             if self.requests:
                 requests = self.requests[max(self.requests)]
@@ -161,7 +185,7 @@ class Command(BaseRunSpiderCommand):
         print("# Requests ", "-" * 65)
         display.pprint(requests, colorize=colour)
 
-    def print_results(self, opts):
+    def print_results(self, opts: argparse.Namespace) -> None:
         colour = not opts.nocolour
 
         if opts.verbose:
@@ -178,7 +202,14 @@ class Command(BaseRunSpiderCommand):
             if not opts.nolinks:
                 self.print_requests(colour=colour)
 
-    def _get_items_and_requests(self, spider_output, opts, depth, spider, callback):
+    def _get_items_and_requests(
+        self,
+        spider_output: Iterable[Any],
+        opts: argparse.Namespace,
+        depth: int,
+        spider: Spider,
+        callback: CallbackT,
+    ) -> tuple[list[Any], list[Request], argparse.Namespace, int, Spider, CallbackT]:
         items, requests = [], []
         for x in spider_output:
             if is_item(x):
@@ -187,14 +218,22 @@ class Command(BaseRunSpiderCommand):
                 requests.append(x)
         return items, requests, opts, depth, spider, callback
 
-    def run_callback(self, response, callback, cb_kwargs=None):
+    def run_callback(
+        self,
+        response: Response,
+        callback: CallbackT,
+        cb_kwargs: dict[str, Any] | None = None,
+    ) -> Deferred[Any]:
         cb_kwargs = cb_kwargs or {}
-        d = maybeDeferred(self.iterate_spider_output, callback(response, **cb_kwargs))
-        return d
+        return maybeDeferred(
+            self.iterate_spider_output, callback(response, **cb_kwargs)
+        )
 
-    def get_callback_from_rules(self, spider, response):
+    def get_callback_from_rules(
+        self, spider: Spider, response: Response
+    ) -> CallbackT | str | None:
         if getattr(spider, "rules", None):
-            for rule in spider.rules:
+            for rule in spider.rules:  # type: ignore[attr-defined]
                 if rule.link_extractor.matches(response.url):
                     return rule.callback or "parse"
         else:
@@ -203,8 +242,10 @@ class Command(BaseRunSpiderCommand):
                 "please specify a callback to use for parsing",
                 {"spider": spider.name},
             )
+        return None
 
-    def set_spidercls(self, url, opts):
+    def set_spidercls(self, url: str, opts: argparse.Namespace) -> None:
+        assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
         if opts.spider:
             try:
@@ -218,13 +259,15 @@ class Command(BaseRunSpiderCommand):
             if not self.spidercls:
                 logger.error("Unable to find spider for: %(url)s", {"url": url})
 
-        def _start_requests(spider):
+        def _start_requests(spider: Spider) -> Iterable[Request]:
             yield self.prepare_request(spider, Request(url), opts)
 
         if self.spidercls:
-            self.spidercls.start_requests = _start_requests
+            self.spidercls.start_requests = _start_requests  # type: ignore[assignment,method-assign]
 
-    def start_parsing(self, url, opts):
+    def start_parsing(self, url: str, opts: argparse.Namespace) -> None:
+        assert self.crawler_process
+        assert self.spidercls
         self.crawler_process.crawl(self.spidercls, **opts.spargs)
         self.pcrawler = list(self.crawler_process.crawlers)[0]
         self.crawler_process.start()
@@ -232,7 +275,12 @@ class Command(BaseRunSpiderCommand):
         if not self.first_response:
             logger.error("No response downloaded for: %(url)s", {"url": url})
 
-    def scraped_data(self, args):
+    def scraped_data(
+        self,
+        args: tuple[
+            list[Any], list[Request], argparse.Namespace, int, Spider, CallbackT
+        ],
+    ) -> list[Any]:
         items, requests, opts, depth, spider, callback = args
         if opts.pipelines:
             itemproc = self.pcrawler.engine.scraper.itemproc
@@ -251,42 +299,53 @@ class Command(BaseRunSpiderCommand):
 
         return scraped_data
 
-    def prepare_request(self, spider, request, opts):
-        def callback(response, **cb_kwargs):
+    def _get_callback(
+        self,
+        *,
+        spider: Spider,
+        opts: argparse.Namespace,
+        response: Response | None = None,
+    ) -> CallbackT:
+        cb: str | CallbackT | None = None
+        if response:
+            cb = response.meta["_callback"]
+        if not cb:
+            if opts.callback:
+                cb = opts.callback
+            elif response and opts.rules and self.first_response == response:
+                cb = self.get_callback_from_rules(spider, response)
+                if not cb:
+                    raise ValueError(
+                        f"Cannot find a rule that matches {response.url!r} in spider: "
+                        f"{spider.name}"
+                    )
+            else:
+                cb = "parse"
+
+        if not callable(cb):
+            assert cb is not None
+            cb_method = getattr(spider, cb, None)
+            if callable(cb_method):
+                cb = cb_method
+            else:
+                raise ValueError(
+                    f"Cannot find callback {cb!r} in spider: {spider.name}"
+                )
+        assert callable(cb)
+        return cb
+
+    def prepare_request(
+        self, spider: Spider, request: Request, opts: argparse.Namespace
+    ) -> Request:
+        def callback(response: Response, **cb_kwargs: Any) -> Deferred[list[Any]]:
             # memorize first request
             if not self.first_response:
                 self.first_response = response
 
-            # determine real callback
-            cb = response.meta["_callback"]
-            if not cb:
-                if opts.callback:
-                    cb = opts.callback
-                elif opts.rules and self.first_response == response:
-                    cb = self.get_callback_from_rules(spider, response)
-
-                    if not cb:
-                        logger.error(
-                            "Cannot find a rule that matches %(url)r in spider: %(spider)s",
-                            {"url": response.url, "spider": spider.name},
-                        )
-                        return
-                else:
-                    cb = "parse"
-
-            if not callable(cb):
-                cb_method = getattr(spider, cb, None)
-                if callable(cb_method):
-                    cb = cb_method
-                else:
-                    logger.error(
-                        "Cannot find callback %(callback)r in spider: %(spider)s",
-                        {"callback": cb, "spider": spider.name},
-                    )
-                    return
+            cb = self._get_callback(spider=spider, opts=opts, response=response)
 
             # parse items and requests
-            depth = response.meta["_depth"]
+            depth: int = response.meta["_depth"]
 
             d = self.run_callback(response, cb, cb_kwargs)
             d.addCallback(self._get_items_and_requests, opts, depth, spider, callback)
@@ -303,16 +362,19 @@ class Command(BaseRunSpiderCommand):
 
         request.meta["_depth"] = 1
         request.meta["_callback"] = request.callback
+        if not request.callback and not opts.rules:
+            cb = self._get_callback(spider=spider, opts=opts)
+            functools.update_wrapper(callback, cb)
         request.callback = callback
         return request
 
-    def process_options(self, args, opts):
-        BaseRunSpiderCommand.process_options(self, args, opts)
+    def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
+        super().process_options(args, opts)
 
         self.process_request_meta(opts)
         self.process_request_cb_kwargs(opts)
 
-    def process_request_meta(self, opts):
+    def process_request_meta(self, opts: argparse.Namespace) -> None:
         if opts.meta:
             try:
                 opts.meta = json.loads(opts.meta)
@@ -323,7 +385,7 @@ class Command(BaseRunSpiderCommand):
                     print_help=False,
                 )
 
-    def process_request_cb_kwargs(self, opts):
+    def process_request_cb_kwargs(self, opts: argparse.Namespace) -> None:
         if opts.cbkwargs:
             try:
                 opts.cbkwargs = json.loads(opts.cbkwargs)
@@ -334,12 +396,11 @@ class Command(BaseRunSpiderCommand):
                     print_help=False,
                 )
 
-    def run(self, args, opts):
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # parse arguments
         if not len(args) == 1 or not is_url(args[0]):
-            raise UsageError()
-        else:
-            url = args[0]
+            raise UsageError
+        url = args[0]
 
         # prepare spidercls
         self.set_spidercls(url, opts)

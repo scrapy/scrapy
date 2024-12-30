@@ -591,7 +591,7 @@ Another common case would be to extract all direct ``<p>`` children:
 For more details about relative XPaths see the `Location Paths`_ section in the
 XPath specification.
 
-.. _Location Paths: https://www.w3.org/TR/xpath/all/#location-paths
+.. _Location Paths: https://www.w3.org/TR/xpath-10/#location-paths
 
 When querying by class, consider using CSS
 ------------------------------------------
@@ -727,7 +727,7 @@ But using the ``.`` to mean the node, works:
     >>> sel.xpath("//a[contains(., 'Next Page')]").getall()
     ['<a href="#">Click here to go to the <strong>Next Page</strong></a>']
 
-.. _`XPath string function`: https://www.w3.org/TR/xpath/all/#section-String-Functions
+.. _`XPath string function`: https://www.w3.org/TR/xpath-10/#section-String-Functions
 
 .. _topics-selectors-xpath-variables:
 
@@ -801,8 +801,8 @@ This is how the file starts::
       ...
 
 You can see several namespace declarations including a default
-"http://www.w3.org/2005/Atom" and another one using the "gd:" prefix for
-"http://schemas.google.com/g/2005".
+``"http://www.w3.org/2005/Atom"`` and another one using the ``gd:`` prefix for
+``"http://schemas.google.com/g/2005"``.
 
 .. highlight:: python
 
@@ -1032,10 +1032,8 @@ whereas the CSS lookup is translated into XPath and thus runs more efficiently,
 so performance-wise its uses are limited to situations that are not easily
 described with CSS selectors.
 
-Parsel also simplifies adding your own XPath extensions.
-
-.. autofunction:: parsel.xpathfuncs.set_xpathfunc
-
+Parsel also simplifies adding your own XPath extensions with 
+:func:`~parsel.xpathfuncs.set_xpathfunc`.
 
 .. _topics-selectors-ref:
 
@@ -1061,6 +1059,12 @@ Selector objects
       .. note::
 
           For convenience, this method can be called as ``response.css()``
+
+  .. automethod:: jmespath
+
+      .. note::
+
+          For convenience, this method can be called as ``response.jmespath()``
 
   .. automethod:: get
 
@@ -1093,6 +1097,8 @@ SelectorList objects
    .. automethod:: xpath
 
    .. automethod:: css
+
+   .. automethod:: jmespath
 
    .. automethod:: getall
 

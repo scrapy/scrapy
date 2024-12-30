@@ -1,8 +1,9 @@
 import copy
 import unittest
 import warnings
-from collections.abc import Mapping, MutableMapping
-from typing import Iterator
+from collections.abc import Iterator, Mapping, MutableMapping
+
+import pytest
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
@@ -91,12 +92,14 @@ class CaseInsensitiveDictMixin:
         self.assertRaises(KeyError, d.__getitem__, "key_LOWER")
         self.assertRaises(KeyError, d.__getitem__, "key_lower")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_getdefault(self):
         d = CaselessDict()
         self.assertEqual(d.get("c", 5), 5)
         d["c"] = 10
         self.assertEqual(d.get("c", 5), 10)
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_setdefault(self):
         d = CaselessDict({"a": 1, "b": 2})
 
@@ -155,6 +158,7 @@ class CaseInsensitiveDictMixin:
             def _normvalue(self, value):
                 if value is not None:
                     return value + 1
+                return None
 
             normvalue = _normvalue  # deprecated CaselessDict class
 
@@ -213,11 +217,13 @@ class CaseInsensitiveDictTest(CaseInsensitiveDictMixin, unittest.TestCase):
         self.assertEqual(list(iterkeys), ["AsDf", "FoO"])
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class CaselessDictTest(CaseInsensitiveDictMixin, unittest.TestCase):
     dict_class = CaselessDict
 
     def test_deprecation_message(self):
         with warnings.catch_warnings(record=True) as caught:
+            warnings.filterwarnings("always", category=ScrapyDeprecationWarning)
             self.dict_class({"foo": "bar"})
 
             self.assertEqual(len(caught), 1)
@@ -353,7 +359,7 @@ class LocalWeakReferencedCacheTest(unittest.TestCase):
         for i, r in enumerate(refs):
             self.assertIn(r, cache)
             self.assertEqual(cache[r], i)
-        del r  # delete reference to the last object in the list
+        del r  # delete reference to the last object in the list  # pylint: disable=undefined-loop-variable
 
         # delete half of the objects, make sure that is reflected in the cache
         for _ in range(max // 2):

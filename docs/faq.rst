@@ -23,7 +23,7 @@ comparing `jinja2`_ to `Django`_.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: https://lxml.de/
-.. _jinja2: https://palletsprojects.com/p/jinja/
+.. _jinja2: https://palletsprojects.com/projects/jinja/
 .. _Django: https://www.djangoproject.com/
 
 Can I use Scrapy with BeautifulSoup?
@@ -138,39 +138,36 @@ See previous question.
 How can I prevent memory errors due to many allowed domains?
 ------------------------------------------------------------
 
-If you have a spider with a long list of
-:attr:`~scrapy.Spider.allowed_domains` (e.g. 50,000+), consider
-replacing the default
-:class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware` spider middleware
-with a :ref:`custom spider middleware <custom-spider-middleware>` that requires
-less memory. For example:
+If you have a spider with a long list of :attr:`~scrapy.Spider.allowed_domains`
+(e.g. 50,000+), consider replacing the default
+:class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` downloader
+middleware with a :ref:`custom downloader middleware
+<topics-downloader-middleware-custom>` that requires less memory. For example:
 
 -   If your domain names are similar enough, use your own regular expression
-    instead joining the strings in
-    :attr:`~scrapy.Spider.allowed_domains` into a complex regular
-    expression.
+    instead joining the strings in :attr:`~scrapy.Spider.allowed_domains` into
+    a complex regular expression.
 
--   If you can `meet the installation requirements`_, use pyre2_ instead of
+-   If you can meet the installation requirements, use pyre2_ instead of
     Python’s re_ to compile your URL-filtering regular expression. See
     :issue:`1908`.
 
-See also other suggestions at `StackOverflow`_.
+See also `other suggestions at StackOverflow
+<https://stackoverflow.com/q/36440681>`__.
 
 .. note:: Remember to disable
-   :class:`scrapy.spidermiddlewares.offsite.OffsiteMiddleware` when you enable
-   your custom implementation:
+   :class:`scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` when you
+   enable your custom implementation:
 
    .. code-block:: python
 
-       SPIDER_MIDDLEWARES = {
-           "scrapy.spidermiddlewares.offsite.OffsiteMiddleware": None,
-           "myproject.middlewares.CustomOffsiteMiddleware": 500,
+       DOWNLOADER_MIDDLEWARES = {
+           "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": None,
+           "myproject.middlewares.CustomOffsiteMiddleware": 50,
        }
 
-.. _meet the installation requirements: https://github.com/andreasvc/pyre2#installation
 .. _pyre2: https://github.com/andreasvc/pyre2
-.. _re: https://docs.python.org/library/re.html
-.. _StackOverflow: https://stackoverflow.com/q/36440681/939364
+.. _re: https://docs.python.org/3/library/re.html
 
 Can I use Basic HTTP Authentication in my spiders?
 --------------------------------------------------
@@ -206,12 +203,10 @@ I get "Filtered offsite request" messages. How can I fix them?
 Those messages (logged with ``DEBUG`` level) don't necessarily mean there is a
 problem, so you may not need to fix them.
 
-Those messages are thrown by the Offsite Spider Middleware, which is a spider
-middleware (enabled by default) whose purpose is to filter out requests to
-domains outside the ones covered by the spider.
-
-For more info see:
-:class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware`.
+Those messages are thrown by
+:class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware`, which is a
+downloader middleware (enabled by default) whose purpose is to filter out
+requests to domains outside the ones covered by the spider.
 
 What is the recommended way to deploy a Scrapy crawler in production?
 ---------------------------------------------------------------------
@@ -273,7 +268,7 @@ To dump into a CSV file::
 
     scrapy crawl myspider -O items.csv
 
-To dump into a XML file::
+To dump into an XML file::
 
     scrapy crawl myspider -O items.xml
 
@@ -286,7 +281,7 @@ The ``__VIEWSTATE`` parameter is used in sites built with ASP.NET/VB.NET. For
 more info on how it works see `this page`_. Also, here's an `example spider`_
 which scrapes one of these sites.
 
-.. _this page: https://metacpan.org/pod/release/ECARROLL/HTML-TreeBuilderX-ASP_NET-0.09/lib/HTML/TreeBuilderX/ASP_NET.pm
+.. _this page: https://metacpan.org/release/ECARROLL/HTML-TreeBuilderX-ASP_NET-0.09/view/lib/HTML/TreeBuilderX/ASP_NET.pm
 .. _example spider: https://github.com/AmbientLighter/rpn-fas/blob/master/fas/spiders/rnp.py
 
 What's the best way to parse big XML/CSV data feeds?
@@ -297,9 +292,13 @@ build the DOM of the entire feed in memory, and this can be quite slow and
 consume a lot of memory.
 
 In order to avoid parsing all the entire feed at once in memory, you can use
-the functions ``xmliter`` and ``csviter`` from ``scrapy.utils.iterators``
-module. In fact, this is what the feed spiders (see :ref:`topics-spiders`) use
-under the cover.
+the :func:`~scrapy.utils.iterators.xmliter_lxml` and
+:func:`~scrapy.utils.iterators.csviter` functions. In fact, this is what
+:class:`~scrapy.spiders.XMLFeedSpider` uses.
+
+.. autofunction:: scrapy.utils.iterators.xmliter_lxml
+
+.. autofunction:: scrapy.utils.iterators.csviter
 
 Does Scrapy manage cookies automatically?
 -----------------------------------------
@@ -405,6 +404,23 @@ or :class:`~scrapy.signals.headers_received` signals and raising a
 :ref:`topics-stop-response-download` topic for additional information and examples.
 
 
+.. _faq-blank-request:
+
+How can I make a blank request?
+-------------------------------
+
+.. code-block:: python
+    
+    from scrapy import Request
+
+
+    blank_request = Request("data:,")
+
+In this case, the URL is set to a data URI scheme. Data URLs allow you to include data
+inline within web pages, similar to external resources. The "data:" scheme with an empty
+content (",") essentially creates a request to a data URL without any specific content.
+
+
 Running ``runspider`` I get ``error: No spider found in file: <filename>``
 --------------------------------------------------------------------------
 
@@ -415,7 +431,7 @@ See :issue:`2680`.
 
 
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905
-.. _Python standard library modules: https://docs.python.org/py-modindex.html
+.. _Python standard library modules: https://docs.python.org/3/py-modindex.html
 .. _Python package: https://pypi.org/
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
 .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)

@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import os
 import shutil
 import string
 from importlib import import_module
 from pathlib import Path
-from typing import Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlparse
 
 import scrapy
@@ -11,8 +13,11 @@ from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.template import render_templatefile, string_camelcase
 
+if TYPE_CHECKING:
+    import argparse
 
-def sanitize_module_name(module_name):
+
+def sanitize_module_name(module_name: str) -> str:
     """Sanitize the given module name, by replacing dashes and points
     with underscores and prefixing it with a letter if it doesn't start
     with one
@@ -23,7 +28,7 @@ def sanitize_module_name(module_name):
     return module_name
 
 
-def extract_domain(url):
+def extract_domain(url: str) -> str:
     """Extract domain name from URL string"""
     o = urlparse(url)
     if o.scheme == "" and o.netloc == "":
@@ -31,7 +36,7 @@ def extract_domain(url):
     return o.netloc
 
 
-def verify_url_scheme(url):
+def verify_url_scheme(url: str) -> str:
     """Check url for scheme and insert https if none found."""
     parsed = urlparse(url)
     if parsed.scheme == "" and parsed.netloc == "":
@@ -43,14 +48,14 @@ class Command(ScrapyCommand):
     requires_project = False
     default_settings = {"LOG_ENABLED": False}
 
-    def syntax(self):
+    def syntax(self) -> str:
         return "[options] <name> <domain>"
 
-    def short_desc(self):
+    def short_desc(self) -> str:
         return "Generate new spider using pre-defined templates"
 
-    def add_options(self, parser):
-        ScrapyCommand.add_options(self, parser)
+    def add_options(self, parser: argparse.ArgumentParser) -> None:
+        super().add_options(parser)
         parser.add_argument(
             "-l",
             "--list",
@@ -86,7 +91,7 @@ class Command(ScrapyCommand):
             help="If the spider already exists, overwrite it with the template",
         )
 
-    def run(self, args, opts):
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if opts.list:
             self._list_templates()
             return
@@ -96,7 +101,7 @@ class Command(ScrapyCommand):
                 print(template_file.read_text(encoding="utf-8"))
             return
         if len(args) != 2:
-            raise UsageError()
+            raise UsageError
 
         name, url = args[0:2]
         url = verify_url_scheme(url)
@@ -113,23 +118,39 @@ class Command(ScrapyCommand):
         if template_file:
             self._genspider(module, name, url, opts.template, template_file)
             if opts.edit:
-                self.exitcode = os.system(f'scrapy edit "{name}"')
+                self.exitcode = os.system(f'scrapy edit "{name}"')  # noqa: S605
 
-    def _genspider(self, module, name, url, template_name, template_file):
-        """Generate the spider module, based on the given template"""
+    def _generate_template_variables(
+        self,
+        module: str,
+        name: str,
+        url: str,
+        template_name: str,
+    ) -> dict[str, Any]:
         capitalized_module = "".join(s.capitalize() for s in module.split("_"))
-        domain = extract_domain(url)
-        tvars = {
+        return {
             "project_name": self.settings.get("BOT_NAME"),
             "ProjectName": string_camelcase(self.settings.get("BOT_NAME")),
             "module": module,
             "name": name,
             "url": url,
-            "domain": domain,
+            "domain": extract_domain(url),
             "classname": f"{capitalized_module}Spider",
         }
+
+    def _genspider(
+        self,
+        module: str,
+        name: str,
+        url: str,
+        template_name: str,
+        template_file: str | os.PathLike,
+    ) -> None:
+        """Generate the spider module, based on the given template"""
+        tvars = self._generate_template_variables(module, name, url, template_name)
         if self.settings.get("NEWSPIDER_MODULE"):
             spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])
+            assert spiders_module.__file__
             spiders_dir = Path(spiders_module.__file__).parent.resolve()
         else:
             spiders_module = None
@@ -144,7 +165,7 @@ class Command(ScrapyCommand):
         if spiders_module:
             print(f"in module:\n  {spiders_module.__name__}.{module}")
 
-    def _find_template(self, template: str) -> Optional[Path]:
+    def _find_template(self, template: str) -> Path | None:
         template_file = Path(self.templates_dir, f"{template}.tmpl")
         if template_file.exists():
             return template_file
@@ -152,7 +173,7 @@ class Command(ScrapyCommand):
         print('Use "scrapy genspider --list" to see all available templates.')
         return None
 
-    def _list_templates(self):
+    def _list_templates(self) -> None:
         print("Available templates:")
         for file in sorted(Path(self.templates_dir).iterdir()):
             if file.suffix == ".tmpl":

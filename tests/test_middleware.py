@@ -2,7 +2,7 @@ from twisted.trial import unittest
 
 from scrapy.exceptions import NotConfigured
 from scrapy.middleware import MiddlewareManager
-from scrapy.settings import Settings
+from scrapy.utils.test import get_crawler
 
 
 class M1:
@@ -22,8 +22,6 @@ class M2:
 
     def close_spider(self, spider):
         pass
-
-    pass
 
 
 class M3:
@@ -83,7 +81,7 @@ class MiddlewareManagerTest(unittest.TestCase):
         self.assertEqual(mwman.middlewares, (m1, m2, m3))
 
     def test_enabled_from_settings(self):
-        settings = Settings()
-        mwman = TestMiddlewareManager.from_settings(settings)
+        crawler = get_crawler()
+        mwman = TestMiddlewareManager.from_crawler(crawler)
         classes = [x.__class__ for x in mwman.middlewares]
         self.assertEqual(classes, [M1, M3])

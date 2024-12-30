@@ -2,19 +2,21 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from w3lib import html
 
-from scrapy import Request, Spider
-from scrapy.crawler import Crawler
 from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse, Response
-from scrapy.settings import BaseSettings
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Request, Spider
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,6 @@ logger = logging.getLogger(__name__)
 class AjaxCrawlMiddleware:
     """
     Handle 'AJAX crawlable' pages marked as crawlable via meta tag.
-    For more info see https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
     """
 
     def __init__(self, settings: BaseSettings):
@@ -41,7 +42,7 @@ class AjaxCrawlMiddleware:
 
     def process_response(
         self, request: Request, response: Response, spider: Spider
-    ) -> Union[Request, Response]:
+    ) -> Request | Response:
         if not isinstance(response, HtmlResponse) or response.status != 200:
             return response
 
@@ -68,8 +69,7 @@ class AjaxCrawlMiddleware:
 
     def _has_ajax_crawlable_variant(self, response: Response) -> bool:
         """
-        Return True if a page without hash fragment could be "AJAX crawlable"
-        according to https://developers.google.com/webmasters/ajax-crawling/docs/getting-started.
+        Return True if a page without hash fragment could be "AJAX crawlable".
         """
         body = response.text[: self.lookup_bytes]
         return _has_ajaxcrawlable_meta(body)

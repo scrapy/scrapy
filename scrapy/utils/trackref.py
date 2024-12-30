@@ -9,19 +9,23 @@ and no performance penalty at all when disabled (as object_ref becomes just an
 alias to object in that case).
 """
 
+from __future__ import annotations
+
 from collections import defaultdict
 from operator import itemgetter
 from time import time
-from typing import TYPE_CHECKING, Any, DefaultDict, Iterable
+from typing import TYPE_CHECKING, Any
 from weakref import WeakKeyDictionary
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
 
 NoneType = type(None)
-live_refs: DefaultDict[type, WeakKeyDictionary] = defaultdict(WeakKeyDictionary)
+live_refs: defaultdict[type, WeakKeyDictionary] = defaultdict(WeakKeyDictionary)
 
 
 class object_ref:
@@ -29,7 +33,7 @@ class object_ref:
 
     __slots__ = ()
 
-    def __new__(cls, *args: Any, **kwargs: Any) -> "Self":
+    def __new__(cls, *args: Any, **kwargs: Any) -> Self:
         obj = object.__new__(cls)
         live_refs[cls][obj] = time()
         return obj
@@ -62,6 +66,7 @@ def get_oldest(class_name: str) -> Any:
             if not wdict:
                 break
             return min(wdict.items(), key=itemgetter(1))[0]
+    return None
 
 
 def iter_all(class_name: str) -> Iterable[Any]:

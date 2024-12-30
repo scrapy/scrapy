@@ -1,28 +1,33 @@
+from __future__ import annotations
+
 from time import time
-from typing import Optional, Type, TypeVar
+from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
-from twisted.internet.base import DelayedCall
-from twisted.internet.defer import Deferred
 from twisted.internet.error import TimeoutError
 from twisted.web.client import URI
 
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.webclient import _parse
 from scrapy.core.http2.agent import H2Agent, H2ConnectionPool, ScrapyProxyH2Agent
-from scrapy.crawler import Crawler
-from scrapy.http import Request, Response
-from scrapy.settings import Settings
-from scrapy.spiders import Spider
 from scrapy.utils.python import to_bytes
 
-H2DownloadHandlerOrSubclass = TypeVar(
-    "H2DownloadHandlerOrSubclass", bound="H2DownloadHandler"
-)
+if TYPE_CHECKING:
+    from twisted.internet.base import DelayedCall
+    from twisted.internet.defer import Deferred
+    from twisted.web.iweb import IPolicyForHTTPS
+
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.http import Request, Response
+    from scrapy.settings import Settings
+    from scrapy.spiders import Spider
 
 
 class H2DownloadHandler:
-    def __init__(self, settings: Settings, crawler: Optional[Crawler] = None):
+    def __init__(self, settings: Settings, crawler: Crawler):
         self._crawler = crawler
 
         from twisted.internet import reactor
@@ -31,12 +36,10 @@ class H2DownloadHandler:
         self._context_factory = load_context_factory_from_settings(settings, crawler)
 
     @classmethod
-    def from_crawler(
-        cls: Type[H2DownloadHandlerOrSubclass], crawler: Crawler
-    ) -> H2DownloadHandlerOrSubclass:
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings, crawler)
 
-    def download_request(self, request: Request, spider: Spider) -> Deferred:
+    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         agent = ScrapyH2Agent(
             context_factory=self._context_factory,
             pool=self._pool,
@@ -54,11 +57,11 @@ class ScrapyH2Agent:
 
     def __init__(
         self,
-        context_factory,
+        context_factory: IPolicyForHTTPS,
         pool: H2ConnectionPool,
         connect_timeout: int = 10,
-        bind_address: Optional[bytes] = None,
-        crawler: Optional[Crawler] = None,
+        bind_address: bytes | None = None,
+        crawler: Crawler | None = None,
     ) -> None:
         self._context_factory = context_factory
         self._connect_timeout = connect_timeout
@@ -66,7 +69,7 @@ class ScrapyH2Agent:
         self._pool = pool
         self._crawler = crawler
 
-    def _get_agent(self, request: Request, timeout: Optional[float]) -> H2Agent:
+    def _get_agent(self, request: Request, timeout: float | None) -> H2Agent:
         from twisted.internet import reactor
 
         bind_address = request.meta.get("bindaddress") or self._bind_address
@@ -97,7 +100,7 @@ class ScrapyH2Agent:
             pool=self._pool,
         )
 
-    def download_request(self, request: Request, spider: Spider) -> Deferred:
+    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         from twisted.internet import reactor
 
         timeout = request.meta.get("download_timeout") or self._connect_timeout

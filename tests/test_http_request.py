@@ -3,9 +3,9 @@ import re
 import unittest
 import warnings
 import xmlrpc.client
-from typing import Any, Dict, List
+from typing import Any
 from unittest import mock
-from urllib.parse import parse_qs, unquote_to_bytes, urlparse
+from urllib.parse import parse_qs, unquote_to_bytes
 
 from scrapy.http import (
     FormRequest,
@@ -16,14 +16,15 @@ from scrapy.http import (
     XmlRpcRequest,
 )
 from scrapy.http.request import NO_CALLBACK
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
 
 
 class RequestTest(unittest.TestCase):
     request_class = Request
     default_method = "GET"
-    default_headers: Dict[bytes, List[bytes]] = {}
-    default_meta: Dict[str, Any] = {}
+    default_headers: dict[bytes, list[bytes]] = {}
+    default_meta: dict[str, Any] = {}
 
     def test_init(self):
         # Request requires url in the __init__ method
@@ -142,7 +143,7 @@ class RequestTest(unittest.TestCase):
         # percent-escaping sequences that do not match valid UTF-8 sequences
         # should be kept untouched (just upper-cased perhaps)
         #
-        # See https://tools.ietf.org/html/rfc3987#section-3.2
+        # See https://datatracker.ietf.org/doc/html/rfc3987#section-3.2
         #
         # "Conversions from URIs to IRIs MUST NOT use any character encoding
         # other than UTF-8 in steps 3 and 4, even if it might be possible to
@@ -617,8 +618,8 @@ class FormRequestTest(RequestTest):
             method="GET",
             formdata=(("foo", "bar"), ("foo", "baz")),
         )
-        self.assertEqual(urlparse(req.url).hostname, "www.example.com")
-        self.assertEqual(urlparse(req.url).query, "foo=bar&foo=baz")
+        self.assertEqual(urlparse_cached(req).hostname, "www.example.com")
+        self.assertEqual(urlparse_cached(req).query, "foo=bar&foo=baz")
 
     def test_from_response_override_duplicate_form_key(self):
         response = _buildresponse(
@@ -666,8 +667,8 @@ class FormRequestTest(RequestTest):
             response, formdata={"one": ["two", "three"], "six": "seven"}
         )
         self.assertEqual(r1.method, "GET")
-        self.assertEqual(urlparse(r1.url).hostname, "www.example.com")
-        self.assertEqual(urlparse(r1.url).path, "/this/get.php")
+        self.assertEqual(urlparse_cached(r1).hostname, "www.example.com")
+        self.assertEqual(urlparse_cached(r1).path, "/this/get.php")
         fs = _qs(r1)
         self.assertEqual(set(fs[b"test"]), {b"val1", b"val2"})
         self.assertEqual(set(fs[b"one"]), {b"two", b"three"})
@@ -1426,6 +1427,58 @@ class FormRequestTest(RequestTest):
             r = self.request_class.from_response(response)
             self.assertEqual(r.method, expected)
 
+    def test_form_response_with_invalid_formdata_type_error(self):
+        """Test that a ValueError is raised for non-iterable and non-dict formdata input"""
+        response = _buildresponse(
+            """<html><body>
+            <form action="/submit" method="post">
+                <input type="text" name="test" value="value">
+            </form>
+            </body></html>"""
+        )
+        with self.assertRaises(ValueError) as context:
+            FormRequest.from_response(response, formdata=123)
+
+        self.assertIn(
+            "formdata should be a dict or iterable of tuples", str(context.exception)
+        )
+
+    def test_form_response_with_custom_invalid_formdata_value_error(self):
+        """Test that a ValueError is raised for fault-inducing iterable formdata input"""
+        response = _buildresponse(
+            """<html><body>
+                <form action="/submit" method="post">
+                    <input type="text" name="test" value="value">
+                </form>
+            </body></html>"""
+        )
+
+        with self.assertRaises(ValueError) as context:
+            FormRequest.from_response(response, formdata=("a",))
+
+        self.assertIn(
+            "formdata should be a dict or iterable of tuples", str(context.exception)
+        )
+
+    def test_get_form_with_xpath_no_form_parent(self):
+        """Test that _get_from raised a ValueError when an XPath selects an element
+        not nested within a <form> and no <form> parent is found"""
+        response = _buildresponse(
+            """<html><body>
+                <div id="outside-form">
+                    <p>This paragraph is not inside a form.</p>
+                </div>
+                <form action="/submit" method="post">
+                    <input type="text" name="inside-form" value="">
+                </form>
+            </body></html>"""
+        )
+
+        with self.assertRaises(ValueError) as context:
+            FormRequest.from_response(response, formxpath='//div[@id="outside-form"]/p')
+
+        self.assertIn("No <form> element found with", str(context.exception))
+
 
 def _buildresponse(body, **kwargs):
     kwargs.setdefault("body", body)
@@ -1641,6 +1694,25 @@ class JsonRequestTest(RequestTest):
             kwargs = mock_dumps.call_args[1]
             self.assertEqual(kwargs["ensure_ascii"], True)
             self.assertEqual(kwargs["allow_nan"], True)
+
+    def test_replacement_both_body_and_data_warns(self):
+        """Test that we get a warning if both body and data are passed"""
+        body1 = None
+        body2 = b"body"
+        data1 = {
+            "name1": "value1",
+        }
+        data2 = {
+            "name2": "value2",
+        }
+        r1 = self.request_class(url="http://www.example.com/", data=data1, body=body1)
+
+        with warnings.catch_warnings(record=True) as _warnings:
+            r1.replace(data=data2, body=body2)
+            self.assertIn(
+                "Both body and data passed. data will be ignored",
+                str(_warnings[0].message),
+            )
 
     def tearDown(self):
         warnings.resetwarnings()

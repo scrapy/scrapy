@@ -1,9 +1,6 @@
 import unittest
-import warnings
 
-import pytest
-
-from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
+from scrapy.exceptions import UsageError
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.conf import (
     arglist_to_dict,
@@ -19,50 +16,6 @@ class BuildComponentListTest(unittest.TestCase):
         self.assertEqual(
             build_component_list(d, convert=lambda x: x), ["one", "four", "three"]
         )
-
-    def test_backward_compatible_build_dict(self):
-        base = {"one": 1, "two": 2, "three": 3, "five": 5, "six": None}
-        custom = {"two": None, "three": 8, "four": 4}
-        with pytest.warns(ScrapyDeprecationWarning, match="The 'custom' attribute"):
-            self.assertEqual(
-                build_component_list(base, custom, convert=lambda x: x),
-                ["one", "four", "five", "three"],
-            )
-
-    def test_return_list(self):
-        custom = ["a", "b", "c"]
-        with pytest.warns(ScrapyDeprecationWarning, match="The 'custom' attribute"):
-            self.assertEqual(
-                build_component_list(None, custom, convert=lambda x: x), custom
-            )
-
-    def test_map_dict(self):
-        custom = {"one": 1, "two": 2, "three": 3}
-        with pytest.warns(ScrapyDeprecationWarning, match="The 'custom' attribute"):
-            self.assertEqual(
-                build_component_list({}, custom, convert=lambda x: x.upper()),
-                ["ONE", "TWO", "THREE"],
-            )
-
-    def test_map_list(self):
-        custom = ["a", "b", "c"]
-        with pytest.warns(ScrapyDeprecationWarning, match="The 'custom' attribute"):
-            self.assertEqual(
-                build_component_list(None, custom, lambda x: x.upper()), ["A", "B", "C"]
-            )
-
-    def test_duplicate_components_in_dict(self):
-        duplicate_dict = {"one": 1, "two": 2, "ONE": 4}
-        with self.assertRaises(ValueError):
-            with pytest.warns(ScrapyDeprecationWarning, match="The 'custom' attribute"):
-                build_component_list({}, duplicate_dict, convert=lambda x: x.lower())
-
-    def test_duplicate_components_in_list(self):
-        duplicate_list = ["a", "b", "a"]
-        with self.assertRaises(ValueError) as cm:
-            with pytest.warns(ScrapyDeprecationWarning, match="The 'custom' attribute"):
-                build_component_list(None, duplicate_list, convert=lambda x: x)
-        self.assertIn(str(duplicate_list), str(cm.exception))
 
     def test_duplicate_components_in_basesettings(self):
         # Higher priority takes precedence
@@ -92,11 +45,6 @@ class BuildComponentListTest(unittest.TestCase):
             "c": 22222222222222222222,
         }
         self.assertEqual(build_component_list(d, convert=lambda x: x), ["b", "c", "a"])
-        # raise exception for invalid values
-        d = {"one": "5"}
-        with self.assertRaises(ValueError):
-            with pytest.warns(ScrapyDeprecationWarning, match="The 'custom' attribute"):
-                build_component_list({}, d, convert=lambda x: x)
 
 
 class UtilsConfTestCase(unittest.TestCase):
@@ -115,7 +63,6 @@ class FeedExportConfigTestCase(unittest.TestCase):
             feed_process_params_from_cli,
             settings,
             ["items.dat"],
-            "noformat",
         )
 
     def test_feed_export_config_mismatch(self):
@@ -125,17 +72,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             feed_process_params_from_cli,
             settings,
             ["items1.dat", "items2.dat"],
-            "noformat",
         )
-
-    def test_feed_export_config_backward_compatible(self):
-        with warnings.catch_warnings(record=True) as cw:
-            settings = Settings()
-            self.assertEqual(
-                {"items.dat": {"format": "csv"}},
-                feed_process_params_from_cli(settings, ["items.dat"], "csv"),
-            )
-            self.assertEqual(cw[0].category, ScrapyDeprecationWarning)
 
     def test_feed_export_config_explicit_formats(self):
         settings = Settings()
@@ -174,7 +111,9 @@ class FeedExportConfigTestCase(unittest.TestCase):
         settings = Settings()
         self.assertEqual(
             {"output.json": {"format": "json", "overwrite": True}},
-            feed_process_params_from_cli(settings, [], None, ["output.json"]),
+            feed_process_params_from_cli(
+                settings, [], overwrite_output=["output.json"]
+            ),
         )
 
     def test_output_and_overwrite_output(self):
@@ -182,8 +121,7 @@ class FeedExportConfigTestCase(unittest.TestCase):
             feed_process_params_from_cli(
                 Settings(),
                 ["output1.json"],
-                None,
-                ["output2.json"],
+                overwrite_output=["output2.json"],
             )
 
     def test_feed_complete_default_values_from_settings_empty(self):

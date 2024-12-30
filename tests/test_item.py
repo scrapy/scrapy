@@ -273,9 +273,7 @@ class ItemMetaTest(unittest.TestCase):
                 def f(self):
                     # For rationale of this see:
                     # https://github.com/python/cpython/blob/ee1a81b77444c6715cbe610e951c655b6adab88b/Lib/test/test_super.py#L222
-                    return (
-                        __class__  # noqa  https://github.com/scrapy/scrapy/issues/2836
-                    )
+                    return __class__
 
             MyItem()
 
@@ -290,7 +288,9 @@ class ItemMetaTest(unittest.TestCase):
 class ItemMetaClassCellRegression(unittest.TestCase):
     def test_item_meta_classcell_regression(self):
         class MyItem(Item, metaclass=ItemMeta):
-            def __init__(self, *args, **kwargs):
+            def __init__(
+                self, *args, **kwargs
+            ):  # pylint: disable=useless-parent-delegation
                 # This call to super() trigger the __classcell__ propagation
                 # requirement. When not done properly raises an error:
                 # TypeError: __class__ set to <class '__main__.MyItem'>

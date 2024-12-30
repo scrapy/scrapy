@@ -4,7 +4,6 @@ This module defines the Link object used in Link extractors.
 For actual link extractors implementation see scrapy.linkextractors, or
 its documentation in: docs/topics/link-extractors.rst
 """
-from typing import Any
 
 
 class Link:
@@ -38,7 +37,7 @@ class Link:
         self.fragment: str = fragment
         self.nofollow: bool = nofollow
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Link):
             raise NotImplementedError
         return (

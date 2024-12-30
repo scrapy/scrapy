@@ -1,22 +1,24 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, List, Union, cast
-from urllib.parse import urljoin, urlparse
+from typing import TYPE_CHECKING, Any, cast
+from urllib.parse import urljoin
 
 from w3lib.url import safe_url_string
 
-from scrapy import Request, Spider
-from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import HtmlResponse, Response
-from scrapy.settings import BaseSettings
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.response import get_meta_refresh
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy import Request, Spider
+    from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
+
 
 logger = logging.getLogger(__name__)
 
@@ -27,13 +29,52 @@ def _build_redirect_request(
     redirect_request = source_request.replace(
         url=url,
         **kwargs,
+        cls=None,
         cookies=None,
     )
-    if "Cookie" in redirect_request.headers:
-        source_request_netloc = urlparse_cached(source_request).netloc
-        redirect_request_netloc = urlparse_cached(redirect_request).netloc
-        if source_request_netloc != redirect_request_netloc:
+    if "_scheme_proxy" in redirect_request.meta:
+        source_request_scheme = urlparse_cached(source_request).scheme
+        redirect_request_scheme = urlparse_cached(redirect_request).scheme
+        if source_request_scheme != redirect_request_scheme:
+            redirect_request.meta.pop("_scheme_proxy")
+            redirect_request.meta.pop("proxy", None)
+            redirect_request.meta.pop("_auth_proxy", None)
+            redirect_request.headers.pop(b"Proxy-Authorization", None)
+    has_cookie_header = "Cookie" in redirect_request.headers
+    has_authorization_header = "Authorization" in redirect_request.headers
+    if has_cookie_header or has_authorization_header:
+        default_ports = {"http": 80, "https": 443}
+
+        parsed_source_request = urlparse_cached(source_request)
+        source_scheme, source_host, source_port = (
+            parsed_source_request.scheme,
+            parsed_source_request.hostname,
+            parsed_source_request.port
+            or default_ports.get(parsed_source_request.scheme),
+        )
+
+        parsed_redirect_request = urlparse_cached(redirect_request)
+        redirect_scheme, redirect_host, redirect_port = (
+            parsed_redirect_request.scheme,
+            parsed_redirect_request.hostname,
+            parsed_redirect_request.port
+            or default_ports.get(parsed_redirect_request.scheme),
+        )
+
+        if has_cookie_header and (
+            redirect_scheme not in {source_scheme, "https"}
+            or source_host != redirect_host
+        ):
             del redirect_request.headers["Cookie"]
+
+        # https://fetch.spec.whatwg.org/#ref-for-cors-non-wildcard-request-header-name
+        if has_authorization_header and (
+            source_scheme != redirect_scheme
+            or source_host != redirect_host
+            or source_port != redirect_port
+        ):
+            del redirect_request.headers["Authorization"]
+
     return redirect_request
 
 
@@ -103,7 +144,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
 
     def process_response(
         self, request: Request, response: Response, spider: Spider
-    ) -> Union[Request, Response]:
+    ) -> Request | Response:
         if (
             request.meta.get("dont_redirect", False)
             or response.status in getattr(spider, "handle_httpstatus_list", [])
@@ -119,13 +160,15 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         assert response.headers["Location"] is not None
         location = safe_url_string(response.headers["Location"])
         if response.headers["Location"].startswith(b"//"):
-            request_scheme = urlparse(request.url).scheme
+            request_scheme = urlparse_cached(request).scheme
             location = request_scheme + "://" + location.lstrip("/")
 
         redirected_url = urljoin(request.url, location)
+        redirected = _build_redirect_request(request, url=redirected_url)
+        if urlparse_cached(redirected).scheme not in {"http", "https"}:
+            return response
 
         if response.status in (301, 307, 308) or request.method == "HEAD":
-            redirected = _build_redirect_request(request, url=redirected_url)
             return self._redirect(redirected, request, spider, response.status)
 
         redirected = self._redirect_request_using_get(request, redirected_url)
@@ -137,22 +180,26 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
 
     def __init__(self, settings: BaseSettings):
         super().__init__(settings)
-        self._ignore_tags: List[str] = settings.getlist("METAREFRESH_IGNORE_TAGS")
+        self._ignore_tags: list[str] = settings.getlist("METAREFRESH_IGNORE_TAGS")
         self._maxdelay: int = settings.getint("METAREFRESH_MAXDELAY")
 
     def process_response(
         self, request: Request, response: Response, spider: Spider
-    ) -> Union[Request, Response]:
+    ) -> Request | Response:
         if (
             request.meta.get("dont_redirect", False)
             or request.method == "HEAD"
             or not isinstance(response, HtmlResponse)
+            or urlparse_cached(request).scheme not in {"http", "https"}
         ):
             return response
 
         interval, url = get_meta_refresh(response, ignore_tags=self._ignore_tags)
-        if url and cast(float, interval) < self._maxdelay:
-            redirected = self._redirect_request_using_get(request, url)
+        if not url:
+            return response
+        redirected = self._redirect_request_using_get(request, url)
+        if urlparse_cached(redirected).scheme not in {"http", "https"}:
+            return response
+        if cast(float, interval) < self._maxdelay:
             return self._redirect(redirected, request, spider, "meta refresh")
-
         return response

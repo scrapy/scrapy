@@ -33,14 +33,6 @@ class FromCrawlerRFPDupeFilter(RFPDupeFilter):
         return df
 
 
-class FromSettingsRFPDupeFilter(RFPDupeFilter):
-    @classmethod
-    def from_settings(cls, settings, *, fingerprinter=None):
-        df = super().from_settings(settings, fingerprinter=fingerprinter)
-        df.method = "from_settings"
-        return df
-
-
 class DirectDupeFilter:
     method = "n/a"
 
@@ -50,28 +42,15 @@ class RFPDupeFilterTest(unittest.TestCase):
         settings = {
             "DUPEFILTER_DEBUG": True,
             "DUPEFILTER_CLASS": FromCrawlerRFPDupeFilter,
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
         }
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
         self.assertTrue(scheduler.df.debug)
         self.assertEqual(scheduler.df.method, "from_crawler")
 
-    def test_df_from_settings_scheduler(self):
-        settings = {
-            "DUPEFILTER_DEBUG": True,
-            "DUPEFILTER_CLASS": FromSettingsRFPDupeFilter,
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
-        }
-        crawler = get_crawler(settings_dict=settings)
-        scheduler = Scheduler.from_crawler(crawler)
-        self.assertTrue(scheduler.df.debug)
-        self.assertEqual(scheduler.df.method, "from_settings")
-
     def test_df_direct_scheduler(self):
         settings = {
             "DUPEFILTER_CLASS": DirectDupeFilter,
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
         }
         crawler = get_crawler(settings_dict=settings)
         scheduler = Scheduler.from_crawler(crawler)
@@ -146,7 +125,7 @@ class RFPDupeFilterTest(unittest.TestCase):
         case_insensitive_dupefilter.close("finished")
 
     def test_seenreq_newlines(self):
-        """Checks against adding duplicate \r to
+        r"""Checks against adding duplicate \r to
         line endings on Windows platforms."""
 
         r1 = Request("http://scrapytest.org/1")
@@ -176,7 +155,6 @@ class RFPDupeFilterTest(unittest.TestCase):
             settings = {
                 "DUPEFILTER_DEBUG": False,
                 "DUPEFILTER_CLASS": FromCrawlerRFPDupeFilter,
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             }
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             spider = SimpleSpider.from_crawler(crawler)
@@ -205,7 +183,6 @@ class RFPDupeFilterTest(unittest.TestCase):
             settings = {
                 "DUPEFILTER_DEBUG": True,
                 "DUPEFILTER_CLASS": FromCrawlerRFPDupeFilter,
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             }
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             spider = SimpleSpider.from_crawler(crawler)
@@ -243,7 +220,6 @@ class RFPDupeFilterTest(unittest.TestCase):
         with LogCapture() as log:
             settings = {
                 "DUPEFILTER_DEBUG": True,
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             }
             crawler = get_crawler(SimpleSpider, settings_dict=settings)
             spider = SimpleSpider.from_crawler(crawler)

@@ -1,0 +1,80 @@
+from typing import Any, Dict
+
+import pytest
+
+from scrapy import Request
+from scrapy.http import JsonRequest
+
+
+class MyRequest(Request):
+    pass
+
+
+class MyRequest2(Request):
+    pass
+
+
+@pytest.mark.mypy_testing
+def mypy_test_headers():
+    Request("data:,", headers=1)  # E: Argument "headers" to "Request" has incompatible type "int"; expected "Union[Mapping[str, Any], Iterable[tuple[str, Any]], None]"
+    Request("data:,", headers=None)
+    Request("data:,", headers={})
+    Request("data:,", headers=[])
+    Request("data:,", headers={"foo": "bar"})
+    Request("data:,", headers={b"foo": "bar"})
+    Request("data:,", headers={"foo": b"bar"})
+    Request("data:,", headers=[("foo", "bar")])
+    Request("data:,", headers=[(b"foo", "bar")])
+    Request("data:,", headers=[("foo", b"bar")])
+
+
+@pytest.mark.mypy_testing
+def mypy_test_copy():
+    req = Request("data:,")
+    reveal_type(req)  # R: scrapy.http.request.Request
+    req_copy = req.copy()
+    reveal_type(req_copy)  # R: scrapy.http.request.Request
+
+
+@pytest.mark.mypy_testing
+def mypy_test_copy_subclass():
+    req = MyRequest("data:,")
+    reveal_type(req)  # R: __main__.MyRequest
+    req_copy = req.copy()
+    reveal_type(req_copy)  # R: __main__.MyRequest
+
+
+@pytest.mark.mypy_testing
+def mypy_test_replace():
+    req = Request("data:,")
+    reveal_type(req)  # R: scrapy.http.request.Request
+    req_copy = req.replace(body=b"a")
+    reveal_type(req_copy)  # R: scrapy.http.request.Request
+    kwargs: Dict[str, Any] = {}
+    req_copy2 = req.replace(body=b"a", **kwargs)
+    reveal_type(req_copy2)  # R: Any
+
+
+@pytest.mark.mypy_testing
+def mypy_test_replace_subclass():
+    req = MyRequest("data:,")
+    reveal_type(req)  # R: __main__.MyRequest
+    req_copy = req.replace(body=b"a")
+    reveal_type(req_copy)  # R: __main__.MyRequest
+    req_copy2 = req.replace(body=b"a", cls=MyRequest2)
+    reveal_type(req_copy2)  # R: __main__.MyRequest2
+    kwargs: Dict[str, Any] = {}
+    req_copy3 = req.replace(body=b"a", cls=MyRequest2, **kwargs)
+    reveal_type(req_copy3)  # R: __main__.MyRequest2
+
+
+@pytest.mark.mypy_testing
+def mypy_test_jsonrequest_copy_replace():
+    req = JsonRequest("data:,")
+    reveal_type(req)  # R: scrapy.http.request.json_request.JsonRequest
+    req_copy = req.copy()
+    reveal_type(req_copy)  # R: scrapy.http.request.json_request.JsonRequest
+    req_copy = req.replace(body=b"a")
+    reveal_type(req_copy)  # R: scrapy.http.request.json_request.JsonRequest
+    req_copy_my = req.replace(body=b"a", cls=MyRequest)
+    reveal_type(req_copy_my)  # R: __main__.MyRequest

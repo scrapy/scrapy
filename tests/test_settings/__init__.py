@@ -105,9 +105,10 @@ class BaseSettingsTest(unittest.TestCase):
 
     def test_set_calls_settings_attributes_methods_on_update(self):
         attr = SettingsAttribute("value", 10)
-        with mock.patch.object(attr, "__setattr__") as mock_setattr, mock.patch.object(
-            attr, "set"
-        ) as mock_set:
+        with (
+            mock.patch.object(attr, "__setattr__") as mock_setattr,
+            mock.patch.object(attr, "set") as mock_set,
+        ):
             self.settings.attributes = {"TEST_OPTION": attr}
 
             for priority in (0, 10, 20):
@@ -426,7 +427,7 @@ class SettingsTest(unittest.TestCase):
         mydict = settings.get("TEST_DICT")
         self.assertIsInstance(mydict, BaseSettings)
         self.assertIn("key", mydict)
-        self.assertEqual(mydict["key"], "val")
+        self.assertEqual(mydict["key"], "val")  # pylint: disable=unsubscriptable-object
         self.assertEqual(mydict.getpriority("key"), 0)
 
     @mock.patch("scrapy.settings.default_settings", default_settings)
@@ -440,7 +441,7 @@ class SettingsTest(unittest.TestCase):
 
     def test_passing_objects_as_values(self):
         from scrapy.core.downloader.handlers.file import FileDownloadHandler
-        from scrapy.utils.misc import create_instance
+        from scrapy.utils.misc import build_from_crawler
         from scrapy.utils.test import get_crawler
 
         class TestPipeline:
@@ -468,7 +469,7 @@ class SettingsTest(unittest.TestCase):
 
         myhandler = settings.getdict("DOWNLOAD_HANDLERS").pop("ftp")
         self.assertEqual(myhandler, FileDownloadHandler)
-        myhandler_instance = create_instance(myhandler, None, get_crawler())
+        myhandler_instance = build_from_crawler(myhandler, get_crawler())
         self.assertIsInstance(myhandler_instance, FileDownloadHandler)
         self.assertTrue(hasattr(myhandler_instance, "download_request"))
 

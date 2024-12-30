@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import bz2
 import csv
 import gzip
@@ -14,10 +16,9 @@ from collections import defaultdict
 from contextlib import ExitStack
 from io import BytesIO
 from logging import getLogger
-from os import PathLike
 from pathlib import Path
 from string import ascii_letters, digits
-from typing import Union
+from typing import TYPE_CHECKING
 from unittest import mock
 from urllib.parse import quote, urljoin
 from urllib.request import pathname2url
@@ -36,7 +37,6 @@ from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.exporters import CsvItemExporter, JsonItemExporter
 from scrapy.extensions.feedexport import (
-    IS_BOTO3_AVAILABLE,
     BlockingFeedStorage,
     FeedExporter,
     FeedSlot,
@@ -49,9 +49,12 @@ from scrapy.extensions.feedexport import (
 )
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
-from scrapy.utils.test import get_crawler, mock_google_cloud_storage, skip_if_no_boto
+from scrapy.utils.test import get_crawler, mock_google_cloud_storage
 from tests.mockserver import MockFTPServer, MockServer
 from tests.spiders import ItemSpider
+
+if TYPE_CHECKING:
+    from os import PathLike
 
 
 def path_to_url(path):
@@ -62,7 +65,7 @@ def printf_escape(string):
     return string.replace("%", "%%")
 
 
-def build_url(path: Union[str, PathLike]) -> str:
+def build_url(path: str | PathLike) -> str:
     path_str = str(path)
     if path_str[0] != "/":
         path_str = "/" + path_str
@@ -131,8 +134,7 @@ class FTPFeedStorageTest(unittest.TestCase):
             name = "test_spider"
 
         crawler = get_crawler(settings_dict=settings)
-        spider = TestSpider.from_crawler(crawler)
-        return spider
+        return TestSpider.from_crawler(crawler)
 
     def _store(self, uri, content, feed_options=None, settings=None):
         crawler = get_crawler(settings_dict=settings or {})
@@ -207,8 +209,7 @@ class BlockingFeedStorageTest(unittest.TestCase):
             name = "test_spider"
 
         crawler = get_crawler(settings_dict=settings)
-        spider = TestSpider.from_crawler(crawler)
-        return spider
+        return TestSpider.from_crawler(crawler)
 
     def test_default_temp_dir(self):
         b = BlockingFeedStorage()
@@ -236,10 +237,8 @@ class BlockingFeedStorageTest(unittest.TestCase):
         self.assertRaises(OSError, b.open, spider=spider)
 
 
+@pytest.mark.requires_boto3
 class S3FeedStorageTest(unittest.TestCase):
-    def setUp(self):
-        skip_if_no_boto()
-
     def test_parse_credentials(self):
         aws_credentials = {
             "AWS_ACCESS_KEY_ID": "settings_key",
@@ -288,38 +287,12 @@ class S3FeedStorageTest(unittest.TestCase):
 
         file = mock.MagicMock()
 
-        if IS_BOTO3_AVAILABLE:
-            storage.s3_client = mock.MagicMock()
-            yield storage.store(file)
-            self.assertEqual(
-                storage.s3_client.upload_fileobj.call_args,
-                mock.call(Bucket=bucket, Key=key, Fileobj=file),
-            )
-        else:
-            from botocore.stub import Stubber
-
-            with Stubber(storage.s3_client) as stub:
-                stub.add_response(
-                    "put_object",
-                    expected_params={
-                        "Body": file,
-                        "Bucket": bucket,
-                        "Key": key,
-                    },
-                    service_response={},
-                )
-
-                yield storage.store(file)
-
-                stub.assert_no_pending_responses()
-                self.assertEqual(
-                    file.method_calls,
-                    [
-                        mock.call.seek(0),
-                        # The call to read does not happen with Stubber
-                        mock.call.close(),
-                    ],
-                )
+        storage.s3_client = mock.MagicMock()
+        yield storage.store(file)
+        self.assertEqual(
+            storage.s3_client.upload_fileobj.call_args,
+            mock.call(Bucket=bucket, Key=key, Fileobj=file),
+        )
 
     def test_init_without_acl(self):
         storage = S3FeedStorage("s3://mybucket/export.csv", "access_key", "secret_key")
@@ -455,14 +428,11 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b"test file"))
-        if IS_BOTO3_AVAILABLE:
-            acl = (
-                storage.s3_client.upload_fileobj.call_args[1]
-                .get("ExtraArgs", {})
-                .get("ACL")
-            )
-        else:
-            acl = storage.s3_client.put_object.call_args[1].get("ACL")
+        acl = (
+            storage.s3_client.upload_fileobj.call_args[1]
+            .get("ExtraArgs", {})
+            .get("ACL")
+        )
         self.assertIsNone(acl)
 
     @defer.inlineCallbacks
@@ -476,10 +446,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b"test file"))
-        if IS_BOTO3_AVAILABLE:
-            acl = storage.s3_client.upload_fileobj.call_args[1]["ExtraArgs"]["ACL"]
-        else:
-            acl = storage.s3_client.put_object.call_args[1]["ACL"]
+        acl = storage.s3_client.upload_fileobj.call_args[1]["ExtraArgs"]["ACL"]
         self.assertEqual(acl, "custom-acl")
 
     def test_overwrite_default(self):
@@ -504,7 +471,7 @@ class S3FeedStorageTest(unittest.TestCase):
 class GCSFeedStorageTest(unittest.TestCase):
     def test_parse_settings(self):
         try:
-            from google.cloud.storage import Client  # noqa
+            from google.cloud.storage import Client  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
@@ -518,7 +485,7 @@ class GCSFeedStorageTest(unittest.TestCase):
 
     def test_parse_empty_acl(self):
         try:
-            from google.cloud.storage import Client  # noqa
+            from google.cloud.storage import Client  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
@@ -535,7 +502,7 @@ class GCSFeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store(self):
         try:
-            from google.cloud.storage import Client  # noqa
+            from google.cloud.storage import Client  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
@@ -673,8 +640,7 @@ class FeedExportTestBase(ABC, unittest.TestCase):
             name = "testspider"
 
             def parse(self, response):
-                for item in items:
-                    yield item
+                yield from items
 
         data = yield self.run_and_export(TestSpider, settings)
         return data
@@ -761,7 +727,7 @@ class ExceptionJsonItemExporter(JsonItemExporter):
     """JsonItemExporter that throws an exception every time export_item is called."""
 
     def export_item(self, _):
-        raise Exception("foo")
+        raise RuntimeError("foo")
 
 
 class FeedExportTest(FeedExportTestBase):
@@ -1357,16 +1323,16 @@ class FeedExportTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_export_encoding(self):
-        items = [dict({"foo": "Test\xd6"})]
+        items = [{"foo": "Test\xd6"}]
 
         formats = {
-            "json": '[{"foo": "Test\\u00d6"}]'.encode("utf-8"),
-            "jsonlines": '{"foo": "Test\\u00d6"}\n'.encode("utf-8"),
+            "json": b'[{"foo": "Test\\u00d6"}]',
+            "jsonlines": b'{"foo": "Test\\u00d6"}\n',
             "xml": (
                 '<?xml version="1.0" encoding="utf-8"?>\n'
                 "<items><item><foo>Test\xd6</foo></item></items>"
-            ).encode("utf-8"),
-            "csv": "foo\r\nTest\xd6\r\n".encode("utf-8"),
+            ).encode(),
+            "csv": "foo\r\nTest\xd6\r\n".encode(),
         }
 
         for fmt, expected in formats.items():
@@ -1380,13 +1346,13 @@ class FeedExportTest(FeedExportTestBase):
             self.assertEqual(expected, data[fmt])
 
         formats = {
-            "json": '[{"foo": "Test\xd6"}]'.encode("latin-1"),
-            "jsonlines": '{"foo": "Test\xd6"}\n'.encode("latin-1"),
+            "json": b'[{"foo": "Test\xd6"}]',
+            "jsonlines": b'{"foo": "Test\xd6"}\n',
             "xml": (
-                '<?xml version="1.0" encoding="latin-1"?>\n'
-                "<items><item><foo>Test\xd6</foo></item></items>"
-            ).encode("latin-1"),
-            "csv": "foo\r\nTest\xd6\r\n".encode("latin-1"),
+                b'<?xml version="1.0" encoding="latin-1"?>\n'
+                b"<items><item><foo>Test\xd6</foo></item></items>"
+            ),
+            "csv": b"foo\r\nTest\xd6\r\n",
         }
 
         for fmt, expected in formats.items():
@@ -1402,15 +1368,15 @@ class FeedExportTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_export_multiple_configs(self):
-        items = [dict({"foo": "FOO", "bar": "BAR"})]
+        items = [{"foo": "FOO", "bar": "BAR"}]
 
         formats = {
-            "json": '[\n{"bar": "BAR"}\n]'.encode("utf-8"),
+            "json": b'[\n{"bar": "BAR"}\n]',
             "xml": (
-                '<?xml version="1.0" encoding="latin-1"?>\n'
-                "<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>"
-            ).encode("latin-1"),
-            "csv": "bar,foo\r\nBAR,FOO\r\n".encode("utf-8"),
+                b'<?xml version="1.0" encoding="latin-1"?>\n'
+                b"<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>"
+            ),
+            "csv": b"bar,foo\r\nBAR,FOO\r\n",
         }
 
         settings = {
@@ -1664,8 +1630,8 @@ class FeedExportTest(FeedExportTestBase):
     def test_extend_kwargs(self):
         items = [{"foo": "FOO", "bar": "BAR"}]
 
-        expected_with_title_csv = "foo,bar\r\nFOO,BAR\r\n".encode("utf-8")
-        expected_without_title_csv = "FOO,BAR\r\n".encode("utf-8")
+        expected_with_title_csv = b"foo,bar\r\nFOO,BAR\r\n"
+        expected_without_title_csv = b"FOO,BAR\r\n"
         test_cases = [
             # with title
             {
@@ -1732,6 +1698,7 @@ class FeedExportTest(FeedExportTestBase):
 
             def store(self, file):
                 Storage.store_file = file
+                Storage.file_was_closed = file.closed
                 file.close()
 
         settings = {
@@ -1747,6 +1714,7 @@ class FeedExportTest(FeedExportTestBase):
         }
         yield self.exported_no_data(settings)
         self.assertIs(Storage.open_file, Storage.store_file)
+        self.assertFalse(Storage.file_was_closed)
 
 
 class FeedPostProcessedExportsTest(FeedExportTestBase):
@@ -1789,13 +1757,13 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
                 crawler = get_crawler(spider_cls, settings)
                 yield crawler.crawl()
 
-            for file_path, feed_options in FEEDS.items():
+            for file_path in FEEDS:
                 content[str(file_path)] = (
                     Path(file_path).read_bytes() if Path(file_path).exists() else None
                 )
 
         finally:
-            for file_path in FEEDS.keys():
+            for file_path in FEEDS:
                 if not Path(file_path).exists():
                     continue
 
@@ -2300,7 +2268,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                     content[feed["format"]].append(file.read_bytes())
         finally:
             self.tearDown()
-        defer.returnValue(content)
+        return content
 
     @defer.inlineCallbacks
     def assertExportedJsonLines(self, items, rows, settings=None):
@@ -2512,28 +2480,28 @@ class BatchDeliveriesTest(FeedExportTestBase):
     @defer.inlineCallbacks
     def test_export_multiple_configs(self):
         items = [
-            dict({"foo": "FOO", "bar": "BAR"}),
-            dict({"foo": "FOO1", "bar": "BAR1"}),
+            {"foo": "FOO", "bar": "BAR"},
+            {"foo": "FOO1", "bar": "BAR1"},
         ]
 
         formats = {
             "json": [
-                '[\n{"bar": "BAR"}\n]'.encode("utf-8"),
-                '[\n{"bar": "BAR1"}\n]'.encode("utf-8"),
+                b'[\n{"bar": "BAR"}\n]',
+                b'[\n{"bar": "BAR1"}\n]',
             ],
             "xml": [
                 (
-                    '<?xml version="1.0" encoding="latin-1"?>\n'
-                    "<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>"
-                ).encode("latin-1"),
+                    b'<?xml version="1.0" encoding="latin-1"?>\n'
+                    b"<items>\n  <item>\n    <foo>FOO</foo>\n  </item>\n</items>"
+                ),
                 (
-                    '<?xml version="1.0" encoding="latin-1"?>\n'
-                    "<items>\n  <item>\n    <foo>FOO1</foo>\n  </item>\n</items>"
-                ).encode("latin-1"),
+                    b'<?xml version="1.0" encoding="latin-1"?>\n'
+                    b"<items>\n  <item>\n    <foo>FOO1</foo>\n  </item>\n</items>"
+                ),
             ],
             "csv": [
-                "foo,bar\r\nFOO,BAR\r\n".encode("utf-8"),
-                "foo,bar\r\nFOO1,BAR1\r\n".encode("utf-8"),
+                b"foo,bar\r\nFOO,BAR\r\n",
+                b"foo,bar\r\nFOO1,BAR1\r\n",
             ],
         }
 
@@ -2573,11 +2541,11 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
     @defer.inlineCallbacks
     def test_batch_item_count_feeds_setting(self):
-        items = [dict({"foo": "FOO"}), dict({"foo": "FOO1"})]
+        items = [{"foo": "FOO"}, {"foo": "FOO1"}]
         formats = {
             "json": [
-                '[{"foo": "FOO"}]'.encode("utf-8"),
-                '[{"foo": "FOO1"}]'.encode("utf-8"),
+                b'[{"foo": "FOO"}]',
+                b'[{"foo": "FOO1"}]',
             ],
         }
         settings = {
@@ -2642,9 +2610,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
             crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 12
         )
 
+    @pytest.mark.requires_boto3
     @defer.inlineCallbacks
     def test_s3_export(self):
-        skip_if_no_boto()
         bucket = "mybucket"
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -2696,8 +2664,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             name = "testspider"
 
             def parse(self, response):
-                for item in items:
-                    yield item
+                yield from items
 
         with MockServer() as server:
             TestSpider.start_urls = [server.url("/")]

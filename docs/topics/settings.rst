@@ -288,7 +288,7 @@ The AWS security token used by code that requires access to `Amazon Web services
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`, when using
 `temporary security credentials`_.
 
-.. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
+.. _temporary security credentials: https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html
 
 .. setting:: AWS_ENDPOINT_URL
 
@@ -617,7 +617,7 @@ necessary to access certain HTTPS websites: for example, you may need to use
 ``'DEFAULT:!DH'`` for a website with weak DH parameters or enable a
 specific cipher that is not included in ``DEFAULT`` if a website requires it.
 
-.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/openssl-ciphers.html#CIPHER-LIST-FORMAT
+.. _OpenSSL cipher list format: https://docs.openssl.org/master/man1/openssl-ciphers/#cipher-list-format
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
@@ -674,6 +674,7 @@ Default:
 .. code-block:: python
 
     {
+        "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
         "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 100,
         "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
         "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware": 350,
@@ -828,14 +829,14 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
     -   No support for the :signal:`bytes_received` and
         :signal:`headers_received` signals.
 
-.. _frame size: https://tools.ietf.org/html/rfc7540#section-4.2
+.. _frame size: https://datatracker.ietf.org/doc/html/rfc7540#section-4.2
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
-.. _server pushes: https://tools.ietf.org/html/rfc7540#section-8.2
+.. _server pushes: https://datatracker.ietf.org/doc/html/rfc7540#section-8.2
 
 .. setting:: DOWNLOAD_SLOTS
 
 DOWNLOAD_SLOTS
-----------------
+--------------
 
 Default: ``{}``
 
@@ -873,40 +874,42 @@ The amount of time (in secs) that the downloader will wait before timing out.
     Request.meta key.
 
 .. setting:: DOWNLOAD_MAXSIZE
+.. reqmeta:: download_maxsize
 
 DOWNLOAD_MAXSIZE
 ----------------
 
-Default: ``1073741824`` (1024MB)
+Default: ``1073741824`` (1 GiB)
 
-The maximum response size (in bytes) that downloader will download.
+The maximum response body size (in bytes) allowed. Bigger responses are
+aborted and ignored.
 
-If you want to disable it set to 0.
+This applies both before and after compression. If decompressing a response
+body would exceed this limit, decompression is aborted and the response is
+ignored.
 
-.. reqmeta:: download_maxsize
+Use ``0`` to disable this limit.
 
-.. note::
-
-    This size can be set per spider using :attr:`download_maxsize`
-    spider attribute and per-request using :reqmeta:`download_maxsize`
-    Request.meta key.
+This limit can be set per spider using the :attr:`download_maxsize` spider
+attribute and per request using the :reqmeta:`download_maxsize` Request.meta
+key.
 
 .. setting:: DOWNLOAD_WARNSIZE
+.. reqmeta:: download_warnsize
 
 DOWNLOAD_WARNSIZE
 -----------------
 
-Default: ``33554432`` (32MB)
+Default: ``33554432`` (32 MiB)
 
-The response size (in bytes) that downloader will start to warn.
+If the size of a response exceeds this value, before or after compression, a
+warning will be logged about it.
 
-If you want to disable it set to 0.
+Use ``0`` to disable this limit.
 
-.. note::
-
-    This size can be set per spider using :attr:`download_warnsize`
-    spider attribute and per-request using :reqmeta:`download_warnsize`
-    Request.meta key.
+This limit can be set per spider using the :attr:`download_warnsize` spider
+attribute and per request using the :reqmeta:`download_warnsize` Request.meta
+key.
 
 .. setting:: DOWNLOAD_FAIL_ON_DATALOSS
 
@@ -1063,7 +1066,7 @@ in ``Request`` meta.
     some FTP servers explicitly ask for the user's e-mail address
     and will not allow login with the "guest" password.
 
-.. _RFC 1635: https://tools.ietf.org/html/rfc1635
+.. _RFC 1635: https://datatracker.ietf.org/doc/html/rfc1635
 
 .. reqmeta:: ftp_user
 .. setting:: FTP_USER
@@ -1224,6 +1227,25 @@ Default: ``False``
 
 If ``True``, the logs will just contain the root path. If it is set to ``False``
 then it displays the component responsible for the log output
+
+.. setting:: LOG_VERSIONS
+
+LOG_VERSIONS
+------------
+
+Default: ``["lxml", "libxml2", "cssselect", "parsel", "w3lib", "Twisted", "Python", "pyOpenSSL", "cryptography", "Platform"]``
+
+Logs the installed versions of the specified items.
+
+An item can be any installed Python package.
+
+The following special items are also supported:
+
+-   ``libxml2``
+
+-   ``Platform`` (:func:`platform.platform`)
+
+-   ``Python``
 
 .. setting:: LOGSTATS_INTERVAL
 
@@ -1569,7 +1591,7 @@ SPIDER_LOADER_WARN_ONLY
 Default: ``False``
 
 By default, when Scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
-it will fail loudly if there is any ``ImportError`` exception.
+it will fail loudly if there is any ``ImportError`` or ``SyntaxError`` exception.
 But you can choose to silence this exception and turn it into a simple
 warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
 
@@ -1603,7 +1625,6 @@ Default:
 
     {
         "scrapy.spidermiddlewares.httperror.HttpErrorMiddleware": 50,
-        "scrapy.spidermiddlewares.offsite.OffsiteMiddleware": 500,
         "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
         "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
         "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,

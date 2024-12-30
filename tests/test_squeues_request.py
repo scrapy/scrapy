@@ -25,7 +25,7 @@ class BaseQueueTestCase(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp(prefix="scrapy-queue-tests-")
         self.qpath = self.tempfilename()
-        self.qdir = self.mkdtemp()
+        self.qdir = tempfile.mkdtemp()
         self.crawler = get_crawler(Spider)
 
     def tearDown(self):
@@ -41,7 +41,7 @@ class BaseQueueTestCase(unittest.TestCase):
 
 class RequestQueueTestMixin:
     def queue(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def test_one_element_with_peek(self):
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):

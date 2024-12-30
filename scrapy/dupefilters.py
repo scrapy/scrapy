@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import logging
+import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Set
+from typing import TYPE_CHECKING
 
-from twisted.internet.defer import Deferred
-
-from scrapy.http.request import Request
-from scrapy.settings import BaseSettings
-from scrapy.spiders import Spider
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import (
     RequestFingerprinter,
@@ -17,29 +14,42 @@ from scrapy.utils.request import (
 )
 
 if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
+    from scrapy.http.request import Request
+    from scrapy.settings import BaseSettings
+    from scrapy.spiders import Spider
 
 
 class BaseDupeFilter:
     @classmethod
     def from_settings(cls, settings: BaseSettings) -> Self:
+        warnings.warn(
+            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return cls()
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls()
 
     def request_seen(self, request: Request) -> bool:
         return False
 
-    def open(self) -> Optional[Deferred]:
+    def open(self) -> Deferred[None] | None:
         pass
 
-    def close(self, reason: str) -> Optional[Deferred]:
+    def close(self, reason: str) -> Deferred[None] | None:
         pass
 
     def log(self, request: Request, spider: Spider) -> None:
         """Log that a request has been filtered"""
-        pass
 
 
 class RFPDupeFilter(BaseDupeFilter):
@@ -47,16 +57,16 @@ class RFPDupeFilter(BaseDupeFilter):
 
     def __init__(
         self,
-        path: Optional[str] = None,
+        path: str | None = None,
         debug: bool = False,
         *,
-        fingerprinter: Optional[RequestFingerprinterProtocol] = None,
+        fingerprinter: RequestFingerprinterProtocol | None = None,
     ) -> None:
         self.file = None
         self.fingerprinter: RequestFingerprinterProtocol = (
             fingerprinter or RequestFingerprinter()
         )
-        self.fingerprints: Set[str] = set()
+        self.fingerprints: set[str] = set()
         self.logdupes = True
         self.debug = debug
         self.logger = logging.getLogger(__name__)
@@ -70,18 +80,32 @@ class RFPDupeFilter(BaseDupeFilter):
         cls,
         settings: BaseSettings,
         *,
-        fingerprinter: Optional[RequestFingerprinterProtocol] = None,
+        fingerprinter: RequestFingerprinterProtocol | None = None,
     ) -> Self:
-        debug = settings.getbool("DUPEFILTER_DEBUG")
-        return cls(job_dir(settings), debug, fingerprinter=fingerprinter)
+        warnings.warn(
+            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return cls._from_settings(settings, fingerprinter=fingerprinter)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         assert crawler.request_fingerprinter
-        return cls.from_settings(
+        return cls._from_settings(
             crawler.settings,
             fingerprinter=crawler.request_fingerprinter,
         )
+
+    @classmethod
+    def _from_settings(
+        cls,
+        settings: BaseSettings,
+        *,
+        fingerprinter: RequestFingerprinterProtocol | None = None,
+    ) -> Self:
+        debug = settings.getbool("DUPEFILTER_DEBUG")
+        return cls(job_dir(settings), debug, fingerprinter=fingerprinter)
 
     def request_seen(self, request: Request) -> bool:
         fp = self.request_fingerprint(request)

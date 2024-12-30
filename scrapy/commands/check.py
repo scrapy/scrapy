@@ -1,3 +1,4 @@
+import argparse
 import time
 from collections import defaultdict
 from unittest import TextTestResult as _TextTestResult
@@ -10,7 +11,7 @@ from scrapy.utils.misc import load_object, set_environ
 
 
 class TextTestResult(_TextTestResult):
-    def printSummary(self, start, stop):
+    def printSummary(self, start: float, stop: float) -> None:
         write = self.stream.write
         writeln = self.stream.writeln
 
@@ -42,14 +43,14 @@ class Command(ScrapyCommand):
     requires_project = True
     default_settings = {"LOG_ENABLED": False}
 
-    def syntax(self):
+    def syntax(self) -> str:
         return "[options] <spider>"
 
-    def short_desc(self):
+    def short_desc(self) -> str:
         return "Check spider contracts"
 
-    def add_options(self, parser):
-        ScrapyCommand.add_options(self, parser)
+    def add_options(self, parser: argparse.ArgumentParser) -> None:
+        super().add_options(parser)
         parser.add_argument(
             "-l",
             "--list",
@@ -66,7 +67,7 @@ class Command(ScrapyCommand):
             help="print contract tests for all spiders",
         )
 
-    def run(self, args, opts):
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # load contracts
         contracts = build_component_list(self.settings.getwithbase("SPIDER_CONTRACTS"))
         conman = ContractsManager(load_object(c) for c in contracts)
@@ -76,12 +77,13 @@ class Command(ScrapyCommand):
         # contract requests
         contract_reqs = defaultdict(list)
 
+        assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
 
         with set_environ(SCRAPY_CHECK="true"):
             for spidername in args or spider_loader.list():
                 spidercls = spider_loader.load(spidername)
-                spidercls.start_requests = lambda s: conman.from_spider(s, result)
+                spidercls.start_requests = lambda s: conman.from_spider(s, result)  # type: ignore[assignment,method-assign,return-value]
 
                 tested_methods = conman.tested_methods_from_spidercls(spidercls)
                 if opts.list:

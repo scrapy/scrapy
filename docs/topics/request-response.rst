@@ -94,13 +94,14 @@ Request objects
         .. code-block:: python
 
             request_with_cookies = Request(
-                url="http://www.example.com",
+                url="https://www.example.com",
                 cookies=[
                     {
                         "name": "currency",
                         "value": "USD",
                         "domain": "example.com",
                         "path": "/currency",
+                        "secure": True,
                     },
                 ],
             )
@@ -469,60 +470,6 @@ import path.
 
 .. autoclass:: scrapy.utils.request.RequestFingerprinter
 
-
-.. setting:: REQUEST_FINGERPRINTER_IMPLEMENTATION
-
-REQUEST_FINGERPRINTER_IMPLEMENTATION
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 2.7
-
-Default: ``'2.6'``
-
-Determines which request fingerprinting algorithm is used by the default
-request fingerprinter class (see :setting:`REQUEST_FINGERPRINTER_CLASS`).
-
-Possible values are:
-
--   ``'2.6'`` (default)
-
-    This implementation uses the same request fingerprinting algorithm as
-    Scrapy 2.6 and earlier versions.
-
-    Even though this is the default value for backward compatibility reasons,
-    it is a deprecated value.
-
--   ``'2.7'``
-
-    This implementation was introduced in Scrapy 2.7 to fix an issue of the
-    previous implementation.
-
-    New projects should use this value. The :command:`startproject` command
-    sets this value in the generated ``settings.py`` file.
-
-If you are using the default value (``'2.6'``) for this setting, and you are
-using Scrapy components where changing the request fingerprinting algorithm
-would cause undesired results, you need to carefully decide when to change the
-value of this setting, or switch the :setting:`REQUEST_FINGERPRINTER_CLASS`
-setting to a custom request fingerprinter class that implements the 2.6 request
-fingerprinting algorithm and does not log this warning (
-:ref:`2.6-request-fingerprinter` includes an example implementation of such a
-class).
-
-Scenarios where changing the request fingerprinting algorithm may cause
-undesired results include, for example, using the HTTP cache middleware (see
-:class:`~scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware`).
-Changing the request fingerprinting algorithm would invalidate the current
-cache, requiring you to redownload all requests again.
-
-Otherwise, set :setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION` to ``'2.7'`` in
-your settings to switch already to the request fingerprinting implementation
-that will be the only request fingerprinting implementation available in a
-future version of Scrapy, and remove the deprecation warning triggered by using
-the default value (``'2.6'``).
-
-
-.. _2.6-request-fingerprinter:
 .. _custom-request-fingerprinter:
 
 Writing your own request fingerprinter
@@ -541,7 +488,7 @@ A request fingerprinter is a class that must implement the following method:
    :param request: request to fingerprint
    :type request: scrapy.http.Request
 
-Additionally, it may also implement the following methods:
+Additionally, it may also implement the following method:
 
 .. classmethod:: from_crawler(cls, crawler)
    :noindex:
@@ -556,13 +503,6 @@ Additionally, it may also implement the following methods:
 
    :param crawler: crawler that uses this request fingerprinter
    :type crawler: :class:`~scrapy.crawler.Crawler` object
-
-.. classmethod:: from_settings(cls, settings)
-
-   If present, and ``from_crawler`` is not defined, this class method is called
-   to create a request fingerprinter instance from a
-   :class:`~scrapy.settings.Settings` object. It must return a new instance of
-   the request fingerprinter.
 
 .. currentmodule:: scrapy.http
 
@@ -721,6 +661,7 @@ are some special keys recognized by Scrapy and its built-in extensions.
 
 Those are:
 
+* :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
 * :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`
@@ -731,6 +672,7 @@ Those are:
 * :reqmeta:`download_fail_on_dataloss`
 * :reqmeta:`download_latency`
 * :reqmeta:`download_maxsize`
+* :reqmeta:`download_warnsize`
 * :reqmeta:`download_timeout`
 * ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
@@ -1357,3 +1299,13 @@ XmlResponse objects
     line.  See :attr:`TextResponse.encoding`.
 
 .. _bug in lxml: https://bugs.launchpad.net/lxml/+bug/1665241
+
+JsonResponse objects
+--------------------
+
+.. class:: JsonResponse(url[, ...])
+
+    The :class:`JsonResponse` class is a subclass of :class:`TextResponse` 
+    that is used when the response has a `JSON MIME type 
+    <https://mimesniff.spec.whatwg.org/#json-mime-type>`_ in its `Content-Type` 
+    header.

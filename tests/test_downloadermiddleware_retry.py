@@ -1,6 +1,5 @@
 import logging
 import unittest
-import warnings
 
 from testfixtures import LogCapture
 from twisted.internet import defer
@@ -121,37 +120,6 @@ class RetryTest(unittest.TestCase):
         mw = RetryMiddleware.from_crawler(crawler)
         req = Request(f"http://www.scrapytest.org/{exc.__name__}")
         self._test_retry_exception(req, exc("foo"), mw)
-
-    def test_exception_to_retry_custom_middleware(self):
-        exc = ValueError
-
-        with warnings.catch_warnings(record=True) as warns:
-
-            class MyRetryMiddleware(RetryMiddleware):
-                EXCEPTIONS_TO_RETRY = RetryMiddleware.EXCEPTIONS_TO_RETRY + (exc,)
-
-            self.assertEqual(len(warns), 1)
-
-        mw2 = MyRetryMiddleware.from_crawler(self.crawler)
-        req = Request(f"http://www.scrapytest.org/{exc.__name__}")
-        req = mw2.process_exception(req, exc("foo"), self.spider)
-        assert isinstance(req, Request)
-        self.assertEqual(req.meta["retry_times"], 1)
-
-    def test_exception_to_retry_custom_middleware_self(self):
-        class MyRetryMiddleware(RetryMiddleware):
-            def process_exception(self, request, exception, spider):
-                if isinstance(exception, self.EXCEPTIONS_TO_RETRY):
-                    return self._retry(request, exception, spider)
-
-        exc = OSError
-        mw2 = MyRetryMiddleware.from_crawler(self.crawler)
-        req = Request(f"http://www.scrapytest.org/{exc.__name__}")
-        with warnings.catch_warnings(record=True) as warns:
-            req = mw2.process_exception(req, exc("foo"), self.spider)
-        assert isinstance(req, Request)
-        self.assertEqual(req.meta["retry_times"], 1)
-        self.assertEqual(len(warns), 1)
 
     def _test_retry_exception(self, req, exception, mw=None):
         if mw is None:
@@ -297,7 +265,7 @@ class MaxRetryTimesTest(unittest.TestCase):
         spider = spider or self.spider
         middleware = middleware or self.mw
 
-        for i in range(0, max_retry_times):
+        for i in range(max_retry_times):
             req = middleware.process_exception(req, exception, spider)
             assert isinstance(req, Request)
 
