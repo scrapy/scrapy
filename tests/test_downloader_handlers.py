@@ -116,7 +116,7 @@ class FileTestCase(unittest.TestCase):
 
     def tearDown(self):
         os.close(self.fd)
-        os.remove(self.tmpname)
+        Path(self.tmpname).unlink()
 
     def test_download(self):
         def _test(response):

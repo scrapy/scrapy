@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 import string
 from importlib.util import find_spec
@@ -28,9 +27,9 @@ TEMPLATES_TO_RENDER: tuple[tuple[str, ...], ...] = (
 IGNORE = ignore_patterns("*.pyc", "__pycache__", ".svn")
 
 
-def _make_writable(path: str | os.PathLike) -> None:
-    current_permissions = os.stat(path).st_mode
-    os.chmod(path, current_permissions | OWNER_WRITE_PERMISSION)
+def _make_writable(path: Path) -> None:
+    current_permissions = path.stat().st_mode
+    path.chmod(current_permissions | OWNER_WRITE_PERMISSION)
 
 
 class Command(ScrapyCommand):
