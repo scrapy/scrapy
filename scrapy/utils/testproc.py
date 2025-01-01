@@ -31,7 +31,7 @@ class ProcessTest:
         if settings is not None:
             env["SCRAPY_SETTINGS_MODULE"] = settings
         assert self.command
-        cmd = self.prefix + [self.command] + list(args)
+        cmd = [*self.prefix, self.command, *args]
         pp = TestProcessProtocol()
         pp.deferred.addCallback(self._process_finished, cmd, check_code)
         reactor.spawnProcess(pp, cmd[0], cmd, env=env, path=self.cwd)

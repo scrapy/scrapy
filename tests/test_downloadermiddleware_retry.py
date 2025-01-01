@@ -114,7 +114,7 @@ class RetryTest(unittest.TestCase):
     def test_exception_to_retry_added(self):
         exc = ValueError
         settings_dict = {
-            "RETRY_EXCEPTIONS": list(RETRY_EXCEPTIONS) + [exc],
+            "RETRY_EXCEPTIONS": [*RETRY_EXCEPTIONS, exc],
         }
         crawler = get_crawler(Spider, settings_dict=settings_dict)
         mw = RetryMiddleware.from_crawler(crawler)

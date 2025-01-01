@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 
 class JsonRequest(Request):
-    attributes: tuple[str, ...] = Request.attributes + ("dumps_kwargs",)
+    attributes: tuple[str, ...] = (*Request.attributes, "dumps_kwargs")
 
     def __init__(
         self, *args: Any, dumps_kwargs: dict[str, Any] | None = None, **kwargs: Any

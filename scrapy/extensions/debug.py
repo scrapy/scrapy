@@ -77,4 +77,4 @@ class Debugger:
 
     def _enter_debugger(self, signum: int, frame: FrameType | None) -> None:
         assert frame
-        Pdb().set_trace(frame.f_back)  # noqa: T100
+        Pdb().set_trace(frame.f_back)

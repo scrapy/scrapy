@@ -11,7 +11,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings.default_settings import LOG_VERSIONS
 from scrapy.utils.ssl import get_openssl_version
 
-_DEFAULT_SOFTWARE = ["Scrapy"] + LOG_VERSIONS
+_DEFAULT_SOFTWARE = ["Scrapy", *LOG_VERSIONS]
 
 
 def _version(item):

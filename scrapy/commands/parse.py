@@ -269,7 +269,7 @@ class Command(BaseRunSpiderCommand):
         assert self.crawler_process
         assert self.spidercls
         self.crawler_process.crawl(self.spidercls, **opts.spargs)
-        self.pcrawler = list(self.crawler_process.crawlers)[0]
+        self.pcrawler = next(iter(self.crawler_process.crawlers))
         self.crawler_process.start()
 
         if not self.first_response:

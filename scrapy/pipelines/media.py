@@ -127,8 +127,7 @@ class MediaPipeline(ABC):
         if (
             not base_class_name
             or class_name == base_class_name
-            or settings
-            and not settings.get(formatted_key)
+            or (settings and not settings.get(formatted_key))
         ):
             return key
         return formatted_key

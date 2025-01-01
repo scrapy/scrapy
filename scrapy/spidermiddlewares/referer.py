@@ -195,8 +195,7 @@ class StrictOriginPolicy(ReferrerPolicy):
         if (
             self.tls_protected(response_url)
             and self.potentially_trustworthy(request_url)
-            or not self.tls_protected(response_url)
-        ):
+        ) or not self.tls_protected(response_url):
             return self.origin_referrer(response_url)
         return None
 
@@ -249,8 +248,7 @@ class StrictOriginWhenCrossOriginPolicy(ReferrerPolicy):
         if (
             self.tls_protected(response_url)
             and self.potentially_trustworthy(request_url)
-            or not self.tls_protected(response_url)
-        ):
+        ) or not self.tls_protected(response_url):
             return self.origin_referrer(response_url)
         return None
 
@@ -282,7 +280,7 @@ class DefaultReferrerPolicy(NoReferrerWhenDowngradePolicy):
     using ``file://`` or ``s3://`` scheme.
     """
 
-    NOREFERRER_SCHEMES: tuple[str, ...] = LOCAL_SCHEMES + ("file", "s3")
+    NOREFERRER_SCHEMES: tuple[str, ...] = (*LOCAL_SCHEMES, "file", "s3")
     name: str = POLICY_SCRAPY_DEFAULT
 
 

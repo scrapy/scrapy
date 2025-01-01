@@ -246,6 +246,8 @@ extend-select = [
     "RET",
     # flake8-raise
     "RSE",
+    # Ruff-specific rules
+    "RUF",
     # flake8-bandit
     "S",
     # flake8-slots
@@ -324,6 +326,14 @@ ignore = [
     "PLR2004",
     # `for` loop variable overwritten by assignment target
     "PLW2901",
+    # String contains ambiguous {}.
+    "RUF001",
+    # Docstring contains ambiguous {}.
+    "RUF002",
+    # Comment contains ambiguous {}.
+    "RUF003",
+    # Mutable class attributes should be annotated with `typing.ClassVar`
+    "RUF012",
     # Use of `assert` detected; needed for mypy
     "S101",
     # FTP-related functions are being called; https://github.com/scrapy/scrapy/issues/4180

@@ -116,7 +116,7 @@ class BaseItemExporterTest(unittest.TestCase):
         )
 
         ie = self._get_exporter(fields_to_export=["name"], encoding="latin-1")
-        _, name = list(ie._get_serialized_fields(self.i))[0]
+        _, name = next(iter(ie._get_serialized_fields(self.i)))
         assert isinstance(name, str)
         self.assertEqual(name, "John\xa3")
 
