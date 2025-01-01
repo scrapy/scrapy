@@ -125,43 +125,30 @@ extension-pkg-allow-list=[
 
 [tool.pylint."MESSAGES CONTROL"]
 disable = [
-    "abstract-method",
-    "arguments-differ",
-    "arguments-renamed",
+    # Ones we want to ignore
     "attribute-defined-outside-init",
     "broad-exception-caught",
     "consider-using-with",
     "cyclic-import",
-    "dangerous-default-value",
     "disallowed-name",
-    "duplicate-code",                            # https://github.com/PyCQA/pylint/issues/214
-    "eval-used",
+    "duplicate-code",  # https://github.com/pylint-dev/pylint/issues/214
     "fixme",
-    "import-error",
     "import-outside-toplevel",
-    "inherit-non-class",
+    "inherit-non-class",  # false positives with create_deprecated_class()
     "invalid-name",
     "invalid-overridden-method",
-    "isinstance-second-argument-not-valid-type",
-    "keyword-arg-before-vararg",
+    "isinstance-second-argument-not-valid-type",  # false positives with create_deprecated_class()
     "line-too-long",
     "logging-format-interpolation",
     "logging-fstring-interpolation",
     "logging-not-lazy",
     "missing-docstring",
     "no-member",
-    "no-method-argument",
-    "no-name-in-module",
-    "no-self-argument",
-    "no-value-for-parameter",                    # https://github.com/pylint-dev/pylint/issues/3268
+    "no-value-for-parameter",  # https://github.com/pylint-dev/pylint/issues/3268
     "not-callable",
-    "pointless-statement",
-    "pointless-string-statement",
     "protected-access",
-    "raise-missing-from",
     "redefined-builtin",
     "redefined-outer-name",
-    "signature-differs",
     "too-few-public-methods",
     "too-many-ancestors",
     "too-many-arguments",
@@ -173,14 +160,23 @@ disable = [
     "too-many-positional-arguments",
     "too-many-public-methods",
     "too-many-return-statements",
-    "unbalanced-tuple-unpacking",
-    "unnecessary-dunder-call",
     "unused-argument",
     "unused-import",
     "unused-variable",
-    "used-before-assignment",
-    "useless-return",
+    "useless-return",  # https://github.com/pylint-dev/pylint/issues/6530
     "wrong-import-position",
+
+    # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
+    "abstract-method",
+    "arguments-differ",
+    "arguments-renamed",
+    "dangerous-default-value",
+    "keyword-arg-before-vararg",
+    "pointless-statement",
+    "raise-missing-from",
+    "unbalanced-tuple-unpacking",
+    "unnecessary-dunder-call",
+    "used-before-assignment",
 ]
 
 [tool.pytest.ini_options]
@@ -270,22 +266,8 @@ extend-select = [
     "YTT",
 ]
 ignore = [
-    # Assigning to `os.environ` doesn't clear the environment.
-    "B003",
-    # Do not use mutable data structures for argument defaults.
-    "B006",
-    # Loop control variable not used within the loop body.
-    "B007",
-    # Do not perform function calls in argument defaults.
-    "B008",
-    # Star-arg unpacking after a keyword argument is strongly discouraged.
-    "B026",
-    # Found useless expression.
-    "B018",
-    # No explicit stacklevel argument found.
-    "B028",
-    # Within an `except` clause, raise exceptions with `raise ... from`
-    "B904",
+    # Ones we want to ignore
+
     # Missing docstring in public module
     "D100",
     # Missing docstring in public class
@@ -346,12 +328,31 @@ ignore = [
     "S321",
     # Argument default set to insecure SSL protocol
     "S503",
-    # Use capitalized environment variable
-    "SIM112",
     # Use a context manager for opening files
     "SIM115",
     # Yoda condition detected
     "SIM300",
+
+    # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
+
+    # Assigning to `os.environ` doesn't clear the environment.
+    "B003",
+    # Do not use mutable data structures for argument defaults.
+    "B006",
+    # Loop control variable not used within the loop body.
+    "B007",
+    # Do not perform function calls in argument defaults.
+    "B008",
+    # Found useless expression.
+    "B018",
+    # Star-arg unpacking after a keyword argument is strongly discouraged.
+    "B026",
+    # No explicit stacklevel argument found.
+    "B028",
+    # Within an `except` clause, raise exceptions with `raise ... from`
+    "B904",
+    # Use capitalized environment variable
+    "SIM112",
 ]
 
 [tool.ruff.lint.per-file-ignores]

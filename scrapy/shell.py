@@ -71,17 +71,16 @@ class Shell:
         else:
             self.populate_vars()
         if self.code:
+            # pylint: disable-next=eval-used
             print(eval(self.code, globals(), self.vars))  # noqa: S307
         else:
-            """
-            Detect interactive shell setting in scrapy.cfg
-            e.g.: ~/.config/scrapy.cfg or ~/.scrapy.cfg
-            [settings]
-            # shell can be one of ipython, bpython or python;
-            # to be used as the interactive python console, if available.
-            # (default is ipython, fallbacks in the order listed above)
-            shell = python
-            """
+            # Detect interactive shell setting in scrapy.cfg
+            # e.g.: ~/.config/scrapy.cfg or ~/.scrapy.cfg
+            # [settings]
+            # # shell can be one of ipython, bpython or python;
+            # # to be used as the interactive python console, if available.
+            # # (default is ipython, fallbacks in the order listed above)
+            # shell = python
             cfg = get_config()
             section, option = "settings", "shell"
             env = os.environ.get("SCRAPY_PYTHON_SHELL")

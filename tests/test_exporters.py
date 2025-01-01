@@ -216,7 +216,9 @@ class PprintItemExporterTest(BaseItemExporterTest):
         return PprintItemExporter(self.output, **kwargs)
 
     def _check_output(self):
-        self._assert_expected_item(eval(self.output.getvalue()))
+        self._assert_expected_item(
+            eval(self.output.getvalue())  # pylint: disable=eval-used
+        )
 
 
 class PprintItemExporterDataclassTest(PprintItemExporterTest):

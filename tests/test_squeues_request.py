@@ -1,3 +1,7 @@
+"""
+Queues that handle requests
+"""
+
 import shutil
 import tempfile
 import unittest
@@ -15,10 +19,6 @@ from scrapy.squeues import (
     PickleLifoDiskQueue,
 )
 from scrapy.utils.test import get_crawler
-
-"""
-Queues that handle requests
-"""
 
 
 class BaseQueueTestCase(unittest.TestCase):
