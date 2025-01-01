@@ -90,6 +90,9 @@ class LogStats:
 
         mins_elapsed = (finish_time - start_time).seconds / 60
 
+        if mins_elapsed == 0:
+            return None, None
+
         items = self.stats.get_value("item_scraped_count", 0)
         pages = self.stats.get_value("response_received_count", 0)
 
