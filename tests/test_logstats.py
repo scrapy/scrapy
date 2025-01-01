@@ -47,7 +47,7 @@ class TestLogStats(unittest.TestCase):
 
         # Simulate when spider closes after running for 30 mins
         self.stats.set_value("start_time", datetime.fromtimestamp(1655100172))
-        self.stats.set_value("finished_time", datetime.fromtimestamp(1655101972))
+        self.stats.set_value("finish_time", datetime.fromtimestamp(1655101972))
         logstats.spider_closed(self.spider, "test reason")
         self.assertEqual(self.stats.get_value("responses_per_minute"), 172.9)
         self.assertEqual(self.stats.get_value("items_per_minute"), 116.4)
