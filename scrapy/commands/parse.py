@@ -174,13 +174,12 @@ class Command(BaseRunSpiderCommand):
         display.pprint([ItemAdapter(x).asdict() for x in items], colorize=colour)
 
     def print_requests(self, lvl: int | None = None, colour: bool = True) -> None:
-        if lvl is None:
-            if self.requests:
-                requests = self.requests[max(self.requests)]
-            else:
-                requests = []
-        else:
+        if lvl is not None:
             requests = self.requests.get(lvl, [])
+        elif self.requests:
+            requests = self.requests[max(self.requests)]
+        else:
+            requests = []
 
         print("# Requests ", "-" * 65)
         display.pprint(requests, colorize=colour)

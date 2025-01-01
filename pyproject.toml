@@ -254,6 +254,8 @@ extend-select = [
     "RUF",
     # flake8-bandit
     "S",
+    # flake8-simplify
+    "SIM",
     # flake8-slots
     "SLOT",
     # flake8-debugger
@@ -344,6 +346,12 @@ ignore = [
     "S321",
     # Argument default set to insecure SSL protocol
     "S503",
+    # Use capitalized environment variable
+    "SIM112",
+    # Use a context manager for opening files
+    "SIM115",
+    # Yoda condition detected
+    "SIM300",
 ]
 
 [tool.ruff.lint.per-file-ignores]

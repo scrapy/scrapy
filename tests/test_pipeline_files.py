@@ -634,19 +634,21 @@ class TestGCSFilesStore(unittest.TestCase):
             import google.cloud.storage  # noqa: F401
         except ModuleNotFoundError:
             raise unittest.SkipTest("google-cloud-storage is not installed")
-        with mock.patch("google.cloud.storage") as _:
-            with mock.patch("scrapy.pipelines.files.time") as _:
-                uri = "gs://my_bucket/my_prefix/"
-                store = GCSFilesStore(uri)
-                store.bucket = mock.Mock()
-                path = "full/my_data.txt"
-                yield store.persist_file(
-                    path, mock.Mock(), info=None, meta=None, headers=None
-                )
-                yield store.stat_file(path, info=None)
-                expected_blob_path = store.prefix + path
-                store.bucket.blob.assert_called_with(expected_blob_path)
-                store.bucket.get_blob.assert_called_with(expected_blob_path)
+        with (
+            mock.patch("google.cloud.storage"),
+            mock.patch("scrapy.pipelines.files.time"),
+        ):
+            uri = "gs://my_bucket/my_prefix/"
+            store = GCSFilesStore(uri)
+            store.bucket = mock.Mock()
+            path = "full/my_data.txt"
+            yield store.persist_file(
+                path, mock.Mock(), info=None, meta=None, headers=None
+            )
+            yield store.stat_file(path, info=None)
+            expected_blob_path = store.prefix + path
+            store.bucket.blob.assert_called_with(expected_blob_path)
+            store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
 class TestFTPFileStore(unittest.TestCase):

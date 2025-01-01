@@ -6,6 +6,7 @@ See documentation in docs/topics/feed-exports.rst
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 import sys
@@ -642,10 +643,8 @@ class FeedExporter:
         )
         d = {}
         for k, v in conf.items():
-            try:
+            with contextlib.suppress(NotConfigured):
                 d[k] = load_object(v)
-            except NotConfigured:
-                pass
         return d
 
     def _exporter_supported(self, format: str) -> bool:

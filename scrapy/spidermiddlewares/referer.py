@@ -360,11 +360,10 @@ class RefererMiddleware:
         - otherwise, the policy from settings is used.
         """
         policy_name = request.meta.get("referrer_policy")
-        if policy_name is None:
-            if isinstance(resp_or_url, Response):
-                policy_header = resp_or_url.headers.get("Referrer-Policy")
-                if policy_header is not None:
-                    policy_name = to_unicode(policy_header.decode("latin1"))
+        if policy_name is None and isinstance(resp_or_url, Response):
+            policy_header = resp_or_url.headers.get("Referrer-Policy")
+            if policy_header is not None:
+                policy_name = to_unicode(policy_header.decode("latin1"))
         if policy_name is None:
             return self.default_policy()
 

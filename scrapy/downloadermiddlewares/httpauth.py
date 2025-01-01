@@ -42,7 +42,10 @@ class HttpAuthMiddleware:
         self, request: Request, spider: Spider
     ) -> Request | Response | None:
         auth = getattr(self, "auth", None)
-        if auth and b"Authorization" not in request.headers:
-            if not self.domain or url_is_from_any_domain(request.url, [self.domain]):
-                request.headers[b"Authorization"] = auth
+        if (
+            auth
+            and b"Authorization" not in request.headers
+            and (not self.domain or url_is_from_any_domain(request.url, [self.domain]))
+        ):
+            request.headers[b"Authorization"] = auth
         return None

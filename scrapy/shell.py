@@ -6,6 +6,7 @@ See documentation in docs/topics/shell.rst
 
 from __future__ import annotations
 
+import contextlib
 import os
 import signal
 from typing import TYPE_CHECKING, Any
@@ -143,12 +144,10 @@ class Shell:
             else:
                 request.meta["handle_httpstatus_all"] = True
         response = None
-        try:
+        with contextlib.suppress(IgnoreRequest):
             response, spider = threads.blockingCallFromThread(
                 reactor, self._schedule, request, spider
             )
-        except IgnoreRequest:
-            pass
         self.populate_vars(response, request, spider)
 
     def populate_vars(

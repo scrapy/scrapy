@@ -64,9 +64,8 @@ class CookieJar:
                 cookies += self.jar._cookies_for_domain(host, wreq)  # type: ignore[attr-defined]
 
         attrs = self.jar._cookie_attrs(cookies)  # type: ignore[attr-defined]
-        if attrs:
-            if not wreq.has_header("Cookie"):
-                wreq.add_unredirected_header("Cookie", "; ".join(attrs))
+        if attrs and not wreq.has_header("Cookie"):
+            wreq.add_unredirected_header("Cookie", "; ".join(attrs))
 
         self.processed += 1
         if self.processed % self.check_expired_frequency == 0:

@@ -198,10 +198,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         # chain, they went through it already from the process_spider_exception method
         recovered: MutableChain[_T] | MutableAsyncChain[_T]
         last_result_is_async = isinstance(result, AsyncIterable)
-        if last_result_is_async:
-            recovered = MutableAsyncChain()
-        else:
-            recovered = MutableChain()
+        recovered = MutableAsyncChain() if last_result_is_async else MutableChain()
 
         # There are three cases for the middleware: def foo, async def foo, def foo + async def foo_async.
         # 1. def foo. Sync iterables are passed as is, async ones are downgraded.

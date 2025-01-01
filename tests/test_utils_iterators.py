@@ -366,7 +366,7 @@ class UtilsCsvTestCase(unittest.TestCase):
 
         # explicit type check cuz' we no like stinkin' autocasting! yarrr
         for result_row in result:
-            self.assertTrue(all(isinstance(k, str) for k in result_row.keys()))
+            self.assertTrue(all(isinstance(k, str) for k in result_row))
             self.assertTrue(all(isinstance(v, str) for v in result_row.values()))
 
     def test_csviter_delimiter(self):

@@ -173,13 +173,19 @@ def strip_url(
         parsed_url.username or parsed_url.password
     ):
         netloc = netloc.split("@")[-1]
-    if strip_default_port and parsed_url.port:
-        if (parsed_url.scheme, parsed_url.port) in (
+
+    if (
+        strip_default_port
+        and parsed_url.port
+        and (parsed_url.scheme, parsed_url.port)
+        in (
             ("http", 80),
             ("https", 443),
             ("ftp", 21),
-        ):
-            netloc = netloc.replace(f":{parsed_url.port}", "")
+        )
+    ):
+        netloc = netloc.replace(f":{parsed_url.port}", "")
+
     return urlunparse(
         (
             parsed_url.scheme,

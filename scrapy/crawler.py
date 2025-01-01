@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 import pprint
 import signal
@@ -503,7 +504,6 @@ class CrawlerProcess(CrawlerRunner):
     def _stop_reactor(self, _: Any = None) -> None:
         from twisted.internet import reactor
 
-        try:
+        # raised if already stopped or in shutdown stage
+        with contextlib.suppress(RuntimeError):
             reactor.stop()
-        except RuntimeError:  # raised if already stopped or in shutdown stage
-            pass

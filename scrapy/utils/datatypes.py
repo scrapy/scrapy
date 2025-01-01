@@ -8,6 +8,7 @@ This module must not depend on any module outside the Standard Library.
 from __future__ import annotations
 
 import collections
+import contextlib
 import warnings
 import weakref
 from collections import OrderedDict
@@ -173,10 +174,9 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
         self.data: LocalCache = LocalCache(limit=limit)
 
     def __setitem__(self, key: _KT, value: _VT) -> None:
-        try:
+        # if raised, key is not weak-referenceable, skip caching
+        with contextlib.suppress(TypeError):
             super().__setitem__(key, value)
-        except TypeError:
-            pass  # key is not weak-referenceable, skip caching
 
     def __getitem__(self, key: _KT) -> _VT | None:  # type: ignore[override]
         try:

@@ -89,10 +89,7 @@ class RFC2616Policy:
             return False
         cc = self._parse_cachecontrol(request)
         # obey user-agent directive "Cache-Control: no-store"
-        if b"no-store" in cc:
-            return False
-        # Any other is eligible for caching
-        return True
+        return b"no-store" not in cc
 
     def should_cache_response(self, response: Response, request: Request) -> bool:
         # What is cacheable - https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
