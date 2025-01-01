@@ -126,7 +126,3 @@ class ResponseTypesTest(unittest.TestCase):
         self.assertEqual(
             responsetypes.mimetypes.guess_type("x.scrapytest")[0], "x-scrapy/test"
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

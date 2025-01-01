@@ -216,7 +216,3 @@ class UtilsMiscTestCase(unittest.TestCase):
         assert rel_has_nofollow("nofollowfoo") is False
         assert rel_has_nofollow("foonofollow") is False
         assert rel_has_nofollow("ugc,  ,  nofollow") is True
-
-
-if __name__ == "__main__":
-    unittest.main()

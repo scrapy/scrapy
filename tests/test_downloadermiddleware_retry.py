@@ -643,7 +643,3 @@ class GetRetryRequestTest(unittest.TestCase):
             f"{stats_key}/reason_count/{expected_reason}",
         ):
             self.assertEqual(spider.crawler.stats.get_value(stat), 1)
-
-
-if __name__ == "__main__":
-    unittest.main()

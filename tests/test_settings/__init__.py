@@ -497,7 +497,3 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(
             str(error.exception), "Trying to modify an immutable Settings object"
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

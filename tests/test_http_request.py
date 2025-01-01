@@ -1717,7 +1717,3 @@ class JsonRequestTest(RequestTest):
     def tearDown(self):
         warnings.resetwarnings()
         super().tearDown()
-
-
-if __name__ == "__main__":
-    unittest.main()

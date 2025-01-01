@@ -20,7 +20,3 @@ class HttpobjUtilsTest(unittest.TestCase):
         assert req1a is req1b
         assert req1a is not req2
         assert req1a is not req2
-
-
-if __name__ == "__main__":
-    unittest.main()
