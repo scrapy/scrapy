@@ -222,6 +222,8 @@ extend-select = [
     "D",
     # flake8-future-annotations
     "FA",
+    # flynt
+    "FLY",
     # refurb
     "FURB",
     # isort
