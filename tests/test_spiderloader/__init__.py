@@ -1,3 +1,4 @@
+import contextlib
 import shutil
 import sys
 import tempfile
@@ -22,10 +23,8 @@ module_dir = Path(__file__).resolve().parent
 
 
 def _copytree(source: Path, target: Path):
-    try:
+    with contextlib.suppress(shutil.Error):
         shutil.copytree(source, target)
-    except shutil.Error:
-        pass
 
 
 class SpiderLoaderTest(unittest.TestCase):

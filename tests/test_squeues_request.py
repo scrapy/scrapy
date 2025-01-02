@@ -1,3 +1,7 @@
+"""
+Queues that handle requests
+"""
+
 import shutil
 import tempfile
 import unittest
@@ -15,10 +19,6 @@ from scrapy.squeues import (
     PickleLifoDiskQueue,
 )
 from scrapy.utils.test import get_crawler
-
-"""
-Queues that handle requests
-"""
 
 
 class BaseQueueTestCase(unittest.TestCase):
@@ -41,7 +41,7 @@ class BaseQueueTestCase(unittest.TestCase):
 
 class RequestQueueTestMixin:
     def queue(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def test_one_element_with_peek(self):
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):

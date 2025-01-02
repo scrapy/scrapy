@@ -36,7 +36,7 @@ def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:
         return reactor.listenTCP(0, factory, interface=host)
     if len(portrange) == 1:
         return reactor.listenTCP(portrange[0], factory, interface=host)
-    for x in range(portrange[0], portrange[1] + 1):
+    for x in range(portrange[0], portrange[1] + 1):  # noqa: RET503
         try:
             return reactor.listenTCP(x, factory, interface=host)
         except error.CannotListenError:
@@ -100,7 +100,7 @@ def install_reactor(reactor_path: str, event_loop_path: str | None = None) -> No
             asyncioreactor.install(eventloop=event_loop)
     else:
         *module, _ = reactor_path.split(".")
-        installer_path = module + ["install"]
+        installer_path = [*module, "install"]
         installer = load_object(".".join(installer_path))
         with suppress(error.ReactorAlreadyInstalledError):
             installer()
@@ -149,12 +149,11 @@ def verify_installed_reactor(reactor_path: str) -> None:
 
     reactor_class = load_object(reactor_path)
     if not reactor.__class__ == reactor_class:
-        msg = (
+        raise RuntimeError(
             "The installed reactor "
             f"({reactor.__module__}.{reactor.__class__.__name__}) does not "
             f"match the requested one ({reactor_path})"
         )
-        raise Exception(msg)
 
 
 def verify_installed_asyncio_event_loop(loop_path: str) -> None:
@@ -168,7 +167,7 @@ def verify_installed_asyncio_event_loop(loop_path: str) -> None:
         f".{reactor._asyncioEventloop.__class__.__qualname__}"
     )
     specified = f"{loop_class.__module__}.{loop_class.__qualname__}"
-    raise Exception(
+    raise RuntimeError(
         "Scrapy found an asyncio Twisted reactor already "
         f"installed, and its event loop class ({installed}) does "
         "not match the one specified in the ASYNCIO_EVENT_LOOP "

@@ -41,9 +41,12 @@ _collect_string_content = etree.XPath("string()")
 
 
 def _nons(tag: Any) -> Any:
-    if isinstance(tag, str):
-        if tag[0] == "{" and tag[1 : len(XHTML_NAMESPACE) + 1] == XHTML_NAMESPACE:
-            return tag.split("}")[-1]
+    if (
+        isinstance(tag, str)
+        and tag[0] == "{"
+        and tag[1 : len(XHTML_NAMESPACE) + 1] == XHTML_NAMESPACE
+    ):
+        return tag.split("}")[-1]
     return tag
 
 
@@ -230,9 +233,7 @@ class LxmlLinkExtractor:
             parsed_url, self.deny_extensions
         ):
             return False
-        if self.restrict_text and not _matches(link.text, self.restrict_text):
-            return False
-        return True
+        return not self.restrict_text or _matches(link.text, self.restrict_text)
 
     def matches(self, url: str) -> bool:
         if self.allow_domains and not url_is_from_any_domain(url, self.allow_domains):
@@ -253,8 +254,7 @@ class LxmlLinkExtractor:
         if self.canonicalize:
             for link in links:
                 link.url = canonicalize_url(link.url)
-        links = self.link_extractor._process_links(links)
-        return links
+        return self.link_extractor._process_links(links)
 
     def _extract_links(self, *args: Any, **kwargs: Any) -> list[Link]:
         return self.link_extractor._extract_links(*args, **kwargs)

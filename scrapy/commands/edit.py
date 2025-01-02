@@ -28,7 +28,7 @@ class Command(ScrapyCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) != 1:
-            raise UsageError()
+            raise UsageError
 
         editor = self.settings["EDITOR"]
         assert self.crawler_process

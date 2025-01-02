@@ -1,10 +1,14 @@
 import unittest
+import warnings
+
+import pytest
 
 from scrapy.linkextractors import IGNORED_EXTENSIONS
 from scrapy.spiders import Spider
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.url import (
     _is_filesystem_path,
+    _public_w3lib_objects,
     add_http_if_no_scheme,
     guess_scheme,
     strip_url,
@@ -327,8 +331,6 @@ def create_guess_scheme_t(args):
 def create_skipped_scheme_t(args):
     def do_expected(self):
         raise unittest.SkipTest(args[2])
-        url = guess_scheme(args[0])
-        assert url.startswith(args[1])
 
     return do_expected
 
@@ -609,5 +611,22 @@ class IsPathTestCase(unittest.TestCase):
             )
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.mark.parametrize(
+    "obj_name",
+    [
+        "_unquotepath",
+        "_safe_chars",
+        "parse_url",
+        *_public_w3lib_objects,
+    ],
+)
+def test_deprecated_imports_from_w3lib(obj_name):
+    with warnings.catch_warnings(record=True) as warns:
+        obj_type = "attribute" if obj_name == "_safe_chars" else "function"
+        message = f"The scrapy.utils.url.{obj_name} {obj_type} is deprecated, use w3lib.url.{obj_name} instead."
+
+        from importlib import import_module
+
+        getattr(import_module("scrapy.utils.url"), obj_name)
+
+        assert message in warns[0].message.args

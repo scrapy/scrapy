@@ -89,10 +89,7 @@ class RFC2616Policy:
             return False
         cc = self._parse_cachecontrol(request)
         # obey user-agent directive "Cache-Control: no-store"
-        if b"no-store" in cc:
-            return False
-        # Any other is eligible for caching
-        return True
+        return b"no-store" not in cc
 
     def should_cache_response(self, response: Response, request: Request) -> bool:
         # What is cacheable - https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.9.1
@@ -282,8 +279,7 @@ class DbmCacheStorage:
         headers = Headers(data["headers"])
         body = data["body"]
         respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        response = respcls(url=url, headers=headers, status=status, body=body)
-        return response
+        return respcls(url=url, headers=headers, status=status, body=body)
 
     def store_response(
         self, spider: Spider, request: Request, response: Response
@@ -349,8 +345,7 @@ class FilesystemCacheStorage:
         status = metadata["status"]
         headers = Headers(headers_raw_to_dict(rawheaders))
         respcls = responsetypes.from_args(headers=headers, url=url, body=body)
-        response = respcls(url=url, headers=headers, status=status, body=body)
-        return response
+        return respcls(url=url, headers=headers, status=status, body=body)
 
     def store_response(
         self, spider: Spider, request: Request, response: Response

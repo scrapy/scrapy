@@ -199,7 +199,7 @@ def _create_testcase(method: Callable, desc: str) -> TestCase:
     spider = method.__self__.name  # type: ignore[attr-defined]
 
     class ContractTestCase(TestCase):
-        def __str__(_self) -> str:
+        def __str__(_self) -> str:  # pylint: disable=no-self-argument
             return f"[{spider}] {method.__name__} ({desc})"
 
     name = f"{spider}_{method.__name__}"

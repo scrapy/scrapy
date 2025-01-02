@@ -291,9 +291,7 @@ class ExecutionEngine:
             return False
         if self.slot.start_requests is not None:  # not all start requests are handled
             return False
-        if self.slot.scheduler.has_pending_requests():
-            return False
-        return True
+        return not self.slot.scheduler.has_pending_requests()
 
     def crawl(self, request: Request) -> None:
         """Inject the request into the spider <-> downloader pipeline"""
@@ -388,9 +386,8 @@ class ExecutionEngine:
         )
         self.slot = Slot(start_requests, close_if_idle, nextcall, scheduler)
         self.spider = spider
-        if hasattr(scheduler, "open"):
-            if d := scheduler.open(spider):
-                yield d
+        if hasattr(scheduler, "open") and (d := scheduler.open(spider)):
+            yield d
         yield self.scraper.open_spider(spider)
         assert self.crawler.stats
         self.crawler.stats.open_spider(spider)

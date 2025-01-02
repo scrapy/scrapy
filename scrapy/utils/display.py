@@ -30,6 +30,7 @@ def _tty_supports_color() -> bool:
 
 
 def _colorize(text: str, colorize: bool = True) -> str:
+    # pylint: disable=no-name-in-module
     if not colorize or not sys.stdout.isatty() or not _tty_supports_color():
         return text
     try:

@@ -219,6 +219,18 @@ LOG_LEVEL = "DEBUG"
 LOG_FILE = None
 LOG_FILE_APPEND = True
 LOG_SHORT_NAMES = False
+LOG_VERSIONS = [
+    "lxml",
+    "libxml2",
+    "cssselect",
+    "parsel",
+    "w3lib",
+    "Twisted",
+    "Python",
+    "pyOpenSSL",
+    "cryptography",
+    "Platform",
+]
 
 SCHEDULER_DEBUG = False
 

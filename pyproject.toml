@@ -124,83 +124,70 @@ disable_warnings = ["include-ignored"]
 # https://github.com/nedbat/coveragepy/issues/831#issuecomment-517778185
 exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
 
-[tool.isort]
-profile = "black"
-
 [tool.pylint.MASTER]
 persistent = "no"
 jobs = 1          # >1 hides results
+extension-pkg-allow-list=[
+    "lxml",
+]
 
 [tool.pylint."MESSAGES CONTROL"]
+enable = [
+    "useless-suppression",
+]
 disable = [
-    "abstract-method",
-    "arguments-differ",
-    "arguments-renamed",
+    # Ones we want to ignore
     "attribute-defined-outside-init",
-    "bad-classmethod-argument",
-    "bare-except",
-    "broad-except",
-    "broad-exception-raised",
-    "c-extension-no-member",
+    "broad-exception-caught",
     "consider-using-with",
     "cyclic-import",
-    "dangerous-default-value",
     "disallowed-name",
-    "duplicate-code",                            # https://github.com/PyCQA/pylint/issues/214
-    "eval-used",
+    "duplicate-code",  # https://github.com/pylint-dev/pylint/issues/214
     "fixme",
-    "function-redefined",
-    "global-statement",
-    "implicit-str-concat",
-    "import-error",
     "import-outside-toplevel",
-    "inherit-non-class",
+    "inherit-non-class",  # false positives with create_deprecated_class()
     "invalid-name",
     "invalid-overridden-method",
-    "isinstance-second-argument-not-valid-type",
-    "keyword-arg-before-vararg",
+    "isinstance-second-argument-not-valid-type",  # false positives with create_deprecated_class()
     "line-too-long",
     "logging-format-interpolation",
     "logging-fstring-interpolation",
     "logging-not-lazy",
-    "lost-exception",
     "missing-docstring",
     "no-member",
-    "no-method-argument",
-    "no-name-in-module",
-    "no-self-argument",
-    "no-value-for-parameter",                    # https://github.com/pylint-dev/pylint/issues/3268
+    "no-value-for-parameter",  # https://github.com/pylint-dev/pylint/issues/3268
     "not-callable",
-    "pointless-statement",
-    "pointless-string-statement",
     "protected-access",
-    "raise-missing-from",
     "redefined-builtin",
     "redefined-outer-name",
-    "reimported",
-    "signature-differs",
     "too-few-public-methods",
     "too-many-ancestors",
     "too-many-arguments",
     "too-many-branches",
-    "too-many-format-args",
     "too-many-function-args",
     "too-many-instance-attributes",
     "too-many-lines",
     "too-many-locals",
+    "too-many-positional-arguments",
     "too-many-public-methods",
     "too-many-return-statements",
-    "unbalanced-tuple-unpacking",
-    "unnecessary-dunder-call",
-    "unnecessary-pass",
-    "unreachable",
     "unused-argument",
     "unused-import",
     "unused-variable",
-    "used-before-assignment",
-    "useless-return",
-    "wildcard-import",
+    "useless-return",  # https://github.com/pylint-dev/pylint/issues/6530
     "wrong-import-position",
+
+    # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
+    "abstract-method",
+    "arguments-differ",
+    "arguments-renamed",
+    "dangerous-default-value",
+    "keyword-arg-before-vararg",
+    "pointless-statement",
+    "raise-missing-from",
+    "unbalanced-tuple-unpacking",
+    "unnecessary-dunder-call",
+    "used-before-assignment",
 ]
 
 [tool.pytest.ini_options]
@@ -242,18 +229,40 @@ extend-select = [
     "D",
     # flake8-future-annotations
     "FA",
+    # flynt
+    "FLY",
     # refurb
     "FURB",
+    # isort
+    "I",
     # flake8-implicit-str-concat
     "ISC",
     # flake8-logging
     "LOG",
+    # Perflint
+    "PERF",
     # pygrep-hooks
     "PGH",
+    # flake8-pie
+    "PIE",
+    # pylint
+    "PL",
+    # flake8-use-pathlib
+    "PTH",
+    # flake8-pyi
+    "PYI",
     # flake8-quotes
     "Q",
+    # flake8-return
+    "RET",
+    # flake8-raise
+    "RSE",
+    # Ruff-specific rules
+    "RUF",
     # flake8-bandit
     "S",
+    # flake8-simplify
+    "SIM",
     # flake8-slots
     "SLOT",
     # flake8-debugger
@@ -262,26 +271,14 @@ extend-select = [
     "TC",
     # pyupgrade
     "UP",
+    # pycodestyle warnings
+    "W",
     # flake8-2020
     "YTT",
 ]
 ignore = [
-    # Assigning to `os.environ` doesn't clear the environment.
-    "B003",
-    # Do not use mutable data structures for argument defaults.
-    "B006",
-    # Loop control variable not used within the loop body.
-    "B007",
-    # Do not perform function calls in argument defaults.
-    "B008",
-    # Star-arg unpacking after a keyword argument is strongly discouraged.
-    "B026",
-    # Found useless expression.
-    "B018",
-    # No explicit stacklevel argument found.
-    "B028",
-    # Within an `except` clause, raise exceptions with `raise ... from`
-    "B904",
+    # Ones we want to ignore
+
     # Missing docstring in public module
     "D100",
     # Missing docstring in public class
@@ -314,12 +311,59 @@ ignore = [
     "D402",
     # First word of the first line should be properly capitalized
     "D403",
+    # `try`-`except` within a loop incurs performance overhead
+    "PERF203",
+    # Too many return statements
+    "PLR0911",
+    # Too many branches
+    "PLR0912",
+    # Too many arguments in function definition
+    "PLR0913",
+    # Too many statements
+    "PLR0915",
+    # Magic value used in comparison
+    "PLR2004",
+    # `for` loop variable overwritten by assignment target
+    "PLW2901",
+    # String contains ambiguous {}.
+    "RUF001",
+    # Docstring contains ambiguous {}.
+    "RUF002",
+    # Comment contains ambiguous {}.
+    "RUF003",
+    # Mutable class attributes should be annotated with `typing.ClassVar`
+    "RUF012",
     # Use of `assert` detected; needed for mypy
     "S101",
     # FTP-related functions are being called; https://github.com/scrapy/scrapy/issues/4180
     "S321",
     # Argument default set to insecure SSL protocol
     "S503",
+    # Use a context manager for opening files
+    "SIM115",
+    # Yoda condition detected
+    "SIM300",
+
+    # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
+
+    # Assigning to `os.environ` doesn't clear the environment.
+    "B003",
+    # Do not use mutable data structures for argument defaults.
+    "B006",
+    # Loop control variable not used within the loop body.
+    "B007",
+    # Do not perform function calls in argument defaults.
+    "B008",
+    # Found useless expression.
+    "B018",
+    # Star-arg unpacking after a keyword argument is strongly discouraged.
+    "B026",
+    # No explicit stacklevel argument found.
+    "B028",
+    # Within an `except` clause, raise exceptions with `raise ... from`
+    "B904",
+    # Use capitalized environment variable
+    "SIM112",
 ]
 
 [tool.ruff.lint.per-file-ignores]

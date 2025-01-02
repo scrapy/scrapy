@@ -41,7 +41,7 @@ class OffsiteMiddleware:
 
     def process_request(self, request: Request, spider: Spider) -> None:
         if request.dont_filter or self.should_follow(request, spider):
-            return None
+            return
         domain = urlparse_cached(request).hostname
         if domain and domain not in self.domains_seen:
             self.domains_seen.add(domain)

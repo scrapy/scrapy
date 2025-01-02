@@ -20,7 +20,7 @@ def _import_file(filepath: str | PathLike[str]) -> ModuleType:
     if abspath.suffix not in (".py", ".pyw"):
         raise ValueError(f"Not a Python source file: {abspath}")
     dirname = str(abspath.parent)
-    sys.path = [dirname] + sys.path
+    sys.path = [dirname, *sys.path]
     try:
         module = import_module(abspath.stem)
     finally:
@@ -43,7 +43,7 @@ class Command(BaseRunSpiderCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) != 1:
-            raise UsageError()
+            raise UsageError
         filename = Path(args[0])
         if not filename.exists():
             raise UsageError(f"File not found: {filename}\n")

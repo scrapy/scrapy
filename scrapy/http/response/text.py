@@ -43,7 +43,7 @@ class TextResponse(Response):
     _DEFAULT_ENCODING = "ascii"
     _cached_decoded_json = _NONE
 
-    attributes: tuple[str, ...] = Response.attributes + ("encoding",)
+    attributes: tuple[str, ...] = (*Response.attributes, "encoding")
 
     def __init__(self, *args: Any, **kwargs: Any):
         self._encoding: str | None = kwargs.pop("encoding", None)

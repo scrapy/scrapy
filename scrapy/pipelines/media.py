@@ -5,16 +5,7 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Literal,
-    NoReturn,
-    TypedDict,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, TypedDict, Union, cast
 
 from twisted import version as twisted_version
 from twisted.internet.defer import Deferred, DeferredList
@@ -40,8 +31,6 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
     from scrapy.http import Response
     from scrapy.utils.request import RequestFingerprinter
-
-_T = TypeVar("_T")
 
 
 class FileInfo(TypedDict):
@@ -138,8 +127,7 @@ class MediaPipeline(ABC):
         if (
             not base_class_name
             or class_name == base_class_name
-            or settings
-            and not settings.get(formatted_key)
+            or (settings and not settings.get(formatted_key))
         ):
             return key
         return formatted_key
@@ -293,12 +281,12 @@ class MediaPipeline(ABC):
         self, request: Request, info: SpiderInfo, *, item: Any = None
     ) -> Deferred[FileInfo | None]:
         """Check request before starting download"""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def get_media_requests(self, item: Any, info: SpiderInfo) -> list[Request]:
         """Returns the media requests to download"""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def media_downloaded(
@@ -310,14 +298,14 @@ class MediaPipeline(ABC):
         item: Any = None,
     ) -> FileInfo:
         """Handler for success downloads"""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def media_failed(
         self, failure: Failure, request: Request, info: SpiderInfo
     ) -> NoReturn:
         """Handler for failed downloads"""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def item_completed(
         self, results: list[FileInfoOrError], item: Any, info: SpiderInfo
@@ -345,4 +333,4 @@ class MediaPipeline(ABC):
         item: Any = None,
     ) -> str:
         """Returns the path where downloaded media should be stored"""
-        raise NotImplementedError()
+        raise NotImplementedError

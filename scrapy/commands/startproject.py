@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 import string
 from importlib.util import find_spec
@@ -28,9 +27,9 @@ TEMPLATES_TO_RENDER: tuple[tuple[str, ...], ...] = (
 IGNORE = ignore_patterns("*.pyc", "__pycache__", ".svn")
 
 
-def _make_writable(path: str | os.PathLike) -> None:
-    current_permissions = os.stat(path).st_mode
-    os.chmod(path, current_permissions | OWNER_WRITE_PERMISSION)
+def _make_writable(path: Path) -> None:
+    current_permissions = path.stat().st_mode
+    path.chmod(current_permissions | OWNER_WRITE_PERMISSION)
 
 
 class Command(ScrapyCommand):
@@ -92,14 +91,11 @@ class Command(ScrapyCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) not in (1, 2):
-            raise UsageError()
+            raise UsageError
 
         project_name = args[0]
 
-        if len(args) == 2:
-            project_dir = Path(args[1])
-        else:
-            project_dir = Path(args[0])
+        project_dir = Path(args[-1])
 
         if (project_dir / "scrapy.cfg").exists():
             self.exitcode = 1

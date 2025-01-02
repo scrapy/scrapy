@@ -55,7 +55,7 @@ class ItemTest(unittest.TestCase):
 
         self.assertEqual(itemrepr, "{'name': 'John Doe', 'number': 123}")
 
-        i2 = eval(itemrepr)
+        i2 = eval(itemrepr)  # pylint: disable=eval-used
         self.assertEqual(i2["name"], "John Doe")
         self.assertEqual(i2["number"], 123)
 
@@ -297,7 +297,3 @@ class ItemMetaClassCellRegression(unittest.TestCase):
                 # TypeError: __class__ set to <class '__main__.MyItem'>
                 # defining 'MyItem' as <class '__main__.MyItem'>
                 super().__init__(*args, **kwargs)
-
-
-if __name__ == "__main__":
-    unittest.main()

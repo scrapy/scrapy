@@ -101,7 +101,7 @@ class Command(ScrapyCommand):
                 print(template_file.read_text(encoding="utf-8"))
             return
         if len(args) != 2:
-            raise UsageError()
+            raise UsageError
 
         name, url = args[0:2]
         url = verify_url_scheme(url)
@@ -154,7 +154,7 @@ class Command(ScrapyCommand):
             spiders_dir = Path(spiders_module.__file__).parent.resolve()
         else:
             spiders_module = None
-            spiders_dir = Path(".")
+            spiders_dir = Path()
         spider_file = f"{spiders_dir / module}.py"
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)

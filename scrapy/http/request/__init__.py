@@ -44,10 +44,10 @@ if TYPE_CHECKING:
 
 
 class VerboseCookie(TypedDict):
-    name: str
-    value: str
-    domain: NotRequired[str]
-    path: NotRequired[str]
+    name: str | bytes
+    value: str | bytes | bool | float | int
+    domain: NotRequired[str | bytes]
+    path: NotRequired[str | bytes]
     secure: NotRequired[bool]
 
 

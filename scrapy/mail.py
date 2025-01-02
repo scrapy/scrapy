@@ -111,11 +111,9 @@ class MailSender:
     ) -> Deferred[None] | None:
         from twisted.internet import reactor
 
-        msg: MIMEBase
-        if attachs:
-            msg = MIMEMultipart()
-        else:
-            msg = MIMENonMultipart(*mimetype.split("/", 1))
+        msg: MIMEBase = (
+            MIMEMultipart() if attachs else MIMENonMultipart(*mimetype.split("/", 1))
+        )
 
         to = list(arg_to_iter(to))
         cc = list(arg_to_iter(cc))
