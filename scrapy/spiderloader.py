@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING
 
 from zope.interface import implementer
 
+from scrapy import Spider
+from scrapy.addons import AddonManager
+from scrapy.crawler import Crawler
 from scrapy.interfaces import ISpiderLoader
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.spider import iter_spider_classes
@@ -17,7 +20,7 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy import Request, Spider
+    from scrapy import Request
     from scrapy.settings import BaseSettings
 
 
@@ -29,7 +32,7 @@ class SpiderLoader:
     """
 
     def __init__(self, settings: BaseSettings):
-        self.spider_modules: list[str] = settings.getlist("SPIDER_MODULES")
+        self.spider_modules: list[str] = self._get_spider_modules(settings)
         self.warn_only: bool = settings.getbool("SPIDER_LOADER_WARN_ONLY")
         self._spiders: dict[str, type[Spider]] = {}
         self._found: defaultdict[str, list[tuple[str, str]]] = defaultdict(list)
@@ -58,6 +61,12 @@ class SpiderLoader:
         for spcls in iter_spider_classes(module):
             self._found[spcls.name].append((module.__name__, spcls.__name__))
             self._spiders[spcls.name] = spcls
+
+    def _get_spider_modules(self, settings: BaseSettings) -> list[str]:
+        settings_copy = settings.copy()
+        settings_copy.frozen = False
+        AddonManager(Crawler(Spider)).load_settings(settings_copy)
+        return settings_copy.getlist("SPIDER_MODULES")
 
     def _load_all_spiders(self) -> None:
         for name in self.spider_modules:

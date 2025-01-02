@@ -98,6 +98,23 @@ class SpiderLoaderTest(unittest.TestCase):
         self.spider_loader = SpiderLoader.from_settings(settings)
         assert len(self.spider_loader._spiders) == 0
 
+    def test_load_spider_module_from_addons(self):
+        module = "tests.test_spiderloader.spiders_from_addons.spider0"
+
+        class SpiderModuleAddon:
+            @classmethod
+            def update_settings(cls, settings):
+                settings.set(
+                    "SPIDER_MODULES",
+                    [module],
+                    "project",
+                )
+
+        settings = Settings({"ADDONS": {SpiderModuleAddon: 1}})
+        self.spider_loader = SpiderLoader.from_settings(settings)
+        assert len(self.spider_loader._spiders) == 1
+        assert "spider_from_addon" in self.spider_loader._spiders
+
     def test_crawler_runner_loading(self):
         module = "tests.test_spiderloader.test_spiders.spider1"
         runner = CrawlerRunner(
