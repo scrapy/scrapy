@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - python-version: "3.13"
+        - python-version: "3.14.0-alpha.3"
           env:
             TOXENV: pylint
         - python-version: "3.9"
@@ -24,7 +24,7 @@ jobs:
         - python-version: "3.13"  # Keep in sync with .readthedocs.yml
           env:
             TOXENV: docs
-        - python-version: "3.13"
+        - python-version: "3.14.0-alpha.3"
           env:
             TOXENV: twinecheck
 
@@ -35,6 +35,12 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
+
+    - name: Install system libraries
+      if: contains(matrix.python-version, '3.14')
+      run: |
+        sudo apt-get update
+        sudo apt-get install libxml2-dev libxslt-dev
 
     - name: Run check
       env: ${{ matrix.env }}
