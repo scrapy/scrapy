@@ -481,7 +481,3 @@ class RequestToCurlTest(unittest.TestCase):
             " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
         )
         self._test_request(request_object, expected_curl_command)
-
-
-if __name__ == "__main__":
-    unittest.main()

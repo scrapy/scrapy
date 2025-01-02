@@ -296,7 +296,3 @@ class ItemMetaClassCellRegression(unittest.TestCase):
                 # TypeError: __class__ set to <class '__main__.MyItem'>
                 # defining 'MyItem' as <class '__main__.MyItem'>
                 super().__init__(*args, **kwargs)
-
-
-if __name__ == "__main__":
-    unittest.main()

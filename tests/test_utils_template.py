@@ -33,7 +33,3 @@ class UtilsRenderTemplateFileTestCase(unittest.TestCase):
 
         render_path.unlink()
         assert not render_path.exists()  # Failure of test itself
-
-
-if "__main__" == __name__:
-    unittest.main()

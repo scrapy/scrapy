@@ -372,7 +372,3 @@ class LocalWeakReferencedCacheTest(unittest.TestCase):
         for i, r in enumerate(refs):
             self.assertIn(r, cache)
             self.assertEqual(cache[r], i)
-
-
-if __name__ == "__main__":
-    unittest.main()

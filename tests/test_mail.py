@@ -157,7 +157,3 @@ class MailSenderTest(unittest.TestCase):
 
         context = factory.buildProtocol("test@scrapy.org").context
         self.assertIsInstance(context, ClientTLSOptions)
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -699,7 +699,3 @@ class CustomExporterItemTest(unittest.TestCase):
 
 class CustomExporterDataclassTest(CustomExporterItemTest):
     item_class = TestDataClass
-
-
-if __name__ == "__main__":
-    unittest.main()

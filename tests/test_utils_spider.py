@@ -30,7 +30,3 @@ class UtilsSpidersTestCase(unittest.TestCase):
 
         it = iter_spider_classes(tests.test_utils_spider)
         self.assertEqual(set(it), {MySpider1, MySpider2})
-
-
-if __name__ == "__main__":
-    unittest.main()

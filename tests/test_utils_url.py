@@ -630,7 +630,3 @@ def test_deprecated_imports_from_w3lib(obj_name):
         getattr(import_module("scrapy.utils.url"), obj_name)
 
         assert message in warns[0].message.args
-
-
-if __name__ == "__main__":
-    unittest.main()

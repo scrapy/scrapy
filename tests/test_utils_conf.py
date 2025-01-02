@@ -177,7 +177,3 @@ class FeedExportConfigTestCase(unittest.TestCase):
                 "item_export_kwargs": {},
             },
         )
-
-
-if __name__ == "__main__":
-    unittest.main()
