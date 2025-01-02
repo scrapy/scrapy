@@ -8,6 +8,8 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
+
+# pylint: disable=import-error
 import os
 import sys
 from pathlib import Path

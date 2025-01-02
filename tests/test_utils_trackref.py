@@ -61,11 +61,11 @@ Foo                                 1   oldest: 0s ago\n\n""",
         )
 
     def test_get_oldest(self):
-        o1 = Foo()  # noqa: F841
+        o1 = Foo()
 
         o1_time = time()
 
-        o2 = Bar()  # noqa: F841
+        o2 = Bar()
 
         o3_time = time()
         if o3_time <= o1_time:
@@ -80,9 +80,9 @@ Foo                                 1   oldest: 0s ago\n\n""",
         self.assertIsNone(trackref.get_oldest("XXX"))
 
     def test_iter_all(self):
-        o1 = Foo()  # noqa: F841
+        o1 = Foo()
         o2 = Bar()  # noqa: F841
-        o3 = Foo()  # noqa: F841
+        o3 = Foo()
         self.assertEqual(
             set(trackref.iter_all("Foo")),
             {o1, o3},

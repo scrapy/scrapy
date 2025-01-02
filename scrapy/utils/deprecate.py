@@ -57,6 +57,7 @@ def create_deprecated_class(
 
     # https://github.com/python/mypy/issues/4177
     class DeprecatedClass(new_class.__class__):  # type: ignore[misc, name-defined]
+        # pylint: disable=no-self-argument
         deprecated_class: type | None = None
         warned_on_subclass: bool = False
 

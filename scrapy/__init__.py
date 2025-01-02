@@ -13,14 +13,14 @@ from scrapy.selector import Selector
 from scrapy.spiders import Spider
 
 __all__ = [
+    "Field",
+    "FormRequest",
+    "Item",
+    "Request",
+    "Selector",
+    "Spider",
     "__version__",
     "version_info",
-    "Spider",
-    "Request",
-    "FormRequest",
-    "Selector",
-    "Item",
-    "Field",
 ]
 
 

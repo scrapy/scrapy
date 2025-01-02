@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import re
 from io import BytesIO
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, BinaryIO
 from urllib.parse import unquote
 
@@ -56,9 +57,11 @@ if TYPE_CHECKING:
 
 
 class ReceivedDataProtocol(Protocol):
-    def __init__(self, filename: str | None = None):
-        self.__filename: str | None = filename
-        self.body: BinaryIO = open(filename, "wb") if filename else BytesIO()
+    def __init__(self, filename: bytes | None = None):
+        self.__filename: bytes | None = filename
+        self.body: BinaryIO = (
+            Path(filename.decode()).open("wb") if filename else BytesIO()
+        )
         self.size: int = 0
 
     def dataReceived(self, data: bytes) -> None:
@@ -66,7 +69,7 @@ class ReceivedDataProtocol(Protocol):
         self.size += len(data)
 
     @property
-    def filename(self) -> str | None:
+    def filename(self) -> bytes | None:
         return self.__filename
 
     def close(self) -> None:
@@ -128,8 +131,8 @@ class FTPDownloadHandler:
     ) -> Response:
         self.result = result
         protocol.close()
-        headers = {"local filename": protocol.filename or "", "size": protocol.size}
-        body = to_bytes(protocol.filename or protocol.body.read())
+        headers = {"local filename": protocol.filename or b"", "size": protocol.size}
+        body = protocol.filename or protocol.body.read()
         respcls = responsetypes.from_args(url=request.url, body=body)
         # hints for Headers-related types may need to be fixed to not use AnyStr
         return respcls(url=request.url, status=200, body=body, headers=headers)  # type: ignore[arg-type]

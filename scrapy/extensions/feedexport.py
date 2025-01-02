@@ -6,6 +6,7 @@ See documentation in docs/topics/feed-exports.rst
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 import sys
@@ -108,6 +109,8 @@ class ItemFilter:
 
 class IFeedStorage(Interface):
     """Interface that all Feed Storages must implement"""
+
+    # pylint: disable=no-self-argument
 
     def __init__(uri, *, feed_options=None):  # pylint: disable=super-init-not-called
         """Initialize the storage with the parameters given in the URI and the
@@ -642,10 +645,8 @@ class FeedExporter:
         )
         d = {}
         for k, v in conf.items():
-            try:
+            with contextlib.suppress(NotConfigured):
                 d[k] = load_object(v)
-            except NotConfigured:
-                pass
         return d
 
     def _exporter_supported(self, format: str) -> bool:

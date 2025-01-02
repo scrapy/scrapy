@@ -424,10 +424,7 @@ class ScrapyAgent:
         headers = TxHeaders(request.headers)
         if isinstance(agent, self._TunnelingAgent):
             headers.removeHeader(b"Proxy-Authorization")
-        if request.body:
-            bodyproducer = _RequestBodyProducer(request.body)
-        else:
-            bodyproducer = None
+        bodyproducer = _RequestBodyProducer(request.body) if request.body else None
         start_time = time()
         d: Deferred[TxResponse] = agent.request(
             method, to_bytes(url, encoding="ascii"), headers, bodyproducer

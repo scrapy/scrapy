@@ -151,10 +151,7 @@ class PeriodicLog:
                 return False
         if exclude and not include:
             return True
-        for p in include:
-            if p in stat_name:
-                return True
-        return False
+        return any(p in stat_name for p in include)
 
     def spider_closed(self, spider: Spider, reason: str) -> None:
         self.log()

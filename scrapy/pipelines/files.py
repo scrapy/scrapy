@@ -553,10 +553,8 @@ class FilesPipeline(MediaPipeline):
         ftp_store.USE_ACTIVE_MODE = settings.getbool("FEED_STORAGE_FTP_ACTIVE")
 
     def _get_store(self, uri: str) -> FilesStoreProtocol:
-        if Path(uri).is_absolute():  # to support win32 paths like: C:\\some\dir
-            scheme = "file"
-        else:
-            scheme = urlparse(uri).scheme
+        # to support win32 paths like: C:\\some\dir
+        scheme = "file" if Path(uri).is_absolute() else urlparse(uri).scheme
         store_cls = self.STORE_SCHEMES[scheme]
         return store_cls(uri)
 

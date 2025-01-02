@@ -59,7 +59,7 @@ def _embed_ptpython_shell(
     namespace: dict[str, Any] = {}, banner: str = ""
 ) -> EmbedFuncT:
     """Start a ptpython shell"""
-    import ptpython.repl
+    import ptpython.repl  # pylint: disable=import-error
 
     @wraps(_embed_ptpython_shell)
     def wrapper(namespace: dict[str, Any] = namespace, banner: str = "") -> None:

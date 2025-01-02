@@ -174,13 +174,12 @@ class Command(BaseRunSpiderCommand):
         display.pprint([ItemAdapter(x).asdict() for x in items], colorize=colour)
 
     def print_requests(self, lvl: int | None = None, colour: bool = True) -> None:
-        if lvl is None:
-            if self.requests:
-                requests = self.requests[max(self.requests)]
-            else:
-                requests = []
-        else:
+        if lvl is not None:
             requests = self.requests.get(lvl, [])
+        elif self.requests:
+            requests = self.requests[max(self.requests)]
+        else:
+            requests = []
 
         print("# Requests ", "-" * 65)
         display.pprint(requests, colorize=colour)
@@ -269,7 +268,7 @@ class Command(BaseRunSpiderCommand):
         assert self.crawler_process
         assert self.spidercls
         self.crawler_process.crawl(self.spidercls, **opts.spargs)
-        self.pcrawler = list(self.crawler_process.crawlers)[0]
+        self.pcrawler = next(iter(self.crawler_process.crawlers))
         self.crawler_process.start()
 
         if not self.first_response:

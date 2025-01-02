@@ -277,14 +277,12 @@ class DownloaderAwareSchedulerTestMixin:
         downloader = self.mock_crawler.engine.downloader
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
-            # pylint: disable=protected-access
             slot = downloader.get_slot_key(request)
             dequeued_slots.append(slot)
             downloader.increment(slot)
             requests.append(request)
 
         for request in requests:
-            # pylint: disable=protected-access
             slot = downloader.get_slot_key(request)
             downloader.decrement(slot)
 

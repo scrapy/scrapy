@@ -54,7 +54,7 @@ class ItemTest(unittest.TestCase):
 
         self.assertEqual(itemrepr, "{'name': 'John Doe', 'number': 123}")
 
-        i2 = eval(itemrepr)
+        i2 = eval(itemrepr)  # pylint: disable=eval-used
         self.assertEqual(i2["name"], "John Doe")
         self.assertEqual(i2["number"], 123)
 

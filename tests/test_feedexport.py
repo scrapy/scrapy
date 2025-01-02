@@ -756,7 +756,7 @@ class FeedExportTest(FeedExportTestBase):
                 )
 
         finally:
-            for file_path in FEEDS.keys():
+            for file_path in FEEDS:
                 if not Path(file_path).exists():
                     continue
 
@@ -1229,15 +1229,13 @@ class FeedExportTest(FeedExportTestBase):
 
         class CustomFilter2(scrapy.extensions.feedexport.ItemFilter):
             def accepts(self, item):
-                if "foo" not in item.fields:
-                    return False
-                return True
+                return "foo" in item.fields
 
         class CustomFilter3(scrapy.extensions.feedexport.ItemFilter):
             def accepts(self, item):
-                if isinstance(item, tuple(self.item_classes)) and item["foo"] == "bar1":
-                    return True
-                return False
+                return (
+                    isinstance(item, tuple(self.item_classes)) and item["foo"] == "bar1"
+                )
 
         formats = {
             "json": b'[\n{"foo": "bar1", "egg": "spam1"}\n]',

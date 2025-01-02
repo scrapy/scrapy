@@ -1488,10 +1488,7 @@ def _buildresponse(body, **kwargs):
 
 
 def _qs(req, encoding="utf-8", to_unicode=False):
-    if req.method == "POST":
-        qs = req.body
-    else:
-        qs = req.url.partition("?")[2]
+    qs = req.body if req.method == "POST" else req.url.partition("?")[2]
     uqs = unquote_to_bytes(qs)
     if to_unicode:
         uqs = uqs.decode(encoding)

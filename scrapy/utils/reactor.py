@@ -100,7 +100,7 @@ def install_reactor(reactor_path: str, event_loop_path: str | None = None) -> No
             asyncioreactor.install(eventloop=event_loop)
     else:
         *module, _ = reactor_path.split(".")
-        installer_path = module + ["install"]
+        installer_path = [*module, "install"]
         installer = load_object(".".join(installer_path))
         with suppress(error.ReactorAlreadyInstalledError):
             installer()

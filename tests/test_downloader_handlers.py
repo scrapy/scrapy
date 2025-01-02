@@ -116,7 +116,7 @@ class FileTestCase(unittest.TestCase):
 
     def tearDown(self):
         os.close(self.fd)
-        os.remove(self.tmpname)
+        Path(self.tmpname).unlink()
 
     def test_download(self):
         def _test(response):
@@ -530,9 +530,10 @@ class Http11TestCase(HttpTestCase):
         d = self.download_request(request, Spider("foo"))
 
         def checkDataLoss(failure):
-            if failure.check(ResponseFailed):
-                if any(r.check(_DataLoss) for r in failure.value.reasons):
-                    return None
+            if failure.check(ResponseFailed) and any(
+                r.check(_DataLoss) for r in failure.value.reasons
+            ):
+                return None
             return failure
 
         d.addCallback(lambda _: self.fail("No DataLoss exception"))

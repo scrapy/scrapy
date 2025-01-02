@@ -517,8 +517,8 @@ class ContractsManagerTest(unittest.TestCase):
                 super().__init__(*args, **kwargs)
                 self.visited = 0
 
-            def start_requests(s):
-                return self.conman.from_spider(s, self.results)
+            def start_requests(self_):  # pylint: disable=no-self-argument
+                return self.conman.from_spider(self_, self.results)
 
             def parse_first(self, response):
                 self.visited += 1

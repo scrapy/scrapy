@@ -891,13 +891,11 @@ class TestSettingsPolicyByName(TestCase):
         # test parsing without space(s) after the comma
         settings1 = Settings(
             {
-                "REFERRER_POLICY": ",".join(
-                    [
-                        "some-custom-unknown-policy",
-                        POLICY_SAME_ORIGIN,
-                        POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
-                        "another-custom-unknown-policy",
-                    ]
+                "REFERRER_POLICY": (
+                    f"some-custom-unknown-policy,"
+                    f"{POLICY_SAME_ORIGIN},"
+                    f"{POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN},"
+                    f"another-custom-unknown-policy"
                 )
             }
         )
@@ -907,12 +905,10 @@ class TestSettingsPolicyByName(TestCase):
         # test parsing with space(s) after the comma
         settings2 = Settings(
             {
-                "REFERRER_POLICY": ",    ".join(
-                    [
-                        POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
-                        "another-custom-unknown-policy",
-                        POLICY_UNSAFE_URL,
-                    ]
+                "REFERRER_POLICY": (
+                    f"{POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN},"
+                    f"    another-custom-unknown-policy,"
+                    f"    {POLICY_UNSAFE_URL}"
                 )
             }
         )
@@ -922,12 +918,10 @@ class TestSettingsPolicyByName(TestCase):
     def test_multiple_policy_tokens_all_invalid(self):
         settings = Settings(
             {
-                "REFERRER_POLICY": ",".join(
-                    [
-                        "some-custom-unknown-policy",
-                        "another-custom-unknown-policy",
-                        "yet-another-custom-unknown-policy",
-                    ]
+                "REFERRER_POLICY": (
+                    "some-custom-unknown-policy,"
+                    "another-custom-unknown-policy,"
+                    "yet-another-custom-unknown-policy"
                 )
             }
         )

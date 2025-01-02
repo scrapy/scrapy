@@ -960,7 +960,7 @@ class XmlResponseTest(TextResponseTest):
 
 
 class CustomResponse(TextResponse):
-    attributes = TextResponse.attributes + ("foo", "bar")
+    attributes = (*TextResponse.attributes, "foo", "bar")
 
     def __init__(self, *args, **kwargs) -> None:
         self.foo = kwargs.pop("foo", None)

@@ -1,5 +1,4 @@
 import logging
-import os
 import platform
 import re
 import signal
@@ -643,11 +642,10 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
 class ScriptRunnerMixin:
     script_dir: Path
-    cwd = os.getcwd()
 
     def get_script_args(self, script_name: str, *script_args: str) -> list[str]:
         script_path = self.script_dir / script_name
-        return [sys.executable, str(script_path)] + list(script_args)
+        return [sys.executable, str(script_path), *script_args]
 
     def run_script(self, script_name: str, *script_args: str) -> str:
         args = self.get_script_args(script_name, *script_args)
