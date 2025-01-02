@@ -6,7 +6,7 @@ import pytest
 from scrapy.linkextractors import IGNORED_EXTENSIONS
 from scrapy.spiders import Spider
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.url import (
+from scrapy.utils.url import (  # type: ignore[attr-defined]
     _is_filesystem_path,
     _public_w3lib_objects,
     add_http_if_no_scheme,
