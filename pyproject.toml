@@ -124,6 +124,9 @@ extension-pkg-allow-list=[
 ]
 
 [tool.pylint."MESSAGES CONTROL"]
+enable = [
+    "useless-suppression",
+]
 disable = [
     # Ones we want to ignore
     "attribute-defined-outside-init",
