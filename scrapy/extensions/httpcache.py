@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from scrapy.http.request import Request
     from scrapy.settings import BaseSettings
     from scrapy.spiders import Spider
-    from scrapy.utils.request import RequestFingerprinter
+    from scrapy.utils.request import RequestFingerprinterProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -265,7 +265,9 @@ class DbmCacheStorage:
         )
 
         assert spider.crawler.request_fingerprinter
-        self._fingerprinter: RequestFingerprinter = spider.crawler.request_fingerprinter
+        self._fingerprinter: RequestFingerprinterProtocol = (
+            spider.crawler.request_fingerprinter
+        )
 
     def close_spider(self, spider: Spider) -> None:
         self.db.close()
