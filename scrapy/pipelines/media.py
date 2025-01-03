@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.http import Response
-    from scrapy.utils.request import RequestFingerprinter
+    from scrapy.utils.request import RequestFingerprinterProtocol
 
 
 class FileInfo(TypedDict):
@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 class MediaPipeline(ABC):
     crawler: Crawler
-    _fingerprinter: RequestFingerprinter
+    _fingerprinter: RequestFingerprinterProtocol
     _modern_init = False
 
     LOG_FAILED_RESULTS: bool = True

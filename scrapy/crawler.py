@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     from scrapy.logformatter import LogFormatter
     from scrapy.spiderloader import SpiderLoader
     from scrapy.statscollectors import StatsCollector
-    from scrapy.utils.request import RequestFingerprinter
+    from scrapy.utils.request import RequestFingerprinterProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class Crawler:
         self.extensions: ExtensionManager | None = None
         self.stats: StatsCollector | None = None
         self.logformatter: LogFormatter | None = None
-        self.request_fingerprinter: RequestFingerprinter | None = None
+        self.request_fingerprinter: RequestFingerprinterProtocol | None = None
         self.spider: Spider | None = None
         self.engine: ExecutionEngine | None = None
 
