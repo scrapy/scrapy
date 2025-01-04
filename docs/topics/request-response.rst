@@ -793,11 +793,12 @@ fields with form data from :class:`Response` objects.
 
 .. _lxml.html forms: https://lxml.de/lxmlhtml.html#forms
 
-.. class:: scrapy.http.request.form.FormRequest
-.. class:: scrapy.http.FormRequest
-.. class:: scrapy.FormRequest(url, [formdata, ...])
+.. currentmodule:: None
 
-    The :class:`FormRequest` class adds a new keyword parameter to the ``__init__()`` method. The
+.. class:: scrapy.FormRequest(url, [formdata, ...])
+    :canonical: scrapy.http.request.form.FormRequest
+
+    The :class:`~scrapy.FormRequest` class adds a new keyword parameter to the ``__init__()`` method. The
     remaining arguments are the same as for the :class:`~scrapy.Request` class and are
     not documented here.
 
@@ -806,12 +807,12 @@ fields with form data from :class:`Response` objects.
        body of the request.
     :type formdata: dict or collections.abc.Iterable
 
-    The :class:`FormRequest` objects support the following class method in
+    The :class:`~scrapy.FormRequest` objects support the following class method in
     addition to the standard :class:`~scrapy.Request` methods:
 
-    .. classmethod:: FormRequest.from_response(response, [formname=None, formid=None, formnumber=0, formdata=None, formxpath=None, formcss=None, clickdata=None, dont_click=False, ...])
+    .. classmethod:: from_response(response, [formname=None, formid=None, formnumber=0, formdata=None, formxpath=None, formcss=None, clickdata=None, dont_click=False, ...])
 
-       Returns a new :class:`FormRequest` object with its form field values
+       Returns a new :class:`~scrapy.FormRequest` object with its form field values
        pre-populated with those found in the HTML ``<form>`` element contained
        in the given response. For an example see
        :ref:`topics-request-response-ref-request-userlogin`.
@@ -821,7 +822,7 @@ fields with form data from :class:`Response` objects.
        though this is quite convenient, and often the desired behaviour,
        sometimes it can cause problems which could be hard to debug. For
        example, when working with forms that are filled and/or submitted using
-       javascript, the default :meth:`~FormRequest.from_response` behaviour may not be the
+       javascript, the default :meth:`~scrapy.FormRequest.from_response` behaviour may not be the
        most appropriate. To disable this behaviour you can set the
        ``dont_click`` argument to ``True``. Also, if you want to change the
        control clicked (instead of disabling it) you can also use the
@@ -833,7 +834,7 @@ fields with form data from :class:`Response` objects.
 
        :param response: the response containing a HTML form which will be used
           to pre-populate the form fields
-       :type response: :class:`Response` object
+       :type response: :class:`~scrapy.http.Response` object
 
        :param formname: if given, the form with name attribute set to this value will be used.
        :type formname: str
@@ -870,7 +871,9 @@ fields with form data from :class:`Response` objects.
        :type dont_click: bool
 
        The other parameters of this class method are passed directly to the
-       :class:`FormRequest` ``__init__()`` method.
+       :class:`~scrapy.FormRequest` ``__init__()`` method.
+
+.. currentmodule:: scrapy.http
 
 Request usage examples
 ----------------------
@@ -879,7 +882,7 @@ Using FormRequest to send data via HTTP POST
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you want to simulate a HTML Form POST in your spider and send a couple of
-key-value fields, you can return a :class:`FormRequest` object (from your
+key-value fields, you can return a :class:`~scrapy.FormRequest` object (from your
 spider) like this:
 
 .. skip: next
@@ -902,8 +905,9 @@ It is usual for web sites to provide pre-populated form fields through ``<input
 type="hidden">`` elements, such as session related data or authentication
 tokens (for login pages). When scraping, you'll want these fields to be
 automatically pre-populated and only override a couple of them, such as the
-user name and password. You can use the :meth:`FormRequest.from_response`
-method for this job. Here's an example spider which uses it:
+user name and password. You can use the :meth:`FormRequest.from_response
+<scrapy.FormRequest.from_response>` method for this job. Here's an example spider
+which uses it:
 
 .. code-block:: python
 
