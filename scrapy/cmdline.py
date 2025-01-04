@@ -90,10 +90,9 @@ def _get_commands_dict(
 
 
 def _pop_command_name(argv: list[str]) -> str | None:
-    for i, arg in enumerate(argv[1:]):
-        if not arg.startswith("-"):
-            del argv[i]
-            return arg
+    for i in range(1, len(argv)):
+        if not argv[i].startswith("-"):
+            return argv.pop(i)
     return None
 
 
