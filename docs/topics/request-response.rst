@@ -488,7 +488,7 @@ A request fingerprinter is a class that must implement the following method:
    :param request: request to fingerprint
    :type request: scrapy.Request
 
-Additionally, it may also implement the following methods:
+Additionally, it may also implement the following method:
 
 .. classmethod:: from_crawler(cls, crawler)
    :noindex:
@@ -503,13 +503,6 @@ Additionally, it may also implement the following methods:
 
    :param crawler: crawler that uses this request fingerprinter
    :type crawler: :class:`~scrapy.crawler.Crawler` object
-
-.. classmethod:: from_settings(cls, settings)
-
-   If present, and ``from_crawler`` is not defined, this class method is called
-   to create a request fingerprinter instance from a
-   :class:`~scrapy.settings.Settings` object. It must return a new instance of
-   the request fingerprinter.
 
 .. currentmodule:: scrapy.http
 
@@ -668,6 +661,7 @@ are some special keys recognized by Scrapy and its built-in extensions.
 
 Those are:
 
+* :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
 * :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`

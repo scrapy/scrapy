@@ -1,6 +1,6 @@
 import logging
-import os
 import platform
+import re
 import signal
 import subprocess
 import sys
@@ -143,7 +143,8 @@ class CrawlerTestCase(BaseCrawlerTest):
             def from_crawler(cls, crawler):
                 return cls(crawler=crawler)
 
-            def __init__(self, crawler):
+            def __init__(self, crawler, **kwargs: Any):
+                super().__init__(**kwargs)
                 self.crawler = crawler
 
             def start_requests(self):
@@ -223,7 +224,8 @@ class CrawlerTestCase(BaseCrawlerTest):
             def from_crawler(cls, crawler):
                 return cls(crawler=crawler)
 
-            def __init__(self, crawler):
+            def __init__(self, crawler, **kwargs: Any):
+                super().__init__(**kwargs)
                 self.crawler = crawler
 
             def start_requests(self):
@@ -301,7 +303,8 @@ class CrawlerTestCase(BaseCrawlerTest):
             def from_crawler(cls, crawler):
                 return cls(crawler=crawler)
 
-            def __init__(self, crawler):
+            def __init__(self, crawler, **kwargs: Any):
+                super().__init__(**kwargs)
                 self.crawler = crawler
 
             def start_requests(self):
@@ -379,7 +382,8 @@ class CrawlerTestCase(BaseCrawlerTest):
             def from_crawler(cls, crawler):
                 return cls(crawler=crawler)
 
-            def __init__(self, crawler):
+            def __init__(self, crawler, **kwargs: Any):
+                super().__init__(**kwargs)
                 self.crawler = crawler
 
             def start_requests(self):
@@ -638,11 +642,10 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
 class ScriptRunnerMixin:
     script_dir: Path
-    cwd = os.getcwd()
 
     def get_script_args(self, script_name: str, *script_args: str) -> list[str]:
         script_path = self.script_dir / script_name
-        return [sys.executable, str(script_path)] + list(script_args)
+        return [sys.executable, str(script_path), *script_args]
 
     def run_script(self, script_name: str, *script_args: str) -> str:
         args = self.get_script_args(script_name, *script_args)
@@ -895,7 +898,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         p.expect_exact("shutting down gracefully")
         # sending the second signal too fast often causes problems
         d = Deferred()
-        reactor.callLater(0.1, d.callback, None)
+        reactor.callLater(0.01, d.callback, None)
         yield d
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")
@@ -919,3 +922,28 @@ class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
             log,
         )
         self.assertIn("DEBUG: Using asyncio event loop", log)
+
+
+@mark.parametrize(
+    ["settings", "items"],
+    (
+        ({}, default_settings.LOG_VERSIONS),
+        ({"LOG_VERSIONS": ["itemadapter"]}, ["itemadapter"]),
+        ({"LOG_VERSIONS": []}, None),
+    ),
+)
+def test_log_scrapy_info(settings, items, caplog):
+    with caplog.at_level("INFO"):
+        CrawlerProcess(settings)
+    assert (
+        caplog.records[0].getMessage()
+        == f"Scrapy {scrapy.__version__} started (bot: scrapybot)"
+    ), repr(caplog.records[0].msg)
+    if not items:
+        assert len(caplog.records) == 1
+        return
+    version_string = caplog.records[1].getMessage()
+    expected_items_pattern = "',\n '".join(
+        f"{item}': '[^']+('\n +'[^']+)*" for item in items
+    )
+    assert re.search(r"^Versions:\n{'" + expected_items_pattern + "'}$", version_string)

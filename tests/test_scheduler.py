@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import collections
 import shutil
 import tempfile
 import unittest
+from typing import Any, NamedTuple
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
@@ -18,8 +18,13 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 
-MockEngine = collections.namedtuple("MockEngine", ["downloader"])
-MockSlot = collections.namedtuple("MockSlot", ["active"])
+
+class MockEngine(NamedTuple):
+    downloader: MockDownloader
+
+
+class MockSlot(NamedTuple):
+    active: list[Any]
 
 
 class MockDownloader:
@@ -272,14 +277,12 @@ class DownloaderAwareSchedulerTestMixin:
         downloader = self.mock_crawler.engine.downloader
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
-            # pylint: disable=protected-access
             slot = downloader.get_slot_key(request)
             dequeued_slots.append(slot)
             downloader.increment(slot)
             requests.append(request)
 
         for request in requests:
-            # pylint: disable=protected-access
             slot = downloader.get_slot_key(request)
             downloader.decrement(slot)
 

@@ -158,6 +158,7 @@ class CaseInsensitiveDictMixin:
             def _normvalue(self, value):
                 if value is not None:
                     return value + 1
+                return None
 
             normvalue = _normvalue  # deprecated CaselessDict class
 
@@ -371,7 +372,3 @@ class LocalWeakReferencedCacheTest(unittest.TestCase):
         for i, r in enumerate(refs):
             self.assertIn(r, cache)
             self.assertEqual(cache[r], i)
-
-
-if __name__ == "__main__":
-    unittest.main()

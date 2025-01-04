@@ -16,7 +16,6 @@ class InjectArgumentsDownloaderMiddleware:
     def process_request(self, request, spider):
         if request.callback.__name__ == "parse_downloader_mw":
             request.cb_kwargs["from_process_request"] = True
-        return None
 
     def process_response(self, request, response, spider):
         if request.callback.__name__ == "parse_downloader_mw":
@@ -39,7 +38,6 @@ class InjectArgumentsSpiderMiddleware:
         request = response.request
         if request.callback.__name__ == "parse_spider_mw":
             request.cb_kwargs["from_process_spider_input"] = True
-        return None
 
     def process_spider_output(self, response, result, spider):
         for element in result:

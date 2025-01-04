@@ -94,7 +94,9 @@ def fingerprint(
             "headers": headers,
         }
         fingerprint_json = json.dumps(fingerprint_data, sort_keys=True)
-        cache[cache_key] = hashlib.sha1(fingerprint_json.encode()).digest()  # nosec
+        cache[cache_key] = hashlib.sha1(  # noqa: S324
+            fingerprint_json.encode()
+        ).digest()
     return cache[cache_key]
 
 
@@ -227,7 +229,8 @@ def request_to_curl(request: Request) -> str:
             cookies = f"--cookie '{cookie}'"
         elif isinstance(request.cookies, list):
             cookie = "; ".join(
-                f"{list(c.keys())[0]}={list(c.values())[0]}" for c in request.cookies
+                f"{next(iter(c.keys()))}={next(iter(c.values()))}"
+                for c in request.cookies
             )
             cookies = f"--cookie '{cookie}'"
 

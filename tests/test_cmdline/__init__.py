@@ -21,7 +21,7 @@ class CmdlineTest(unittest.TestCase):
 
     def _execute(self, *new_args, **kwargs):
         encoding = sys.stdout.encoding or "utf-8"
-        args = (sys.executable, "-m", "scrapy.cmdline") + new_args
+        args = (sys.executable, "-m", "scrapy.cmdline", *new_args)
         proc = Popen(args, stdout=PIPE, stderr=PIPE, env=self.env, **kwargs)
         comm = proc.communicate()[0].strip()
         return comm.decode(encoding)

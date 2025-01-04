@@ -17,13 +17,9 @@ from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
 
 from scrapy import signals
-from scrapy.core.downloader import Downloader
 from scrapy.core.scraper import Scraper, _HandleOutputDeferred
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.logformatter import LogFormatter
-from scrapy.settings import Settings
-from scrapy.signalmanager import SignalManager
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.reactor import CallLaterOnce
@@ -31,9 +27,12 @@ from scrapy.utils.reactor import CallLaterOnce
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterable, Iterator
 
+    from scrapy.core.downloader import Downloader
     from scrapy.core.scheduler import BaseScheduler
     from scrapy.crawler import Crawler
-    from scrapy.settings import BaseSettings
+    from scrapy.logformatter import LogFormatter
+    from scrapy.settings import BaseSettings, Settings
+    from scrapy.signalmanager import SignalManager
     from scrapy.spiders import Spider
 
 
@@ -172,7 +171,7 @@ class ExecutionEngine:
         assert self.spider is not None  # typing
 
         if self.paused:
-            return None
+            return
 
         while (
             not self._needs_backout()
@@ -292,9 +291,7 @@ class ExecutionEngine:
             return False
         if self.slot.start_requests is not None:  # not all start requests are handled
             return False
-        if self.slot.scheduler.has_pending_requests():
-            return False
-        return True
+        return not self.slot.scheduler.has_pending_requests()
 
     def crawl(self, request: Request) -> None:
         """Inject the request into the spider <-> downloader pipeline"""
@@ -389,9 +386,8 @@ class ExecutionEngine:
         )
         self.slot = Slot(start_requests, close_if_idle, nextcall, scheduler)
         self.spider = spider
-        if hasattr(scheduler, "open"):
-            if d := scheduler.open(spider):
-                yield d
+        if hasattr(scheduler, "open") and (d := scheduler.open(spider)):
+            yield d
         yield self.scraper.open_spider(spider)
         assert self.crawler.stats
         self.crawler.stats.open_spider(spider)
@@ -418,7 +414,7 @@ class ExecutionEngine:
             if isinstance(x, Failure) and isinstance(x.value, ex)
         }
         if DontCloseSpider in detected_ex:
-            return None
+            return
         if self.spider_is_idle():
             ex = detected_ex.get(CloseSpider, CloseSpider(reason="finished"))
             assert isinstance(ex, CloseSpider)  # typing

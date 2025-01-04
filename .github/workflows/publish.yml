@@ -10,16 +10,20 @@ concurrency:
 
 jobs:
   publish:
+    name: Upload release to PyPI
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/Scrapy
+    permissions:
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
       - run: | 
-          pip install --upgrade build twine
+          python -m pip install --upgrade build
           python -m build
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.10.3
-        with:
-          password: ${{ secrets.PYPI_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@release/v1

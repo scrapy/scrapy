@@ -13,7 +13,7 @@ class TelnetExtensionTest(unittest.TestCase):
         console = TelnetConsole(crawler)
 
         # This function has some side effects we don't need for this test
-        console._get_telnet_vars = lambda: {}
+        console._get_telnet_vars = dict
 
         console.start_listening()
         protocol = console.protocol()

@@ -6,6 +6,7 @@ See documentation in docs/topics/feed-exports.rst
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 import sys
@@ -25,7 +26,6 @@ from zope.interface import Interface, implementer
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions.postprocessing import PostProcessingManager
-from scrapy.settings import Settings
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.ftp import ftp_store_file
@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.exporters import BaseItemExporter
-    from scrapy.settings import BaseSettings
+    from scrapy.settings import BaseSettings, Settings
 
 
 logger = logging.getLogger(__name__)
@@ -62,6 +62,11 @@ def build_storage(
     preargs: Iterable[Any] = (),
     **kwargs: Any,
 ) -> _StorageT:
+    warnings.warn(
+        "scrapy.extensions.feedexport.build_storage() is deprecated, call the builder directly.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     kwargs["feed_options"] = feed_options
     return builder(*preargs, uri, *args, **kwargs)
 
@@ -105,7 +110,9 @@ class ItemFilter:
 class IFeedStorage(Interface):
     """Interface that all Feed Storages must implement"""
 
-    def __init__(uri, *, feed_options=None):
+    # pylint: disable=no-self-argument
+
+    def __init__(uri, *, feed_options=None):  # pylint: disable=super-init-not-called
         """Initialize the storage with the parameters given in the URI and the
         feed-specific options (see :setting:`FEEDS`)"""
 
@@ -248,8 +255,7 @@ class S3FeedStorage(BlockingFeedStorage):
         *,
         feed_options: dict[str, Any] | None = None,
     ) -> Self:
-        return build_storage(
-            cls,
+        return cls(
             uri,
             access_key=crawler.settings["AWS_ACCESS_KEY_ID"],
             secret_key=crawler.settings["AWS_SECRET_ACCESS_KEY"],
@@ -323,10 +329,9 @@ class FTPFeedStorage(BlockingFeedStorage):
         *,
         feed_options: dict[str, Any] | None = None,
     ) -> Self:
-        return build_storage(
-            cls,
+        return cls(
             uri,
-            crawler.settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
+            use_active_mode=crawler.settings.getbool("FEED_STORAGE_FTP_ACTIVE"),
             feed_options=feed_options,
         )
 
@@ -407,15 +412,12 @@ class FeedSlot:
             self.exporter.start_exporting()
             self._exporting = True
 
-    def _get_instance(
-        self, objcls: type[BaseItemExporter], *args: Any, **kwargs: Any
-    ) -> BaseItemExporter:
-        return build_from_crawler(objcls, self.crawler, *args, **kwargs)
-
     def _get_exporter(
         self, file: IO[bytes], format: str, *args: Any, **kwargs: Any
     ) -> BaseItemExporter:
-        return self._get_instance(self.exporters[format], file, *args, **kwargs)
+        return build_from_crawler(
+            self.exporters[format], self.crawler, file, *args, **kwargs
+        )
 
     def finish_exporting(self) -> None:
         if self._exporting:
@@ -587,7 +589,7 @@ class FeedExporter:
         :param uri_template: template of uri which contains %(batch_time)s or %(batch_id)d to create new uri
         """
         storage = self._get_storage(uri, feed_options)
-        slot = FeedSlot(
+        return FeedSlot(
             storage=storage,
             uri=uri,
             format=feed_options["format"],
@@ -601,7 +603,6 @@ class FeedExporter:
             settings=self.settings,
             crawler=self.crawler,
         )
-        return slot
 
     def item_scraped(self, item: Any, spider: Spider) -> None:
         slots = []
@@ -644,10 +645,8 @@ class FeedExporter:
         )
         d = {}
         for k, v in conf.items():
-            try:
+            with contextlib.suppress(NotConfigured):
                 d[k] = load_object(v)
-            except NotConfigured:
-                pass
         return d
 
     def _exporter_supported(self, format: str) -> bool:
@@ -682,7 +681,7 @@ class FeedExporter:
                 return True
             except NotConfigured as e:
                 logger.error(
-                    "Disabled feed storage scheme: %(scheme)s. " "Reason: %(reason)s",
+                    "Disabled feed storage scheme: %(scheme)s. Reason: %(reason)s",
                     {"scheme": scheme, "reason": str(e)},
                 )
         else:
@@ -692,34 +691,10 @@ class FeedExporter:
     def _get_storage(
         self, uri: str, feed_options: dict[str, Any]
     ) -> FeedStorageProtocol:
-        """Fork of create_instance specific to feed storage classes
-
-        It supports not passing the *feed_options* parameters to classes that
-        do not support it, and issuing a deprecation warning instead.
-        """
-        feedcls = self.storages.get(urlparse(uri).scheme, self.storages["file"])
-        crawler = getattr(self, "crawler", None)
-
-        def build_instance(
-            builder: type[FeedStorageProtocol], *preargs: Any
-        ) -> FeedStorageProtocol:
-            return build_storage(
-                builder, uri, feed_options=feed_options, preargs=preargs
-            )
-
-        instance: FeedStorageProtocol
-        if crawler and hasattr(feedcls, "from_crawler"):
-            instance = build_instance(feedcls.from_crawler, crawler)
-            method_name = "from_crawler"
-        elif hasattr(feedcls, "from_settings"):
-            instance = build_instance(feedcls.from_settings, self.settings)
-            method_name = "from_settings"
-        else:
-            instance = build_instance(feedcls)
-            method_name = "__new__"
-        if instance is None:
-            raise TypeError(f"{feedcls.__qualname__}.{method_name} returned None")
-        return instance
+        """Build a storage object for the specified *uri* with the specified
+        *feed_options*."""
+        cls = self.storages.get(urlparse(uri).scheme, self.storages["file"])
+        return build_from_crawler(cls, self.crawler, uri, feed_options=feed_options)
 
     def _get_uri_params(
         self,

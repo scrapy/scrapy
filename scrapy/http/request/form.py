@@ -11,11 +11,13 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 
-from lxml.html import FormElement  # nosec
-from lxml.html import InputElement  # nosec
-from lxml.html import MultipleSelectOptions  # nosec
-from lxml.html import SelectElement  # nosec
-from lxml.html import TextareaElement  # nosec
+from lxml.html import (
+    FormElement,
+    InputElement,
+    MultipleSelectOptions,
+    SelectElement,
+    TextareaElement,
+)
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.request import Request
@@ -152,8 +154,7 @@ def _get_form(
         form = forms[formnumber]
     except IndexError:
         raise IndexError(f"Form number {formnumber} not found in {response}")
-    else:
-        return cast(FormElement, form)
+    return cast(FormElement, form)
 
 
 def _get_inputs(
@@ -187,7 +188,7 @@ def _get_inputs(
 
     if not dont_click:
         clickable = _get_clickable(clickdata, form)
-        if clickable and clickable[0] not in formdata and not clickable[0] is None:
+        if clickable and clickable[0] not in formdata and clickable[0] is not None:
             values.append(clickable)
 
     formdata_items = formdata.items() if isinstance(formdata, dict) else formdata
@@ -264,5 +265,4 @@ def _get_clickable(
             f"Multiple elements found ({el!r}) matching the "
             f"criteria in clickdata: {clickdata!r}"
         )
-    else:
-        raise ValueError(f"No clickable element matching clickdata: {clickdata!r}")
+    raise ValueError(f"No clickable element matching clickdata: {clickdata!r}")

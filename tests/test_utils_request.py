@@ -8,6 +8,7 @@ from weakref import WeakKeyDictionary
 
 import pytest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import (
@@ -384,7 +385,9 @@ class CustomRequestFingerprinterTestCase(unittest.TestCase):
             "REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter,
             "FINGERPRINT": b"fingerprint",
         }
-        crawler = get_crawler(settings_dict=settings)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
+            crawler = get_crawler(settings_dict=settings)
 
         request = Request("http://www.example.com")
         fingerprint = crawler.request_fingerprinter.fingerprint(request)
@@ -478,7 +481,3 @@ class RequestToCurlTest(unittest.TestCase):
             " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
         )
         self._test_request(request_object, expected_curl_command)
-
-
-if __name__ == "__main__":
-    unittest.main()

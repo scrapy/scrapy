@@ -12,7 +12,7 @@ from scrapy.utils.project import data_path, get_project_settings
 
 @contextlib.contextmanager
 def inside_a_project():
-    prev_dir = os.getcwd()
+    prev_dir = Path.cwd()
     project_dir = tempfile.mkdtemp()
 
     try:

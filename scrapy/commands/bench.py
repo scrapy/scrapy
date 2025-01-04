@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import argparse
-import subprocess  # nosec
+import subprocess
 import sys
 import time
 from typing import TYPE_CHECKING, Any
@@ -13,6 +12,7 @@ from scrapy.http import Response, TextResponse
 from scrapy.linkextractors import LinkExtractor
 
 if TYPE_CHECKING:
+    import argparse
     from collections.abc import Iterable
 
     from scrapy import Request
@@ -40,9 +40,9 @@ class _BenchServer:
         from scrapy.utils.test import get_testenv
 
         pargs = [sys.executable, "-u", "-m", "scrapy.utils.benchserver"]
-        self.proc = subprocess.Popen(
+        self.proc = subprocess.Popen(  # noqa: S603
             pargs, stdout=subprocess.PIPE, env=get_testenv()
-        )  # nosec
+        )
         assert self.proc.stdout
         self.proc.stdout.readline()
 

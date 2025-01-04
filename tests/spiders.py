@@ -175,7 +175,7 @@ class AsyncDefAsyncioReqsReturnSpider(SimpleSpider):
         status = await get_from_asyncio_queue(response.status)
         self.logger.info(f"Got response {status}, req_id {req_id}")
         if req_id > 0:
-            return
+            return None
         reqs = []
         for i in range(1, 3):
             req = Request(self.start_urls[0], dont_filter=True, meta={"req_id": i})
@@ -377,11 +377,13 @@ class SingleRequestSpider(MetaSpider):
             return self.callback_func(response)
         if "next" in response.meta:
             return response.meta["next"]
+        return None
 
     def on_error(self, failure):
         self.meta["failure"] = failure
         if callable(self.errback_func):
             return self.errback_func(failure)
+        return None
 
 
 class DuplicateStartRequestsSpider(MockServerSpider):
@@ -391,8 +393,8 @@ class DuplicateStartRequestsSpider(MockServerSpider):
     dupe_factor = 3
 
     def start_requests(self):
-        for i in range(0, self.distinct_urls):
-            for j in range(0, self.dupe_factor):
+        for i in range(self.distinct_urls):
+            for j in range(self.dupe_factor):
                 url = self.mockserver.url(f"/echo?headers=1&body=test{i}")
                 yield Request(url, dont_filter=self.dont_filter)
 

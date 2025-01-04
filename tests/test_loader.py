@@ -586,7 +586,3 @@ class FunctionProcessorTestCase(unittest.TestCase):
         lo.add_value("foo", "  bar  ")
         lo.add_value("foo", ["  asdf  ", "  qwerty  "])
         self.assertEqual(dict(lo.load_item()), {"foo": ["BAR", "ASDF", "QWERTY"]})
-
-
-if __name__ == "__main__":
-    unittest.main()

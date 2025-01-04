@@ -24,7 +24,9 @@ collect_ignore = [
     *_py_files("tests/CrawlerRunner"),
 ]
 
-with Path("tests/ignores.txt").open(encoding="utf-8") as reader:
+base_dir = Path(__file__).parent
+ignore_file_path = base_dir / "tests" / "ignores.txt"
+with ignore_file_path.open(encoding="utf-8") as reader:
     for line in reader:
         file_path = line.strip()
         if file_path and file_path[0] != "#":
@@ -57,7 +59,7 @@ def pytest_addoption(parser):
 def reactor_pytest(request):
     if not request.cls:
         # doctests
-        return
+        return None
     request.cls.reactor_pytest = request.config.getoption("--reactor")
     return request.cls.reactor_pytest
 

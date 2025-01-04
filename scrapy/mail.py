@@ -7,6 +7,7 @@ See documentation in docs/topics/email.rst
 from __future__ import annotations
 
 import logging
+import warnings
 from email import encoders as Encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -19,6 +20,7 @@ from typing import IO, TYPE_CHECKING, Any
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
 
@@ -32,6 +34,7 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
 
 
@@ -72,6 +75,19 @@ class MailSender:
 
     @classmethod
     def from_settings(cls, settings: BaseSettings) -> Self:
+        warnings.warn(
+            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return cls._from_settings(settings)
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        return cls._from_settings(crawler.settings)
+
+    @classmethod
+    def _from_settings(cls, settings: BaseSettings) -> Self:
         return cls(
             smtphost=settings["MAIL_HOST"],
             mailfrom=settings["MAIL_FROM"],
@@ -95,11 +111,9 @@ class MailSender:
     ) -> Deferred[None] | None:
         from twisted.internet import reactor
 
-        msg: MIMEBase
-        if attachs:
-            msg = MIMEMultipart()
-        else:
-            msg = MIMENonMultipart(*mimetype.split("/", 1))
+        msg: MIMEBase = (
+            MIMEMultipart() if attachs else MIMENonMultipart(*mimetype.split("/", 1))
+        )
 
         to = list(arg_to_iter(to))
         cc = list(arg_to_iter(cc))
@@ -117,8 +131,8 @@ class MailSender:
             if charset:
                 msg.set_charset(charset)
             msg.attach(MIMEText(body, "plain", charset or "us-ascii"))
-            for attach_name, mimetype, f in attachs:
-                part = MIMEBase(*mimetype.split("/"))
+            for attach_name, attach_mimetype, f in attachs:
+                part = MIMEBase(*attach_mimetype.split("/"))
                 part.set_payload(f.read())
                 Encoders.encode_base64(part)
                 part.add_header(

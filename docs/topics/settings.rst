@@ -845,12 +845,7 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
     .. code-block:: python
 
         DOWNLOAD_SLOTS = {
-            "quotes.toscrape.com": {
-                "concurrency": 1,
-                "delay": 2,
-                "randomize_delay": False,
-                "throttle": False,
-            },
+            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "randomize_delay": False},
             "books.toscrape.com": {"delay": 3, "randomize_delay": False},
         }
 
@@ -861,9 +856,6 @@ Allows to define concurrency/delay parameters on per slot (domain) basis:
     -   :setting:`DOWNLOAD_DELAY`: ``delay``
     -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
     -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
-
-    There is no global setting for ``throttle``, whose default value is
-    ``None``.
 
 
 .. setting:: DOWNLOAD_TIMEOUT
@@ -1235,6 +1227,25 @@ Default: ``False``
 
 If ``True``, the logs will just contain the root path. If it is set to ``False``
 then it displays the component responsible for the log output
+
+.. setting:: LOG_VERSIONS
+
+LOG_VERSIONS
+------------
+
+Default: ``["lxml", "libxml2", "cssselect", "parsel", "w3lib", "Twisted", "Python", "pyOpenSSL", "cryptography", "Platform"]``
+
+Logs the installed versions of the specified items.
+
+An item can be any installed Python package.
+
+The following special items are also supported:
+
+-   ``libxml2``
+
+-   ``Platform`` (:func:`platform.platform`)
+
+-   ``Python``
 
 .. setting:: LOGSTATS_INTERVAL
 

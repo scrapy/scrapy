@@ -6,6 +6,7 @@ See documentation in docs/topics/extensions.rst
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import signal
 import sys
@@ -69,12 +70,10 @@ class StackTraceDump:
 
 class Debugger:
     def __init__(self) -> None:
-        try:
+        # win32 platforms don't support SIGUSR signals
+        with contextlib.suppress(AttributeError):
             signal.signal(signal.SIGUSR2, self._enter_debugger)  # type: ignore[attr-defined]
-        except AttributeError:
-            # win32 platforms don't support SIGUSR signals
-            pass
 
     def _enter_debugger(self, signum: int, frame: FrameType | None) -> None:
         assert frame
-        Pdb().set_trace(frame.f_back)  # noqa: T100
+        Pdb().set_trace(frame.f_back)

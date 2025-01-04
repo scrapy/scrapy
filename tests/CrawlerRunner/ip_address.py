@@ -1,9 +1,8 @@
 from urllib.parse import urlparse
 
 from twisted.internet import reactor
-from twisted.names import cache
+from twisted.names import cache, resolve
 from twisted.names import hosts as hostsModule
-from twisted.names import resolve
 from twisted.names.client import Resolver
 from twisted.python.runtime import platform
 

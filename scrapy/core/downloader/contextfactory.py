@@ -21,6 +21,7 @@ from scrapy.core.downloader.tls import (
     ScrapyClientTLSOptions,
     openssl_methods,
 )
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
@@ -70,6 +71,31 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         *args: Any,
         **kwargs: Any,
     ) -> Self:
+        warnings.warn(
+            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return cls._from_settings(settings, method, *args, **kwargs)
+
+    @classmethod
+    def from_crawler(
+        cls,
+        crawler: Crawler,
+        method: int = SSL.SSLv23_METHOD,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Self:
+        return cls._from_settings(crawler.settings, method, *args, **kwargs)
+
+    @classmethod
+    def _from_settings(
+        cls,
+        settings: BaseSettings,
+        method: int = SSL.SSLv23_METHOD,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Self:
         tls_verbose_logging: bool = settings.getbool(
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
@@ -85,18 +111,9 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     def getCertificateOptions(self) -> CertificateOptions:
         # setting verify=True will require you to provide CAs
         # to verify against; in other words: it's not that simple
-
-        # backward-compatible SSL/TLS method:
-        #
-        # * this will respect `method` attribute in often recommended
-        #   `ScrapyClientContextFactory` subclass
-        #   (https://github.com/scrapy/scrapy/issues/1429#issuecomment-131782133)
-        #
-        # * getattr() for `_ssl_method` attribute for context factories
-        #   not calling super().__init__
         return CertificateOptions(
             verify=False,
-            method=getattr(self, "method", getattr(self, "_ssl_method", None)),
+            method=self._ssl_method,
             fixBrokenPeers=True,
             acceptableCiphers=self.tls_ciphers,
         )

@@ -114,7 +114,7 @@ class RetryTest(unittest.TestCase):
     def test_exception_to_retry_added(self):
         exc = ValueError
         settings_dict = {
-            "RETRY_EXCEPTIONS": list(RETRY_EXCEPTIONS) + [exc],
+            "RETRY_EXCEPTIONS": [*RETRY_EXCEPTIONS, exc],
         }
         crawler = get_crawler(Spider, settings_dict=settings_dict)
         mw = RetryMiddleware.from_crawler(crawler)
@@ -265,7 +265,7 @@ class MaxRetryTimesTest(unittest.TestCase):
         spider = spider or self.spider
         middleware = middleware or self.mw
 
-        for i in range(0, max_retry_times):
+        for i in range(max_retry_times):
             req = middleware.process_exception(req, exception, spider)
             assert isinstance(req, Request)
 
@@ -643,7 +643,3 @@ class GetRetryRequestTest(unittest.TestCase):
             f"{stats_key}/reason_count/{expected_reason}",
         ):
             self.assertEqual(spider.crawler.stats.get_value(stat), 1)
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -3,7 +3,6 @@ from __future__ import annotations
 import numbers
 import os
 import sys
-from collections.abc import Iterable
 from configparser import ConfigParser
 from operator import itemgetter
 from pathlib import Path
@@ -15,7 +14,7 @@ from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Mapping, MutableMapping
+    from collections.abc import Collection, Iterable, Mapping, MutableMapping
 
 
 def build_component_list(
@@ -44,8 +43,7 @@ def build_component_list(
                         "convert to the same "
                         "object, please update your settings"
                     )
-                else:
-                    compbs.set(convert(k), v, priority=prio)
+                compbs.set(convert(k), v, priority=prio)
             return compbs
         _check_components(compdict)
         return {convert(k): v for k, v in compdict.items()}

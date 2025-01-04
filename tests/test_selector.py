@@ -264,7 +264,7 @@ class JMESPathTestCase(unittest.TestCase):
         )
 
     @pytest.mark.skipif(PARSEL_18_PLUS, reason="parsel >= 1.8 supports jmespath")
-    def test_jmespath_not_available(my_json_page) -> None:
+    def test_jmespath_not_available(self) -> None:
         body = """
         {
             "website": {"name": "Example"}

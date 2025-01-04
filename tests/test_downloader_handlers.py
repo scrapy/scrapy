@@ -116,7 +116,7 @@ class FileTestCase(unittest.TestCase):
 
     def tearDown(self):
         os.close(self.fd)
-        os.remove(self.tmpname)
+        Path(self.tmpname).unlink()
 
     def test_download(self):
         def _test(response):
@@ -349,11 +349,6 @@ class HttpTestCase(unittest.TestCase):
         request = Request(self.getURL("host"), headers={"Host": host})
         return self.download_request(request, Spider("foo")).addCallback(_test)
 
-        d = self.download_request(request, Spider("foo"))
-        d.addCallback(lambda r: r.body)
-        d.addCallback(self.assertEqual, b"localhost")
-        return d
-
     def test_content_length_zero_bodyless_post_request_headers(self):
         """Tests if "Content-Length: 0" is sent for bodyless POST requests.
 
@@ -535,9 +530,10 @@ class Http11TestCase(HttpTestCase):
         d = self.download_request(request, Spider("foo"))
 
         def checkDataLoss(failure):
-            if failure.check(ResponseFailed):
-                if any(r.check(_DataLoss) for r in failure.value.reasons):
-                    return None
+            if failure.check(ResponseFailed) and any(
+                r.check(_DataLoss) for r in failure.value.reasons
+            ):
+                return None
             return failure
 
         d.addCallback(lambda _: self.fail("No DataLoss exception"))
@@ -894,7 +890,7 @@ class S3TestCase(unittest.TestCase):
         except Exception as e:
             self.assertIsInstance(e, (TypeError, NotConfigured))
         else:
-            raise AssertionError()
+            raise AssertionError
 
     def test_request_signing1(self):
         # gets an object from the johnsmith bucket.

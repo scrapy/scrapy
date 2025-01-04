@@ -57,10 +57,11 @@ def create_deprecated_class(
 
     # https://github.com/python/mypy/issues/4177
     class DeprecatedClass(new_class.__class__):  # type: ignore[misc, name-defined]
+        # pylint: disable=no-self-argument
         deprecated_class: type | None = None
         warned_on_subclass: bool = False
 
-        def __new__(
+        def __new__(  # pylint: disable=bad-classmethod-argument
             metacls, name: str, bases: tuple[type, ...], clsdict_: dict[str, Any]
         ) -> type:
             cls = super().__new__(metacls, name, bases, clsdict_)

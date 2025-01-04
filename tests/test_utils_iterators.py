@@ -26,15 +26,14 @@ class XmliterBaseTestCase:
         """
 
         response = XmlResponse(url="http://example.com", body=body)
-        attrs = []
-        for x in self.xmliter(response, "product"):
-            attrs.append(
-                (
-                    x.attrib["id"],
-                    x.xpath("name/text()").getall(),
-                    x.xpath("./type/text()").getall(),
-                )
+        attrs = [
+            (
+                x.attrib["id"],
+                x.xpath("name/text()").getall(),
+                x.xpath("./type/text()").getall(),
             )
+            for x in self.xmliter(response, "product")
+        ]
 
         self.assertEqual(
             attrs, [("001", ["Name 1"], ["Type 1"]), ("002", ["Name 2"], ["Type 2"])]
@@ -99,15 +98,14 @@ class XmliterBaseTestCase:
             # Unicode body needs encoding information
             XmlResponse(url="http://example.com", body=body, encoding="utf-8"),
         ):
-            attrs = []
-            for x in self.xmliter(r, "þingflokkur"):
-                attrs.append(
-                    (
-                        x.attrib["id"],
-                        x.xpath("./skammstafanir/stuttskammstöfun/text()").getall(),
-                        x.xpath("./tímabil/fyrstaþing/text()").getall(),
-                    )
+            attrs = [
+                (
+                    x.attrib["id"],
+                    x.xpath("./skammstafanir/stuttskammstöfun/text()").getall(),
+                    x.xpath("./tímabil/fyrstaþing/text()").getall(),
                 )
+                for x in self.xmliter(r, "þingflokkur")
+            ]
 
             self.assertEqual(
                 attrs,
@@ -368,7 +366,7 @@ class UtilsCsvTestCase(unittest.TestCase):
 
         # explicit type check cuz' we no like stinkin' autocasting! yarrr
         for result_row in result:
-            self.assertTrue(all(isinstance(k, str) for k in result_row.keys()))
+            self.assertTrue(all(isinstance(k, str) for k in result_row))
             self.assertTrue(all(isinstance(v, str) for v in result_row.values()))
 
     def test_csviter_delimiter(self):

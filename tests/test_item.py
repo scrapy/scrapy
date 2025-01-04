@@ -1,7 +1,8 @@
 import unittest
+from abc import ABCMeta
 from unittest import mock
 
-from scrapy.item import ABCMeta, Field, Item, ItemMeta
+from scrapy.item import Field, Item, ItemMeta
 
 
 class ItemTest(unittest.TestCase):
@@ -54,7 +55,7 @@ class ItemTest(unittest.TestCase):
 
         self.assertEqual(itemrepr, "{'name': 'John Doe', 'number': 123}")
 
-        i2 = eval(itemrepr)
+        i2 = eval(itemrepr)  # pylint: disable=eval-used
         self.assertEqual(i2["name"], "John Doe")
         self.assertEqual(i2["number"], 123)
 
@@ -273,9 +274,7 @@ class ItemMetaTest(unittest.TestCase):
                 def f(self):
                     # For rationale of this see:
                     # https://github.com/python/cpython/blob/ee1a81b77444c6715cbe610e951c655b6adab88b/Lib/test/test_super.py#L222
-                    return (
-                        __class__  # noqa  https://github.com/scrapy/scrapy/issues/2836
-                    )
+                    return __class__
 
             MyItem()
 
@@ -298,7 +297,3 @@ class ItemMetaClassCellRegression(unittest.TestCase):
                 # TypeError: __class__ set to <class '__main__.MyItem'>
                 # defining 'MyItem' as <class '__main__.MyItem'>
                 super().__init__(*args, **kwargs)
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -81,7 +81,6 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         :param spider: the spider object for the current crawl
         :type spider: :class:`~scrapy.spiders.Spider`
         """
-        pass
 
     def close(self, reason: str) -> Deferred[None] | None:
         """
@@ -91,14 +90,13 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         :param reason: a string which describes the reason why the spider was closed
         :type reason: :class:`str`
         """
-        pass
 
     @abstractmethod
     def has_pending_requests(self) -> bool:
         """
         ``True`` if the scheduler has enqueued requests, ``False`` otherwise
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def enqueue_request(self, request: Request) -> bool:
@@ -112,7 +110,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         For reference, the default Scrapy scheduler returns ``False`` when the
         request is rejected by the dupefilter.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @abstractmethod
     def next_request(self) -> Request | None:
@@ -124,7 +122,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         to the downloader in the current reactor cycle. The engine will continue
         calling ``next_request`` until ``has_pending_requests`` is ``False``.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class Scheduler(BaseScheduler):
@@ -312,8 +310,7 @@ class Scheduler(BaseScheduler):
             assert self.stats is not None
             self.stats.inc_value("scheduler/unserializable", spider=self.spider)
             return False
-        else:
-            return True
+        return True
 
     def _mqpush(self, request: Request) -> None:
         self.mqs.push(request)

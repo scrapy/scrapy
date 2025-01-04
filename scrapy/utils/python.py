@@ -136,7 +136,7 @@ def to_bytes(
         return text
     if not isinstance(text, str):
         raise TypeError(
-            "to_bytes must receive a str or bytes " f"object, got {type(text).__name__}"
+            f"to_bytes must receive a str or bytes object, got {type(text).__name__}"
         )
     if encoding is None:
         encoding = "utf-8"
@@ -235,8 +235,7 @@ def get_func_args(func: Callable[..., Any], stripself: bool = False) -> list[str
                 continue
             args.append(name)
     else:
-        for name in sig.parameters.keys():
-            args.append(name)
+        args = list(sig.parameters)
 
     if stripself and args and args[0] == "self":
         args = args[1:]
@@ -323,14 +322,12 @@ def without_none_values(
     """
     if isinstance(iterable, Mapping):
         return {k: v for k, v in iterable.items() if v is not None}
-    else:
-        # the iterable __init__ must take another iterable
-        return type(iterable)(v for v in iterable if v is not None)  # type: ignore[call-arg]
+    # the iterable __init__ must take another iterable
+    return type(iterable)(v for v in iterable if v is not None)  # type: ignore[call-arg]
 
 
 def global_object_name(obj: Any) -> str:
-    """
-    Return full name of a global object.
+    """Return the full import path of the given class.
 
     >>> from scrapy import Request
     >>> global_object_name(Request)

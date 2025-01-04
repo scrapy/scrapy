@@ -876,7 +876,7 @@ REDIRECT_MAX_TIMES
 Default: ``20``
 
 The maximum number of redirections that will be followed for a single request.
-After this maximum, the request's response is returned as is.
+If maximum redirections are exceeded, the request is aborted and ignored.
 
 MetaRefreshMiddleware
 ---------------------
@@ -925,10 +925,6 @@ Meta tags within these tags are ignored.
 .. versionchanged:: 2.11.2
    The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
    ``[]`` to ``["noscript"]``.
-
-.. versionchanged:: VERSION
-   The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
-   ``[]`` to ``['noscript']``.
 
 .. setting:: METAREFRESH_MAXDELAY
 
