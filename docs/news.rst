@@ -1095,7 +1095,8 @@ New features
     :setting:`RANDOMIZE_DOWNLOAD_DELAY` can now be set on a per-domain basis
     via the new :setting:`DOWNLOAD_SLOTS` setting. (:issue:`5328`)
 
--   Added :meth:`TextResponse.jmespath`, a shortcut for JMESPath selectors
+-   Added :meth:`TextResponse.jmespath <scrapy.http.TextResponse.jmespath>`,
+    a shortcut for JMESPath selectors
     available since parsel_ 1.8.1. (:issue:`5894`, :issue:`5915`)
 
 -   Added :signal:`feed_slot_closed` and :signal:`feed_exporter_closed`
@@ -2861,8 +2862,7 @@ Backward-incompatible changes
 Deprecations
 ~~~~~~~~~~~~
 
-*   :meth:`TextResponse.body_as_unicode
-    <scrapy.http.TextResponse.body_as_unicode>` is now deprecated, use
+*   ``TextResponse.body_as_unicode()`` is now deprecated, use
     :attr:`TextResponse.text <scrapy.http.TextResponse.text>` instead
     (:issue:`4546`, :issue:`4555`, :issue:`4579`)
 
@@ -3262,7 +3262,7 @@ Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
 *   The :ref:`Scrapy shell <topics-shell>` no longer provides a `sel` proxy
-    object, use :meth:`response.selector <scrapy.http.Response.selector>`
+    object, use :meth:`response.selector <scrapy.http.TextResponse.selector>`
     instead (:issue:`4347`)
 
 *   LevelDB support has been removed (:issue:`4112`)
@@ -4192,7 +4192,7 @@ Bug fixes
 *   Requests with private callbacks are now correctly unserialized from disk
     (:issue:`3790`)
 
-*   :meth:`FormRequest.from_response() <scrapy.http.FormRequest.from_response>`
+*   :meth:`FormRequest.from_response() <scrapy.FormRequest.from_response>`
     now handles invalid methods like major web browsers (:issue:`3777`,
     :issue:`3794`)
 
@@ -4860,7 +4860,7 @@ Bug fixes
 - LinkExtractor now strips leading and trailing whitespaces from attributes
   (:issue:`2547`, fixes :issue:`1614`)
 - Properly handle whitespaces in action attribute in
-  :class:`~scrapy.http.FormRequest` (:issue:`2548`)
+  :class:`~scrapy.FormRequest` (:issue:`2548`)
 - Buffer CONNECT response bytes from proxy until all HTTP headers are received
   (:issue:`2495`, fixes :issue:`2491`)
 - FTP downloader now works on Python 3, provided you use Twisted>=17.1
@@ -4903,7 +4903,7 @@ Documentation
 
 - Binary mode is required for exporters (:issue:`2564`, fixes :issue:`2553`)
 - Mention issue with :meth:`FormRequest.from_response
-  <scrapy.http.FormRequest.from_response>` due to bug in lxml (:issue:`2572`)
+  <scrapy.FormRequest.from_response>` due to bug in lxml (:issue:`2572`)
 - Use single quotes uniformly in templates (:issue:`2596`)
 - Document :reqmeta:`ftp_user` and :reqmeta:`ftp_password` meta keys (:issue:`2587`)
 - Removed section on deprecated ``contrib/`` (:issue:`2636`)
@@ -5442,7 +5442,7 @@ Bugfixes
 - Support empty password for http_proxy config (:issue:`1274`).
 - Interpret ``application/x-json`` as ``TextResponse`` (:issue:`1333`).
 - Support link rel attribute with multiple values (:issue:`1201`).
-- Fixed ``scrapy.http.FormRequest.from_response`` when there is a ``<base>``
+- Fixed ``scrapy.FormRequest.from_response`` when there is a ``<base>``
   tag (:issue:`1564`).
 - Fixed :setting:`TEMPLATES_DIR` handling (:issue:`1575`).
 - Various ``FormRequest`` fixes (:issue:`1595`, :issue:`1596`, :issue:`1597`).

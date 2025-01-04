@@ -7,15 +7,15 @@ Requests and Responses
 .. module:: scrapy.http
    :synopsis: Request and Response classes
 
-Scrapy uses :class:`scrapy.Request` and :class:`Response` objects for crawling web
+Scrapy uses :class:`~scrapy.Request` and :class:`Response` objects for crawling web
 sites.
 
-Typically, :class:`scrapy.Request` objects are generated in the spiders and pass
+Typically, :class:`~scrapy.Request` objects are generated in the spiders and pass
 across the system until they reach the Downloader, which executes the request
 and returns a :class:`Response` object which travels back to the spider that
 issued the request.
 
-Both :class:`scrapy.Request` and :class:`Response` classes have subclasses which add
+Both :class:`~scrapy.Request` and :class:`Response` classes have subclasses which add
 functionality not required in the base classes. These are described
 below in :ref:`topics-request-response-ref-request-subclasses` and
 :ref:`topics-request-response-ref-response-subclasses`.
@@ -52,7 +52,8 @@ Request objects
     :param method: the HTTP method of this request. Defaults to ``'GET'``.
     :type method: str
 
-    :param meta: the initial values for the :attr:`scrapy.Request.meta` attribute. If
+    :param meta: the initial values for the :attr:`Request.meta
+       <scrapy.Request.meta>` attribute. If
        given, the dict passed in this parameter will be shallow copied.
     :type meta: dict
 
@@ -67,10 +68,10 @@ Request objects
        (for single valued headers) or lists (for multi-valued headers). If
        ``None`` is passed as value, the HTTP header will not be sent at all.
 
-        .. caution:: Cookies set via the ``Cookie`` header are not considered by the
-            :ref:`cookies-mw`. If you need to set cookies for a request, use the
-            :class:`scrapy.Request.cookies <scrapy.Request>` parameter. This is a known
-            current limitation that is being worked on.
+       .. caution:: Cookies set via the ``Cookie`` header are not considered by the
+           :ref:`cookies-mw`. If you need to set cookies for a request, use the
+           ``cookies`` argument. This is a known current limitation that is being
+           worked on.
 
     :type headers: dict
 
@@ -172,7 +173,7 @@ Request objects
 
         A string containing the URL of this request. Keep in mind that this
         attribute contains the escaped URL, so it can differ from the URL passed in
-        the ``__init__`` method.
+        the ``__init__()`` method.
 
         This attribute is read-only. To change the URL of a Request use
         :meth:`replace`.
@@ -241,7 +242,7 @@ Request objects
         A dictionary that contains arbitrary metadata for this request. Its contents
         will be passed to the Request's callback as keyword arguments. It is empty
         for new Requests, which means by default callbacks only get a
-        :class:`scrapy.http.Response` object as argument.
+        :class:`~scrapy.http.Response` object as argument.
 
         This dict is :doc:`shallow copied <library/copy>` when the request is
         cloned using the ``copy()`` or ``replace()`` methods, and can also be
@@ -262,7 +263,7 @@ Request objects
 
        Return a Request object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
-       :attr:`scrapy.Request.cb_kwargs` and :attr:`scrapy.Request.meta` attributes are shallow
+       :attr:`~scrapy.Request.cb_kwargs` and :attr:`~scrapy.Request.meta` attributes are shallow
        copied by default (unless new values are given as arguments). See also
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
@@ -326,10 +327,10 @@ The following example shows how to achieve this by using the
             foo=foo,
         )
 
-.. caution:: :attr:`scrapy.Request.cb_kwargs` was introduced in version ``1.7``.
-   Prior to that, using :attr:`scrapy.Request.meta` was recommended for passing
-   information around callbacks. After ``1.7``, :attr:`scrapy.Request.cb_kwargs`
-   became the preferred way for handling user information, leaving :attr:`scrapy.Request.meta`
+.. caution:: :attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>` was introduced in version ``1.7``.
+   Prior to that, using :attr:`Request.meta <scrapy.Request.meta>` was recommended for passing
+   information around callbacks. After ``1.7``, :attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>`
+   became the preferred way for handling user information, leaving :attr:`Request.meta <scrapy.Request.meta>`
    for communication with components like middlewares and extensions.
 
 .. _topics-request-response-ref-errbacks:
@@ -628,7 +629,7 @@ The following built-in Scrapy components have such restrictions:
     :setting:`HTTPCACHE_DIR` also apply. Inside :setting:`HTTPCACHE_DIR`,
     the following directory structure is created:
 
-    -   :attr:`Spider.name <scrapy.spiders.Spider.name>`
+    -   :attr:`Spider.name <scrapy.Spider.name>`
 
         -   first byte of a request fingerprint as hexadecimal
 
@@ -780,13 +781,13 @@ call their callback instead, like in this example, pass ``fail=False`` to the
 Request subclasses
 ==================
 
-Here is the list of built-in :class:`scrapy.Request` subclasses. You can also subclass
+Here is the list of built-in :class:`~scrapy.Request` subclasses. You can also subclass
 it to implement your own custom functionality.
 
 FormRequest objects
 -------------------
 
-The FormRequest class extends the base :class:`scrapy.Request` with functionality for
+The FormRequest class extends the base :class:`~scrapy.Request` with functionality for
 dealing with HTML forms. It uses `lxml.html forms`_  to pre-populate form
 fields with form data from :class:`Response` objects.
 
@@ -796,8 +797,8 @@ fields with form data from :class:`Response` objects.
 .. class:: scrapy.http.FormRequest
 .. class:: scrapy.FormRequest(url, [formdata, ...])
 
-    The :class:`FormRequest` class adds a new keyword parameter to the ``__init__`` method. The
-    remaining arguments are the same as for the :class:`scrapy.Request` class and are
+    The :class:`FormRequest` class adds a new keyword parameter to the ``__init__()`` method. The
+    remaining arguments are the same as for the :class:`~scrapy.Request` class and are
     not documented here.
 
     :param formdata: is a dictionary (or iterable of (key, value) tuples)
@@ -806,7 +807,7 @@ fields with form data from :class:`Response` objects.
     :type formdata: dict or collections.abc.Iterable
 
     The :class:`FormRequest` objects support the following class method in
-    addition to the standard :class:`scrapy.Request` methods:
+    addition to the standard :class:`~scrapy.Request` methods:
 
     .. classmethod:: FormRequest.from_response(response, [formname=None, formid=None, formnumber=0, formdata=None, formxpath=None, formcss=None, clickdata=None, dont_click=False, ...])
 
@@ -820,7 +821,7 @@ fields with form data from :class:`Response` objects.
        though this is quite convenient, and often the desired behaviour,
        sometimes it can cause problems which could be hard to debug. For
        example, when working with forms that are filled and/or submitted using
-       javascript, the default :meth:`from_response` behaviour may not be the
+       javascript, the default :meth:`~FormRequest.from_response` behaviour may not be the
        most appropriate. To disable this behaviour you can set the
        ``dont_click`` argument to ``True``. Also, if you want to change the
        control clicked (instead of disabling it) you can also use the
@@ -869,7 +870,7 @@ fields with form data from :class:`Response` objects.
        :type dont_click: bool
 
        The other parameters of this class method are passed directly to the
-       :class:`FormRequest` ``__init__`` method.
+       :class:`FormRequest` ``__init__()`` method.
 
 Request usage examples
 ----------------------
@@ -936,21 +937,22 @@ method for this job. Here's an example spider which uses it:
 JsonRequest
 -----------
 
-The JsonRequest class extends the base :class:`scrapy.Request` class with functionality for
+The JsonRequest class extends the base :class:`~scrapy.Request` class with functionality for
 dealing with JSON requests.
 
 .. class:: JsonRequest(url, [... data, dumps_kwargs])
 
-   The :class:`JsonRequest` class adds two new keyword parameters to the ``__init__`` method. The
-   remaining arguments are the same as for the :class:`scrapy.Request` class and are
+   The :class:`JsonRequest` class adds two new keyword parameters to the ``__init__()`` method. The
+   remaining arguments are the same as for the :class:`~scrapy.Request` class and are
    not documented here.
 
    Using the :class:`JsonRequest` will set the ``Content-Type`` header to ``application/json``
    and ``Accept`` header to ``application/json, text/javascript, */*; q=0.01``
 
    :param data: is any JSON serializable object that needs to be JSON encoded and assigned to body.
-      if :attr:`scrapy.Request.body` argument is provided this parameter will be ignored.
-      if :attr:`scrapy.Request.body` argument is not provided and data argument is provided :attr:`scrapy.Request.method` will be
+      If the :attr:`~scrapy.Request.body` argument is provided this parameter will be ignored.
+      If the :attr:`~scrapy.Request.body` argument is not provided and the
+      ``data`` argument is provided the :attr:`~scrapy.Request.method` will be
       set to ``'POST'`` automatically.
    :type data: object
 
@@ -1002,7 +1004,7 @@ Response objects
     :type flags: list
 
     :param request: the initial value of the :attr:`Response.request` attribute.
-        This represents the :class:`scrapy.Request` that generated this response.
+        This represents the :class:`~scrapy.Request` that generated this response.
     :type request: scrapy.Request
 
     :param certificate: an object representing the server's SSL certificate.
@@ -1038,11 +1040,12 @@ Response objects
 
     .. attribute:: Response.headers
 
-        A dictionary-like object which contains the response headers. Values can
-        be accessed using :meth:`get` to return the first header value with the
-        specified name or :meth:`getlist` to return all header values with the
-        specified name. For example, this call will give you all cookies in the
-        headers::
+        A dictionary-like (:class:`scrapy.http.headers.Headers`) object which contains
+        the response headers. Values can be accessed using
+        :meth:`~scrapy.http.headers.Headers.get` to return the first header value with
+        the specified name or :meth:`~scrapy.http.headers.Headers.getlist` to return
+        all header values with the specified name. For example, this call will give you
+        all cookies in the headers::
 
             response.headers.getlist('Set-Cookie')
 
@@ -1058,7 +1061,7 @@ Response objects
 
     .. attribute:: Response.request
 
-        The :class:`scrapy.Request` object that generated this response. This attribute is
+        The :class:`~scrapy.Request` object that generated this response. This attribute is
         assigned in the Scrapy engine, after the response and the request have passed
         through all :ref:`Downloader Middlewares <topics-downloader-middleware>`.
         In particular, this means that:
@@ -1077,12 +1080,12 @@ Response objects
 
     .. attribute:: Response.meta
 
-        A shortcut to the :attr:`scrapy.Request.meta` attribute of the
+        A shortcut to the :attr:`~scrapy.Request.meta` attribute of the
         :attr:`Response.request` object (i.e. ``self.request.meta``).
 
         Unlike the :attr:`Response.request` attribute, the :attr:`Response.meta`
         attribute is propagated along redirects and retries, so you will get
-        the original :attr:`scrapy.Request.meta` sent from your spider.
+        the original :attr:`Request.meta <scrapy.Request.meta>` sent from your spider.
 
         .. seealso:: :attr:`scrapy.Request.meta` attribute
 
@@ -1090,13 +1093,13 @@ Response objects
 
         .. versionadded:: 2.0
 
-        A shortcut to the :attr:`scrapy.Request.cb_kwargs` attribute of the
+        A shortcut to the :attr:`~scrapy.Request.cb_kwargs` attribute of the
         :attr:`Response.request` object (i.e. ``self.request.cb_kwargs``).
 
         Unlike the :attr:`Response.request` attribute, the
         :attr:`Response.cb_kwargs` attribute is propagated along redirects and
-        retries, so you will get the original :attr:`scrapy.Request.cb_kwargs` sent
-        from your spider.
+        retries, so you will get the original :attr:`Request.cb_kwargs
+        <scrapy.Request.cb_kwargs>` sent from your spider.
 
         .. seealso:: :attr:`scrapy.Request.cb_kwargs` attribute
 
@@ -1104,7 +1107,7 @@ Response objects
 
         A list that contains flags for this response. Flags are labels used for
         tagging Responses. For example: ``'cached'``, ``'redirected``', etc. And
-        they're shown on the string representation of the Response (`__str__`
+        they're shown on the string representation of the Response (``__str__()``
         method) which is used by the engine for logging.
 
     .. attribute:: Response.certificate
@@ -1181,7 +1184,7 @@ TextResponse objects
     :class:`Response` class, which is meant to be used only for binary data,
     such as images, sounds or any media file.
 
-    :class:`TextResponse` objects support a new ``__init__`` method argument, in
+    :class:`TextResponse` objects support a new ``__init__()`` method argument, in
     addition to the base :class:`Response` objects. The remaining functionality
     is the same as for the :class:`Response` class and is not documented here.
 
@@ -1219,7 +1222,7 @@ TextResponse objects
        A string with the encoding of this response. The encoding is resolved by
        trying the following mechanisms, in order:
 
-       1. the encoding passed in the ``__init__`` method ``encoding`` argument
+       1. the encoding passed in the ``__init__()`` method ``encoding`` argument
 
        2. the encoding declared in the Content-Type HTTP header. If this
           encoding is not valid (i.e. unknown), it is ignored and the next
@@ -1273,7 +1276,7 @@ TextResponse objects
 
         Constructs an absolute url by combining the Response's base url with
         a possible relative url. The base url shall be extracted from the
-        ``<base>`` tag, or just the Response's :attr:`url` if there is no such
+        ``<base>`` tag, or just :attr:`Response.url` if there is no such
         tag.
 
 
