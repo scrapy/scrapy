@@ -1,7 +1,9 @@
 import functools
 import operator
 import platform
+import sys
 
+import pytest
 from twisted.trial import unittest
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
@@ -55,13 +57,6 @@ class MutableAsyncChainTest(unittest.TestCase):
         1 / 0
         for i in range(5, 7):
             yield i
-
-    @staticmethod
-    async def collect_asyncgen_exc(asyncgen):
-        results = []
-        async for x in asyncgen:
-            results.append(x)
-        return results
 
     @deferred_f_from_coro_f
     async def test_mutableasyncchain(self):
@@ -150,6 +145,7 @@ class BinaryIsTextTest(unittest.TestCase):
 
 
 class UtilsPythonTestCase(unittest.TestCase):
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_equal_attributes(self):
         class Obj:
             pass
@@ -238,15 +234,17 @@ class UtilsPythonTestCase(unittest.TestCase):
         self.assertEqual(get_func_args(str.split, stripself=True), ["sep", "maxsplit"])
         self.assertEqual(get_func_args(" ".join, stripself=True), ["iterable"])
 
-        if platform.python_implementation() == "CPython":
-            # This didn't work on older versions of CPython: https://github.com/python/cpython/issues/86951
+        if sys.version_info >= (3, 13) or platform.python_implementation() == "PyPy":
+            # the correct and correctly extracted signature
+            self.assertEqual(
+                get_func_args(operator.itemgetter(2), stripself=True), ["obj"]
+            )
+        elif platform.python_implementation() == "CPython":
+            # ["args", "kwargs"] is a correct result for the pre-3.13 incorrect function signature
+            # [] is an incorrect result on even older CPython (https://github.com/python/cpython/issues/86951)
             self.assertIn(
                 get_func_args(operator.itemgetter(2), stripself=True),
                 [[], ["args", "kwargs"]],
-            )
-        elif platform.python_implementation() == "PyPy":
-            self.assertEqual(
-                get_func_args(operator.itemgetter(2), stripself=True), ["obj"]
             )
 
     def test_without_none_values(self):

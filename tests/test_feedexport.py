@@ -37,7 +37,6 @@ from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.exporters import CsvItemExporter, JsonItemExporter
 from scrapy.extensions.feedexport import (
-    IS_BOTO3_AVAILABLE,
     BlockingFeedStorage,
     FeedExporter,
     FeedSlot,
@@ -50,7 +49,7 @@ from scrapy.extensions.feedexport import (
 )
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
-from scrapy.utils.test import get_crawler, mock_google_cloud_storage, skip_if_no_boto
+from scrapy.utils.test import get_crawler, mock_google_cloud_storage
 from tests.mockserver import MockFTPServer, MockServer
 from tests.spiders import ItemSpider
 
@@ -135,8 +134,7 @@ class FTPFeedStorageTest(unittest.TestCase):
             name = "test_spider"
 
         crawler = get_crawler(settings_dict=settings)
-        spider = TestSpider.from_crawler(crawler)
-        return spider
+        return TestSpider.from_crawler(crawler)
 
     def _store(self, uri, content, feed_options=None, settings=None):
         crawler = get_crawler(settings_dict=settings or {})
@@ -211,8 +209,7 @@ class BlockingFeedStorageTest(unittest.TestCase):
             name = "test_spider"
 
         crawler = get_crawler(settings_dict=settings)
-        spider = TestSpider.from_crawler(crawler)
-        return spider
+        return TestSpider.from_crawler(crawler)
 
     def test_default_temp_dir(self):
         b = BlockingFeedStorage()
@@ -240,10 +237,8 @@ class BlockingFeedStorageTest(unittest.TestCase):
         self.assertRaises(OSError, b.open, spider=spider)
 
 
+@pytest.mark.requires_boto3
 class S3FeedStorageTest(unittest.TestCase):
-    def setUp(self):
-        skip_if_no_boto()
-
     def test_parse_credentials(self):
         aws_credentials = {
             "AWS_ACCESS_KEY_ID": "settings_key",
@@ -292,38 +287,12 @@ class S3FeedStorageTest(unittest.TestCase):
 
         file = mock.MagicMock()
 
-        if IS_BOTO3_AVAILABLE:
-            storage.s3_client = mock.MagicMock()
-            yield storage.store(file)
-            self.assertEqual(
-                storage.s3_client.upload_fileobj.call_args,
-                mock.call(Bucket=bucket, Key=key, Fileobj=file),
-            )
-        else:
-            from botocore.stub import Stubber
-
-            with Stubber(storage.s3_client) as stub:
-                stub.add_response(
-                    "put_object",
-                    expected_params={
-                        "Body": file,
-                        "Bucket": bucket,
-                        "Key": key,
-                    },
-                    service_response={},
-                )
-
-                yield storage.store(file)
-
-                stub.assert_no_pending_responses()
-                self.assertEqual(
-                    file.method_calls,
-                    [
-                        mock.call.seek(0),
-                        # The call to read does not happen with Stubber
-                        mock.call.close(),
-                    ],
-                )
+        storage.s3_client = mock.MagicMock()
+        yield storage.store(file)
+        self.assertEqual(
+            storage.s3_client.upload_fileobj.call_args,
+            mock.call(Bucket=bucket, Key=key, Fileobj=file),
+        )
 
     def test_init_without_acl(self):
         storage = S3FeedStorage("s3://mybucket/export.csv", "access_key", "secret_key")
@@ -459,14 +428,11 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b"test file"))
-        if IS_BOTO3_AVAILABLE:
-            acl = (
-                storage.s3_client.upload_fileobj.call_args[1]
-                .get("ExtraArgs", {})
-                .get("ACL")
-            )
-        else:
-            acl = storage.s3_client.put_object.call_args[1].get("ACL")
+        acl = (
+            storage.s3_client.upload_fileobj.call_args[1]
+            .get("ExtraArgs", {})
+            .get("ACL")
+        )
         self.assertIsNone(acl)
 
     @defer.inlineCallbacks
@@ -480,10 +446,7 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b"test file"))
-        if IS_BOTO3_AVAILABLE:
-            acl = storage.s3_client.upload_fileobj.call_args[1]["ExtraArgs"]["ACL"]
-        else:
-            acl = storage.s3_client.put_object.call_args[1]["ACL"]
+        acl = storage.s3_client.upload_fileobj.call_args[1]["ExtraArgs"]["ACL"]
         self.assertEqual(acl, "custom-acl")
 
     def test_overwrite_default(self):
@@ -508,7 +471,7 @@ class S3FeedStorageTest(unittest.TestCase):
 class GCSFeedStorageTest(unittest.TestCase):
     def test_parse_settings(self):
         try:
-            from google.cloud.storage import Client  # noqa
+            from google.cloud.storage import Client  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
@@ -522,7 +485,7 @@ class GCSFeedStorageTest(unittest.TestCase):
 
     def test_parse_empty_acl(self):
         try:
-            from google.cloud.storage import Client  # noqa
+            from google.cloud.storage import Client  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
@@ -539,7 +502,7 @@ class GCSFeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store(self):
         try:
-            from google.cloud.storage import Client  # noqa
+            from google.cloud.storage import Client  # noqa: F401
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
@@ -764,7 +727,7 @@ class ExceptionJsonItemExporter(JsonItemExporter):
     """JsonItemExporter that throws an exception every time export_item is called."""
 
     def export_item(self, _):
-        raise Exception("foo")
+        raise RuntimeError("foo")
 
 
 class FeedExportTest(FeedExportTestBase):
@@ -793,7 +756,7 @@ class FeedExportTest(FeedExportTestBase):
                 )
 
         finally:
-            for file_path in FEEDS.keys():
+            for file_path in FEEDS:
                 if not Path(file_path).exists():
                     continue
 
@@ -1266,15 +1229,13 @@ class FeedExportTest(FeedExportTestBase):
 
         class CustomFilter2(scrapy.extensions.feedexport.ItemFilter):
             def accepts(self, item):
-                if "foo" not in item.fields:
-                    return False
-                return True
+                return "foo" in item.fields
 
         class CustomFilter3(scrapy.extensions.feedexport.ItemFilter):
             def accepts(self, item):
-                if isinstance(item, tuple(self.item_classes)) and item["foo"] == "bar1":
-                    return True
-                return False
+                return (
+                    isinstance(item, tuple(self.item_classes)) and item["foo"] == "bar1"
+                )
 
         formats = {
             "json": b'[\n{"foo": "bar1", "egg": "spam1"}\n]',
@@ -1794,13 +1755,13 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
                 crawler = get_crawler(spider_cls, settings)
                 yield crawler.crawl()
 
-            for file_path, feed_options in FEEDS.items():
+            for file_path in FEEDS:
                 content[str(file_path)] = (
                     Path(file_path).read_bytes() if Path(file_path).exists() else None
                 )
 
         finally:
-            for file_path in FEEDS.keys():
+            for file_path in FEEDS:
                 if not Path(file_path).exists():
                     continue
 
@@ -2647,9 +2608,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
             crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 12
         )
 
+    @pytest.mark.requires_boto3
     @defer.inlineCallbacks
     def test_s3_export(self):
-        skip_if_no_boto()
         bucket = "mybucket"
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),

@@ -59,7 +59,7 @@ def _embed_ptpython_shell(
     namespace: dict[str, Any] = {}, banner: str = ""
 ) -> EmbedFuncT:
     """Start a ptpython shell"""
-    import ptpython.repl
+    import ptpython.repl  # pylint: disable=import-error
 
     @wraps(_embed_ptpython_shell)
     def wrapper(namespace: dict[str, Any] = namespace, banner: str = "") -> None:
@@ -82,7 +82,7 @@ def _embed_standard_shell(
     else:
         import rlcompleter  # noqa: F401
 
-        readline.parse_and_bind("tab:complete")
+        readline.parse_and_bind("tab:complete")  # type: ignore[attr-defined]
 
     @wraps(_embed_standard_shell)
     def wrapper(namespace: dict[str, Any] = namespace, banner: str = "") -> None:
@@ -101,7 +101,7 @@ DEFAULT_PYTHON_SHELLS: KnownShellsT = {
 
 def get_shell_embed_func(
     shells: Iterable[str] | None = None, known_shells: KnownShellsT | None = None
-) -> Any:
+) -> EmbedFuncT | None:
     """Return the first acceptable shell-embed function
     from a given list of shell names.
     """
@@ -117,6 +117,7 @@ def get_shell_embed_func(
                 return known_shells[shell]()
             except ImportError:
                 continue
+    return None
 
 
 def start_python_console(

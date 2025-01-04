@@ -9,6 +9,8 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+# pylint: disable=import-error
+import os
 import sys
 from pathlib import Path
 
@@ -186,6 +188,8 @@ html_css_files = [
     "custom.css",
 ]
 
+# Set canonical URL from the Read the Docs Domain
+html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
 
 # Options for LaTeX output
 # ------------------------
@@ -229,6 +233,7 @@ linkcheck_ignore = [
     r"http://localhost:\d+",
     "http://hg.scrapy.org",
     "http://directory.google.com/",
+    r"https://github.com/scrapy/scrapy/issues/\d+",
 ]
 
 

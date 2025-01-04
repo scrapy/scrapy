@@ -12,12 +12,10 @@ once the spider has finished crawling all regular (non-failed) pages.
 
 from __future__ import annotations
 
-import warnings
 from logging import Logger, getLogger
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.settings import BaseSettings, Settings
+from scrapy.exceptions import NotConfigured
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import global_object_name
 from scrapy.utils.response import response_status_message
@@ -29,31 +27,11 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
     from scrapy.http import Response
     from scrapy.http.request import Request
+    from scrapy.settings import BaseSettings
     from scrapy.spiders import Spider
 
 
 retry_logger = getLogger(__name__)
-
-
-def backwards_compatibility_getattr(self: Any, name: str) -> tuple[Any, ...]:
-    if name == "EXCEPTIONS_TO_RETRY":
-        warnings.warn(
-            "Attribute RetryMiddleware.EXCEPTIONS_TO_RETRY is deprecated. "
-            "Use the RETRY_EXCEPTIONS setting instead.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return tuple(
-            load_object(x) if isinstance(x, str) else x
-            for x in Settings().getlist("RETRY_EXCEPTIONS")
-        )
-    raise AttributeError(
-        f"{self.__class__.__name__!r} object has no attribute {name!r}"
-    )
-
-
-class BackwardsCompatibilityMetaclass(type):
-    __getattr__ = backwards_compatibility_getattr
 
 
 def get_retry_request(
@@ -137,29 +115,24 @@ def get_retry_request(
         return new_request
     stats.inc_value(f"{stats_base_key}/max_reached")
     logger.error(
-        "Gave up retrying %(request)s (failed %(retry_times)d times): " "%(reason)s",
+        "Gave up retrying %(request)s (failed %(retry_times)d times): %(reason)s",
         {"request": request, "retry_times": retry_times, "reason": reason},
         extra={"spider": spider},
     )
     return None
 
 
-class RetryMiddleware(metaclass=BackwardsCompatibilityMetaclass):
+class RetryMiddleware:
     def __init__(self, settings: BaseSettings):
         if not settings.getbool("RETRY_ENABLED"):
             raise NotConfigured
         self.max_retry_times = settings.getint("RETRY_TIMES")
         self.retry_http_codes = {int(x) for x in settings.getlist("RETRY_HTTP_CODES")}
         self.priority_adjust = settings.getint("RETRY_PRIORITY_ADJUST")
-
-        try:
-            self.exceptions_to_retry = self.__getattribute__("EXCEPTIONS_TO_RETRY")
-        except AttributeError:
-            # If EXCEPTIONS_TO_RETRY is not "overridden"
-            self.exceptions_to_retry = tuple(
-                load_object(x) if isinstance(x, str) else x
-                for x in settings.getlist("RETRY_EXCEPTIONS")
-            )
+        self.exceptions_to_retry = tuple(
+            load_object(x) if isinstance(x, str) else x
+            for x in settings.getlist("RETRY_EXCEPTIONS")
+        )
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -199,5 +172,3 @@ class RetryMiddleware(metaclass=BackwardsCompatibilityMetaclass):
             max_retry_times=max_retry_times,
             priority_adjust=priority_adjust,
         )
-
-    __getattr__ = backwards_compatibility_getattr

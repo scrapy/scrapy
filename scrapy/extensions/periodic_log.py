@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from json import JSONEncoder
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet import task
@@ -13,6 +12,8 @@ from scrapy.utils.serialize import ScrapyJSONEncoder
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
+    from json import JSONEncoder
+
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
@@ -150,10 +151,7 @@ class PeriodicLog:
                 return False
         if exclude and not include:
             return True
-        for p in include:
-            if p in stat_name:
-                return True
-        return False
+        return any(p in stat_name for p in include)
 
     def spider_closed(self, spider: Spider, reason: str) -> None:
         self.log()

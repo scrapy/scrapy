@@ -143,7 +143,7 @@ class RequestTest(unittest.TestCase):
         # percent-escaping sequences that do not match valid UTF-8 sequences
         # should be kept untouched (just upper-cased perhaps)
         #
-        # See https://tools.ietf.org/html/rfc3987#section-3.2
+        # See https://datatracker.ietf.org/doc/html/rfc3987#section-3.2
         #
         # "Conversions from URIs to IRIs MUST NOT use any character encoding
         # other than UTF-8 in steps 3 and 4, even if it might be possible to
@@ -1488,10 +1488,7 @@ def _buildresponse(body, **kwargs):
 
 
 def _qs(req, encoding="utf-8", to_unicode=False):
-    if req.method == "POST":
-        qs = req.body
-    else:
-        qs = req.url.partition("?")[2]
+    qs = req.body if req.method == "POST" else req.url.partition("?")[2]
     uqs = unquote_to_bytes(qs)
     if to_unicode:
         uqs = uqs.decode(encoding)
@@ -1717,7 +1714,3 @@ class JsonRequestTest(RequestTest):
     def tearDown(self):
         warnings.resetwarnings()
         super().tearDown()
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
-import lxml.etree  # nosec
+import lxml.etree
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -24,15 +24,17 @@ class Sitemap:
         xmlp = lxml.etree.XMLParser(
             recover=True, remove_comments=True, resolve_entities=False
         )
-        self._root = lxml.etree.fromstring(xmltext, parser=xmlp)  # nosec
+        self._root = lxml.etree.fromstring(xmltext, parser=xmlp)  # noqa: S320
         rt = self._root.tag
-        self.type = self._root.tag.split("}", 1)[1] if "}" in rt else rt
+        assert isinstance(rt, str)
+        self.type = rt.split("}", 1)[1] if "}" in rt else rt
 
     def __iter__(self) -> Iterator[dict[str, Any]]:
         for elem in self._root.getchildren():
             d: dict[str, Any] = {}
             for el in elem.getchildren():
                 tag = el.tag
+                assert isinstance(tag, str)
                 name = tag.split("}", 1)[1] if "}" in tag else tag
 
                 if name == "link":

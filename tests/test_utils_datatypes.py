@@ -3,6 +3,8 @@ import unittest
 import warnings
 from collections.abc import Iterator, Mapping, MutableMapping
 
+import pytest
+
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.utils.datatypes import (
@@ -90,12 +92,14 @@ class CaseInsensitiveDictMixin:
         self.assertRaises(KeyError, d.__getitem__, "key_LOWER")
         self.assertRaises(KeyError, d.__getitem__, "key_lower")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_getdefault(self):
         d = CaselessDict()
         self.assertEqual(d.get("c", 5), 5)
         d["c"] = 10
         self.assertEqual(d.get("c", 5), 10)
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_setdefault(self):
         d = CaselessDict({"a": 1, "b": 2})
 
@@ -154,6 +158,7 @@ class CaseInsensitiveDictMixin:
             def _normvalue(self, value):
                 if value is not None:
                     return value + 1
+                return None
 
             normvalue = _normvalue  # deprecated CaselessDict class
 
@@ -212,11 +217,13 @@ class CaseInsensitiveDictTest(CaseInsensitiveDictMixin, unittest.TestCase):
         self.assertEqual(list(iterkeys), ["AsDf", "FoO"])
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class CaselessDictTest(CaseInsensitiveDictMixin, unittest.TestCase):
     dict_class = CaselessDict
 
     def test_deprecation_message(self):
         with warnings.catch_warnings(record=True) as caught:
+            warnings.filterwarnings("always", category=ScrapyDeprecationWarning)
             self.dict_class({"foo": "bar"})
 
             self.assertEqual(len(caught), 1)
@@ -365,7 +372,3 @@ class LocalWeakReferencedCacheTest(unittest.TestCase):
         for i, r in enumerate(refs):
             self.assertIn(r, cache)
             self.assertEqual(cache[r], i)
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -43,7 +43,7 @@ class TextResponse(Response):
     _DEFAULT_ENCODING = "ascii"
     _cached_decoded_json = _NONE
 
-    attributes: tuple[str, ...] = Response.attributes + ("encoding",)
+    attributes: tuple[str, ...] = (*Response.attributes, "encoding")
 
     def __init__(self, *args: Any, **kwargs: Any):
         self._encoding: str | None = kwargs.pop("encoding", None)
@@ -308,7 +308,7 @@ def _url_from_selector(sel: parsel.Selector) -> str:
         raise _InvalidSelector(f"Unsupported selector: {sel}")
     if sel.root.tag not in ("a", "link"):
         raise _InvalidSelector(
-            "Only <a> and <link> elements are supported; " f"got <{sel.root.tag}>"
+            f"Only <a> and <link> elements are supported; got <{sel.root.tag}>"
         )
     href = sel.root.get("href")
     if href is None:

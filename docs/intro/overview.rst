@@ -152,6 +152,6 @@ interest!
 
 .. _join the community: https://scrapy.org/community/
 .. _web scraping: https://en.wikipedia.org/wiki/Web_scraping
-.. _Amazon Associates Web Services: https://affiliate-program.amazon.com/gp/advertising/api/detail/main.html
+.. _Amazon Associates Web Services: https://affiliate-program.amazon.com/welcome/ecs
 .. _Amazon S3: https://aws.amazon.com/s3/
 .. _Sitemaps: https://www.sitemaps.org/index.html

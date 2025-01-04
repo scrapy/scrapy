@@ -21,7 +21,8 @@ from typing import (
 
 from w3lib.url import safe_url_string
 
-import scrapy
+# a workaround for the docs "more than one target found" problem
+import scrapy  # noqa: TC001
 from scrapy.http.headers import Headers
 from scrapy.utils.curl import curl_to_request_kwargs
 from scrapy.utils.python import to_bytes
@@ -43,10 +44,10 @@ if TYPE_CHECKING:
 
 
 class VerboseCookie(TypedDict):
-    name: str
-    value: str
-    domain: NotRequired[str]
-    path: NotRequired[str]
+    name: str | bytes
+    value: str | bytes | bool | float | int
+    domain: NotRequired[str | bytes]
+    path: NotRequired[str | bytes]
     secure: NotRequired[bool]
 
 
@@ -222,7 +223,7 @@ class Request(object_ref):
         **kwargs: Any,
     ) -> Self:
         """Create a Request object from a string containing a `cURL
-        <https://curl.haxx.se/>`_ command. It populates the HTTP method, the
+        <https://curl.se/>`_ command. It populates the HTTP method, the
         URL, the headers, the cookies and the body. It accepts the same
         arguments as the :class:`Request` class, taking preference and
         overriding the values of the same arguments contained in the cURL

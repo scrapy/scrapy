@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.job import job_dir
 from scrapy.utils.request import (
     RequestFingerprinter,
@@ -26,6 +28,15 @@ if TYPE_CHECKING:
 class BaseDupeFilter:
     @classmethod
     def from_settings(cls, settings: BaseSettings) -> Self:
+        warnings.warn(
+            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return cls()
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls()
 
     def request_seen(self, request: Request) -> bool:
@@ -39,7 +50,6 @@ class BaseDupeFilter:
 
     def log(self, request: Request, spider: Spider) -> None:
         """Log that a request has been filtered"""
-        pass
 
 
 class RFPDupeFilter(BaseDupeFilter):
@@ -72,16 +82,30 @@ class RFPDupeFilter(BaseDupeFilter):
         *,
         fingerprinter: RequestFingerprinterProtocol | None = None,
     ) -> Self:
-        debug = settings.getbool("DUPEFILTER_DEBUG")
-        return cls(job_dir(settings), debug, fingerprinter=fingerprinter)
+        warnings.warn(
+            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return cls._from_settings(settings, fingerprinter=fingerprinter)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         assert crawler.request_fingerprinter
-        return cls.from_settings(
+        return cls._from_settings(
             crawler.settings,
             fingerprinter=crawler.request_fingerprinter,
         )
+
+    @classmethod
+    def _from_settings(
+        cls,
+        settings: BaseSettings,
+        *,
+        fingerprinter: RequestFingerprinterProtocol | None = None,
+    ) -> Self:
+        debug = settings.getbool("DUPEFILTER_DEBUG")
+        return cls(job_dir(settings), debug, fingerprinter=fingerprinter)
 
     def request_seen(self, request: Request) -> bool:
         fp = self.request_fingerprint(request)

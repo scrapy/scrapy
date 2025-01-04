@@ -178,27 +178,23 @@ class TestSpider(Spider):
         """method with no url
         @returns items 1 1
         """
-        pass
 
     def custom_form(self, response):
         """
         @url http://scrapy.org
         @custom_form
         """
-        pass
 
     def invalid_regex(self, response):
         """method with invalid regex
         @ Scrapy is awsome
         """
-        pass
 
     def invalid_regex_with_valid_contract(self, response):
         """method with invalid regex
         @ scrapy is awsome
         @url http://scrapy.org
         """
-        pass
 
     def returns_request_meta(self, response):
         """method which returns request
@@ -235,7 +231,6 @@ class CustomContractSuccessSpider(Spider):
         """
         @custom_success_contract
         """
-        pass
 
 
 class CustomContractFailSpider(Spider):
@@ -245,7 +240,6 @@ class CustomContractFailSpider(Spider):
         """
         @custom_fail_contract
         """
-        pass
 
 
 class InheritsTestSpider(TestSpider):
@@ -523,8 +517,8 @@ class ContractsManagerTest(unittest.TestCase):
                 super().__init__(*args, **kwargs)
                 self.visited = 0
 
-            def start_requests(s):
-                return self.conman.from_spider(s, self.results)
+            def start_requests(self_):  # pylint: disable=no-self-argument
+                return self.conman.from_spider(self_, self.results)
 
             def parse_first(self, response):
                 self.visited += 1
@@ -556,3 +550,61 @@ class ContractsManagerTest(unittest.TestCase):
 
         requests = self.conman.from_spider(spider, self.results)
         self.assertTrue(requests)
+
+
+class CustomFailContractPreProcess(Contract):
+    name = "test_contract"
+
+    def pre_process(self, response):
+        raise KeyboardInterrupt("Pre-process exception")
+
+
+class CustomFailContractPostProcess(Contract):
+    name = "test_contract"
+
+    def post_process(self, response):
+        raise KeyboardInterrupt("Post-process exception")
+
+
+class CustomContractPrePostProcess(unittest.TestCase):
+
+    def setUp(self):
+        self.results = TextTestResult(stream=None, descriptions=False, verbosity=0)
+
+    def test_pre_hook_keyboard_interrupt(self):
+        spider = TestSpider()
+        response = ResponseMock()
+        contract = CustomFailContractPreProcess(spider.returns_request)
+        conman = ContractsManager([contract])
+
+        try:
+            request = conman.from_method(spider.returns_request, self.results)
+            contract.add_pre_hook(request, self.results)
+            # Expect this to raise a KeyboardInterrupt
+            request.callback(response, **request.cb_kwargs)
+        except KeyboardInterrupt as e:
+            self.assertEqual(str(e), "Pre-process exception")
+        else:
+            self.fail("KeyboardInterrupt not raised")
+
+        self.assertFalse(self.results.failures)
+        self.assertFalse(self.results.errors)
+
+    def test_post_hook_keyboard_interrupt(self):
+        spider = TestSpider()
+        response = ResponseMock()
+        contract = CustomFailContractPostProcess(spider.returns_request)
+        conman = ContractsManager([contract])
+
+        try:
+            request = conman.from_method(spider.returns_request, self.results)
+            contract.add_post_hook(request, self.results)
+            # Expect this to raise a KeyboardInterrupt
+            request.callback(response, **request.cb_kwargs)
+        except KeyboardInterrupt as e:
+            self.assertEqual(str(e), "Post-process exception")
+        else:
+            self.fail("KeyboardInterrupt not raised")
+
+        self.assertFalse(self.results.failures)
+        self.assertFalse(self.results.errors)

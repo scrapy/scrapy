@@ -1,18 +1,20 @@
 from __future__ import annotations
 
-import argparse
 import os
 import shutil
 import string
 from importlib import import_module
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlparse
 
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.utils.template import render_templatefile, string_camelcase
+
+if TYPE_CHECKING:
+    import argparse
 
 
 def sanitize_module_name(module_name: str) -> str:
@@ -99,7 +101,7 @@ class Command(ScrapyCommand):
                 print(template_file.read_text(encoding="utf-8"))
             return
         if len(args) != 2:
-            raise UsageError()
+            raise UsageError
 
         name, url = args[0:2]
         url = verify_url_scheme(url)
@@ -116,7 +118,7 @@ class Command(ScrapyCommand):
         if template_file:
             self._genspider(module, name, url, opts.template, template_file)
             if opts.edit:
-                self.exitcode = os.system(f'scrapy edit "{name}"')  # nosec
+                self.exitcode = os.system(f'scrapy edit "{name}"')  # noqa: S605
 
     def _generate_template_variables(
         self,
@@ -152,7 +154,7 @@ class Command(ScrapyCommand):
             spiders_dir = Path(spiders_module.__file__).parent.resolve()
         else:
             spiders_module = None
-            spiders_dir = Path(".")
+            spiders_dir = Path()
         spider_file = f"{spiders_dir / module}.py"
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)

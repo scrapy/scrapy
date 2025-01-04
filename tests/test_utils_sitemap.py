@@ -295,7 +295,3 @@ Disallow: /forum/active/
         )
 
         self.assertEqual(list(s), [{"loc": "http://127.0.0.1:8000/"}])
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -13,7 +13,6 @@ import pprint
 from typing import TYPE_CHECKING, Any
 
 from twisted.internet import protocol
-from twisted.internet.tcp import Port
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
@@ -24,6 +23,7 @@ from scrapy.utils.trackref import print_live_refs
 
 if TYPE_CHECKING:
     from twisted.conch import telnet
+    from twisted.internet.tcp import Port
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -75,7 +75,7 @@ class TelnetConsole(protocol.ServerFactory):
     def stop_listening(self) -> None:
         self.port.stopListening()
 
-    def protocol(self) -> telnet.TelnetTransport:  # type: ignore[override]
+    def protocol(self) -> telnet.TelnetTransport:
         # these import twisted.internet.reactor
         from twisted.conch import manhole, telnet
         from twisted.conch.insults import insults
@@ -84,7 +84,9 @@ class TelnetConsole(protocol.ServerFactory):
             """An implementation of IPortal"""
 
             @defers
-            def login(self_, credentials, mind, *interfaces):
+            def login(
+                self_, credentials, mind, *interfaces
+            ):  # pylint: disable=no-self-argument
                 if not (
                     credentials.username == self.username.encode("utf8")
                     and credentials.checkPassword(self.password.encode("utf8"))

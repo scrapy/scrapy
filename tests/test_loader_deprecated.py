@@ -69,8 +69,7 @@ class BasicItemLoaderTest(unittest.TestCase):
     def test_load_item_ignore_none_field_values(self):
         def validate_sku(value):
             # Let's assume a SKU is only digits.
-            if value.isdigit():
-                return value
+            return value if value.isdigit() else None
 
         class MyLoader(ItemLoader):
             name_out = Compose(lambda vs: vs[0])  # take first which allows empty values
@@ -331,10 +330,10 @@ class BasicItemLoaderTest(unittest.TestCase):
         il.add_value("name", ["mar", "ta"])
         self.assertEqual(il.get_output_value("name"), "Mar Ta")
 
-        class TakeFirstItemLoader(TestItemLoader):
+        class TakeFirstItemLoader2(TestItemLoader):
             name_out = Join("<br>")
 
-        il = TakeFirstItemLoader()
+        il = TakeFirstItemLoader2()
         il.add_value("name", ["mar", "ta"])
         self.assertEqual(il.get_output_value("name"), "Mar<br>Ta")
 
@@ -716,7 +715,3 @@ class FunctionProcessorTestCase(unittest.TestCase):
         lo.add_value("foo", "  bar  ")
         lo.add_value("foo", ["  asdf  ", "  qwerty  "])
         self.assertEqual(dict(lo.load_item()), {"foo": ["BAR", "ASDF", "QWERTY"]})
-
-
-if __name__ == "__main__":
-    unittest.main()

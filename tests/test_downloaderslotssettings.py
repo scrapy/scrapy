@@ -31,7 +31,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
     def start_requests(self):
         self.times = {None: []}
 
-        slots = list(self.custom_settings.get("DOWNLOAD_SLOTS", {}).keys()) + [None]
+        slots = [*self.custom_settings.get("DOWNLOAD_SLOTS", {}), None]
 
         for slot in slots:
             url = self.mockserver.url(f"/?downloader_slot={slot}")
@@ -80,7 +80,6 @@ def test_params():
         "concurrency": 1,
         "delay": 2,
         "randomize_delay": False,
-        "throttle": False,
     }
     settings = {
         "DOWNLOAD_SLOTS": {

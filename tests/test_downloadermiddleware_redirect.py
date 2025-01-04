@@ -1314,7 +1314,3 @@ def test_meta_refresh_schemes(url, location, target):
     else:
         assert isinstance(redirect, Request)
         assert redirect.url == target
-
-
-if __name__ == "__main__":
-    unittest.main()

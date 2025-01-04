@@ -2,11 +2,8 @@ import unittest
 from email.charset import Charset
 from io import BytesIO
 
-from twisted import version as twisted_version
 from twisted.internet import defer
 from twisted.internet._sslverify import ClientTLSOptions
-from twisted.internet.ssl import ClientContextFactory
-from twisted.python.versions import Version
 
 from scrapy.mail import MailSender
 
@@ -159,11 +156,4 @@ class MailSenderTest(unittest.TestCase):
         )
 
         context = factory.buildProtocol("test@scrapy.org").context
-        if twisted_version >= Version("twisted", 21, 2, 0):
-            self.assertIsInstance(context, ClientTLSOptions)
-        else:
-            self.assertIsInstance(context, ClientContextFactory)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        self.assertIsInstance(context, ClientTLSOptions)

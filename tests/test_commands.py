@@ -87,13 +87,13 @@ class ProjectTest(unittest.TestCase):
 
     def call(self, *new_args, **kwargs):
         with TemporaryFile() as out:
-            args = (sys.executable, "-m", "scrapy.cmdline") + new_args
+            args = (sys.executable, "-m", "scrapy.cmdline", *new_args)
             return subprocess.call(
                 args, stdout=out, stderr=out, cwd=self.cwd, env=self.env, **kwargs
             )
 
     def proc(self, *new_args, **popen_kwargs):
-        args = (sys.executable, "-m", "scrapy.cmdline") + new_args
+        args = (sys.executable, "-m", "scrapy.cmdline", *new_args)
         p = subprocess.Popen(
             args,
             cwd=popen_kwargs.pop("cwd", self.cwd),
@@ -238,7 +238,7 @@ class StartprojectTemplatesTest(ProjectTest):
         args = ["--set", f"TEMPLATES_DIR={self.tmpl}"]
         p, out, err = self.proc("startproject", self.project_name, *args)
         self.assertIn(
-            f"New Scrapy project '{self.project_name}', " "using template directory",
+            f"New Scrapy project '{self.project_name}', using template directory",
             out,
         )
         self.assertIn(self.tmpl_proj, out)

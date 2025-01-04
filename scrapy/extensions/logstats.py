@@ -83,12 +83,15 @@ class LogStats:
         self, spider: Spider
     ) -> tuple[None, None] | tuple[float, float]:
         start_time = self.stats.get_value("start_time")
-        finished_time = self.stats.get_value("finished_time")
+        finish_time = self.stats.get_value("finish_time")
 
-        if not start_time or not finished_time:
+        if not start_time or not finish_time:
             return None, None
 
-        mins_elapsed = (finished_time - start_time).seconds / 60
+        mins_elapsed = (finish_time - start_time).seconds / 60
+
+        if mins_elapsed == 0:
+            return None, None
 
         items = self.stats.get_value("item_scraped_count", 0)
         pages = self.stats.get_value("response_received_count", 0)

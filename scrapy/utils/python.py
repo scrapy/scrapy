@@ -8,12 +8,14 @@ import gc
 import inspect
 import re
 import sys
+import warnings
 import weakref
 from collections.abc import AsyncIterable, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator
 
 if TYPE_CHECKING:
@@ -47,6 +49,11 @@ def flatten(x: Iterable[Any]) -> list[Any]:
     >>> flatten(["foo", ["baz", 42], "bar"])
     ['foo', 'baz', 42, 'bar']
     """
+    warnings.warn(
+        "The flatten function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     return list(iflatten(x))
 
 
@@ -54,6 +61,11 @@ def iflatten(x: Iterable[Any]) -> Iterable[Any]:
     """iflatten(sequence) -> iterator
 
     Similar to ``.flatten()``, but returns iterator instead"""
+    warnings.warn(
+        "The iflatten function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     for el in x:
         if is_listlike(el):
             yield from iflatten(el)
@@ -124,7 +136,7 @@ def to_bytes(
         return text
     if not isinstance(text, str):
         raise TypeError(
-            "to_bytes must receive a str or bytes " f"object, got {type(text).__name__}"
+            f"to_bytes must receive a str or bytes object, got {type(text).__name__}"
         )
     if encoding is None:
         encoding = "utf-8"
@@ -223,8 +235,7 @@ def get_func_args(func: Callable[..., Any], stripself: bool = False) -> list[str
                 continue
             args.append(name)
     else:
-        for name in sig.parameters.keys():
-            args.append(name)
+        args = list(sig.parameters)
 
     if stripself and args and args[0] == "self":
         args = args[1:]
@@ -272,6 +283,11 @@ def equal_attributes(
     obj1: Any, obj2: Any, attributes: list[str | Callable[[Any], Any]] | None
 ) -> bool:
     """Compare two objects attributes"""
+    warnings.warn(
+        "The equal_attributes function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     # not attributes given return False by default
     if not attributes:
         return False
@@ -306,14 +322,12 @@ def without_none_values(
     """
     if isinstance(iterable, Mapping):
         return {k: v for k, v in iterable.items() if v is not None}
-    else:
-        # the iterable __init__ must take another iterable
-        return type(iterable)(v for v in iterable if v is not None)  # type: ignore[call-arg]
+    # the iterable __init__ must take another iterable
+    return type(iterable)(v for v in iterable if v is not None)  # type: ignore[call-arg]
 
 
 def global_object_name(obj: Any) -> str:
-    """
-    Return full name of a global object.
+    """Return the full import path of the given class.
 
     >>> from scrapy import Request
     >>> global_object_name(Request)

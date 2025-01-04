@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import warnings
 from importlib import import_module
 from pathlib import Path
 from posixpath import split
@@ -15,7 +16,7 @@ from unittest import TestCase, mock
 from twisted.trial.unittest import SkipTest
 
 from scrapy import Spider
-from scrapy.crawler import Crawler
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.boto import is_botocore_available
 
 if TYPE_CHECKING:
@@ -23,6 +24,8 @@ if TYPE_CHECKING:
 
     from twisted.internet.defer import Deferred
     from twisted.web.client import Response as TxResponse
+
+    from scrapy.crawler import Crawler
 
 
 _T = TypeVar("_T")
@@ -125,6 +128,11 @@ def assert_samelines(
     """Asserts text1 and text2 have the same lines, ignoring differences in
     line endings between platforms
     """
+    warnings.warn(
+        "The assert_samelines function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
 
 

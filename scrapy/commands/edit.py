@@ -28,16 +28,17 @@ class Command(ScrapyCommand):
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         if len(args) != 1:
-            raise UsageError()
+            raise UsageError
 
         editor = self.settings["EDITOR"]
         assert self.crawler_process
         try:
             spidercls = self.crawler_process.spider_loader.load(args[0])
         except KeyError:
-            return self._err(f"Spider not found: {args[0]}")
+            self._err(f"Spider not found: {args[0]}")
+            return
 
         sfile = sys.modules[spidercls.__module__].__file__
         assert sfile
         sfile = sfile.replace(".pyc", ".py")
-        self.exitcode = os.system(f'{editor} "{sfile}"')  # nosec
+        self.exitcode = os.system(f'{editor} "{sfile}"')  # noqa: S605

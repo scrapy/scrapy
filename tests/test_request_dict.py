@@ -159,7 +159,7 @@ class RequestSerializationTest(unittest.TestCase):
 
 
 class TestSpiderMixin:
-    def __mixin_callback(self, response):
+    def __mixin_callback(self, response):  # pylint: disable=unused-private-member
         pass
 
 
@@ -191,7 +191,8 @@ class TestSpider(Spider, TestSpiderMixin):
     __parse_item_reference = private_parse_item
     __handle_error_reference = private_handle_error
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.delegated_callback = TestSpiderDelegation().delegated_callback
 
     def parse_item(self, response):
@@ -200,5 +201,5 @@ class TestSpider(Spider, TestSpiderMixin):
     def handle_error(self, failure):
         pass
 
-    def __parse_item_private(self, response):
+    def __parse_item_private(self, response):  # pylint: disable=unused-private-member
         pass

@@ -174,14 +174,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 # _process_spider_exception too, which complicates the architecture
                 msg = f"Async iterable returned from {method.__qualname__} cannot be downgraded"
                 raise _InvalidOutput(msg)
-            elif result is None:
+            if result is None:
                 continue
-            else:
-                msg = (
-                    f"{method.__qualname__} must return None "
-                    f"or an iterable, got {type(result)}"
-                )
-                raise _InvalidOutput(msg)
+            msg = (
+                f"{method.__qualname__} must return None "
+                f"or an iterable, got {type(result)}"
+            )
+            raise _InvalidOutput(msg)
         return _failure
 
     # This method cannot be made async def, as _process_spider_exception relies on the Deferred result
@@ -199,10 +198,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         # chain, they went through it already from the process_spider_exception method
         recovered: MutableChain[_T] | MutableAsyncChain[_T]
         last_result_is_async = isinstance(result, AsyncIterable)
-        if last_result_is_async:
-            recovered = MutableAsyncChain()
-        else:
-            recovered = MutableChain()
+        recovered = MutableAsyncChain() if last_result_is_async else MutableChain()
 
         # There are three cases for the middleware: def foo, async def foo, def foo + async def foo_async.
         # 1. def foo. Sync iterables are passed as is, async ones are downgraded.

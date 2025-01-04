@@ -47,7 +47,7 @@ class TestLogStats(unittest.TestCase):
 
         # Simulate when spider closes after running for 30 mins
         self.stats.set_value("start_time", datetime.fromtimestamp(1655100172))
-        self.stats.set_value("finished_time", datetime.fromtimestamp(1655101972))
+        self.stats.set_value("finish_time", datetime.fromtimestamp(1655101972))
         logstats.spider_closed(self.spider, "test reason")
         self.assertEqual(self.stats.get_value("responses_per_minute"), 172.9)
         self.assertEqual(self.stats.get_value("items_per_minute"), 116.4)
@@ -57,6 +57,15 @@ class TestLogStats(unittest.TestCase):
         not available.
         """
         logstats = LogStats.from_crawler(self.crawler)
+        logstats.spider_closed(self.spider, "test reason")
+        self.assertIsNone(self.stats.get_value("responses_per_minute"))
+        self.assertIsNone(self.stats.get_value("items_per_minute"))
+
+    def test_stats_calculation_no_elapsed_time(self):
+        """The stat values should be None since the elapsed time is 0."""
+        logstats = LogStats.from_crawler(self.crawler)
+        self.stats.set_value("start_time", datetime.fromtimestamp(1655100172))
+        self.stats.set_value("finish_time", datetime.fromtimestamp(1655100172))
         logstats.spider_closed(self.spider, "test reason")
         self.assertIsNone(self.stats.get_value("responses_per_minute"))
         self.assertIsNone(self.stats.get_value("items_per_minute"))

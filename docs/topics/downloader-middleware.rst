@@ -877,7 +877,7 @@ REDIRECT_MAX_TIMES
 Default: ``20``
 
 The maximum number of redirections that will be followed for a single request.
-After this maximum, the request's response is returned as is.
+If maximum redirections are exceeded, the request is aborted and ignored.
 
 MetaRefreshMiddleware
 ---------------------
@@ -926,10 +926,6 @@ Meta tags within these tags are ignored.
 .. versionchanged:: 2.11.2
    The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
    ``[]`` to ``["noscript"]``.
-
-.. versionchanged:: VERSION
-   The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
-   ``[]`` to ``['noscript']``.
 
 .. setting:: METAREFRESH_MAXDELAY
 
@@ -1106,7 +1102,7 @@ Parsers vary in several aspects:
 
 * Support for wildcard matching
 
-* Usage of `length based rule <https://developers.google.com/search/reference/robots_txt#order-of-precedence-for-group-member-lines>`_:
+* Usage of `length based rule <https://developers.google.com/search/docs/crawling-indexing/robots/robots_txt#order-of-precedence-for-rules>`_:
   in particular for ``Allow`` and ``Disallow`` directives, where the most
   specific rule based on the length of the path trumps the less specific
   (shorter) rule
@@ -1124,7 +1120,7 @@ Based on `Protego <https://github.com/scrapy/protego>`_:
 * implemented in Python
 
 * is compliant with `Google's Robots.txt Specification
-  <https://developers.google.com/search/reference/robots_txt>`_
+  <https://developers.google.com/search/docs/crawling-indexing/robots/robots_txt>`_
 
 * supports wildcard matching
 
@@ -1159,7 +1155,7 @@ In order to use this parser, set:
 Robotexclusionrulesparser
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
+Based on `Robotexclusionrulesparser <https://pypi.org/project/robotexclusionrulesparser/>`_:
 
 * implemented in Python
 
@@ -1172,7 +1168,7 @@ Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
 
 In order to use this parser:
 
-* Install `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_ by running
+* Install ``Robotexclusionrulesparser`` by running
   ``pip install robotexclusionrulesparser``
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
@@ -1232,9 +1228,7 @@ AjaxCrawlMiddleware
 .. class:: AjaxCrawlMiddleware
 
    Middleware that finds 'AJAX crawlable' page variants based
-   on meta-fragment html tag. See
-   https://developers.google.com/search/docs/ajax-crawling/docs/getting-started
-   for more info.
+   on meta-fragment html tag.
 
    .. note::
 

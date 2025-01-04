@@ -71,7 +71,6 @@ class FileDownloadCrawlTestCase(TestCase):
         # prepare a directory for storing files
         self.tmpmediastore = Path(mkdtemp())
         self.settings = {
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             "ITEM_PIPELINES": {self.pipeline_class: 1},
             self.store_setting_key: str(self.tmpmediastore),
         }
@@ -219,11 +218,9 @@ class FileDownloadCrawlTestCase(TestCase):
 
 skip_pillow: str | None
 try:
-    from PIL import Image  # noqa: imported just to check for the import error
+    from PIL import Image  # noqa: F401
 except ImportError:
-    skip_pillow = (
-        "Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow"
-    )
+    skip_pillow = "Missing Python Imaging Library, install https://pypi.org/pypi/Pillow"
 else:
     skip_pillow = None
 

@@ -3,25 +3,23 @@ from __future__ import annotations
 import numbers
 import os
 import sys
-import warnings
-from collections.abc import Iterable
 from configparser import ConfigParser
 from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, cast
 
-from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
+from scrapy.exceptions import UsageError
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Mapping, MutableMapping
+    from collections.abc import Collection, Iterable, Mapping, MutableMapping
 
 
 def build_component_list(
     compdict: MutableMapping[Any, Any],
-    custom: Any = None,
+    *,
     convert: Callable[[Any], Any] = update_classpath,
 ) -> list[Any]:
     """Compose a component list from a { class: order } dictionary."""
@@ -45,8 +43,7 @@ def build_component_list(
                         "convert to the same "
                         "object, please update your settings"
                     )
-                else:
-                    compbs.set(convert(k), v, priority=prio)
+                compbs.set(convert(k), v, priority=prio)
             return compbs
         _check_components(compdict)
         return {convert(k): v for k, v in compdict.items()}
@@ -59,19 +56,6 @@ def build_component_list(
                     f"Invalid value {value} for component {name}, "
                     "please provide a real number or None instead"
                 )
-
-    if custom is not None:
-        warnings.warn(
-            "The 'custom' attribute of build_component_list() is deprecated. "
-            "Please merge its value into 'compdict' manually or change your "
-            "code to use Settings.getwithbase().",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        if isinstance(custom, (list, tuple)):
-            _check_components(custom)
-            return type(custom)(convert(c) for c in custom)  # type: ignore[return-value]
-        compdict.update(custom)
 
     _validate_values(compdict)
     compdict = without_none_values(_map_keys(compdict))
@@ -159,7 +143,7 @@ def feed_complete_default_values_from_settings(
 def feed_process_params_from_cli(
     settings: BaseSettings,
     output: list[str],
-    output_format: str | None = None,
+    *,
     overwrite_output: list[str] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """
@@ -186,36 +170,8 @@ def feed_process_params_from_cli(
             raise UsageError(
                 "Please use only one of -o/--output and -O/--overwrite-output"
             )
-        if output_format:
-            raise UsageError(
-                "-t/--output-format is a deprecated command line option"
-                " and does not work in combination with -O/--overwrite-output."
-                " To specify a format please specify it after a colon at the end of the"
-                " output URI (i.e. -O <URI>:<FORMAT>)."
-                " Example working in the tutorial: "
-                "scrapy crawl quotes -O quotes.json:json"
-            )
         output = overwrite_output
         overwrite = True
-
-    if output_format:
-        if len(output) == 1:
-            check_valid_format(output_format)
-            message = (
-                "The -t/--output-format command line option is deprecated in favor of "
-                "specifying the output format within the output URI using the -o/--output or the"
-                " -O/--overwrite-output option (i.e. -o/-O <URI>:<FORMAT>). See the documentation"
-                " of the -o or -O option or the following examples for more information. "
-                "Examples working in the tutorial: "
-                "scrapy crawl quotes -o quotes.csv:csv   or   "
-                "scrapy crawl quotes -O quotes.json:json"
-            )
-            warnings.warn(message, ScrapyDeprecationWarning, stacklevel=2)
-            return {output[0]: {"format": output_format}}
-        raise UsageError(
-            "The -t command-line option cannot be used if multiple output "
-            "URIs are specified"
-        )
 
     result: dict[str, dict[str, Any]] = {}
     for element in output:

@@ -428,7 +428,7 @@ with multiples lines
 
     @defer.inlineCallbacks
     def test_crawl_multiple(self):
-        runner = CrawlerRunner({"REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7"})
+        runner = CrawlerRunner()
         runner.crawl(
             SimpleSpider,
             self.mockserver.url("/status?n=200"),

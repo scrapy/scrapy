@@ -1,13 +1,13 @@
 import logging
-import os
 import platform
+import re
 import signal
 import subprocess
 import sys
 import warnings
 from pathlib import Path
+from typing import Any
 
-import pytest
 from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
 from pytest import mark, raises
@@ -28,10 +28,7 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer, get_mockserver_env
 
-# To prevent warnings.
-BASE_SETTINGS = {
-    "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
-}
+BASE_SETTINGS: dict[str, Any] = {}
 
 
 def get_raw_crawler(spidercls=None, settings_dict=None):
@@ -84,13 +81,10 @@ class CrawlerTestCase(BaseCrawlerTest):
             Crawler(DefaultSpider())
 
     @inlineCallbacks
-    def test_crawler_crawl_twice_deprecated(self):
+    def test_crawler_crawl_twice_unsupported(self):
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
         yield crawler.crawl()
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match=r"Running Crawler.crawl\(\) more than once is deprecated",
-        ):
+        with raises(RuntimeError, match="more than once on the same instance"):
             yield crawler.crawl()
 
     def test_get_addon(self):
@@ -149,7 +143,8 @@ class CrawlerTestCase(BaseCrawlerTest):
             def from_crawler(cls, crawler):
                 return cls(crawler=crawler)
 
-            def __init__(self, crawler):
+            def __init__(self, crawler, **kwargs: Any):
+                super().__init__(**kwargs)
                 self.crawler = crawler
 
             def start_requests(self):
@@ -229,7 +224,8 @@ class CrawlerTestCase(BaseCrawlerTest):
             def from_crawler(cls, crawler):
                 return cls(crawler=crawler)
 
-            def __init__(self, crawler):
+            def __init__(self, crawler, **kwargs: Any):
+                super().__init__(**kwargs)
                 self.crawler = crawler
 
             def start_requests(self):
@@ -307,7 +303,8 @@ class CrawlerTestCase(BaseCrawlerTest):
             def from_crawler(cls, crawler):
                 return cls(crawler=crawler)
 
-            def __init__(self, crawler):
+            def __init__(self, crawler, **kwargs: Any):
+                super().__init__(**kwargs)
                 self.crawler = crawler
 
             def start_requests(self):
@@ -385,7 +382,8 @@ class CrawlerTestCase(BaseCrawlerTest):
             def from_crawler(cls, crawler):
                 return cls(crawler=crawler)
 
-            def __init__(self, crawler):
+            def __init__(self, crawler, **kwargs: Any):
+                super().__init__(**kwargs)
                 self.crawler = crawler
 
             def start_requests(self):
@@ -478,8 +476,6 @@ class CrawlerLoggingTestCase(unittest.TestCase):
             custom_settings = {
                 "LOG_LEVEL": "INFO",
                 "LOG_FILE": str(log_file),
-                # settings to avoid extra warnings
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             }
 
         configure_logging()
@@ -582,7 +578,7 @@ class NoRequestsSpider(scrapy.Spider):
 @mark.usefixtures("reactor_pytest")
 class CrawlerRunnerHasSpider(unittest.TestCase):
     def _runner(self):
-        return CrawlerRunner({"REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7"})
+        return CrawlerRunner()
 
     @inlineCallbacks
     def test_crawler_runner_bootstrap_successful(self):
@@ -631,7 +627,6 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
             CrawlerRunner(
                 settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                    "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
                 }
             )
         else:
@@ -640,7 +635,6 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
                 runner = CrawlerRunner(
                     settings={
                         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                        "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
                     }
                 )
                 yield runner.crawl(NoRequestsSpider)
@@ -648,11 +642,10 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
 
 class ScriptRunnerMixin:
     script_dir: Path
-    cwd = os.getcwd()
 
     def get_script_args(self, script_name: str, *script_args: str) -> list[str]:
         script_path = self.script_dir / script_name
-        return [sys.executable, str(script_path)] + list(script_args)
+        return [sys.executable, str(script_path), *script_args]
 
     def run_script(self, script_name: str, *script_args: str) -> str:
         args = self.get_script_args(script_name, *script_args)
@@ -905,7 +898,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         p.expect_exact("shutting down gracefully")
         # sending the second signal too fast often causes problems
         d = Deferred()
-        reactor.callLater(0.1, d.callback, None)
+        reactor.callLater(0.01, d.callback, None)
         yield d
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")
@@ -929,3 +922,28 @@ class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
             log,
         )
         self.assertIn("DEBUG: Using asyncio event loop", log)
+
+
+@mark.parametrize(
+    ["settings", "items"],
+    (
+        ({}, default_settings.LOG_VERSIONS),
+        ({"LOG_VERSIONS": ["itemadapter"]}, ["itemadapter"]),
+        ({"LOG_VERSIONS": []}, None),
+    ),
+)
+def test_log_scrapy_info(settings, items, caplog):
+    with caplog.at_level("INFO"):
+        CrawlerProcess(settings)
+    assert (
+        caplog.records[0].getMessage()
+        == f"Scrapy {scrapy.__version__} started (bot: scrapybot)"
+    ), repr(caplog.records[0].msg)
+    if not items:
+        assert len(caplog.records) == 1
+        return
+    version_string = caplog.records[1].getMessage()
+    expected_items_pattern = "',\n '".join(
+        f"{item}': '[^']+('\n +'[^']+)*" for item in items
+    )
+    assert re.search(r"^Versions:\n{'" + expected_items_pattern + "'}$", version_string)

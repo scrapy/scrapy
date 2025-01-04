@@ -45,7 +45,7 @@ class OffsiteMiddleware:
             or request.meta.get("allow_offsite")
             or self.should_follow(request, spider)
         ):
-            return None
+            return
         domain = urlparse_cached(request).hostname
         if domain and domain not in self.domains_seen:
             self.domains_seen.add(domain)

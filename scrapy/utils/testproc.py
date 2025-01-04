@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class ProcessTest:
     command: str | None = None
     prefix = [sys.executable, "-m", "scrapy.cmdline"]
-    cwd = os.getcwd()  # trial chdirs to temp dir
+    cwd = os.getcwd()  # trial chdirs to temp dir  # noqa: PTH109
 
     def execute(
         self,
@@ -31,7 +31,7 @@ class ProcessTest:
         if settings is not None:
             env["SCRAPY_SETTINGS_MODULE"] = settings
         assert self.command
-        cmd = self.prefix + [self.command] + list(args)
+        cmd = [*self.prefix, self.command, *args]
         pp = TestProcessProtocol()
         pp.deferred.addCallback(self._process_finished, cmd, check_code)
         reactor.spawnProcess(pp, cmd[0], cmd, env=env, path=self.cwd)

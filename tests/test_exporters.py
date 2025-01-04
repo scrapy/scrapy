@@ -116,7 +116,7 @@ class BaseItemExporterTest(unittest.TestCase):
         )
 
         ie = self._get_exporter(fields_to_export=["name"], encoding="latin-1")
-        _, name = list(ie._get_serialized_fields(self.i))[0]
+        _, name = next(iter(ie._get_serialized_fields(self.i)))
         assert isinstance(name, str)
         self.assertEqual(name, "John\xa3")
 
@@ -216,7 +216,9 @@ class PprintItemExporterTest(BaseItemExporterTest):
         return PprintItemExporter(self.output, **kwargs)
 
     def _check_output(self):
-        self._assert_expected_item(eval(self.output.getvalue()))
+        self._assert_expected_item(
+            eval(self.output.getvalue())  # pylint: disable=eval-used
+        )
 
 
 class PprintItemExporterDataclassTest(PprintItemExporterTest):
@@ -699,7 +701,3 @@ class CustomExporterItemTest(unittest.TestCase):
 
 class CustomExporterDataclassTest(CustomExporterItemTest):
     item_class = TestDataClass
-
-
-if __name__ == "__main__":
-    unittest.main()
