@@ -44,3 +44,6 @@ jobs:
       run: |
         pip install -U tox
         tox
+
+    - name: Upload coverage report
+      uses: codecov/codecov-action@v5
