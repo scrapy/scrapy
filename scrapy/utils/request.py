@@ -113,8 +113,6 @@ class RequestFingerprinter:
     <scrapy.Request.method>` and :attr:`request.body
     <scrapy.Request.body>`. It then generates an `SHA1
     <https://en.wikipedia.org/wiki/SHA-1>`_ hash.
-
-    .. seealso:: :setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION`.
     """
 
     @classmethod

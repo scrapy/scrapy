@@ -185,7 +185,8 @@ Request objects
 
     .. attribute:: Request.headers
 
-        A dictionary-like object which contains the request headers.
+        A dictionary-like (:class:`scrapy.http.headers.Headers`) object which contains
+        the request headers.
 
     .. attribute:: Request.body
 
@@ -306,7 +307,7 @@ Example:
 In some cases you may be interested in passing arguments to those callback
 functions so you can receive the arguments later, in the second callback.
 The following example shows how to achieve this by using the
-:attr:`scrapy.Request.cb_kwargs` attribute:
+:attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>` attribute:
 
 .. code-block:: python
 
@@ -582,10 +583,8 @@ when available, and then falls back to
                 return request.meta["fingerprint"]
             return fingerprint(request)
 
-If you need to reproduce the same fingerprinting algorithm as Scrapy 2.6
-without using the deprecated ``'2.6'`` value of the
-:setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION` setting, use the following
-request fingerprinter:
+If you need to reproduce the same fingerprinting algorithm as Scrapy 2.6, use
+the following request fingerprinter:
 
 .. code-block:: python
 
@@ -657,7 +656,7 @@ The following built-in Scrapy components have such restrictions:
 Request.meta special keys
 =========================
 
-The :attr:`scrapy.Request.meta` attribute can contain any arbitrary data, but there
+The :attr:`Request.meta <scrapy.Request.meta>` attribute can contain any arbitrary data, but there
 are some special keys recognized by Scrapy and its built-in extensions.
 
 Those are:
@@ -905,7 +904,7 @@ It is usual for web sites to provide pre-populated form fields through ``<input
 type="hidden">`` elements, such as session related data or authentication
 tokens (for login pages). When scraping, you'll want these fields to be
 automatically pre-populated and only override a couple of them, such as the
-user name and password. You can use the :meth:`FormRequest.from_response
+user name and password. You can use the :meth:`FormRequest.from_response()
 <scrapy.FormRequest.from_response>` method for this job. Here's an example spider
 which uses it:
 
@@ -1091,7 +1090,7 @@ Response objects
         attribute is propagated along redirects and retries, so you will get
         the original :attr:`Request.meta <scrapy.Request.meta>` sent from your spider.
 
-        .. seealso:: :attr:`scrapy.Request.meta` attribute
+        .. seealso:: :attr:`Request.meta <scrapy.Request.meta>` attribute
 
     .. attribute:: Response.cb_kwargs
 
@@ -1105,7 +1104,7 @@ Response objects
         retries, so you will get the original :attr:`Request.cb_kwargs
         <scrapy.Request.cb_kwargs>` sent from your spider.
 
-        .. seealso:: :attr:`scrapy.Request.cb_kwargs` attribute
+        .. seealso:: :attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>` attribute
 
     .. attribute:: Response.flags
 

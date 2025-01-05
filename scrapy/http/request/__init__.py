@@ -83,7 +83,7 @@ def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
 
 class Request(object_ref):
     """Represents an HTTP request, which is usually generated in a Spider and
-    executed by the Downloader, thus generating a :class:`scrapy.http.Response`.
+    executed by the Downloader, thus generating a :class:`~scrapy.http.Response`.
     """
 
     attributes: tuple[str, ...] = (
@@ -103,9 +103,10 @@ class Request(object_ref):
     )
     """A tuple of :class:`str` objects containing the name of all public
     attributes of the class that are also keyword parameters of the
-    ``__init__`` method.
+    ``__init__()`` method.
 
-    Currently used by :meth:`scrapy.Request.replace`, :meth:`scrapy.Request.to_dict` and
+    Currently used by :meth:`Request.replace() <scrapy.Request.replace>`,
+    :meth:`Request.to_dict() <scrapy.Request.to_dict>` and
     :func:`~scrapy.utils.request.request_from_dict`.
     """
 
