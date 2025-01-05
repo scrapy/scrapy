@@ -284,6 +284,7 @@ intersphinx_mapping = {
     "cryptography": ("https://cryptography.io/en/latest/", None),
     "cssselect": ("https://cssselect.readthedocs.io/en/latest", None),
     "itemloaders": ("https://itemloaders.readthedocs.io/en/latest/", None),
+    "parsel": ("https://parsel.readthedocs.io/en/latest/", None),
     "pytest": ("https://docs.pytest.org/en/latest", None),
     "python": ("https://docs.python.org/3", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master", None),
