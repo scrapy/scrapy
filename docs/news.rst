@@ -734,7 +734,7 @@ Documentation
 -   Improved documentation for :class:`~scrapy.crawler.Crawler` initialization
     changes made in the 2.11.0 release. (:issue:`6057`, :issue:`6147`)
 
--   Extended documentation for :attr:`Request.meta <scrapy.Request.meta>`.
+-   Extended documentation for :attr:`.Request.meta`.
     (:issue:`5565`)
 
 -   Fixed the :reqmeta:`dont_merge_cookies` documentation. (:issue:`5936`,
@@ -1095,8 +1095,7 @@ New features
     :setting:`RANDOMIZE_DOWNLOAD_DELAY` can now be set on a per-domain basis
     via the new :setting:`DOWNLOAD_SLOTS` setting. (:issue:`5328`)
 
--   Added :meth:`TextResponse.jmespath <scrapy.http.TextResponse.jmespath>`,
-    a shortcut for JMESPath selectors
+-   Added :meth:`.TextResponse.jmespath`, a shortcut for JMESPath selectors
     available since parsel_ 1.8.1. (:issue:`5894`, :issue:`5915`)
 
 -   Added :signal:`feed_slot_closed` and :signal:`feed_exporter_closed`
@@ -1880,7 +1879,7 @@ Deprecations
 -   :mod:`scrapy.utils.reqser` is deprecated. (:issue:`5130`)
 
     -   Instead of :func:`~scrapy.utils.reqser.request_to_dict`, use the new
-        :meth:`Request.to_dict <scrapy.Request.to_dict>` method.
+        :meth:`.Request.to_dict` method.
 
     -   Instead of :func:`~scrapy.utils.reqser.request_from_dict`, use the new
         :func:`scrapy.utils.request.request_from_dict` function.
@@ -2453,8 +2452,7 @@ Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 *   :class:`~scrapy.downloadermiddlewares.cookies.CookiesMiddleware` once again
-    discards cookies defined in :attr:`Request.headers
-    <scrapy.Request.headers>`.
+    discards cookies defined in :attr:`.Request.headers`.
 
     We decided to revert this bug fix, introduced in Scrapy 2.2.0, because it
     was reported that the current implementation could break existing code.
@@ -2761,7 +2759,7 @@ New features
 *   The :command:`parse` command now allows specifying an output file
     (:issue:`4317`, :issue:`4377`)
 
-*   :meth:`Request.from_curl <scrapy.Request.from_curl>` and
+*   :meth:`.Request.from_curl` and
     :func:`~scrapy.utils.curl.curl_to_request_kwargs` now also support
     ``--data-raw`` (:issue:`4612`)
 
@@ -2777,7 +2775,7 @@ Bug fixes
     :ref:`dataclass items <dataclass-items>` and :ref:`attr.s items
     <attrs-items>` (:issue:`4667`, :issue:`4668`)
 
-*   :meth:`Request.from_curl <scrapy.Request.from_curl>` and
+*   :meth:`.Request.from_curl` and
     :func:`~scrapy.utils.curl.curl_to_request_kwargs` now set the request
     method to ``POST`` when a request body is specified and no request method
     is specified (:issue:`4612`)
@@ -2901,9 +2899,8 @@ New features
 
 *   :ref:`Link extractors <topics-link-extractors>` are now serializable,
     as long as you do not use :ref:`lambdas <lambda>` for parameters; for
-    example, you can now pass link extractors in :attr:`Request.cb_kwargs
-    <scrapy.Request.cb_kwargs>` or
-    :attr:`Request.meta <scrapy.Request.meta>` when :ref:`persisting
+    example, you can now pass link extractors in :attr:`.Request.cb_kwargs`
+    or :attr:`.Request.meta` when :ref:`persisting
     scheduled requests <topics-jobs>` (:issue:`4554`)
 
 *   Upgraded the :ref:`pickle protocol <pickle-protocols>` that Scrapy uses
@@ -2976,8 +2973,8 @@ Documentation
     :issue:`4587`)
 
 *   The display-on-hover behavior of internal documentation references now also
-    covers links to :ref:`commands <topics-commands>`, :attr:`Request.meta
-    <scrapy.Request.meta>` keys, :ref:`settings <topics-settings>` and
+    covers links to :ref:`commands <topics-commands>`, :attr:`.Request.meta`
+    keys, :ref:`settings <topics-settings>` and
     :ref:`signals <topics-signals>` (:issue:`4495`, :issue:`4563`)
 
 *   It is again possible to download the documentation for offline reading
@@ -3815,7 +3812,7 @@ Highlights:
 
 * Dropped Python 3.4 support and updated minimum requirements; made Python 3.8
   support official
-* New :meth:`Request.from_curl <scrapy.Request.from_curl>` class method
+* New :meth:`.Request.from_curl` class method
 * New :setting:`ROBOTSTXT_PARSER` and :setting:`ROBOTSTXT_USER_AGENT` settings
 * New :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS` and
   :setting:`DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING` settings
@@ -3898,9 +3895,8 @@ New features
     ``True`` to enable debug-level messages about TLS connection parameters
     after establishing HTTPS connections (:issue:`2111`, :issue:`3450`)
 
-*   Callbacks that receive keyword arguments
-    (see :attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>`) can now be
-    tested using the new :class:`@cb_kwargs
+*   Callbacks that receive keyword arguments (see :attr:`.Request.cb_kwargs`)
+    can now be tested using the new :class:`@cb_kwargs
     <scrapy.contracts.default.CallbackKeywordArgumentsContract>`
     :ref:`spider contract <topics-contracts>` (:issue:`3985`, :issue:`3988`)
 
@@ -4111,7 +4107,7 @@ New features
     scheduling improvement on crawls targeting multiple web domains, at the
     cost of no :setting:`CONCURRENT_REQUESTS_PER_IP` support (:issue:`3520`)
 
-*   A new :attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>` attribute
+*   A new :attr:`.Request.cb_kwargs` attribute
     provides a cleaner way to pass keyword arguments to callback methods
     (:issue:`1138`, :issue:`3563`)
 
@@ -4192,7 +4188,7 @@ Bug fixes
 *   Requests with private callbacks are now correctly unserialized from disk
     (:issue:`3790`)
 
-*   :meth:`FormRequest.from_response() <scrapy.FormRequest.from_response>`
+*   :meth:`.FormRequest.from_response`
     now handles invalid methods like major web browsers (:issue:`3777`,
     :issue:`3794`)
 
@@ -4902,8 +4898,7 @@ Documentation
 ~~~~~~~~~~~~~
 
 - Binary mode is required for exporters (:issue:`2564`, fixes :issue:`2553`)
-- Mention issue with :meth:`FormRequest.from_response
-  <scrapy.FormRequest.from_response>` due to bug in lxml (:issue:`2572`)
+- Mention issue with :meth:`.FormRequest.from_response` due to bug in lxml (:issue:`2572`)
 - Use single quotes uniformly in templates (:issue:`2596`)
 - Document :reqmeta:`ftp_user` and :reqmeta:`ftp_password` meta keys (:issue:`2587`)
 - Removed section on deprecated ``contrib/`` (:issue:`2636`)

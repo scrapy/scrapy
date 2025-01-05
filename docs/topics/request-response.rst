@@ -52,8 +52,7 @@ Request objects
     :param method: the HTTP method of this request. Defaults to ``'GET'``.
     :type method: str
 
-    :param meta: the initial values for the :attr:`Request.meta
-       <scrapy.Request.meta>` attribute. If
+    :param meta: the initial values for the :attr:`.Request.meta` attribute. If
        given, the dict passed in this parameter will be shallow copied.
     :type meta: dict
 
@@ -307,7 +306,7 @@ Example:
 In some cases you may be interested in passing arguments to those callback
 functions so you can receive the arguments later, in the second callback.
 The following example shows how to achieve this by using the
-:attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>` attribute:
+:attr:`.Request.cb_kwargs` attribute:
 
 .. code-block:: python
 
@@ -328,10 +327,10 @@ The following example shows how to achieve this by using the
             foo=foo,
         )
 
-.. caution:: :attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>` was introduced in version ``1.7``.
-   Prior to that, using :attr:`Request.meta <scrapy.Request.meta>` was recommended for passing
-   information around callbacks. After ``1.7``, :attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>`
-   became the preferred way for handling user information, leaving :attr:`Request.meta <scrapy.Request.meta>`
+.. caution:: :attr:`.Request.cb_kwargs` was introduced in version ``1.7``.
+   Prior to that, using :attr:`.Request.meta` was recommended for passing
+   information around callbacks. After ``1.7``, :attr:`.Request.cb_kwargs`
+   became the preferred way for handling user information, leaving :attr:`.Request.meta`
    for communication with components like middlewares and extensions.
 
 .. _topics-request-response-ref-errbacks:
@@ -628,7 +627,7 @@ The following built-in Scrapy components have such restrictions:
     :setting:`HTTPCACHE_DIR` also apply. Inside :setting:`HTTPCACHE_DIR`,
     the following directory structure is created:
 
-    -   :attr:`Spider.name <scrapy.Spider.name>`
+    -   :attr:`.Spider.name`
 
         -   first byte of a request fingerprint as hexadecimal
 
@@ -656,7 +655,7 @@ The following built-in Scrapy components have such restrictions:
 Request.meta special keys
 =========================
 
-The :attr:`Request.meta <scrapy.Request.meta>` attribute can contain any arbitrary data, but there
+The :attr:`.Request.meta` attribute can contain any arbitrary data, but there
 are some special keys recognized by Scrapy and its built-in extensions.
 
 Those are:
@@ -821,7 +820,7 @@ fields with form data from :class:`Response` objects.
        though this is quite convenient, and often the desired behaviour,
        sometimes it can cause problems which could be hard to debug. For
        example, when working with forms that are filled and/or submitted using
-       javascript, the default :meth:`~scrapy.FormRequest.from_response` behaviour may not be the
+       javascript, the default :meth:`from_response` behaviour may not be the
        most appropriate. To disable this behaviour you can set the
        ``dont_click`` argument to ``True``. Also, if you want to change the
        control clicked (instead of disabling it) you can also use the
@@ -904,9 +903,8 @@ It is usual for web sites to provide pre-populated form fields through ``<input
 type="hidden">`` elements, such as session related data or authentication
 tokens (for login pages). When scraping, you'll want these fields to be
 automatically pre-populated and only override a couple of them, such as the
-user name and password. You can use the :meth:`FormRequest.from_response()
-<scrapy.FormRequest.from_response>` method for this job. Here's an example spider
-which uses it:
+user name and password. You can use the :meth:`.FormRequest.from_response()`
+method for this job. Here's an example spider which uses it:
 
 .. code-block:: python
 
@@ -1088,9 +1086,9 @@ Response objects
 
         Unlike the :attr:`Response.request` attribute, the :attr:`Response.meta`
         attribute is propagated along redirects and retries, so you will get
-        the original :attr:`Request.meta <scrapy.Request.meta>` sent from your spider.
+        the original :attr:`.Request.meta` sent from your spider.
 
-        .. seealso:: :attr:`Request.meta <scrapy.Request.meta>` attribute
+        .. seealso:: :attr:`.Request.meta` attribute
 
     .. attribute:: Response.cb_kwargs
 
@@ -1101,10 +1099,9 @@ Response objects
 
         Unlike the :attr:`Response.request` attribute, the
         :attr:`Response.cb_kwargs` attribute is propagated along redirects and
-        retries, so you will get the original :attr:`Request.cb_kwargs
-        <scrapy.Request.cb_kwargs>` sent from your spider.
+        retries, so you will get the original :attr:`.Request.cb_kwargs` sent from your spider.
 
-        .. seealso:: :attr:`Request.cb_kwargs <scrapy.Request.cb_kwargs>` attribute
+        .. seealso:: :attr:`.Request.cb_kwargs` attribute
 
     .. attribute:: Response.flags
 

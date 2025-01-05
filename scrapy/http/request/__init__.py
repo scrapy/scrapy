@@ -105,8 +105,7 @@ class Request(object_ref):
     attributes of the class that are also keyword parameters of the
     ``__init__()`` method.
 
-    Currently used by :meth:`Request.replace() <scrapy.Request.replace>`,
-    :meth:`Request.to_dict() <scrapy.Request.to_dict>` and
+    Currently used by :meth:`.Request.replace`, :meth:`.Request.to_dict` and
     :func:`~scrapy.utils.request.request_from_dict`.
     """
 
