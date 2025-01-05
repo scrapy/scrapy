@@ -419,6 +419,37 @@ This setting also affects :setting:`DOWNLOAD_DELAY` and
 is non-zero, download delay is enforced per IP, not per domain.
 
 
+.. setting:: DEFAULT_DROPITEM_LOG_LEVEL
+
+DEFAULT_DROPITEM_LOG_LEVEL
+------------------
+
+Default: ``'WARNING'``
+
+This setting allows you to configure the default log severity level for dropped items in Scrapy. When an item is dropped using the ``DropItem`` exception, the severity level of the corresponding log message will be determined by this setting, unless a specific severity is explicitly provided in the exception.
+
+Available options are the standard logging levels: ``'DEBUG'``, ``'INFO'``, ``'WARNING'``, ``'ERROR'``, and ``'CRITICAL'``.
+
+Example:
+
+.. code-block:: python
+
+   # settings.py
+   DEFAULT_DROPITEM_LOG_LEVEL = "INFO"
+
+To override the severity for a specific drop, you can pass the ``severity`` argument to the ``DropItem`` exception:
+
+.. code-block:: python
+
+   from scrapy.exceptions import DropItem
+
+
+   class MyPipeline:
+       def process_item(self, item, spider):
+           if not item.get("price"):
+               raise DropItem("Missing price field", severity="INFO")
+           return item
+
 .. setting:: DEFAULT_ITEM_CLASS
 
 DEFAULT_ITEM_CLASS

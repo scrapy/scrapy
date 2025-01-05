@@ -7,6 +7,8 @@ new exceptions here without documenting them there.
 
 from typing import Any
 
+from scrapy.utils.project import get_project_settings
+
 # Internal
 
 
@@ -57,6 +59,12 @@ class StopDownload(Exception):
 
 class DropItem(Exception):
     """Drop item from the item pipeline"""
+
+    def __init__(self, message, severity=None):
+        settings = get_project_settings()
+        default_severity = settings.get("DEFAULT_DROPITEM_LOG_LEVEL", "WARNING")
+        super().__init__(message)
+        self.severity = severity or default_severity
 
 
 class NotSupported(Exception):

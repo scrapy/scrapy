@@ -120,8 +120,10 @@ class LogFormatter:
         spider: Spider,
     ) -> LogFormatterResult:
         """Logs a message when an item is dropped while it is passing through the item pipeline."""
+        severity = exception.severity.upper()
+        log_level = getattr(logging, severity, logging.WARNING)
         return {
-            "level": logging.WARNING,
+            "level": log_level,
             "msg": DROPPEDMSG,
             "args": {
                 "exception": exception,
