@@ -421,7 +421,7 @@ is non-zero, download delay is enforced per IP, not per domain.
 .. setting:: DEFAULT_DROPITEM_LOG_LEVEL
 
 DEFAULT_DROPITEM_LOG_LEVEL
-------------------
+--------------------------
 
 Default: ``'WARNING'``
 
@@ -438,6 +438,8 @@ To override the severity for a specific drop, you can pass the ``severity`` argu
 
 .. code-block:: python
    from scrapy.exceptions import DropItem
+
+
    class MyPipeline:
        def process_item(self, item, spider):
            if not item.get("price"):
