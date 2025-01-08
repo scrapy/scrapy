@@ -68,6 +68,21 @@ class LogFormatterTestCase(unittest.TestCase):
         assert all(isinstance(x, str) for x in lines)
         self.assertEqual(lines, ["Dropped: \u2018", "{}"])
 
+    def test_dropitem_default_severity(self):
+        exception = DropItem("Test drop")
+        self.assertEqual(exception.severity, "WARNING")
+
+    def test_dropitem_custom_severity(self):
+        exception = DropItem("Test drop", severity="INFO")
+        self.assertEqual(exception.severity, "INFO")
+
+    def test_log_formatter(self):
+        item = {"key": "value"}
+        exception = DropItem("Test drop", severity="ERROR")
+        response = Response("http://www.example.com")
+        log = self.formatter.dropped(item, exception, response, self.spider)
+        self.assertEqual(log["level"], 40)
+
     def test_item_error(self):
         # In practice, the complete traceback is shown by passing the
         # 'exc_info' argument to the logging function

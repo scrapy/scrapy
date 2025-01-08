@@ -9,6 +9,7 @@ from twisted.python.failure import Failure
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
 from scrapy import Request, Spider  # noqa: TC001
 from scrapy.http import Response  # noqa: TC001
+from scrapy.utils.project import get_project_settings
 from scrapy.utils.python import global_object_name
 from scrapy.utils.request import referer_str
 
@@ -120,8 +121,10 @@ class LogFormatter:
         spider: Spider,
     ) -> LogFormatterResult:
         """Logs a message when an item is dropped while it is passing through the item pipeline."""
-        severity = exception.severity.upper()
-        log_level = getattr(logging, severity, logging.WARNING)
+        settings = get_project_settings()
+        severity = getattr(exception, "severity", None)
+        severity = severity or settings.get("DEFAULT_DROPITEM_LOG_LEVEL", "WARNING")
+        log_level = getattr(logging, severity.upper(), logging.WARNING)
         return {
             "level": log_level,
             "msg": DROPPEDMSG,
