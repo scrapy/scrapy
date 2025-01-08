@@ -23,6 +23,7 @@ from pytest import mark
 from twisted.trial import unittest
 
 import scrapy
+from scrapy.cmdline import _print_unknown_command_msg
 from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
 from scrapy.commands.startproject import IGNORE
 from scrapy.settings import Settings
@@ -654,8 +655,6 @@ class MiscCommandsTest(CommandTest):
         self.assertEqual(0, self.call("list"))
 
     def test_command_not_found(self):
-        from scrapy.cmdline import _print_unknown_command_msg
-
         na_msg = """
 list command is not available from this location.
 These commands can only be triggered from within a project: check, crawl, edit, list, parse
