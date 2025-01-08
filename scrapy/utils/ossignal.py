@@ -1,29 +1,38 @@
+from __future__ import annotations
 
-from __future__ import absolute_import
 import signal
+from collections.abc import Callable
+from types import FrameType
+from typing import Any, Optional, Union
 
-from twisted.internet import reactor
+# copy of _HANDLER from typeshed/stdlib/signal.pyi
+SignalHandlerT = Union[
+    Callable[[int, Optional[FrameType]], Any], int, signal.Handlers, None
+]
 
-
-signal_names = {}
+signal_names: dict[int, str] = {}
 for signame in dir(signal):
-    if signame.startswith('SIG') and not signame.startswith('SIG_'):
+    if signame.startswith("SIG") and not signame.startswith("SIG_"):
         signum = getattr(signal, signame)
         if isinstance(signum, int):
             signal_names[signum] = signame
 
 
-def install_shutdown_handlers(function, override_sigint=True):
+def install_shutdown_handlers(
+    function: SignalHandlerT, override_sigint: bool = True
+) -> None:
     """Install the given function as a signal handler for all common shutdown
-    signals (such as SIGINT, SIGTERM, etc). If override_sigint is ``False`` the
-    SIGINT handler won't be install if there is already a handler in place
-    (e.g.  Pdb)
+    signals (such as SIGINT, SIGTERM, etc). If ``override_sigint`` is ``False`` the
+    SIGINT handler won't be installed if there is already a handler in place
+    (e.g. Pdb)
     """
-    reactor._handleSignals()
     signal.signal(signal.SIGTERM, function)
-    if signal.getsignal(signal.SIGINT) == signal.default_int_handler or \
-            override_sigint:
+    if (
+        signal.getsignal(signal.SIGINT)  # pylint: disable=comparison-with-callable
+        == signal.default_int_handler
+        or override_sigint
+    ):
         signal.signal(signal.SIGINT, function)
     # Catch Ctrl-Break in windows
-    if hasattr(signal, 'SIGBREAK'):
+    if hasattr(signal, "SIGBREAK"):
         signal.signal(signal.SIGBREAK, function)
