@@ -89,14 +89,9 @@ def _get_commands_dict(
     return cmds
 
 
-def _get_commands_diff(settings, inproject=True):
-    # returns by default project only commands
-    return list(
-        {cmdname for cmdname, _ in _get_commands_dict(settings, inproject).items()}
-        - {
-            cmdname
-            for cmdname, _ in _get_commands_dict(settings, not inproject).items()
-        }
+def _get_project_only_cmds(settings: BaseSettings) -> set[str]:
+    return set(_get_commands_dict(settings, inproject=True)) - set(
+        _get_commands_dict(settings, inproject=False)
     )
 
 
@@ -132,10 +127,12 @@ def _print_commands(settings: BaseSettings, inproject: bool) -> None:
     print('Use "scrapy <command> -h" to see more info about a command')
 
 
-def _print_unknown_command_msg(settings, cmdname, inproject):
-    proj_only_cmds = sorted(_get_commands_diff(settings))
+def _print_unknown_command_msg(
+    settings: BaseSettings, cmdname: str, inproject: bool
+) -> None:
+    proj_only_cmds = _get_project_only_cmds(settings)
     if cmdname in proj_only_cmds and not inproject:
-        cmd_list = ", ".join(proj_only_cmds)
+        cmd_list = ", ".join(sorted(proj_only_cmds))
         print(
             f"{cmdname} command is not available from this location.\n"
             f"These commands can only be triggered from within a project: {cmd_list}\n"
