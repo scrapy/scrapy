@@ -145,9 +145,9 @@ Request objects
     :type priority: int
 
     :param dont_filter: indicates that this request should not be filtered by
-       the scheduler. This is used when you want to perform an identical
-       request multiple times, to ignore the duplicates filter. Use it with
-       care, or you will get into crawling loops. Default to ``False``.
+       the scheduler or some middlewares. This is used when you want to perform
+       an identical request multiple times, to ignore the duplicates filter.
+       Use it with care, or you will get into crawling loops. Default to ``False``.
     :type dont_filter: bool
 
     :param errback: a function that will be called if any exception was
@@ -660,6 +660,7 @@ are some special keys recognized by Scrapy and its built-in extensions.
 
 Those are:
 
+* :reqmeta:`allow_offsite`
 * :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
 * :reqmeta:`cookiejar`

@@ -61,7 +61,11 @@ class OffsiteMiddleware:
     def _filter(self, request: Any, spider: Spider) -> bool:
         if not isinstance(request, Request):
             return True
-        if request.dont_filter or self.should_follow(request, spider):
+        if (
+            request.dont_filter
+            or request.meta.get("allow_offsite")
+            or self.should_follow(request, spider)
+        ):
             return True
         domain = urlparse_cached(request).hostname
         if domain and domain not in self.domains_seen:
