@@ -1,19 +1,19 @@
-from typing import Dict, Optional
+from __future__ import annotations
+
 from unittest import TestCase
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TwistedTestCase
 
 from scrapy.core.scheduler import BaseScheduler
-from scrapy.crawler import CrawlerRunner
 from scrapy.http import Request
 from scrapy.spiders import Spider
-from scrapy.utils.request import request_fingerprint
-
+from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.request import fingerprint
+from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
-
 
 PATHS = ["/a", "/b", "/c"]
 URLS = [urljoin("https://example.org", p) for p in PATHS]
@@ -21,19 +21,19 @@ URLS = [urljoin("https://example.org", p) for p in PATHS]
 
 class MinimalScheduler:
     def __init__(self) -> None:
-        self.requests: Dict[str, Request] = {}
+        self.requests: dict[bytes, Request] = {}
 
     def has_pending_requests(self) -> bool:
         return bool(self.requests)
 
     def enqueue_request(self, request: Request) -> bool:
-        fp = request_fingerprint(request)
+        fp = fingerprint(request)
         if fp not in self.requests:
             self.requests[fp] = request
             return True
         return False
 
-    def next_request(self) -> Optional[Request]:
+    def next_request(self) -> Request | None:
         if self.has_pending_requests():
             fp, request = self.requests.popitem()
             return request
@@ -59,7 +59,7 @@ class TestSpider(Spider):
         self.start_urls = map(mockserver.url, PATHS)
 
     def parse(self, response):
-        return {"path": urlparse(response.url).path}
+        return {"path": urlparse_cached(response).path}
 
 
 class InterfaceCheckMixin:
@@ -76,7 +76,11 @@ class BaseSchedulerTest(TestCase, InterfaceCheckMixin):
         self.assertIsNone(self.scheduler.open(Spider("foo")))
         self.assertIsNone(self.scheduler.close("finished"))
         self.assertRaises(NotImplementedError, self.scheduler.has_pending_requests)
-        self.assertRaises(NotImplementedError, self.scheduler.enqueue_request, Request("https://example.org"))
+        self.assertRaises(
+            NotImplementedError,
+            self.scheduler.enqueue_request,
+            Request("https://example.org"),
+        )
         self.assertRaises(NotImplementedError, self.scheduler.next_request)
 
 
@@ -147,9 +151,12 @@ class MinimalSchedulerCrawlTest(TwistedTestCase):
     @defer.inlineCallbacks
     def test_crawl(self):
         with MockServer() as mockserver:
-            settings = {"SCHEDULER": self.scheduler_cls}
+            settings = {
+                "SCHEDULER": self.scheduler_cls,
+            }
             with LogCapture() as log:
-                yield CrawlerRunner(settings).crawl(TestSpider, mockserver)
+                crawler = get_crawler(TestSpider, settings)
+                yield crawler.crawl(mockserver)
             for path in PATHS:
                 self.assertIn(f"{{'path': '{path}'}}", str(log))
             self.assertIn(f"'item_scraped_count': {len(PATHS)}", str(log))

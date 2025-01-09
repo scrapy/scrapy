@@ -86,8 +86,8 @@ coverage: BUILDER = coverage
 coverage: build
 
 htmlview: html
-	 $(PYTHON) -c "import webbrowser, os; webbrowser.open('file://' + \
-	 os.path.realpath('build/html/index.html'))"
+	 $(PYTHON) -c "import webbrowser; from pathlib import Path; \
+	 webbrowser.open(Path('build/html/index.html').resolve().as_uri())"
 
 clean:
 	-rm -rf build/*

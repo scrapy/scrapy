@@ -2,25 +2,31 @@
 XPath selectors based on lxml
 """
 
+from __future__ import annotations
+
+from typing import Any
+
 from parsel import Selector as _ParselSelector
-from scrapy.utils.trackref import object_ref
+
+from scrapy.http import HtmlResponse, TextResponse, XmlResponse
 from scrapy.utils.python import to_bytes
-from scrapy.http import HtmlResponse, XmlResponse
+from scrapy.utils.response import get_base_url
+from scrapy.utils.trackref import object_ref
+
+__all__ = ["Selector", "SelectorList"]
+
+_NOT_SET = object()
 
 
-__all__ = ['Selector', 'SelectorList']
-
-
-def _st(response, st):
+def _st(response: TextResponse | None, st: str | None) -> str:
     if st is None:
-        return 'xml' if isinstance(response, XmlResponse) else 'html'
+        return "xml" if isinstance(response, XmlResponse) else "html"
     return st
 
 
-def _response_from_text(text, st):
-    rt = XmlResponse if st == 'xml' else HtmlResponse
-    return rt(url='about:blank', encoding='utf-8',
-              body=to_bytes(text, 'utf-8'))
+def _response_from_text(text: str | bytes, st: str | None) -> TextResponse:
+    rt: type[TextResponse] = XmlResponse if st == "xml" else HtmlResponse
+    return rt(url="about:blank", encoding="utf-8", body=to_bytes(text, "utf-8"))
 
 
 class SelectorList(_ParselSelector.selectorlist_cls, object_ref):
@@ -43,7 +49,7 @@ class Selector(_ParselSelector, object_ref):
     ``response`` isn't available. Using ``text`` and ``response`` together is
     undefined behavior.
 
-    ``type`` defines the selector type, it can be ``"html"``, ``"xml"``
+    ``type`` defines the selector type, it can be ``"html"``, ``"xml"``, ``"json"``
     or ``None`` (default).
 
     If ``type`` is ``None``, the selector automatically chooses the best type
@@ -55,19 +61,29 @@ class Selector(_ParselSelector, object_ref):
 
     * ``"html"`` for :class:`~scrapy.http.HtmlResponse` type
     * ``"xml"`` for :class:`~scrapy.http.XmlResponse` type
+    * ``"json"`` for :class:`~scrapy.http.TextResponse` type
     * ``"html"`` for anything else
 
     Otherwise, if ``type`` is set, the selector type will be forced and no
     detection will occur.
     """
 
-    __slots__ = ['response']
+    __slots__ = ["response"]
     selectorlist_cls = SelectorList
 
-    def __init__(self, response=None, text=None, type=None, root=None, **kwargs):
+    def __init__(
+        self,
+        response: TextResponse | None = None,
+        text: str | None = None,
+        type: str | None = None,
+        root: Any | None = _NOT_SET,
+        **kwargs: Any,
+    ):
         if response is not None and text is not None:
-            raise ValueError(f'{self.__class__.__name__}.__init__() received '
-                             'both response and text')
+            raise ValueError(
+                f"{self.__class__.__name__}.__init__() received "
+                "both response and text"
+            )
 
         st = _st(response, type)
 
@@ -76,7 +92,11 @@ class Selector(_ParselSelector, object_ref):
 
         if response is not None:
             text = response.text
-            kwargs.setdefault('base_url', response.url)
+            kwargs.setdefault("base_url", get_base_url(response))
 
         self.response = response
-        super().__init__(text=text, type=st, root=root, **kwargs)
+
+        if root is not _NOT_SET:
+            kwargs["root"] = root
+
+        super().__init__(text=text, type=st, **kwargs)

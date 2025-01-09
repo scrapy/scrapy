@@ -19,19 +19,33 @@ Quick example
 =============
 
 There are two ways to instantiate the mail sender. You can instantiate it using
-the standard ``__init__`` method::
+the standard ``__init__`` method:
+
+.. code-block:: python
 
     from scrapy.mail import MailSender
+
     mailer = MailSender()
 
-Or you can instantiate it passing a Scrapy settings object, which will respect
-the :ref:`settings <topics-email-settings>`::
+Or you can instantiate it passing a :class:`scrapy.Crawler` instance, which
+will respect the :ref:`settings <topics-email-settings>`:
 
-    mailer = MailSender.from_settings(settings)
+.. skip: start
+.. code-block:: python
 
-And here is how to use it to send an e-mail (without attachments)::
+    mailer = MailSender.from_crawler(crawler)
 
-    mailer.send(to=["someone@example.com"], subject="Some subject", body="Some body", cc=["another@example.com"])
+And here is how to use it to send an e-mail (without attachments):
+
+.. code-block:: python
+
+    mailer.send(
+        to=["someone@example.com"],
+        subject="Some subject",
+        body="Some body",
+        cc=["another@example.com"],
+    )
+.. skip: end
 
 MailSender class reference
 ==========================
@@ -67,13 +81,13 @@ rest of the framework.
     :param smtpssl: enforce using a secure SSL connection
     :type smtpssl: bool
 
-    .. classmethod:: from_settings(settings)
+    .. classmethod:: from_crawler(crawler)
 
-        Instantiate using a Scrapy settings object, which will respect
-        :ref:`these Scrapy settings <topics-email-settings>`.
+        Instantiate using a :class:`scrapy.Crawler` instance, which will
+        respect :ref:`these Scrapy settings <topics-email-settings>`.
 
-        :param settings: the e-mail recipients
-        :type settings: :class:`scrapy.settings.Settings` object
+        :param crawler: the crawler
+        :type settings: :class:`scrapy.Crawler` object
 
     .. method:: send(to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None)
 

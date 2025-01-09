@@ -1,31 +1,29 @@
 name: Publish
-on: [push]
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+concurrency:
+  group: ${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   publish:
-    runs-on: ubuntu-18.04
-    if: startsWith(github.event.ref, 'refs/tags/')
-
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/Scrapy
+    permissions:
+      id-token: write
     steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: "3.10"
-
-    - name: Check Tag
-      id: check-release-tag
-      run: |
-        if [[ ${{ github.event.ref }} =~ ^refs/tags/[0-9]+[.][0-9]+[.][0-9]+(rc[0-9]+|[.]dev[0-9]+)?$ ]]; then
-          echo ::set-output name=release_tag::true
-        fi
-
-    - name: Publish to PyPI
-      if: steps.check-release-tag.outputs.release_tag == 'true'
-      run: |
-        pip install --upgrade setuptools wheel twine
-        python setup.py sdist bdist_wheel
-        export TWINE_USERNAME=__token__
-        export TWINE_PASSWORD=${{ secrets.PYPI_TOKEN }}
-        twine upload dist/*
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: | 
+          python -m pip install --upgrade build
+          python -m build
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

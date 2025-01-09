@@ -18,7 +18,9 @@ through a set of :class:`~scrapy.spiders.Rule` objects.
 
 You can also use link extractors in regular spiders. For example, you can instantiate
 :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>` into a class
-variable in your spider, and use it from your spider callbacks::
+variable in your spider, and use it from your spider callbacks:
+
+.. code-block:: python
 
     def parse(self, response):
         for link in self.link_extractor.extract_links(response):
@@ -83,7 +85,7 @@ LxmlLinkExtractor
     :param restrict_xpaths: is an XPath (or list of XPath's) which defines
         regions inside the response where links should be extracted from.
         If given, only the text selected by those XPath will be scanned for
-        links. See examples below.
+        links.
     :type restrict_xpaths: str or list
 
     :param restrict_css: a CSS selector (or list of selectors) which defines
@@ -132,10 +134,12 @@ LxmlLinkExtractor
 
         .. highlight:: python
 
-        You can use the following function in ``process_value``::
+        You can use the following function in ``process_value``:
+
+        .. code-block:: python
 
             def process_value(value):
-                m = re.search("javascript:goToPage\('(.*?)'", value)
+                m = re.search(r"javascript:goToPage\('(.*?)'", value)
                 if m:
                     return m.group(1)
 

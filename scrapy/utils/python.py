@@ -1,22 +1,38 @@
 """
 This module contains essential stuff that should've come with Python itself ;)
 """
-import errno
+
+from __future__ import annotations
+
 import gc
 import inspect
 import re
 import sys
 import warnings
 import weakref
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.decorators import deprecated
+from scrapy.utils.asyncgen import as_async_generator
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Callable, Iterator
+    from re import Pattern
+
+    # typing.Concatenate and typing.ParamSpec require Python 3.10
+    from typing_extensions import Concatenate, ParamSpec
+
+    _P = ParamSpec("_P")
+
+_T = TypeVar("_T")
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
 
 
-def flatten(x):
+def flatten(x: Iterable[Any]) -> list[Any]:
     """flatten(sequence) -> list
 
     Returns a single, flat list which contains all elements retrieved
@@ -33,22 +49,31 @@ def flatten(x):
     >>> flatten(["foo", ["baz", 42], "bar"])
     ['foo', 'baz', 42, 'bar']
     """
+    warnings.warn(
+        "The flatten function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     return list(iflatten(x))
 
 
-def iflatten(x):
+def iflatten(x: Iterable[Any]) -> Iterable[Any]:
     """iflatten(sequence) -> iterator
 
     Similar to ``.flatten()``, but returns iterator instead"""
+    warnings.warn(
+        "The iflatten function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     for el in x:
         if is_listlike(el):
-            for el_ in iflatten(el):
-                yield el_
+            yield from iflatten(el)
         else:
             yield el
 
 
-def is_listlike(x):
+def is_listlike(x: Any) -> bool:
     """
     >>> is_listlike("foo")
     False
@@ -72,10 +97,10 @@ def is_listlike(x):
     return hasattr(x, "__iter__") and not isinstance(x, (str, bytes))
 
 
-def unique(list_, key=lambda x: x):
+def unique(list_: Iterable[_T], key: Callable[[_T], Any] = lambda x: x) -> list[_T]:
     """efficient function to uniquify a list preserving item order"""
     seen = set()
-    result = []
+    result: list[_T] = []
     for item in list_:
         seenkey = key(item)
         if seenkey in seen:
@@ -85,39 +110,42 @@ def unique(list_, key=lambda x: x):
     return result
 
 
-def to_unicode(text, encoding=None, errors='strict'):
+def to_unicode(
+    text: str | bytes, encoding: str | None = None, errors: str = "strict"
+) -> str:
     """Return the unicode representation of a bytes object ``text``. If
     ``text`` is already an unicode object, return it as-is."""
     if isinstance(text, str):
         return text
     if not isinstance(text, (bytes, str)):
-        raise TypeError('to_unicode must receive a bytes or str '
-                        f'object, got {type(text).__name__}')
+        raise TypeError(
+            "to_unicode must receive a bytes or str "
+            f"object, got {type(text).__name__}"
+        )
     if encoding is None:
-        encoding = 'utf-8'
+        encoding = "utf-8"
     return text.decode(encoding, errors)
 
 
-def to_bytes(text, encoding=None, errors='strict'):
+def to_bytes(
+    text: str | bytes, encoding: str | None = None, errors: str = "strict"
+) -> bytes:
     """Return the binary representation of ``text``. If ``text``
     is already a bytes object, return it as-is."""
     if isinstance(text, bytes):
         return text
     if not isinstance(text, str):
-        raise TypeError('to_bytes must receive a str or bytes '
-                        f'object, got {type(text).__name__}')
+        raise TypeError(
+            f"to_bytes must receive a str or bytes object, got {type(text).__name__}"
+        )
     if encoding is None:
-        encoding = 'utf-8'
+        encoding = "utf-8"
     return text.encode(encoding, errors)
 
 
-@deprecated('to_unicode')
-def to_native_str(text, encoding=None, errors='strict'):
-    """ Return str representation of ``text``. """
-    return to_unicode(text, encoding, errors)
-
-
-def re_rsearch(pattern, text, chunk_size=1024):
+def re_rsearch(
+    pattern: str | Pattern[str], text: str, chunk_size: int = 1024
+) -> tuple[int, int] | None:
     """
     This function does a reverse search in a text using a regular expression
     given in the attribute 'pattern'.
@@ -131,10 +159,10 @@ def re_rsearch(pattern, text, chunk_size=1024):
     the start position of the match, and the ending (regarding the entire text).
     """
 
-    def _chunk_iter():
+    def _chunk_iter() -> Iterable[tuple[str, int]]:
         offset = len(text)
         while True:
-            offset -= (chunk_size * 1024)
+            offset -= chunk_size * 1024
             if offset <= 0:
                 break
             yield (text[offset:], offset)
@@ -144,21 +172,26 @@ def re_rsearch(pattern, text, chunk_size=1024):
         pattern = re.compile(pattern)
 
     for chunk, offset in _chunk_iter():
-        matches = [match for match in pattern.finditer(chunk)]
+        matches = list(pattern.finditer(chunk))
         if matches:
             start, end = matches[-1].span()
             return offset + start, offset + end
     return None
 
 
-def memoizemethod_noargs(method):
+_SelfT = TypeVar("_SelfT")
+
+
+def memoizemethod_noargs(
+    method: Callable[Concatenate[_SelfT, _P], _T]
+) -> Callable[Concatenate[_SelfT, _P], _T]:
     """Decorator to cache the result of a method (without arguments) using a
     weak reference to its object
     """
-    cache = weakref.WeakKeyDictionary()
+    cache: weakref.WeakKeyDictionary[_SelfT, _T] = weakref.WeakKeyDictionary()
 
     @wraps(method)
-    def new_method(self, *args, **kwargs):
+    def new_method(self: _SelfT, *args: _P.args, **kwargs: _P.kwargs) -> _T:
         if self not in cache:
             cache[self] = method(self, *args, **kwargs)
         return cache[self]
@@ -166,12 +199,13 @@ def memoizemethod_noargs(method):
     return new_method
 
 
-_BINARYCHARS = {to_bytes(chr(i)) for i in range(32)} - {b"\0", b"\t", b"\n", b"\r"}
-_BINARYCHARS |= {ord(ch) for ch in _BINARYCHARS}
+_BINARYCHARS = {
+    i for i in range(32) if to_bytes(chr(i)) not in {b"\0", b"\t", b"\n", b"\r"}
+}
 
 
-def binary_is_text(data):
-    """ Returns ``True`` if the given ``data`` argument (a ``bytes`` object)
+def binary_is_text(data: bytes) -> bool:
+    """Returns ``True`` if the given ``data`` argument (a ``bytes`` object)
     does not contain unprintable control characters.
     """
     if not isinstance(data, bytes):
@@ -179,52 +213,36 @@ def binary_is_text(data):
     return all(c not in _BINARYCHARS for c in data)
 
 
-def _getargspec_py23(func):
-    """_getargspec_py23(function) -> named tuple ArgSpec(args, varargs, keywords,
-                                                        defaults)
+def get_func_args(func: Callable[..., Any], stripself: bool = False) -> list[str]:
+    """Return the argument name list of a callable object"""
+    if not callable(func):
+        raise TypeError(f"func must be callable, got '{type(func).__name__}'")
 
-    Was identical to inspect.getargspec() in python2, but uses
-    inspect.getfullargspec() for python3 behind the scenes to avoid
-    DeprecationWarning.
+    args: list[str] = []
+    try:
+        sig = inspect.signature(func)
+    except ValueError:
+        return args
 
-    >>> def f(a, b=2, *ar, **kw):
-    ...     pass
+    if isinstance(func, partial):
+        partial_args = func.args
+        partial_kw = func.keywords
 
-    >>> _getargspec_py23(f)
-    ArgSpec(args=['a', 'b'], varargs='ar', keywords='kw', defaults=(2,))
-    """
-    return inspect.ArgSpec(*inspect.getfullargspec(func)[:4])
-
-
-def get_func_args(func, stripself=False):
-    """Return the argument name list of a callable"""
-    if inspect.isfunction(func):
-        spec = inspect.getfullargspec(func)
-        func_args = spec.args + spec.kwonlyargs
-    elif inspect.isclass(func):
-        return get_func_args(func.__init__, True)
-    elif inspect.ismethod(func):
-        return get_func_args(func.__func__, True)
-    elif inspect.ismethoddescriptor(func):
-        return []
-    elif isinstance(func, partial):
-        return [x for x in get_func_args(func.func)[len(func.args):]
-                if not (func.keywords and x in func.keywords)]
-    elif hasattr(func, '__call__'):
-        if inspect.isroutine(func):
-            return []
-        elif getattr(func, '__name__', None) == '__call__':
-            return []
-        else:
-            return get_func_args(func.__call__, True)
+        for name, param in sig.parameters.items():
+            if param.name in partial_args:
+                continue
+            if partial_kw and param.name in partial_kw:
+                continue
+            args.append(name)
     else:
-        raise TypeError(f'{type(func)} is not callable')
-    if stripself:
-        func_args.pop(0)
-    return func_args
+        args = list(sig.parameters)
+
+    if stripself and args and args[0] == "self":
+        args = args[1:]
+    return args
 
 
-def get_spec(func):
+def get_spec(func: Callable[..., Any]) -> tuple[list[str], dict[str, Any]]:
     """Returns (args, kwargs) tuple for a function
     >>> import re
     >>> get_spec(re.match)
@@ -247,13 +265,13 @@ def get_spec(func):
     """
 
     if inspect.isfunction(func) or inspect.ismethod(func):
-        spec = _getargspec_py23(func)
-    elif hasattr(func, '__call__'):
-        spec = _getargspec_py23(func.__call__)
+        spec = inspect.getfullargspec(func)
+    elif hasattr(func, "__call__"):  # noqa: B004
+        spec = inspect.getfullargspec(func.__call__)
     else:
-        raise TypeError(f'{type(func)} is not callable')
+        raise TypeError(f"{type(func)} is not callable")
 
-    defaults = spec.defaults or []
+    defaults: tuple[Any, ...] = spec.defaults or ()
 
     firstdefault = len(spec.args) - len(defaults)
     args = spec.args[:firstdefault]
@@ -261,8 +279,15 @@ def get_spec(func):
     return args, kwargs
 
 
-def equal_attributes(obj1, obj2, attributes):
+def equal_attributes(
+    obj1: Any, obj2: Any, attributes: list[str | Callable[[Any], Any]] | None
+) -> bool:
     """Compare two objects attributes"""
+    warnings.warn(
+        "The equal_attributes function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     # not attributes given return False by default
     if not attributes:
         return False
@@ -279,80 +304,90 @@ def equal_attributes(obj1, obj2, attributes):
     return True
 
 
-class WeakKeyCache:
-
-    def __init__(self, default_factory):
-        warnings.warn("The WeakKeyCache class is deprecated", category=ScrapyDeprecationWarning, stacklevel=2)
-        self.default_factory = default_factory
-        self._weakdict = weakref.WeakKeyDictionary()
-
-    def __getitem__(self, key):
-        if key not in self._weakdict:
-            self._weakdict[key] = self.default_factory(key)
-        return self._weakdict[key]
+@overload
+def without_none_values(iterable: Mapping[_KT, _VT]) -> dict[_KT, _VT]: ...
 
 
-@deprecated
-def retry_on_eintr(function, *args, **kw):
-    """Run a function and retry it while getting EINTR errors"""
-    while True:
-        try:
-            return function(*args, **kw)
-        except IOError as e:
-            if e.errno != errno.EINTR:
-                raise
+@overload
+def without_none_values(iterable: Iterable[_KT]) -> Iterable[_KT]: ...
 
 
-def without_none_values(iterable):
+def without_none_values(
+    iterable: Mapping[_KT, _VT] | Iterable[_KT]
+) -> dict[_KT, _VT] | Iterable[_KT]:
     """Return a copy of ``iterable`` with all ``None`` entries removed.
 
     If ``iterable`` is a mapping, return a dictionary where all pairs that have
     value ``None`` have been removed.
     """
-    try:
+    if isinstance(iterable, Mapping):
         return {k: v for k, v in iterable.items() if v is not None}
-    except AttributeError:
-        return type(iterable)((v for v in iterable if v is not None))
+    # the iterable __init__ must take another iterable
+    return type(iterable)(v for v in iterable if v is not None)  # type: ignore[call-arg]
 
 
-def global_object_name(obj):
-    """
-    Return full name of a global object.
+def global_object_name(obj: Any) -> str:
+    """Return the full import path of the given class.
 
     >>> from scrapy import Request
     >>> global_object_name(Request)
     'scrapy.http.request.Request'
     """
-    return f"{obj.__module__}.{obj.__name__}"
+    return f"{obj.__module__}.{obj.__qualname__}"
 
 
 if hasattr(sys, "pypy_version_info"):
-    def garbage_collect():
+
+    def garbage_collect() -> None:
         # Collecting weakreferences can take two collections on PyPy.
         gc.collect()
         gc.collect()
+
 else:
-    def garbage_collect():
+
+    def garbage_collect() -> None:
         gc.collect()
 
 
-class MutableChain(Iterable):
+class MutableChain(Iterable[_T]):
     """
     Thin wrapper around itertools.chain, allowing to add iterables "in-place"
     """
 
-    def __init__(self, *args: Iterable):
-        self.data = chain.from_iterable(args)
+    def __init__(self, *args: Iterable[_T]):
+        self.data: Iterator[_T] = chain.from_iterable(args)
 
-    def extend(self, *iterables: Iterable):
+    def extend(self, *iterables: Iterable[_T]) -> None:
         self.data = chain(self.data, chain.from_iterable(iterables))
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[_T]:
         return self
 
-    def __next__(self):
+    def __next__(self) -> _T:
         return next(self.data)
 
-    @deprecated("scrapy.utils.python.MutableChain.__next__")
-    def next(self):
-        return self.__next__()
+
+async def _async_chain(
+    *iterables: Iterable[_T] | AsyncIterable[_T],
+) -> AsyncIterator[_T]:
+    for it in iterables:
+        async for o in as_async_generator(it):
+            yield o
+
+
+class MutableAsyncChain(AsyncIterable[_T]):
+    """
+    Similar to MutableChain but for async iterables
+    """
+
+    def __init__(self, *args: Iterable[_T] | AsyncIterable[_T]):
+        self.data: AsyncIterator[_T] = _async_chain(*args)
+
+    def extend(self, *iterables: Iterable[_T] | AsyncIterable[_T]) -> None:
+        self.data = _async_chain(self.data, _async_chain(*iterables))
+
+    def __aiter__(self) -> AsyncIterator[_T]:
+        return self
+
+    async def __anext__(self) -> _T:
+        return await self.data.__anext__()

@@ -42,43 +42,34 @@ Item objects
 :class:`Item` provides a :class:`dict`-like API plus additional features that
 make it the most feature-complete item type:
 
-.. class:: scrapy.item.Item([arg])
-.. class:: scrapy.Item([arg])
+.. autoclass:: scrapy.Item
+   :members: copy, deepcopy, fields
+   :undoc-members:
 
-    :class:`Item` objects replicate the standard :class:`dict` API, including
-    its ``__init__`` method.
+:class:`Item` objects replicate the standard :class:`dict` API, including
+its ``__init__`` method.
 
-    :class:`Item` allows defining field names, so that:
+:class:`Item` allows the defining of field names, so that:
 
-    -   :class:`KeyError` is raised when using undefined field names (i.e.
-        prevents typos going unnoticed)
+-   :class:`KeyError` is raised when using undefined field names (i.e.
+    prevents typos going unnoticed)
 
-    -   :ref:`Item exporters <topics-exporters>` can export all fields by
-        default even if the first scraped object does not have values for all
-        of them
+-   :ref:`Item exporters <topics-exporters>` can export all fields by
+    default even if the first scraped object does not have values for all
+    of them
 
-    :class:`Item` also allows defining field metadata, which can be used to
-    :ref:`customize serialization <topics-exporters-field-serialization>`.
+:class:`Item` also allows the defining of field metadata, which can be used to
+:ref:`customize serialization <topics-exporters-field-serialization>`.
 
-    :mod:`trackref` tracks :class:`Item` objects to help find memory leaks
-    (see :ref:`topics-leaks-trackrefs`).
+:mod:`trackref` tracks :class:`Item` objects to help find memory leaks
+(see :ref:`topics-leaks-trackrefs`).
 
-    :class:`Item` objects also provide the following additional API members:
+Example:
 
-    .. automethod:: copy
-
-    .. automethod:: deepcopy
-
-    .. attribute:: fields
-
-        A dictionary containing *all declared fields* for this Item, not only
-        those populated. The keys are the field names and the values are the
-        :class:`Field` objects used in the :ref:`Item declaration
-        <topics-items-declaring>`.
-
-Example::
+.. code-block:: python
 
     from scrapy.item import Item, Field
+
 
     class CustomItem(Item):
         one_field = Field()
@@ -91,20 +82,23 @@ Dataclass objects
 
 .. versionadded:: 2.2
 
-:func:`~dataclasses.dataclass` allows defining item classes with field names,
+:func:`~dataclasses.dataclass` allows the defining of item classes with field names,
 so that :ref:`item exporters <topics-exporters>` can export all fields by
 default even if the first scraped object does not have values for all of them.
 
-Additionally, ``dataclass`` items also allow to:
+Additionally, ``dataclass`` items also allow you to:
 
 * define the type and default value of each defined field.
 
 * define custom field metadata through :func:`dataclasses.field`, which can be used to
   :ref:`customize serialization <topics-exporters-field-serialization>`.
 
-Example::
+Example:
+
+.. code-block:: python
 
     from dataclasses import dataclass
+
 
     @dataclass
     class CustomItem:
@@ -120,7 +114,7 @@ attr.s objects
 
 .. versionadded:: 2.2
 
-:func:`attr.s` allows defining item classes with field names,
+:func:`attr.s` allows the defining of item classes with field names,
 so that :ref:`item exporters <topics-exporters>` can export all fields by
 default even if the first scraped object does not have values for all of them.
 
@@ -133,9 +127,12 @@ Additionally, ``attr.s`` items also allow to:
 
 In order to use this type, the :doc:`attrs package <attrs:index>` needs to be installed.
 
-Example::
+Example:
+
+.. code-block:: python
 
     import attr
+
 
     @attr.s
     class CustomItem:
@@ -152,9 +149,12 @@ Declaring Item subclasses
 -------------------------
 
 Item subclasses are declared using a simple class definition syntax and
-:class:`Field` objects. Here is an example::
+:class:`Field` objects. Here is an example:
+
+.. code-block:: python
 
     import scrapy
+
 
     class Product(scrapy.Item):
         name = scrapy.Field()
@@ -193,10 +193,9 @@ documentation to see which metadata keys are used by each component.
 
 It's important to note that the :class:`Field` objects used to declare the item
 do not stay assigned as class attributes. Instead, they can be accessed through
-the :attr:`Item.fields` attribute.
+the :attr:`~scrapy.Item.fields` attribute.
 
-.. class:: scrapy.item.Field([arg])
-.. class:: scrapy.Field([arg])
+.. autoclass:: scrapy.Field
 
     The :class:`Field` class is just an alias to the built-in :class:`dict` class and
     doesn't provide any extra functionality or attributes. In other words,
@@ -209,7 +208,7 @@ the :attr:`Item.fields` attribute.
     `attr.ib`_ for additional information.
 
     .. _dataclasses.field: https://docs.python.org/3/library/dataclasses.html#dataclasses.field
-    .. _attr.ib: https://www.attrs.org/en/stable/api.html#attr.ib
+    .. _attr.ib: https://www.attrs.org/en/stable/api-attr.html#attr.ib
 
 
 Working with Item objects
@@ -222,62 +221,68 @@ notice the API is very similar to the :class:`dict` API.
 Creating items
 ''''''''''''''
 
->>> product = Product(name='Desktop PC', price=1000)
->>> print(product)
-Product(name='Desktop PC', price=1000)
+.. code-block:: pycon
+
+    >>> product = Product(name="Desktop PC", price=1000)
+    >>> print(product)
+    Product(name='Desktop PC', price=1000)
 
 
 Getting field values
 ''''''''''''''''''''
 
->>> product['name']
-Desktop PC
->>> product.get('name')
-Desktop PC
+.. code-block:: pycon
 
->>> product['price']
-1000
+    >>> product["name"]
+    Desktop PC
+    >>> product.get("name")
+    Desktop PC
 
->>> product['last_updated']
-Traceback (most recent call last):
-    ...
-KeyError: 'last_updated'
+    >>> product["price"]
+    1000
 
->>> product.get('last_updated', 'not set')
-not set
+    >>> product["last_updated"]
+    Traceback (most recent call last):
+        ...
+    KeyError: 'last_updated'
 
->>> product['lala'] # getting unknown field
-Traceback (most recent call last):
-    ...
-KeyError: 'lala'
+    >>> product.get("last_updated", "not set")
+    not set
 
->>> product.get('lala', 'unknown field')
-'unknown field'
+    >>> product["lala"]  # getting unknown field
+    Traceback (most recent call last):
+        ...
+    KeyError: 'lala'
 
->>> 'name' in product  # is name field populated?
-True
+    >>> product.get("lala", "unknown field")
+    'unknown field'
 
->>> 'last_updated' in product  # is last_updated populated?
-False
+    >>> "name" in product  # is name field populated?
+    True
 
->>> 'last_updated' in product.fields  # is last_updated a declared field?
-True
+    >>> "last_updated" in product  # is last_updated populated?
+    False
 
->>> 'lala' in product.fields  # is lala a declared field?
-False
+    >>> "last_updated" in product.fields  # is last_updated a declared field?
+    True
+
+    >>> "lala" in product.fields  # is lala a declared field?
+    False
 
 
 Setting field values
 ''''''''''''''''''''
 
->>> product['last_updated'] = 'today'
->>> product['last_updated']
-today
+.. code-block:: pycon
 
->>> product['lala'] = 'test' # setting unknown field
-Traceback (most recent call last):
-    ...
-KeyError: 'Product does not support field: lala'
+    >>> product["last_updated"] = "today"
+    >>> product["last_updated"]
+    today
+
+    >>> product["lala"] = "test"  # setting unknown field
+    Traceback (most recent call last):
+        ...
+    KeyError: 'Product does not support field: lala'
 
 
 Accessing all populated values
@@ -285,11 +290,13 @@ Accessing all populated values
 
 To access all populated values, just use the typical :class:`dict` API:
 
->>> product.keys()
-['price', 'name']
+.. code-block:: pycon
 
->>> product.items()
-[('price', 1000), ('name', 'Desktop PC')]
+    >>> product.keys()
+    ['price', 'name']
+
+    >>> product.items()
+    [('price', 1000), ('name', 'Desktop PC')]
 
 
 .. _copying-items:
@@ -327,18 +334,20 @@ Other common tasks
 
 Creating dicts from items:
 
->>> dict(product) # create a dict from all populated values
-{'price': 1000, 'name': 'Desktop PC'}
+.. code-block:: pycon
 
-Creating items from dicts:
+    >>> dict(product)  # create a dict from all populated values
+    {'price': 1000, 'name': 'Desktop PC'}
 
->>> Product({'name': 'Laptop PC', 'price': 1500})
-Product(price=1500, name='Laptop PC')
+    Creating items from dicts:
 
->>> Product({'name': 'Laptop PC', 'lala': 1500}) # warning: unknown field in dict
-Traceback (most recent call last):
-    ...
-KeyError: 'Product does not support field: lala'
+    >>> Product({"name": "Laptop PC", "price": 1500})
+    Product(price=1500, name='Laptop PC')
+
+    >>> Product({"name": "Laptop PC", "lala": 1500})  # warning: unknown field in dict
+    Traceback (most recent call last):
+        ...
+    KeyError: 'Product does not support field: lala'
 
 
 Extending Item subclasses
@@ -347,17 +356,21 @@ Extending Item subclasses
 You can extend Items (to add more fields or to change some metadata for some
 fields) by declaring a subclass of your original Item.
 
-For example::
+For example:
+
+.. code-block:: python
 
     class DiscountedProduct(Product):
         discount_percent = scrapy.Field(serializer=str)
         discount_expiration_date = scrapy.Field()
 
 You can also extend field metadata by using the previous field metadata and
-appending more values, or changing existing values, like this::
+appending more values, or changing existing values, like this:
+
+.. code-block:: python
 
     class SpecificProduct(Product):
-        name = scrapy.Field(Product.fields['name'], serializer=my_serializer)
+        name = scrapy.Field(Product.fields["name"], serializer=my_serializer)
 
 That adds (or replaces) the ``serializer`` metadata key for the ``name`` field,
 keeping all the previously existing metadata values.
@@ -373,12 +386,7 @@ In code that receives an item, such as methods of :ref:`item pipelines
 <topics-spider-middleware>`, it is a good practice to use the
 :class:`~itemadapter.ItemAdapter` class and the
 :func:`~itemadapter.is_item` function to write code that works for
-any :ref:`supported item type <item-types>`:
-
-.. autoclass:: itemadapter.ItemAdapter
-
-.. autofunction:: itemadapter.is_item
-
+any supported item type.
 
 Other classes related to items
 ==============================

@@ -21,9 +21,14 @@ Design goals
 How it works
 ============
 
-AutoThrottle extension adjusts download delays dynamically to make spider send
-:setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` concurrent requests on average
-to each remote website.
+Scrapy allows defining the concurrency and delay of different download slots,
+e.g. through the :setting:`DOWNLOAD_SLOTS` setting. By default requests are
+assigned to slots based on their URL domain, although it is possible to
+customize the download slot of any request.
+
+The AutoThrottle extension adjusts the delay of each download slot dynamically,
+to make your spider send :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` concurrent
+requests on average to each remote website.
 
 It uses download latency to compute the delays. The main idea is the
 following: if a server needs ``latency`` seconds to respond, a client
@@ -80,6 +85,33 @@ callback, for example, and unable to attend downloads. However, these latencies
 should still give a reasonable estimate of how busy Scrapy (and ultimately, the
 server) is, and this extension builds on that premise.
 
+.. reqmeta:: autothrottle_dont_adjust_delay
+
+Prevent specific requests from triggering slot delay adjustments
+================================================================
+
+AutoThrottle adjusts the delay of download slots based on the latencies of
+responses that belong to that download slot. The only exceptions are non-200
+responses, which are only taken into account to increase that delay, but
+ignored if they would decrease that delay.
+
+You can also set the ``autothrottle_dont_adjust_delay`` request metadata key to
+``True`` in any request to prevent its response latency from impacting the
+delay of its download slot:
+
+.. code-block:: python
+
+    from scrapy import Request
+
+    Request("https://example.com", meta={"autothrottle_dont_adjust_delay": True})
+
+Note, however, that AutoThrottle still determines the starting delay of every
+download slot by setting the ``download_delay`` attribute on the running
+spider. If you want AutoThrottle not to impact a download slot at all, in
+addition to setting this meta key in all requests that use that download slot,
+you might want to set a custom value for the ``delay`` attribute of that
+download slot, e.g. using :setting:`DOWNLOAD_SLOTS`.
+
 Settings
 ========
 
@@ -131,7 +163,7 @@ AUTOTHROTTLE_TARGET_CONCURRENCY
 Default: ``1.0``
 
 Average number of requests Scrapy should be sending in parallel to remote
-websites.
+websites. It must be higher than ``0.0``.
 
 By default, AutoThrottle adjusts the delay to send a single
 concurrent request to each of the remote websites. Set this option to

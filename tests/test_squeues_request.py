@@ -1,32 +1,31 @@
+"""
+Queues that handle requests
+"""
+
 import shutil
 import tempfile
 import unittest
 
 import queuelib
 
-from scrapy.squeues import (
-    PickleFifoDiskQueue,
-    PickleLifoDiskQueue,
-    MarshalFifoDiskQueue,
-    MarshalLifoDiskQueue,
-    FifoMemoryQueue,
-    LifoMemoryQueue,
-)
 from scrapy.http import Request
 from scrapy.spiders import Spider
+from scrapy.squeues import (
+    FifoMemoryQueue,
+    LifoMemoryQueue,
+    MarshalFifoDiskQueue,
+    MarshalLifoDiskQueue,
+    PickleFifoDiskQueue,
+    PickleLifoDiskQueue,
+)
 from scrapy.utils.test import get_crawler
-
-
-"""
-Queues that handle requests
-"""
 
 
 class BaseQueueTestCase(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp(prefix="scrapy-queue-tests-")
         self.qpath = self.tempfilename()
-        self.qdir = self.mkdtemp()
+        self.qdir = tempfile.mkdtemp()
         self.crawler = get_crawler(Spider)
 
     def tearDown(self):
@@ -42,7 +41,7 @@ class BaseQueueTestCase(unittest.TestCase):
 
 class RequestQueueTestMixin:
     def queue(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def test_one_element_with_peek(self):
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
@@ -70,7 +69,10 @@ class RequestQueueTestMixin:
         req = Request("http://www.example.com")
         q.push(req)
         self.assertEqual(len(q), 1)
-        with self.assertRaises(NotImplementedError, msg="The underlying queue class does not implement 'peek'"):
+        with self.assertRaises(
+            NotImplementedError,
+            msg="The underlying queue class does not implement 'peek'",
+        ):
             q.peek()
         self.assertEqual(q.pop().url, req.url)
         self.assertEqual(len(q), 0)
@@ -118,7 +120,10 @@ class FifoQueueMixin(RequestQueueTestMixin):
         q.push(req1)
         q.push(req2)
         q.push(req3)
-        with self.assertRaises(NotImplementedError, msg="The underlying queue class does not implement 'peek'"):
+        with self.assertRaises(
+            NotImplementedError,
+            msg="The underlying queue class does not implement 'peek'",
+        ):
             q.peek()
         self.assertEqual(len(q), 3)
         self.assertEqual(q.pop().url, req1.url)
@@ -171,7 +176,10 @@ class LifoQueueMixin(RequestQueueTestMixin):
         q.push(req1)
         q.push(req2)
         q.push(req3)
-        with self.assertRaises(NotImplementedError, msg="The underlying queue class does not implement 'peek'"):
+        with self.assertRaises(
+            NotImplementedError,
+            msg="The underlying queue class does not implement 'peek'",
+        ):
             q.peek()
         self.assertEqual(len(q), 3)
         self.assertEqual(q.pop().url, req3.url)
@@ -196,12 +204,16 @@ class PickleLifoDiskQueueRequestTest(LifoQueueMixin, BaseQueueTestCase):
 
 class MarshalFifoDiskQueueRequestTest(FifoQueueMixin, BaseQueueTestCase):
     def queue(self):
-        return MarshalFifoDiskQueue.from_crawler(crawler=self.crawler, key="marshal/fifo")
+        return MarshalFifoDiskQueue.from_crawler(
+            crawler=self.crawler, key="marshal/fifo"
+        )
 
 
 class MarshalLifoDiskQueueRequestTest(LifoQueueMixin, BaseQueueTestCase):
     def queue(self):
-        return MarshalLifoDiskQueue.from_crawler(crawler=self.crawler, key="marshal/lifo")
+        return MarshalLifoDiskQueue.from_crawler(
+            crawler=self.crawler, key="marshal/lifo"
+        )
 
 
 class FifoMemoryQueueRequestTest(FifoQueueMixin, BaseQueueTestCase):
