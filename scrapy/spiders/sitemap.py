@@ -82,7 +82,7 @@ class SitemapSpider(Spider):
             sitemap = Sitemap(body)
             yield from self._requests_from_sitemap(sitemap)
 
-    def _requests_from_sitemap(self, sitemap):
+    def _requests_from_sitemap(self, sitemap: Sitemap) -> Iterable[Request]:
         if sitemap.type == "sitemapindex":
             build_request = self._sitemapindex_request
         elif sitemap.type == "urlset":
@@ -97,18 +97,22 @@ class SitemapSpider(Spider):
                 if request:
                     yield request
 
-    def _sitemapindex_request(self, link, sitemap_dict):
+    def _sitemapindex_request(
+        self, link: str, sitemap_dict: dict[str, Any]
+    ) -> Request | None:
         if any(x.search(link) for x in self._follow):
             return Request(link, callback=self._parse_sitemap)
         return None
 
-    def _urlset_request(self, link, sitemap_dict):
+    def _urlset_request(
+        self, link: str, sitemap_dict: dict[str, Any]
+    ) -> Request | None:
         for r, c in self._cbs:
             if r.search(link):
                 return Request(link, callback=c)
         return None
 
-    def _sitemapitem_links(self, sitemap_dict):
+    def _sitemapitem_links(self, sitemap_dict: dict[str, Any]) -> Iterable[str]:
         yield sitemap_dict["loc"]
 
         if self.sitemap_alternate_links and "alternate" in sitemap_dict:
