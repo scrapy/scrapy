@@ -18,10 +18,12 @@ To activate a spider middleware component, add it to the
 :setting:`SPIDER_MIDDLEWARES` setting, which is a dict whose keys are the
 middleware class path and their values are the middleware orders.
 
-Here's an example::
+Here's an example:
+
+.. code-block:: python
 
     SPIDER_MIDDLEWARES = {
-        'myproject.middlewares.CustomSpiderMiddleware': 543,
+        "myproject.middlewares.CustomSpiderMiddleware": 543,
     }
 
 The :setting:`SPIDER_MIDDLEWARES` setting is merged with the
@@ -43,22 +45,30 @@ previous (or subsequent) middleware being applied.
 
 If you want to disable a builtin middleware (the ones defined in
 :setting:`SPIDER_MIDDLEWARES_BASE`, and enabled by default) you must define it
-in your project :setting:`SPIDER_MIDDLEWARES` setting and assign `None` as its
-value.  For example, if you want to disable the off-site middleware::
+in your project :setting:`SPIDER_MIDDLEWARES` setting and assign ``None`` as its
+value.  For example, if you want to disable the off-site middleware:
+
+.. code-block:: python
 
     SPIDER_MIDDLEWARES = {
-        'myproject.middlewares.CustomSpiderMiddleware': 543,
-        'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': None,
+        "scrapy.spidermiddlewares.referer.RefererMiddleware": None,
+        "myproject.middlewares.CustomRefererSpiderMiddleware": 700,
     }
 
 Finally, keep in mind that some middlewares may need to be enabled through a
 particular setting. See each middleware documentation for more info.
 
+.. _custom-spider-middleware:
+
 Writing your own spider middleware
 ==================================
 
-Each middleware component is a Python class that defines one or more of the
-following methods:
+Each spider middleware is a Python class that defines one or more of the
+methods defined below.
+
+The main entry point is the ``from_crawler`` class method, which receives a
+:class:`~scrapy.crawler.Crawler` instance. The :class:`~scrapy.crawler.Crawler`
+object gives you access, for example, to the :ref:`settings <topics-settings>`.
 
 .. module:: scrapy.spidermiddlewares
 
@@ -78,7 +88,8 @@ following methods:
 
         If it raises an exception, Scrapy won't bother calling any other spider
         middleware :meth:`process_spider_input` and will call the request
-        errback.  The output of the errback is chained back in the other
+        errback if there is one, otherwise it will start the :meth:`process_spider_exception`
+        chain. The output of the errback is chained back in the other
         direction for :meth:`process_spider_output` to process it, or
         :meth:`process_spider_exception` if it raised an exception.
 
@@ -86,7 +97,7 @@ following methods:
         :type response: :class:`~scrapy.http.Response` object
 
         :param spider: the spider for which this response is intended
-        :type spider: :class:`~scrapy.spiders.Spider` object
+        :type spider: :class:`~scrapy.Spider` object
 
 
     .. method:: process_spider_output(response, result, spider)
@@ -95,29 +106,48 @@ following methods:
         it has processed the response.
 
         :meth:`process_spider_output` must return an iterable of
-        :class:`~scrapy.http.Request`, dict or :class:`~scrapy.item.Item`
-        objects.
+        :class:`~scrapy.Request` objects and :ref:`item objects
+        <topics-items>`.
+
+        .. versionchanged:: 2.7
+           This method may be defined as an :term:`asynchronous generator`, in
+           which case ``result`` is an :term:`asynchronous iterable`.
+
+        Consider defining this method as an :term:`asynchronous generator`,
+        which will be a requirement in a future version of Scrapy. However, if
+        you plan on sharing your spider middleware with other people, consider
+        either :ref:`enforcing Scrapy 2.7 <enforce-component-requirements>`
+        as a minimum requirement of your spider middleware, or :ref:`making
+        your spider middleware universal <universal-spider-middleware>` so that
+        it works with Scrapy versions earlier than Scrapy 2.7.
 
         :param response: the response which generated this output from the
           spider
         :type response: :class:`~scrapy.http.Response` object
 
         :param result: the result returned by the spider
-        :type result: an iterable of :class:`~scrapy.http.Request`, dict
-          or :class:`~scrapy.item.Item` objects
+        :type result: an iterable of :class:`~scrapy.Request` objects and
+          :ref:`item objects <topics-items>`
 
         :param spider: the spider whose result is being processed
-        :type spider: :class:`~scrapy.spiders.Spider` object
+        :type spider: :class:`~scrapy.Spider` object
 
+    .. method:: process_spider_output_async(response, result, spider)
+
+        .. versionadded:: 2.7
+
+        If defined, this method must be an :term:`asynchronous generator`,
+        which will be called instead of :meth:`process_spider_output` if
+        ``result`` is an :term:`asynchronous iterable`.
 
     .. method:: process_spider_exception(response, exception, spider)
 
-        This method is called when a spider or :meth:`process_spider_input`
-        method (from other spider middleware) raises an exception.
+        This method is called when a spider or :meth:`process_spider_output`
+        method (from a previous spider middleware) raises an exception.
 
         :meth:`process_spider_exception` should return either ``None`` or an
-        iterable of :class:`~scrapy.http.Request`, dict or
-        :class:`~scrapy.item.Item` objects.
+        iterable of :class:`~scrapy.Request` or :ref:`item <topics-items>`
+        objects.
 
         If it returns ``None``, Scrapy will continue processing this exception,
         executing any other :meth:`process_spider_exception` in the following
@@ -125,21 +155,20 @@ following methods:
         exception reaches the engine (where it's logged and discarded).
 
         If it returns an iterable the :meth:`process_spider_output` pipeline
-        kicks in, and no other :meth:`process_spider_exception` will be called.
+        kicks in, starting from the next spider middleware, and no other
+        :meth:`process_spider_exception` will be called.
 
         :param response: the response being processed when the exception was
           raised
         :type response: :class:`~scrapy.http.Response` object
 
         :param exception: the exception raised
-        :type exception: `Exception`_ object
+        :type exception: :exc:`Exception` object
 
         :param spider: the spider which raised the exception
-        :type spider: :class:`~scrapy.spiders.Spider` object
+        :type spider: :class:`~scrapy.Spider` object
 
     .. method:: process_start_requests(start_requests, spider)
-
-        .. versionadded:: 0.15
 
         This method is called with the start requests of the spider, and works
         similarly to the :meth:`process_spider_output` method, except that it
@@ -147,7 +176,7 @@ following methods:
         items).
 
         It receives an iterable (in the ``start_requests`` parameter) and must
-        return another iterable of :class:`~scrapy.http.Request` objects.
+        return another iterable of :class:`~scrapy.Request` objects and/or :ref:`item objects <topics-items>`.
 
         .. note:: When implementing this method in your spider middleware, you
            should always return an iterable (that follows the input one) and
@@ -159,25 +188,21 @@ following methods:
            (like a time limit or item/page count).
 
         :param start_requests: the start requests
-        :type start_requests: an iterable of :class:`~scrapy.http.Request`
+        :type start_requests: an iterable of :class:`~scrapy.Request`
 
         :param spider: the spider to whom the start requests belong
-        :type spider: :class:`~scrapy.spiders.Spider` object
+        :type spider: :class:`~scrapy.Spider` object
 
     .. method:: from_crawler(cls, crawler)
-    
+
        If present, this classmethod is called to create a middleware instance
        from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
        of the middleware. Crawler object provides access to all Scrapy core
        components like settings and signals; it is a way for middleware to
        access them and hook its functionality into Scrapy.
-    
+
        :param crawler: crawler that uses this middleware
        :type crawler: :class:`~scrapy.crawler.Crawler` object
-
-
-.. _Exception: https://docs.python.org/2/library/exceptions.html#exceptions.Exception
-
 
 .. _topics-spider-middleware-ref:
 
@@ -200,7 +225,7 @@ DepthMiddleware
 .. class:: DepthMiddleware
 
    DepthMiddleware is used for tracking the depth of each Request inside the
-   site being scraped. It works by setting `request.meta['depth'] = 0` whenever
+   site being scraped. It works by setting ``request.meta['depth'] = 0`` whenever
    there is no value previously set (usually just the first Request) and
    incrementing it by 1 otherwise.
 
@@ -240,7 +265,12 @@ specify which response codes the spider is able to handle using the
 :setting:`HTTPERROR_ALLOWED_CODES` setting.
 
 For example, if you want your spider to handle 404 responses you can do
-this::
+this:
+
+.. code-block:: python
+
+    from scrapy.spiders import CrawlSpider
+
 
     class MySpider(CrawlSpider):
         handle_httpstatus_list = [404]
@@ -250,9 +280,10 @@ this::
 .. reqmeta:: handle_httpstatus_all
 
 The ``handle_httpstatus_list`` key of :attr:`Request.meta
-<scrapy.http.Request.meta>` can also be used to specify which response codes to
+<scrapy.Request.meta>` can also be used to specify which response codes to
 allow on a per-request basis. You can also set the meta key ``handle_httpstatus_all``
-to ``True`` if you want to allow any response code for a request.
+to ``True`` if you want to allow any response code for a request, and ``False`` to
+disable the effects of the ``handle_httpstatus_all`` key.
 
 Keep in mind, however, that it's usually a bad idea to handle non-200
 responses, unless you really know what you're doing.
@@ -282,42 +313,6 @@ Default: ``False``
 
 Pass all responses, regardless of its status code.
 
-OffsiteMiddleware
------------------
-
-.. module:: scrapy.spidermiddlewares.offsite
-   :synopsis: Offsite Spider Middleware
-
-.. class:: OffsiteMiddleware
-
-   Filters out Requests for URLs outside the domains covered by the spider.
-
-   This middleware filters out every request whose host names aren't in the
-   spider's :attr:`~scrapy.spiders.Spider.allowed_domains` attribute.
-   All subdomains of any domain in the list are also allowed.
-   E.g. the rule ``www.example.org`` will also allow ``bob.www.example.org``
-   but not ``www2.example.com`` nor ``example.com``.
-
-   When your spider returns a request for a domain not belonging to those
-   covered by the spider, this middleware will log a debug message similar to
-   this one::
-
-      DEBUG: Filtered offsite request to 'www.othersite.com': <GET http://www.othersite.com/some/page.html>
-
-   To avoid filling the log with too much noise, it will only print one of
-   these messages for each new domain filtered. So, for example, if another
-   request for ``www.othersite.com`` is filtered, no log message will be
-   printed. But if a request for ``someothersite.com`` is filtered, a message
-   will be printed (but only for the first request filtered).
-
-   If the spider doesn't define an
-   :attr:`~scrapy.spiders.Spider.allowed_domains` attribute, or the
-   attribute is empty, the offsite middleware will allow all requests.
-
-   If the request has the :attr:`~scrapy.http.Request.dont_filter` attribute
-   set, the offsite middleware will allow the request even if its domain is not
-   listed in allowed domains.
-
 
 RefererMiddleware
 -----------------
@@ -338,8 +333,6 @@ RefererMiddleware settings
 REFERER_ENABLED
 ^^^^^^^^^^^^^^^
 
-.. versionadded:: 0.15
-
 Default: ``True``
 
 Whether to enable referer middleware.
@@ -348,8 +341,6 @@ Whether to enable referer middleware.
 
 REFERRER_POLICY
 ^^^^^^^^^^^^^^^
-
-.. versionadded:: 1.4
 
 Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
 
@@ -367,7 +358,7 @@ Acceptable values for REFERRER_POLICY
 
 - either a path to a ``scrapy.spidermiddlewares.referer.ReferrerPolicy``
   subclass — a custom policy or one of the built-in ones (see classes below),
-- or one of the standard W3C-defined string values,
+- or one or more comma-separated standard W3C-defined string values,
 - or the special ``"scrapy-default"``.
 
 =======================================  ========================================================================
@@ -442,4 +433,3 @@ UrlLengthMiddleware
    settings (see the settings documentation for more info):
 
       * :setting:`URLLENGTH_LIMIT` - The maximum URL length to allow for crawled URLs.
-

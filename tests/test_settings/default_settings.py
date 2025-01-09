@@ -1,5 +1,3 @@
+TEST_DEFAULT = "defvalue"
 
-TEST_DEFAULT = 'defvalue'
-
-TEST_DICT = {'key': 'val'}
-
+TEST_DICT = {"key": "val"}

@@ -4,7 +4,15 @@
 Scrapy |version| documentation
 ==============================
 
-This documentation contains everything you need to know about Scrapy.
+Scrapy is a fast high-level `web crawling`_ and `web scraping`_ framework, used
+to crawl websites and extract structured data from their pages. It can be used
+for a wide range of purposes, from data mining to monitoring and automated
+testing.
+
+.. _web crawling: https://en.wikipedia.org/wiki/Web_crawler
+.. _web scraping: https://en.wikipedia.org/wiki/Web_scraping
+
+.. _getting-help:
 
 Getting help
 ============
@@ -18,12 +26,14 @@ Having trouble? We'd like to help!
 * Search for questions on the archives of the `scrapy-users mailing list`_.
 * Ask a question in the `#scrapy IRC channel`_,
 * Report bugs with Scrapy in our `issue tracker`_.
+* Join the Discord community `Scrapy Discord`_.
 
 .. _scrapy-users mailing list: https://groups.google.com/forum/#!forum/scrapy-users
 .. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
 .. _StackOverflow using the scrapy tag: https://stackoverflow.com/tags/scrapy
 .. _#scrapy IRC channel: irc://irc.freenode.net/scrapy
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
+.. _Scrapy Discord: https://discord.com/invite/mv3yErfpvq
 
 
 First steps
@@ -71,7 +81,6 @@ Basic concepts
    topics/link-extractors
    topics/settings
    topics/exceptions
-
 
 :doc:`topics/commands`
     Learn about the command-line tool used to manage your Scrapy project.
@@ -121,7 +130,6 @@ Built-in services
    topics/stats
    topics/email
    topics/telnetconsole
-   topics/webservice
 
 :doc:`topics/logging`
     Learn how to use Python's builtin logging on Scrapy.
@@ -134,9 +142,6 @@ Built-in services
 
 :doc:`topics/telnetconsole`
     Inspect a running crawler using a built-in Python console.
-
-:doc:`topics/webservice`
-    Monitor and control a crawler using a web service.
 
 
 Solving specific problems
@@ -152,18 +157,21 @@ Solving specific problems
    topics/practices
    topics/broad-crawls
    topics/developer-tools
+   topics/dynamic-content
    topics/leaks
    topics/media-pipeline
    topics/deploy
    topics/autothrottle
    topics/benchmarking
    topics/jobs
+   topics/coroutines
+   topics/asyncio
 
 :doc:`faq`
     Get answers to most frequently asked questions.
 
 :doc:`topics/debug`
-    Learn how to debug common problems of your scrapy spider.
+    Learn how to debug common problems of your Scrapy spider.
 
 :doc:`topics/contracts`
     Learn how to use contracts for testing your spiders.
@@ -176,6 +184,9 @@ Solving specific problems
 
 :doc:`topics/developer-tools`
     Learn how to scrape with your browser's developer tools.
+
+:doc:`topics/dynamic-content`
+    Read webpage data that is loaded dynamically.
 
 :doc:`topics/leaks`
     Learn how to find and get rid of memory leaks in your crawler.
@@ -195,6 +206,12 @@ Solving specific problems
 :doc:`topics/jobs`
     Learn how to pause and resume crawls for large spiders.
 
+:doc:`topics/coroutines`
+    Use the :ref:`coroutine syntax <async>`.
+
+:doc:`topics/asyncio`
+    Use :mod:`asyncio` and :mod:`asyncio`-powered libraries.
+
 .. _extending-scrapy:
 
 Extending Scrapy
@@ -205,16 +222,22 @@ Extending Scrapy
    :hidden:
 
    topics/architecture
+   topics/addons
    topics/downloader-middleware
    topics/spider-middleware
    topics/extensions
-   topics/api
    topics/signals
+   topics/scheduler
    topics/exporters
+   topics/components
+   topics/api
 
 
 :doc:`topics/architecture`
     Understand the Scrapy architecture.
+
+:doc:`topics/addons`
+    Enable and configure third-party extensions.
 
 :doc:`topics/downloader-middleware`
     Customize how pages get requested and downloaded.
@@ -225,14 +248,21 @@ Extending Scrapy
 :doc:`topics/extensions`
     Extend Scrapy with your custom functionality
 
-:doc:`topics/api`
-    Use it on extensions and middlewares to extend Scrapy functionality
-
 :doc:`topics/signals`
     See all available signals and how to work with them.
 
+:doc:`topics/scheduler`
+    Understand the scheduler component.
+
 :doc:`topics/exporters`
     Quickly export your scraped items to a file (XML, CSV, etc).
+
+:doc:`topics/components`
+    Learn the common API and some good practices when building custom Scrapy
+    components.
+
+:doc:`topics/api`
+    Use it on extensions and middlewares to extend Scrapy functionality.
 
 
 All the rest
