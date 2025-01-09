@@ -15,8 +15,10 @@ import subprocess
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
+from logging import DEBUG
 from pathlib import Path
 from threading import Timer
+from unittest.mock import Mock
 from urllib.parse import urlparse
 
 import attr
@@ -27,11 +29,13 @@ from twisted.trial import unittest
 from twisted.web import server, static, util
 
 from scrapy import signals
-from scrapy.core.engine import ExecutionEngine
-from scrapy.exceptions import CloseSpider
+from scrapy.core.engine import ExecutionEngine, Slot
+from scrapy.core.scheduler import BaseScheduler
+from scrapy.exceptions import CloseSpider, IgnoreRequest
 from scrapy.http import Request
 from scrapy.item import Field, Item
 from scrapy.linkextractors import LinkExtractor
+from scrapy.signals import request_scheduled
 from scrapy.spiders import Spider
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
@@ -63,8 +67,8 @@ class TestSpider(Spider):
     allowed_domains = ["scrapytest.org", "localhost"]
 
     itemurl_re = re.compile(r"item\d+.html")
-    name_re = re.compile(r"<h1>(.*?)</h1>", re.M)
-    price_re = re.compile(r">Price: \$(.*?)<", re.M)
+    name_re = re.compile(r"<h1>(.*?)</h1>", re.MULTILINE)
+    price_re = re.compile(r">Price: \$(.*?)<", re.MULTILINE)
 
     item_cls: type = TestItem
 
@@ -455,7 +459,7 @@ class EngineTest(unittest.TestCase):
         def kill_proc():
             p.kill()
             p.communicate()
-            assert False, "Command took too much time to complete"
+            raise AssertionError("Command took too much time to complete")
 
         timer = Timer(15, kill_proc)
         try:
@@ -465,6 +469,37 @@ class EngineTest(unittest.TestCase):
             timer.cancel()
 
         self.assertNotIn(b"Traceback", stderr)
+
+
+def test_request_scheduled_signal(caplog):
+    class TestScheduler(BaseScheduler):
+        def __init__(self):
+            self.enqueued = []
+
+        def enqueue_request(self, request: Request) -> bool:
+            self.enqueued.append(request)
+            return True
+
+    def signal_handler(request: Request, spider: Spider) -> None:
+        if "drop" in request.url:
+            raise IgnoreRequest
+
+    spider = TestSpider()
+    crawler = get_crawler(spider.__class__)
+    engine = ExecutionEngine(crawler, lambda _: None)
+    engine.downloader._slot_gc_loop.stop()
+    scheduler = TestScheduler()
+    engine.slot = Slot((), None, Mock(), scheduler)
+    crawler.signals.connect(signal_handler, request_scheduled)
+    keep_request = Request("https://keep.example")
+    engine._schedule_request(keep_request, spider)
+    drop_request = Request("https://drop.example")
+    caplog.set_level(DEBUG)
+    engine._schedule_request(drop_request, spider)
+    assert scheduler.enqueued == [
+        keep_request
+    ], f"{scheduler.enqueued!r} != [{keep_request!r}]"
+    crawler.signals.disconnect(signal_handler, request_scheduled)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import unittest
 from ipaddress import IPv4Address
 from socket import gethostbyname
@@ -49,6 +50,8 @@ from tests.spiders import (
     HeadersReceivedErrbackSpider,
     SimpleSpider,
     SingleRequestSpider,
+    StartRequestsGoodAndBadOutput,
+    StartRequestsItemSpider,
 )
 
 
@@ -76,11 +79,11 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def _test_delay(self, total, delay, randomize=False):
-        crawl_kwargs = dict(
-            maxlatency=delay * 2,
-            mockserver=self.mockserver,
-            total=total,
-        )
+        crawl_kwargs = {
+            "maxlatency": delay * 2,
+            "mockserver": self.mockserver,
+            "total": total,
+        }
         tolerance = 1 - (0.6 if randomize else 0.2)
 
         settings = {"DOWNLOAD_DELAY": delay, "RANDOMIZE_DOWNLOAD_DELAY": randomize}
@@ -183,6 +186,39 @@ class CrawlTestCase(TestCase):
         record = log.records[0]
         self.assertIsNotNone(record.exc_info)
         self.assertIs(record.exc_info[0], ZeroDivisionError)
+
+    @defer.inlineCallbacks
+    def test_start_requests_items(self):
+        with LogCapture("scrapy", level=logging.ERROR) as log:
+            crawler = get_crawler(StartRequestsItemSpider)
+            yield crawler.crawl(mockserver=self.mockserver)
+
+        self.assertEqual(len(log.records), 0)
+
+    @defer.inlineCallbacks
+    def test_start_requests_unsupported_output(self):
+        with LogCapture("scrapy", level=logging.ERROR) as log:
+            crawler = get_crawler(StartRequestsGoodAndBadOutput)
+            yield crawler.crawl(mockserver=self.mockserver)
+
+        self.assertEqual(len(log.records), 2)
+        self.assertEqual(
+            log.records[0].msg,
+            (
+                "Got 'data:,b' among start requests. Only requests and items "
+                "are supported. It will be ignored."
+            ),
+        )
+        self.assertTrue(
+            re.match(
+                (
+                    r"^Got <object object at 0x[0-9a-fA-F]+> among start "
+                    r"requests\. Only requests and items are supported\. It "
+                    r"will be ignored\.$"
+                ),
+                log.records[1].msg,
+            )
+        )
 
     @defer.inlineCallbacks
     def test_start_requests_laziness(self):
@@ -392,7 +428,7 @@ with multiples lines
 
     @defer.inlineCallbacks
     def test_crawl_multiple(self):
-        runner = CrawlerRunner({"REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7"})
+        runner = CrawlerRunner()
         runner.crawl(
             SimpleSpider,
             self.mockserver.url("/status?n=200"),

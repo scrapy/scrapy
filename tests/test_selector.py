@@ -80,10 +80,10 @@ class SelectorTestCase(unittest.TestCase):
         meta = (
             '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">'
         )
-        head = "<head>" + meta + "</head>"
+        head = f"<head>{meta}</head>"
         body_content = '<span id="blank">\xa3</span>'
-        body = "<body>" + body_content + "</body>"
-        html = "<html>" + head + body + "</html>"
+        body = f"<body>{body_content}</body>"
+        html = f"<html>{head}{body}</html>"
         encoding = "utf-8"
         html_utf8 = html.encode(encoding)
 
@@ -264,7 +264,7 @@ class JMESPathTestCase(unittest.TestCase):
         )
 
     @pytest.mark.skipif(PARSEL_18_PLUS, reason="parsel >= 1.8 supports jmespath")
-    def test_jmespath_not_available(my_json_page) -> None:
+    def test_jmespath_not_available(self) -> None:
         body = """
         {
             "website": {"name": "Example"}

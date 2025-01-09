@@ -12,6 +12,8 @@ BOT_NAME = "$project_name"
 SPIDER_MODULES = ["$project_name.spiders"]
 NEWSPIDER_MODULE = "$project_name.spiders"
 
+ADDONS = {}
+
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "$project_name (+http://www.yourdomain.com)"
@@ -88,6 +90,5 @@ ROBOTSTXT_OBEY = True
 #HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
 # Set settings whose default value is deprecated to a future-proof value
-REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"

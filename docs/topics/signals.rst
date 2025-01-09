@@ -159,8 +159,9 @@ item_scraped
     :param spider: the spider which scraped the item
     :type spider: :class:`~scrapy.Spider` object
 
-    :param response: the response from where the item was scraped
-    :type response: :class:`~scrapy.http.Response` object
+    :param response: the response from where the item was scraped, or ``None``
+        if it was yielded from :meth:`~scrapy.Spider.start_requests`.
+    :type response: :class:`~scrapy.http.Response` | ``None``
 
 item_dropped
 ~~~~~~~~~~~~
@@ -179,8 +180,9 @@ item_dropped
     :param spider: the spider which scraped the item
     :type spider: :class:`~scrapy.Spider` object
 
-    :param response: the response from where the item was dropped
-    :type response: :class:`~scrapy.http.Response` object
+    :param response: the response from where the item was dropped, or ``None``
+        if it was yielded from :meth:`~scrapy.Spider.start_requests`.
+    :type response: :class:`~scrapy.http.Response` | ``None``
 
     :param exception: the exception (which must be a
         :exc:`~scrapy.exceptions.DropItem` subclass) which caused the item
@@ -201,8 +203,10 @@ item_error
     :param item: the item that caused the error in the :ref:`topics-item-pipeline`
     :type item: :ref:`item object <item-types>`
 
-    :param response: the response being processed when the exception was raised
-    :type response: :class:`~scrapy.http.Response` object
+    :param response: the response being processed when the exception was
+        raised, or ``None`` if it was yielded from
+        :meth:`~scrapy.Spider.start_requests`.
+    :type response: :class:`~scrapy.http.Response` | ``None``
 
     :param spider: the spider which raised the exception
     :type spider: :class:`~scrapy.Spider` object
@@ -343,10 +347,17 @@ request_scheduled
 .. signal:: request_scheduled
 .. function:: request_scheduled(request, spider)
 
-    Sent when the engine schedules a :class:`~scrapy.Request`, to be
-    downloaded later.
+    Sent when the engine is asked to schedule a :class:`~scrapy.Request`, to be
+    downloaded later, before the request reaches the :ref:`scheduler
+    <topics-scheduler>`.
+
+    Raise :exc:`~scrapy.exceptions.IgnoreRequest` to drop a request before it
+    reaches the scheduler.
 
     This signal does not support returning deferreds from its handlers.
+
+    .. versionadded:: 2.11.2
+        Allow dropping requests with :exc:`~scrapy.exceptions.IgnoreRequest`.
 
     :param request: the request that reached the scheduler
     :type request: :class:`~scrapy.Request` object

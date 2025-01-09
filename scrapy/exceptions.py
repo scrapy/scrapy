@@ -4,6 +4,7 @@ Scrapy core exceptions
 These exceptions are documented in docs/topics/exceptions.rst. Please don't add
 new exceptions here without documenting them there.
 """
+
 from typing import Any
 
 # Internal
@@ -12,16 +13,12 @@ from typing import Any
 class NotConfigured(Exception):
     """Indicates a missing configuration situation"""
 
-    pass
-
 
 class _InvalidOutput(TypeError):
     """
     Indicates an invalid value has been returned by a middleware's processing method.
     Internal and undocumented, it should not be raised or caught by user code.
     """
-
-    pass
 
 
 # HTTP and crawling
@@ -33,8 +30,6 @@ class IgnoreRequest(Exception):
 
 class DontCloseSpider(Exception):
     """Request the spider not to be closed yet"""
-
-    pass
 
 
 class CloseSpider(Exception):
@@ -63,13 +58,9 @@ class StopDownload(Exception):
 class DropItem(Exception):
     """Drop item from the item pipeline"""
 
-    pass
-
 
 class NotSupported(Exception):
     """Indicates a feature or method is not supported"""
-
-    pass
 
 
 # Commands
@@ -88,10 +79,6 @@ class ScrapyDeprecationWarning(Warning):
     DeprecationWarning is silenced on Python 2.7+
     """
 
-    pass
-
 
 class ContractFail(AssertionError):
     """Error raised in case of a failing contract"""
-
-    pass

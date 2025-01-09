@@ -1,6 +1,9 @@
 """
 Some spiders used for testing and benchmarking
 """
+
+from __future__ import annotations
+
 import asyncio
 import time
 from urllib.parse import urlencode
@@ -77,6 +80,28 @@ class DelaySpider(MetaSpider):
         self.t2_err = time.time()
 
 
+class LogSpider(MetaSpider):
+    name = "log_spider"
+
+    def log_debug(self, message: str, extra: dict | None = None):
+        self.logger.debug(message, extra=extra)
+
+    def log_info(self, message: str, extra: dict | None = None):
+        self.logger.info(message, extra=extra)
+
+    def log_warning(self, message: str, extra: dict | None = None):
+        self.logger.warning(message, extra=extra)
+
+    def log_error(self, message: str, extra: dict | None = None):
+        self.logger.error(message, extra=extra)
+
+    def log_critical(self, message: str, extra: dict | None = None):
+        self.logger.critical(message, extra=extra)
+
+    def parse(self, response):
+        pass
+
+
 class SlowSpider(DelaySpider):
     name = "slow"
 
@@ -150,7 +175,7 @@ class AsyncDefAsyncioReqsReturnSpider(SimpleSpider):
         status = await get_from_asyncio_queue(response.status)
         self.logger.info(f"Got response {status}, req_id {req_id}")
         if req_id > 0:
-            return
+            return None
         reqs = []
         for i in range(1, 3):
             req = Request(self.start_urls[0], dont_filter=True, meta={"req_id": i})
@@ -259,6 +284,24 @@ class ItemSpider(FollowAllSpider):
             yield {}
 
 
+class MaxItemsAndRequestsSpider(FollowAllSpider):
+    def __init__(self, max_items=10, max_requests=10, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.max_items = max_items
+        self.max_requests = max_requests
+
+    def parse(self, response):
+        self.items_scraped = 0
+        self.pages_crawled = 1  # account for the start url
+        for request in super().parse(response):
+            if self.pages_crawled < self.max_requests:
+                yield request
+                self.pages_crawled += 1
+            if self.items_scraped < self.max_items:
+                yield Item()
+                self.items_scraped += 1
+
+
 class DefaultError(Exception):
     pass
 
@@ -301,8 +344,20 @@ class BrokenStartRequestsSpider(FollowAllSpider):
 
     def parse(self, response):
         self.seedsseen.append(response.meta.get("seed"))
-        for req in super().parse(response):
-            yield req
+        yield from super().parse(response)
+
+
+class StartRequestsItemSpider(FollowAllSpider):
+    def start_requests(self):
+        yield {"name": "test item"}
+
+
+class StartRequestsGoodAndBadOutput(FollowAllSpider):
+    def start_requests(self):
+        yield {"a": "a"}
+        yield Request("data:,a")
+        yield "data:,b"
+        yield object()
 
 
 class SingleRequestSpider(MetaSpider):
@@ -322,11 +377,13 @@ class SingleRequestSpider(MetaSpider):
             return self.callback_func(response)
         if "next" in response.meta:
             return response.meta["next"]
+        return None
 
     def on_error(self, failure):
         self.meta["failure"] = failure
         if callable(self.errback_func):
             return self.errback_func(failure)
+        return None
 
 
 class DuplicateStartRequestsSpider(MockServerSpider):
@@ -336,8 +393,8 @@ class DuplicateStartRequestsSpider(MockServerSpider):
     dupe_factor = 3
 
     def start_requests(self):
-        for i in range(0, self.distinct_urls):
-            for j in range(0, self.dupe_factor):
+        for i in range(self.distinct_urls):
+            for j in range(self.dupe_factor):
                 url = self.mockserver.url(f"/echo?headers=1&body=test{i}")
                 yield Request(url, dont_filter=self.dont_filter)
 

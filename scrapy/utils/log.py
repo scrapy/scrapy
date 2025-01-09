@@ -1,27 +1,32 @@
 from __future__ import annotations
 
 import logging
+import pprint
 import sys
+from collections.abc import MutableMapping
 from logging.config import dictConfig
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.settings import Settings
-from scrapy.utils.versions import scrapy_components_versions
+from scrapy.settings import Settings, _SettingsKeyT
+from scrapy.utils.versions import get_versions
 
 if TYPE_CHECKING:
+
     from scrapy.crawler import Crawler
+    from scrapy.logformatter import LogFormatterResult
+
 
 logger = logging.getLogger(__name__)
 
 
 def failure_to_exc_info(
     failure: Failure,
-) -> Optional[Tuple[Type[BaseException], BaseException, Optional[TracebackType]]]:
+) -> tuple[type[BaseException], BaseException, TracebackType | None] | None:
     """Extract exc_info from Failure instances"""
     if isinstance(failure, Failure):
         assert failure.type
@@ -35,7 +40,7 @@ def failure_to_exc_info(
 
 
 class TopLevelFormatter(logging.Filter):
-    """Keep only top level loggers's name (direct children from root) from
+    """Keep only top level loggers' name (direct children from root) from
     records.
 
     This filter will replace Scrapy loggers' names with 'scrapy'. This mimics
@@ -46,8 +51,9 @@ class TopLevelFormatter(logging.Filter):
     ``loggers`` list where it should act.
     """
 
-    def __init__(self, loggers: Optional[List[str]] = None):
-        self.loggers: List[str] = loggers or []
+    def __init__(self, loggers: list[str] | None = None):
+        super().__init__()
+        self.loggers: list[str] = loggers or []
 
     def filter(self, record: logging.LogRecord) -> bool:
         if any(record.name.startswith(logger + ".") for logger in self.loggers):
@@ -76,7 +82,8 @@ DEFAULT_LOGGING = {
 
 
 def configure_logging(
-    settings: Union[Settings, dict, None] = None, install_root_handler: bool = True
+    settings: Settings | dict[_SettingsKeyT, Any] | None = None,
+    install_root_handler: bool = True,
 ) -> None:
     """
     Initialize logging defaults for Scrapy.
@@ -114,17 +121,17 @@ def configure_logging(
         settings = Settings(settings)
 
     if settings.getbool("LOG_STDOUT"):
-        sys.stdout = StreamLogger(logging.getLogger("stdout"))  # type: ignore[assignment]
+        sys.stdout = StreamLogger(logging.getLogger("stdout"))
 
     if install_root_handler:
         install_scrapy_root_handler(settings)
 
 
-_scrapy_root_handler: Optional[logging.Handler] = None
+_scrapy_root_handler: logging.Handler | None = None
 
 
 def install_scrapy_root_handler(settings: Settings) -> None:
-    global _scrapy_root_handler
+    global _scrapy_root_handler  # noqa: PLW0603  # pylint: disable=global-statement
 
     if (
         _scrapy_root_handler is not None
@@ -136,7 +143,7 @@ def install_scrapy_root_handler(settings: Settings) -> None:
     logging.root.addHandler(_scrapy_root_handler)
 
 
-def get_scrapy_root_handler() -> Optional[logging.Handler]:
+def get_scrapy_root_handler() -> logging.Handler | None:
     return _scrapy_root_handler
 
 
@@ -168,12 +175,11 @@ def log_scrapy_info(settings: Settings) -> None:
         "Scrapy %(version)s started (bot: %(bot)s)",
         {"version": scrapy.__version__, "bot": settings["BOT_NAME"]},
     )
-    versions = [
-        f"{name} {version}"
-        for name, version in scrapy_components_versions()
-        if name != "Scrapy"
-    ]
-    logger.info("Versions: %(versions)s", {"versions": ", ".join(versions)})
+    software = settings.getlist("LOG_VERSIONS")
+    if not software:
+        return
+    versions = pprint.pformat(dict(get_versions(software)), sort_dicts=False)
+    logger.info(f"Versions:\n{versions}")
 
 
 def log_reactor_info() -> None:
@@ -224,7 +230,9 @@ class LogCounterHandler(logging.Handler):
         self.crawler.stats.inc_value(sname)
 
 
-def logformatter_adapter(logkws: dict) -> Tuple[int, str, dict]:
+def logformatter_adapter(
+    logkws: LogFormatterResult,
+) -> tuple[int, str, dict[str, Any] | tuple[Any, ...]]:
     """
     Helper that takes the dictionary output from the methods in LogFormatter
     and adapts it into a tuple of positional arguments for logger.log calls,
@@ -235,6 +243,19 @@ def logformatter_adapter(logkws: dict) -> Tuple[int, str, dict]:
     message = logkws.get("msg") or ""
     # NOTE: This also handles 'args' being an empty dict, that case doesn't
     # play well in logger.log calls
-    args = logkws if not logkws.get("args") else logkws["args"]
+    args = cast(dict[str, Any], logkws) if not logkws.get("args") else logkws["args"]
 
     return (level, message, args)
+
+
+class SpiderLoggerAdapter(logging.LoggerAdapter):
+    def process(
+        self, msg: str, kwargs: MutableMapping[str, Any]
+    ) -> tuple[str, MutableMapping[str, Any]]:
+        """Method that augments logging with additional 'extra' data"""
+        if isinstance(kwargs.get("extra"), MutableMapping):
+            kwargs["extra"].update(self.extra)
+        else:
+            kwargs["extra"] = self.extra
+
+        return msg, kwargs

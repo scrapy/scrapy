@@ -1,6 +1,13 @@
 import unittest
 
-from scrapy.http import Headers, HtmlResponse, Response, TextResponse, XmlResponse
+from scrapy.http import (
+    Headers,
+    HtmlResponse,
+    JsonResponse,
+    Response,
+    TextResponse,
+    XmlResponse,
+)
 from scrapy.responsetypes import responsetypes
 
 
@@ -22,11 +29,14 @@ class ResponseTypesTest(unittest.TestCase):
         mappings = [
             (b'attachment; filename="data.xml"', XmlResponse),
             (b"attachment; filename=data.xml", XmlResponse),
-            ("attachment;filename=data£.tar.gz".encode("utf-8"), Response),
+            ("attachment;filename=data£.tar.gz".encode(), Response),
             ("attachment;filename=dataµ.tar.gz".encode("latin-1"), Response),
             ("attachment;filename=data高.doc".encode("gbk"), Response),
             ("attachment;filename=دورهdata.html".encode("cp720"), HtmlResponse),
-            ("attachment;filename=日本語版Wikipedia.xml".encode("iso2022_jp"), XmlResponse),
+            (
+                "attachment;filename=日本語版Wikipedia.xml".encode("iso2022_jp"),
+                XmlResponse,
+            ),
         ]
         for source, cls in mappings:
             retcls = responsetypes.from_content_disposition(source)
@@ -40,8 +50,9 @@ class ResponseTypesTest(unittest.TestCase):
             ("application/vnd.wap.xhtml+xml; charset=utf-8", HtmlResponse),
             ("application/xml; charset=UTF-8", XmlResponse),
             ("application/octet-stream", Response),
-            ("application/x-json; encoding=UTF8;charset=UTF-8", TextResponse),
-            ("application/json-amazonui-streaming;charset=UTF-8", TextResponse),
+            ("application/json; encoding=UTF8;charset=UTF-8", JsonResponse),
+            ("application/x-json; encoding=UTF8;charset=UTF-8", JsonResponse),
+            ("application/json-amazonui-streaming;charset=UTF-8", JsonResponse),
             (b"application/x-download; filename=\x80dummy.txt", Response),
         ]
         for source, cls in mappings:
@@ -115,7 +126,3 @@ class ResponseTypesTest(unittest.TestCase):
         self.assertEqual(
             responsetypes.mimetypes.guess_type("x.scrapytest")[0], "x-scrapy/test"
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

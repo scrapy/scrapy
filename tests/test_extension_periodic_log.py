@@ -67,7 +67,7 @@ def extension(settings=None):
 
 class TestPeriodicLog(unittest.TestCase):
     def test_extension_enabled(self):
-        # Expected that settings for this extension loaded succesfully
+        # Expected that settings for this extension loaded successfully
         # And on certain conditions - extension raising NotConfigured
 
         # "PERIODIC_LOG_STATS": True -> set to {"enabled": True}
@@ -192,4 +192,3 @@ class TestPeriodicLog(unittest.TestCase):
             {"PERIODIC_LOG_STATS": {"include": ["downloader/"], "exclude": ["bytes"]}},
             lambda k, v: "downloader/" in k and "bytes" not in k,
         )
-        #

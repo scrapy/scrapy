@@ -1,14 +1,14 @@
-from pytest import mark
+import pytest
 from twisted.trial import unittest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse, XmlResponse
 from scrapy.utils.iterators import _body_or_str, csviter, xmliter, xmliter_lxml
 from tests import get_testdata
 
 
-class XmliterTestCase(unittest.TestCase):
-    xmliter = staticmethod(xmliter)
-
+class XmliterBaseTestCase:
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -26,20 +26,20 @@ class XmliterTestCase(unittest.TestCase):
         """
 
         response = XmlResponse(url="http://example.com", body=body)
-        attrs = []
-        for x in self.xmliter(response, "product"):
-            attrs.append(
-                (
-                    x.attrib["id"],
-                    x.xpath("name/text()").getall(),
-                    x.xpath("./type/text()").getall(),
-                )
+        attrs = [
+            (
+                x.attrib["id"],
+                x.xpath("name/text()").getall(),
+                x.xpath("./type/text()").getall(),
             )
+            for x in self.xmliter(response, "product")
+        ]
 
         self.assertEqual(
             attrs, [("001", ["Name 1"], ["Type 1"]), ("002", ["Name 2"], ["Type 2"])]
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_unusual_node(self):
         body = b"""<?xml version="1.0" encoding="UTF-8"?>
             <root>
@@ -53,6 +53,7 @@ class XmliterTestCase(unittest.TestCase):
         ]
         self.assertEqual(nodenames, [["matchme..."]])
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_unicode(self):
         # example taken from https://github.com/scrapy/scrapy/issues/1665
         body = """<?xml version="1.0" encoding="UTF-8"?>
@@ -97,21 +98,21 @@ class XmliterTestCase(unittest.TestCase):
             # Unicode body needs encoding information
             XmlResponse(url="http://example.com", body=body, encoding="utf-8"),
         ):
-            attrs = []
-            for x in self.xmliter(r, "þingflokkur"):
-                attrs.append(
-                    (
-                        x.attrib["id"],
-                        x.xpath("./skammstafanir/stuttskammstöfun/text()").getall(),
-                        x.xpath("./tímabil/fyrstaþing/text()").getall(),
-                    )
+            attrs = [
+                (
+                    x.attrib["id"],
+                    x.xpath("./skammstafanir/stuttskammstöfun/text()").getall(),
+                    x.xpath("./tímabil/fyrstaþing/text()").getall(),
                 )
+                for x in self.xmliter(r, "þingflokkur")
+            ]
 
             self.assertEqual(
                 attrs,
                 [("26", ["-"], ["80"]), ("21", ["Ab"], ["76"]), ("27", ["A"], ["27"])],
             )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_text(self):
         body = (
             '<?xml version="1.0" encoding="UTF-8"?>'
@@ -123,6 +124,7 @@ class XmliterTestCase(unittest.TestCase):
             [["one"], ["two"]],
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_namespaces(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -162,6 +164,7 @@ class XmliterTestCase(unittest.TestCase):
         self.assertEqual(node.xpath("id/text()").getall(), [])
         self.assertEqual(node.xpath("price/text()").getall(), [])
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_namespaced_nodename(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -190,6 +193,7 @@ class XmliterTestCase(unittest.TestCase):
             ["http://www.mydummycompany.com/images/item1.jpg"],
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_namespaced_nodename_missing(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -214,6 +218,7 @@ class XmliterTestCase(unittest.TestCase):
         with self.assertRaises(StopIteration):
             next(my_iter)
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_exception(self):
         body = (
             '<?xml version="1.0" encoding="UTF-8"?>'
@@ -226,10 +231,12 @@ class XmliterTestCase(unittest.TestCase):
 
         self.assertRaises(StopIteration, next, iter)
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_objtype_exception(self):
         i = self.xmliter(42, "product")
         self.assertRaises(TypeError, next, i)
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_encoding(self):
         body = (
             b'<?xml version="1.0" encoding="ISO-8859-9"?>\n'
@@ -244,12 +251,25 @@ class XmliterTestCase(unittest.TestCase):
         )
 
 
-class LxmlXmliterTestCase(XmliterTestCase):
-    xmliter = staticmethod(xmliter_lxml)
+class XmliterTestCase(XmliterBaseTestCase, unittest.TestCase):
+    xmliter = staticmethod(xmliter)
 
-    @mark.xfail(reason="known bug of the current implementation")
-    def test_xmliter_namespaced_nodename(self):
-        super().test_xmliter_namespaced_nodename()
+    def test_deprecation(self):
+        body = b"""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <products>
+              <product></product>
+            </products>
+        """
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="xmliter",
+        ):
+            next(self.xmliter(body, "product"))
+
+
+class LxmlXmliterTestCase(XmliterBaseTestCase, unittest.TestCase):
+    xmliter = staticmethod(xmliter_lxml)
 
     def test_xmliter_iterate_namespace(self):
         body = b"""
@@ -333,7 +353,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         response = TextResponse(url="http://example.com/", body=body)
         csv = csviter(response)
 
-        result = [row for row in csv]
+        result = list(csv)
         self.assertEqual(
             result,
             [
@@ -346,7 +366,7 @@ class UtilsCsvTestCase(unittest.TestCase):
 
         # explicit type check cuz' we no like stinkin' autocasting! yarrr
         for result_row in result:
-            self.assertTrue(all(isinstance(k, str) for k in result_row.keys()))
+            self.assertTrue(all(isinstance(k, str) for k in result_row))
             self.assertTrue(all(isinstance(v, str) for v in result_row.values()))
 
     def test_csviter_delimiter(self):
@@ -355,7 +375,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         csv = csviter(response, delimiter="\t")
 
         self.assertEqual(
-            [row for row in csv],
+            list(csv),
             [
                 {"id": "1", "name": "alpha", "value": "foobar"},
                 {"id": "2", "name": "unicode", "value": "\xfan\xedc\xf3d\xe9\u203d"},
@@ -372,7 +392,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         csv1 = csviter(response1, quotechar="'")
 
         self.assertEqual(
-            [row for row in csv1],
+            list(csv1),
             [
                 {"id": "1", "name": "alpha", "value": "foobar"},
                 {"id": "2", "name": "unicode", "value": "\xfan\xedc\xf3d\xe9\u203d"},
@@ -385,7 +405,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         csv2 = csviter(response2, delimiter="|", quotechar="'")
 
         self.assertEqual(
-            [row for row in csv2],
+            list(csv2),
             [
                 {"id": "1", "name": "alpha", "value": "foobar"},
                 {"id": "2", "name": "unicode", "value": "\xfan\xedc\xf3d\xe9\u203d"},
@@ -400,7 +420,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         csv = csviter(response)
 
         self.assertEqual(
-            [row for row in csv],
+            list(csv),
             [
                 {"'id'": "1", "'name'": "'alpha'", "'value'": "'foobar'"},
                 {
@@ -419,7 +439,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         csv = csviter(response, delimiter="\t")
 
         self.assertEqual(
-            [row for row in csv],
+            list(csv),
             [
                 {"id": "1", "name": "alpha", "value": "foobar"},
                 {"id": "2", "name": "unicode", "value": "\xfan\xedc\xf3d\xe9\u203d"},
@@ -436,7 +456,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         csv = csviter(response, headers=[h.decode("utf-8") for h in headers])
 
         self.assertEqual(
-            [row for row in csv],
+            list(csv),
             [
                 {"id": "1", "name": "alpha", "value": "foobar"},
                 {"id": "2", "name": "unicode", "value": "\xfan\xedc\xf3d\xe9\u203d"},
@@ -453,7 +473,7 @@ class UtilsCsvTestCase(unittest.TestCase):
         csv = csviter(response)
 
         self.assertEqual(
-            [row for row in csv],
+            list(csv),
             [
                 {"id": "1", "name": "alpha", "value": "foobar"},
                 {"id": "2", "name": "unicode", "value": "\xfan\xedc\xf3d\xe9\u203d"},
@@ -524,6 +544,6 @@ class TestHelper(unittest.TestCase):
 
     def _assert_type_and_value(self, a, b, obj):
         self.assertTrue(
-            type(a) is type(b), f"Got {type(a)}, expected {type(b)} for { obj!r}"
+            type(a) is type(b), f"Got {type(a)}, expected {type(b)} for {obj!r}"
         )
         self.assertEqual(a, b)

@@ -6,7 +6,7 @@
 Command line tool
 =================
 
-Scrapy is controlled through the ``scrapy`` command-line tool, to be referred
+Scrapy is controlled through the ``scrapy`` command-line tool, to be referred to
 here as the "Scrapy tool" to differentiate it from the sub-commands, which we
 just call "commands" or "Scrapy commands".
 
@@ -185,8 +185,8 @@ And you can see all available commands with::
 
 There are two kinds of commands, those that only work from inside a Scrapy
 project (Project-specific commands) and those that also work without an active
-Scrapy project (Global commands), though they may behave slightly different
-when running from inside a project (as they would use the project overridden
+Scrapy project (Global commands), though they may behave slightly differently
+when run from inside a project (as they would use the project overridden
 settings).
 
 Global commands:
@@ -236,7 +236,7 @@ genspider
 .. versionadded:: 2.6.0
    The ability to pass a URL instead of a domain.
 
-Create a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain or URL>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
+Creates a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain or URL>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
 
 Usage example::
 
@@ -253,7 +253,7 @@ Usage example::
     $ scrapy genspider -t crawl scrapyorg scrapy.org
     Created spider 'scrapyorg' using template 'crawl'
 
-This is just a convenience shortcut command for creating spiders based on
+This is just a convenient shortcut command for creating spiders based on
 pre-defined templates, but certainly not the only way to create spiders. You
 can just create the spider source code files yourself, instead of using this
 command.
@@ -274,11 +274,9 @@ Supported options:
 
 * ``-a NAME=VALUE``: set a spider argument (may be repeated)
 
-* ``--output FILE`` or ``-o FILE``: append scraped items to the end of FILE (use - for stdout), to define format set a colon at the end of the output URI (i.e. ``-o FILE:FORMAT``)
+* ``--output FILE`` or ``-o FILE``: append scraped items to the end of FILE (use - for stdout). To define the output format, set a colon at the end of the output URI (i.e. ``-o FILE:FORMAT``)
 
-* ``--overwrite-output FILE`` or ``-O FILE``: dump scraped items into FILE, overwriting any existing file, to define format set a colon at the end of the output URI (i.e. ``-O FILE:FORMAT``)
-
-* ``--output-format FORMAT`` or ``-t FORMAT``: deprecated way to define format to use for dumping items, does not work in combination with ``-O``
+* ``--overwrite-output FILE`` or ``-O FILE``: dump scraped items into FILE, overwriting any existing file. To define the output format, set a colon at the end of the output URI (i.e. ``-O FILE:FORMAT``)
 
 Usage examples::
 
@@ -290,9 +288,6 @@ Usage examples::
 
     $ scrapy crawl -O myfile:json myspider
     [ ... myspider starts crawling and saves the result in myfile in json format overwriting the original content... ]
-
-    $ scrapy crawl -o myfile -t csv myspider
-    [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
 
 .. command:: check
 
@@ -353,7 +348,7 @@ edit
 Edit the given spider using the editor defined in the ``EDITOR`` environment
 variable or (if unset) the :setting:`EDITOR` setting.
 
-This command is provided only as a convenience shortcut for the most common
+This command is provided only as a convenient shortcut for the most common
 case, the developer is of course free to choose any tool or IDE to write and
 debug spiders.
 
@@ -372,7 +367,7 @@ fetch
 Downloads the given URL using the Scrapy downloader and writes the contents to
 standard output.
 
-The interesting thing about this command is that it fetches the page how the
+The interesting thing about this command is that it fetches the page the way the
 spider would download it. For example, if the spider has a ``USER_AGENT``
 attribute which overrides the User Agent, it will use that one.
 

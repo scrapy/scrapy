@@ -3,22 +3,33 @@ Offsite Spider Middleware
 
 See documentation in docs/topics/spider-middleware.rst
 """
+
 from __future__ import annotations
 
 import logging
 import re
 import warnings
-from typing import TYPE_CHECKING, Any, AsyncIterable, Iterable, Set
+from typing import TYPE_CHECKING, Any
 
 from scrapy import Spider, signals
-from scrapy.crawler import Crawler
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
-from scrapy.statscollectors import StatsCollector
 from scrapy.utils.httpobj import urlparse_cached
 
+warnings.warn(
+    "The scrapy.spidermiddlewares.offsite module is deprecated, use "
+    "scrapy.downloadermiddlewares.offsite instead.",
+    ScrapyDeprecationWarning,
+)
+
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterable, Iterable
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
 
 
 logger = logging.getLogger(__name__)
@@ -50,7 +61,11 @@ class OffsiteMiddleware:
     def _filter(self, request: Any, spider: Spider) -> bool:
         if not isinstance(request, Request):
             return True
-        if request.dont_filter or self.should_follow(request, spider):
+        if (
+            request.dont_filter
+            or request.meta.get("allow_offsite")
+            or self.should_follow(request, spider)
+        ):
             return True
         domain = urlparse_cached(request).hostname
         if domain and domain not in self.domains_seen:
@@ -100,7 +115,7 @@ class OffsiteMiddleware:
 
     def spider_opened(self, spider: Spider) -> None:
         self.host_regex: re.Pattern[str] = self.get_host_regex(spider)
-        self.domains_seen: Set[str] = set()
+        self.domains_seen: set[str] = set()
 
 
 class URLWarning(Warning):

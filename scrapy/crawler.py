@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 import pprint
 import signal
-import warnings
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Set, Type, Union, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.internet.defer import (
     Deferred,
@@ -12,25 +12,15 @@ from twisted.internet.defer import (
     inlineCallbacks,
     maybeDeferred,
 )
-
-try:
-    # zope >= 5.0 only supports MultipleInvalid
-    from zope.interface.exceptions import MultipleInvalid
-except ImportError:
-    MultipleInvalid = None
-
 from zope.interface.verify import verifyClass
 
 from scrapy import Spider, signals
 from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
-from scrapy.logformatter import LogFormatter
 from scrapy.settings import BaseSettings, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
-from scrapy.statscollectors import StatsCollector
 from scrapy.utils.log import (
     LogCounterHandler,
     configure_logging,
@@ -39,7 +29,7 @@ from scrapy.utils.log import (
     log_reactor_info,
     log_scrapy_info,
 )
-from scrapy.utils.misc import create_instance, load_object
+from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.reactor import (
     install_reactor,
@@ -49,17 +39,24 @@ from scrapy.utils.reactor import (
 )
 
 if TYPE_CHECKING:
-    from scrapy.utils.request import RequestFingerprinter
+    from collections.abc import Generator, Iterable
+
+    from scrapy.logformatter import LogFormatter
+    from scrapy.spiderloader import SpiderLoader
+    from scrapy.statscollectors import StatsCollector
+    from scrapy.utils.request import RequestFingerprinterProtocol
 
 
 logger = logging.getLogger(__name__)
+
+_T = TypeVar("_T")
 
 
 class Crawler:
     def __init__(
         self,
-        spidercls: Type[Spider],
-        settings: Union[None, Dict[str, Any], Settings] = None,
+        spidercls: type[Spider],
+        settings: dict[str, Any] | Settings | None = None,
         init_reactor: bool = False,
     ):
         if isinstance(spidercls, Spider):
@@ -68,7 +65,7 @@ class Crawler:
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
-        self.spidercls: Type[Spider] = spidercls
+        self.spidercls: type[Spider] = spidercls
         self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
         self._update_root_log_handler()
@@ -80,12 +77,12 @@ class Crawler:
         self.crawling: bool = False
         self._started: bool = False
 
-        self.extensions: Optional[ExtensionManager] = None
-        self.stats: Optional[StatsCollector] = None
-        self.logformatter: Optional[LogFormatter] = None
-        self.request_fingerprinter: Optional[RequestFingerprinter] = None
-        self.spider: Optional[Spider] = None
-        self.engine: Optional[ExecutionEngine] = None
+        self.extensions: ExtensionManager | None = None
+        self.stats: StatsCollector | None = None
+        self.logformatter: LogFormatter | None = None
+        self.request_fingerprinter: RequestFingerprinterProtocol | None = None
+        self.spider: Spider | None = None
+        self.engine: ExecutionEngine | None = None
 
     def _update_root_log_handler(self) -> None:
         if get_scrapy_root_handler() is not None:
@@ -106,13 +103,12 @@ class Crawler:
         self.__remove_handler = lambda: logging.root.removeHandler(handler)
         self.signals.connect(self.__remove_handler, signals.engine_stopped)
 
-        lf_cls: Type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
+        lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
         self.logformatter = lf_cls.from_crawler(self)
 
-        self.request_fingerprinter = create_instance(
+        self.request_fingerprinter = build_from_crawler(
             load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
-            settings=self.settings,
-            crawler=self,
+            self,
         )
 
         reactor_class: str = self.settings["TWISTED_REACTOR"]
@@ -130,6 +126,8 @@ class Crawler:
             if is_asyncio_reactor_installed() and event_loop:
                 verify_installed_asyncio_event_loop(event_loop)
 
+            log_reactor_info()
+
         self.extensions = ExtensionManager.from_crawler(self)
         self.settings.freeze()
 
@@ -139,14 +137,12 @@ class Crawler:
         )
 
     @inlineCallbacks
-    def crawl(self, *args: Any, **kwargs: Any) -> Generator[Deferred, Any, None]:
+    def crawl(self, *args: Any, **kwargs: Any) -> Generator[Deferred[Any], Any, None]:
         if self.crawling:
             raise RuntimeError("Crawling already taking place")
         if self._started:
-            warnings.warn(
-                "Running Crawler.crawl() more than once is deprecated.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
+            raise RuntimeError(
+                "Cannot run Crawler.crawl() more than once on the same instance."
             )
         self.crawling = self._started = True
 
@@ -171,13 +167,99 @@ class Crawler:
         return ExecutionEngine(self, lambda _: self.stop())
 
     @inlineCallbacks
-    def stop(self) -> Generator[Deferred, Any, None]:
+    def stop(self) -> Generator[Deferred[Any], Any, None]:
         """Starts a graceful stop of the crawler and returns a deferred that is
         fired when the crawler is stopped."""
         if self.crawling:
             self.crawling = False
             assert self.engine
             yield maybeDeferred(self.engine.stop)
+
+    @staticmethod
+    def _get_component(
+        component_class: type[_T], components: Iterable[Any]
+    ) -> _T | None:
+        for component in components:
+            if isinstance(component, component_class):
+                return component
+        return None
+
+    def get_addon(self, cls: type[_T]) -> _T | None:
+        """Return the run-time instance of an :ref:`add-on <topics-addons>` of
+        the specified class or a subclass, or ``None`` if none is found.
+
+        .. versionadded:: 2.12
+        """
+        return self._get_component(cls, self.addons.addons)
+
+    def get_downloader_middleware(self, cls: type[_T]) -> _T | None:
+        """Return the run-time instance of a :ref:`downloader middleware
+        <topics-downloader-middleware>` of the specified class or a subclass,
+        or ``None`` if none is found.
+
+        .. versionadded:: 2.12
+
+        This method can only be called after the crawl engine has been created,
+        e.g. at signals :signal:`engine_started` or :signal:`spider_opened`.
+        """
+        if not self.engine:
+            raise RuntimeError(
+                "Crawler.get_downloader_middleware() can only be called after "
+                "the crawl engine has been created."
+            )
+        return self._get_component(cls, self.engine.downloader.middleware.middlewares)
+
+    def get_extension(self, cls: type[_T]) -> _T | None:
+        """Return the run-time instance of an :ref:`extension
+        <topics-extensions>` of the specified class or a subclass,
+        or ``None`` if none is found.
+
+        .. versionadded:: 2.12
+
+        This method can only be called after the extension manager has been
+        created, e.g. at signals :signal:`engine_started` or
+        :signal:`spider_opened`.
+        """
+        if not self.extensions:
+            raise RuntimeError(
+                "Crawler.get_extension() can only be called after the "
+                "extension manager has been created."
+            )
+        return self._get_component(cls, self.extensions.middlewares)
+
+    def get_item_pipeline(self, cls: type[_T]) -> _T | None:
+        """Return the run-time instance of a :ref:`item pipeline
+        <topics-item-pipeline>` of the specified class or a subclass, or
+        ``None`` if none is found.
+
+        .. versionadded:: 2.12
+
+        This method can only be called after the crawl engine has been created,
+        e.g. at signals :signal:`engine_started` or :signal:`spider_opened`.
+        """
+        if not self.engine:
+            raise RuntimeError(
+                "Crawler.get_item_pipeline() can only be called after the "
+                "crawl engine has been created."
+            )
+        return self._get_component(cls, self.engine.scraper.itemproc.middlewares)
+
+    def get_spider_middleware(self, cls: type[_T]) -> _T | None:
+        """Return the run-time instance of a :ref:`spider middleware
+        <topics-spider-middleware>` of the specified class or a subclass, or
+        ``None`` if none is found.
+
+        .. versionadded:: 2.12
+
+        This method can only be called after the crawl engine has been created,
+        e.g. at signals :signal:`engine_started` or :signal:`spider_opened`.
+        """
+        if not self.engine:
+            raise RuntimeError(
+                "Crawler.get_spider_middleware() can only be called after the "
+                "crawl engine has been created."
+            )
+        return self._get_component(cls, self.engine.scraper.spidermw.middlewares)
 
 
 class CrawlerRunner:
@@ -200,28 +282,28 @@ class CrawlerRunner:
     )
 
     @staticmethod
-    def _get_spider_loader(settings: BaseSettings):
+    def _get_spider_loader(settings: BaseSettings) -> SpiderLoader:
         """Get SpiderLoader instance from settings"""
         cls_path = settings.get("SPIDER_LOADER_CLASS")
         loader_cls = load_object(cls_path)
         verifyClass(ISpiderLoader, loader_cls)
-        return loader_cls.from_settings(settings.frozencopy())
+        return cast("SpiderLoader", loader_cls.from_settings(settings.frozencopy()))
 
-    def __init__(self, settings: Union[Dict[str, Any], Settings, None] = None):
+    def __init__(self, settings: dict[str, Any] | Settings | None = None):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
-        self.settings = settings
-        self.spider_loader = self._get_spider_loader(settings)
-        self._crawlers: Set[Crawler] = set()
-        self._active: Set[Deferred] = set()
+        self.settings: Settings = settings
+        self.spider_loader: SpiderLoader = self._get_spider_loader(settings)
+        self._crawlers: set[Crawler] = set()
+        self._active: set[Deferred[None]] = set()
         self.bootstrap_failed = False
 
     def crawl(
         self,
-        crawler_or_spidercls: Union[Type[Spider], str, Crawler],
+        crawler_or_spidercls: type[Spider] | str | Crawler,
         *args: Any,
         **kwargs: Any,
-    ) -> Deferred:
+    ) -> Deferred[None]:
         """
         Run a crawler with the provided arguments.
 
@@ -251,12 +333,12 @@ class CrawlerRunner:
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
 
-    def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> Deferred:
+    def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> Deferred[None]:
         self.crawlers.add(crawler)
         d = crawler.crawl(*args, **kwargs)
         self._active.add(d)
 
-        def _done(result: Any) -> Any:
+        def _done(result: _T) -> _T:
             self.crawlers.discard(crawler)
             self._active.discard(d)
             self.bootstrap_failed |= not getattr(crawler, "spider", None)
@@ -265,7 +347,7 @@ class CrawlerRunner:
         return d.addBoth(_done)
 
     def create_crawler(
-        self, crawler_or_spidercls: Union[Type[Spider], str, Crawler]
+        self, crawler_or_spidercls: type[Spider] | str | Crawler
     ) -> Crawler:
         """
         Return a :class:`~scrapy.crawler.Crawler` object.
@@ -286,13 +368,12 @@ class CrawlerRunner:
             return crawler_or_spidercls
         return self._create_crawler(crawler_or_spidercls)
 
-    def _create_crawler(self, spidercls: Union[str, Type[Spider]]) -> Crawler:
+    def _create_crawler(self, spidercls: str | type[Spider]) -> Crawler:
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
-        # temporary cast until self.spider_loader is typed
-        return Crawler(cast(Type[Spider], spidercls), self.settings)
+        return Crawler(spidercls, self.settings)
 
-    def stop(self) -> Deferred:
+    def stop(self) -> Deferred[Any]:
         """
         Stops simultaneously all the crawling jobs taking place.
 
@@ -301,7 +382,7 @@ class CrawlerRunner:
         return DeferredList([c.stop() for c in list(self.crawlers)])
 
     @inlineCallbacks
-    def join(self) -> Generator[Deferred, Any, None]:
+    def join(self) -> Generator[Deferred[Any], Any, None]:
         """
         join()
 
@@ -338,13 +419,13 @@ class CrawlerProcess(CrawlerRunner):
 
     def __init__(
         self,
-        settings: Union[Dict[str, Any], Settings, None] = None,
+        settings: dict[str, Any] | Settings | None = None,
         install_root_handler: bool = True,
     ):
         super().__init__(settings)
         configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
-        self._initialized_reactor = False
+        self._initialized_reactor: bool = False
 
     def _signal_shutdown(self, signum: int, _: Any) -> None:
         from twisted.internet import reactor
@@ -367,15 +448,13 @@ class CrawlerProcess(CrawlerRunner):
         )
         reactor.callFromThread(self._stop_reactor)
 
-    def _create_crawler(self, spidercls: Union[Type[Spider], str]) -> Crawler:
+    def _create_crawler(self, spidercls: type[Spider] | str) -> Crawler:
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
         init_reactor = not self._initialized_reactor
         self._initialized_reactor = True
         # temporary cast until self.spider_loader is typed
-        return Crawler(
-            cast(Type[Spider], spidercls), self.settings, init_reactor=init_reactor
-        )
+        return Crawler(spidercls, self.settings, init_reactor=init_reactor)
 
     def start(
         self, stop_after_crawl: bool = True, install_signal_handlers: bool = True
@@ -404,7 +483,9 @@ class CrawlerProcess(CrawlerRunner):
             d.addBoth(self._stop_reactor)
 
         resolver_class = load_object(self.settings["DNS_RESOLVER"])
-        resolver = create_instance(resolver_class, self.settings, self, reactor=reactor)
+        # We pass self, which is CrawlerProcess, instead of Crawler here,
+        # which works because the default resolvers only use crawler.settings.
+        resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[arg-type]
         resolver.install_on_reactor()
         tp = reactor.getThreadPool()
         tp.adjustPoolsize(maxthreads=self.settings.getint("REACTOR_THREADPOOL_MAXSIZE"))
@@ -415,7 +496,7 @@ class CrawlerProcess(CrawlerRunner):
             )
         reactor.run(installSignalHandlers=install_signal_handlers)  # blocking call
 
-    def _graceful_stop_reactor(self) -> Deferred:
+    def _graceful_stop_reactor(self) -> Deferred[Any]:
         d = self.stop()
         d.addBoth(self._stop_reactor)
         return d
@@ -423,7 +504,6 @@ class CrawlerProcess(CrawlerRunner):
     def _stop_reactor(self, _: Any = None) -> None:
         from twisted.internet import reactor
 
-        try:
+        # raised if already stopped or in shutdown stage
+        with contextlib.suppress(RuntimeError):
             reactor.stop()
-        except RuntimeError:  # raised if already stopped or in shutdown stage
-            pass

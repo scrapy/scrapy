@@ -85,9 +85,8 @@ It might be enough to yield a :class:`~scrapy.Request` with the same HTTP
 method and URL. However, you may also need to reproduce the body, headers and
 form parameters (see :class:`~scrapy.FormRequest`) of that request.
 
-As all major browsers allow to export the requests in `cURL
-<https://curl.haxx.se/>`_ format, Scrapy incorporates the method
-:meth:`~scrapy.Request.from_curl()` to generate an equivalent
+As all major browsers allow to export the requests in curl_ format, Scrapy
+incorporates the method :meth:`~scrapy.Request.from_curl()` to generate an equivalent
 :class:`~scrapy.Request` from a cURL command. To get more information
 visit :ref:`request from curl <requests-from-curl>` inside the network
 tool section.
@@ -115,15 +114,15 @@ Handling different response formats
 Once you have a response with the desired data, how you extract the desired
 data from it depends on the type of response:
 
--   If the response is HTML or XML, use :ref:`selectors
+-   If the response is HTML, XML or JSON, use :ref:`selectors
     <topics-selectors>` as usual.
 
--   If the response is JSON, use :func:`json.loads` to load the desired data from
-    :attr:`response.text <scrapy.http.TextResponse.text>`:
+-   If the response is JSON, use :func:`response.json()
+    <scrapy.http.TextResponse.json>` to load the desired data:
 
     .. code-block:: python
 
-        data = json.loads(response.text)
+        data = response.json()
 
     If the desired data is inside HTML or XML code embedded within JSON data,
     you can load that HTML or XML code into a
@@ -145,7 +144,7 @@ data from it depends on the type of response:
 
 -   If the response is an image or another format based on images (e.g. PDF),
     read the response as bytes from
-    :attr:`response.body <scrapy.http.TextResponse.body>` and use an OCR
+    :attr:`response.body <scrapy.http.Response.body>` and use an OCR
     solution to extract the desired data as text.
 
     For example, you can use pytesseract_. To read a table from a PDF,
@@ -290,7 +289,7 @@ We recommend using `scrapy-playwright`_ for a better integration.
 .. _JavaScript: https://en.wikipedia.org/wiki/JavaScript
 .. _Splash: https://github.com/scrapinghub/splash
 .. _chompjs: https://github.com/Nykakin/chompjs
-.. _curl: https://curl.haxx.se/
+.. _curl: https://curl.se/
 .. _headless browser: https://en.wikipedia.org/wiki/Headless_browser
 .. _js2xml: https://github.com/scrapinghub/js2xml
 .. _playwright-python: https://github.com/microsoft/playwright-python

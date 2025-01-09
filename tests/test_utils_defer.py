@@ -14,7 +14,6 @@ from scrapy.utils.defer import (
     mustbe_deferred,
     parallel_async,
     process_chain,
-    process_chain_both,
     process_parallel,
 )
 
@@ -81,19 +80,6 @@ class DeferUtilsTest(unittest.TestCase):
         self.assertTrue(gotexc)
 
     @defer.inlineCallbacks
-    def test_process_chain_both(self):
-        x = yield process_chain_both(
-            [cb_fail, cb2, cb3], [None, eb1, None], "res", "v1", "v2"
-        )
-        self.assertEqual(x, "(cb3 (eb1 TypeError v1 v2) v1 v2)")
-
-        fail = Failure(ZeroDivisionError())
-        x = yield process_chain_both(
-            [eb1, cb2, cb3], [eb1, None, None], fail, "v1", "v2"
-        )
-        self.assertEqual(x, "(cb3 (cb2 (eb1 ZeroDivisionError v1 v2) v1 v2) v1 v2)")
-
-    @defer.inlineCallbacks
     def test_process_parallel(self):
         x = yield process_parallel([cb1, cb2, cb3], "res", "v1", "v2")
         self.assertEqual(x, ["(cb1 res v1 v2)", "(cb2 res v1 v2)", "(cb3 res v1 v2)"])
@@ -107,8 +93,7 @@ class DeferUtilsTest(unittest.TestCase):
 class IterErrbackTest(unittest.TestCase):
     def test_iter_errback_good(self):
         def itergood():
-            for x in range(10):
-                yield x
+            yield from range(10)
 
         errors = []
         out = list(iter_errback(itergood(), errors.append))
@@ -168,7 +153,7 @@ class AsyncDefTestsuiteTest(unittest.TestCase):
     @mark.xfail(reason="Checks that the test is actually executed", strict=True)
     @deferred_f_from_coro_f
     async def test_deferred_f_from_coro_f_xfail(self):
-        raise Exception("This is expected to be raised")
+        raise RuntimeError("This is expected to be raised")
 
 
 class AsyncCooperatorTest(unittest.TestCase):
@@ -197,6 +182,7 @@ class AsyncCooperatorTest(unittest.TestCase):
             return dfd
         # simulate trivial sync processing
         results.append(o)
+        return None
 
     @staticmethod
     def get_async_iterable(length):

@@ -99,7 +99,7 @@ contain a price:
                     adapter["price"] = adapter["price"] * self.vat_factor
                 return item
             else:
-                raise DropItem(f"Missing price in {item}")
+                raise DropItem("Missing price")
 
 
 Write items to a JSON lines file
@@ -175,7 +175,7 @@ method and how to clean up the resources properly.
             return item
 
 .. _MongoDB: https://www.mongodb.com/
-.. _pymongo: https://api.mongodb.com/python/current/
+.. _pymongo: https://pymongo.readthedocs.io/en/stable/
 
 
 .. _ScreenshotPipeline:
@@ -254,7 +254,7 @@ returns multiples items with the same id:
         def process_item(self, item, spider):
             adapter = ItemAdapter(item)
             if adapter["id"] in self.ids_seen:
-                raise DropItem(f"Duplicate item found: {item!r}")
+                raise DropItem(f"Item ID already seen: {adapter['id']}")
             else:
                 self.ids_seen.add(adapter["id"])
                 return item

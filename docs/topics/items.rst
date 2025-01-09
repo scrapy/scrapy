@@ -42,39 +42,27 @@ Item objects
 :class:`Item` provides a :class:`dict`-like API plus additional features that
 make it the most feature-complete item type:
 
-.. class:: scrapy.item.Item([arg])
-.. class:: scrapy.Item([arg])
+.. autoclass:: scrapy.Item
+   :members: copy, deepcopy, fields
+   :undoc-members:
 
-    :class:`Item` objects replicate the standard :class:`dict` API, including
-    its ``__init__`` method.
+:class:`Item` objects replicate the standard :class:`dict` API, including
+its ``__init__`` method.
 
-    :class:`Item` allows defining field names, so that:
+:class:`Item` allows the defining of field names, so that:
 
-    -   :class:`KeyError` is raised when using undefined field names (i.e.
-        prevents typos going unnoticed)
+-   :class:`KeyError` is raised when using undefined field names (i.e.
+    prevents typos going unnoticed)
 
-    -   :ref:`Item exporters <topics-exporters>` can export all fields by
-        default even if the first scraped object does not have values for all
-        of them
+-   :ref:`Item exporters <topics-exporters>` can export all fields by
+    default even if the first scraped object does not have values for all
+    of them
 
-    :class:`Item` also allows defining field metadata, which can be used to
-    :ref:`customize serialization <topics-exporters-field-serialization>`.
+:class:`Item` also allows the defining of field metadata, which can be used to
+:ref:`customize serialization <topics-exporters-field-serialization>`.
 
-    :mod:`trackref` tracks :class:`Item` objects to help find memory leaks
-    (see :ref:`topics-leaks-trackrefs`).
-
-    :class:`Item` objects also provide the following additional API members:
-
-    .. automethod:: copy
-
-    .. automethod:: deepcopy
-
-    .. attribute:: fields
-
-        A dictionary containing *all declared fields* for this Item, not only
-        those populated. The keys are the field names and the values are the
-        :class:`Field` objects used in the :ref:`Item declaration
-        <topics-items-declaring>`.
+:mod:`trackref` tracks :class:`Item` objects to help find memory leaks
+(see :ref:`topics-leaks-trackrefs`).
 
 Example:
 
@@ -94,11 +82,11 @@ Dataclass objects
 
 .. versionadded:: 2.2
 
-:func:`~dataclasses.dataclass` allows defining item classes with field names,
+:func:`~dataclasses.dataclass` allows the defining of item classes with field names,
 so that :ref:`item exporters <topics-exporters>` can export all fields by
 default even if the first scraped object does not have values for all of them.
 
-Additionally, ``dataclass`` items also allow to:
+Additionally, ``dataclass`` items also allow you to:
 
 * define the type and default value of each defined field.
 
@@ -126,7 +114,7 @@ attr.s objects
 
 .. versionadded:: 2.2
 
-:func:`attr.s` allows defining item classes with field names,
+:func:`attr.s` allows the defining of item classes with field names,
 so that :ref:`item exporters <topics-exporters>` can export all fields by
 default even if the first scraped object does not have values for all of them.
 
@@ -205,10 +193,9 @@ documentation to see which metadata keys are used by each component.
 
 It's important to note that the :class:`Field` objects used to declare the item
 do not stay assigned as class attributes. Instead, they can be accessed through
-the :attr:`Item.fields` attribute.
+the :attr:`~scrapy.Item.fields` attribute.
 
-.. class:: scrapy.item.Field([arg])
-.. class:: scrapy.Field([arg])
+.. autoclass:: scrapy.Field
 
     The :class:`Field` class is just an alias to the built-in :class:`dict` class and
     doesn't provide any extra functionality or attributes. In other words,
@@ -221,7 +208,7 @@ the :attr:`Item.fields` attribute.
     `attr.ib`_ for additional information.
 
     .. _dataclasses.field: https://docs.python.org/3/library/dataclasses.html#dataclasses.field
-    .. _attr.ib: https://www.attrs.org/en/stable/api.html#attr.ib
+    .. _attr.ib: https://www.attrs.org/en/stable/api-attr.html#attr.ib
 
 
 Working with Item objects
@@ -399,12 +386,7 @@ In code that receives an item, such as methods of :ref:`item pipelines
 <topics-spider-middleware>`, it is a good practice to use the
 :class:`~itemadapter.ItemAdapter` class and the
 :func:`~itemadapter.is_item` function to write code that works for
-any :ref:`supported item type <item-types>`:
-
-.. autoclass:: itemadapter.ItemAdapter
-
-.. autofunction:: itemadapter.is_item
-
+any supported item type.
 
 Other classes related to items
 ==============================

@@ -9,8 +9,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+# pylint: disable=import-error
+import os
 import sys
-from datetime import datetime
 from pathlib import Path
 
 # If your extensions are in another directory, add it here. If the directory
@@ -48,7 +49,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "Scrapy"
-copyright = f"2008–{datetime.now().year}, Scrapy developers"
+copyright = "Scrapy developers"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -187,6 +188,8 @@ html_css_files = [
     "custom.css",
 ]
 
+# Set canonical URL from the Read the Docs Domain
+html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
 
 # Options for LaTeX output
 # ------------------------
@@ -227,9 +230,10 @@ latex_documents = [
 # A list of regular expressions that match URIs that should not be checked when
 # doing a linkcheck build.
 linkcheck_ignore = [
-    "http://localhost:\d+",
+    r"http://localhost:\d+",
     "http://hg.scrapy.org",
     "http://directory.google.com/",
+    r"https://github.com/scrapy/scrapy/issues/\d+",
 ]
 
 
@@ -280,6 +284,7 @@ intersphinx_mapping = {
     "cryptography": ("https://cryptography.io/en/latest/", None),
     "cssselect": ("https://cssselect.readthedocs.io/en/latest", None),
     "itemloaders": ("https://itemloaders.readthedocs.io/en/latest/", None),
+    "parsel": ("https://parsel.readthedocs.io/en/latest/", None),
     "pytest": ("https://docs.pytest.org/en/latest", None),
     "python": ("https://docs.python.org/3", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master", None),

@@ -1,9 +1,9 @@
+from __future__ import annotations
+
 import os
 import warnings
 from importlib import import_module
-from os import PathLike
 from pathlib import Path
-from typing import Union
 
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import Settings
@@ -46,7 +46,7 @@ def project_data_dir(project: str = "default") -> str:
     return str(d)
 
 
-def data_path(path: Union[str, PathLike], createdir: bool = False) -> str:
+def data_path(path: str | os.PathLike[str], createdir: bool = False) -> str:
     """
     Return the given path joined with the .scrapy data directory.
     If given an absolute path, return it unmodified.
