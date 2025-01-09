@@ -162,7 +162,6 @@ The feeds are stored in the local filesystem.
 
 Note that for the local filesystem storage (only) you can omit the scheme if
 you specify an absolute path like ``/tmp/export.csv`` (Unix systems only).
-Alternatively you can also use a :class:`pathlib.Path` object.
 
 .. _topics-feed-storage-ftp:
 
@@ -429,9 +428,9 @@ FEEDS
 
 Default: ``{}``
 
-A dictionary in which every key is a feed URI (or a :class:`pathlib.Path`
-object) and each value is a nested dictionary containing configuration
-parameters for the specific feed.
+A dictionary in which every key is a feed URI and each value is a nested dictionary containing configuration
+parameters for the specific feed. 
+Currently, using :class:`pathlib.Path` object as feed URI is not supported.
 
 This setting is required for enabling the feed export feature.
 
@@ -458,7 +457,7 @@ For instance::
             'encoding': 'latin1',
             'indent': 8,
         },
-        pathlib.Path('items.csv.gz'): {
+        'items.csv.gz': {
             'format': 'csv',
             'fields': ['price', 'name'],
             'item_filter': 'myproject.filters.MyCustomFilter2',
