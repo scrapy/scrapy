@@ -432,11 +432,14 @@ Available options are the standard logging levels: ``'DEBUG'``, ``'INFO'``, ``'W
 Example:
 
 .. code-block:: python
+
    # settings.py
    DEFAULT_DROPITEM_LOG_LEVEL = "INFO"
+
 To override the severity for a specific drop, you can pass the ``severity`` argument to the ``DropItem`` exception:
 
 .. code-block:: python
+
    from scrapy.exceptions import DropItem
 
 
