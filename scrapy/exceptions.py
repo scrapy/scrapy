@@ -58,13 +58,9 @@ class StopDownload(Exception):
 class DropItem(Exception):
     """Drop item from the item pipeline"""
 
-    def __init__(self, message, severity=None):
-        from scrapy.utils.project import get_project_settings
-
-        settings = get_project_settings()
-        default_severity = settings.get("DEFAULT_DROPITEM_LOG_LEVEL", "WARNING")
+    def __init__(self, message, log_level=None):
         super().__init__(message)
-        self.severity = severity or default_severity
+        self.log_level = log_level
 
 
 class NotSupported(Exception):

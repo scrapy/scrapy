@@ -372,6 +372,12 @@ class Scraper:
         if isinstance(output, Failure):
             ex = output.value
             if isinstance(ex, DropItem):
+                if ex.log_level is None:
+                    ex.log_level = spider.crawler.settings.get(
+                        "DEFAULT_DROPITEM_LOG_LEVEL", "WARNING"
+                    )
+                else:
+                    ex.log_level = ex.log_level.upper()
                 logkws = self.logformatter.dropped(item, ex, response, spider)
                 if logkws is not None:
                     logger.log(*logformatter_adapter(logkws), extra={"spider": spider})

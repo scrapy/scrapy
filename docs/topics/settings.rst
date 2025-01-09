@@ -423,20 +423,15 @@ is non-zero, download delay is enforced per IP, not per domain.
 DEFAULT_DROPITEM_LOG_LEVEL
 --------------------------
 
-Default: ``'WARNING'``
+Default: ``"WARNING"``
 
-This setting allows you to configure the default log severity level for dropped items in Scrapy. When an item is dropped using the ``DropItem`` exception, the severity level of the corresponding log message will be determined by this setting, unless a specific severity is explicitly provided in the exception.
+This setting allows you to configure the default log level for dropped items in Scrapy. When an item is dropped using the :exc:`scrapy.exceptions.DropItem` exception, the log level of the corresponding log message will be determined by this setting, unless a specific log level is explicitly provided in the exception.
 
-Available options are the standard logging levels: ``'DEBUG'``, ``'INFO'``, ``'WARNING'``, ``'ERROR'``, and ``'CRITICAL'``.
+For example, an :ref:`item pipeline <topics-item-pipeline>` is a Scrapy component that often uses the :exc:`scrapy.exceptions.DropItem` exception to discard unwanted or invalid items during processing.
 
-Example:
+Available options are the standard logging levels: ``"DEBUG"``, ``"INFO"``, ``"WARNING"``, ``"ERROR"``, and ``"CRITICAL"``.
 
-.. code-block:: python
-
-   # settings.py
-   DEFAULT_DROPITEM_LOG_LEVEL = "INFO"
-
-To override the severity for a specific drop, you can pass the ``severity`` argument to the ``DropItem`` exception:
+To override the log level for a specific drop, you can pass the ``log_level`` argument to the ``DropItem`` exception:
 
 .. code-block:: python
 
@@ -446,7 +441,7 @@ To override the severity for a specific drop, you can pass the ``severity`` argu
    class MyPipeline:
        def process_item(self, item, spider):
            if not item.get("price"):
-               raise DropItem("Missing price field", severity="INFO")
+               raise DropItem("Missing price field", log_level="INFO")
            return item
 
 .. setting:: DEFAULT_ITEM_CLASS
