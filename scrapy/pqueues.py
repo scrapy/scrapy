@@ -173,12 +173,12 @@ class ScrapyDelayedRequestsPriorityQueue(ScrapyPriorityQueue):
     will be taken.
     """
 
-    def priority(self, request):
+    def priority(self, request: Request) -> int:
         now = int(time.time())
-        per_request_delay = request.meta.get("request_delay", 0)
+        per_request_delay: int = request.meta.get("request_delay", 0)
         return now + per_request_delay
 
-    def pop(self):
+    def pop(self) -> Request | None:
         if self.curprio is None:
             return None
         if time.time() < self.curprio:

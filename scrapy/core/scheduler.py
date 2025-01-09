@@ -216,14 +216,14 @@ class Scheduler(BaseScheduler):
         pqclass: type[ScrapyPriorityQueue] | None = None,
         crawler: Crawler | None = None,
         *,
-        delay_priority_adjust=0,
-        dpqclass=None,
+        delay_priority_adjust: int = 0,
+        dpqclass: type[ScrapyPriorityQueue] | None = None,
     ):
         self.delay_priority_adjust = delay_priority_adjust
         self.df: BaseDupeFilter = dupefilter
         self.dqdir: str | None = self._dqdir(jobdir)
         self.pqclass: type[ScrapyPriorityQueue] | None = pqclass
-        self.dpqclass = dpqclass
+        self.dpqclass: type[ScrapyPriorityQueue] | None = dpqclass
         self.dqclass: type[BaseQueue] | None = dqclass
         self.mqclass: type[BaseQueue] | None = mqclass
         self.logunser: bool = logunser
@@ -455,8 +455,10 @@ class Scheduler(BaseScheduler):
             )
         return q
 
-    def _dpq(self):
+    def _dpq(self) -> ScrapyPriorityQueue:
         """Create a new delayed requests priority queue instance, with in-memory storage"""
+        assert self.crawler
+        assert self.dpqclass
         return build_from_crawler(
             self.dpqclass,
             self.crawler,
