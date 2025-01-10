@@ -965,12 +965,13 @@ fingerprinting class <custom-request-fingerprinter>`. For example:
 
 .. code-block:: python
 
+    from scrapy import Request
     from scrapy.dupefilters import RFPDupeFilter
-    from scrapy.utils.request import fingerprint
+    from scrapy.utils.request import RequestFingerprinterProtocol, fingerprint
 
 
     class CustomRequestFingerprinter:
-        def fingerprint(self, request):
+        def fingerprint(self, request: Request) -> bytes:
             return fingerprint(request, include_headers=["X-ID"])
 
 
@@ -984,7 +985,7 @@ fingerprinting class <custom-request-fingerprinter>`. For example:
             fingerprinter: RequestFingerprinterProtocol | None = None,
         ) -> None:
             super().__init__(
-                path=pat, debug=debug, fingerprinter=CustomRequestFingerprinter()
+                path=path, debug=debug, fingerprinter=CustomRequestFingerprinter()
             )
 
 To disable duplicate request filtering set :setting:`DUPEFILTER_CLASS` to
