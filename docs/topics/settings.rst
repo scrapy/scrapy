@@ -958,10 +958,34 @@ The class used to detect and filter duplicate requests.
 The default, :class:`~scrapy.dupefilters.RFPDupeFilter`, filters based on the
 :setting:`REQUEST_FINGERPRINTER_CLASS` setting.
 
-To change how duplicates are checked you can subclass
-:class:`~scrapy.dupefilters.RFPDupeFilter` and override its
-:meth:`~scrapy.dupefilters.RFPDupeFilter.request_fingerprint` method using the
-:func:`scrapy.utils.request.request_fingerprint` helper function.
+To change how duplicates are checked, you can point :setting:`DUPEFILTER_CLASS`
+to a custom subclass of :class:`~scrapy.dupefilters.RFPDupeFilter` that
+overrides its ``__init__`` method to use a :ref:`different request
+fingerprinting class <custom-request-fingerprinter>`. For example:
+
+.. code-block:: python
+
+    from scrapy.dupefilters import RFPDupeFilter
+    from scrapy.utils.request import fingerprint
+
+
+    class CustomRequestFingerprinter:
+        def fingerprint(self, request):
+            return fingerprint(request, include_headers=["X-ID"])
+
+
+    class CustomDupeFilter(RFPDupeFilter):
+
+        def __init__(
+            self,
+            path: str | None = None,
+            debug: bool = False,
+            *,
+            fingerprinter: RequestFingerprinterProtocol | None = None,
+        ) -> None:
+            super().__init__(
+                path=pat, debug=debug, fingerprinter=CustomRequestFingerprinter()
+            )
 
 To disable duplicate request filtering set :setting:`DUPEFILTER_CLASS` to
 ``'scrapy.dupefilters.BaseDupeFilter'``. Note that not filtering out duplicate
@@ -1009,10 +1033,6 @@ interface::
 .. autoclass:: scrapy.dupefilters.BaseDupeFilter
 
 .. autoclass:: scrapy.dupefilters.RFPDupeFilter
-
-   .. automethod:: request_fingerprint
-
-.. autofunction:: scrapy.utils.request.request_fingerprint
 
 
 .. setting:: DUPEFILTER_DEBUG
