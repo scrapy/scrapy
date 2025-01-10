@@ -1,31 +1,25 @@
+from __future__ import annotations
+
 import dataclasses
-import hashlib
 import io
 import random
-import warnings
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import Dict, List, Optional
-from unittest.mock import patch
 
 import attr
 from itemadapter import ItemAdapter
 from twisted.trial import unittest
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
-from scrapy.pipelines.images import ImageException, ImagesPipeline, NoimagesDrop
-from scrapy.settings import Settings
-from scrapy.utils.python import to_bytes
+from scrapy.pipelines.images import ImageException, ImagesPipeline
+from scrapy.utils.test import get_crawler
 
-skip_pillow: Optional[str]
+skip_pillow: str | None
 try:
     from PIL import Image
 except ImportError:
-    skip_pillow = (
-        "Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow"
-    )
+    skip_pillow = "Missing Python Imaging Library, install https://pypi.org/pypi/Pillow"
 else:
     encoders = {"jpeg_encoder", "jpeg_decoder"}
     if not encoders.issubset(set(Image.core.__dict__)):  # type: ignore[attr-defined]
@@ -39,7 +33,8 @@ class ImagesPipelineTestCase(unittest.TestCase):
 
     def setUp(self):
         self.tempdir = mkdtemp()
-        self.pipeline = ImagesPipeline(self.tempdir)
+        crawler = get_crawler()
+        self.pipeline = ImagesPipeline(self.tempdir, crawler=crawler)
 
     def tearDown(self):
         rmtree(self.tempdir)
@@ -129,10 +124,10 @@ class ImagesPipelineTestCase(unittest.TestCase):
             ):
                 return f"thumb/{thumb_id}/{item.get('path')}"
 
-        thumb_path = CustomImagesPipeline.from_settings(
-            Settings({"IMAGES_STORE": self.tempdir})
+        thumb_path = CustomImagesPipeline.from_crawler(
+            get_crawler(None, {"IMAGES_STORE": self.tempdir})
         ).thumb_path
-        item = dict(path="path-to-store-file")
+        item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
         self.assertEqual(
             thumb_path(request, "small", item=item), "thumb/small/path-to-store-file"
@@ -158,7 +153,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
         with self.assertRaises(ImageException):
             next(self.pipeline.get_images(response=resp3, request=req, info=object()))
 
-    def test_get_images_new(self):
+    def test_get_images(self):
         self.pipeline.min_width = 0
         self.pipeline.min_height = 0
         self.pipeline.thumbs = {"small": (20, 20)}
@@ -184,101 +179,7 @@ class ImagesPipelineTestCase(unittest.TestCase):
         self.assertEqual(thumb_img, thumb_img)
         self.assertEqual(orig_thumb_buf.getvalue(), thumb_buf.getvalue())
 
-    def test_get_images_old(self):
-        self.pipeline.thumbs = {"small": (20, 20)}
-        orig_im, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
-        resp = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf.getvalue())
-        req = Request(url="https://dev.mydeco.com/mydeco.gif")
-
-        def overridden_convert_image(image, size=None):
-            im, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
-            return im, buf
-
-        with patch.object(self.pipeline, "convert_image", overridden_convert_image):
-            with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter("always")
-                get_images_gen = self.pipeline.get_images(
-                    response=resp, request=req, info=object()
-                )
-                path, new_im, new_buf = next(get_images_gen)
-                self.assertEqual(
-                    path, "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
-                )
-                self.assertEqual(orig_im.mode, new_im.mode)
-                self.assertEqual(orig_im.getcolors(), new_im.getcolors())
-                self.assertEqual(buf.getvalue(), new_buf.getvalue())
-
-                thumb_path, thumb_img, thumb_buf = next(get_images_gen)
-                self.assertEqual(
-                    thumb_path,
-                    "thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg",
-                )
-                self.assertEqual(orig_im.mode, thumb_img.mode)
-                self.assertEqual(orig_im.getcolors(), thumb_img.getcolors())
-                self.assertEqual(buf.getvalue(), thumb_buf.getvalue())
-
-                expected_warning_msg = (
-                    ".convert_image() method overridden in a deprecated way, "
-                    "overridden method does not accept response_body argument."
-                )
-                self.assertEqual(
-                    len(
-                        [
-                            warning
-                            for warning in w
-                            if expected_warning_msg in str(warning.message)
-                        ]
-                    ),
-                    1,
-                )
-
-    def test_convert_image_old(self):
-        # tests for old API
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            SIZE = (100, 100)
-            # straight forward case: RGB and JPEG
-            COLOUR = (0, 127, 255)
-            im, _ = _create_image("JPEG", "RGB", SIZE, COLOUR)
-            converted, _ = self.pipeline.convert_image(im)
-            self.assertEqual(converted.mode, "RGB")
-            self.assertEqual(converted.getcolors(), [(10000, COLOUR)])
-
-            # check that thumbnail keep image ratio
-            thumbnail, _ = self.pipeline.convert_image(converted, size=(10, 25))
-            self.assertEqual(thumbnail.mode, "RGB")
-            self.assertEqual(thumbnail.size, (10, 10))
-
-            # transparency case: RGBA and PNG
-            COLOUR = (0, 127, 255, 50)
-            im, _ = _create_image("PNG", "RGBA", SIZE, COLOUR)
-            converted, _ = self.pipeline.convert_image(im)
-            self.assertEqual(converted.mode, "RGB")
-            self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
-
-            # transparency case with palette: P and PNG
-            COLOUR = (0, 127, 255, 50)
-            im, _ = _create_image("PNG", "RGBA", SIZE, COLOUR)
-            im = im.convert("P")
-            converted, _ = self.pipeline.convert_image(im)
-            self.assertEqual(converted.mode, "RGB")
-            self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
-
-            # ensure that we received deprecation warnings
-            expected_warning_msg = ".convert_image() method called in a deprecated way"
-            self.assertTrue(
-                len(
-                    [
-                        warning
-                        for warning in w
-                        if expected_warning_msg in str(warning.message)
-                    ]
-                )
-                == 4
-            )
-
-    def test_convert_image_new(self):
-        # tests for new API
+    def test_convert_image(self):
         SIZE = (100, 100)
         # straight forward case: RGB and JPEG
         COLOUR = (0, 127, 255)
@@ -312,27 +213,14 @@ class ImagesPipelineTestCase(unittest.TestCase):
         self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
 
 
-class DeprecatedImagesPipeline(ImagesPipeline):
-    def file_key(self, url):
-        return self.image_key(url)
-
-    def image_key(self, url):
-        image_guid = hashlib.sha1(to_bytes(url)).hexdigest()
-        return f"empty/{image_guid}.jpg"
-
-    def thumb_key(self, url, thumb_id):
-        thumb_guid = hashlib.sha1(to_bytes(url)).hexdigest()
-        return f"thumbsup/{thumb_id}/{thumb_guid}.jpg"
-
-
 class ImagesPipelineTestCaseFieldsMixin:
     skip = skip_pillow
 
     def test_item_fields_default(self):
         url = "http://www.example.com/images/1.jpg"
         item = self.item_class(name="item1", image_urls=[url])
-        pipeline = ImagesPipeline.from_settings(
-            Settings({"IMAGES_STORE": "s3://example/images/"})
+        pipeline = ImagesPipeline.from_crawler(
+            get_crawler(None, {"IMAGES_STORE": "s3://example/images/"})
         )
         requests = list(pipeline.get_media_requests(item, None))
         self.assertEqual(requests[0].url, url)
@@ -345,13 +233,14 @@ class ImagesPipelineTestCaseFieldsMixin:
     def test_item_fields_override_settings(self):
         url = "http://www.example.com/images/1.jpg"
         item = self.item_class(name="item1", custom_image_urls=[url])
-        pipeline = ImagesPipeline.from_settings(
-            Settings(
+        pipeline = ImagesPipeline.from_crawler(
+            get_crawler(
+                None,
                 {
                     "IMAGES_STORE": "s3://example/images/",
                     "IMAGES_URLS_FIELD": "custom_image_urls",
                     "IMAGES_RESULT_FIELD": "custom_images",
-                }
+                },
             )
         )
         requests = list(pipeline.get_media_requests(item, None))
@@ -406,11 +295,11 @@ class ImagesPipelineTestCaseFieldsDataClass(
 class ImagesPipelineTestAttrsItem:
     name = attr.ib(default="")
     # default fields
-    image_urls: List[str] = attr.ib(default=lambda: [])
-    images: List[Dict[str, str]] = attr.ib(default=lambda: [])
+    image_urls: list[str] = attr.ib(default=list)
+    images: list[dict[str, str]] = attr.ib(default=list)
     # overridden fields
-    custom_image_urls: List[str] = attr.ib(default=lambda: [])
-    custom_images: List[Dict[str, str]] = attr.ib(default=lambda: [])
+    custom_image_urls: list[str] = attr.ib(default=list)
+    custom_images: list[dict[str, str]] = attr.ib(default=list)
 
 
 class ImagesPipelineTestCaseFieldsAttrsItem(
@@ -433,14 +322,14 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
     ]
 
     # This should match what is defined in ImagesPipeline.
-    default_pipeline_settings = dict(
-        MIN_WIDTH=0,
-        MIN_HEIGHT=0,
-        EXPIRES=90,
-        THUMBS={},
-        IMAGES_URLS_FIELD="image_urls",
-        IMAGES_RESULT_FIELD="images",
-    )
+    default_pipeline_settings = {
+        "MIN_WIDTH": 0,
+        "MIN_HEIGHT": 0,
+        "EXPIRES": 90,
+        "THUMBS": {},
+        "IMAGES_URLS_FIELD": "image_urls",
+        "IMAGES_RESULT_FIELD": "images",
+    }
 
     def setUp(self):
         self.tempdir = mkdtemp()
@@ -502,9 +391,8 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         have different settings.
         """
         custom_settings = self._generate_fake_settings()
-        default_settings = Settings()
-        default_sts_pipe = ImagesPipeline(self.tempdir, settings=default_settings)
-        user_sts_pipe = ImagesPipeline.from_settings(Settings(custom_settings))
+        default_sts_pipe = ImagesPipeline(self.tempdir, crawler=get_crawler(None))
+        user_sts_pipe = ImagesPipeline.from_crawler(get_crawler(None, custom_settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_default_value = self.default_pipeline_settings.get(pipe_attr)
             custom_value = custom_settings.get(settings_attr)
@@ -520,7 +408,9 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         from class attributes.
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
-        pipeline = pipeline_cls.from_settings(Settings({"IMAGES_STORE": self.tempdir}))
+        pipeline = pipeline_cls.from_crawler(
+            get_crawler(None, {"IMAGES_STORE": self.tempdir})
+        )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to class attribute (uppercase).
             attr_value = getattr(pipeline, pipe_attr.lower())
@@ -534,7 +424,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
         settings = self._generate_fake_settings()
-        pipeline = pipeline_cls.from_settings(Settings(settings))
+        pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to
             # value defined in settings.
@@ -552,8 +442,8 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         class UserDefinedImagePipeline(ImagesPipeline):
             pass
 
-        user_pipeline = UserDefinedImagePipeline.from_settings(
-            Settings({"IMAGES_STORE": self.tempdir})
+        user_pipeline = UserDefinedImagePipeline.from_crawler(
+            get_crawler(None, {"IMAGES_STORE": self.tempdir})
         )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
@@ -571,7 +461,9 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
 
         prefix = UserDefinedImagePipeline.__name__.upper()
         settings = self._generate_fake_settings(prefix=prefix)
-        user_pipeline = UserDefinedImagePipeline.from_settings(Settings(settings))
+        user_pipeline = UserDefinedImagePipeline.from_crawler(
+            get_crawler(None, settings)
+        )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = settings.get(prefix + "_" + settings_attr)
@@ -586,7 +478,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         pipeline_cls = self._generate_fake_pipeline_subclass()
         prefix = pipeline_cls.__name__.upper()
         settings = self._generate_fake_settings(prefix=prefix)
-        user_pipeline = pipeline_cls.from_settings(Settings(settings))
+        user_pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             custom_value = settings.get(prefix + "_" + settings_attr)
             self.assertNotEqual(custom_value, self.default_pipeline_settings[pipe_attr])
@@ -597,8 +489,8 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             DEFAULT_IMAGES_URLS_FIELD = "something"
             DEFAULT_IMAGES_RESULT_FIELD = "something_else"
 
-        pipeline = UserDefinedImagePipeline.from_settings(
-            Settings({"IMAGES_STORE": self.tempdir})
+        pipeline = UserDefinedImagePipeline.from_crawler(
+            get_crawler(None, {"IMAGES_STORE": self.tempdir})
         )
         self.assertEqual(
             pipeline.images_result_field,
@@ -619,28 +511,11 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         class UserPipe(ImagesPipeline):
             pass
 
-        pipeline_cls = UserPipe.from_settings(Settings(settings))
+        pipeline_cls = UserPipe.from_crawler(get_crawler(None, settings))
 
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_value = settings.get(settings_attr)
             self.assertEqual(getattr(pipeline_cls, pipe_attr.lower()), expected_value)
-
-
-class NoimagesDropTestCase(unittest.TestCase):
-    def test_deprecation_warning(self):
-        arg = str()
-        with warnings.catch_warnings(record=True) as w:
-            NoimagesDrop(arg)
-            self.assertEqual(len(w), 1)
-            self.assertEqual(w[0].category, ScrapyDeprecationWarning)
-        with warnings.catch_warnings(record=True) as w:
-
-            class SubclassedNoimagesDrop(NoimagesDrop):
-                pass
-
-            SubclassedNoimagesDrop(arg)
-            self.assertEqual(len(w), 1)
-            self.assertEqual(w[0].category, ScrapyDeprecationWarning)
 
 
 def _create_image(format, *a, **kw):

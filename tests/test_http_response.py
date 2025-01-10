@@ -342,13 +342,11 @@ class BaseResponseTest(unittest.TestCase):
 
     def _links_response(self):
         body = get_testdata("link_extractor", "linkextractor.html")
-        resp = self.response_class("http://example.com/index", body=body)
-        return resp
+        return self.response_class("http://example.com/index", body=body)
 
     def _links_response_no_href(self):
         body = get_testdata("link_extractor", "linkextractor_no_href.html")
-        resp = self.response_class("http://example.com/index", body=body)
-        return resp
+        return self.response_class("http://example.com/index", body=body)
 
 
 class TextResponseTest(BaseResponseTest):
@@ -728,9 +726,7 @@ class TextResponseTest(BaseResponseTest):
         resp1 = self.response_class(
             "http://example.com",
             encoding="utf8",
-            body='<html><body><a href="foo?привет">click me</a></body></html>'.encode(
-                "utf8"
-            ),
+            body='<html><body><a href="foo?привет">click me</a></body></html>'.encode(),
         )
         req = self._assert_followed_url(
             resp1.css("a")[0],
@@ -964,7 +960,7 @@ class XmlResponseTest(TextResponseTest):
 
 
 class CustomResponse(TextResponse):
-    attributes = TextResponse.attributes + ("foo", "bar")
+    attributes = (*TextResponse.attributes, "foo", "bar")
 
     def __init__(self, *args, **kwargs) -> None:
         self.foo = kwargs.pop("foo", None)

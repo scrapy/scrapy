@@ -12,12 +12,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - python-version: 3.8
+        - python-version: "3.9"
           env:
             TOXENV: windows-pinned
-        - python-version: 3.9
-          env:
-            TOXENV: py
         - python-version: "3.10"
           env:
             TOXENV: py
@@ -27,7 +24,10 @@ jobs:
         - python-version: "3.12"
           env:
             TOXENV: py
-        - python-version: "3.12"
+        - python-version: "3.13"
+          env:
+            TOXENV: py
+        - python-version: "3.13"
           env:
             TOXENV: asyncio
 
@@ -35,7 +35,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -44,3 +44,6 @@ jobs:
       run: |
         pip install -U tox
         tox
+
+    - name: Upload coverage report
+      uses: codecov/codecov-action@v5

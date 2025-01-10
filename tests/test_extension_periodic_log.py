@@ -192,4 +192,3 @@ class TestPeriodicLog(unittest.TestCase):
             {"PERIODIC_LOG_STATS": {"include": ["downloader/"], "exclude": ["bytes"]}},
             lambda k, v: "downloader/" in k and "bytes" not in k,
         )
-        #

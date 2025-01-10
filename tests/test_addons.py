@@ -1,5 +1,5 @@
 import itertools
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import patch
 
 from twisted.internet.defer import inlineCallbacks
@@ -17,7 +17,7 @@ class SimpleAddon:
         pass
 
 
-def get_addon_cls(config: Dict[str, Any]) -> type:
+def get_addon_cls(config: dict[str, Any]) -> type:
     class AddonWithConfig:
         def update_settings(self, settings: BaseSettings):
             settings.update(config, priority="addon")
@@ -64,7 +64,7 @@ class AddonManagerTest(unittest.TestCase):
     def test_notconfigured(self):
         class NotConfiguredAddon:
             def update_settings(self, settings):
-                raise NotConfigured()
+                raise NotConfigured
 
         settings_dict = {
             "ADDONS": {NotConfiguredAddon: 0},
@@ -166,19 +166,21 @@ class AddonManagerTest(unittest.TestCase):
             def update_settings(self, settings):
                 pass
 
-        with patch("scrapy.addons.logger") as logger_mock:
-            with patch("scrapy.addons.build_from_crawler") as build_from_crawler_mock:
-                settings_dict = {
-                    "ADDONS": {LoggedAddon: 1},
-                }
-                addon = LoggedAddon()
-                build_from_crawler_mock.return_value = addon
-                crawler = get_crawler(settings_dict=settings_dict)
-                logger_mock.info.assert_called_once_with(
-                    "Enabled addons:\n%(addons)s",
-                    {"addons": [addon]},
-                    extra={"crawler": crawler},
-                )
+        with (
+            patch("scrapy.addons.logger") as logger_mock,
+            patch("scrapy.addons.build_from_crawler") as build_from_crawler_mock,
+        ):
+            settings_dict = {
+                "ADDONS": {LoggedAddon: 1},
+            }
+            addon = LoggedAddon()
+            build_from_crawler_mock.return_value = addon
+            crawler = get_crawler(settings_dict=settings_dict)
+            logger_mock.info.assert_called_once_with(
+                "Enabled addons:\n%(addons)s",
+                {"addons": [addon]},
+                extra={"crawler": crawler},
+            )
 
     @inlineCallbacks
     def test_enable_addon_in_spider(self):

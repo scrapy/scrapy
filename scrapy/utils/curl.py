@@ -1,14 +1,26 @@
+from __future__ import annotations
+
 import argparse
 import warnings
 from http.cookies import SimpleCookie
 from shlex import split
+from typing import TYPE_CHECKING, Any, NoReturn
 from urllib.parse import urlparse
 
 from w3lib.http import basic_auth_header
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
 
 class DataAction(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: str | Sequence[Any] | None,
+        option_string: str | None = None,
+    ) -> None:
         value = str(values)
         if value.startswith("$"):
             value = value[1:]
@@ -16,7 +28,7 @@ class DataAction(argparse.Action):
 
 
 class CurlParser(argparse.ArgumentParser):
-    def error(self, message):
+    def error(self, message: str) -> NoReturn:
         error_msg = f"There was an error parsing the curl command: {message}"
         raise ValueError(error_msg)
 
@@ -42,9 +54,11 @@ for argument in safe_to_ignore_arguments:
     curl_parser.add_argument(*argument, action="store_true")
 
 
-def _parse_headers_and_cookies(parsed_args):
-    headers = []
-    cookies = {}
+def _parse_headers_and_cookies(
+    parsed_args: argparse.Namespace,
+) -> tuple[list[tuple[str, bytes]], dict[str, str]]:
+    headers: list[tuple[str, bytes]] = []
+    cookies: dict[str, str] = {}
     for header in parsed_args.headers or ():
         name, val = header.split(":", 1)
         name = name.strip()
@@ -64,7 +78,7 @@ def _parse_headers_and_cookies(parsed_args):
 
 def curl_to_request_kwargs(
     curl_command: str, ignore_unknown_options: bool = True
-) -> dict:
+) -> dict[str, Any]:
     """Convert a cURL command syntax to Request kwargs.
 
     :param str curl_command: string containing the curl command
@@ -98,7 +112,7 @@ def curl_to_request_kwargs(
 
     method = parsed_args.method or "GET"
 
-    result = {"method": method.upper(), "url": url}
+    result: dict[str, Any] = {"method": method.upper(), "url": url}
 
     headers, cookies = _parse_headers_and_cookies(parsed_args)
 

@@ -168,9 +168,7 @@ For more information about asynchronous programming and Twisted see these
 links:
 
 * :doc:`twisted:core/howto/defer-intro`
-* `Twisted - hello, asynchronous programming`_
 * `Twisted Introduction - Krondo`_
 
-.. _Twisted: https://twistedmatrix.com/trac/
-.. _Twisted - hello, asynchronous programming: http://jessenoller.com/blog/2009/02/11/twisted-hello-asynchronous-programming/
-.. _Twisted Introduction - Krondo: http://krondo.com/an-introduction-to-asynchronous-programming-and-twisted/
+.. _Twisted: https://twisted.org/
+.. _Twisted Introduction - Krondo: https://krondo.com/an-introduction-to-asynchronous-programming-and-twisted/

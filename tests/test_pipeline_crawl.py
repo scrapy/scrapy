@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import shutil
 from pathlib import Path
-from typing import Optional, Set
+from tempfile import mkdtemp
 
 from testfixtures import LogCapture
 from twisted.internet import defer
@@ -56,7 +58,7 @@ class FileDownloadCrawlTestCase(TestCase):
     store_setting_key = "FILES_STORE"
     media_key = "files"
     media_urls_key = "file_urls"
-    expected_checksums: Optional[Set[str]] = {
+    expected_checksums: set[str] | None = {
         "5547178b89448faf0015a13f904c936e",
         "c2281c83670e31d8aaab7cb642b824db",
         "ed3f6538dc15d4d9179dae57319edc5f",
@@ -67,10 +69,8 @@ class FileDownloadCrawlTestCase(TestCase):
         self.mockserver.__enter__()
 
         # prepare a directory for storing files
-        self.tmpmediastore = Path(self.mktemp())
-        self.tmpmediastore.mkdir()
+        self.tmpmediastore = Path(mkdtemp())
         self.settings = {
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
             "ITEM_PIPELINES": {self.pipeline_class: 1},
             self.store_setting_key: str(self.tmpmediastore),
         }
@@ -107,9 +107,7 @@ class FileDownloadCrawlTestCase(TestCase):
 
         # check that the images/files checksums are what we know they should be
         if self.expected_checksums is not None:
-            checksums = set(
-                i["checksum"] for item in items for i in item[self.media_key]
-            )
+            checksums = {i["checksum"] for item in items for i in item[self.media_key]}
             self.assertEqual(checksums, self.expected_checksums)
 
         # check that the image files where actually written to the media store
@@ -140,7 +138,7 @@ class FileDownloadCrawlTestCase(TestCase):
         self.assertEqual(logs.count(file_dl_failure), 3)
 
         # check that no files were written to the media store
-        self.assertEqual([x for x in self.tmpmediastore.iterdir()], [])
+        self.assertEqual(list(self.tmpmediastore.iterdir()), [])
 
     @defer.inlineCallbacks
     def test_download_media(self):
@@ -218,13 +216,11 @@ class FileDownloadCrawlTestCase(TestCase):
         self.assertIn("ZeroDivisionError", str(log))
 
 
-skip_pillow: Optional[str]
+skip_pillow: str | None
 try:
-    from PIL import Image  # noqa: imported just to check for the import error
+    from PIL import Image  # noqa: F401
 except ImportError:
-    skip_pillow = (
-        "Missing Python Imaging Library, install https://pypi.python.org/pypi/Pillow"
-    )
+    skip_pillow = "Missing Python Imaging Library, install https://pypi.org/pypi/Pillow"
 else:
     skip_pillow = None
 

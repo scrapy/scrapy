@@ -80,7 +80,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
       middleware.
 
       :meth:`process_request` should either: return ``None``, return a
-      :class:`~scrapy.Response` object, return a :class:`~scrapy.http.Request`
+      :class:`~scrapy.http.Response` object, return a :class:`~scrapy.Request`
       object, or raise :exc:`~scrapy.exceptions.IgnoreRequest`.
 
       If it returns ``None``, Scrapy will continue processing this request, executing all
@@ -768,6 +768,47 @@ HttpProxyMiddleware
    Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
    environment variables, and it will also ignore ``no_proxy`` environment variable.
 
+OffsiteMiddleware
+-----------------
+
+.. module:: scrapy.downloadermiddlewares.offsite
+   :synopsis: Offsite Middleware
+
+.. class:: OffsiteMiddleware
+
+   .. versionadded:: 2.11.2
+
+   Filters out Requests for URLs outside the domains covered by the spider.
+
+   This middleware filters out every request whose host names aren't in the
+   spider's :attr:`~scrapy.Spider.allowed_domains` attribute.
+   All subdomains of any domain in the list are also allowed.
+   E.g. the rule ``www.example.org`` will also allow ``bob.www.example.org``
+   but not ``www2.example.com`` nor ``example.com``.
+
+   When your spider returns a request for a domain not belonging to those
+   covered by the spider, this middleware will log a debug message similar to
+   this one::
+
+      DEBUG: Filtered offsite request to 'offsite.example': <GET http://offsite.example/some/page.html>
+
+   To avoid filling the log with too much noise, it will only print one of
+   these messages for each new domain filtered. So, for example, if another
+   request for ``offsite.example`` is filtered, no log message will be
+   printed. But if a request for ``other.example`` is filtered, a message
+   will be printed (but only for the first request filtered).
+
+   If the spider doesn't define an
+   :attr:`~scrapy.Spider.allowed_domains` attribute, or the
+   attribute is empty, the offsite middleware will allow all requests.
+
+   .. reqmeta:: allow_offsite
+
+   If the request has the :attr:`~scrapy.Request.dont_filter` attribute set to
+   ``True`` or :attr:`Request.meta` has ``allow_offsite`` set to ``True``, then
+   the OffsiteMiddleware will allow the request even if its domain is not listed
+   in allowed domains.
+
 RedirectMiddleware
 ------------------
 
@@ -843,7 +884,7 @@ REDIRECT_MAX_TIMES
 Default: ``20``
 
 The maximum number of redirections that will be followed for a single request.
-After this maximum, the request's response is returned as is.
+If maximum redirections are exceeded, the request is aborted and ignored.
 
 MetaRefreshMiddleware
 ---------------------
@@ -887,7 +928,11 @@ Meta tags within these tags are ignored.
 
 .. versionchanged:: 2.0
    The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
-   ``['script', 'noscript']`` to ``[]``.
+   ``["script", "noscript"]`` to ``[]``.
+
+.. versionchanged:: 2.11.2
+   The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
+   ``[]`` to ``["noscript"]``.
 
 .. setting:: METAREFRESH_MAXDELAY
 
@@ -1045,7 +1090,6 @@ RobotsTxtMiddleware
     * :ref:`Protego <protego-parser>` (default)
     * :ref:`RobotFileParser <python-robotfileparser>`
     * :ref:`Robotexclusionrulesparser <rerp-parser>`
-    * :ref:`Reppy <reppy-parser>` (deprecated)
 
     You can change the robots.txt_ parser with the :setting:`ROBOTSTXT_PARSER`
     setting. Or you can also :ref:`implement support for a new parser <support-for-new-robots-parser>`.
@@ -1065,7 +1109,7 @@ Parsers vary in several aspects:
 
 * Support for wildcard matching
 
-* Usage of `length based rule <https://developers.google.com/search/reference/robots_txt#order-of-precedence-for-group-member-lines>`_:
+* Usage of `length based rule <https://developers.google.com/search/docs/crawling-indexing/robots/robots_txt#order-of-precedence-for-rules>`_:
   in particular for ``Allow`` and ``Disallow`` directives, where the most
   specific rule based on the length of the path trumps the less specific
   (shorter) rule
@@ -1083,7 +1127,7 @@ Based on `Protego <https://github.com/scrapy/protego>`_:
 * implemented in Python
 
 * is compliant with `Google's Robots.txt Specification
-  <https://developers.google.com/search/reference/robots_txt>`_
+  <https://developers.google.com/search/docs/crawling-indexing/robots/robots_txt>`_
 
 * supports wildcard matching
 
@@ -1113,43 +1157,12 @@ In order to use this parser, set:
 
 * :setting:`ROBOTSTXT_PARSER` to ``scrapy.robotstxt.PythonRobotParser``
 
-.. _reppy-parser:
-
-Reppy parser
-~~~~~~~~~~~~
-
-Based on `Reppy <https://github.com/seomoz/reppy/>`_:
-
-* is a Python wrapper around `Robots Exclusion Protocol Parser for C++
-  <https://github.com/seomoz/rep-cpp>`_
-
-* is compliant with `Martijn Koster's 1996 draft specification
-  <https://www.robotstxt.org/norobots-rfc.txt>`_
-
-* supports wildcard matching
-
-* uses the length based rule
-
-Native implementation, provides better speed than Protego.
-
-In order to use this parser:
-
-* Install `Reppy <https://github.com/seomoz/reppy/>`_ by running ``pip install reppy``
-
-    .. warning:: `Upstream issue #122
-        <https://github.com/seomoz/reppy/issues/122>`_ prevents reppy usage in Python 3.9+.
-        Because of this the Reppy parser is deprecated.
-
-* Set :setting:`ROBOTSTXT_PARSER` setting to
-  ``scrapy.robotstxt.ReppyRobotParser``
-
-
 .. _rerp-parser:
 
 Robotexclusionrulesparser
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
+Based on `Robotexclusionrulesparser <https://pypi.org/project/robotexclusionrulesparser/>`_:
 
 * implemented in Python
 
@@ -1162,7 +1175,7 @@ Based on `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_:
 
 In order to use this parser:
 
-* Install `Robotexclusionrulesparser <http://nikitathespider.com/python/rerp/>`_ by running
+* Install ``Robotexclusionrulesparser`` by running
   ``pip install robotexclusionrulesparser``
 
 * Set :setting:`ROBOTSTXT_PARSER` setting to
@@ -1232,9 +1245,7 @@ AjaxCrawlMiddleware
 .. class:: AjaxCrawlMiddleware
 
    Middleware that finds 'AJAX crawlable' page variants based
-   on meta-fragment html tag. See
-   https://developers.google.com/search/docs/ajax-crawling/docs/getting-started
-   for more info.
+   on meta-fragment html tag.
 
    .. note::
 

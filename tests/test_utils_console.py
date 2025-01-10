@@ -38,7 +38,3 @@ class UtilsConsoleTestCase(unittest.TestCase):
         # default shell should be 'ipython'
         shell = get_shell_embed_func()
         self.assertEqual(shell.__name__, "_embed_ipython_shell")
-
-
-if __name__ == "__main__":
-    unittest.main()

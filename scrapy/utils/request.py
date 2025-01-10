@@ -1,24 +1,14 @@
 """
 This module provides some useful functions for working with
-scrapy.http.Request objects
+scrapy.Request objects
 """
+
+from __future__ import annotations
 
 import hashlib
 import json
 import warnings
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Generator,
-    Iterable,
-    List,
-    Optional,
-    Protocol,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Protocol
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
 
@@ -32,26 +22,23 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
     from scrapy.crawler import Crawler
 
 
-def _serialize_headers(
-    headers: Iterable[bytes], request: Request
-) -> Generator[bytes, Any, None]:
-    for header in headers:
-        if header in request.headers:
-            yield header
-            yield from request.headers.getlist(header)
-
-
-_fingerprint_cache: "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]]"
-_fingerprint_cache = WeakKeyDictionary()
+_fingerprint_cache: WeakKeyDictionary[
+    Request, dict[tuple[tuple[bytes, ...] | None, bool], bytes]
+] = WeakKeyDictionary()
 
 
 def fingerprint(
     request: Request,
     *,
-    include_headers: Optional[Iterable[Union[bytes, str]]] = None,
+    include_headers: Iterable[bytes | str] | None = None,
     keep_fragments: bool = False,
 ) -> bytes:
     """
@@ -59,17 +46,15 @@ def fingerprint(
 
     The request fingerprint is a hash that uniquely identifies the resource the
     request points to. For example, take the following two urls:
-
-    http://www.example.com/query?id=111&cat=222
-    http://www.example.com/query?cat=222&id=111
+    ``http://www.example.com/query?id=111&cat=222``,
+    ``http://www.example.com/query?cat=222&id=111``.
 
     Even though those are two different URLs both point to the same resource
     and are equivalent (i.e. they should return the same response).
 
     Another example are cookies used to store session ids. Suppose the
     following page is only accessible to authenticated users:
-
-    http://www.example.com/members/offers.html
+    ``http://www.example.com/members/offers.html``.
 
     Lots of sites use a cookie to store the session id, which adds a random
     component to the HTTP Request and thus should be ignored when calculating
@@ -84,7 +69,7 @@ def fingerprint(
     If you want to include them, set the keep_fragments argument to True
     (for instance when handling requests with a headless browser).
     """
-    processed_include_headers: Optional[Tuple[bytes, ...]] = None
+    processed_include_headers: tuple[bytes, ...] | None = None
     if include_headers:
         processed_include_headers = tuple(
             to_bytes(h.lower()) for h in sorted(include_headers)
@@ -94,7 +79,7 @@ def fingerprint(
     if cache_key not in cache:
         # To decode bytes reliably (JSON does not support bytes), regardless of
         # character encoding, we use bytes.hex()
-        headers: Dict[str, List[str]] = {}
+        headers: dict[str, list[str]] = {}
         if processed_include_headers:
             for header in processed_include_headers:
                 if header in request.headers:
@@ -109,13 +94,14 @@ def fingerprint(
             "headers": headers,
         }
         fingerprint_json = json.dumps(fingerprint_data, sort_keys=True)
-        cache[cache_key] = hashlib.sha1(fingerprint_json.encode()).digest()
+        cache[cache_key] = hashlib.sha1(  # noqa: S324
+            fingerprint_json.encode()
+        ).digest()
     return cache[cache_key]
 
 
 class RequestFingerprinterProtocol(Protocol):
-    def fingerprint(self, request: Request) -> bytes:
-        ...
+    def fingerprint(self, request: Request) -> bytes: ...
 
 
 class RequestFingerprinter:
@@ -123,19 +109,17 @@ class RequestFingerprinter:
 
     It takes into account a canonical version
     (:func:`w3lib.url.canonicalize_url`) of :attr:`request.url
-    <scrapy.http.Request.url>` and the values of :attr:`request.method
-    <scrapy.http.Request.method>` and :attr:`request.body
-    <scrapy.http.Request.body>`. It then generates an `SHA1
+    <scrapy.Request.url>` and the values of :attr:`request.method
+    <scrapy.Request.method>` and :attr:`request.body
+    <scrapy.Request.body>`. It then generates an `SHA1
     <https://en.wikipedia.org/wiki/SHA-1>`_ hash.
-
-    .. seealso:: :setting:`REQUEST_FINGERPRINTER_IMPLEMENTATION`.
     """
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler)
 
-    def __init__(self, crawler: Optional["Crawler"] = None):
+    def __init__(self, crawler: Crawler | None = None):
         if crawler:
             implementation = crawler.settings.get(
                 "REQUEST_FINGERPRINTER_IMPLEMENTATION"
@@ -146,7 +130,7 @@ class RequestFingerprinter:
         if implementation != "SENTINEL":
             message = (
                 "'REQUEST_FINGERPRINTER_IMPLEMENTATION' is a deprecated setting.\n"
-                "And it will be removed in future version of Scrapy."
+                "It will be removed in a future version of Scrapy."
             )
             warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
         self._fingerprint = fingerprint
@@ -163,6 +147,11 @@ def request_authenticate(
     """Authenticate the given request (in place) using the HTTP basic access
     authentication mechanism (RFC 2617) and the given username and password
     """
+    warnings.warn(
+        "The request_authenticate function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     request.headers["Authorization"] = basic_auth_header(username, password)
 
 
@@ -183,7 +172,7 @@ def request_httprepr(request: Request) -> bytes:
     return s
 
 
-def referer_str(request: Request) -> Optional[str]:
+def referer_str(request: Request) -> str | None:
     """Return Referer HTTP header suitable for logging."""
     referrer = request.headers.get("Referer")
     if referrer is None:
@@ -191,13 +180,13 @@ def referer_str(request: Request) -> Optional[str]:
     return to_unicode(referrer, errors="replace")
 
 
-def request_from_dict(d: dict, *, spider: Optional[Spider] = None) -> Request:
+def request_from_dict(d: dict[str, Any], *, spider: Spider | None = None) -> Request:
     """Create a :class:`~scrapy.Request` object from a dict.
 
     If a spider is given, it will try to resolve the callbacks looking at the
     spider for methods with the same name.
     """
-    request_cls: Type[Request] = load_object(d["_class"]) if "_class" in d else Request
+    request_cls: type[Request] = load_object(d["_class"]) if "_class" in d else Request
     kwargs = {key: value for key, value in d.items() if key in request_cls.attributes}
     if d.get("callback") and spider:
         kwargs["callback"] = _get_method(spider, d["callback"])
@@ -238,7 +227,8 @@ def request_to_curl(request: Request) -> str:
             cookies = f"--cookie '{cookie}'"
         elif isinstance(request.cookies, list):
             cookie = "; ".join(
-                f"{list(c.keys())[0]}={list(c.values())[0]}" for c in request.cookies
+                f"{next(iter(c.keys()))}={next(iter(c.values()))}"
+                for c in request.cookies
             )
             cookies = f"--cookie '{cookie}'"
 

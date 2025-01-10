@@ -1,13 +1,16 @@
+from __future__ import annotations
+
 import signal
+from collections.abc import Callable
 from types import FrameType
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 # copy of _HANDLER from typeshed/stdlib/signal.pyi
 SignalHandlerT = Union[
     Callable[[int, Optional[FrameType]], Any], int, signal.Handlers, None
 ]
 
-signal_names: Dict[int, str] = {}
+signal_names: dict[int, str] = {}
 for signame in dir(signal):
     if signame.startswith("SIG") and not signame.startswith("SIG_"):
         signum = getattr(signal, signame)
@@ -24,7 +27,11 @@ def install_shutdown_handlers(
     (e.g. Pdb)
     """
     signal.signal(signal.SIGTERM, function)
-    if signal.getsignal(signal.SIGINT) == signal.default_int_handler or override_sigint:
+    if (
+        signal.getsignal(signal.SIGINT)  # pylint: disable=comparison-with-callable
+        == signal.default_int_handler
+        or override_sigint
+    ):
         signal.signal(signal.SIGINT, function)
     # Catch Ctrl-Break in windows
     if hasattr(signal, "SIGBREAK"):

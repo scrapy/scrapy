@@ -261,7 +261,7 @@ policy:
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
 You can also use other S3-like storages. Storages like self-hosted `Minio`_ or
-`s3.scality`_. All you need to do is set endpoint option in you Scrapy
+`Zenko CloudServer`_. All you need to do is set endpoint option in you Scrapy
 settings:
 
 .. code-block:: python
@@ -276,9 +276,9 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
     AWS_VERIFY = False  # or True (None by default)
 
 .. _botocore: https://github.com/boto/botocore
-.. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
+.. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Minio: https://github.com/minio/minio
-.. _s3.scality: https://s3.scality.com/
+.. _Zenko CloudServer: https://www.zenko.io/cloudserver/
 
 
 .. _media-pipeline-gcs:
@@ -303,7 +303,7 @@ For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_I
 
 For information about authentication, see this `documentation`_.
 
-.. _documentation: https://cloud.google.com/docs/authentication/production
+.. _documentation: https://cloud.google.com/docs/authentication
 
 You can modify the Access Control List (ACL) policy used for the stored files,
 which is defined by the :setting:`FILES_STORE_GCS_ACL` and
@@ -532,14 +532,14 @@ See here the methods that you can override in your custom Files Pipeline:
       .. code-block:: python
 
         from pathlib import PurePosixPath
-        from urllib.parse import urlparse
+        from scrapy.utils.httpobj import urlparse_cached
 
         from scrapy.pipelines.files import FilesPipeline
 
 
         class MyFilesPipeline(FilesPipeline):
             def file_path(self, request, response=None, info=None, *, item=None):
-                return "files/" + PurePosixPath(urlparse(request.url).path).name
+                return "files/" + PurePosixPath(urlparse_cached(request).path).name
 
       Similarly, you can use the ``item`` to determine the file path based on some item 
       property.
@@ -690,14 +690,14 @@ See here the methods that you can override in your custom Images Pipeline:
       .. code-block:: python
 
         from pathlib import PurePosixPath
-        from urllib.parse import urlparse
+        from scrapy.utils.httpobj import urlparse_cached
 
         from scrapy.pipelines.images import ImagesPipeline
 
 
         class MyImagesPipeline(ImagesPipeline):
             def file_path(self, request, response=None, info=None, *, item=None):
-                return "files/" + PurePosixPath(urlparse(request.url).path).name
+                return "files/" + PurePosixPath(urlparse_cached(request).path).name
 
       Similarly, you can use the ``item`` to determine the file path based on some item 
       property.

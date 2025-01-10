@@ -8,9 +8,7 @@ class AsyncgenUtilsTest(unittest.TestCase):
     @deferred_f_from_coro_f
     async def test_as_async_generator(self):
         ag = as_async_generator(range(42))
-        results = []
-        async for i in ag:
-            results.append(i)
+        results = [i async for i in ag]
         self.assertEqual(results, list(range(42)))
 
     @deferred_f_from_coro_f

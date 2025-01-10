@@ -1,11 +1,12 @@
 """
 Extension for processing data before they are exported to feeds.
 """
+
 from bz2 import BZ2File
 from gzip import GzipFile
 from io import IOBase
 from lzma import LZMAFile
-from typing import Any, BinaryIO, Dict, List
+from typing import IO, Any, BinaryIO, cast
 
 from scrapy.utils.misc import load_object
 
@@ -23,7 +24,7 @@ class GzipPlugin:
     See :py:class:`gzip.GzipFile` for more info about parameters.
     """
 
-    def __init__(self, file: BinaryIO, feed_options: Dict[str, Any]) -> None:
+    def __init__(self, file: BinaryIO, feed_options: dict[str, Any]) -> None:
         self.file = file
         self.feed_options = feed_options
         compress_level = self.feed_options.get("gzip_compresslevel", 9)
@@ -42,7 +43,6 @@ class GzipPlugin:
 
     def close(self) -> None:
         self.gzipfile.close()
-        self.file.close()
 
 
 class Bz2Plugin:
@@ -56,7 +56,7 @@ class Bz2Plugin:
     See :py:class:`bz2.BZ2File` for more info about parameters.
     """
 
-    def __init__(self, file: BinaryIO, feed_options: Dict[str, Any]) -> None:
+    def __init__(self, file: BinaryIO, feed_options: dict[str, Any]) -> None:
         self.file = file
         self.feed_options = feed_options
         compress_level = self.feed_options.get("bz2_compresslevel", 9)
@@ -69,7 +69,6 @@ class Bz2Plugin:
 
     def close(self) -> None:
         self.bz2file.close()
-        self.file.close()
 
 
 class LZMAPlugin:
@@ -89,7 +88,7 @@ class LZMAPlugin:
     See :py:class:`lzma.LZMAFile` for more info about parameters.
     """
 
-    def __init__(self, file: BinaryIO, feed_options: Dict[str, Any]) -> None:
+    def __init__(self, file: BinaryIO, feed_options: dict[str, Any]) -> None:
         self.file = file
         self.feed_options = feed_options
 
@@ -111,7 +110,6 @@ class LZMAPlugin:
 
     def close(self) -> None:
         self.lzmafile.close()
-        self.file.close()
 
 
 # io.IOBase is subclassed here, so that exporters can use the PostProcessingManager
@@ -128,7 +126,7 @@ class PostProcessingManager(IOBase):
     """
 
     def __init__(
-        self, plugins: List[Any], file: BinaryIO, feed_options: Dict[str, Any]
+        self, plugins: list[Any], file: IO[bytes], feed_options: dict[str, Any]
     ) -> None:
         self.plugins = self._load_plugins(plugins)
         self.file = file
@@ -144,7 +142,7 @@ class PostProcessingManager(IOBase):
         :return: returns number of bytes written
         :rtype: int
         """
-        return self.head_plugin.write(data)
+        return cast(int, self.head_plugin.write(data))
 
     def tell(self) -> int:
         return self.file.tell()
@@ -158,9 +156,8 @@ class PostProcessingManager(IOBase):
     def writable(self) -> bool:
         return True
 
-    def _load_plugins(self, plugins: List[Any]) -> List[Any]:
-        plugins = [load_object(plugin) for plugin in plugins]
-        return plugins
+    def _load_plugins(self, plugins: list[Any]) -> list[Any]:
+        return [load_object(plugin) for plugin in plugins]
 
     def _get_head_plugin(self) -> Any:
         prev = self.file

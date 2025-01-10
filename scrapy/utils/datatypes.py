@@ -8,25 +8,18 @@ This module must not depend on any module outside the Standard Library.
 from __future__ import annotations
 
 import collections
+import contextlib
 import warnings
 import weakref
+from collections import OrderedDict
 from collections.abc import Mapping
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    AnyStr,
-    Iterable,
-    Optional,
-    OrderedDict,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, AnyStr, TypeVar
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -52,7 +45,7 @@ class CaselessDict(dict):
 
     def __init__(
         self,
-        seq: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]], None] = None,
+        seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
     ):
         super().__init__()
         if seq:
@@ -92,7 +85,7 @@ class CaselessDict(dict):
         return dict.setdefault(self, self.normkey(key), self.normvalue(def_val))  # type: ignore[arg-type]
 
     # doesn't fully implement MutableMapping.update()
-    def update(self, seq: Union[Mapping[AnyStr, Any], Iterable[Tuple[AnyStr, Any]]]) -> None:  # type: ignore[override]
+    def update(self, seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]]) -> None:  # type: ignore[override]
         seq = seq.items() if isinstance(seq, Mapping) else seq
         iseq = ((self.normkey(k), self.normvalue(v)) for k, v in seq)
         super().update(iseq)
@@ -110,7 +103,7 @@ class CaseInsensitiveDict(collections.UserDict):
     as keys and allows case-insensitive lookups.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._keys: dict = {}
         super().__init__(*args, **kwargs)
 
@@ -153,9 +146,9 @@ class LocalCache(OrderedDict[_KT, _VT]):
     Older items expires first.
     """
 
-    def __init__(self, limit: Optional[int] = None):
+    def __init__(self, limit: int | None = None):
         super().__init__()
-        self.limit: Optional[int] = limit
+        self.limit: int | None = limit
 
     def __setitem__(self, key: _KT, value: _VT) -> None:
         if self.limit:
@@ -176,17 +169,16 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
     it cannot be instantiated with an initial dictionary.
     """
 
-    def __init__(self, limit: Optional[int] = None):
+    def __init__(self, limit: int | None = None):
         super().__init__()
         self.data: LocalCache = LocalCache(limit=limit)
 
     def __setitem__(self, key: _KT, value: _VT) -> None:
-        try:
+        # if raised, key is not weak-referenceable, skip caching
+        with contextlib.suppress(TypeError):
             super().__setitem__(key, value)
-        except TypeError:
-            pass  # key is not weak-referenceable, skip caching
 
-    def __getitem__(self, key: _KT) -> Optional[_VT]:  # type: ignore[override]
+    def __getitem__(self, key: _KT) -> _VT | None:  # type: ignore[override]
         try:
             return super().__getitem__(key)
         except (TypeError, KeyError):
@@ -196,8 +188,8 @@ class LocalWeakReferencedCache(weakref.WeakKeyDictionary):
 class SequenceExclude:
     """Object to test if an item is NOT within some sequence."""
 
-    def __init__(self, seq: Sequence):
-        self.seq: Sequence = seq
+    def __init__(self, seq: Sequence[Any]):
+        self.seq: Sequence[Any] = seq
 
     def __contains__(self, item: Any) -> bool:
         return item not in self.seq

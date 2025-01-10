@@ -4,8 +4,8 @@
 Components
 ==========
 
-A Scrapy component is any class whose objects are created using
-:func:`scrapy.utils.misc.create_instance`.
+A Scrapy component is any class whose objects are built using
+:func:`~scrapy.utils.misc.build_from_crawler`.
 
 That includes the classes that you may assign to the following settings:
 
@@ -84,3 +84,15 @@ If your requirement is a minimum Scrapy version, you may use
                     f"method of spider middlewares as an asynchronous "
                     f"generator."
                 )
+
+API reference
+=============
+
+The following function can be used to create an instance of a component class:
+
+.. autofunction:: scrapy.utils.misc.build_from_crawler
+
+The following function can also be useful when implementing a component, to
+report the import path of the component class, e.g. when reporting problems:
+
+.. autofunction:: scrapy.utils.python.global_object_name

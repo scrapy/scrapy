@@ -2,30 +2,33 @@
 from twisted.internet import defer
 Tests borrowed from the twisted.web.client tests.
 """
+
+from __future__ import annotations
+
 import shutil
 from pathlib import Path
+from tempfile import mkdtemp
+from typing import Any
 
 import OpenSSL.SSL
+from pytest import raises
 from twisted.internet import defer, reactor
+from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.testing import StringTransport
+from twisted.protocols.policies import WrappingFactory
 from twisted.trial import unittest
 from twisted.web import resource, server, static, util
 
-try:
-    from twisted.internet.testing import StringTransport
-except ImportError:
-    # deprecated in Twisted 19.7.0
-    # (remove once we bump our requirement past that version)
-    from twisted.test.proto_helpers import StringTransport
-
-from twisted.internet.defer import inlineCallbacks
-from twisted.protocols.policies import WrappingFactory
-
 from scrapy.core.downloader import webclient as client
-from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
+from scrapy.core.downloader.contextfactory import (
+    ScrapyClientContextFactory,
+    load_context_factory_from_settings,
+)
 from scrapy.http import Headers, Request
 from scrapy.settings import Settings
-from scrapy.utils.misc import build_from_settings
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.test import get_crawler
 from tests.mockserver import (
     BrokenDownloadResource,
     ErrorResource,
@@ -158,7 +161,7 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
 
         # test minimal sent headers
         factory = client.ScrapyHTTPClientFactory(Request("http://foo/bar"))
-        self._test(factory, b"GET /bar HTTP/1.0\r\n" b"Host: foo\r\n" b"\r\n")
+        self._test(factory, b"GET /bar HTTP/1.0\r\nHost: foo\r\n\r\n")
 
         # test a simple POST with body and content-type
         factory = client.ScrapyHTTPClientFactory(
@@ -188,7 +191,7 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
 
         self._test(
             factory,
-            b"POST /bar HTTP/1.0\r\n" b"Host: foo\r\n" b"Content-Length: 0\r\n" b"\r\n",
+            b"POST /bar HTTP/1.0\r\nHost: foo\r\nContent-Length: 0\r\n\r\n",
         )
 
         # test with single and multivalued headers
@@ -274,8 +277,7 @@ class WebClientTestCase(unittest.TestCase):
         return reactor.listenTCP(0, site, interface="127.0.0.1")
 
     def setUp(self):
-        self.tmpname = Path(self.mktemp())
-        self.tmpname.mkdir()
+        self.tmpname = Path(mkdtemp())
         (self.tmpname / "file").write_bytes(b"0123456789")
         r = static.File(str(self.tmpname))
         r.putChild(b"redirect", util.Redirect(b"/file"))
@@ -440,8 +442,7 @@ class WebClientSSLTestCase(unittest.TestCase):
         return f"https://127.0.0.1:{self.portno}/{path}"
 
     def setUp(self):
-        self.tmpname = Path(self.mktemp())
-        self.tmpname.mkdir()
+        self.tmpname = Path(mkdtemp())
         (self.tmpname / "file").write_bytes(b"0123456789")
         r = static.File(str(self.tmpname))
         r.putChild(b"payload", PayloadResource())
@@ -469,23 +470,71 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
 
     def testPayload(self):
         s = "0123456789" * 10
-        settings = Settings({"DOWNLOADER_CLIENT_TLS_CIPHERS": self.custom_ciphers})
-        client_context_factory = build_from_settings(
-            ScrapyClientContextFactory, settings
+        crawler = get_crawler(
+            settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": self.custom_ciphers}
         )
+        client_context_factory = build_from_crawler(ScrapyClientContextFactory, crawler)
         return getPage(
             self.getURL("payload"), body=s, contextFactory=client_context_factory
         ).addCallback(self.assertEqual, to_bytes(s))
 
     def testPayloadDisabledCipher(self):
         s = "0123456789" * 10
-        settings = Settings(
-            {"DOWNLOADER_CLIENT_TLS_CIPHERS": "ECDHE-RSA-AES256-GCM-SHA384"}
+        crawler = get_crawler(
+            settings_dict={
+                "DOWNLOADER_CLIENT_TLS_CIPHERS": "ECDHE-RSA-AES256-GCM-SHA384"
+            }
         )
-        client_context_factory = build_from_settings(
-            ScrapyClientContextFactory, settings
-        )
+        client_context_factory = build_from_crawler(ScrapyClientContextFactory, crawler)
         d = getPage(
             self.getURL("payload"), body=s, contextFactory=client_context_factory
         )
         return self.assertFailure(d, OpenSSL.SSL.Error)
+
+
+class WebClientTLSMethodTestCase(WebClientSSLTestCase):
+    def _assert_factory_works(
+        self, client_context_factory: ScrapyClientContextFactory
+    ) -> Deferred[Any]:
+        s = "0123456789" * 10
+        return getPage(
+            self.getURL("payload"), body=s, contextFactory=client_context_factory
+        ).addCallback(self.assertEqual, to_bytes(s))
+
+    def test_setting_default(self):
+        crawler = get_crawler()
+        settings = Settings()
+        client_context_factory = load_context_factory_from_settings(settings, crawler)
+        assert client_context_factory._ssl_method == OpenSSL.SSL.SSLv23_METHOD
+        return self._assert_factory_works(client_context_factory)
+
+    def test_setting_none(self):
+        crawler = get_crawler()
+        settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": None})
+        with raises(KeyError):
+            load_context_factory_from_settings(settings, crawler)
+
+    def test_setting_bad(self):
+        crawler = get_crawler()
+        settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": "bad"})
+        with raises(KeyError):
+            load_context_factory_from_settings(settings, crawler)
+
+    def test_setting_explicit(self):
+        crawler = get_crawler()
+        settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": "TLSv1.2"})
+        client_context_factory = load_context_factory_from_settings(settings, crawler)
+        assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
+        return self._assert_factory_works(client_context_factory)
+
+    def test_direct_from_crawler(self):
+        # the setting is ignored
+        crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_METHOD": "bad"})
+        client_context_factory = build_from_crawler(ScrapyClientContextFactory, crawler)
+        assert client_context_factory._ssl_method == OpenSSL.SSL.SSLv23_METHOD
+        return self._assert_factory_works(client_context_factory)
+
+    def test_direct_init(self):
+        client_context_factory = ScrapyClientContextFactory(OpenSSL.SSL.TLSv1_2_METHOD)
+        assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
+        return self._assert_factory_works(client_context_factory)

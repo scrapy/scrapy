@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 import json
 import unittest
 import warnings
 from hashlib import sha1
-from typing import Dict, Optional, Tuple, Union
 from weakref import WeakKeyDictionary
 
+import pytest
+
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import (
@@ -18,6 +22,7 @@ from scrapy.utils.test import get_crawler
 
 
 class UtilsRequestTest(unittest.TestCase):
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_request_authenticate(self):
         r = Request("http://www.example.com")
         request_authenticate(r, "someuser", "somepass")
@@ -56,12 +61,12 @@ class FingerprintTest(unittest.TestCase):
     maxDiff = None
 
     function: staticmethod = staticmethod(fingerprint)
-    cache: Union[
-        "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], bytes]]",
-        "WeakKeyDictionary[Request, Dict[Tuple[Optional[Tuple[bytes, ...]], bool], str]]",
-    ] = _fingerprint_cache
+    cache: (
+        WeakKeyDictionary[Request, dict[tuple[tuple[bytes, ...] | None, bool], bytes]]
+        | WeakKeyDictionary[Request, dict[tuple[tuple[bytes, ...] | None, bool], str]]
+    ) = _fingerprint_cache
     default_cache_key = (None, False)
-    known_hashes: Tuple[Tuple[Request, Union[bytes, str], Dict], ...] = (
+    known_hashes: tuple[tuple[Request, bytes | str, dict], ...] = (
         (
             Request("http://example.org"),
             b"xs\xd7\x0c3uj\x15\xfe\xd7d\x9b\xa9\t\xe0d\xbf\x9cXD",
@@ -380,7 +385,9 @@ class CustomRequestFingerprinterTestCase(unittest.TestCase):
             "REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter,
             "FINGERPRINT": b"fingerprint",
         }
-        crawler = get_crawler(settings_dict=settings)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
+            crawler = get_crawler(settings_dict=settings)
 
         request = Request("http://www.example.com")
         fingerprint = crawler.request_fingerprinter.fingerprint(request)
@@ -474,7 +481,3 @@ class RequestToCurlTest(unittest.TestCase):
             " --data-raw '{\"foo\": \"bar\"}' --cookie 'foo=bar'"
         )
         self._test_request(request_object, expected_curl_command)
-
-
-if __name__ == "__main__":
-    unittest.main()

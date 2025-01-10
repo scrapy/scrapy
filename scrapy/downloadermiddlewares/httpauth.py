@@ -6,18 +6,33 @@ See documentation in docs/topics/downloader-middleware.rst
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from w3lib.http import basic_auth_header
 
 from scrapy import Request, Spider, signals
-from scrapy.crawler import Crawler
-from scrapy.http import Response
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.url import url_is_from_any_domain
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+    from scrapy.http import Response
+
+
+def _origin(request: Request) -> str:
+    parsed_url = urlparse_cached(request)
+    return f"{parsed_url.scheme}://{parsed_url.netloc}"
+
+
+def _setdefault_auth_origin(request: Request) -> str:
+    if origin := request.meta.get("auth_origin"):
+        return origin
+    origin = _origin(request)
+    request.meta["auth_origin"] = origin
+    return origin
 
 
 class HttpAuthMiddleware:
@@ -43,13 +58,18 @@ class HttpAuthMiddleware:
 
     def process_request(
         self, request: Request, spider: Spider
-    ) -> Union[Request, Response, None]:
+    ) -> Request | Response | None:
         if b"Authorization" in request.headers:
             return None
-        usr = request.meta.get("http_user", "")
-        pwd = request.meta.get("http_pass", "")
-        if usr or pwd:
-            auth = basic_auth_header(usr, pwd)
+        user = request.meta.get("http_user", "")
+        password = request.meta.get("http_pass", "")
+        if user or password:
+            auth_origin = _setdefault_auth_origin(request)
+            request_origin = _origin(request)
+            if auth_origin == request_origin:
+                auth = basic_auth_header(user, password)
+            else:
+                auth = None
         elif not self.domain or url_is_from_any_domain(request.url, [self.domain]):
             auth = self.auth
         else:

@@ -3,22 +3,14 @@ Spider Middleware manager
 
 See documentation in docs/topics/spider-middleware.rst
 """
+
+from __future__ import annotations
+
 import logging
+from collections.abc import AsyncIterable, Callable, Iterable
 from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice
-from typing import (
-    Any,
-    AsyncGenerator,
-    AsyncIterable,
-    Callable,
-    Generator,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
@@ -27,7 +19,6 @@ from scrapy import Request, Spider
 from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Response
 from scrapy.middleware import MiddlewareManager
-from scrapy.settings import BaseSettings
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
@@ -38,10 +29,19 @@ from scrapy.utils.defer import (
 )
 from scrapy.utils.python import MutableAsyncChain, MutableChain
 
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from scrapy.settings import BaseSettings
+
+
 logger = logging.getLogger(__name__)
 
 
-ScrapeFunc = Callable[[Union[Response, Failure], Request, Spider], Any]
+_T = TypeVar("_T")
+ScrapeFunc = Callable[
+    [Union[Response, Failure], Request, Spider], Union[Iterable[_T], AsyncIterable[_T]]
+]
 
 
 def _isiterable(o: Any) -> bool:
@@ -56,7 +56,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self.downgrade_warning_done = False
 
     @classmethod
-    def _get_mwlist_from_settings(cls, settings: BaseSettings) -> List[Any]:
+    def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
         return build_component_list(settings.getwithbase("SPIDER_MIDDLEWARES"))
 
     def _add_middleware(self, mw: Any) -> None:
@@ -72,11 +72,11 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     def _process_spider_input(
         self,
-        scrape_func: ScrapeFunc,
+        scrape_func: ScrapeFunc[_T],
         response: Response,
         request: Request,
         spider: Spider,
-    ) -> Any:
+    ) -> Iterable[_T] | AsyncIterable[_T]:
         for method in self.methods["process_spider_input"]:
             method = cast(Callable, method)
             try:
@@ -97,31 +97,39 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self,
         response: Response,
         spider: Spider,
-        iterable: Union[Iterable, AsyncIterable],
+        iterable: Iterable[_T] | AsyncIterable[_T],
         exception_processor_index: int,
-        recover_to: Union[MutableChain, MutableAsyncChain],
-    ) -> Union[Generator, AsyncGenerator]:
-        def process_sync(iterable: Iterable) -> Generator:
+        recover_to: MutableChain[_T] | MutableAsyncChain[_T],
+    ) -> Iterable[_T] | AsyncIterable[_T]:
+        def process_sync(iterable: Iterable[_T]) -> Iterable[_T]:
             try:
                 yield from iterable
             except Exception as ex:
-                exception_result = self._process_spider_exception(
-                    response, spider, Failure(ex), exception_processor_index
+                exception_result = cast(
+                    Union[Failure, MutableChain[_T]],
+                    self._process_spider_exception(
+                        response, spider, Failure(ex), exception_processor_index
+                    ),
                 )
                 if isinstance(exception_result, Failure):
                     raise
+                assert isinstance(recover_to, MutableChain)
                 recover_to.extend(exception_result)
 
-        async def process_async(iterable: AsyncIterable) -> AsyncGenerator:
+        async def process_async(iterable: AsyncIterable[_T]) -> AsyncIterable[_T]:
             try:
                 async for r in iterable:
                     yield r
             except Exception as ex:
-                exception_result = self._process_spider_exception(
-                    response, spider, Failure(ex), exception_processor_index
+                exception_result = cast(
+                    Union[Failure, MutableAsyncChain[_T]],
+                    self._process_spider_exception(
+                        response, spider, Failure(ex), exception_processor_index
+                    ),
                 )
                 if isinstance(exception_result, Failure):
                     raise
+                assert isinstance(recover_to, MutableAsyncChain)
                 recover_to.extend(exception_result)
 
         if isinstance(iterable, AsyncIterable):
@@ -134,7 +142,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         spider: Spider,
         _failure: Failure,
         start_index: int = 0,
-    ) -> Union[Failure, MutableChain]:
+    ) -> Failure | MutableChain[_T] | MutableAsyncChain[_T]:
         exception = _failure.value
         # don't handle _InvalidOutput exception
         if isinstance(exception, _InvalidOutput):
@@ -150,26 +158,29 @@ class SpiderMiddlewareManager(MiddlewareManager):
             if _isiterable(result):
                 # stop exception handling by handing control over to the
                 # process_spider_output chain if an iterable has been returned
-                dfd: Deferred = self._process_spider_output(
-                    response, spider, result, method_index + 1
+                dfd: Deferred[MutableChain[_T] | MutableAsyncChain[_T]] = (
+                    self._process_spider_output(
+                        response, spider, result, method_index + 1
+                    )
                 )
                 # _process_spider_output() returns a Deferred only because of downgrading so this can be
                 # simplified when downgrading is removed.
                 if dfd.called:
                     # the result is available immediately if _process_spider_output didn't do downgrading
-                    return cast(MutableChain, dfd.result)
+                    return cast(
+                        Union[MutableChain[_T], MutableAsyncChain[_T]], dfd.result
+                    )
                 # we forbid waiting here because otherwise we would need to return a deferred from
                 # _process_spider_exception too, which complicates the architecture
                 msg = f"Async iterable returned from {method.__qualname__} cannot be downgraded"
                 raise _InvalidOutput(msg)
-            elif result is None:
+            if result is None:
                 continue
-            else:
-                msg = (
-                    f"{method.__qualname__} must return None "
-                    f"or an iterable, got {type(result)}"
-                )
-                raise _InvalidOutput(msg)
+            msg = (
+                f"{method.__qualname__} must return None "
+                f"or an iterable, got {type(result)}"
+            )
+            raise _InvalidOutput(msg)
         return _failure
 
     # This method cannot be made async def, as _process_spider_exception relies on the Deferred result
@@ -180,17 +191,14 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self,
         response: Response,
         spider: Spider,
-        result: Union[Iterable, AsyncIterable],
+        result: Iterable[_T] | AsyncIterable[_T],
         start_index: int = 0,
-    ) -> Generator[Deferred, Any, Union[MutableChain, MutableAsyncChain]]:
+    ) -> Generator[Deferred[Any], Any, MutableChain[_T] | MutableAsyncChain[_T]]:
         # items in this iterable do not need to go through the process_spider_output
         # chain, they went through it already from the process_spider_exception method
-        recovered: Union[MutableChain, MutableAsyncChain]
+        recovered: MutableChain[_T] | MutableAsyncChain[_T]
         last_result_is_async = isinstance(result, AsyncIterable)
-        if last_result_is_async:
-            recovered = MutableAsyncChain()
-        else:
-            recovered = MutableChain()
+        recovered = MutableAsyncChain() if last_result_is_async else MutableChain()
 
         # There are three cases for the middleware: def foo, async def foo, def foo + async def foo_async.
         # 1. def foo. Sync iterables are passed as is, async ones are downgraded.
@@ -236,8 +244,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 # might fail directly if the output value is not a generator
                 result = method(response=response, result=result, spider=spider)
             except Exception as ex:
-                exception_result = self._process_spider_exception(
-                    response, spider, Failure(ex), method_index + 1
+                exception_result: Failure | MutableChain[_T] | MutableAsyncChain[_T] = (
+                    self._process_spider_exception(
+                        response, spider, Failure(ex), method_index + 1
+                    )
                 )
                 if isinstance(exception_result, Failure):
                     raise
@@ -266,16 +276,22 @@ class SpiderMiddlewareManager(MiddlewareManager):
         return MutableChain(result, recovered)  # type: ignore[arg-type]
 
     async def _process_callback_output(
-        self, response: Response, spider: Spider, result: Union[Iterable, AsyncIterable]
-    ) -> Union[MutableChain, MutableAsyncChain]:
-        recovered: Union[MutableChain, MutableAsyncChain]
+        self,
+        response: Response,
+        spider: Spider,
+        result: Iterable[_T] | AsyncIterable[_T],
+    ) -> MutableChain[_T] | MutableAsyncChain[_T]:
+        recovered: MutableChain[_T] | MutableAsyncChain[_T]
         if isinstance(result, AsyncIterable):
             recovered = MutableAsyncChain()
         else:
             recovered = MutableChain()
         result = self._evaluate_iterable(response, spider, result, 0, recovered)
         result = await maybe_deferred_to_future(
-            self._process_spider_output(response, spider, result)
+            cast(
+                "Deferred[Iterable[_T] | AsyncIterable[_T]]",
+                self._process_spider_output(response, spider, result),
+            )
         )
         if isinstance(result, AsyncIterable):
             return MutableAsyncChain(result, recovered)
@@ -286,41 +302,43 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     def scrape_response(
         self,
-        scrape_func: ScrapeFunc,
+        scrape_func: ScrapeFunc[_T],
         response: Response,
         request: Request,
         spider: Spider,
-    ) -> Deferred:
+    ) -> Deferred[MutableChain[_T] | MutableAsyncChain[_T]]:
         async def process_callback_output(
-            result: Union[Iterable, AsyncIterable]
-        ) -> Union[MutableChain, MutableAsyncChain]:
+            result: Iterable[_T] | AsyncIterable[_T],
+        ) -> MutableChain[_T] | MutableAsyncChain[_T]:
             return await self._process_callback_output(response, spider, result)
 
-        def process_spider_exception(_failure: Failure) -> Union[Failure, MutableChain]:
+        def process_spider_exception(
+            _failure: Failure,
+        ) -> Failure | MutableChain[_T] | MutableAsyncChain[_T]:
             return self._process_spider_exception(response, spider, _failure)
 
-        dfd = mustbe_deferred(
+        dfd: Deferred[Iterable[_T] | AsyncIterable[_T]] = mustbe_deferred(
             self._process_spider_input, scrape_func, response, request, spider
         )
-        dfd.addCallbacks(
-            callback=deferred_f_from_coro_f(process_callback_output),
-            errback=process_spider_exception,
+        dfd2: Deferred[MutableChain[_T] | MutableAsyncChain[_T]] = dfd.addCallback(
+            deferred_f_from_coro_f(process_callback_output)
         )
-        return dfd
+        dfd2.addErrback(process_spider_exception)
+        return dfd2
 
     def process_start_requests(
         self, start_requests: Iterable[Request], spider: Spider
-    ) -> Deferred:
+    ) -> Deferred[Iterable[Request]]:
         return self._process_chain("process_start_requests", start_requests, spider)
 
     # This method is only needed until _async compatibility methods are removed.
     @staticmethod
     def _get_async_method_pair(
         mw: Any, methodname: str
-    ) -> Union[None, Callable, Tuple[Callable, Callable]]:
-        normal_method: Optional[Callable] = getattr(mw, methodname, None)
+    ) -> Callable | tuple[Callable, Callable] | None:
+        normal_method: Callable | None = getattr(mw, methodname, None)
         methodname_async = methodname + "_async"
-        async_method: Optional[Callable] = getattr(mw, methodname_async, None)
+        async_method: Callable | None = getattr(mw, methodname_async, None)
         if not async_method:
             return normal_method
         if not normal_method:

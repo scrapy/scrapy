@@ -198,8 +198,7 @@ class DropSomeItemsPipeline:
         if self.drop:
             self.drop = False
             raise DropItem("Ignoring item")
-        else:
-            self.drop = True
+        self.drop = True
 
 
 class ShowOrSkipMessagesTestCase(TwistedTestCase):
@@ -235,7 +234,3 @@ class ShowOrSkipMessagesTestCase(TwistedTestCase):
         self.assertNotIn("Scraped from <200 http://127.0.0.1:", str(lc))
         self.assertNotIn("Crawled (200) <GET http://127.0.0.1:", str(lc))
         self.assertNotIn("Dropped: Ignoring item", str(lc))
-
-
-if __name__ == "__main__":
-    unittest.main()

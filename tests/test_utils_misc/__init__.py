@@ -4,11 +4,12 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import pytest
+
 from scrapy.item import Field, Item
 from scrapy.utils.misc import (
     arg_to_iter,
     build_from_crawler,
-    build_from_settings,
     create_instance,
     load_object,
     rel_has_nofollow,
@@ -97,6 +98,7 @@ class UtilsMiscTestCase(unittest.TestCase):
             list(arg_to_iter(TestItem(name="john"))), [TestItem(name="john")]
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_create_instance(self):
         settings = mock.MagicMock()
         crawler = mock.MagicMock(spec_set=["settings"])
@@ -194,39 +196,6 @@ class UtilsMiscTestCase(unittest.TestCase):
         with self.assertRaises(TypeError):
             build_from_crawler(m, crawler, *args, **kwargs)
 
-    def test_build_from_settings(self):
-        settings = mock.MagicMock()
-        args = (True, 100.0)
-        kwargs = {"key": "val"}
-
-        def _test_with_settings(mock, settings):
-            build_from_settings(mock, settings, *args, **kwargs)
-            if hasattr(mock, "from_settings"):
-                mock.from_settings.assert_called_once_with(settings, *args, **kwargs)
-                self.assertEqual(mock.call_count, 0)
-            else:
-                mock.assert_called_once_with(*args, **kwargs)
-
-        # Check usage of correct constructor using three mocks:
-        #   1. with no alternative constructors
-        #   2. with from_settings() constructor
-        #   3. with from_settings() and from_crawler() constructor
-        spec_sets = (
-            ["__qualname__"],
-            ["__qualname__", "from_settings"],
-            ["__qualname__", "from_settings", "from_crawler"],
-        )
-        for specs in spec_sets:
-            m = mock.MagicMock(spec_set=specs)
-            _test_with_settings(m, settings)
-            m.reset_mock()
-
-        # Check adoption of crawler settings
-        m = mock.MagicMock(spec_set=["__qualname__", "from_settings"])
-        m.from_settings.return_value = None
-        with self.assertRaises(TypeError):
-            build_from_settings(m, settings, *args, **kwargs)
-
     def test_set_environ(self):
         assert os.environ.get("some_test_environ") is None
         with set_environ(some_test_environ="test_value"):
@@ -247,7 +216,3 @@ class UtilsMiscTestCase(unittest.TestCase):
         assert rel_has_nofollow("nofollowfoo") is False
         assert rel_has_nofollow("foonofollow") is False
         assert rel_has_nofollow("ugc,  ,  nofollow") is True
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -59,7 +59,7 @@ class HttpAuthMiddlewareTest(unittest.TestCase):
         self.assertEqual(req.headers["Authorization"], basic_auth_header("foo", "bar"))
 
     def test_auth_already_set(self):
-        req = Request("http://example.com/", headers=dict(Authorization="Digest 123"))
+        req = Request("http://example.com/", headers={"Authorization": "Digest 123"})
         assert self.mw.process_request(req, self.spider) is None
         self.assertEqual(req.headers["Authorization"], b"Digest 123")
 
@@ -79,7 +79,7 @@ class HttpAuthAnyMiddlewareTest(unittest.TestCase):
         self.assertEqual(req.headers["Authorization"], basic_auth_header("foo", "bar"))
 
     def test_auth_already_set(self):
-        req = Request("http://example.com/", headers=dict(Authorization="Digest 123"))
+        req = Request("http://example.com/", headers={"Authorization": "Digest 123"})
         assert self.mw.process_request(req, self.spider) is None
         self.assertEqual(req.headers["Authorization"], b"Digest 123")
 
@@ -87,7 +87,7 @@ class HttpAuthAnyMiddlewareTest(unittest.TestCase):
         meta = {"http_user": "bar", "http_pass": "foo"}
         req = Request(
             "http://example.com/",
-            headers=dict(Authorization="Digest 123"),
+            headers={"Authorization": "Digest 123"},
             meta=meta,
         )
         assert self.mw.process_request(req, self.spider) is None

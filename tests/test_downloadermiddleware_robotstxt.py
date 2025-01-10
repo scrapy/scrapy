@@ -11,7 +11,7 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
-from tests.test_robotstxt_interface import reppy_available, rerp_available
+from tests.test_robotstxt_interface import rerp_available
 
 
 class RobotsTxtMiddlewareTest(unittest.TestCase):
@@ -40,9 +40,7 @@ Disallow: /wiki/K%C3%A4ytt%C3%A4j%C3%A4:
 Disallow: /wiki/Käyttäjä:
 User-Agent: UnicödeBöt
 Disallow: /some/randome/page.html
-""".encode(
-            "utf-8"
-        )
+""".encode()
         response = TextResponse("http://site.local/robots.txt", body=ROBOTS)
 
         def return_response(request):
@@ -118,7 +116,7 @@ Disallow: /some/randome/page.html
     def test_robotstxt_garbage(self):
         # garbage response should be discarded, equal 'allow all'
         middleware = RobotsTxtMiddleware(self._get_garbage_crawler())
-        deferred = DeferredList(
+        return DeferredList(
             [
                 self.assertNotIgnored(Request("http://site.local"), middleware),
                 self.assertNotIgnored(Request("http://site.local/allowed"), middleware),
@@ -129,7 +127,6 @@ Disallow: /some/randome/page.html
             ],
             fireOnOneErrback=True,
         )
-        return deferred
 
     def _get_emptybody_crawler(self):
         crawler = self.crawler
@@ -255,15 +252,4 @@ class RobotsTxtMiddlewareWithRerpTest(RobotsTxtMiddlewareTest):
         super().setUp()
         self.crawler.settings.set(
             "ROBOTSTXT_PARSER", "scrapy.robotstxt.RerpRobotParser"
-        )
-
-
-class RobotsTxtMiddlewareWithReppyTest(RobotsTxtMiddlewareTest):
-    if not reppy_available():
-        skip = "Reppy parser is not installed"
-
-    def setUp(self):
-        super().setUp()
-        self.crawler.settings.set(
-            "ROBOTSTXT_PARSER", "scrapy.robotstxt.ReppyRobotParser"
         )
