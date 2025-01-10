@@ -369,7 +369,6 @@ class Scraper:
         """ItemProcessor finished for the given ``item`` and returned ``output``"""
         assert self.slot is not None  # typing
         self.slot.itemproc_size -= 1
-        valid_severities = ["WARNING", "ERROR", "INFO", "DEBUG", "CRITICAL"]
         if isinstance(output, Failure):
             ex = output.value
             if isinstance(ex, DropItem):
@@ -377,16 +376,8 @@ class Scraper:
                     ex.log_level = spider.crawler.settings.get(
                         "DEFAULT_DROPITEM_LOG_LEVEL", "WARNING"
                     )
-                elif (
-                    isinstance(ex.log_level, str)
-                    and ex.log_level.upper() in valid_severities
-                ):
+                elif isinstance(ex.log_level, str):
                     ex.log_level = ex.log_level.upper()
-                else:
-                    raise ValueError(
-                        f"Invalid severity level: {ex.log_level}. "
-                        f"Must be one of {', '.join(valid_severities)}."
-                    )
                 logkws = self.logformatter.dropped(item, ex, response, spider)
                 if logkws is not None:
                     logger.log(*logformatter_adapter(logkws), extra={"spider": spider})
