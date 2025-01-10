@@ -22,9 +22,22 @@ if TYPE_CHECKING:
     from scrapy.http import Response
 
 
+_NO_PORT = object()
+_DEFAULT_PORTS = {
+    "http": 80,
+    "https": 443,
+}
+
+
 def _origin(request: Request) -> str:
     parsed_url = urlparse_cached(request)
-    return f"{parsed_url.scheme}://{parsed_url.netloc}"
+    scheme = parsed_url.scheme
+    netloc = (
+        parsed_url.netloc
+        if parsed_url.port != _DEFAULT_PORTS[scheme]
+        else parsed_url.hostname
+    )
+    return f"{scheme}://{netloc}"
 
 
 def _setdefault_auth_origin(request: Request) -> str:
@@ -59,7 +72,10 @@ class HttpAuthMiddleware:
     def process_request(
         self, request: Request, spider: Spider
     ) -> Request | Response | None:
-        if b"Authorization" in request.headers:
+        if (
+            b"Authorization" in request.headers
+            or urlparse_cached(request).scheme not in _DEFAULT_PORTS
+        ):
             return None
         user = request.meta.get("http_user", "")
         password = request.meta.get("http_pass", "")

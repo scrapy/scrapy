@@ -14,9 +14,6 @@ class AbstractWrapper:
             self.mw = UriUserInfoMiddleware()
             self.spider = Spider("bar")
 
-        def tearDown(self):
-            del self.mw
-
     class ProtocolTestCase(BaseTestCase):
         def test_username_and_password(self):
             req = Request(f"{self.protocol}://foo:bar@example.com/")
