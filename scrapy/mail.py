@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import warnings
+from abc import ABC, abstractmethod
 from email import encoders as Encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -25,7 +26,7 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Sequence
 
     # imports twisted.internet.reactor
     from twisted.mail.smtp import ESMTPSenderFactory
@@ -53,15 +54,15 @@ def _to_bytes_or_none(text: str | bytes | None) -> bytes | None:
 
 
 def create_email_message(
-    mailfrom,
-    to,
-    subject,
-    body,
-    cc=None,
-    attachs=(),
-    mimetype="text/plain",
-    charset=None,
-):
+    mailfrom: str,
+    to: str | list[str],
+    subject: str,
+    body: str,
+    cc: str | list[str] | None = None,
+    attachs: Sequence[tuple[str, str, IO[Any]]] = (),
+    mimetype: str = "text/plain",
+    charset: str | None = None,
+) -> MIMEBase:
     msg: MIMEBase = (
         MIMEMultipart() if attachs else MIMENonMultipart(*mimetype.split("/", 1))
     )
@@ -94,23 +95,23 @@ def create_email_message(
     return msg
 
 
-class BaseMailSender:
-
+class BaseMailSender(ABC):
     @classmethod
-    def from_crawler(cls, crawler):
+    @abstractmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
         raise NotImplementedError
 
+    @abstractmethod
     def send(
         self,
-        to,
-        subject,
-        body,
-        cc=None,
-        attachs=(),
-        mimetype="text/plain",
-        charset=None,
-        _callback=None,
-    ):
+        to: str | list[str],
+        subject: str,
+        body: str,
+        cc: str | list[str] | None = None,
+        attachs: Sequence[tuple[str, str, IO[Any]]] = (),
+        mimetype: str = "text/plain",
+        charset: str | None = None,
+    ) -> Deferred[None] | None:
         raise NotImplementedError
 
 
@@ -169,16 +170,12 @@ class MailSender(BaseMailSender):
         attachs: Sequence[tuple[str, str, IO[Any]]] = (),
         mimetype: str = "text/plain",
         charset: str | None = None,
-        _callback: Callable[..., None] | None = None,
     ) -> Deferred[None] | None:
         from twisted.internet import reactor
 
         msg = create_email_message(
             self.mailfrom, to, subject, body, cc, attachs, mimetype, charset
         )
-
-        if _callback:
-            _callback(to=to, subject=subject, body=body, cc=cc, attach=attachs, msg=msg)
 
         if self.debug:
             logger.debug(
@@ -288,38 +285,38 @@ class SESMailSender(BaseMailSender):
 
     def __init__(
         self,
-        aws_access_key,
-        aws_secret_key,
-        aws_region,
-        mailfrom="scrapy@localhost",
-        debug=False,
+        aws_access_key: str,
+        aws_secret_key: str,
+        aws_region_name: str,
+        mailfrom: str = "scrapy@localhost",
+        debug: bool = False,
     ):
-        self.aws_access_key = aws_access_key
-        self.aws_secret_key = aws_secret_key
-        self.aws_region = aws_region
-        self.mailfrom = mailfrom
-        self.debug = debug
+        self.aws_access_key: str = aws_access_key
+        self.aws_secret_key: str = aws_secret_key
+        self.aws_region_name: str = aws_region_name
+        self.mailfrom: str = mailfrom
+        self.debug: bool = debug
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         settings = crawler.settings
         return cls(
             aws_access_key=settings["AWS_ACCESS_KEY_ID"],
             aws_secret_key=settings["AWS_SECRET_ACCESS_KEY"],
-            aws_region=settings["AWS_REGION"],
+            aws_region_name=settings["AWS_REGION_NAME"],
             mailfrom=settings["MAIL_FROM"],
         )
 
     def send(
         self,
-        to,
-        subject,
-        body,
-        cc=None,
-        attachs=(),
-        mimetype="text/plain",
-        charset=None,
-    ):
+        to: str | list[str],
+        subject: str,
+        body: str,
+        cc: str | list[str] | None = None,
+        attachs: Sequence[tuple[str, str, IO[Any]]] = (),
+        mimetype: str = "text/plain",
+        charset: str | None = None,
+    ) -> Deferred[None] | None:
         import boto3
 
         msg = create_email_message(
@@ -337,12 +334,13 @@ class SESMailSender(BaseMailSender):
                     "mailattachs": len(attachs),
                 },
             )
-            return
+            return None
 
         ses_client = boto3.client(
             "ses",
             aws_access_key_id=self.aws_access_key,
             aws_secret_access_key=self.aws_secret_key,
-            region_name=self.aws_region,
+            region_name=self.aws_region_name,
         )
         ses_client.send_raw_email(RawMessage={"Data": msg.as_string()})
+        return None

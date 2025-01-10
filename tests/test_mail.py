@@ -3,11 +3,11 @@ from email.charset import Charset
 from io import BytesIO
 from unittest import mock
 
+import pytest
 from twisted.internet import defer
 from twisted.internet._sslverify import ClientTLSOptions
 
 from scrapy.mail import MailSender, SESMailSender, create_email_message
-from scrapy.utils.test import is_module_installed
 
 
 class SESMailSenderTest(unittest.TestCase):
@@ -20,18 +20,18 @@ class SESMailSenderTest(unittest.TestCase):
             SESMailSender("ONE_CREDENTIAL", "OTHER_CREDENTIAL")
 
         # This must work
-        SESMailSender("aws_access_key", "aws_secret_key", "aws_region")
+        SESMailSender("aws_access_key", "aws_secret_key", "aws_region_name")
 
-    @unittest.skipUnless(is_module_installed("boto3"), "boto3 is not installed")
+    @pytest.mark.requires_boto3
     @mock.patch("boto3.client")
     def test_if_debug_do_not_send_message(self, boto3_client):
         sender = SESMailSender(
-            "aws_access_key", "aws_secret_key", "aws_region", debug=True
+            "aws_access_key", "aws_secret_key", "aws_region_name", debug=True
         )
         sender.send("to@scrapy.org", "subject", "body")
         boto3_client.assert_not_called()
 
-    @unittest.skipUnless(is_module_installed("boto3"), "boto3 is not installed")
+    @pytest.mark.requires_boto3
     @mock.patch("boto3.client")
     def test_send_message_if_not_debug(self, boto3_client):
         ses_client_mock = mock.MagicMock()
@@ -39,7 +39,7 @@ class SESMailSenderTest(unittest.TestCase):
         ses_client_mock.send_raw_email.return_value = lambda x: x
         boto3_client.return_value = ses_client_mock
 
-        sender = SESMailSender("aws_access_key", "aws_secret_key", "aws_region")
+        sender = SESMailSender("aws_access_key", "aws_secret_key", "aws_region_name")
         sender.send("to@scrapy.org", "subject", "body")
 
         ses_client_mock.send_raw_email.assert_called_once()
@@ -99,9 +99,6 @@ class CreateMessageTestCase(unittest.TestCase):
         self.assertEqual(text.get_payload(decode=True), b"body")
         self.assertEqual(text.get_charset(), Charset("us-ascii"))
         self.assertEqual(attach.get_payload(decode=True), b"content")
-
-    def _catch_mail_sent(self, **kwargs):
-        self.catched_msg = {**kwargs}
 
     def test_utf8_message(self):
         subject = "sübjèçt"

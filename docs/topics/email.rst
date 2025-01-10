@@ -93,19 +93,21 @@ interfering with the non-blocking IO of the crawler.
 SESMailSender
 -------------
 
-SESMailSender provides an easy API for sending emails from Scrapy using `Amazon Simple Email Service`_. The AWS credentials can be passed in the class constructor, or they can be
-passed through the following settings (if initialized using `from_crawler` method):
+SESMailSender provides an easy API for sending emails from Scrapy using `Amazon
+Simple Email Service`_. The AWS credentials can be passed in the class
+constructor, or they can be passed through the following settings (if
+initialized using the :meth:`SESMailSender.from_crawler` method):
 
  * :setting:`AWS_ACCESS_KEY_ID`
  * :setting:`AWS_SECRET_ACCESS_KEY`
- * :setting:`AWS_REGION`
+ * :setting:`AWS_REGION_NAME`
 
 `boto3`_ external library must be installed to use this class.
 
 .. _Amazon Simple Email Service: https://aws.amazon.com/pt/ses/
 .. _boto3: https://pypi.org/project/boto3/
 
-.. class:: SESMailSender(aws_access_key, aws_secret_key, aws_region, mailfrom='scrapy@localhost')
+.. class:: SESMailSender(aws_access_key, aws_secret_key, aws_region_name, mailfrom='scrapy@localhost')
 
     :param aws_access_key: AWS Access Key
     :type aws_access_key: str
@@ -113,8 +115,8 @@ passed through the following settings (if initialized using `from_crawler` metho
     :param aws_secret_key: AWS Secret Key
     :type aws_secret_key: str
 
-    :param aws_region: AWS Region
-    :type aws_region: str
+    :param aws_region_name: AWS Region
+    :type aws_region_name: str
 
     :param mailfrom: the address used to send emails (in the ``From:`` header).
       If omitted, the :setting:`MAIL_FROM` setting will be used.
@@ -123,7 +125,7 @@ passed through the following settings (if initialized using `from_crawler` metho
     .. classmethod:: from_crawler(crawler)
 
         Instantiate using a :class:`scrapy.Crawler` instance, which will
-        respect :ref:`these Scrapy settings <topics-email-settings>`.
+        respect the ``AWS_*`` settings.
 
         :param crawler: the crawler
         :type settings: :class:`scrapy.Crawler` object
