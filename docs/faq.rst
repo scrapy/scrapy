@@ -22,8 +22,8 @@ In other words, comparing `BeautifulSoup`_ (or `lxml`_) to Scrapy is like
 comparing `jinja2`_ to `Django`_.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
-.. _lxml: http://lxml.de/
-.. _jinja2: http://jinja.pocoo.org/
+.. _lxml: https://lxml.de/
+.. _jinja2: https://palletsprojects.com/projects/jinja/
 .. _Django: https://www.djangoproject.com/
 
 Can I use Scrapy with BeautifulSoup?
@@ -35,8 +35,10 @@ for parsing HTML responses in Scrapy callbacks.
 You just have to feed the response's body into a ``BeautifulSoup`` object
 and extract whatever data you need from it.
 
-Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML parser::
+Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML parser:
 
+.. skip: next
+.. code-block:: python
 
     from bs4 import BeautifulSoup
     import scrapy
@@ -45,17 +47,12 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
     class ExampleSpider(scrapy.Spider):
         name = "example"
         allowed_domains = ["example.com"]
-        start_urls = (
-            'http://www.example.com/',
-        )
+        start_urls = ("http://www.example.com/",)
 
         def parse(self, response):
             # use lxml to get decent HTML parsing speed
-            soup = BeautifulSoup(response.text, 'lxml')
-            yield {
-                "url": response.url,
-                "title": soup.h1.string
-            }
+            soup = BeautifulSoup(response.text, "lxml")
+            yield {"url": response.url, "title": soup.h1.string}
 
 .. note::
 
@@ -64,20 +61,6 @@ Here's an example spider using BeautifulSoup API, with ``lxml`` as the HTML pars
 
 .. _BeautifulSoup's official documentation: https://www.crummy.com/software/BeautifulSoup/bs4/doc/#specifying-the-parser-to-use
 
-.. _faq-python-versions:
-
-What Python versions does Scrapy support?
------------------------------------------
-
-Scrapy is supported under Python 2.7 and Python 3.4+
-under CPython (default Python implementation) and PyPy (starting with PyPy 5.9).
-Python 2.6 support was dropped starting at Scrapy 0.20.
-Python 3 support was added in Scrapy 1.1.
-PyPy support was added in Scrapy 1.4, PyPy3 support was added in Scrapy 1.5.
-
-.. note::
-    For Python 3 support on Windows, it is recommended to use
-    Anaconda/Miniconda as :ref:`outlined in the installation guide <intro-install-windows>`.
 
 Did Scrapy "steal" X from Django?
 ---------------------------------
@@ -108,15 +91,6 @@ How can I scrape an item with attributes in different pages?
 
 See :ref:`topics-request-response-ref-request-callback-arguments`.
 
-
-Scrapy crashes with: ImportError: No module named win32api
-----------------------------------------------------------
-
-You need to install `pywin32`_ because of `this Twisted bug`_.
-
-.. _pywin32: https://sourceforge.net/projects/pywin32/
-.. _this Twisted bug: https://twistedmatrix.com/trac/ticket/3707
-
 How can I simulate a user login in my spider?
 ---------------------------------------------
 
@@ -129,12 +103,24 @@ Does Scrapy crawl in breadth-first or depth-first order?
 
 By default, Scrapy uses a `LIFO`_ queue for storing pending requests, which
 basically means that it crawls in `DFO order`_. This order is more convenient
-in most cases. If you do want to crawl in true `BFO order`_, you can do it by
-setting the following settings::
+in most cases.
+
+If you do want to crawl in true `BFO order`_, you can do it by
+setting the following settings:
+
+.. code-block:: python
 
     DEPTH_PRIORITY = 1
-    SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleFifoDiskQueue'
-    SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.FifoMemoryQueue'
+    SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
+    SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
+
+While pending requests are below the configured values of
+:setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
+:setting:`CONCURRENT_REQUESTS_PER_IP`, those requests are sent
+concurrently. As a result, the first few requests of a crawl rarely follow the
+desired order. Lowering those settings to ``1`` enforces the desired order, but
+it significantly slows down the crawl as a whole.
+
 
 My Scrapy crawler has memory leaks. What can I do?
 --------------------------------------------------
@@ -148,6 +134,40 @@ How can I make Scrapy consume less memory?
 ------------------------------------------
 
 See previous question.
+
+How can I prevent memory errors due to many allowed domains?
+------------------------------------------------------------
+
+If you have a spider with a long list of :attr:`~scrapy.Spider.allowed_domains`
+(e.g. 50,000+), consider replacing the default
+:class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` downloader
+middleware with a :ref:`custom downloader middleware
+<topics-downloader-middleware-custom>` that requires less memory. For example:
+
+-   If your domain names are similar enough, use your own regular expression
+    instead joining the strings in :attr:`~scrapy.Spider.allowed_domains` into
+    a complex regular expression.
+
+-   If you can meet the installation requirements, use pyre2_ instead of
+    Python’s re_ to compile your URL-filtering regular expression. See
+    :issue:`1908`.
+
+See also `other suggestions at StackOverflow
+<https://stackoverflow.com/q/36440681>`__.
+
+.. note:: Remember to disable
+   :class:`scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` when you
+   enable your custom implementation:
+
+   .. code-block:: python
+
+       DOWNLOADER_MIDDLEWARES = {
+           "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": None,
+           "myproject.middlewares.CustomOffsiteMiddleware": 50,
+       }
+
+.. _pyre2: https://github.com/andreasvc/pyre2
+.. _re: https://docs.python.org/3/library/re.html
 
 Can I use Basic HTTP Authentication in my spiders?
 --------------------------------------------------
@@ -183,12 +203,10 @@ I get "Filtered offsite request" messages. How can I fix them?
 Those messages (logged with ``DEBUG`` level) don't necessarily mean there is a
 problem, so you may not need to fix them.
 
-Those messages are thrown by the Offsite Spider Middleware, which is a spider
-middleware (enabled by default) whose purpose is to filter out requests to
-domains outside the ones covered by the spider.
-
-For more info see:
-:class:`~scrapy.spidermiddlewares.offsite.OffsiteMiddleware`.
+Those messages are thrown by
+:class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware`, which is a
+downloader middleware (enabled by default) whose purpose is to filter out
+requests to domains outside the ones covered by the spider.
 
 What is the recommended way to deploy a Scrapy crawler in production?
 ---------------------------------------------------------------------
@@ -208,16 +226,20 @@ Can I return (Twisted) deferreds from signal handlers?
 Some signals support returning deferreds from their handlers, others don't. See
 the :ref:`topics-signals-ref` to know which ones.
 
-What does the response status code 999 means?
----------------------------------------------
+What does the response status code 999 mean?
+--------------------------------------------
 
 999 is a custom response status code used by Yahoo sites to throttle requests.
 Try slowing down the crawling speed by using a download delay of ``2`` (or
-higher) in your spider::
+higher) in your spider:
+
+.. code-block:: python
+
+    from scrapy.spiders import CrawlSpider
+
 
     class MySpider(CrawlSpider):
-
-        name = 'myspider'
+        name = "myspider"
 
         download_delay = 2
 
@@ -240,15 +262,15 @@ Simplest way to dump all my scraped items into a JSON/CSV/XML file?
 
 To dump into a JSON file::
 
-    scrapy crawl myspider -o items.json
+    scrapy crawl myspider -O items.json
 
 To dump into a CSV file::
 
-    scrapy crawl myspider -o items.csv
+    scrapy crawl myspider -O items.csv
 
-To dump into a XML file::
+To dump into an XML file::
 
-    scrapy crawl myspider -o items.xml
+    scrapy crawl myspider -O items.xml
 
 For more information see :ref:`topics-feed-exports`
 
@@ -259,7 +281,7 @@ The ``__VIEWSTATE`` parameter is used in sites built with ASP.NET/VB.NET. For
 more info on how it works see `this page`_. Also, here's an `example spider`_
 which scrapes one of these sites.
 
-.. _this page: http://search.cpan.org/~ecarroll/HTML-TreeBuilderX-ASP_NET-0.09/lib/HTML/TreeBuilderX/ASP_NET.pm
+.. _this page: https://metacpan.org/release/ECARROLL/HTML-TreeBuilderX-ASP_NET-0.09/view/lib/HTML/TreeBuilderX/ASP_NET.pm
 .. _example spider: https://github.com/AmbientLighter/rpn-fas/blob/master/fas/spiders/rnp.py
 
 What's the best way to parse big XML/CSV data feeds?
@@ -270,9 +292,13 @@ build the DOM of the entire feed in memory, and this can be quite slow and
 consume a lot of memory.
 
 In order to avoid parsing all the entire feed at once in memory, you can use
-the functions ``xmliter`` and ``csviter`` from ``scrapy.utils.iterators``
-module. In fact, this is what the feed spiders (see :ref:`topics-spiders`) use
-under the cover.
+the :func:`~scrapy.utils.iterators.xmliter_lxml` and
+:func:`~scrapy.utils.iterators.csviter` functions. In fact, this is what
+:class:`~scrapy.spiders.XMLFeedSpider` uses.
+
+.. autofunction:: scrapy.utils.iterators.xmliter_lxml
+
+.. autofunction:: scrapy.utils.iterators.csviter
 
 Does Scrapy manage cookies automatically?
 -----------------------------------------
@@ -319,6 +345,94 @@ I'm scraping a XML document and my XPath selector doesn't return any items
 
 You may need to remove namespaces. See :ref:`removing-namespaces`.
 
+
+.. _faq-split-item:
+
+How to split an item into multiple items in an item pipeline?
+-------------------------------------------------------------
+
+:ref:`Item pipelines <topics-item-pipeline>` cannot yield multiple items per
+input item. :ref:`Create a spider middleware <custom-spider-middleware>`
+instead, and use its
+:meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
+method for this purpose. For example:
+
+.. code-block:: python
+
+    from copy import deepcopy
+
+    from itemadapter import is_item, ItemAdapter
+
+
+    class MultiplyItemsMiddleware:
+        def process_spider_output(self, response, result, spider):
+            for item in result:
+                if is_item(item):
+                    adapter = ItemAdapter(item)
+                    for _ in range(adapter["multiply_by"]):
+                        yield deepcopy(item)
+
+Does Scrapy support IPv6 addresses?
+-----------------------------------
+
+Yes, by setting :setting:`DNS_RESOLVER` to ``scrapy.resolver.CachingHostnameResolver``.
+Note that by doing so, you lose the ability to set a specific timeout for DNS requests
+(the value of the :setting:`DNS_TIMEOUT` setting is ignored).
+
+
+.. _faq-specific-reactor:
+
+How to deal with ``<class 'ValueError'>: filedescriptor out of range in select()`` exceptions?
+----------------------------------------------------------------------------------------------
+
+This issue `has been reported`_ to appear when running broad crawls in macOS, where the default
+Twisted reactor is :class:`twisted.internet.selectreactor.SelectReactor`. Switching to a
+different reactor is possible by using the :setting:`TWISTED_REACTOR` setting.
+
+
+.. _faq-stop-response-download:
+
+How can I cancel the download of a given response?
+--------------------------------------------------
+
+In some situations, it might be useful to stop the download of a certain response.
+For instance, sometimes you can determine whether or not you need the full contents
+of a response by inspecting its headers or the first bytes of its body. In that case,
+you could save resources by attaching a handler to the :class:`~scrapy.signals.bytes_received`
+or :class:`~scrapy.signals.headers_received` signals and raising a
+:exc:`~scrapy.exceptions.StopDownload` exception. Please refer to the
+:ref:`topics-stop-response-download` topic for additional information and examples.
+
+
+.. _faq-blank-request:
+
+How can I make a blank request?
+-------------------------------
+
+.. code-block:: python
+    
+    from scrapy import Request
+
+
+    blank_request = Request("data:,")
+
+In this case, the URL is set to a data URI scheme. Data URLs allow you to include data
+inline within web pages, similar to external resources. The "data:" scheme with an empty
+content (",") essentially creates a request to a data URL without any specific content.
+
+
+Running ``runspider`` I get ``error: No spider found in file: <filename>``
+--------------------------------------------------------------------------
+
+This may happen if your Scrapy project has a spider module with a name that
+conflicts with the name of one of the `Python standard library modules`_, such
+as ``csv.py`` or ``os.py``, or any `Python package`_ that you have installed.
+See :issue:`2680`.
+
+
+.. _has been reported: https://github.com/scrapy/scrapy/issues/2905
+.. _Python standard library modules: https://docs.python.org/3/py-modindex.html
+.. _Python package: https://pypi.org/
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
 .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
 .. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search

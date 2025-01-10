@@ -1,89 +1,127 @@
-from scrapy.item import BaseItem
-from scrapy.http import Request
-from scrapy.exceptions import ContractFail
+from __future__ import annotations
 
-from . import Contract
+import json
+from typing import Any, Callable
+
+from itemadapter import ItemAdapter, is_item
+
+from scrapy.contracts import Contract
+from scrapy.exceptions import ContractFail
+from scrapy.http import Request
 
 
 # contracts
 class UrlContract(Contract):
-    """ Contract to set the url of the request (mandatory)
-        @url http://scrapy.org
+    """Contract to set the url of the request (mandatory)
+    @url http://scrapy.org
     """
 
-    name = 'url'
+    name = "url"
 
-    def adjust_request_args(self, args):
-        args['url'] = self.args[0]
+    def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
+        args["url"] = self.args[0]
+        return args
+
+
+class CallbackKeywordArgumentsContract(Contract):
+    """Contract to set the keyword arguments for the request.
+    The value should be a JSON-encoded dictionary, e.g.:
+
+    @cb_kwargs {"arg1": "some value"}
+    """
+
+    name = "cb_kwargs"
+
+    def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
+        args["cb_kwargs"] = json.loads(" ".join(self.args))
+        return args
+
+
+class MetadataContract(Contract):
+    """Contract to set metadata arguments for the request.
+    The value should be JSON-encoded dictionary, e.g.:
+
+    @meta {"arg1": "some value"}
+    """
+
+    name = "meta"
+
+    def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
+        args["meta"] = json.loads(" ".join(self.args))
         return args
 
 
 class ReturnsContract(Contract):
-    """ Contract to check the output of a callback
+    """Contract to check the output of a callback
 
-        general form:
-        @returns request(s)/item(s) [min=1 [max]]
+    general form:
+    @returns request(s)/item(s) [min=1 [max]]
 
-        e.g.:
-        @returns request
-        @returns request 2
-        @returns request 2 10
-        @returns request 0 10
+    e.g.:
+    @returns request
+    @returns request 2
+    @returns request 2 10
+    @returns request 0 10
     """
 
-    name = 'returns'
-    objects = {
-        'request': Request,
-        'requests': Request,
-        'item': (BaseItem, dict),
-        'items': (BaseItem, dict),
+    name = "returns"
+    object_type_verifiers: dict[str | None, Callable[[Any], bool]] = {
+        "request": lambda x: isinstance(x, Request),
+        "requests": lambda x: isinstance(x, Request),
+        "item": is_item,
+        "items": is_item,
     }
 
-    def __init__(self, *args, **kwargs):
-        super(ReturnsContract, self).__init__(*args, **kwargs)
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
 
-        assert len(self.args) in [1, 2, 3]
+        if len(self.args) not in [1, 2, 3]:
+            raise ValueError(
+                f"Incorrect argument quantity: expected 1, 2 or 3, got {len(self.args)}"
+            )
         self.obj_name = self.args[0] or None
-        self.obj_type = self.objects[self.obj_name]
+        self.obj_type_verifier = self.object_type_verifiers[self.obj_name]
 
         try:
-            self.min_bound = int(self.args[1])
+            self.min_bound: float = int(self.args[1])
         except IndexError:
             self.min_bound = 1
 
         try:
-            self.max_bound = int(self.args[2])
+            self.max_bound: float = int(self.args[2])
         except IndexError:
-            self.max_bound = float('inf')
+            self.max_bound = float("inf")
 
-    def post_process(self, output):
+    def post_process(self, output: list[Any]) -> None:
         occurrences = 0
         for x in output:
-            if isinstance(x, self.obj_type):
+            if self.obj_type_verifier(x):
                 occurrences += 1
 
-        assertion = (self.min_bound <= occurrences <= self.max_bound)
+        assertion = self.min_bound <= occurrences <= self.max_bound
 
         if not assertion:
             if self.min_bound == self.max_bound:
-                expected = self.min_bound
+                expected = str(self.min_bound)
             else:
-                expected = '%s..%s' % (self.min_bound, self.max_bound)
+                expected = f"{self.min_bound}..{self.max_bound}"
 
-            raise ContractFail("Returned %s %s, expected %s" % \
-                (occurrences, self.obj_name, expected))
+            raise ContractFail(
+                f"Returned {occurrences} {self.obj_name}, expected {expected}"
+            )
 
 
 class ScrapesContract(Contract):
-    """ Contract to check presence of fields in scraped items
-        @scrapes page_name page_body
+    """Contract to check presence of fields in scraped items
+    @scrapes page_name page_body
     """
 
-    name = 'scrapes'
+    name = "scrapes"
 
-    def post_process(self, output):
+    def post_process(self, output: list[Any]) -> None:
         for x in output:
-            if isinstance(x, (BaseItem, dict)):
-                for arg in self.args:
-                    if not arg in x:
-                        raise ContractFail("'%s' field is missing" % arg)
+            if is_item(x):
+                missing = [arg for arg in self.args if arg not in ItemAdapter(x)]
+                if missing:
+                    missing_fields = ", ".join(missing)
+                    raise ContractFail(f"Missing fields: {missing_fields}")

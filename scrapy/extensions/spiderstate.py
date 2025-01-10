@@ -1,18 +1,28 @@
-import os
-from six.moves import cPickle as pickle
+from __future__ import annotations
 
-from scrapy import signals
+import pickle
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.job import job_dir
 
-class SpiderState(object):
+if TYPE_CHECKING:
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
+
+
+class SpiderState:
     """Store and load spider state during a scraping job"""
 
-    def __init__(self, jobdir=None):
-        self.jobdir = jobdir
+    def __init__(self, jobdir: str | None = None):
+        self.jobdir: str | None = jobdir
 
     @classmethod
-    def from_crawler(cls, crawler):
+    def from_crawler(cls, crawler: Crawler) -> Self:
         jobdir = job_dir(crawler.settings)
         if not jobdir:
             raise NotConfigured
@@ -22,18 +32,20 @@ class SpiderState(object):
         crawler.signals.connect(obj.spider_opened, signal=signals.spider_opened)
         return obj
 
-    def spider_closed(self, spider):
+    def spider_closed(self, spider: Spider) -> None:
         if self.jobdir:
-            with open(self.statefn, 'wb') as f:
-                pickle.dump(spider.state, f, protocol=2)
+            with Path(self.statefn).open("wb") as f:
+                assert hasattr(spider, "state")  # set in spider_opened
+                pickle.dump(spider.state, f, protocol=4)
 
-    def spider_opened(self, spider):
-        if self.jobdir and os.path.exists(self.statefn):
-            with open(self.statefn, 'rb') as f:
-                spider.state = pickle.load(f)
+    def spider_opened(self, spider: Spider) -> None:
+        if self.jobdir and Path(self.statefn).exists():
+            with Path(self.statefn).open("rb") as f:
+                spider.state = pickle.load(f)  # type: ignore[attr-defined]  # noqa: S301
         else:
-            spider.state = {}
+            spider.state = {}  # type: ignore[attr-defined]
 
     @property
-    def statefn(self):
-        return os.path.join(self.jobdir, 'spider.state')
+    def statefn(self) -> str:
+        assert self.jobdir
+        return str(Path(self.jobdir, "spider.state"))

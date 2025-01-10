@@ -7,6 +7,8 @@ Common Practices
 This section documents common practices when using Scrapy. These are things
 that cover many topics and don't often fall into any other specific section.
 
+.. skip: start
+
 .. _run-from-script:
 
 Run Scrapy from a script
@@ -25,24 +27,30 @@ the one used by all Scrapy commands.
 
 Here's an example showing how to run a single spider with it.
 
-::
+.. code-block:: python
 
     import scrapy
     from scrapy.crawler import CrawlerProcess
+
 
     class MySpider(scrapy.Spider):
         # Your spider definition
         ...
 
-    process = CrawlerProcess({
-        'USER_AGENT': 'Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)'
-    })
+
+    process = CrawlerProcess(
+        settings={
+            "FEEDS": {
+                "items.json": {"format": "json"},
+            },
+        }
+    )
 
     process.crawl(MySpider)
-    process.start() # the script will block here until the crawling is finished
+    process.start()  # the script will block here until the crawling is finished
 
-Make sure to check :class:`~scrapy.crawler.CrawlerProcess` documentation to get
-acquainted with its usage details.
+Define settings within dictionary in CrawlerProcess. Make sure to check :class:`~scrapy.crawler.CrawlerProcess`
+documentation to get acquainted with its usage details.
 
 If you are inside a Scrapy project there are some additional helpers you can
 use to import those components within the project. You can automatically import
@@ -53,7 +61,7 @@ instance with your project settings.
 What follows is a working example of how to do that, using the `testspiders`_
 project as example.
 
-::
+.. code-block:: python
 
     from scrapy.crawler import CrawlerProcess
     from scrapy.utils.project import get_project_settings
@@ -61,8 +69,8 @@ project as example.
     process = CrawlerProcess(get_project_settings())
 
     # 'followall' is the name of one of the spiders of the project.
-    process.crawl('followall', domain='scrapinghub.com')
-    process.start() # the script will block here until the crawling is finished
+    process.crawl("followall", domain="scrapy.org")
+    process.start()  # the script will block here until the crawling is finished
 
 There's another Scrapy utility that provides more control over the crawling
 process: :class:`scrapy.crawler.CrawlerRunner`. This class is a thin wrapper
@@ -80,27 +88,59 @@ returned by the :meth:`CrawlerRunner.crawl
 <scrapy.crawler.CrawlerRunner.crawl>` method.
 
 Here's an example of its usage, along with a callback to manually stop the
-reactor after `MySpider` has finished running.
+reactor after ``MySpider`` has finished running.
 
-::
+.. code-block:: python
 
-    from twisted.internet import reactor
     import scrapy
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
+
 
     class MySpider(scrapy.Spider):
         # Your spider definition
         ...
 
-    configure_logging({'LOG_FORMAT': '%(levelname)s: %(message)s'})
+
+    configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
     runner = CrawlerRunner()
 
     d = runner.crawl(MySpider)
-    d.addBoth(lambda _: reactor.stop())
-    reactor.run() # the script will block here until the crawling is finished
 
-.. seealso:: `Twisted Reactor Overview`_.
+    from twisted.internet import reactor
+
+    d.addBoth(lambda _: reactor.stop())
+    reactor.run()  # the script will block here until the crawling is finished
+
+Same example but using a non-default reactor, it's only necessary call
+``install_reactor`` if you are using ``CrawlerRunner`` since ``CrawlerProcess`` already does this automatically.
+
+.. code-block:: python
+
+    import scrapy
+    from scrapy.crawler import CrawlerRunner
+    from scrapy.utils.log import configure_logging
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+
+    from scrapy.utils.reactor import install_reactor
+
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    runner = CrawlerRunner()
+    d = runner.crawl(MySpider)
+
+    from twisted.internet import reactor
+
+    d.addBoth(lambda _: reactor.stop())
+    reactor.run()  # the script will block here until the crawling is finished
+
+.. seealso:: :doc:`twisted:core/howto/reactor-basics`
 
 .. _run-multiple-spiders:
 
@@ -113,68 +153,86 @@ the :ref:`internal API <topics-api>`.
 
 Here is an example that runs multiple spiders simultaneously:
 
-::
+.. code-block:: python
 
     import scrapy
     from scrapy.crawler import CrawlerProcess
+    from scrapy.utils.project import get_project_settings
+
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
 
+
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
 
-    process = CrawlerProcess()
+
+    settings = get_project_settings()
+    process = CrawlerProcess(settings)
     process.crawl(MySpider1)
     process.crawl(MySpider2)
-    process.start() # the script will block here until all crawling jobs are finished
+    process.start()  # the script will block here until all crawling jobs are finished
 
 Same example using :class:`~scrapy.crawler.CrawlerRunner`:
 
-::
+.. code-block:: python
 
     import scrapy
-    from twisted.internet import reactor
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
+    from scrapy.utils.project import get_project_settings
+
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
 
+
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
 
+
     configure_logging()
-    runner = CrawlerRunner()
+    settings = get_project_settings()
+    runner = CrawlerRunner(settings)
     runner.crawl(MySpider1)
     runner.crawl(MySpider2)
     d = runner.join()
+
+    from twisted.internet import reactor
+
     d.addBoth(lambda _: reactor.stop())
 
-    reactor.run() # the script will block here until all crawling jobs are finished
+    reactor.run()  # the script will block here until all crawling jobs are finished
 
 Same example but running the spiders sequentially by chaining the deferreds:
 
-::
+.. code-block:: python
 
-    from twisted.internet import reactor, defer
+    from twisted.internet import defer
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
+    from scrapy.utils.project import get_project_settings
+
 
     class MySpider1(scrapy.Spider):
         # Your first spider definition
         ...
 
+
     class MySpider2(scrapy.Spider):
         # Your second spider definition
         ...
 
-    configure_logging()
-    runner = CrawlerRunner()
+
+    settings = get_project_settings()
+    configure_logging(settings)
+    runner = CrawlerRunner(settings)
+
 
     @defer.inlineCallbacks
     def crawl():
@@ -182,10 +240,34 @@ Same example but running the spiders sequentially by chaining the deferreds:
         yield runner.crawl(MySpider2)
         reactor.stop()
 
+
+    from twisted.internet import reactor
+
     crawl()
-    reactor.run() # the script will block here until the last crawl call is finished
+    reactor.run()  # the script will block here until the last crawl call is finished
+
+Different spiders can set different values for the same setting, but when they
+run in the same process it may be impossible, by design or because of some
+limitations, to use these different values. What happens in practice is
+different for different settings:
+
+* :setting:`SPIDER_LOADER_CLASS` and the ones used by its value
+  (:setting:`SPIDER_MODULES`, :setting:`SPIDER_LOADER_WARN_ONLY` for the
+  default one) cannot be read from the per-spider settings. These are applied
+  when the :class:`~scrapy.crawler.CrawlerRunner` or
+  :class:`~scrapy.crawler.CrawlerProcess` object is created.
+* For :setting:`TWISTED_REACTOR` and :setting:`ASYNCIO_EVENT_LOOP` the first
+  available value is used, and if a spider requests a different reactor an
+  exception will be raised. These are applied when the reactor is installed.
+* For :setting:`REACTOR_THREADPOOL_MAXSIZE`, :setting:`DNS_RESOLVER` and the
+  ones used by the resolver (:setting:`DNSCACHE_ENABLED`,
+  :setting:`DNSCACHE_SIZE`, :setting:`DNS_TIMEOUT` for ones included in Scrapy)
+  the first available value is used. These are applied when the reactor is
+  started.
 
 .. seealso:: :ref:`run-from-script`.
+
+.. skip: end
 
 .. _distributed-crawls:
 
@@ -235,14 +317,14 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
 * disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use
   cookies to spot bot behaviour
 * use download delays (2 or higher). See :setting:`DOWNLOAD_DELAY` setting.
-* if possible, use `Google cache`_ to fetch pages, instead of hitting the sites
+* if possible, use `Common Crawl`_ to fetch pages, instead of hitting the sites
   directly
 * use a pool of rotating IPs. For example, the free `Tor project`_ or paid
   services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
   super proxy that you can attach your own proxies to.
-* use a highly distributed downloader that circumvents bans internally, so you
-  can just focus on parsing clean pages. One example of such downloaders is
-  `Crawlera`_
+* use a ban avoidance service, such as `Zyte API`_, which provides a `Scrapy
+  plugin <https://github.com/scrapy-plugins/scrapy-zyte-api>`__ and additional 
+  features, like `AI web scraping <https://www.zyte.com/ai-web-scraping/>`__
 
 If you are still unable to prevent your bot getting banned, consider contacting
 `commercial support`_.
@@ -250,8 +332,7 @@ If you are still unable to prevent your bot getting banned, consider contacting
 .. _Tor project: https://www.torproject.org/
 .. _commercial support: https://scrapy.org/support/
 .. _ProxyMesh: https://proxymesh.com/
-.. _Google cache: http://www.googleguide.com/cached_pages.html
+.. _Common Crawl: https://commoncrawl.org/
 .. _testspiders: https://github.com/scrapinghub/testspiders
-.. _Twisted Reactor Overview: https://twistedmatrix.com/documents/current/core/howto/reactor-basics.html
-.. _Crawlera: https://scrapinghub.com/crawlera
 .. _scrapoxy: https://scrapoxy.io/
+.. _Zyte API: https://docs.zyte.com/zyte-api/get-started.html

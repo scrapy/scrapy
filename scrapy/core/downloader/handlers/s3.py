@@ -1,99 +1,101 @@
-from six.moves.urllib.parse import unquote
+from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
+from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.httpobj import urlparse_cached
-from scrapy.utils.boto import is_botocore
-from .http import HTTPDownloadHandler
+from scrapy.utils.misc import build_from_crawler
+
+if TYPE_CHECKING:
+    from twisted.internet.defer import Deferred
+
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy import Request, Spider
+    from scrapy.crawler import Crawler
+    from scrapy.http import Response
+    from scrapy.settings import BaseSettings
 
 
-def _get_boto_connection():
-    from boto.s3.connection import S3Connection
-
-    class _v19_S3Connection(S3Connection):
-        """A dummy S3Connection wrapper that doesn't do any synchronous download"""
-        def _mexe(self, method, bucket, key, headers, *args, **kwargs):
-            return headers
-
-    class _v20_S3Connection(S3Connection):
-        """A dummy S3Connection wrapper that doesn't do any synchronous download"""
-        def _mexe(self, http_request, *args, **kwargs):
-            http_request.authorize(connection=self)
-            return http_request.headers
-
-    try:
-        import boto.auth
-    except ImportError:
-        _S3Connection = _v19_S3Connection
-    else:
-        _S3Connection = _v20_S3Connection
-
-    return _S3Connection
-
-
-class S3DownloadHandler(object):
-
-    def __init__(self, settings, aws_access_key_id=None, aws_secret_access_key=None, \
-            httpdownloadhandler=HTTPDownloadHandler, **kw):
+class S3DownloadHandler:
+    def __init__(
+        self,
+        settings: BaseSettings,
+        *,
+        crawler: Crawler,
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        aws_session_token: str | None = None,
+        httpdownloadhandler: type[HTTPDownloadHandler] = HTTPDownloadHandler,
+        **kw: Any,
+    ):
+        if not is_botocore_available():
+            raise NotConfigured("missing botocore library")
 
         if not aws_access_key_id:
-            aws_access_key_id = settings['AWS_ACCESS_KEY_ID']
+            aws_access_key_id = settings["AWS_ACCESS_KEY_ID"]
         if not aws_secret_access_key:
-            aws_secret_access_key = settings['AWS_SECRET_ACCESS_KEY']
+            aws_secret_access_key = settings["AWS_SECRET_ACCESS_KEY"]
+        if not aws_session_token:
+            aws_session_token = settings["AWS_SESSION_TOKEN"]
 
         # If no credentials could be found anywhere,
         # consider this an anonymous connection request by default;
         # unless 'anon' was set explicitly (True/False).
-        anon = kw.get('anon')
+        anon = kw.get("anon")
         if anon is None and not aws_access_key_id and not aws_secret_access_key:
-            kw['anon'] = True
-        self.anon = kw.get('anon')
+            kw["anon"] = True
+        self.anon = kw.get("anon")
 
         self._signer = None
-        if is_botocore():
-            import botocore.auth
-            import botocore.credentials
-            kw.pop('anon', None)
-            if kw:
-                raise TypeError('Unexpected keyword arguments: %s' % kw)
-            if not self.anon:
-                SignerCls = botocore.auth.AUTH_TYPE_MAPS['s3']
-                self._signer = SignerCls(botocore.credentials.Credentials(
-                    aws_access_key_id, aws_secret_access_key))
-        else:
-            _S3Connection = _get_boto_connection()
-            try:
-                self.conn = _S3Connection(
-                    aws_access_key_id, aws_secret_access_key, **kw)
-            except Exception as ex:
-                raise NotConfigured(str(ex))
+        import botocore.auth
+        import botocore.credentials
 
-        self._download_http = httpdownloadhandler(settings).download_request
+        kw.pop("anon", None)
+        if kw:
+            raise TypeError(f"Unexpected keyword arguments: {kw}")
+        if not self.anon:
+            assert aws_access_key_id is not None
+            assert aws_secret_access_key is not None
+            SignerCls = botocore.auth.AUTH_TYPE_MAPS["s3"]
+            # botocore.auth.BaseSigner doesn't have an __init__() with args, only subclasses do
+            self._signer = SignerCls(  # type: ignore[call-arg]
+                botocore.credentials.Credentials(
+                    aws_access_key_id, aws_secret_access_key, aws_session_token
+                )
+            )
 
-    def download_request(self, request, spider):
+        _http_handler = build_from_crawler(
+            httpdownloadhandler,
+            crawler,
+        )
+        self._download_http = _http_handler.download_request
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler, **kwargs: Any) -> Self:
+        return cls(crawler.settings, crawler=crawler, **kwargs)
+
+    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         p = urlparse_cached(request)
-        scheme = 'https' if request.meta.get('is_secure') else 'http'
+        scheme = "https" if request.meta.get("is_secure") else "http"
         bucket = p.hostname
-        path = p.path + '?' + p.query if p.query else p.path
-        url = '%s://%s.s3.amazonaws.com%s' % (scheme, bucket, path)
+        path = p.path + "?" + p.query if p.query else p.path
+        url = f"{scheme}://{bucket}.s3.amazonaws.com{path}"
         if self.anon:
             request = request.replace(url=url)
-        elif self._signer is not None:
+        else:
             import botocore.awsrequest
+
             awsrequest = botocore.awsrequest.AWSRequest(
                 method=request.method,
-                url='%s://s3.amazonaws.com/%s%s' % (scheme, bucket, path),
+                url=f"{scheme}://s3.amazonaws.com/{bucket}{path}",
                 headers=request.headers.to_unicode_dict(),
-                data=request.body)
+                data=request.body,
+            )
+            assert self._signer
             self._signer.add_auth(awsrequest)
-            request = request.replace(
-                url=url, headers=awsrequest.headers.items())
-        else:
-            signed_headers = self.conn.make_request(
-                    method=request.method,
-                    bucket=bucket,
-                    key=unquote(p.path),
-                    query_args=unquote(p.query),
-                    headers=request.headers,
-                    data=request.body)
-            request = request.replace(url=url, headers=signed_headers)
+            request = request.replace(url=url, headers=awsrequest.headers.items())
         return self._download_http(request, spider)
