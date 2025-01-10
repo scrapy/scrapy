@@ -656,8 +656,8 @@ class MiscCommandsTest(CommandTest):
 
     def test_command_not_found(self):
         na_msg = """
-list command is not available from this location.
-These commands can only be triggered from within a project: check, crawl, edit, list, parse
+The list command is not available from this location.
+These commands are only available from within a project: check, crawl, edit, list, parse.
 """
         not_found_msg = """
 Unknown command: abc

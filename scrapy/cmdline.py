@@ -134,8 +134,8 @@ def _print_unknown_command_msg(
     if cmdname in proj_only_cmds and not inproject:
         cmd_list = ", ".join(sorted(proj_only_cmds))
         print(
-            f"{cmdname} command is not available from this location.\n"
-            f"These commands can only be triggered from within a project: {cmd_list}\n"
+            f"The {cmdname} command is not available from this location.\n"
+            f"These commands are only available from within a project: {cmd_list}.\n"
         )
     else:
         print(f"Unknown command: {cmdname}\n")
