@@ -965,25 +965,18 @@ fingerprinting class <custom-request-fingerprinter>`. For example:
 
 .. code-block:: python
 
-    from scrapy import Request
     from scrapy.dupefilters import RFPDupeFilter
-    from scrapy.utils.request import RequestFingerprinterProtocol, fingerprint
+    from scrapy.utils.request import fingerprint
 
 
     class CustomRequestFingerprinter:
-        def fingerprint(self, request: Request) -> bytes:
+        def fingerprint(self, request):
             return fingerprint(request, include_headers=["X-ID"])
 
 
     class CustomDupeFilter(RFPDupeFilter):
 
-        def __init__(
-            self,
-            path: str | None = None,
-            debug: bool = False,
-            *,
-            fingerprinter: RequestFingerprinterProtocol | None = None,
-        ) -> None:
+        def __init__(self, path=None, debug=False, *, fingerprinter=None):
             super().__init__(
                 path=path, debug=debug, fingerprinter=CustomRequestFingerprinter()
             )
