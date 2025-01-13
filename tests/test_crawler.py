@@ -95,16 +95,11 @@ class CrawlerTestCase(BaseCrawlerTest):
         class TrackingAddon(ParentAddon):
             instances = []
 
-            def __init__(self, crawler):
+            def __init__(self):
                 TrackingAddon.instances.append(self)
-                self.crawler = crawler
 
             def update_settings(self, settings):
                 pass
-
-            @classmethod
-            def from_crawler(cls, crawler):
-                return cls(crawler)
 
         settings = {
             **BASE_SETTINGS,
@@ -113,10 +108,7 @@ class CrawlerTestCase(BaseCrawlerTest):
             },
         }
         crawler = get_crawler(settings_dict=settings)
-        this_crawler_addon_instances = [
-            i for i in TrackingAddon.instances if i.crawler is crawler
-        ]
-        self.assertEqual(len(this_crawler_addon_instances), 1)
+        self.assertEqual(len(TrackingAddon.instances), 1)
         expected = TrackingAddon.instances[-1]
 
         addon = crawler.get_addon(TrackingAddon)
@@ -945,24 +937,15 @@ class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
 def test_log_scrapy_info(settings, items, caplog):
     with caplog.at_level("INFO"):
         CrawlerProcess(settings)
-    scrapy_version_msg = next(
-        record for record in caplog.records if record.getMessage().startswith("Scrapy ")
-    ).getMessage()
-    expected_scrapy_version_msg = (
-        f"Scrapy {scrapy.__version__} started (bot: scrapybot)"
-    )
-
     assert (
-        scrapy_version_msg == expected_scrapy_version_msg
-    ), f"Got: {scrapy_version_msg}, Expected: {expected_scrapy_version_msg}"
+        caplog.records[0].getMessage()
+        == f"Scrapy {scrapy.__version__} started (bot: scrapybot)"
+    ), repr(caplog.records[0].msg)
     if not items:
-        # we expect the logs to consist of the scrapy version
-        # and the enabled addons
-        assert len(caplog.records) == 2
+        assert len(caplog.records) == 1
         return
-    version_records = [record.getMessage() for record in caplog.records]
+    version_string = caplog.records[1].getMessage()
     expected_items_pattern = "',\n '".join(
         f"{item}': '[^']+('\n +'[^']+)*" for item in items
     )
-    version_pattern = r"^Versions:\n{'" + expected_items_pattern + "'}$"
-    assert any(re.search(version_pattern, record) for record in version_records)
+    assert re.search(r"^Versions:\n{'" + expected_items_pattern + "'}$", version_string)
