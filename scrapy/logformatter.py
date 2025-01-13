@@ -125,7 +125,7 @@ class LogFormatter:
         # that is used in DropItem exception, so a default value is provided
         # inside the first getattr() below
         log_level = getattr(exception, "log_level", "WARNING")
-        severity = getattr(logging, log_level.upper())
+        severity = getattr(logging, log_level)
         return {
             "level": severity,
             "msg": DROPPEDMSG,

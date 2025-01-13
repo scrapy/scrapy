@@ -69,12 +69,28 @@ class LogFormatterTestCase(unittest.TestCase):
         self.assertEqual(lines, ["Dropped: \u2018", "{}"])
 
     def test_dropitem_default_log_level(self):
+        item = {}
         exception = DropItem("Test drop")
-        self.assertEqual(exception.log_level, None)
+        # This test needs to be updated as exception.log_level is manually
+        # assigned the default value here. Instead,
+        # _itemproc_finished() should be mocked to see how it modifies the exception
+        exception.log_level = "WARNING"
+        response = Response("http://www.example.com")
+        logkws = self.formatter.dropped(item, exception, response, self.spider)
+        logline = logkws["msg"] % logkws["args"]
+        lines = logline.splitlines()
+        assert all(isinstance(x, str) for x in lines)
+        self.assertEqual(logkws["level"], 30)
 
     def test_dropitem_custom_log_level(self):
+        item = {}
         exception = DropItem("Test drop", log_level="INFO")
-        self.assertEqual(exception.log_level, "INFO")
+        response = Response("http://www.example.com")
+        logkws = self.formatter.dropped(item, exception, response, self.spider)
+        logline = logkws["msg"] % logkws["args"]
+        lines = logline.splitlines()
+        assert all(isinstance(x, str) for x in lines)
+        self.assertEqual(logkws["level"], 20)
 
     def test_log_formatter(self):
         item = {"key": "value"}
