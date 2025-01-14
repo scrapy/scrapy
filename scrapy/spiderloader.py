@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 
 from zope.interface import implementer
 
-from scrapy.addons import AddonManager
 from scrapy.interfaces import ISpiderLoader
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.spider import iter_spider_classes
@@ -30,7 +29,6 @@ class SpiderLoader:
     """
 
     def __init__(self, settings: BaseSettings):
-        self._load_spider_modules_from_addons(settings)
         self.spider_modules: list[str] = settings.getlist("SPIDER_MODULES")
         self.warn_only: bool = settings.getbool("SPIDER_LOADER_WARN_ONLY")
         self._spiders: dict[str, type[Spider]] = {}
@@ -77,11 +75,6 @@ class SpiderLoader:
                 else:
                     raise
         self._check_name_duplicates()
-
-    def _load_spider_modules_from_addons(self, settings: BaseSettings) -> None:
-        settings.frozen = False
-        AddonManager.load_spider_modules(settings)
-        settings.frozen = True
 
     @classmethod
     def from_settings(cls, settings: BaseSettings) -> Self:

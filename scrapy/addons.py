@@ -9,7 +9,7 @@ from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
-    from scrapy.settings import Settings
+    from scrapy.settings import BaseSettings, Settings
 
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ class AddonManager:
         )
 
     @classmethod
-    def load_spider_modules(cls, settings):
+    def load_early_settings(cls, settings: BaseSettings):
         for clspath in build_component_list(settings["ADDONS"]):
             try:
                 addoncls = load_object(clspath)
