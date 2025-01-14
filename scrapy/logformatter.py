@@ -120,14 +120,12 @@ class LogFormatter:
         spider: Spider,
     ) -> LogFormatterResult:
         """Logs a message when an item is dropped while it is passing through the item pipeline."""
-        # There is a test case called test_dropped under tests/test_logformatter.py
-        # that raises base exception which will not have the attribute log_level
-        # that is used in DropItem exception, so a default value is provided
-        # inside the first getattr() below
-        log_level = getattr(exception, "log_level", "WARNING")
-        severity = getattr(logging, log_level)
+        if (level := getattr(exception, "log_level", None)) is None:
+            level = spider.crawler.settings["DEFAULT_DROPITEM_LOG_LEVEL"]
+        if isinstance(level, str):
+            level = getattr(logging, level)
         return {
-            "level": severity,
+            "level": level,
             "msg": DROPPEDMSG,
             "args": {
                 "exception": exception,

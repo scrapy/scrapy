@@ -425,13 +425,20 @@ DEFAULT_DROPITEM_LOG_LEVEL
 
 Default: ``"WARNING"``
 
-This setting allows you to configure the default log level for dropped items in Scrapy. When an item is dropped using the :exc:`scrapy.exceptions.DropItem` exception, the log level of the corresponding log message will be determined by this setting, unless a specific log level is explicitly provided in the exception.
+Default :ref:`log level <levels>` of messages about dropped items.
 
-For example, an :ref:`item pipeline <topics-item-pipeline>` is a Scrapy component that often uses the :exc:`scrapy.exceptions.DropItem` exception to discard unwanted or invalid items during processing.
+When an item is dropped by raising :exc:`scrapy.exceptions.DropItem` from the
+:func:`process_item` method of an :ref:`item pipeline <topics-item-pipeline>`,
+a message is logged, and by default its log level is the one configured in this
+setting.
 
-Available options are the standard logging levels: ``"DEBUG"``, ``"INFO"``, ``"WARNING"``, ``"ERROR"``, and ``"CRITICAL"``.
+You may specify this log level as an integer (e.g. ``20``), as a log level
+constant (e.g. ``logging.INFO``) or as a string with the name of a log level
+constant (e.g. ``"INFO"``).
 
-To override the log level for a specific drop, you can pass the ``log_level`` argument to the ``DropItem`` exception:
+When writing an item pipeline, you can force a different log level by setting
+:attr:`scrapy.exceptions.DropItem.log_level` in your
+:exc:`scrapy.exceptions.DropItem` exception. For example:
 
 .. code-block:: python
 
@@ -441,7 +448,7 @@ To override the log level for a specific drop, you can pass the ``log_level`` ar
    class MyPipeline:
        def process_item(self, item, spider):
            if not item.get("price"):
-               raise DropItem("Missing price field", log_level="INFO")
+               raise DropItem("Missing price data", log_level="INFO")
            return item
 
 .. setting:: DEFAULT_ITEM_CLASS

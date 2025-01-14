@@ -1,5 +1,7 @@
+import logging
 import unittest
 
+import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.python.failure import Failure
@@ -26,6 +28,7 @@ class LogFormatterTestCase(unittest.TestCase):
     def setUp(self):
         self.formatter = LogFormatter()
         self.spider = Spider("default")
+        self.spider.crawler = get_crawler()
 
     def test_crawled_with_referer(self):
         req = Request("http://www.example.com")
@@ -71,33 +74,58 @@ class LogFormatterTestCase(unittest.TestCase):
     def test_dropitem_default_log_level(self):
         item = {}
         exception = DropItem("Test drop")
-        # This test needs to be updated as exception.log_level is manually
-        # assigned the default value here. Instead,
-        # _itemproc_finished() should be mocked to see how it modifies the exception
-        exception.log_level = "WARNING"
         response = Response("http://www.example.com")
-        logkws = self.formatter.dropped(item, exception, response, self.spider)
-        logline = logkws["msg"] % logkws["args"]
-        lines = logline.splitlines()
-        assert all(isinstance(x, str) for x in lines)
-        self.assertEqual(logkws["level"], 30)
+        spider = Spider("foo")
+        spider.crawler = get_crawler(Spider)
+
+        logkws = self.formatter.dropped(item, exception, response, spider)
+        self.assertEqual(logkws["level"], logging.WARNING)
+
+        spider.crawler.settings.frozen = False
+        spider.crawler.settings["DEFAULT_DROPITEM_LOG_LEVEL"] = logging.INFO
+        spider.crawler.settings.frozen = True
+        logkws = self.formatter.dropped(item, exception, response, spider)
+        self.assertEqual(logkws["level"], logging.INFO)
+
+        spider.crawler.settings.frozen = False
+        spider.crawler.settings["DEFAULT_DROPITEM_LOG_LEVEL"] = "INFO"
+        spider.crawler.settings.frozen = True
+        logkws = self.formatter.dropped(item, exception, response, spider)
+        self.assertEqual(logkws["level"], logging.INFO)
+
+        spider.crawler.settings.frozen = False
+        spider.crawler.settings["DEFAULT_DROPITEM_LOG_LEVEL"] = 10
+        spider.crawler.settings.frozen = True
+        logkws = self.formatter.dropped(item, exception, response, spider)
+        self.assertEqual(logkws["level"], logging.DEBUG)
+
+        spider.crawler.settings.frozen = False
+        spider.crawler.settings["DEFAULT_DROPITEM_LOG_LEVEL"] = 0
+        spider.crawler.settings.frozen = True
+        logkws = self.formatter.dropped(item, exception, response, spider)
+        self.assertEqual(logkws["level"], logging.NOTSET)
+
+        unsupported_value = object()
+        spider.crawler.settings.frozen = False
+        spider.crawler.settings["DEFAULT_DROPITEM_LOG_LEVEL"] = unsupported_value
+        spider.crawler.settings.frozen = True
+        logkws = self.formatter.dropped(item, exception, response, spider)
+        self.assertEqual(logkws["level"], unsupported_value)
+
+        with pytest.raises(TypeError):
+            logging.log(logkws["level"], "message")
 
     def test_dropitem_custom_log_level(self):
         item = {}
-        exception = DropItem("Test drop", log_level="INFO")
         response = Response("http://www.example.com")
-        logkws = self.formatter.dropped(item, exception, response, self.spider)
-        logline = logkws["msg"] % logkws["args"]
-        lines = logline.splitlines()
-        assert all(isinstance(x, str) for x in lines)
-        self.assertEqual(logkws["level"], 20)
 
-    def test_log_formatter(self):
-        item = {"key": "value"}
+        exception = DropItem("Test drop", log_level="INFO")
+        logkws = self.formatter.dropped(item, exception, response, self.spider)
+        self.assertEqual(logkws["level"], logging.INFO)
+
         exception = DropItem("Test drop", log_level="ERROR")
-        response = Response("http://www.example.com")
-        log = self.formatter.dropped(item, exception, response, self.spider)
-        self.assertEqual(log["level"], 40)
+        logkws = self.formatter.dropped(item, exception, response, self.spider)
+        self.assertEqual(logkws["level"], logging.ERROR)
 
     def test_item_error(self):
         # In practice, the complete traceback is shown by passing the
@@ -176,6 +204,7 @@ class LogformatterSubclassTest(LogFormatterTestCase):
     def setUp(self):
         self.formatter = LogFormatterSubclass()
         self.spider = Spider("default")
+        self.spider.crawler = get_crawler(Spider)
 
     def test_crawled_with_referer(self):
         req = Request("http://www.example.com")
