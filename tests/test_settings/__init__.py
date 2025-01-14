@@ -712,6 +712,47 @@ class Component2:
             3,
             {"FOO": {Component2: 3}},
         ),
+        # If old_cls has None as value, raise KeyError.
+        (
+            {"FOO": {Component1: None}},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            KeyError,
+        ),
+        (
+            {"FOO": '{"tests.test_settings.Component1": null}'},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            KeyError,
+        ),
+        (
+            {"FOO": {Component1: None, "tests.test_settings.Component1": None}},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            KeyError,
+        ),
+        (
+            {"FOO": {Component1: 1, "tests.test_settings.Component1": None}},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            KeyError,
+        ),
+        (
+            {"FOO": {Component1: None, "tests.test_settings.Component1": 1}},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            KeyError,
+        ),
     ),
 )
 def test_replace_in_component_list(before, name, old_cls, new_cls, pos, after):

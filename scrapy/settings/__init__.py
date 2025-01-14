@@ -328,9 +328,11 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
     def replace_in_component_list(
         self, name: _SettingsKeyT, old_cls: type, new_cls: type, pos: int | None = None
     ) -> None:
-        """Replace *old_cls* with *new_cls* in the *name* component list.
+        """Replace *old_cls* with *new_cls* in the *name* :ref:`component list
+        <component-lists>`.
 
-        If *old_cls* is missing, :exc:`KeyError` is raised.
+        If *old_cls* is missing, or has :data:`None` as value, :exc:`KeyError`
+        is raised.
 
         If *old_cls* was present as an import string, even more than once,
         those keys are dropped and replaced by *new_cls*.
@@ -353,6 +355,8 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
                 _cls = cls_or_path
             if _cls == old_cls:
                 old_pos = component_list.pop(cls_or_path)
+                if old_pos is None:
+                    break
         if old_pos is None:
             raise KeyError(
                 f"{old_cls} not found in the {name} setting ({component_list!r})."
@@ -396,8 +400,8 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
     def set_in_component_list(
         self, name: _SettingsKeyT, cls: type, pos: int | None
     ) -> None:
-        """Set the *cls* component in the *name* component list setting with
-        position *pos*.
+        """Set the *cls* component in the *name* :ref:`component list
+        <component-lists>` setting with position *pos*.
 
         If *cls* already exists, its value is updated.
 
@@ -432,8 +436,9 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
     def setdefault_in_component_list(
         self, name: _SettingsKeyT, cls: type, pos: int | None
     ) -> None:
-        """Set the *cls* component in the *name* component list setting with
-        position *pos* if not already defined (even as an import string).
+        """Set the *cls* component in the *name* :ref:`component list
+        <component-lists>` setting with position *pos* if not already defined
+        (even as an import string).
 
         If *cls* is not already defined, it is set regardless of the priority
         of the *name* setting. The setting priority is not affected by this
