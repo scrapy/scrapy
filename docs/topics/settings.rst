@@ -242,6 +242,7 @@ Component lists
 A **component list** is a :class:`dict` where keys are :ref:`components
 <topics-components>` and values are component positions. For example:
 
+.. skip: next
 .. code-block:: python
 
     {

@@ -260,6 +260,7 @@ class BaseSettingsTest(unittest.TestCase):
             "TEST_FLOAT2": "123.45",
             "TEST_LIST1": ["one", "two"],
             "TEST_LIST2": "one,two",
+            "TEST_LIST3": "",
             "TEST_STR": "value",
             "TEST_DICT1": {"key1": "val1", "ke2": 3},
             "TEST_DICT2": '{"key1": "val1", "ke2": 3}',
@@ -292,6 +293,7 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertEqual(settings.getfloat("TEST_FLOATx", 55.0), 55.0)
         self.assertEqual(settings.getlist("TEST_LIST1"), ["one", "two"])
         self.assertEqual(settings.getlist("TEST_LIST2"), ["one", "two"])
+        self.assertEqual(settings.getlist("TEST_LIST3"), [])
         self.assertEqual(settings.getlist("TEST_LISTx"), [])
         self.assertEqual(settings.getlist("TEST_LISTx", ["default"]), ["default"])
         self.assertEqual(settings["TEST_STR"], "value")
@@ -507,7 +509,6 @@ class SettingsTest(unittest.TestCase):
         ({"FOO": ["BAR"]}, "FOO", "BAZ", {"FOO": ["BAR", "BAZ"]}),
         ({"FOO": ["BAR"]}, "FOO", "BAR", {"FOO": ["BAR"]}),
         ({"FOO": ""}, "FOO", "BAR", {"FOO": ["BAR"]}),
-        ({"FOO": "[]"}, "FOO", "BAR", {"FOO": ["BAR"]}),
         ({"FOO": "BAR"}, "FOO", "BAR", {"FOO": "BAR"}),
         ({"FOO": "BAR"}, "FOO", "BAZ", {"FOO": ["BAR", "BAZ"]}),
         ({"FOO": "BAR,BAZ"}, "FOO", "BAZ", {"FOO": "BAR,BAZ"}),
@@ -517,7 +518,7 @@ class SettingsTest(unittest.TestCase):
 def test_add_to_list(before, name, item, after):
     settings = BaseSettings(before, priority=0)
     settings.add_to_list(name, item)
-    expected_priority = settings.getpriority(name)
+    expected_priority = settings.getpriority(name) or 0
     expected_settings = BaseSettings(after, priority=expected_priority)
     assert (
         settings == expected_settings
@@ -548,7 +549,7 @@ def test_remove_from_list(before, name, item, after):
         return
 
     settings.remove_from_list(name, item)
-    expected_priority = settings.getpriority(name)
+    expected_priority = settings.getpriority(name) or 0
     expected_settings = BaseSettings(after, priority=expected_priority)
     assert (
         settings == expected_settings
@@ -763,7 +764,7 @@ def test_replace_in_component_list(before, name, old_cls, new_cls, pos, after):
             settings.replace_in_component_list(name, old_cls, new_cls, pos)
         return
 
-    expected_priority = settings.getpriority(name)
+    expected_priority = settings.getpriority(name) or 0
     settings.replace_in_component_list(name, old_cls, new_cls, pos)
     expected_settings = BaseSettings(after, priority=expected_priority)
     assert settings == expected_settings
@@ -901,11 +902,13 @@ def test_replace_in_component_list(before, name, old_cls, new_cls, pos, after):
 )
 def test_set_in_component_list(before, name, cls, pos, after):
     settings = BaseSettings(before, priority=0)
-    expected_priority = settings.getpriority(name)
+    expected_priority = settings.getpriority(name) or 0
     settings.set_in_component_list(name, cls, pos)
     expected_settings = BaseSettings(after, priority=expected_priority)
     assert settings == expected_settings
-    assert settings.getpriority(name) == expected_settings.getpriority(name)
+    assert settings.getpriority(name) == expected_settings.getpriority(
+        name
+    ), f"{settings.getpriority(name)=} != {expected_settings.getpriority(name)=}"
 
 
 @pytest.mark.parametrize(
@@ -1046,7 +1049,7 @@ def test_set_in_component_list(before, name, cls, pos, after):
 )
 def test_setdefault_in_component_list(before, name, cls, pos, after):
     settings = BaseSettings(before, priority=0)
-    expected_priority = settings.getpriority(name)
+    expected_priority = settings.getpriority(name) or 0
     settings.setdefault_in_component_list(name, cls, pos)
     expected_settings = BaseSettings(after, priority=expected_priority)
     assert settings == expected_settings

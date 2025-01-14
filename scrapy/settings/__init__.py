@@ -207,8 +207,9 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         self, name: _SettingsKeyT, default: list[Any] | None = None
     ) -> list[Any]:
         """
-        Get a setting value as a list. If the setting original type is a list, a
-        copy of it will be returned. If it's a string it will be split by ",".
+        Get a setting value as a list. If the setting original type is a list,
+        a copy of it will be returned. If it's a string it will be split by
+        ",". If it is an empty string, an empty list will be returned.
 
         For example, settings populated through environment variables set to
         ``'one,two'`` will return a list ['one', 'two'] when using this method.
@@ -220,6 +221,8 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         :type default: object
         """
         value = self.get(name, default or [])
+        if not value:
+            return []
         if isinstance(value, str):
             value = value.split(",")
         return list(value)

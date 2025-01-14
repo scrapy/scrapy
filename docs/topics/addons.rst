@@ -114,6 +114,7 @@ Add-on examples
 
 Set some basic configuration:
 
+.. skip: next
 .. code-block:: python
 
     from myproject.pipelines import MyPipeline
