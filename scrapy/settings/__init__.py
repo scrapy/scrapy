@@ -111,6 +111,13 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
     def __contains__(self, name: Any) -> bool:
         return name in self.attributes
 
+    def add_to_list(self, name: _SettingsKeyT, item: Any) -> None:
+        value: list[str] = self.getlist(name)
+        if item not in value:
+            new_value = [*value, item]
+            priority = self.getpriority(name) or SETTINGS_PRIORITIES["default"]
+            self.set(name, new_value, priority=priority)
+
     def get(self, name: _SettingsKeyT, default: Any = None) -> Any:
         """
         Get a setting value without affecting its original type.

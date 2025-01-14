@@ -497,3 +497,17 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(
             str(error.exception), "Trying to modify an immutable Settings object"
         )
+
+
+@pytest.mark.parametrize(
+    ("before", "name", "item", "after"),
+    (
+        ({}, "FOO", "BAR", {"FOO": ["BAR"]}),
+        ({"FOO": ["BAR"]}, "FOO", "BAZ", {"FOO": ["BAR", "BAZ"]}),
+        ({"FOO": ["BAR"]}, "FOO", "BAR", {"FOO": ["BAR"]}),
+    ),
+)
+def test_add_to_list(before, name, item, after):
+    settings = BaseSettings(before)
+    settings.add_to_list(name, item)
+    assert settings == BaseSettings(after)
