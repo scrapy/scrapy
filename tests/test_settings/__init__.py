@@ -541,144 +541,6 @@ class Component2:
 
 
 @pytest.mark.parametrize(
-    ("before", "name", "cls", "pos", "after"),
-    (
-        # Set
-        ({}, "FOO", Component1, None, {"FOO": {Component1: None}}),
-        ({}, "FOO", Component1, 0, {"FOO": {Component1: 0}}),
-        ({}, "FOO", Component1, 1, {"FOO": {Component1: 1}}),
-        # Add
-        (
-            {"FOO": {Component1: 0}},
-            "FOO",
-            Component2,
-            None,
-            {"FOO": {Component1: 0, Component2: None}},
-        ),
-        (
-            {"FOO": {Component1: 0}},
-            "FOO",
-            Component2,
-            0,
-            {"FOO": {Component1: 0, Component2: 0}},
-        ),
-        (
-            {"FOO": {Component1: 0}},
-            "FOO",
-            Component2,
-            1,
-            {"FOO": {Component1: 0, Component2: 1}},
-        ),
-        # Replace
-        (
-            {
-                "FOO": {
-                    Component1: None,
-                    "tests.test_settings.Component1": 0,
-                    "tests.test_settings.Component1Alias": 1,
-                    Component1Subclass: None,
-                    "tests.test_settings.Component1Subclass": 0,
-                    "tests.test_settings.Component1SubclassAlias": 1,
-                }
-            },
-            "FOO",
-            Component1,
-            None,
-            {
-                "FOO": {
-                    Component1: None,
-                    Component1Subclass: None,
-                    "tests.test_settings.Component1Subclass": 0,
-                    "tests.test_settings.Component1SubclassAlias": 1,
-                }
-            },
-        ),
-        (
-            {
-                "FOO": {
-                    Component1: 0,
-                    "tests.test_settings.Component1": 1,
-                    "tests.test_settings.Component1Alias": None,
-                    Component1Subclass: 0,
-                    "tests.test_settings.Component1Subclass": 1,
-                    "tests.test_settings.Component1SubclassAlias": None,
-                }
-            },
-            "FOO",
-            Component1,
-            0,
-            {
-                "FOO": {
-                    Component1: 0,
-                    Component1Subclass: 0,
-                    "tests.test_settings.Component1Subclass": 1,
-                    "tests.test_settings.Component1SubclassAlias": None,
-                }
-            },
-        ),
-        (
-            {
-                "FOO": {
-                    Component1: 1,
-                    "tests.test_settings.Component1": None,
-                    "tests.test_settings.Component1Alias": 0,
-                    Component1Subclass: 1,
-                    "tests.test_settings.Component1Subclass": None,
-                    "tests.test_settings.Component1SubclassAlias": 0,
-                }
-            },
-            "FOO",
-            Component1,
-            1,
-            {
-                "FOO": {
-                    Component1: 1,
-                    Component1Subclass: 1,
-                    "tests.test_settings.Component1Subclass": None,
-                    "tests.test_settings.Component1SubclassAlias": 0,
-                }
-            },
-        ),
-        # String-based setting values
-        (
-            {"FOO": '{"tests.test_settings.Component1": 0}'},
-            "FOO",
-            Component2,
-            None,
-            {"FOO": {"tests.test_settings.Component1": 0, Component2: None}},
-        ),
-        (
-            {
-                "FOO": """{
-                    "tests.test_settings.Component1": 0,
-                    "tests.test_settings.Component1Alias": 1,
-                    "tests.test_settings.Component1Subclass": 0,
-                    "tests.test_settings.Component1SubclassAlias": 1
-                }"""
-            },
-            "FOO",
-            Component1,
-            None,
-            {
-                "FOO": {
-                    Component1: None,
-                    "tests.test_settings.Component1Subclass": 0,
-                    "tests.test_settings.Component1SubclassAlias": 1,
-                }
-            },
-        ),
-    ),
-)
-def test_set_in_component_list(before, name, cls, pos, after):
-    settings = BaseSettings(before, priority=0)
-    expected_priority = settings.getpriority(name)
-    settings.set_in_component_list(name, cls, pos)
-    expected_settings = BaseSettings(after, priority=expected_priority)
-    assert settings == expected_settings
-    assert settings.getpriority(name) == expected_settings.getpriority(name)
-
-
-@pytest.mark.parametrize(
     ("before", "name", "old_cls", "new_cls", "pos", "after"),
     (
         ({}, "FOO", Component1, Component2, None, KeyError),
@@ -828,6 +690,289 @@ def test_replace_in_component_list(before, name, old_cls, new_cls, pos, after):
 
     expected_priority = settings.getpriority(name)
     settings.replace_in_component_list(name, old_cls, new_cls, pos)
+    expected_settings = BaseSettings(after, priority=expected_priority)
+    assert settings == expected_settings
+    assert settings.getpriority(name) == expected_settings.getpriority(name)
+
+
+@pytest.mark.parametrize(
+    ("before", "name", "cls", "pos", "after"),
+    (
+        # Set
+        ({}, "FOO", Component1, None, {"FOO": {Component1: None}}),
+        ({}, "FOO", Component1, 0, {"FOO": {Component1: 0}}),
+        ({}, "FOO", Component1, 1, {"FOO": {Component1: 1}}),
+        # Add
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            None,
+            {"FOO": {Component1: 0, Component2: None}},
+        ),
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            0,
+            {"FOO": {Component1: 0, Component2: 0}},
+        ),
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            1,
+            {"FOO": {Component1: 0, Component2: 1}},
+        ),
+        # Replace
+        (
+            {
+                "FOO": {
+                    Component1: None,
+                    "tests.test_settings.Component1": 0,
+                    "tests.test_settings.Component1Alias": 1,
+                    Component1Subclass: None,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1,
+                }
+            },
+            "FOO",
+            Component1,
+            None,
+            {
+                "FOO": {
+                    Component1: None,
+                    Component1Subclass: None,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1,
+                }
+            },
+        ),
+        (
+            {
+                "FOO": {
+                    Component1: 0,
+                    "tests.test_settings.Component1": 1,
+                    "tests.test_settings.Component1Alias": None,
+                    Component1Subclass: 0,
+                    "tests.test_settings.Component1Subclass": 1,
+                    "tests.test_settings.Component1SubclassAlias": None,
+                }
+            },
+            "FOO",
+            Component1,
+            0,
+            {
+                "FOO": {
+                    Component1: 0,
+                    Component1Subclass: 0,
+                    "tests.test_settings.Component1Subclass": 1,
+                    "tests.test_settings.Component1SubclassAlias": None,
+                }
+            },
+        ),
+        (
+            {
+                "FOO": {
+                    Component1: 1,
+                    "tests.test_settings.Component1": None,
+                    "tests.test_settings.Component1Alias": 0,
+                    Component1Subclass: 1,
+                    "tests.test_settings.Component1Subclass": None,
+                    "tests.test_settings.Component1SubclassAlias": 0,
+                }
+            },
+            "FOO",
+            Component1,
+            1,
+            {
+                "FOO": {
+                    Component1: 1,
+                    Component1Subclass: 1,
+                    "tests.test_settings.Component1Subclass": None,
+                    "tests.test_settings.Component1SubclassAlias": 0,
+                }
+            },
+        ),
+        # String-based setting values
+        (
+            {"FOO": '{"tests.test_settings.Component1": 0}'},
+            "FOO",
+            Component2,
+            None,
+            {"FOO": {"tests.test_settings.Component1": 0, Component2: None}},
+        ),
+        (
+            {
+                "FOO": """{
+                    "tests.test_settings.Component1": 0,
+                    "tests.test_settings.Component1Alias": 1,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1
+                }"""
+            },
+            "FOO",
+            Component1,
+            None,
+            {
+                "FOO": {
+                    Component1: None,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1,
+                }
+            },
+        ),
+    ),
+)
+def test_set_in_component_list(before, name, cls, pos, after):
+    settings = BaseSettings(before, priority=0)
+    expected_priority = settings.getpriority(name)
+    settings.set_in_component_list(name, cls, pos)
+    expected_settings = BaseSettings(after, priority=expected_priority)
+    assert settings == expected_settings
+    assert settings.getpriority(name) == expected_settings.getpriority(name)
+
+
+@pytest.mark.parametrize(
+    ("before", "name", "cls", "pos", "after"),
+    (
+        # Set
+        ({}, "FOO", Component1, None, {"FOO": {Component1: None}}),
+        ({}, "FOO", Component1, 0, {"FOO": {Component1: 0}}),
+        ({}, "FOO", Component1, 1, {"FOO": {Component1: 1}}),
+        # Add
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            None,
+            {"FOO": {Component1: 0, Component2: None}},
+        ),
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            0,
+            {"FOO": {Component1: 0, Component2: 0}},
+        ),
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            1,
+            {"FOO": {Component1: 0, Component2: 1}},
+        ),
+        # Keep
+        (
+            {
+                "FOO": {
+                    Component1: None,
+                    "tests.test_settings.Component1": 0,
+                    "tests.test_settings.Component1Alias": 1,
+                    Component1Subclass: None,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1,
+                }
+            },
+            "FOO",
+            Component1,
+            None,
+            {
+                "FOO": {
+                    Component1: None,
+                    "tests.test_settings.Component1": 0,
+                    "tests.test_settings.Component1Alias": 1,
+                    Component1Subclass: None,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1,
+                }
+            },
+        ),
+        (
+            {
+                "FOO": {
+                    Component1: 0,
+                    "tests.test_settings.Component1": 1,
+                    "tests.test_settings.Component1Alias": None,
+                    Component1Subclass: 0,
+                    "tests.test_settings.Component1Subclass": 1,
+                    "tests.test_settings.Component1SubclassAlias": None,
+                }
+            },
+            "FOO",
+            Component1,
+            0,
+            {
+                "FOO": {
+                    Component1: 0,
+                    "tests.test_settings.Component1": 1,
+                    "tests.test_settings.Component1Alias": None,
+                    Component1Subclass: 0,
+                    "tests.test_settings.Component1Subclass": 1,
+                    "tests.test_settings.Component1SubclassAlias": None,
+                }
+            },
+        ),
+        (
+            {
+                "FOO": {
+                    Component1: 1,
+                    "tests.test_settings.Component1": None,
+                    "tests.test_settings.Component1Alias": 0,
+                    Component1Subclass: 1,
+                    "tests.test_settings.Component1Subclass": None,
+                    "tests.test_settings.Component1SubclassAlias": 0,
+                }
+            },
+            "FOO",
+            Component1,
+            1,
+            {
+                "FOO": {
+                    Component1: 1,
+                    "tests.test_settings.Component1": None,
+                    "tests.test_settings.Component1Alias": 0,
+                    Component1Subclass: 1,
+                    "tests.test_settings.Component1Subclass": None,
+                    "tests.test_settings.Component1SubclassAlias": 0,
+                }
+            },
+        ),
+        # String-based setting values
+        (
+            {"FOO": '{"tests.test_settings.Component1": 0}'},
+            "FOO",
+            Component2,
+            None,
+            {"FOO": {"tests.test_settings.Component1": 0, Component2: None}},
+        ),
+        (
+            {
+                "FOO": """{
+                    "tests.test_settings.Component1": 0,
+                    "tests.test_settings.Component1Alias": 1,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1
+                }"""
+            },
+            "FOO",
+            Component1,
+            None,
+            {
+                "FOO": """{
+                    "tests.test_settings.Component1": 0,
+                    "tests.test_settings.Component1Alias": 1,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1
+                }"""
+            },
+        ),
+    ),
+)
+def test_setdefault_in_component_list(before, name, cls, pos, after):
+    settings = BaseSettings(before, priority=0)
+    expected_priority = settings.getpriority(name)
+    settings.setdefault_in_component_list(name, cls, pos)
     expected_settings = BaseSettings(after, priority=expected_priority)
     assert settings == expected_settings
     assert settings.getpriority(name) == expected_settings.getpriority(name)

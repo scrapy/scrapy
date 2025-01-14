@@ -396,16 +396,13 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         setting. The setting priority is not affected by this change either.
         """
         component_list = self.getdict(name)
-        if component_list:
-            for cls_or_path in tuple(component_list):
-                if not isinstance(cls_or_path, str):
-                    continue
-                _cls = load_object(cls_or_path)
-                if _cls == cls:
-                    del component_list[cls_or_path]
-            component_list[cls] = pos
-        else:
-            component_list = {cls: pos}
+        for cls_or_path in tuple(component_list):
+            if not isinstance(cls_or_path, str):
+                continue
+            _cls = load_object(cls_or_path)
+            if _cls == cls:
+                del component_list[cls_or_path]
+        component_list[cls] = pos
         self.set(name, component_list, self.getpriority(name))
 
     def setdefault(
@@ -419,6 +416,26 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
             return default
 
         return self.attributes[name].value
+
+    def setdefault_in_component_list(
+        self, name: _SettingsKeyT, cls: type, pos: int | None
+    ) -> None:
+        """Set the *cls* component in the *name* component list setting with
+        position *pos* if not already defined (even as an import string).
+
+        If *cls* is not already defined, it is set regardless of the priority
+        of the *name* setting. The setting priority is not affected by this
+        change either.
+        """
+        component_list = self.getdict(name)
+        for cls_or_path in tuple(component_list):
+            if not isinstance(cls_or_path, str):
+                continue
+            _cls = load_object(cls_or_path)
+            if _cls == cls:
+                return
+        component_list[cls] = pos
+        self.set(name, component_list, self.getpriority(name))
 
     def setdict(self, values: _SettingsInputT, priority: int | str = "project") -> None:
         self.update(values, priority)
