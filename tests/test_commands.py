@@ -23,7 +23,7 @@ from pytest import mark
 from twisted.trial import unittest
 
 import scrapy
-from scrapy.cmdline import _print_unknown_command_msg
+from scrapy.cmdline import _pop_command_name, _print_unknown_command_msg
 from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
 from scrapy.commands.startproject import IGNORE
 from scrapy.settings import Settings
@@ -1163,3 +1163,29 @@ class HelpMessageTest(CommandTest):
         for command in self.commands:
             _, out, _ = self.proc(command, "-h")
             self.assertIn("Usage", out)
+
+
+class PopCommandNameTest(unittest.TestCase):
+    def test_valid_command(self):
+        argv = ["scrapy", "crawl", "my_spider"]
+        command = _pop_command_name(argv)
+        self.assertEqual(command, "crawl")
+        self.assertEqual(argv, ["scrapy", "my_spider"])
+
+    def test_no_command(self):
+        argv = ["scrapy"]
+        command = _pop_command_name(argv)
+        self.assertIsNone(command)
+        self.assertEqual(argv, ["scrapy"])
+
+    def test_option_before_command(self):
+        argv = ["scrapy", "-h", "crawl"]
+        command = _pop_command_name(argv)
+        self.assertEqual(command, "crawl")
+        self.assertEqual(argv, ["scrapy", "-h"])
+
+    def test_option_after_command(self):
+        argv = ["scrapy", "crawl", "-h"]
+        command = _pop_command_name(argv)
+        self.assertEqual(command, "crawl")
+        self.assertEqual(argv, ["scrapy", "-h"])
