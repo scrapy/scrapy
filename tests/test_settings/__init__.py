@@ -511,3 +511,128 @@ def test_add_to_list(before, name, item, after):
     settings = BaseSettings(before)
     settings.add_to_list(name, item)
     assert settings == BaseSettings(after)
+
+
+class Component1:
+    pass
+
+
+Component1Alias = Component1
+
+
+class Component1Subclass(Component1):
+    pass
+
+
+Component1SubclassAlias = Component1Subclass
+
+
+class Component2:
+    pass
+
+
+@pytest.mark.parametrize(
+    ("before", "name", "cls", "pos", "after"),
+    (
+        # Set
+        ({}, "FOO", Component1, None, {"FOO": {Component1: None}}),
+        ({}, "FOO", Component1, 0, {"FOO": {Component1: 0}}),
+        ({}, "FOO", Component1, 1, {"FOO": {Component1: 1}}),
+        # Add
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            None,
+            {"FOO": {Component1: 0, Component2: None}},
+        ),
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            0,
+            {"FOO": {Component1: 0, Component2: 0}},
+        ),
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            1,
+            {"FOO": {Component1: 0, Component2: 1}},
+        ),
+        # Replace
+        (
+            {
+                "FOO": {
+                    Component1: None,
+                    "tests.test_settings.Component1": 0,
+                    "tests.test_settings.Component1Alias": 1,
+                    Component1Subclass: None,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1,
+                }
+            },
+            "FOO",
+            Component1,
+            None,
+            {
+                "FOO": {
+                    Component1: None,
+                    Component1Subclass: None,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1,
+                }
+            },
+        ),
+        (
+            {
+                "FOO": {
+                    Component1: 0,
+                    "tests.test_settings.Component1": 1,
+                    "tests.test_settings.Component1Alias": None,
+                    Component1Subclass: 0,
+                    "tests.test_settings.Component1Subclass": 1,
+                    "tests.test_settings.Component1SubclassAlias": None,
+                }
+            },
+            "FOO",
+            Component1,
+            0,
+            {
+                "FOO": {
+                    Component1: 0,
+                    Component1Subclass: 0,
+                    "tests.test_settings.Component1Subclass": 1,
+                    "tests.test_settings.Component1SubclassAlias": None,
+                }
+            },
+        ),
+        (
+            {
+                "FOO": {
+                    Component1: 1,
+                    "tests.test_settings.Component1": None,
+                    "tests.test_settings.Component1Alias": 0,
+                    Component1Subclass: 1,
+                    "tests.test_settings.Component1Subclass": None,
+                    "tests.test_settings.Component1SubclassAlias": 0,
+                }
+            },
+            "FOO",
+            Component1,
+            1,
+            {
+                "FOO": {
+                    Component1: 1,
+                    Component1Subclass: 1,
+                    "tests.test_settings.Component1Subclass": None,
+                    "tests.test_settings.Component1SubclassAlias": 0,
+                }
+            },
+        ),
+    ),
+)
+def test_set_in_component_list(before, name, cls, pos, after):
+    settings = BaseSettings(before)
+    settings.set_in_component_list(name, cls, pos)
+    assert settings == BaseSettings(after)

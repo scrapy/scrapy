@@ -8,6 +8,7 @@ from pprint import pformat
 from typing import TYPE_CHECKING, Any, Union, cast
 
 from scrapy.settings import default_settings
+from scrapy.utils.misc import load_object
 
 # The key types are restricted in BaseSettings._get_key() to ones supported by JSON,
 # see https://github.com/scrapy/scrapy/issues/5383.
@@ -112,6 +113,8 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         return name in self.attributes
 
     def add_to_list(self, name: _SettingsKeyT, item: Any) -> None:
+        """Append *item* to the :class:`list` setting with the specified *name*
+        if *item* is not already in that list."""
         value: list[str] = self.getlist(name)
         if item not in value:
             new_value = [*value, item]
@@ -338,6 +341,29 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
                 self.attributes[name] = SettingsAttribute(value, priority)
         else:
             self.attributes[name].set(value, priority)
+
+    def set_in_component_list(
+        self, name: _SettingsKeyT, cls: type, pos: int | None
+    ) -> None:
+        """Sets the *cls* component in the *name* component list setting with
+        position *pos*.
+
+        If *cls* already exists, its value is updated.
+
+        If *cls* was present as an import string, even more than once, those
+        keys are dropped and replaced by *cls*.
+        """
+        component_list = self.get(name)
+        if not component_list:
+            self[name] = {cls: pos}
+            return
+        for cls_or_path in tuple(component_list):
+            if not isinstance(cls_or_path, str):
+                continue
+            _cls = load_object(cls_or_path)
+            if _cls == cls:
+                del component_list[cls_or_path]
+        component_list[cls] = pos
 
     def setdefault(
         self,
