@@ -234,6 +234,54 @@ example, proper setting names for a fictional robots.txt extension would be
 ``ROBOTSTXT_ENABLED``, ``ROBOTSTXT_OBEY``, ``ROBOTSTXT_CACHEDIR``, etc.
 
 
+.. _component-lists:
+
+Component lists
+===============
+
+A **component list** is a :class:`dict` where keys are :ref:`components
+<topics-components>` and values are component positions. For example:
+
+.. code-block:: python
+
+    {
+        "path.to.ComponentA": None,
+        ComponentB: 100,
+    }
+
+A component can be specified either as a class object or through an import
+path.
+
+.. warning:: Component lists are regular :class:`dict` objects. Be careful not
+    to define the same component more than once, e.g. with different import
+    path strings or defining both an import path and a :class:`type` object.
+
+A position can be an :class:`int` or :data:`None`.
+
+A component with position 1 goes *before* a component with position 2. What
+going before entails, however, depends on the corresponding setting. For
+example, in the :setting:`DOWNLOADER_MIDDLEWARES` setting, components have
+their
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`
+method executed before that of later components, but have their
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`
+method executed after that of later components.
+
+A component with position :data:`None` is disabled.
+
+Some component lists get merged with some built-in value. For example,
+:setting:`DOWNLOADER_MIDDLEWARES` is merged with
+:setting:`DOWNLOADER_MIDDLEWARES_BASE`. This is where :data:`None` comes in
+handy, allowing you to disable a component from the base setting in the regular
+setting:
+
+.. code-block:: python
+
+    DOWNLOADER_MIDDLEWARES = {
+        "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": None,
+    }
+
+
 .. _topics-settings-ref:
 
 Built-in settings reference

@@ -503,8 +503,11 @@ class SettingsTest(unittest.TestCase):
     ("before", "name", "item", "after"),
     (
         ({}, "FOO", "BAR", {"FOO": ["BAR"]}),
+        ({"FOO": []}, "FOO", "BAR", {"FOO": ["BAR"]}),
         ({"FOO": ["BAR"]}, "FOO", "BAZ", {"FOO": ["BAR", "BAZ"]}),
         ({"FOO": ["BAR"]}, "FOO", "BAR", {"FOO": ["BAR"]}),
+        ({"FOO": ""}, "FOO", "BAR", {"FOO": ["BAR"]}),
+        ({"FOO": "[]"}, "FOO", "BAR", {"FOO": ["BAR"]}),
         ({"FOO": "BAR"}, "FOO", "BAR", {"FOO": "BAR"}),
         ({"FOO": "BAR"}, "FOO", "BAZ", {"FOO": ["BAR", "BAZ"]}),
         ({"FOO": "BAR,BAZ"}, "FOO", "BAZ", {"FOO": "BAR,BAZ"}),
@@ -514,6 +517,37 @@ class SettingsTest(unittest.TestCase):
 def test_add_to_list(before, name, item, after):
     settings = BaseSettings(before, priority=0)
     settings.add_to_list(name, item)
+    expected_priority = settings.getpriority(name)
+    expected_settings = BaseSettings(after, priority=expected_priority)
+    assert (
+        settings == expected_settings
+    ), f"{settings[name]=} != {expected_settings[name]=}"
+    assert settings.getpriority(name) == expected_settings.getpriority(name)
+
+
+@pytest.mark.parametrize(
+    ("before", "name", "item", "after"),
+    (
+        ({}, "FOO", "BAR", ValueError),
+        ({"FOO": ["BAR"]}, "FOO", "BAR", {"FOO": []}),
+        ({"FOO": ["BAR"]}, "FOO", "BAZ", ValueError),
+        ({"FOO": ["BAR", "BAZ"]}, "FOO", "BAR", {"FOO": ["BAZ"]}),
+        ({"FOO": ""}, "FOO", "BAR", ValueError),
+        ({"FOO": "[]"}, "FOO", "BAR", ValueError),
+        ({"FOO": "BAR"}, "FOO", "BAR", {"FOO": []}),
+        ({"FOO": "BAR"}, "FOO", "BAZ", ValueError),
+        ({"FOO": "BAR,BAZ"}, "FOO", "BAR", {"FOO": ["BAZ"]}),
+    ),
+)
+def test_remove_from_list(before, name, item, after):
+    settings = BaseSettings(before, priority=0)
+
+    if isinstance(after, type) and issubclass(after, Exception):
+        with pytest.raises(after):
+            settings.remove_from_list(name, item)
+        return
+
+    settings.remove_from_list(name, item)
     expected_priority = settings.getpriority(name)
     expected_settings = BaseSettings(after, priority=expected_priority)
     assert (

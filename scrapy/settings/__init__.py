@@ -121,9 +121,21 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """
         value: list[str] = self.getlist(name)
         if item not in value:
-            new_value = [*value, item]
-            priority = self.getpriority(name)
-            self.set(name, new_value, priority=priority)
+            self.set(name, [*value, item], self.getpriority(name))
+
+    def remove_from_list(self, name: _SettingsKeyT, item: Any) -> None:
+        """Remove *item* to the :class:`list` setting with the specified
+        *name*.
+
+        If *item* is missing, raise :exc:`ValueError`.
+
+        This change is applied regardless of the priority of the *name*
+        setting. The setting priority is not affected by this change either.
+        """
+        value: list[str] = self.getlist(name)
+        if item not in value:
+            raise ValueError(f"{item!r} not found in the {name} setting ({value!r}).")
+        self.set(name, [v for v in value if v != item], self.getpriority(name))
 
     def get(self, name: _SettingsKeyT, default: Any = None) -> Any:
         """
