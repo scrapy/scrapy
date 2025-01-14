@@ -114,11 +114,15 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
 
     def add_to_list(self, name: _SettingsKeyT, item: Any) -> None:
         """Append *item* to the :class:`list` setting with the specified *name*
-        if *item* is not already in that list."""
+        if *item* is not already in that list.
+
+        This change is applied regardless of the priority of the *name*
+        setting. The setting priority is not affected by this change either.
+        """
         value: list[str] = self.getlist(name)
         if item not in value:
             new_value = [*value, item]
-            priority = self.getpriority(name) or SETTINGS_PRIORITIES["default"]
+            priority = self.getpriority(name)
             self.set(name, new_value, priority=priority)
 
     def get(self, name: _SettingsKeyT, default: Any = None) -> Any:
@@ -309,6 +313,41 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
             return max(cast(int, self.getpriority(name)) for name in self)
         return get_settings_priority("default")
 
+    def replace_in_component_list(
+        self, name: _SettingsKeyT, old_cls: type, new_cls: type, pos: int | None = None
+    ) -> None:
+        """Replace *old_cls* with *new_cls* in the *name* component list.
+
+        If *old_cls* is missing, :exc:`KeyError` is raised.
+
+        If *old_cls* was present as an import string, even more than once,
+        those keys are dropped and replaced by *new_cls*.
+
+        If *pos* is specified, that is the value assigned to *new_cls* in the
+        component list. Otherwise, the value of *old_cls* is used. If *old_cls*
+        was present multiple times (possible with import strings) with
+        different values, the value assigned to *new_cls* is one of them, with
+        no guarantee about which one it is.
+
+        This change is applied regardless of the priority of the *name*
+        setting. The setting priority is not affected by this change either.
+        """
+        component_list = self.getdict(name)
+        old_pos = None
+        for cls_or_path in tuple(component_list):
+            if isinstance(cls_or_path, str):
+                _cls = load_object(cls_or_path)
+            else:
+                _cls = cls_or_path
+            if _cls == old_cls:
+                old_pos = component_list.pop(cls_or_path)
+        if old_pos is None:
+            raise KeyError(
+                f"{old_cls} not found in the {name} setting ({component_list!r})."
+            )
+        component_list[new_cls] = old_pos if pos is None else pos
+        self.set(name, component_list, priority=self.getpriority(name))
+
     def __setitem__(self, name: _SettingsKeyT, value: Any) -> None:
         self.set(name, value)
 
@@ -345,25 +384,29 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
     def set_in_component_list(
         self, name: _SettingsKeyT, cls: type, pos: int | None
     ) -> None:
-        """Sets the *cls* component in the *name* component list setting with
+        """Set the *cls* component in the *name* component list setting with
         position *pos*.
 
         If *cls* already exists, its value is updated.
 
         If *cls* was present as an import string, even more than once, those
         keys are dropped and replaced by *cls*.
+
+        This change is applied regardless of the priority of the *name*
+        setting. The setting priority is not affected by this change either.
         """
-        component_list = self.get(name)
-        if not component_list:
-            self[name] = {cls: pos}
-            return
-        for cls_or_path in tuple(component_list):
-            if not isinstance(cls_or_path, str):
-                continue
-            _cls = load_object(cls_or_path)
-            if _cls == cls:
-                del component_list[cls_or_path]
-        component_list[cls] = pos
+        component_list = self.getdict(name)
+        if component_list:
+            for cls_or_path in tuple(component_list):
+                if not isinstance(cls_or_path, str):
+                    continue
+                _cls = load_object(cls_or_path)
+                if _cls == cls:
+                    del component_list[cls_or_path]
+            component_list[cls] = pos
+        else:
+            component_list = {cls: pos}
+        self.set(name, component_list, self.getpriority(name))
 
     def setdefault(
         self,
