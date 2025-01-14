@@ -955,15 +955,79 @@ Default: ``'scrapy.dupefilters.RFPDupeFilter'``
 
 The class used to detect and filter duplicate requests.
 
-The default (``RFPDupeFilter``) filters based on the
+The default, :class:`~scrapy.dupefilters.RFPDupeFilter`, filters based on the
 :setting:`REQUEST_FINGERPRINTER_CLASS` setting.
 
-You can disable filtering of duplicate requests by setting
-:setting:`DUPEFILTER_CLASS` to ``'scrapy.dupefilters.BaseDupeFilter'``.
-Be very careful about this however, because you can get into crawling loops.
-It's usually a better idea to set the ``dont_filter`` parameter to
-``True`` on the specific :class:`~scrapy.Request` that should not be
-filtered.
+To change how duplicates are checked, you can point :setting:`DUPEFILTER_CLASS`
+to a custom subclass of :class:`~scrapy.dupefilters.RFPDupeFilter` that
+overrides its ``__init__`` method to use a :ref:`different request
+fingerprinting class <custom-request-fingerprinter>`. For example:
+
+.. code-block:: python
+
+    from scrapy.dupefilters import RFPDupeFilter
+    from scrapy.utils.request import fingerprint
+
+
+    class CustomRequestFingerprinter:
+        def fingerprint(self, request):
+            return fingerprint(request, include_headers=["X-ID"])
+
+
+    class CustomDupeFilter(RFPDupeFilter):
+
+        def __init__(self, path=None, debug=False, *, fingerprinter=None):
+            super().__init__(
+                path=path, debug=debug, fingerprinter=CustomRequestFingerprinter()
+            )
+
+To disable duplicate request filtering set :setting:`DUPEFILTER_CLASS` to
+``'scrapy.dupefilters.BaseDupeFilter'``. Note that not filtering out duplicate
+requests may cause crawling loops. It is usually better to set
+the ``dont_filter`` parameter to ``True`` on the ``__init__`` method of a
+specific :class:`~scrapy.Request` object that should not be filtered out.
+
+A class assigned to :setting:`DUPEFILTER_CLASS` must implement the following
+interface::
+
+    class MyDupeFilter:
+
+        @classmethod
+        def from_settings(cls, settings):
+            """Returns an instance of this duplicate request filtering class
+            based on the current crawl settings."""
+            return cls()
+
+        def request_seen(self, request):
+            """Returns ``True`` if *request* is a duplicate of another request
+            seen in a previous call to :meth:`request_seen`, or ``False``
+            otherwise."""
+            return False
+
+        def open(self):
+            """Called before the spider opens. It may return a deferred."""
+            pass
+
+        def close(self, reason):
+            """Called before the spider closes. It may return a deferred."""
+            pass
+
+        def log(self, request, spider):
+            """Logs that a request has been filtered out.
+
+            It is called right after a call to :meth:`request_seen` that
+            returns ``True``.
+
+            If :meth:`request_seen` always returns ``False``, such as in the
+            case of :class:`~scrapy.dupefilters.BaseDupeFilter`, this method
+            may be omitted.
+            """
+            pass
+
+.. autoclass:: scrapy.dupefilters.BaseDupeFilter
+
+.. autoclass:: scrapy.dupefilters.RFPDupeFilter
+
 
 .. setting:: DUPEFILTER_DEBUG
 
