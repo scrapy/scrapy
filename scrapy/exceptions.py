@@ -5,6 +5,8 @@ These exceptions are documented in docs/topics/exceptions.rst. Please don't add
 new exceptions here without documenting them there.
 """
 
+from __future__ import annotations
+
 from typing import Any
 
 # Internal
@@ -57,6 +59,10 @@ class StopDownload(Exception):
 
 class DropItem(Exception):
     """Drop item from the item pipeline"""
+
+    def __init__(self, message: str, log_level: str | None = None):
+        super().__init__(message)
+        self.log_level = log_level
 
 
 class NotSupported(Exception):
