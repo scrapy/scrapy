@@ -124,7 +124,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
             self.set(name, [*value, item], self.getpriority(name) or 0)
 
     def remove_from_list(self, name: _SettingsKeyT, item: Any) -> None:
-        """Remove *item* to the :class:`list` setting with the specified
+        """Remove *item* from the :class:`list` setting with the specified
         *name*.
 
         If *item* is missing, raise :exc:`ValueError`.
