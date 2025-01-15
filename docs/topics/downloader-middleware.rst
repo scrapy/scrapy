@@ -80,7 +80,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
       middleware.
 
       :meth:`process_request` should either: return ``None``, return a
-      :class:`~scrapy.Response` object, return a :class:`~scrapy.http.Request`
+      :class:`~scrapy.http.Response` object, return a :class:`~scrapy.Request`
       object, or raise :exc:`~scrapy.exceptions.IgnoreRequest`.
 
       If it returns ``None``, Scrapy will continue processing this request, executing all
@@ -797,9 +797,12 @@ OffsiteMiddleware
    :attr:`~scrapy.Spider.allowed_domains` attribute, or the
    attribute is empty, the offsite middleware will allow all requests.
 
-   If the request has the :attr:`~scrapy.Request.dont_filter` attribute
-   set, the offsite middleware will allow the request even if its domain is not
-   listed in allowed domains.
+   .. reqmeta:: allow_offsite
+
+   If the request has the :attr:`~scrapy.Request.dont_filter` attribute set to
+   ``True`` or :attr:`Request.meta` has ``allow_offsite`` set to ``True``, then
+   the OffsiteMiddleware will allow the request even if its domain is not listed
+   in allowed domains.
 
 RedirectMiddleware
 ------------------

@@ -120,8 +120,12 @@ class LogFormatter:
         spider: Spider,
     ) -> LogFormatterResult:
         """Logs a message when an item is dropped while it is passing through the item pipeline."""
+        if (level := getattr(exception, "log_level", None)) is None:
+            level = spider.crawler.settings["DEFAULT_DROPITEM_LOG_LEVEL"]
+        if isinstance(level, str):
+            level = getattr(logging, level)
         return {
-            "level": logging.WARNING,
+            "level": level,
             "msg": DROPPEDMSG,
             "args": {
                 "exception": exception,

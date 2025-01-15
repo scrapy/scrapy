@@ -258,6 +258,10 @@ coverage_ignore_pyobjects = [
     # Base classes of downloader middlewares are implementation details that
     # are not meant for users.
     r"^scrapy\.downloadermiddlewares\.\w*?\.Base\w*?Middleware",
+    # The interface methods of duplicate request filtering classes are already
+    # covered in the interface documentation part of the DUPEFILTER_CLASS
+    # setting documentation.
+    r"^scrapy\.dupefilters\.[A-Z]\w*?\.(from_settings|request_seen|open|close|log)$",
     # Private exception used by the command-line interface implementation.
     r"^scrapy\.exceptions\.UsageError",
     # Methods of BaseItemExporter subclasses are only documented in
@@ -284,6 +288,7 @@ intersphinx_mapping = {
     "cryptography": ("https://cryptography.io/en/latest/", None),
     "cssselect": ("https://cssselect.readthedocs.io/en/latest", None),
     "itemloaders": ("https://itemloaders.readthedocs.io/en/latest/", None),
+    "parsel": ("https://parsel.readthedocs.io/en/latest/", None),
     "pytest": ("https://docs.pytest.org/en/latest", None),
     "python": ("https://docs.python.org/3", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master", None),

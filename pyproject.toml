@@ -73,9 +73,9 @@ version = {file = "./scrapy/VERSION"}
 
 [tool.mypy]
 ignore_missing_imports = true
+implicit_reexport = false
 
 # Interface classes are hard to support
-
 [[tool.mypy.overrides]]
 module = "twisted.internet.interfaces"
 follow_imports = "skip"
@@ -92,6 +92,14 @@ follow_imports = "skip"
 [[tool.mypy.overrides]]
 module = "scrapy.settings.default_settings"
 ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "itemadapter"
+implicit_reexport = true
+
+[[tool.mypy.overrides]]
+module = "twisted"
+implicit_reexport = true
 
 [tool.bumpversion]
 current_version = "2.12.0"
@@ -112,6 +120,12 @@ branch = true
 include = ["scrapy/*"]
 omit = ["tests/*"]
 disable_warnings = ["include-ignored"]
+
+[tool.coverage.paths]
+source = [
+    "scrapy",
+    ".tox/**/site-packages/scrapy"
+]
 
 [tool.coverage.report]
 # https://github.com/nedbat/coveragepy/issues/831#issuecomment-517778185
@@ -360,13 +374,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Exclude files that are meant to provide top-level imports
-"scrapy/__init__.py" = ["E402"]
-"scrapy/core/downloader/handlers/http.py" = ["F401"]
-"scrapy/http/__init__.py" = ["F401"]
-"scrapy/linkextractors/__init__.py" = ["E402", "F401"]
-"scrapy/selector/__init__.py" = ["F401"]
-"scrapy/spiders/__init__.py" = ["E402", "F401"]
+# Circular import workarounds
+"scrapy/linkextractors/__init__.py" = ["E402"]
+"scrapy/spiders/__init__.py" = ["E402"]
 
 # Skip bandit in tests
 "tests/**" = ["S"]

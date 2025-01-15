@@ -51,7 +51,7 @@ class Response(object_ref):
     )
     """A tuple of :class:`str` objects containing the name of all public
     attributes of the class that are also keyword parameters of the
-    ``__init__`` method.
+    ``__init__()`` method.
 
     Currently used by :meth:`Response.replace`.
     """
@@ -199,8 +199,8 @@ class Response(object_ref):
     ) -> Request:
         """
         Return a :class:`~.Request` instance to follow a link ``url``.
-        It accepts the same arguments as ``Request.__init__`` method,
-        but ``url`` can be a relative URL or a ``scrapy.link.Link`` object,
+        It accepts the same arguments as ``Request.__init__()`` method,
+        but ``url`` can be a relative URL or a :class:`~scrapy.link.Link` object,
         not only an absolute URL.
 
         :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow`
@@ -254,7 +254,7 @@ class Response(object_ref):
         .. versionadded:: 2.0
 
         Return an iterable of :class:`~.Request` instances to follow all links
-        in ``urls``. It accepts the same arguments as ``Request.__init__`` method,
+        in ``urls``. It accepts the same arguments as ``Request.__init__()`` method,
         but elements of ``urls`` can be relative URLs or :class:`~scrapy.link.Link` objects,
         not only absolute URLs.
 

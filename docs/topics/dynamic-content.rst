@@ -117,7 +117,8 @@ data from it depends on the type of response:
 -   If the response is HTML, XML or JSON, use :ref:`selectors
     <topics-selectors>` as usual.
 
--   If the response is JSON, use :func:`response.json()` to load the desired data:
+-   If the response is JSON, use :func:`response.json()
+    <scrapy.http.TextResponse.json>` to load the desired data:
 
     .. code-block:: python
 
@@ -143,7 +144,7 @@ data from it depends on the type of response:
 
 -   If the response is an image or another format based on images (e.g. PDF),
     read the response as bytes from
-    :attr:`response.body <scrapy.http.TextResponse.body>` and use an OCR
+    :attr:`response.body <scrapy.http.Response.body>` and use an OCR
     solution to extract the desired data as text.
 
     For example, you can use pytesseract_. To read a table from a PDF,

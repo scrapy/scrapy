@@ -76,7 +76,7 @@ jobs:
       if: contains(matrix.python-version, 'pypy') || contains(matrix.env.TOXENV, 'pinned') || contains(matrix.python-version, '3.14')
       run: |
         sudo apt-get update
-        sudo apt-get install libxml2-dev libxslt-dev
+        sudo apt-get install libxml2-dev libxslt-dev libjpeg-dev
 
     - name: Run tests
       env: ${{ matrix.env }}
@@ -85,4 +85,4 @@ jobs:
         tox
 
     - name: Upload coverage report
-      run: bash <(curl -s https://codecov.io/bash)
+      uses: codecov/codecov-action@v5

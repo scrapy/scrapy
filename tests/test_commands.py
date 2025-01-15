@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 from contextlib import contextmanager
+from io import StringIO
 from itertools import chain
 from pathlib import Path
 from shutil import copytree, rmtree
@@ -16,12 +17,13 @@ from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
 from tempfile import TemporaryFile, mkdtemp
 from threading import Timer
 from typing import TYPE_CHECKING
-from unittest import skipIf
+from unittest import mock, skipIf
 
 from pytest import mark
 from twisted.trial import unittest
 
 import scrapy
+from scrapy.cmdline import _pop_command_name, _print_unknown_command_msg
 from scrapy.commands import ScrapyCommand, ScrapyHelpFormatter, view
 from scrapy.commands.startproject import IGNORE
 from scrapy.settings import Settings
@@ -652,6 +654,24 @@ class MiscCommandsTest(CommandTest):
     def test_list(self):
         self.assertEqual(0, self.call("list"))
 
+    def test_command_not_found(self):
+        na_msg = """
+The list command is not available from this location.
+These commands are only available from within a project: check, crawl, edit, list, parse.
+"""
+        not_found_msg = """
+Unknown command: abc
+"""
+        params = [
+            ("list", 0, na_msg),
+            ("abc", 0, not_found_msg),
+            ("abc", 1, not_found_msg),
+        ]
+        for cmdname, inproject, message in params:
+            with mock.patch("sys.stdout", new=StringIO()) as out:
+                _print_unknown_command_msg(Settings(), cmdname, inproject)
+                self.assertEqual(out.getvalue().strip(), message.strip())
+
 
 class RunSpiderCommandTest(CommandTest):
     spider_filename = "myspider.py"
@@ -1143,3 +1163,29 @@ class HelpMessageTest(CommandTest):
         for command in self.commands:
             _, out, _ = self.proc(command, "-h")
             self.assertIn("Usage", out)
+
+
+class PopCommandNameTest(unittest.TestCase):
+    def test_valid_command(self):
+        argv = ["scrapy", "crawl", "my_spider"]
+        command = _pop_command_name(argv)
+        self.assertEqual(command, "crawl")
+        self.assertEqual(argv, ["scrapy", "my_spider"])
+
+    def test_no_command(self):
+        argv = ["scrapy"]
+        command = _pop_command_name(argv)
+        self.assertIsNone(command)
+        self.assertEqual(argv, ["scrapy"])
+
+    def test_option_before_command(self):
+        argv = ["scrapy", "-h", "crawl"]
+        command = _pop_command_name(argv)
+        self.assertEqual(command, "crawl")
+        self.assertEqual(argv, ["scrapy", "-h"])
+
+    def test_option_after_command(self):
+        argv = ["scrapy", "crawl", "-h"]
+        command = _pop_command_name(argv)
+        self.assertEqual(command, "crawl")
+        self.assertEqual(argv, ["scrapy", "-h"])
