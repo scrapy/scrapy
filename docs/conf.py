@@ -31,6 +31,7 @@ extensions = [
     "notfound.extension",
     "scrapydocs",
     "sphinx.ext.autodoc",
+    "scrapyfixautodoc",  # Must be after "sphinx.ext.autodoc"
     "sphinx.ext.coverage",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
@@ -173,15 +174,3 @@ hoverxref_role_types = {
     "signal": "tooltip",
 }
 hoverxref_roles = ["command", "reqmeta", "setting", "signal"]
-
-
-def setup(app):
-    app.connect("autodoc-skip-member", maybe_skip_member)
-
-
-def maybe_skip_member(app, what, name, obj, skip, options):
-    if not skip:
-        # autodocs was generating a text "alias of" for the following members
-        # https://github.com/sphinx-doc/sphinx/issues/4422
-        return name in {"default_item_class", "default_selector_class"}
-    return skip
