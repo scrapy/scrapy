@@ -32,7 +32,7 @@ This is an example where two add-ons are enabled in a project's
 Writing your own add-ons
 ========================
 
-Add-ons are Python classes that include one of the following methods:
+Add-ons are Python classes that include one or both of the following methods:
 
 .. method:: update_settings(settings)
 
