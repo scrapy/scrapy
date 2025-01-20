@@ -64,6 +64,7 @@ class AddonManager:
 
         :param settings: The :class:`~scrapy.settings.BaseSettings` object from \
             which to read the early add-on configuration
+        :type settings: :class:`~scrapy.settings.Settings`
         """
         for clspath in build_component_list(settings["ADDONS"]):
             addoncls = load_object(clspath)
