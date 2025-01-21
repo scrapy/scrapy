@@ -291,7 +291,7 @@ class CrawlerRunner:
     def __init__(self, settings: dict[str, Any] | Settings | None = None):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
-        AddonManager.load_early_settings(settings)
+        AddonManager.load_pre_crawler_settings(settings)
         self.settings: Settings = settings
         self.spider_loader: SpiderLoader = self._get_spider_loader(settings)
         self._crawlers: set[Crawler] = set()

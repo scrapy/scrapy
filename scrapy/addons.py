@@ -55,11 +55,11 @@ class AddonManager:
         )
 
     @classmethod
-    def load_early_settings(cls, settings: BaseSettings):
+    def load_pre_crawler_settings(cls, settings: BaseSettings):
         """Update early settings that do not require a crawler instance, such as SPIDER_MODULES.
 
         Similar to the load_settings method, this loads each add-on configured in the
-        ``ADDONS`` setting and calls their 'update_early_settings' class method if present.
+        ``ADDONS`` setting and calls their 'update_pre_crawler_settings' class method if present.
         This method doesn't have access to the crawler instance or the addons list.
 
         :param settings: The :class:`~scrapy.settings.BaseSettings` object from \
@@ -68,5 +68,5 @@ class AddonManager:
         """
         for clspath in build_component_list(settings["ADDONS"]):
             addoncls = load_object(clspath)
-            if hasattr(addoncls, "update_early_settings"):
-                addoncls.update_early_settings(settings)
+            if hasattr(addoncls, "update_pre_crawler_settings"):
+                addoncls.update_pre_crawler_settings(settings)

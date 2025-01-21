@@ -45,13 +45,11 @@ Add-ons are Python classes that include one or both of the following methods:
     :param settings: The settings object storing Scrapy/component configuration
     :type settings: :class:`~scrapy.settings.Settings`
 
-.. classmethod:: update_early_settings(cls, settings)
+.. classmethod:: update_pre_crawler_settings(cls, settings)
 
-    This method is called before the initialization of the
-    :class:`~scrapy.crawler.Crawler`. Here you can do the same updates as in the
-    ``update_settings`` method, but won't have access to the crawler instance.
-    Some settings, like :setting:`SPIDER_MODULES`, need to be updated here
-    because they are used during the initialization of the crawler.
+    Use this class method instead of the :meth:`update_settings` method to
+    update :ref:`pre-crawler settings <pre-crawler-settings>` whose value is
+    used before the :class:`~scrapy.crawler.Crawler` object is created.
 
     :param settings: The settings object storing Scrapy/component configuration
     :type settings: :class:`~scrapy.settings.BaseSettings`

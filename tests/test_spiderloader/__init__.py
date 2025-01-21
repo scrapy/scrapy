@@ -103,7 +103,7 @@ class SpiderLoaderTest(unittest.TestCase):
 
         class SpiderModuleAddon:
             @classmethod
-            def update_early_settings(cls, settings):
+            def update_pre_crawler_settings(cls, settings):
                 settings.set(
                     "SPIDER_MODULES",
                     [module],
