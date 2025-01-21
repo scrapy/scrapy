@@ -2633,6 +2633,8 @@ class BatchDeliveriesTest(FeedExportTestBase):
                         "Body": ANY,
                         "Bucket": bucket,
                         "Key": ANY,
+                        # Accept any checksum param that boto might send
+                        "ChecksumAlgorithm": ANY,
                     },
                     service_response={},
                 )
