@@ -97,6 +97,25 @@ class SpiderLoaderTest(unittest.TestCase):
         self.spider_loader = SpiderLoader.from_settings(settings)
         assert len(self.spider_loader._spiders) == 0
 
+    def test_load_spider_module_from_addons(self):
+        module = "tests.test_spiderloader.spiders_from_addons.spider0"
+
+        class SpiderModuleAddon:
+            @classmethod
+            def update_pre_crawler_settings(cls, settings):
+                settings.set(
+                    "SPIDER_MODULES",
+                    [module],
+                    "project",
+                )
+
+        runner = CrawlerRunner({"ADDONS": {SpiderModuleAddon: 1}})
+
+        crawler = runner.create_crawler("spider_from_addon")
+        self.assertTrue(issubclass(crawler.spidercls, scrapy.Spider))
+        self.assertEqual(crawler.spidercls.name, "spider_from_addon")
+        self.assertTrue(len(crawler.settings["SPIDER_MODULES"]) == 1)
+
     def test_crawler_runner_loading(self):
         module = "tests.test_spiderloader.test_spiders.spider1"
         runner = CrawlerRunner(
