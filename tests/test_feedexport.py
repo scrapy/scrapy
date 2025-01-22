@@ -468,13 +468,9 @@ class S3FeedStorageTest(unittest.TestCase):
         self.assertIn("S3 does not support appending to files", str(log))
 
 
+@pytest.mark.requires_gcs
 class GCSFeedStorageTest(unittest.TestCase):
     def test_parse_settings(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401
-        except ImportError:
-            raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
-
         settings = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": "publicRead"}
         crawler = get_crawler(settings_dict=settings)
         storage = GCSFeedStorage.from_crawler(crawler, "gs://mybucket/export.csv")
@@ -484,11 +480,6 @@ class GCSFeedStorageTest(unittest.TestCase):
         assert storage.blob_name == "export.csv"
 
     def test_parse_empty_acl(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401
-        except ImportError:
-            raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
-
         settings = {"GCS_PROJECT_ID": "123", "FEED_STORAGE_GCS_ACL": ""}
         crawler = get_crawler(settings_dict=settings)
         storage = GCSFeedStorage.from_crawler(crawler, "gs://mybucket/export.csv")
@@ -501,11 +492,6 @@ class GCSFeedStorageTest(unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_store(self):
-        try:
-            from google.cloud.storage import Client  # noqa: F401
-        except ImportError:
-            raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
-
         uri = "gs://mybucket/export.csv"
         project_id = "myproject-123"
         acl = "publicRead"
