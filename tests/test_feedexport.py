@@ -2622,18 +2622,24 @@ class BatchDeliveriesTest(FeedExportTestBase):
             stubs = []
 
             def open(self, *args, **kwargs):
+                from botocore import __version__ as botocore_version
                 from botocore.stub import ANY, Stubber
+                from packaging.version import Version
+
+                expected_params = {
+                    "Body": ANY,
+                    "Bucket": bucket,
+                    "Key": ANY,
+                }
+                if Version(botocore_version) >= Version("1.36.0"):
+                    expected_params["ChecksumAlgorithm"] = ANY
 
                 stub = Stubber(self.s3_client)
                 stub.activate()
                 CustomS3FeedStorage.stubs.append(stub)
                 stub.add_response(
                     "put_object",
-                    expected_params={
-                        "Body": ANY,
-                        "Bucket": bucket,
-                        "Key": ANY,
-                    },
+                    expected_params=expected_params,
                     service_response={},
                 )
                 return super().open(*args, **kwargs)
