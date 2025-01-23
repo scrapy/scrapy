@@ -222,7 +222,6 @@ markers = [
     "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
     "requires_botocore: marks tests that need botocore (but not boto3)",
     "requires_boto3: marks tests that need botocore and boto3",
-    "requires_gcs: marks tests that need google-cloud-storage",
 ]
 filterwarnings = []
 

@@ -115,18 +115,6 @@ def requires_boto3(request):
         pytest.skip("boto3 is not installed")
 
 
-@pytest.fixture(autouse=True)
-def requires_gcs(request):
-    if not request.node.get_closest_marker("requires_gcs"):
-        return
-    try:
-        from google.cloud.storage import Client
-
-        del Client
-    except ImportError:
-        pytest.skip("google-cloud-storage is not installed")
-
-
 def pytest_configure(config):
     if config.getoption("--reactor") == "asyncio":
         install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
