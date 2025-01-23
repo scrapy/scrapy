@@ -276,51 +276,28 @@ class S3FeedStorage(BlockingFeedStorage):
 
 
 class GCSFeedStorage(BlockingFeedStorage):
-    def __init__(
-        self,
-        uri: str,
-        project_id: str | None,
-        acl: str | None,
-        *,
-        feed_options: dict[str, Any] | None = None,
-    ):
-        try:
-            from google.cloud.storage import Client
-        except ImportError:
-            raise NotConfigured("missing google-cloud-storage library")
+    def __init__(self, uri: str, project_id: str | None, acl: str | None):
         self.project_id: str | None = project_id
         self.acl: str | None = acl
         u = urlparse(uri)
         assert u.hostname
         self.bucket_name: str = u.hostname
         self.blob_name: str = u.path[1:]  # remove first "/"
-        self.gcs_client = Client(project=self.project_id)
-
-        if feed_options and feed_options.get("overwrite", True) is False:
-            logger.warning(
-                "GCS does not support appending to files. To "
-                "suppress this warning, remove the overwrite "
-                "option from your FEEDS setting or set it to True."
-            )
 
     @classmethod
-    def from_crawler(
-        cls,
-        crawler: Crawler,
-        uri: str,
-        *,
-        feed_options: dict[str, Any] | None = None,
-    ) -> Self:
+    def from_crawler(cls, crawler: Crawler, uri: str) -> Self:
         return cls(
             uri,
             crawler.settings["GCS_PROJECT_ID"],
             crawler.settings["FEED_STORAGE_GCS_ACL"] or None,
-            feed_options=feed_options,
         )
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
-        bucket = self.gcs_client.get_bucket(self.bucket_name)
+        from google.cloud.storage import Client
+
+        client = Client(project=self.project_id)
+        bucket = client.get_bucket(self.bucket_name)
         blob = bucket.blob(self.blob_name)
         blob.upload_from_file(file, predefined_acl=self.acl)
 
