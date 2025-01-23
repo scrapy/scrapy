@@ -523,6 +523,21 @@ class GCSFeedStorageTest(unittest.TestCase):
             bucket_mock.blob.assert_called_once_with("export.csv")
             blob_mock.upload_from_file.assert_called_once_with(f, predefined_acl=acl)
 
+    def test_overwrite_default(self):
+        with LogCapture() as log:
+            GCSFeedStorage("gs://mybucket/export.csv", "myproject-123", "custom-acl")
+        self.assertNotIn("GCS does not support appending to files", str(log))
+
+    def test_overwrite_false(self):
+        with LogCapture() as log:
+            GCSFeedStorage(
+                "gs://mybucket/export.csv",
+                "myproject-123",
+                "custom-acl",
+                feed_options={"overwrite": False},
+            )
+        self.assertIn("GCS does not support appending to files", str(log))
+
 
 class StdoutFeedStorageTest(unittest.TestCase):
     @defer.inlineCallbacks

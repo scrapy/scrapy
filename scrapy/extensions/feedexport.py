@@ -293,7 +293,7 @@ class GCSFeedStorage(BlockingFeedStorage):
 
         if feed_options and feed_options.get("overwrite", True) is False:
             logger.warning(
-                "S3 does not support appending to files. To "
+                "GCS does not support appending to files. To "
                 "suppress this warning, remove the overwrite "
                 "option from your FEEDS setting or set it to True."
             )
