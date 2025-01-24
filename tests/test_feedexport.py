@@ -1190,8 +1190,7 @@ class FeedExportTest(FeedExportTestBase):
             "csv": b"baz,egg,foo\r\n,spam1,bar1\r\n",
             "json": b'[\n{"hello": "world2", "foo": "bar2"}\n]',
             "jsonlines": (
-                b'{"foo": "bar1", "egg": "spam1"}\n'
-                b'{"hello": "world2", "foo": "bar2"}\n'
+                b'{"foo": "bar1", "egg": "spam1"}\n{"hello": "world2", "foo": "bar2"}\n'
             ),
             "xml": (
                 b'<?xml version="1.0" encoding="utf-8"?>\n<items>\n<item>'
@@ -2289,9 +2288,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings.update(
             {
                 "FEEDS": {
-                    self._random_temp_filename()
-                    / "jl"
-                    / self._file_mark: {"format": "jl"},
+                    self._random_temp_filename() / "jl" / self._file_mark: {
+                        "format": "jl"
+                    },
                 },
             }
         )
@@ -2311,9 +2310,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings.update(
             {
                 "FEEDS": {
-                    self._random_temp_filename()
-                    / "csv"
-                    / self._file_mark: {"format": "csv"},
+                    self._random_temp_filename() / "csv" / self._file_mark: {
+                        "format": "csv"
+                    },
                 },
             }
         )
@@ -2331,9 +2330,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings.update(
             {
                 "FEEDS": {
-                    self._random_temp_filename()
-                    / "xml"
-                    / self._file_mark: {"format": "xml"},
+                    self._random_temp_filename() / "xml" / self._file_mark: {
+                        "format": "xml"
+                    },
                 },
             }
         )
@@ -2352,12 +2351,12 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings.update(
             {
                 "FEEDS": {
-                    self._random_temp_filename()
-                    / "xml"
-                    / self._file_mark: {"format": "xml"},
-                    self._random_temp_filename()
-                    / "json"
-                    / self._file_mark: {"format": "json"},
+                    self._random_temp_filename() / "xml" / self._file_mark: {
+                        "format": "xml"
+                    },
+                    self._random_temp_filename() / "json" / self._file_mark: {
+                        "format": "json"
+                    },
                 },
             }
         )
@@ -2384,9 +2383,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings.update(
             {
                 "FEEDS": {
-                    self._random_temp_filename()
-                    / "pickle"
-                    / self._file_mark: {"format": "pickle"},
+                    self._random_temp_filename() / "pickle" / self._file_mark: {
+                        "format": "pickle"
+                    },
                 },
             }
         )
@@ -2406,9 +2405,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
         settings.update(
             {
                 "FEEDS": {
-                    self._random_temp_filename()
-                    / "marshal"
-                    / self._file_mark: {"format": "marshal"},
+                    self._random_temp_filename() / "marshal" / self._file_mark: {
+                        "format": "marshal"
+                    },
                 },
             }
         )
@@ -2455,9 +2454,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
         for fmt in ("json", "jsonlines", "xml", "csv"):
             settings = {
                 "FEEDS": {
-                    self._random_temp_filename()
-                    / fmt
-                    / self._file_mark: {"format": fmt},
+                    self._random_temp_filename() / fmt / self._file_mark: {
+                        "format": fmt
+                    },
                 },
                 "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
                 "FEED_STORE_EMPTY": False,
@@ -2478,9 +2477,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
         for fmt, expctd in formats:
             settings = {
                 "FEEDS": {
-                    self._random_temp_filename()
-                    / fmt
-                    / self._file_mark: {"format": fmt},
+                    self._random_temp_filename() / fmt / self._file_mark: {
+                        "format": fmt
+                    },
                 },
                 "FEED_STORE_EMPTY": True,
                 "FEED_EXPORT_INDENT": None,
@@ -2520,25 +2519,19 @@ class BatchDeliveriesTest(FeedExportTestBase):
 
         settings = {
             "FEEDS": {
-                self._random_temp_filename()
-                / "json"
-                / self._file_mark: {
+                self._random_temp_filename() / "json" / self._file_mark: {
                     "format": "json",
                     "indent": 0,
                     "fields": ["bar"],
                     "encoding": "utf-8",
                 },
-                self._random_temp_filename()
-                / "xml"
-                / self._file_mark: {
+                self._random_temp_filename() / "xml" / self._file_mark: {
                     "format": "xml",
                     "indent": 2,
                     "fields": ["foo"],
                     "encoding": "latin-1",
                 },
-                self._random_temp_filename()
-                / "csv"
-                / self._file_mark: {
+                self._random_temp_filename() / "csv" / self._file_mark: {
                     "format": "csv",
                     "indent": None,
                     "fields": ["foo", "bar"],
@@ -2563,9 +2556,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         }
         settings = {
             "FEEDS": {
-                self._random_temp_filename()
-                / "json"
-                / self._file_mark: {
+                self._random_temp_filename() / "json" / self._file_mark: {
                     "format": "json",
                     "indent": None,
                     "encoding": "utf-8",
@@ -2591,8 +2582,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         ]
         settings = {
             "FEEDS": {
-                self._random_temp_filename()
-                / "%(batch_id)d": {
+                self._random_temp_filename() / "%(batch_id)d": {
                     "format": "json",
                 },
             },

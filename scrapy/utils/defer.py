@@ -377,7 +377,7 @@ def deferred_from_coro(o: _T) -> Deferred | _T:
 
 
 def deferred_f_from_coro_f(
-    coro_f: Callable[_P, Coroutine[Any, Any, _T]]
+    coro_f: Callable[_P, Coroutine[Any, Any, _T]],
 ) -> Callable[_P, Deferred[_T]]:
     """Converts a coroutine function into a function that returns a Deferred.
 

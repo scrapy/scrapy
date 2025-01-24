@@ -99,9 +99,9 @@ class BaseResponseTest(unittest.TestCase):
         self.assertEqual(r1.flags, r2.flags)
 
         # make sure headers attribute is shallow copied
-        assert (
-            r1.headers is not r2.headers
-        ), "headers must be a shallow copy, not identical"
+        assert r1.headers is not r2.headers, (
+            "headers must be a shallow copy, not identical"
+        )
         self.assertEqual(r1.headers, r2.headers)
 
     def test_copy_meta(self):

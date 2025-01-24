@@ -35,7 +35,6 @@ def _mocked_download_func(request, info):
 
 
 class UserDefinedPipeline(MediaPipeline):
-
     def media_to_download(self, request, info, *, item=None):
         pass
 
@@ -376,7 +375,6 @@ class MediaPipelineTestCase(BaseMediaPipelineTestCase):
 
 
 class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):
-
     def _assert_request_no3xx(self, pipeline_class, settings):
         pipe = pipeline_class(crawler=get_crawler(None, settings))
         request = Request("http://url")
@@ -403,11 +401,9 @@ class MediaPipelineAllowRedirectSettingsTestCase(unittest.TestCase):
                 self.assertNotIn(status, request.meta["handle_httpstatus_list"])
 
     def test_subclass_standard_setting(self):
-
         self._assert_request_no3xx(UserDefinedPipeline, {"MEDIA_ALLOW_REDIRECTS": True})
 
     def test_subclass_specific_setting(self):
-
         self._assert_request_no3xx(
             UserDefinedPipeline, {"USERDEFINEDPIPELINE_MEDIA_ALLOW_REDIRECTS": True}
         )

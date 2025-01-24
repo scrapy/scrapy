@@ -529,7 +529,7 @@ class ContractsManagerTest(unittest.TestCase):
                 return TestItem()
 
         with MockServer() as mockserver:
-            contract_doc = f'@url {mockserver.url("/status?n=200")}'
+            contract_doc = f"@url {mockserver.url('/status?n=200')}"
 
             TestSameUrlSpider.parse_first.__doc__ = contract_doc
             TestSameUrlSpider.parse_second.__doc__ = contract_doc
@@ -567,7 +567,6 @@ class CustomFailContractPostProcess(Contract):
 
 
 class CustomContractPrePostProcess(unittest.TestCase):
-
     def setUp(self):
         self.results = TextTestResult(stream=None, descriptions=False, verbosity=0)
 

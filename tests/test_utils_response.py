@@ -158,18 +158,18 @@ class ResponseUtilsTest(unittest.TestCase):
         )
 
         assert open_in_browser(r1, _openfunc=check_base_url), "Inject base url"
-        assert open_in_browser(
-            r2, _openfunc=check_base_url
-        ), "Inject base url with argumented head"
-        assert open_in_browser(
-            r3, _openfunc=check_base_url
-        ), "Inject unique base url with misleading tag"
-        assert open_in_browser(
-            r4, _openfunc=check_base_url
-        ), "Inject unique base url with misleading comment"
-        assert open_in_browser(
-            r5, _openfunc=check_base_url
-        ), "Inject unique base url with conditional comment"
+        assert open_in_browser(r2, _openfunc=check_base_url), (
+            "Inject base url with argumented head"
+        )
+        assert open_in_browser(r3, _openfunc=check_base_url), (
+            "Inject unique base url with misleading tag"
+        )
+        assert open_in_browser(r4, _openfunc=check_base_url), (
+            "Inject unique base url with misleading comment"
+        )
+        assert open_in_browser(r5, _openfunc=check_base_url), (
+            "Inject unique base url with conditional comment"
+        )
 
     def test_open_in_browser_redos_comment(self):
         MAX_CPU_TIME = 0.02
@@ -240,6 +240,6 @@ class ResponseUtilsTest(unittest.TestCase):
     ),
 )
 def test_remove_html_comments(input_body, output_body):
-    assert (
-        _remove_html_comments(input_body) == output_body
-    ), f"{_remove_html_comments(input_body)=} == {output_body=}"
+    assert _remove_html_comments(input_body) == output_body, (
+        f"{_remove_html_comments(input_body)=} == {output_body=}"
+    )

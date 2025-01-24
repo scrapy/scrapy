@@ -294,9 +294,9 @@ class EngineTest(unittest.TestCase):
         ]
         urls_visited = {rp[0].url for rp in run.respplug}
         urls_expected = {run.geturl(p) for p in must_be_visited}
-        assert (
-            urls_expected <= urls_visited
-        ), f"URLs not visited: {list(urls_expected - urls_visited)}"
+        assert urls_expected <= urls_visited, (
+            f"URLs not visited: {list(urls_expected - urls_visited)}"
+        )
 
     def _assert_scheduled_requests(self, run: CrawlerRun, count=None):
         self.assertEqual(count, len(run.reqplug))
@@ -496,9 +496,9 @@ def test_request_scheduled_signal(caplog):
     drop_request = Request("https://drop.example")
     caplog.set_level(DEBUG)
     engine._schedule_request(drop_request, spider)
-    assert scheduler.enqueued == [
-        keep_request
-    ], f"{scheduler.enqueued!r} != [{keep_request!r}]"
+    assert scheduler.enqueued == [keep_request], (
+        f"{scheduler.enqueued!r} != [{keep_request!r}]"
+    )
     crawler.signals.disconnect(signal_handler, request_scheduled)
 
 

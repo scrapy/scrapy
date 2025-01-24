@@ -215,7 +215,7 @@ class FilesPipelineTestCase(unittest.TestCase):
 
         class CustomFilesPipeline(FilesPipeline):
             def file_path(self, request, response=None, info=None, item=None):
-                return f'full/{item.get("path")}'
+                return f"full/{item.get('path')}"
 
         file_path = CustomFilesPipeline.from_crawler(
             get_crawler(None, {"FILES_STORE": self.tempdir})
