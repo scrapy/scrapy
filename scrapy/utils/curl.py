@@ -22,8 +22,7 @@ class DataAction(argparse.Action):
         option_string: str | None = None,
     ) -> None:
         value = str(values)
-        if value.startswith("$"):
-            value = value[1:]
+        value = value.removeprefix("$")
         setattr(namespace, self.dest, value)
 
 
