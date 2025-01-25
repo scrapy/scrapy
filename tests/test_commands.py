@@ -1034,6 +1034,7 @@ class BenchCommandTest(CommandTest):
         )
         self.assertIn("INFO: Crawled", log)
         self.assertNotIn("Unhandled Error", log)
+        self.assertNotIn("log_count/ERROR", log)
 
 
 class ViewCommandTest(CommandTest):
