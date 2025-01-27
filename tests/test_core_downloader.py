@@ -9,7 +9,7 @@ from typing import Any
 import OpenSSL.SSL
 import pytest
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.protocols.policies import WrappingFactory
 from twisted.trial import unittest
 from twisted.web import server, static
@@ -79,7 +79,15 @@ class ContextFactoryBaseTestCase(unittest.TestCase):
         response: TxResponse = await maybe_deferred_to_future(
             agent.request(b"GET", url.encode(), bodyProducer=body_producer)
         )
-        return await maybe_deferred_to_future(readBody(response))  # type: ignore[arg-type]
+        with warnings.catch_warnings():
+            # https://github.com/twisted/twisted/issues/8227
+            warnings.filterwarnings(
+                "ignore",
+                category=DeprecationWarning,
+                message=r".*does not have an abortConnection method",
+            )
+            d: Deferred[bytes] = readBody(response)  # type: ignore[arg-type]
+        return await maybe_deferred_to_future(d)
 
 
 class ContextFactoryTestCase(ContextFactoryBaseTestCase):
