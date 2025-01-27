@@ -22,6 +22,7 @@ from scrapy.core.downloader.tls import (
     openssl_methods,
 )
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
@@ -62,6 +63,13 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             self.tls_ciphers = AcceptableCiphers.fromOpenSSLCipherString(tls_ciphers)
         else:
             self.tls_ciphers = DEFAULT_CIPHERS
+        if method_is_overridden(type(self), ScrapyClientContextFactory, "getContext"):
+            warnings.warn(
+                "Overriding ScrapyClientContextFactory.getContext() is deprecated and that method"
+                " will be removed in a future Scrapy version. Override creatorForNetloc() instead.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
 
     @classmethod
     def from_settings(
@@ -121,7 +129,6 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     # kept for old-style HTTP/1.0 downloader context twisted calls,
     # e.g. connectSSL()
     def getContext(self, hostname: Any = None, port: Any = None) -> SSL.Context:
-        # FIXME
         ctx: SSL.Context = self.getCertificateOptions().getContext()
         ctx.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
         return ctx

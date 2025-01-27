@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import shutil
+import warnings
 from pathlib import Path
 from tempfile import mkdtemp
+from typing import Any
 
 import OpenSSL.SSL
 import pytest
@@ -91,6 +93,22 @@ class ContextFactoryTestCase(ContextFactoryBaseTestCase):
             self.getURL("payload"), client_context_factory, body=s
         )
         self.assertEqual(body, to_bytes(s))
+
+    def test_override_getContext(self):
+        class MyFactory(ScrapyClientContextFactory):
+            def getContext(
+                self, hostname: Any = None, port: Any = None
+            ) -> OpenSSL.SSL.Context:
+                ctx: OpenSSL.SSL.Context = super().getContext(hostname, port)
+                return ctx
+
+        with warnings.catch_warnings(record=True) as w:
+            MyFactory()
+            self.assertEqual(len(w), 1)
+            self.assertIn(
+                "Overriding ScrapyClientContextFactory.getContext() is deprecated",
+                str(w[0].message),
+            )
 
 
 class ContextFactoryTLSMethodTestCase(ContextFactoryBaseTestCase):
