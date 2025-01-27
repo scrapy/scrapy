@@ -67,6 +67,6 @@ class _BenchSpider(scrapy.Spider):
         return [scrapy.Request(url, dont_filter=True)]
 
     def parse(self, response: Response) -> Any:
-        assert isinstance(Response, TextResponse)
+        assert isinstance(response, TextResponse)
         for link in self.link_extractor.extract_links(response):
             yield scrapy.Request(link.url, callback=self.parse)
