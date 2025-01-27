@@ -121,6 +121,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     # kept for old-style HTTP/1.0 downloader context twisted calls,
     # e.g. connectSSL()
     def getContext(self, hostname: Any = None, port: Any = None) -> SSL.Context:
+        # FIXME
         ctx: SSL.Context = self.getCertificateOptions().getContext()
         ctx.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
         return ctx

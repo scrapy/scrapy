@@ -1,3 +1,5 @@
+"""Deprecated HTTP/1.0 helper classes used by HTTP10DownloadHandler."""
+
 from __future__ import annotations
 
 import re

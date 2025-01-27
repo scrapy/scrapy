@@ -422,6 +422,7 @@ class HttpTestCase(unittest.TestCase):
         return self.download_request(request, Spider("foo")).addCallback(_test)
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class Http10TestCase(HttpTestCase):
     """HTTP 1.0 test case"""
 
@@ -780,6 +781,7 @@ class HttpProxyTestCase(unittest.TestCase):
         return self.download_request(request, Spider("foo")).addCallback(_test)
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class Http10ProxyTestCase(HttpProxyTestCase):
     download_handler_cls: type = HTTP10DownloadHandler
 
