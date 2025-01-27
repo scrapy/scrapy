@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import warnings
 from time import time
 from typing import TYPE_CHECKING
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
@@ -9,6 +10,7 @@ from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
 from twisted.web.http import HTTPClient
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
@@ -48,6 +50,14 @@ def _parse(url: str) -> tuple[bytes, bytes, bytes, int, bytes]:
 
 class ScrapyHTTPPageGetter(HTTPClient):
     delimiter = b"\n"
+
+    def __init__(self):
+        warnings.warn(
+            "ScrapyHTTPPageGetter is deprecated and will be removed in a future Scrapy version.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__()
 
     def connectionMade(self):
         self.headers = Headers()  # bucket for response headers
@@ -140,6 +150,12 @@ class ScrapyHTTPClientFactory(ClientFactory):
             self.path = self.url
 
     def __init__(self, request: Request, timeout: float = 180):
+        warnings.warn(
+            "ScrapyHTTPClientFactory is deprecated and will be removed in a future Scrapy version.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+
         self._url: str = urldefrag(request.url)[0]
         # converting to bytes to comply to Twisted interface
         self.url: bytes = to_bytes(self._url, encoding="ascii")
