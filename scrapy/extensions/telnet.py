@@ -84,9 +84,7 @@ class TelnetConsole(protocol.ServerFactory):
             """An implementation of IPortal"""
 
             @defers
-            def login(
-                self_, credentials, mind, *interfaces
-            ):  # pylint: disable=no-self-argument
+            def login(self_, credentials, mind, *interfaces):  # pylint: disable=no-self-argument
                 if not (
                     credentials.username == self.username.encode("utf8")
                     and credentials.checkPassword(self.password.encode("utf8"))

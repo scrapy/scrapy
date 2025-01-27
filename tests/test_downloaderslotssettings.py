@@ -93,6 +93,6 @@ def test_params():
     _, actual = downloader._get_slot(request, spider=None)
     expected = Slot(**params)
     for param in params:
-        assert getattr(expected, param) == getattr(
-            actual, param
-        ), f"Slot.{param}: {getattr(expected, param)!r} != {getattr(actual, param)!r}"
+        assert getattr(expected, param) == getattr(actual, param), (
+            f"Slot.{param}: {getattr(expected, param)!r} != {getattr(actual, param)!r}"
+        )

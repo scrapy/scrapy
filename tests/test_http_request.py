@@ -226,9 +226,9 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r1.flags, r2.flags)
 
         # make sure cb_kwargs dict is shallow copied
-        assert (
-            r1.cb_kwargs is not r2.cb_kwargs
-        ), "cb_kwargs must be a shallow copy, not identical"
+        assert r1.cb_kwargs is not r2.cb_kwargs, (
+            "cb_kwargs must be a shallow copy, not identical"
+        )
         self.assertEqual(r1.cb_kwargs, r2.cb_kwargs)
 
         # make sure meta dict is shallow copied
@@ -236,9 +236,9 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r1.meta, r2.meta)
 
         # make sure headers attribute is shallow copied
-        assert (
-            r1.headers is not r2.headers
-        ), "headers must be a shallow copy, not identical"
+        assert r1.headers is not r2.headers, (
+            "headers must be a shallow copy, not identical"
+        )
         self.assertEqual(r1.headers, r2.headers)
         self.assertEqual(r1.encoding, r2.encoding)
         self.assertEqual(r1.dont_filter, r2.dont_filter)
