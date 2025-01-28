@@ -785,9 +785,6 @@ class HttpProxyTestCase(unittest.TestCase):
 class Http10ProxyTestCase(HttpProxyTestCase):
     download_handler_cls: type = HTTP10DownloadHandler
 
-    def test_download_with_proxy_https_noconnect(self):
-        raise unittest.SkipTest("noconnect is not supported in HTTP10DownloadHandler")
-
 
 class Http11ProxyTestCase(HttpProxyTestCase):
     download_handler_cls: type = HTTP11DownloadHandler
