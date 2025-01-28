@@ -1,83 +1,96 @@
 import unittest
 from email.charset import Charset
 from io import BytesIO
+from unittest import mock
 
+import pytest
 from twisted.internet import defer
 from twisted.internet._sslverify import ClientTLSOptions
 
-from scrapy.mail import MailSender
+from scrapy.mail import MailSender, SESMailSender, create_email_message
 
 
-class MailSenderTest(unittest.TestCase):
-    def test_send(self):
-        mailsender = MailSender(debug=True)
-        mailsender.send(
-            to=["test@scrapy.org"],
-            subject="subject",
-            body="body",
-            _callback=self._catch_mail_sent,
+class SESMailSenderTest(unittest.TestCase):
+    def test_raise_error_if_aws_credentials_are_not_provided(self):
+        with self.assertRaises(TypeError):
+            SESMailSender()
+        with self.assertRaises(TypeError):
+            SESMailSender("JUST_ONE_CREDENTIAL")
+        with self.assertRaises(TypeError):
+            SESMailSender("ONE_CREDENTIAL", "OTHER_CREDENTIAL")
+
+        # This must work
+        SESMailSender("aws_access_key", "aws_secret_key", "aws_region_name")
+
+    @pytest.mark.requires_boto3
+    @mock.patch("boto3.client")
+    def test_if_debug_do_not_send_message(self, boto3_client):
+        sender = SESMailSender(
+            "aws_access_key", "aws_secret_key", "aws_region_name", debug=True
         )
+        sender.send("to@scrapy.org", "subject", "body")
+        boto3_client.assert_not_called()
 
-        assert self.catched_msg
+    @pytest.mark.requires_boto3
+    @mock.patch("boto3.client")
+    def test_send_message_if_not_debug(self, boto3_client):
+        ses_client_mock = mock.MagicMock()
+        # Just need to have this method available in mock
+        ses_client_mock.send_raw_email.return_value = lambda x: x
+        boto3_client.return_value = ses_client_mock
 
-        self.assertEqual(self.catched_msg["to"], ["test@scrapy.org"])
-        self.assertEqual(self.catched_msg["subject"], "subject")
-        self.assertEqual(self.catched_msg["body"], "body")
+        sender = SESMailSender("aws_access_key", "aws_secret_key", "aws_region_name")
+        sender.send("to@scrapy.org", "subject", "body")
 
-        msg = self.catched_msg["msg"]
-        self.assertEqual(msg["to"], "test@scrapy.org")
-        self.assertEqual(msg["subject"], "subject")
-        self.assertEqual(msg.get_payload(), "body")
-        self.assertEqual(msg.get("Content-Type"), "text/plain")
+        ses_client_mock.send_raw_email.assert_called_once()
 
-    def test_send_single_values_to_and_cc(self):
-        mailsender = MailSender(debug=True)
-        mailsender.send(
-            to="test@scrapy.org",
-            subject="subject",
-            body="body",
-            cc="test@scrapy.org",
-            _callback=self._catch_mail_sent,
+
+class CreateMessageTestCase(unittest.TestCase):
+    def test_message_with_minimal_values(self):
+        msg = create_email_message(
+            "from@scrapy.org", "test@scrapy.org", "subject", "content"
         )
+        self.assertEqual(msg["From"], "from@scrapy.org")
+        self.assertEqual(msg["To"], "test@scrapy.org")
+        self.assertEqual(msg["Subject"], "subject")
+        self.assertEqual(msg["Cc"], None)
+        self.assertEqual(msg["Content-Type"], "text/plain")
+        self.assertEqual(msg.get_payload(), "content")
 
-    def test_send_html(self):
-        mailsender = MailSender(debug=True)
-        mailsender.send(
-            to=["test@scrapy.org"],
-            subject="subject",
-            body="<p>body</p>",
+    def test_message_with_cc(self):
+        msg = create_email_message(
+            "from@scrapy.org", "test@scrapy.org", "subject", "content", "cc@scrapy.org"
+        )
+        self.assertEqual(msg["Cc"], "cc@scrapy.org")
+
+    def test_message_with_more_recipients(self):
+        to = ["destination1@scrapy.org", "destination2@scrapy.org"]
+        cc = ["cc1@scrapy.org", "cc2@scrapy.org"]
+
+        msg = create_email_message("from@scrapy.org", to, "subject", "content", cc)
+        self.assertEqual(msg["To"], ", ".join(to))
+        self.assertEqual(msg["Cc"], ", ".join(cc))
+
+    def test_html_message(self):
+        msg = create_email_message(
+            "from@scrapy.org",
+            "to@scrapy.org",
+            "subject",
+            "<h1>content</h1>",
             mimetype="text/html",
-            _callback=self._catch_mail_sent,
         )
+        self.assertEqual(msg["Content-Type"], "text/html")
+        self.assertEqual(msg.get_payload(), "<h1>content</h1>")
 
-        msg = self.catched_msg["msg"]
-        self.assertEqual(msg.get_payload(), "<p>body</p>")
-        self.assertEqual(msg.get("Content-Type"), "text/html")
-
-    def test_send_attach(self):
+    def test_message_with_attach(self):
         attach = BytesIO()
         attach.write(b"content")
         attach.seek(0)
         attachs = [("attachment", "text/plain", attach)]
 
-        mailsender = MailSender(debug=True)
-        mailsender.send(
-            to=["test@scrapy.org"],
-            subject="subject",
-            body="body",
-            attachs=attachs,
-            _callback=self._catch_mail_sent,
+        msg = create_email_message(
+            "from@scrapy.org", "to@scrapy.org", "subject", "body", attachs=attachs
         )
-
-        assert self.catched_msg
-        self.assertEqual(self.catched_msg["to"], ["test@scrapy.org"])
-        self.assertEqual(self.catched_msg["subject"], "subject")
-        self.assertEqual(self.catched_msg["body"], "body")
-
-        msg = self.catched_msg["msg"]
-        self.assertEqual(msg["to"], "test@scrapy.org")
-        self.assertEqual(msg["subject"], "subject")
-
         payload = msg.get_payload()
         assert isinstance(payload, list)
         self.assertEqual(len(payload), 2)
@@ -87,32 +100,18 @@ class MailSenderTest(unittest.TestCase):
         self.assertEqual(text.get_charset(), Charset("us-ascii"))
         self.assertEqual(attach.get_payload(decode=True), b"content")
 
-    def _catch_mail_sent(self, **kwargs):
-        self.catched_msg = {**kwargs}
-
-    def test_send_utf8(self):
+    def test_utf8_message(self):
         subject = "sübjèçt"
         body = "bödÿ-àéïöñß"
-        mailsender = MailSender(debug=True)
-        mailsender.send(
-            to=["test@scrapy.org"],
-            subject=subject,
-            body=body,
-            charset="utf-8",
-            _callback=self._catch_mail_sent,
+        msg = create_email_message(
+            "from@scrapy.org", "to@scrapy.org", subject, body, charset="utf-8"
         )
-
-        assert self.catched_msg
-        self.assertEqual(self.catched_msg["subject"], subject)
-        self.assertEqual(self.catched_msg["body"], body)
-
-        msg = self.catched_msg["msg"]
         self.assertEqual(msg["subject"], subject)
         self.assertEqual(msg.get_payload(decode=True).decode("utf-8"), body)
         self.assertEqual(msg.get_charset(), Charset("utf-8"))
         self.assertEqual(msg.get("Content-Type"), 'text/plain; charset="utf-8"')
 
-    def test_send_attach_utf8(self):
+    def test_utf8_message_attach(self):
         subject = "sübjèçt"
         body = "bödÿ-àéïöñß"
         attach = BytesIO()
@@ -120,22 +119,15 @@ class MailSenderTest(unittest.TestCase):
         attach.seek(0)
         attachs = [("attachment", "text/plain", attach)]
 
-        mailsender = MailSender(debug=True)
-        mailsender.send(
-            to=["test@scrapy.org"],
-            subject=subject,
-            body=body,
+        msg = create_email_message(
+            "from@scrapy.org",
+            "to@scrapy.org",
+            subject,
+            body,
             attachs=attachs,
             charset="utf-8",
-            _callback=self._catch_mail_sent,
         )
-
-        assert self.catched_msg
-        self.assertEqual(self.catched_msg["subject"], subject)
-        self.assertEqual(self.catched_msg["body"], body)
-
-        msg = self.catched_msg["msg"]
-        self.assertEqual(msg["subject"], subject)
+        self.assertEqual(msg["Subject"], subject)
         self.assertEqual(msg.get_charset(), Charset("utf-8"))
         self.assertEqual(msg.get("Content-Type"), 'multipart/mixed; charset="utf-8"')
 
