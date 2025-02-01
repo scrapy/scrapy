@@ -609,49 +609,12 @@ class Https11TestCase(Http11TestCase):
             yield download_handler.close()
 
 
-class Https11WrongHostnameTestCase(Http11TestCase):
-    scheme = "https"
-
-    # above tests use a server certificate for "localhost",
-    # client connection to "localhost" too.
-    # here we test that even if the server certificate is for another domain,
-    # "www.example.com" in this case,
-    # the tests still pass
-    keyfile = "keys/example-com.key.pem"
-    certfile = "keys/example-com.cert.pem"
-
-
-class Https11InvalidDNSId(Https11TestCase):
-    """Connect to HTTPS hosts with IP while certificate uses domain names IDs."""
-
-    def setUp(self):
-        super().setUp()
-        self.host = "127.0.0.1"
-
-
-class Https11InvalidDNSPattern(Https11TestCase):
-    """Connect to HTTPS hosts where the certificate are issued to an ip instead of a domain."""
-
-    keyfile = "keys/localhost.ip.key"
-    certfile = "keys/localhost.ip.crt"
-
-    def setUp(self):
-        try:
-            from service_identity.exceptions import CertificateError  # noqa: F401
-        except ImportError:
-            raise unittest.SkipTest("cryptography lib is too old")
-        self.tls_log_message = (
-            'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", '
-            'subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
-        )
-        super().setUp()
-
-
-class Https11CustomCiphers(unittest.TestCase):
-    scheme = "https"
+class SimpleHttpsTest(unittest.TestCase):
+    """Base class for special cases tested with just one simple request"""
 
     keyfile = "keys/localhost.key"
     certfile = "keys/localhost.crt"
+    cipher_string: str | None = None
 
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
@@ -667,14 +630,16 @@ class Https11CustomCiphers(unittest.TestCase):
             0,
             self.site,
             ssl_context_factory(
-                self.keyfile, self.certfile, cipher_string="CAMELLIA256-SHA"
+                self.keyfile, self.certfile, cipher_string=self.cipher_string
             ),
             interface=self.host,
         )
         self.portno = self.port.getHost().port
-        crawler = get_crawler(
-            settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": "CAMELLIA256-SHA"}
-        )
+        if self.cipher_string is not None:
+            settings_dict = {"DOWNLOADER_CLIENT_TLS_CIPHERS": self.cipher_string}
+        else:
+            settings_dict = None
+        crawler = get_crawler(settings_dict=settings_dict)
         self.download_handler = build_from_crawler(self.download_handler_cls, crawler)
         self.download_request = self.download_handler.download_request
 
@@ -686,7 +651,7 @@ class Https11CustomCiphers(unittest.TestCase):
         shutil.rmtree(self.tmpname)
 
     def getURL(self, path):
-        return f"{self.scheme}://{self.host}:{self.portno}/{path}"
+        return f"https://{self.host}:{self.portno}/{path}"
 
     def test_download(self):
         request = Request(self.getURL("file"))
@@ -694,6 +659,42 @@ class Https11CustomCiphers(unittest.TestCase):
         d.addCallback(lambda r: r.body)
         d.addCallback(self.assertEqual, b"0123456789")
         return d
+
+
+class Https11WrongHostnameTestCase(SimpleHttpsTest):
+    # above tests use a server certificate for "localhost",
+    # client connection to "localhost" too.
+    # here we test that even if the server certificate is for another domain,
+    # "www.example.com" in this case,
+    # the tests still pass
+    keyfile = "keys/example-com.key.pem"
+    certfile = "keys/example-com.cert.pem"
+
+
+class Https11InvalidDNSId(SimpleHttpsTest):
+    """Connect to HTTPS hosts with IP while certificate uses domain names IDs."""
+
+    def setUp(self):
+        super().setUp()
+        self.host = "127.0.0.1"
+
+
+class Https11InvalidDNSPattern(SimpleHttpsTest):
+    """Connect to HTTPS hosts where the certificate are issued to an ip instead of a domain."""
+
+    keyfile = "keys/localhost.ip.key"
+    certfile = "keys/localhost.ip.crt"
+
+    def setUp(self):
+        try:
+            from service_identity.exceptions import CertificateError  # noqa: F401
+        except ImportError:
+            raise unittest.SkipTest("cryptography lib is too old")
+        super().setUp()
+
+
+class Https11CustomCiphers(SimpleHttpsTest):
+    cipher_string = "CAMELLIA256-SHA"
 
 
 class Http11MockServerTestCase(unittest.TestCase):

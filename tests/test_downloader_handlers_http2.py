@@ -19,9 +19,18 @@ from tests.test_downloader_handlers import (
     Http11MockServerTestCase,
     Http11ProxyTestCase,
     Https11CustomCiphers,
+    Https11InvalidDNSId,
+    Https11InvalidDNSPattern,
     Https11TestCase,
+    Https11WrongHostnameTestCase,
     UriResource,
 )
+
+
+def _get_dh() -> type[DownloadHandlerProtocol]:
+    from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
+
+    return H2DownloadHandler
 
 
 @skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
@@ -31,9 +40,7 @@ class Https2TestCase(Https11TestCase):
 
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
-
-        return H2DownloadHandler
+        return _get_dh()
 
     def test_protocol(self):
         request = Request(self.getURL("host"), method="GET")
@@ -151,56 +158,32 @@ class Https2TestCase(Https11TestCase):
         return d
 
 
-class Https2WrongHostnameTestCase(Https2TestCase):
-    tls_log_message = (
-        'SSL connection certificate: issuer "/C=XW/ST=XW/L=The '
-        'Internet/O=Scrapy/CN=www.example.com/emailAddress=test@example.com", '
-        'subject "/C=XW/ST=XW/L=The '
-        'Internet/O=Scrapy/CN=www.example.com/emailAddress=test@example.com"'
-    )
-
-    # above tests use a server certificate for "localhost",
-    # client connection to "localhost" too.
-    # here we test that even if the server certificate is for another domain,
-    # "www.example.com" in this case,
-    # the tests still pass
-    keyfile = "keys/example-com.key.pem"
-    certfile = "keys/example-com.cert.pem"
+@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
+class Https2WrongHostnameTestCase(Https11WrongHostnameTestCase):
+    @property
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        return _get_dh()
 
 
-class Https2InvalidDNSId(Https2TestCase):
-    """Connect to HTTPS hosts with IP while certificate uses domain names IDs."""
+@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
+class Https2InvalidDNSId(Https11InvalidDNSId):
+    @property
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        return _get_dh()
 
-    def setUp(self):
-        super().setUp()
-        self.host = "127.0.0.1"
 
-
-class Https2InvalidDNSPattern(Https2TestCase):
-    """Connect to HTTPS hosts where the certificate are issued to an ip instead of a domain."""
-
-    keyfile = "keys/localhost.ip.key"
-    certfile = "keys/localhost.ip.crt"
-
-    def setUp(self):
-        try:
-            from service_identity.exceptions import CertificateError  # noqa: F401
-        except ImportError:
-            raise unittest.SkipTest("cryptography lib is too old")
-        self.tls_log_message = (
-            'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=127.0.0.1", '
-            'subject "/C=IE/O=Scrapy/CN=127.0.0.1"'
-        )
-        super().setUp()
+@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
+class Https2InvalidDNSPattern(Https11InvalidDNSPattern):
+    @property
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        return _get_dh()
 
 
 @skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
 class Https2CustomCiphers(Https11CustomCiphers):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
-
-        return H2DownloadHandler
+        return _get_dh()
 
 
 @skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
@@ -228,9 +211,7 @@ class Https2ProxyTestCase(Http11ProxyTestCase):
 
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
-
-        return H2DownloadHandler
+        return _get_dh()
 
     def setUp(self):
         site = server.Site(UriResource(), timeout=None)
