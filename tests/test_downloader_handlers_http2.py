@@ -1,7 +1,7 @@
 import json
-from unittest import mock, skipIf
+from unittest import mock
 
-from pytest import mark
+import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer, error, reactor
 from twisted.trial import unittest
@@ -16,15 +16,38 @@ from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.mockserver import ssl_context_factory
 from tests.test_downloader_handlers import (
-    Http11MockServerTestCase,
-    Http11ProxyTestCase,
-    Https11CustomCiphers,
-    Https11InvalidDNSId,
-    Https11InvalidDNSPattern,
-    Https11TestCase,
-    Https11WrongHostnameTestCase,
     UriResource,
 )
+
+pytestmark = pytest.mark.skipif(
+    not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
+)
+
+
+class BaseTestClasses:
+    # A hack to prevent tests from the imported classes to run here too.
+    # See https://stackoverflow.com/q/1323455/113586 for other ways.
+    from tests.test_downloader_handlers import (
+        Http11MockServerTestCase as Http11MockServerTestCase,
+    )
+    from tests.test_downloader_handlers import (
+        Http11ProxyTestCase as Http11ProxyTestCase,
+    )
+    from tests.test_downloader_handlers import (
+        Https11CustomCiphers as Https11CustomCiphers,
+    )
+    from tests.test_downloader_handlers import (
+        Https11InvalidDNSId as Https11InvalidDNSId,
+    )
+    from tests.test_downloader_handlers import (
+        Https11InvalidDNSPattern as Https11InvalidDNSPattern,
+    )
+    from tests.test_downloader_handlers import (
+        Https11TestCase as Https11TestCase,
+    )
+    from tests.test_downloader_handlers import (
+        Https11WrongHostnameTestCase as Https11WrongHostnameTestCase,
+    )
 
 
 def _get_dh() -> type[DownloadHandlerProtocol]:
@@ -33,8 +56,7 @@ def _get_dh() -> type[DownloadHandlerProtocol]:
     return H2DownloadHandler
 
 
-@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
-class Https2TestCase(Https11TestCase):
+class Https2TestCase(BaseTestClasses.Https11TestCase):
     scheme = "https"
     HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
 
@@ -107,7 +129,7 @@ class Https2TestCase(Https11TestCase):
 
         return defer.DeferredList([d1, d2])
 
-    @mark.xfail(reason="https://github.com/python-hyper/h2/issues/1247")
+    @pytest.mark.xfail(reason="https://github.com/python-hyper/h2/issues/1247")
     def test_connect_request(self):
         request = Request(self.getURL("file"), method="CONNECT")
         d = self.download_request(request, Spider("foo"))
@@ -158,36 +180,31 @@ class Https2TestCase(Https11TestCase):
         return d
 
 
-@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
-class Https2WrongHostnameTestCase(Https11WrongHostnameTestCase):
+class Https2WrongHostnameTestCase(BaseTestClasses.Https11WrongHostnameTestCase):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return _get_dh()
 
 
-@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
-class Https2InvalidDNSId(Https11InvalidDNSId):
+class Https2InvalidDNSId(BaseTestClasses.Https11InvalidDNSId):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return _get_dh()
 
 
-@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
-class Https2InvalidDNSPattern(Https11InvalidDNSPattern):
+class Https2InvalidDNSPattern(BaseTestClasses.Https11InvalidDNSPattern):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return _get_dh()
 
 
-@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
-class Https2CustomCiphers(Https11CustomCiphers):
+class Https2CustomCiphers(BaseTestClasses.Https11CustomCiphers):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return _get_dh()
 
 
-@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
-class Http2MockServerTestCase(Http11MockServerTestCase):
+class Http2MockServerTestCase(BaseTestClasses.Http11MockServerTestCase):
     """HTTP 2.0 test case with MockServer"""
 
     settings_dict = {
@@ -198,8 +215,7 @@ class Http2MockServerTestCase(Http11MockServerTestCase):
     is_secure = True
 
 
-@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
-class Https2ProxyTestCase(Http11ProxyTestCase):
+class Https2ProxyTestCase(BaseTestClasses.Http11ProxyTestCase):
     # only used for HTTPS tests
     keyfile = "keys/localhost.key"
     certfile = "keys/localhost.crt"
