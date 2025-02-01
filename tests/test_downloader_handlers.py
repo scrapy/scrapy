@@ -13,6 +13,7 @@ import pytest
 from testfixtures import LogCapture
 from twisted.cred import checkers, credentials, portal
 from twisted.internet import defer, error, reactor
+from twisted.protocols.ftp import FTPFactory, FTPRealm
 from twisted.protocols.policies import WrappingFactory
 from twisted.trial import unittest
 from twisted.web import resource, server, static, util
@@ -23,6 +24,7 @@ from w3lib.url import path_to_file_uri
 from scrapy.core.downloader.handlers import DownloadHandlerProtocol, DownloadHandlers
 from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
+from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
@@ -1020,10 +1022,6 @@ class BaseFTPTestCase(unittest.TestCase):
     )
 
     def setUp(self):
-        from twisted.protocols.ftp import FTPFactory, FTPRealm
-
-        from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
-
         # setup dirs and test file
         self.directory = Path(mkdtemp())
         userdir = self.directory / self.username
@@ -1167,10 +1165,6 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
     req_meta = {}
 
     def setUp(self):
-        from twisted.protocols.ftp import FTPFactory, FTPRealm
-
-        from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
-
         # setup dir and test file
         self.directory = Path(mkdtemp())
         for filename, content in self.test_files:
