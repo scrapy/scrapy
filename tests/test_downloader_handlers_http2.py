@@ -23,9 +23,6 @@ pytestmark = pytest.mark.skipif(
     not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
 )
 
-# pylint: disable-next=ungrouped-imports
-from scrapy.core.downloader.handlers.http2 import H2DownloadHandler  # noqa: E402
-
 
 class BaseTestClasses:
     # A hack to prevent tests from the imported classes to run here too.
@@ -53,13 +50,19 @@ class BaseTestClasses:
     )
 
 
+def _get_dh() -> type[DownloadHandlerProtocol]:
+    from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
+
+    return H2DownloadHandler
+
+
 class Https2TestCase(BaseTestClasses.Https11TestCase):
     scheme = "https"
     HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
 
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return H2DownloadHandler
+        return _get_dh()
 
     def test_protocol(self):
         request = Request(self.getURL("host"), method="GET")
@@ -180,25 +183,25 @@ class Https2TestCase(BaseTestClasses.Https11TestCase):
 class Https2WrongHostnameTestCase(BaseTestClasses.Https11WrongHostnameTestCase):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return H2DownloadHandler
+        return _get_dh()
 
 
 class Https2InvalidDNSId(BaseTestClasses.Https11InvalidDNSId):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return H2DownloadHandler
+        return _get_dh()
 
 
 class Https2InvalidDNSPattern(BaseTestClasses.Https11InvalidDNSPattern):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return H2DownloadHandler
+        return _get_dh()
 
 
 class Https2CustomCiphers(BaseTestClasses.Https11CustomCiphers):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return H2DownloadHandler
+        return _get_dh()
 
 
 class Http2MockServerTestCase(BaseTestClasses.Http11MockServerTestCase):
@@ -224,7 +227,7 @@ class Https2ProxyTestCase(BaseTestClasses.Http11ProxyTestCase):
 
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return H2DownloadHandler
+        return _get_dh()
 
     def setUp(self):
         site = server.Site(UriResource(), timeout=None)
