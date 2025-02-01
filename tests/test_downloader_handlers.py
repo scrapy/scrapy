@@ -4,6 +4,7 @@ import contextlib
 import os
 import shutil
 import sys
+from abc import ABC, abstractmethod
 from pathlib import Path
 from tempfile import mkdtemp, mkstemp
 from unittest import SkipTest, mock
@@ -19,10 +20,9 @@ from twisted.web._newclient import ResponseFailed
 from twisted.web.http import _DataLoss
 from w3lib.url import path_to_file_uri
 
-from scrapy.core.downloader.handlers import DownloadHandlers
+from scrapy.core.downloader.handlers import DownloadHandlerProtocol, DownloadHandlers
 from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
-from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
@@ -218,13 +218,17 @@ class DuplicateHeaderResource(resource.Resource):
         return b""
 
 
-class HttpTestCase(unittest.TestCase):
+class HttpTestCase(unittest.TestCase, ABC):
     scheme = "http"
-    download_handler_cls: type = HTTPDownloadHandler
 
     # only used for HTTPS tests
     keyfile = "keys/localhost.key"
     certfile = "keys/localhost.crt"
+
+    @property
+    @abstractmethod
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        raise NotImplementedError
 
     def setUp(self):
         self.tmpname = Path(mkdtemp())
@@ -426,7 +430,9 @@ class HttpTestCase(unittest.TestCase):
 class Http10TestCase(HttpTestCase):
     """HTTP 1.0 test case"""
 
-    download_handler_cls: type = HTTP10DownloadHandler
+    @property
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        return HTTP10DownloadHandler
 
     def test_protocol(self):
         request = Request(self.getURL("host"), method="GET")
@@ -443,7 +449,9 @@ class Https10TestCase(Http10TestCase):
 class Http11TestCase(HttpTestCase):
     """HTTP 1.1 test case"""
 
-    download_handler_cls: type = HTTP11DownloadHandler
+    @property
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        return HTTP11DownloadHandler
 
     def test_download_without_maxsize_limit(self):
         request = Request(self.getURL("file"))
@@ -644,10 +652,13 @@ class Https11InvalidDNSPattern(Https11TestCase):
 
 class Https11CustomCiphers(unittest.TestCase):
     scheme = "https"
-    download_handler_cls: type = HTTP11DownloadHandler
 
     keyfile = "keys/localhost.key"
     certfile = "keys/localhost.crt"
+
+    @property
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        return HTTP11DownloadHandler
 
     def setUp(self):
         self.tmpname = Path(mkdtemp())
@@ -738,9 +749,13 @@ class UriResource(resource.Resource):
         return b""
 
 
-class HttpProxyTestCase(unittest.TestCase):
-    download_handler_cls: type = HTTPDownloadHandler
+class HttpProxyTestCase(unittest.TestCase, ABC):
     expected_http_proxy_request_body = b"http://example.com"
+
+    @property
+    @abstractmethod
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        raise NotImplementedError
 
     def setUp(self):
         site = server.Site(UriResource(), timeout=None)
@@ -783,11 +798,15 @@ class HttpProxyTestCase(unittest.TestCase):
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class Http10ProxyTestCase(HttpProxyTestCase):
-    download_handler_cls: type = HTTP10DownloadHandler
+    @property
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        return HTTP10DownloadHandler
 
 
 class Http11ProxyTestCase(HttpProxyTestCase):
-    download_handler_cls: type = HTTP11DownloadHandler
+    @property
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        return HTTP11DownloadHandler
 
     @defer.inlineCallbacks
     def test_download_with_proxy_https_timeout(self):
