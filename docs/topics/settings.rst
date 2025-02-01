@@ -779,6 +779,7 @@ Default:
     {
         "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
         "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 100,
+        "scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware": 200,
         "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
         "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware": 350,
         "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
@@ -1227,6 +1228,13 @@ Default: ``"guest"``
 The password to use for FTP connections when there is no ``"ftp_password"``
 in ``Request`` meta.
 
+It can be overriden in a request in any of the following ways:
+
+-   Specifying ``ftp_password`` in :attr:`Request.meta <scrapy.http.Request.meta>`
+
+-   Specifying the password in :attr:`Request.url <scrapy.http.Request.url>`
+    (see :class:`~scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware`)
+
 .. note::
     Paraphrasing `RFC 1635`_, although it is common to use either the password
     "guest" or one's e-mail address for anonymous FTP,
@@ -1243,8 +1251,14 @@ FTP_USER
 
 Default: ``"anonymous"``
 
-The username to use for FTP connections when there is no ``"ftp_user"``
-in ``Request`` meta.
+The default username to use for FTP connections.
+
+It can be overriden in a request in any of the following ways:
+
+-   Specifying ``ftp_user`` in :attr:`Request.meta <scrapy.http.Request.meta>`
+
+-   Specifying the username in :attr:`Request.url <scrapy.http.Request.url>`
+    (see :class:`~scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware`)
 
 .. setting:: GCS_PROJECT_ID
 

@@ -674,10 +674,12 @@ Those are:
 * :reqmeta:`download_maxsize`
 * :reqmeta:`download_warnsize`
 * :reqmeta:`download_timeout`
-* ``ftp_password`` (See :setting:`FTP_PASSWORD` for more info)
-* ``ftp_user`` (See :setting:`FTP_USER` for more info)
+* :reqmeta:`ftp_user`
+* :reqmeta:`ftp_password`
 * :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`http_user`
+* :reqmeta:`http_pass`
 * :reqmeta:`max_retry_times`
 * :reqmeta:`proxy`
 * :reqmeta:`redirect_reasons`
