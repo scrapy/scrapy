@@ -218,6 +218,12 @@ class DuplicateHeaderResource(resource.Resource):
         return b""
 
 
+class LongHeaderResource(resource.Resource):
+    def render(self, request):
+        request.responseHeaders.setRawHeaders(b"a", [b"a" * 2**15])
+        return b""
+
+
 class HttpTestCase(unittest.TestCase):
     scheme = "http"
     download_handler_cls: type = HTTPDownloadHandler
@@ -243,6 +249,7 @@ class HttpTestCase(unittest.TestCase):
         r.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
         r.putChild(b"largechunkedfile", LargeChunkedFileResource())
         r.putChild(b"duplicate-header", DuplicateHeaderResource())
+        r.putChild(b"long-header", LongHeaderResource())
         r.putChild(b"echo", Echo())
         self.site = server.Site(r, timeout=None)
         self.wrapper = WrappingFactory(self.site)
@@ -421,6 +428,13 @@ class HttpTestCase(unittest.TestCase):
         request = Request(self.getURL("duplicate-header"))
         return self.download_request(request, Spider("foo")).addCallback(_test)
 
+    def test_get_long_header(self):
+        def _test(response):
+            self.assertEqual(response.headers.get(b"a"), b"a" * 2**15)
+
+        request = Request(self.getURL("long-header"))
+        return self.download_request(request, Spider("foo")).addCallback(_test)
+
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class Http10TestCase(HttpTestCase):
@@ -434,6 +448,9 @@ class Http10TestCase(HttpTestCase):
         d.addCallback(lambda r: r.protocol)
         d.addCallback(self.assertEqual, "HTTP/1.0")
         return d
+
+    def test_get_long_header(self):
+        raise unittest.SkipTest("Scrapy does not support long headers on HTTP/1.0")
 
 
 class Https10TestCase(Http10TestCase):

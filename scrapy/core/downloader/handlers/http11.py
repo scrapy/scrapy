@@ -17,6 +17,7 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import TimeoutError
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
+from twisted.web._newclient import HTTPClientParser
 from twisted.web.client import (
     URI,
     Agent,
@@ -62,6 +63,11 @@ class _ResultT(TypedDict):
     certificate: ssl.Certificate | None
     ip_address: ipaddress.IPv4Address | ipaddress.IPv6Address | None
     failure: NotRequired[Failure | None]
+
+
+# Monkey-patch to increase the maximum length for (header) lines, which is
+# 2**14 by default as of Twisted 22.10.0.
+HTTPClientParser.MAX_LENGTH = max(2**16, HTTPClientParser.MAX_LENGTH)
 
 
 class HTTP11DownloadHandler:
