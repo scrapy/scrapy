@@ -16,7 +16,7 @@ from twisted.internet import defer, error, reactor
 from twisted.protocols.policies import WrappingFactory
 from twisted.trial import unittest
 from twisted.web import resource, server, static, util
-from twisted.web._newclient import ResponseFailed
+from twisted.web.client import ResponseFailed
 from twisted.web.http import _DataLoss
 from w3lib.url import path_to_file_uri
 
@@ -183,10 +183,7 @@ class BrokenDownloadResource(resource.Resource):
 def closeConnection(request):
     # We have to force a disconnection for HTTP/1.1 clients. Otherwise
     # client keeps the connection open waiting for more data.
-    if hasattr(request.channel, "loseConnection"):  # twisted >=16.3.0
-        request.channel.loseConnection()
-    else:
-        request.channel.transport.loseConnection()
+    request.channel.loseConnection()
     request.finish()
 
 
@@ -703,6 +700,7 @@ class Http11MockServerTestCase(unittest.TestCase):
     """HTTP 1.1 test case with MockServer"""
 
     settings_dict: dict | None = None
+    is_secure = False
 
     def setUp(self):
         self.mockserver = MockServer()
@@ -718,7 +716,8 @@ class Http11MockServerTestCase(unittest.TestCase):
         # download it
         yield crawler.crawl(
             seed=Request(
-                url=self.mockserver.url("/partial"), meta={"download_maxsize": 1000}
+                url=self.mockserver.url("/partial", is_secure=self.is_secure),
+                meta={"download_maxsize": 1000},
             )
         )
         failure = crawler.spider.meta["failure"]
@@ -727,7 +726,9 @@ class Http11MockServerTestCase(unittest.TestCase):
     @defer.inlineCallbacks
     def test_download(self):
         crawler = get_crawler(SingleRequestSpider, self.settings_dict)
-        yield crawler.crawl(seed=Request(url=self.mockserver.url("")))
+        yield crawler.crawl(
+            seed=Request(url=self.mockserver.url("", is_secure=self.is_secure))
+        )
         failure = crawler.spider.meta.get("failure")
         self.assertTrue(failure is None)
         reason = crawler.spider.meta["close_reason"]

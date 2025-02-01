@@ -196,8 +196,6 @@ class Https2InvalidDNSPattern(Https2TestCase):
 
 @skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
 class Https2CustomCiphers(Https11CustomCiphers):
-    scheme = "https"
-
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
@@ -205,6 +203,7 @@ class Https2CustomCiphers(Https11CustomCiphers):
         return H2DownloadHandler
 
 
+@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
 class Http2MockServerTestCase(Http11MockServerTestCase):
     """HTTP 2.0 test case with MockServer"""
 
@@ -213,6 +212,7 @@ class Http2MockServerTestCase(Http11MockServerTestCase):
             "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler"
         }
     }
+    is_secure = True
 
 
 @skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
