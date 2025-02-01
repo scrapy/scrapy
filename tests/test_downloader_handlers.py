@@ -685,13 +685,6 @@ class Https11InvalidDNSPattern(SimpleHttpsTest):
     keyfile = "keys/localhost.ip.key"
     certfile = "keys/localhost.ip.crt"
 
-    def setUp(self):
-        try:
-            from service_identity.exceptions import CertificateError  # noqa: F401
-        except ImportError:
-            raise unittest.SkipTest("cryptography lib is too old")
-        super().setUp()
-
 
 class Https11CustomCiphers(SimpleHttpsTest):
     cipher_string = "CAMELLIA256-SHA"
