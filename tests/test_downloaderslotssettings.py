@@ -50,13 +50,17 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
 
 
 class CrawlTestCase(TestCase):
-    def setUp(self):
-        self.mockserver = MockServer()
-        self.mockserver.__enter__()
-        self.runner = CrawlerRunner()
+    @classmethod
+    def setUpClass(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
 
-    def tearDown(self):
-        self.mockserver.__exit__(None, None, None)
+    @classmethod
+    def tearDownClass(cls):
+        cls.mockserver.__exit__(None, None, None)
+
+    def setUp(self):
+        self.runner = CrawlerRunner()
 
     @defer.inlineCallbacks
     def test_delay(self):

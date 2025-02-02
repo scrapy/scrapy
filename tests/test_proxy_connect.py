@@ -62,14 +62,21 @@ def _wrong_credentials(proxy_url):
 
 
 class ProxyConnectTestCase(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.mockserver.__exit__(None, None, None)
+
     def setUp(self):
         try:
             import mitmproxy  # noqa: F401
         except ImportError:
             self.skipTest("mitmproxy is not installed")
 
-        self.mockserver = MockServer()
-        self.mockserver.__enter__()
         self._oldenv = os.environ.copy()
 
         self._proxy = MitmProxy()
@@ -78,7 +85,6 @@ class ProxyConnectTestCase(TestCase):
         os.environ["http_proxy"] = proxy_url
 
     def tearDown(self):
-        self.mockserver.__exit__(None, None, None)
         self._proxy.stop()
         os.environ = self._oldenv
 

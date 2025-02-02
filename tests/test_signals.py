@@ -21,13 +21,17 @@ class ItemSpider(Spider):
 
 
 class AsyncSignalTestCase(unittest.TestCase):
-    def setUp(self):
-        self.mockserver = MockServer()
-        self.mockserver.__enter__()
-        self.items = []
+    @classmethod
+    def setUpClass(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
 
-    def tearDown(self):
-        self.mockserver.__exit__(None, None, None)
+    @classmethod
+    def tearDownClass(cls):
+        cls.mockserver.__exit__(None, None, None)
+
+    def setUp(self):
+        self.items = []
 
     async def _on_item_scraped(self, item):
         item = await get_from_asyncio_queue(item)

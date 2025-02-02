@@ -636,13 +636,19 @@ class FeedExportTestBase(ABC, unittest.TestCase):
         filename = "".join(chars)
         return Path(self.temp_dir, inter_dir, filename)
 
+    @classmethod
+    def setUpClass(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.mockserver.__exit__(None, None, None)
+
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
-        self.mockserver = MockServer()
-        self.mockserver.__enter__()
 
     def tearDown(self):
-        self.mockserver.__exit__(None, None, None)
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     @defer.inlineCallbacks
