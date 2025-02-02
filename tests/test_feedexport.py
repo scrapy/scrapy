@@ -13,7 +13,6 @@ import tempfile
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from contextlib import ExitStack
 from io import BytesIO
 from logging import getLogger
 from pathlib import Path
@@ -623,8 +622,6 @@ class LogOnStoreFileStorage:
 
 
 class FeedExportTestBase(ABC, unittest.TestCase):
-    __test__ = False
-
     class MyItem(scrapy.Item):
         foo = scrapy.Field()
         egg = scrapy.Field()
@@ -641,8 +638,11 @@ class FeedExportTestBase(ABC, unittest.TestCase):
 
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
+        self.mockserver = MockServer()
+        self.mockserver.__enter__()
 
     def tearDown(self):
+        self.mockserver.__exit__(None, None, None)
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     @defer.inlineCallbacks
@@ -746,8 +746,6 @@ class ExceptionJsonItemExporter(JsonItemExporter):
 
 
 class FeedExportTest(FeedExportTestBase):
-    __test__ = True
-
     @defer.inlineCallbacks
     def run_and_export(self, spider_cls, settings):
         """Run spider with specified settings; return exported data."""
@@ -760,10 +758,9 @@ class FeedExportTest(FeedExportTestBase):
 
         content = {}
         try:
-            with MockServer() as s:
-                spider_cls.start_urls = [s.url("/")]
-                crawler = get_crawler(spider_cls, settings)
-                yield crawler.crawl()
+            spider_cls.start_urls = [self.mockserver.url("/")]
+            crawler = get_crawler(spider_cls, settings)
+            yield crawler.crawl()
 
             for file_path, feed_options in FEEDS.items():
                 content[feed_options["format"]] = (
@@ -890,8 +887,7 @@ class FeedExportTest(FeedExportTestBase):
             },
         }
         crawler = get_crawler(ItemSpider, settings)
-        with MockServer() as mockserver:
-            yield crawler.crawl(mockserver=mockserver)
+        yield crawler.crawl(mockserver=self.mockserver)
         self.assertIn(
             "feedexport/success_count/FileFeedStorage", crawler.stats.get_stats()
         )
@@ -909,15 +905,11 @@ class FeedExportTest(FeedExportTestBase):
             },
         }
         crawler = get_crawler(ItemSpider, settings)
-        with ExitStack() as stack:
-            mockserver = stack.enter_context(MockServer())
-            stack.enter_context(
-                mock.patch(
-                    "scrapy.extensions.feedexport.FileFeedStorage.store",
-                    side_effect=KeyError("foo"),
-                )
-            )
-            yield crawler.crawl(mockserver=mockserver)
+        with mock.patch(
+            "scrapy.extensions.feedexport.FileFeedStorage.store",
+            side_effect=KeyError("foo"),
+        ):
+            yield crawler.crawl(mockserver=self.mockserver)
         self.assertIn(
             "feedexport/failed_count/FileFeedStorage", crawler.stats.get_stats()
         )
@@ -938,8 +930,8 @@ class FeedExportTest(FeedExportTestBase):
             },
         }
         crawler = get_crawler(ItemSpider, settings)
-        with MockServer() as mockserver, mock.patch.object(S3FeedStorage, "store"):
-            yield crawler.crawl(mockserver=mockserver)
+        with mock.patch.object(S3FeedStorage, "store"):
+            yield crawler.crawl(mockserver=self.mockserver)
         self.assertIn(
             "feedexport/success_count/FileFeedStorage", crawler.stats.get_stats()
         )
@@ -1730,8 +1722,6 @@ class FeedExportTest(FeedExportTestBase):
 
 
 class FeedPostProcessedExportsTest(FeedExportTestBase):
-    __test__ = True
-
     items = [{"foo": "bar"}]
     expected = b"foo\r\nbar\r\n"
 
@@ -1764,10 +1754,9 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
         content = {}
         try:
-            with MockServer() as s:
-                spider_cls.start_urls = [s.url("/")]
-                crawler = get_crawler(spider_cls, settings)
-                yield crawler.crawl()
+            spider_cls.start_urls = [self.mockserver.url("/")]
+            crawler = get_crawler(spider_cls, settings)
+            yield crawler.crawl()
 
             for file_path in FEEDS:
                 content[str(file_path)] = (
@@ -2253,7 +2242,6 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
 
 class BatchDeliveriesTest(FeedExportTestBase):
-    __test__ = True
     _file_mark = "_%(batch_time)s_#%(batch_id)02d_"
 
     @defer.inlineCallbacks
@@ -2265,21 +2253,17 @@ class BatchDeliveriesTest(FeedExportTestBase):
             build_url(file_path): feed for file_path, feed in FEEDS.items()
         }
         content = defaultdict(list)
-        try:
-            with MockServer() as s:
-                spider_cls.start_urls = [s.url("/")]
-                crawler = get_crawler(spider_cls, settings)
-                yield crawler.crawl()
+        spider_cls.start_urls = [self.mockserver.url("/")]
+        crawler = get_crawler(spider_cls, settings)
+        yield crawler.crawl()
 
-            for path, feed in FEEDS.items():
-                dir_name = Path(path).parent
-                if not dir_name.exists():
-                    content[feed["format"]] = []
-                    continue
-                for file in sorted(dir_name.iterdir()):
-                    content[feed["format"]].append(file.read_bytes())
-        finally:
-            self.tearDown()
+        for path, feed in FEEDS.items():
+            dir_name = Path(path).parent
+            if not dir_name.exists():
+                content[feed["format"]] = []
+                continue
+            for file in sorted(dir_name.iterdir()):
+                content[feed["format"]].append(file.read_bytes())
         return content
 
     @defer.inlineCallbacks
@@ -2604,8 +2588,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
         }
         crawler = get_crawler(ItemSpider, settings)
-        with MockServer() as mockserver:
-            yield crawler.crawl(total=2, mockserver=mockserver)
+        yield crawler.crawl(total=2, mockserver=self.mockserver)
         self.assertIn(
             "feedexport/success_count/FileFeedStorage", crawler.stats.get_stats()
         )
@@ -2675,10 +2658,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
             def parse(self, response):
                 yield from items
 
-        with MockServer() as server:
-            TestSpider.start_urls = [server.url("/")]
-            crawler = get_crawler(TestSpider, settings)
-            yield crawler.crawl()
+        TestSpider.start_urls = [self.mockserver.url("/")]
+        crawler = get_crawler(TestSpider, settings)
+        yield crawler.crawl()
 
         self.assertEqual(len(CustomS3FeedStorage.stubs), len(items))
         for stub in CustomS3FeedStorage.stubs[:-1]:
