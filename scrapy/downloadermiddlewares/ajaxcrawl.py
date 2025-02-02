@@ -9,6 +9,7 @@ from w3lib import html
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import HtmlResponse, Response
+from scrapy.utils.url import escape_ajax
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -64,8 +65,7 @@ class AjaxCrawlMiddleware:
         if not self._has_ajax_crawlable_variant(response):
             return response
 
-        # scrapy already handles #! links properly
-        ajax_crawl_request = request.replace(url=request.url + "#!")
+        ajax_crawl_request = request.replace(url=escape_ajax(request.url + "#!"))
         logger.debug(
             "Downloading AJAX crawlable %(ajax_crawl_request)s instead of %(request)s",
             {"ajax_crawl_request": ajax_crawl_request, "request": request},
