@@ -105,7 +105,8 @@ class Headers(CaselessDict):
 
     def values(self) -> list[bytes | None]:  # type: ignore[override]
         return [
-            self[k] for k in self.keys()  # pylint: disable=consider-using-dict-items
+            self[k]
+            for k in self.keys()  # pylint: disable=consider-using-dict-items
         ]
 
     def to_string(self) -> bytes:

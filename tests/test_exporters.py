@@ -390,14 +390,14 @@ class CsvItemExporterTest(BaseItemExporterTest):
     def test_errors_default(self):
         with self.assertRaises(UnicodeEncodeError):
             self.assertExportResult(
-                item={"text": "W\u0275\u200Brd"},
+                item={"text": "W\u0275\u200brd"},
                 expected=None,
                 encoding="windows-1251",
             )
 
     def test_errors_xmlcharrefreplace(self):
         self.assertExportResult(
-            item={"text": "W\u0275\u200Brd"},
+            item={"text": "W\u0275\u200brd"},
             include_headers_line=False,
             expected="W&#629;&#8203;rd\r\n",
             encoding="windows-1251",

@@ -1,13 +1,10 @@
 repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.8.4
+  rev: v0.9.3
   hooks:
     - id: ruff
       args: [ --fix ]
-- repo: https://github.com/psf/black.git
-  rev: 24.10.0
-  hooks:
-  - id: black
+    - id: ruff-format
 - repo: https://github.com/adamchainz/blacken-docs
   rev: 1.19.1
   hooks:

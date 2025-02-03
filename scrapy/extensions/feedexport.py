@@ -276,7 +276,14 @@ class S3FeedStorage(BlockingFeedStorage):
 
 
 class GCSFeedStorage(BlockingFeedStorage):
-    def __init__(self, uri: str, project_id: str | None, acl: str | None):
+    def __init__(
+        self,
+        uri: str,
+        project_id: str | None,
+        acl: str | None,
+        *,
+        feed_options: dict[str, Any] | None = None,
+    ):
         self.project_id: str | None = project_id
         self.acl: str | None = acl
         u = urlparse(uri)
@@ -284,12 +291,26 @@ class GCSFeedStorage(BlockingFeedStorage):
         self.bucket_name: str = u.hostname
         self.blob_name: str = u.path[1:]  # remove first "/"
 
+        if feed_options and feed_options.get("overwrite", True) is False:
+            logger.warning(
+                "GCS does not support appending to files. To "
+                "suppress this warning, remove the overwrite "
+                "option from your FEEDS setting or set it to True."
+            )
+
     @classmethod
-    def from_crawler(cls, crawler: Crawler, uri: str) -> Self:
+    def from_crawler(
+        cls,
+        crawler: Crawler,
+        uri: str,
+        *,
+        feed_options: dict[str, Any] | None = None,
+    ) -> Self:
         return cls(
             uri,
             crawler.settings["GCS_PROJECT_ID"],
             crawler.settings["FEED_STORAGE_GCS_ACL"] or None,
+            feed_options=feed_options,
         )
 
     def _store_in_thread(self, file: IO[bytes]) -> None:

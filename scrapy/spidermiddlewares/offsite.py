@@ -110,7 +110,7 @@ class OffsiteMiddleware:
                 warnings.warn(message, PortWarning)
             else:
                 domains.append(re.escape(domain))
-        regex = rf'^(.*\.)?({"|".join(domains)})$'
+        regex = rf"^(.*\.)?({'|'.join(domains)})$"
         return re.compile(regex)
 
     def spider_opened(self, spider: Spider) -> None:

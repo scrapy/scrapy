@@ -27,7 +27,6 @@ from scrapy.http.headers import Headers
 from scrapy.utils.curl import curl_to_request_kwargs
 from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
-from scrapy.utils.url import escape_ajax
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -170,8 +169,7 @@ class Request(object_ref):
         if not isinstance(url, str):
             raise TypeError(f"Request url must be str, got {type(url).__name__}")
 
-        s = safe_url_string(url, self.encoding)
-        self._url = escape_ajax(s)
+        self._url = safe_url_string(url, self.encoding)
 
         if (
             "://" not in self._url

@@ -193,7 +193,7 @@ class Stream:
             url.netloc == str(self._protocol.metadata["uri"].host, "utf-8")
             or url.netloc == str(self._protocol.metadata["uri"].netloc, "utf-8")
             or url.netloc
-            == f'{self._protocol.metadata["ip_address"]}:{self._protocol.metadata["uri"].port}'
+            == f"{self._protocol.metadata['ip_address']}:{self._protocol.metadata['uri'].port}"
         )
 
     def _get_request_headers(self) -> list[tuple[str, str]]:
@@ -339,7 +339,7 @@ class Stream:
         if self._log_warnsize:
             self.metadata["reached_warnsize"] = True
             warning_msg = (
-                f'Received more ({self._response["flow_controlled_size"]}) bytes than download '
+                f"Received more ({self._response['flow_controlled_size']}) bytes than download "
                 f"warn size ({self._download_warnsize}) in request {self._request}"
             )
             logger.warning(warning_msg)
@@ -445,7 +445,7 @@ class Stream:
                 ResponseFailed(
                     [
                         Failure(
-                            f'Remote peer {self._protocol.metadata["ip_address"]} sent RST_STREAM',
+                            f"Remote peer {self._protocol.metadata['ip_address']} sent RST_STREAM",
                             ProtocolError,
                         )
                     ]
@@ -465,7 +465,7 @@ class Stream:
                 InvalidHostname(
                     self._request,
                     str(self._protocol.metadata["uri"].host, "utf-8"),
-                    f'{self._protocol.metadata["ip_address"]}:{self._protocol.metadata["uri"].port}',
+                    f"{self._protocol.metadata['ip_address']}:{self._protocol.metadata['uri'].port}",
                 )
             )
 

@@ -1249,8 +1249,11 @@ AJAXCRAWL_ENABLED
 
 Default: ``False``
 
-Whether the AjaxCrawlMiddleware will be enabled. You may want to
-enable it for :ref:`broad crawls <topics-broad-crawls>`.
+Whether the AjaxCrawlMiddleware will be enabled.
+
+   .. note::
+
+       This middleware is deprecated and will be removed in a future Scrapy release.
 
 HttpProxyMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

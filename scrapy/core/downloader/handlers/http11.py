@@ -9,7 +9,7 @@ from contextlib import suppress
 from io import BytesIO
 from time import time
 from typing import TYPE_CHECKING, Any, TypedDict, TypeVar
-from urllib.parse import urldefrag, urlunparse
+from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
 from twisted.internet.defer import CancelledError, Deferred, succeed
@@ -32,11 +32,12 @@ from zope.interface import implementer
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
-from scrapy.core.downloader.webclient import _parse
 from scrapy.exceptions import StopDownload
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.url import add_http_if_no_scheme
 
 if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
@@ -378,12 +379,15 @@ class ScrapyAgent:
         bindaddress = request.meta.get("bindaddress") or self._bindAddress
         proxy = request.meta.get("proxy")
         if proxy:
-            proxyScheme, proxyNetloc, proxyHost, proxyPort, proxyParams = _parse(proxy)
-            scheme = _parse(request.url)[0]
-            proxyHost_str = to_unicode(proxyHost)
-            if scheme == b"https":
+            proxy = add_http_if_no_scheme(proxy)
+            proxy_parsed = urlparse(proxy)
+            proxy_host = proxy_parsed.hostname
+            proxy_port = proxy_parsed.port
+            if not proxy_port:
+                proxy_port = 443 if proxy_parsed.scheme == "https" else 80
+            if urlparse_cached(request).scheme == "https":
                 proxyAuth = request.headers.get(b"Proxy-Authorization", None)
-                proxyConf = (proxyHost_str, proxyPort, proxyAuth)
+                proxyConf = (proxy_host, proxy_port, proxyAuth)
                 return self._TunnelingAgent(
                     reactor=reactor,
                     proxyConf=proxyConf,
@@ -392,13 +396,9 @@ class ScrapyAgent:
                     bindAddress=bindaddress,
                     pool=self._pool,
                 )
-            proxyScheme = proxyScheme or b"http"
-            proxyURI = urlunparse(
-                (proxyScheme, proxyNetloc, proxyParams, b"", b"", b"")
-            )
             return self._ProxyAgent(
                 reactor=reactor,
-                proxyURI=to_bytes(proxyURI, encoding="ascii"),
+                proxyURI=to_bytes(proxy, encoding="ascii"),
                 connectTimeout=timeout,
                 bindAddress=bindaddress,
                 pool=self._pool,

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import to_unicode
 
@@ -26,6 +28,11 @@ class HTTP10DownloadHandler:
     lazy = False
 
     def __init__(self, settings: BaseSettings, crawler: Crawler):
+        warnings.warn(
+            "HTTP10DownloadHandler is deprecated and will be removed in a future Scrapy version.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         self.HTTPClientFactory: type[ScrapyHTTPClientFactory] = load_object(
             settings["DOWNLOADER_HTTPCLIENTFACTORY"]
         )

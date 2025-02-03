@@ -54,8 +54,7 @@ class CookiesMiddleware:
     ) -> None:
         for cookie in cookies:
             cookie_domain = cookie.domain
-            if cookie_domain.startswith("."):
-                cookie_domain = cookie_domain[1:]
+            cookie_domain = cookie_domain.removeprefix(".")
 
             hostname = urlparse_cached(request).hostname
             assert hostname is not None

@@ -89,5 +89,5 @@ class OffsiteMiddleware:
                 warnings.warn(message)
             else:
                 domains.append(re.escape(domain))
-        regex = rf'^(.*\.)?({"|".join(domains)})$'
+        regex = rf"^(.*\.)?({'|'.join(domains)})$"
         return re.compile(regex)

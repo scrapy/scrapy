@@ -10,6 +10,7 @@ import warnings
 from importlib import import_module
 from typing import TYPE_CHECKING, Union
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
+from warnings import warn
 
 from w3lib.url import __all__ as _public_w3lib_objects
 from w3lib.url import add_or_replace_parameter as _add_or_replace_parameter
@@ -83,6 +84,11 @@ def escape_ajax(url: str) -> str:
     >>> escape_ajax("www.example.com/ajax.html")
     'www.example.com/ajax.html'
     """
+    warn(
+        "escape_ajax() is deprecated and will be removed in a future Scrapy version.",
+        ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     defrag, frag = urldefrag(url)
     if not frag.startswith("!"):
         return url

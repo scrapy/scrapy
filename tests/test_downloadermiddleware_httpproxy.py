@@ -94,7 +94,7 @@ class TestHttpProxyMiddleware(TestCase):
 
     def test_proxy_auth_encoding(self):
         # utf-8 encoding
-        os.environ["http_proxy"] = "https://m\u00E1n:pass@proxy:3128"
+        os.environ["http_proxy"] = "https://m\u00e1n:pass@proxy:3128"
         mw = HttpProxyMiddleware(auth_encoding="utf-8")
         req = Request("http://scrapytest.org")
         assert mw.process_request(req, spider) is None
@@ -103,7 +103,7 @@ class TestHttpProxyMiddleware(TestCase):
 
         # proxy from request.meta
         req = Request(
-            "http://scrapytest.org", meta={"proxy": "https://\u00FCser:pass@proxy:3128"}
+            "http://scrapytest.org", meta={"proxy": "https://\u00fcser:pass@proxy:3128"}
         )
         assert mw.process_request(req, spider) is None
         self.assertEqual(req.meta["proxy"], "https://proxy:3128")
@@ -120,7 +120,7 @@ class TestHttpProxyMiddleware(TestCase):
 
         # proxy from request.meta, latin-1 encoding
         req = Request(
-            "http://scrapytest.org", meta={"proxy": "https://\u00FCser:pass@proxy:3128"}
+            "http://scrapytest.org", meta={"proxy": "https://\u00fcser:pass@proxy:3128"}
         )
         assert mw.process_request(req, spider) is None
         self.assertEqual(req.meta["proxy"], "https://proxy:3128")

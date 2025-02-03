@@ -32,7 +32,7 @@ This is an example where two add-ons are enabled in a project's
 Writing your own add-ons
 ========================
 
-Add-ons are Python classes that include the following method:
+Add-ons are Python classes that include one or both of the following methods:
 
 .. method:: update_settings(settings)
 
@@ -44,6 +44,15 @@ Add-ons are Python classes that include the following method:
 
     :param settings: The settings object storing Scrapy/component configuration
     :type settings: :class:`~scrapy.settings.Settings`
+
+.. classmethod:: update_pre_crawler_settings(cls, settings)
+
+    Use this class method instead of the :meth:`update_settings` method to
+    update :ref:`pre-crawler settings <pre-crawler-settings>` whose value is
+    used before the :class:`~scrapy.crawler.Crawler` object is created.
+
+    :param settings: The settings object storing Scrapy/component configuration
+    :type settings: :class:`~scrapy.settings.BaseSettings`
 
 They can also have the following method:
 

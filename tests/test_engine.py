@@ -243,46 +243,7 @@ class CrawlerRun:
         self.signals_caught[sig] = signalargs
 
 
-class EngineTest(unittest.TestCase):
-    @defer.inlineCallbacks
-    def test_crawler(self):
-        for spider in (
-            TestSpider,
-            DictItemsSpider,
-            AttrsItemsSpider,
-            DataClassItemsSpider,
-        ):
-            run = CrawlerRun(spider)
-            yield run.run()
-            self._assert_visited_urls(run)
-            self._assert_scheduled_requests(run, count=9)
-            self._assert_downloaded_responses(run, count=9)
-            self._assert_scraped_items(run)
-            self._assert_signals_caught(run)
-            self._assert_bytes_received(run)
-
-    @defer.inlineCallbacks
-    def test_crawler_dupefilter(self):
-        run = CrawlerRun(TestDupeFilterSpider)
-        yield run.run()
-        self._assert_scheduled_requests(run, count=8)
-        self._assert_dropped_requests(run)
-
-    @defer.inlineCallbacks
-    def test_crawler_itemerror(self):
-        run = CrawlerRun(ItemZeroDivisionErrorSpider)
-        yield run.run()
-        self._assert_items_error(run)
-
-    @defer.inlineCallbacks
-    def test_crawler_change_close_reason_on_idle(self):
-        run = CrawlerRun(ChangeCloseReasonSpider)
-        yield run.run()
-        self.assertEqual(
-            {"spider": run.spider, "reason": "custom_reason"},
-            run.signals_caught[signals.spider_closed],
-        )
-
+class EngineTestBase(unittest.TestCase):
     def _assert_visited_urls(self, run: CrawlerRun):
         must_be_visited = [
             "/",
@@ -294,9 +255,9 @@ class EngineTest(unittest.TestCase):
         ]
         urls_visited = {rp[0].url for rp in run.respplug}
         urls_expected = {run.geturl(p) for p in must_be_visited}
-        assert (
-            urls_expected <= urls_visited
-        ), f"URLs not visited: {list(urls_expected - urls_visited)}"
+        assert urls_expected <= urls_visited, (
+            f"URLs not visited: {list(urls_expected - urls_visited)}"
+        )
 
     def _assert_scheduled_requests(self, run: CrawlerRun, count=None):
         self.assertEqual(count, len(run.reqplug))
@@ -422,6 +383,47 @@ class EngineTest(unittest.TestCase):
             run.signals_caught[signals.spider_closed],
         )
 
+
+class EngineTest(EngineTestBase):
+    @defer.inlineCallbacks
+    def test_crawler(self):
+        for spider in (
+            TestSpider,
+            DictItemsSpider,
+            AttrsItemsSpider,
+            DataClassItemsSpider,
+        ):
+            run = CrawlerRun(spider)
+            yield run.run()
+            self._assert_visited_urls(run)
+            self._assert_scheduled_requests(run, count=9)
+            self._assert_downloaded_responses(run, count=9)
+            self._assert_scraped_items(run)
+            self._assert_signals_caught(run)
+            self._assert_bytes_received(run)
+
+    @defer.inlineCallbacks
+    def test_crawler_dupefilter(self):
+        run = CrawlerRun(TestDupeFilterSpider)
+        yield run.run()
+        self._assert_scheduled_requests(run, count=8)
+        self._assert_dropped_requests(run)
+
+    @defer.inlineCallbacks
+    def test_crawler_itemerror(self):
+        run = CrawlerRun(ItemZeroDivisionErrorSpider)
+        yield run.run()
+        self._assert_items_error(run)
+
+    @defer.inlineCallbacks
+    def test_crawler_change_close_reason_on_idle(self):
+        run = CrawlerRun(ChangeCloseReasonSpider)
+        yield run.run()
+        self.assertEqual(
+            {"spider": run.spider, "reason": "custom_reason"},
+            run.signals_caught[signals.spider_closed],
+        )
+
     @defer.inlineCallbacks
     def test_close_downloader(self):
         e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
@@ -496,9 +498,9 @@ def test_request_scheduled_signal(caplog):
     drop_request = Request("https://drop.example")
     caplog.set_level(DEBUG)
     engine._schedule_request(drop_request, spider)
-    assert scheduler.enqueued == [
-        keep_request
-    ], f"{scheduler.enqueued!r} != [{keep_request!r}]"
+    assert scheduler.enqueued == [keep_request], (
+        f"{scheduler.enqueued!r} != [{keep_request!r}]"
+    )
     crawler.signals.disconnect(signal_handler, request_scheduled)
 
 

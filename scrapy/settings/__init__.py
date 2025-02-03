@@ -539,7 +539,7 @@ def iter_default_settings() -> Iterable[tuple[str, Any]]:
 
 
 def overridden_settings(
-    settings: Mapping[_SettingsKeyT, Any]
+    settings: Mapping[_SettingsKeyT, Any],
 ) -> Iterable[tuple[str, Any]]:
     """Return an iterable of the settings that have been overridden"""
     for name, defvalue in iter_default_settings():
