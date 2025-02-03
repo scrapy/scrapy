@@ -46,9 +46,6 @@ else:
     ACCEPTED_ENCODINGS.append(b"zstd")
 
 
-_UNSUPPORTED_ENCODINGS: set[bytes] = {b"br", b"zstd"} - set(ACCEPTED_ENCODINGS)
-
-
 class HttpCompressionMiddleware:
     """This middleware allows compressed (gzip, deflate) traffic to be
     sent/received from websites"""
@@ -81,35 +78,9 @@ class HttpCompressionMiddleware:
         if hasattr(spider, "download_warnsize"):
             self._warn_size = spider.download_warnsize
 
-    @staticmethod
-    def _get_unsupported_suggestion(encoding: bytes) -> str:
-        if encoding == b"br":
-            return " You need to install brotli or brotlicffi to use it."
-        if encoding == b"zstd":
-            return " You need to install zstandard to use it."
-        return ""
-
     def process_request(
         self, request: Request, spider: Spider
     ) -> Request | Response | None:
-
-        user_header = request.headers.get("Accept-Encoding")
-        if user_header:
-            for user_encoding in user_header.split(b","):
-                user_encoding = user_encoding.strip()
-                # Encoding specification can also include a weight,
-                # we won't check such encodings.
-                if user_encoding in _UNSUPPORTED_ENCODINGS:
-                    msg = (
-                        f"User-provided Accept-Encoding header {user_header.decode()} "
-                        f"contains unsupported encoding: {user_encoding.decode()}."
-                    )
-                    if user_encoding == b"br":
-                        msg += " You need to install brotli or brotlicffi to use it."
-                    elif user_encoding == b"zstd":
-                        msg += " You need to install zstandard to use it."
-                    logger.error(msg)
-
         request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
         return None
 
@@ -141,18 +112,7 @@ class HttpCompressionMiddleware:
                         f"download warning size ({warn_size} B)."
                     )
                 if content_encoding:
-                    encodings_str = b",".join(content_encoding).decode()
-                    msg = (
-                        f"Response for {response.url} received "
-                        f"in unsupported encoding(s) '{encodings_str}'."
-                    )
-                    if b"br" in content_encoding:
-                        msg += (
-                            " You need to install brotli or brotlicffi to decode 'br'."
-                        )
-                    if b"zstd" in content_encoding:
-                        msg += " You need to install zstandard to decode 'zstd'."
-                    logger.warning(msg)
+                    self._warn_unknown_encoding(response, content_encoding)
                 response.headers["Content-Encoding"] = content_encoding
                 if self.stats:
                     self.stats.inc_value(
@@ -213,3 +173,17 @@ class HttpCompressionMiddleware:
         if encoding == b"zstd" and b"zstd" in ACCEPTED_ENCODINGS:
             return _unzstd(body, max_size=max_size)
         return body
+
+    def _warn_unknown_encoding(
+        self, response: Response, encodings: list[bytes]
+    ) -> None:
+        encodings_str = b",".join(encodings).decode()
+        msg = (
+            f"{self.__class__.__name__} cannot decode the response for {response.url} "
+            f"from unsupported encoding(s) '{encodings_str}'."
+        )
+        if b"br" in encodings:
+            msg += " You need to install brotli or brotlicffi to decode 'br'."
+        if b"zstd" in encodings:
+            msg += " You need to install zstandard to decode 'zstd'."
+        logger.warning(msg)
