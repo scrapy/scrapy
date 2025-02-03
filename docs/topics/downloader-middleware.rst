@@ -1251,6 +1251,10 @@ Default: ``False``
 
 Whether the AjaxCrawlMiddleware will be enabled.
 
+   .. note::
+
+       This middleware is deprecated and will be removed in a future Scrapy release.
+
 HttpProxyMiddleware settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
