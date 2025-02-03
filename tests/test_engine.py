@@ -243,46 +243,7 @@ class CrawlerRun:
         self.signals_caught[sig] = signalargs
 
 
-class EngineTest(unittest.TestCase):
-    @defer.inlineCallbacks
-    def test_crawler(self):
-        for spider in (
-            TestSpider,
-            DictItemsSpider,
-            AttrsItemsSpider,
-            DataClassItemsSpider,
-        ):
-            run = CrawlerRun(spider)
-            yield run.run()
-            self._assert_visited_urls(run)
-            self._assert_scheduled_requests(run, count=9)
-            self._assert_downloaded_responses(run, count=9)
-            self._assert_scraped_items(run)
-            self._assert_signals_caught(run)
-            self._assert_bytes_received(run)
-
-    @defer.inlineCallbacks
-    def test_crawler_dupefilter(self):
-        run = CrawlerRun(TestDupeFilterSpider)
-        yield run.run()
-        self._assert_scheduled_requests(run, count=8)
-        self._assert_dropped_requests(run)
-
-    @defer.inlineCallbacks
-    def test_crawler_itemerror(self):
-        run = CrawlerRun(ItemZeroDivisionErrorSpider)
-        yield run.run()
-        self._assert_items_error(run)
-
-    @defer.inlineCallbacks
-    def test_crawler_change_close_reason_on_idle(self):
-        run = CrawlerRun(ChangeCloseReasonSpider)
-        yield run.run()
-        self.assertEqual(
-            {"spider": run.spider, "reason": "custom_reason"},
-            run.signals_caught[signals.spider_closed],
-        )
-
+class EngineTestBase(unittest.TestCase):
     def _assert_visited_urls(self, run: CrawlerRun):
         must_be_visited = [
             "/",
@@ -419,6 +380,47 @@ class EngineTest(unittest.TestCase):
         )
         self.assertEqual(
             {"spider": run.spider, "reason": "finished"},
+            run.signals_caught[signals.spider_closed],
+        )
+
+
+class EngineTest(EngineTestBase):
+    @defer.inlineCallbacks
+    def test_crawler(self):
+        for spider in (
+            TestSpider,
+            DictItemsSpider,
+            AttrsItemsSpider,
+            DataClassItemsSpider,
+        ):
+            run = CrawlerRun(spider)
+            yield run.run()
+            self._assert_visited_urls(run)
+            self._assert_scheduled_requests(run, count=9)
+            self._assert_downloaded_responses(run, count=9)
+            self._assert_scraped_items(run)
+            self._assert_signals_caught(run)
+            self._assert_bytes_received(run)
+
+    @defer.inlineCallbacks
+    def test_crawler_dupefilter(self):
+        run = CrawlerRun(TestDupeFilterSpider)
+        yield run.run()
+        self._assert_scheduled_requests(run, count=8)
+        self._assert_dropped_requests(run)
+
+    @defer.inlineCallbacks
+    def test_crawler_itemerror(self):
+        run = CrawlerRun(ItemZeroDivisionErrorSpider)
+        yield run.run()
+        self._assert_items_error(run)
+
+    @defer.inlineCallbacks
+    def test_crawler_change_close_reason_on_idle(self):
+        run = CrawlerRun(ChangeCloseReasonSpider)
+        yield run.run()
+        self.assertEqual(
+            {"spider": run.spider, "reason": "custom_reason"},
             run.signals_caught[signals.spider_closed],
         )
 
