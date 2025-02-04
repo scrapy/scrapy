@@ -35,6 +35,7 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
+    "sphinx_rtd_dark_mode",
 ]
 
 templates_path = ["_templates"]

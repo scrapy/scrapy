@@ -8,3 +8,11 @@
 .rst-content dl p + ol, .rst-content dl p + ul {
     margin-top: -6px; /* Compensates margin-top: 12px of p  */
 }
+.theme-switcher {
+    right: 1.2em !important;
+    bottom: 29em !important;
+    -webkit-box-shadow: 0px 3px 14px 4px rgba(0, 0, 0, 0.30) !important;
+    box-shadow: 0px 3px 14px 4px rgba(0, 0, 0, 0.30) !important;
+    height: 2em !important;
+    width: 2em !important;
+}
