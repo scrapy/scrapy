@@ -12,8 +12,8 @@
 /*override some styles in
 sphinx-rtd-dark-mode/static/dark_mode_css/general.css*/
 .theme-switcher {
-    right: 1.2em !important;
-    bottom: 29em !important;
+    right: 0.4em !important;
+    top: 0.6em !important;
     -webkit-box-shadow: 0px 3px 14px 4px rgba(0, 0, 0, 0.30) !important;
     box-shadow: 0px 3px 14px 4px rgba(0, 0, 0, 0.30) !important;
     height: 2em !important;
