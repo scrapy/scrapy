@@ -175,3 +175,5 @@ hoverxref_role_types = {
     "signal": "tooltip",
 }
 hoverxref_roles = ["command", "reqmeta", "setting", "signal"]
+
+default_dark_mode = False
