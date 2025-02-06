@@ -120,12 +120,12 @@ class Crawler:
                 install_reactor(reactor_class, event_loop)
             else:
                 from twisted.internet import reactor  # noqa: F401
-            log_reactor_info()
         if reactor_class:
             verify_installed_reactor(reactor_class)
             if is_asyncio_reactor_installed() and event_loop:
                 verify_installed_asyncio_event_loop(event_loop)
 
+        if self._init_reactor or reactor_class:
             log_reactor_info()
 
         self.extensions = ExtensionManager.from_crawler(self)
