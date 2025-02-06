@@ -35,6 +35,7 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
+    "sphinx_rtd_dark_mode",
 ]
 
 templates_path = ["_templates"]
@@ -174,3 +175,5 @@ hoverxref_role_types = {
     "signal": "tooltip",
 }
 hoverxref_roles = ["command", "reqmeta", "setting", "signal"]
+
+default_dark_mode = False
