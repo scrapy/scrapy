@@ -32,7 +32,8 @@ at the bottom right corner on small screens*/
 
 /*persist blue color at the top left used in
 default rtd theme*/
-html[data-theme="dark"] .wy-side-nav-search, .wy-nav-top {
+html[data-theme="dark"] .wy-side-nav-search,
+html[data-theme="dark"] .wy-nav-top {
     background-color: #1d577d !important;
 }
 
@@ -43,34 +44,13 @@ html[data-theme="dark"] .sig.sig-object {
     background-color: #202325 !important
 }
 
-html[data-theme="dark"] .sig-name{
-    color: #e8e6e3 !important
-}
-
-html[data-theme="dark"] .sig-prename {
-    color: #e8e6e3 !important
-}
-
-html[data-theme="dark"] .property {
-    color: #e8e6e3 !important
-}
-
-html[data-theme="dark"] .sig-param {
-    color: #e8e6e3 !important
-}
-
-html[data-theme="dark"] .sig-paren {
-    color: #e8e6e3 !important
-}
-
-html[data-theme="dark"] .sig-return-icon {
-    color: #e8e6e3 !important
-}
-
-html[data-theme="dark"] .sig-return-typehint {
-    color: #e8e6e3 !important
-}
-
+html[data-theme="dark"] .sig-name,
+html[data-theme="dark"] .sig-prename,
+html[data-theme="dark"] .property,
+html[data-theme="dark"] .sig-param,
+html[data-theme="dark"] .sig-paren,
+html[data-theme="dark"] .sig-return-icon,
+html[data-theme="dark"] .sig-return-typehint,
 html[data-theme="dark"] .optional {
     color: #e8e6e3 !important
 }
