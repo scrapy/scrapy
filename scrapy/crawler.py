@@ -113,7 +113,6 @@ class Crawler:
 
         reactor_class: str = self.settings["TWISTED_REACTOR"]
         event_loop: str = self.settings["ASYNCIO_EVENT_LOOP"]
-
         if self._init_reactor:
             # this needs to be done after the spider settings are merged,
             # but before something imports twisted.internet.reactor
@@ -121,7 +120,6 @@ class Crawler:
                 install_reactor(reactor_class, event_loop)
             else:
                 from twisted.internet import reactor  # noqa: F401
-
         if reactor_class:
             verify_installed_reactor(reactor_class)
             if is_asyncio_reactor_installed() and event_loop:
