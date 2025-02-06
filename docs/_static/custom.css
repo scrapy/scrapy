@@ -19,3 +19,19 @@ sphinx-rtd-dark-mode/static/dark_mode_css/general.css*/
     height: 2em !important;
     width: 2em !important;
 }
+
+@media (max-width: 768px) {
+    .theme-switcher {
+        right: 0.4em !important;
+        bottom: 2.6em !important;
+        top: auto !important;
+    }
+}
+
+html[data-theme="dark"] .wy-side-nav-search {
+    background-color: #1d577d !important;
+}
+
+html[data-theme="dark"] .wy-nav-top {
+    background-color: #1d577d !important
+}
