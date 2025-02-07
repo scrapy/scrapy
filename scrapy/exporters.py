@@ -122,7 +122,7 @@ class JsonLinesItemExporter(BaseItemExporter):
 
 
 class JsonItemExporter(BaseItemExporter):
-    def __init__(self, file: BytesIO, **kwargs: Any):
+    def __init__(self, file: BytesIO, separators=(",", ":"), **kwargs: Any):
         super().__init__(dont_fail=True, **kwargs)
         self.file: BytesIO = file
         # there is a small difference between the behaviour or JsonItemExporter.indent
@@ -133,6 +133,7 @@ class JsonItemExporter(BaseItemExporter):
         )
         self._kwargs.setdefault("indent", json_indent)
         self._kwargs.setdefault("ensure_ascii", not self.encoding)
+        self._kwargs.setdefault("separators", separators)
         self.encoder = ScrapyJSONEncoder(**self._kwargs)
         self.first_item = True
 

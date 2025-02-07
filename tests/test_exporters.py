@@ -623,6 +623,28 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         }
         self.assertEqual(exported, [expected])
 
+    def test_json_exporter_separators_compact(self):
+        #Test compact separators (no spaces between keys and values).
+        self.ie = self._get_exporter(separators=(",", ":"))
+        self.ie.start_exporting()
+        self.ie.export_item(self.i)
+        self.ie.finish_exporting()
+        del self.ie
+        exported = to_unicode(self.output.getvalue().strip())
+        expected = json.dumps([ItemAdapter(self.i).asdict()], separators=(",", ":"))
+        self.assertEqual(exported, expected)
+
+    def test_json_exporter_separators_with_spaces(self):
+        #Test separators with spaces around keys and values.
+        self.ie = self._get_exporter(separators=(", ", ": "))
+        self.ie.start_exporting()
+        self.ie.export_item(self.i)
+        self.ie.finish_exporting()
+        del self.ie
+        exported = to_unicode(self.output.getvalue().strip())
+        expected = json.dumps([ItemAdapter(self.i).asdict()], separators=(", ", ": "))
+        self.assertEqual(exported, expected)
+
     def test_nested_dict_item(self):
         i1 = {"name": "Joseph\xa3", "age": "22"}
         i2 = self.item_class(name="Maria", age=i1)
