@@ -326,11 +326,13 @@ def without_none_values(
 
 
 def global_object_name(obj: Any) -> str:
-    """Return the full import path of the given class.
+    """Return the full import path of the given object.
 
     >>> from scrapy import Request
     >>> global_object_name(Request)
     'scrapy.http.request.Request'
+    >>> global_object_name(Request.replace)
+    'scrapy.http.request.Request.replace'
     """
     return f"{obj.__module__}.{obj.__qualname__}"
 

@@ -79,7 +79,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 result = method(response=response, spider=spider)
                 if result is not None:
                     msg = (
-                        f"{method.__qualname__} must return None "
+                        f"{global_object_name(method)} must return None "
                         f"or raise an exception, got {type(result)}"
                     )
                     raise _InvalidOutput(msg)
@@ -168,12 +168,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     )
                 # we forbid waiting here because otherwise we would need to return a deferred from
                 # _process_spider_exception too, which complicates the architecture
-                msg = f"Async iterable returned from {method.__qualname__} cannot be downgraded"
+                msg = f"Async iterable returned from {global_object_name(method)} cannot be downgraded"
                 raise _InvalidOutput(msg)
             if result is None:
                 continue
             msg = (
-                f"{method.__qualname__} must return None "
+                f"{global_object_name(method)} must return None "
                 f"or an iterable, got {type(result)}"
             )
             raise _InvalidOutput(msg)
@@ -224,7 +224,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     result = as_async_generator(result)
                 elif need_downgrade:
                     logger.warning(
-                        f"Async iterable passed to {method.__qualname__} was"
+                        f"Async iterable passed to {global_object_name(method)} was"
                         f" downgraded to a non-async one. This is deprecated and will"
                         f" stop working in a future version of Scrapy. Please see"
                         f" https://docs.scrapy.org/en/latest/topics/coroutines.html#mixing-synchronous-and-asynchronous-spider-middlewares"
@@ -257,12 +257,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 if iscoroutine(result):
                     result.close()  # Silence warning about not awaiting
                     msg = (
-                        f"{method.__qualname__} must be an asynchronous "
+                        f"{global_object_name(method)} must be an asynchronous "
                         f"generator (i.e. use yield)"
                     )
                 else:
                     msg = (
-                        f"{method.__qualname__} must return an iterable, got "
+                        f"{global_object_name(method)} must return an iterable, got "
                         f"{type(result)}"
                     )
                 raise _InvalidOutput(msg)
@@ -355,13 +355,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
             return None
         if not isasyncgenfunction(async_method):
             logger.error(
-                f"{async_method.__qualname__} is not "
+                f"{global_object_name(async_method)} is not "
                 f"an async generator function, skipping this method."
             )
             return normal_method
         if isasyncgenfunction(normal_method):
             logger.error(
-                f"{normal_method.__qualname__} is an async "
+                f"{global_object_name(normal_method)} is an async "
                 f"generator function while {methodname_async} exists, "
                 f"skipping both methods."
             )
