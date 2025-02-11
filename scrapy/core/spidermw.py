@@ -27,7 +27,7 @@ from scrapy.utils.defer import (
     maybe_deferred_to_future,
     mustbe_deferred,
 )
-from scrapy.utils.python import MutableAsyncChain, MutableChain
+from scrapy.utils.python import MutableAsyncChain, MutableChain, global_object_name
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -50,10 +50,6 @@ def _isiterable(o: Any) -> bool:
 
 class SpiderMiddlewareManager(MiddlewareManager):
     component_name = "spider middleware"
-
-    def __init__(self, *middlewares: Any):
-        super().__init__(*middlewares)
-        self.downgrade_warning_done = False
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
@@ -83,7 +79,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 result = method(response=response, spider=spider)
                 if result is not None:
                     msg = (
-                        f"{method.__qualname__} must return None "
+                        f"{global_object_name(method)} must return None "
                         f"or raise an exception, got {type(result)}"
                     )
                     raise _InvalidOutput(msg)
@@ -172,12 +168,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     )
                 # we forbid waiting here because otherwise we would need to return a deferred from
                 # _process_spider_exception too, which complicates the architecture
-                msg = f"Async iterable returned from {method.__qualname__} cannot be downgraded"
+                msg = f"Async iterable returned from {global_object_name(method)} cannot be downgraded"
                 raise _InvalidOutput(msg)
             if result is None:
                 continue
             msg = (
-                f"{method.__qualname__} must return None "
+                f"{global_object_name(method)} must return None "
                 f"or an iterable, got {type(result)}"
             )
             raise _InvalidOutput(msg)
@@ -227,12 +223,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     # Iterable -> AsyncIterable
                     result = as_async_generator(result)
                 elif need_downgrade:
-                    if not self.downgrade_warning_done:
-                        logger.warning(
-                            f"Async iterable passed to {method.__qualname__} "
-                            f"was downgraded to a non-async one"
-                        )
-                        self.downgrade_warning_done = True
+                    logger.warning(
+                        f"Async iterable passed to {global_object_name(method)} was"
+                        f" downgraded to a non-async one. This is deprecated and will"
+                        f" stop working in a future version of Scrapy. Please see"
+                        f" https://docs.scrapy.org/en/latest/topics/coroutines.html#mixing-synchronous-and-asynchronous-spider-middlewares"
+                        f" for more information."
+                    )
                     assert isinstance(result, AsyncIterable)
                     # AsyncIterable -> Iterable
                     result = yield deferred_from_coro(collect_asyncgen(result))
@@ -260,12 +257,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 if iscoroutine(result):
                     result.close()  # Silence warning about not awaiting
                     msg = (
-                        f"{method.__qualname__} must be an asynchronous "
+                        f"{global_object_name(method)} must be an asynchronous "
                         f"generator (i.e. use yield)"
                     )
                 else:
                     msg = (
-                        f"{method.__qualname__} must return an iterable, got "
+                        f"{global_object_name(method)} must return an iterable, got "
                         f"{type(result)}"
                     )
                 raise _InvalidOutput(msg)
@@ -340,22 +337,31 @@ class SpiderMiddlewareManager(MiddlewareManager):
         methodname_async = methodname + "_async"
         async_method: Callable | None = getattr(mw, methodname_async, None)
         if not async_method:
+            if normal_method and not isasyncgenfunction(normal_method):
+                logger.warning(
+                    f"Middleware {global_object_name(mw.__class__)} doesn't support"
+                    f" asynchronous spider output, this is deprecated and will stop"
+                    f" working in a future version of Scrapy. The middleware should"
+                    f" be updated to support it. Please see"
+                    f" https://docs.scrapy.org/en/latest/topics/coroutines.html#mixing-synchronous-and-asynchronous-spider-middlewares"
+                    f" for more information."
+                )
             return normal_method
         if not normal_method:
             logger.error(
-                f"Middleware {mw.__qualname__} has {methodname_async} "
+                f"Middleware {global_object_name(mw.__class__)} has {methodname_async} "
                 f"without {methodname}, skipping this method."
             )
             return None
         if not isasyncgenfunction(async_method):
             logger.error(
-                f"{async_method.__qualname__} is not "
+                f"{global_object_name(async_method)} is not "
                 f"an async generator function, skipping this method."
             )
             return normal_method
         if isasyncgenfunction(normal_method):
             logger.error(
-                f"{normal_method.__qualname__} is an async "
+                f"{global_object_name(normal_method)} is an async "
                 f"generator function while {methodname_async} exists, "
                 f"skipping both methods."
             )

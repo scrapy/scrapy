@@ -152,6 +152,10 @@ class BaseAsyncSpiderMiddlewareTestCase(SpiderMiddlewareTestCase):
         self.assertEqual(len(result_list), self.RESULT_COUNT)
         self.assertIsInstance(result_list[0], self.ITEM_TYPE)
         self.assertEqual("downgraded to a non-async" in str(log), downgrade)
+        self.assertEqual(
+            "doesn't support asynchronous spider output" in str(log),
+            ProcessSpiderOutputSimpleMiddleware in mw_classes,
+        )
 
     @defer.inlineCallbacks
     def _test_asyncgen_base(
@@ -376,21 +380,21 @@ class UniversalMiddlewareManagerTest(TestCase):
         self.mwman = SpiderMiddlewareManager()
 
     def test_simple_mw(self):
-        mw = ProcessSpiderOutputSimpleMiddleware
+        mw = ProcessSpiderOutputSimpleMiddleware()
         self.mwman._add_middleware(mw)
         self.assertEqual(
             self.mwman.methods["process_spider_output"][0], mw.process_spider_output
         )
 
     def test_async_mw(self):
-        mw = ProcessSpiderOutputAsyncGenMiddleware
+        mw = ProcessSpiderOutputAsyncGenMiddleware()
         self.mwman._add_middleware(mw)
         self.assertEqual(
             self.mwman.methods["process_spider_output"][0], mw.process_spider_output
         )
 
     def test_universal_mw(self):
-        mw = ProcessSpiderOutputUniversalMiddleware
+        mw = ProcessSpiderOutputUniversalMiddleware()
         self.mwman._add_middleware(mw)
         self.assertEqual(
             self.mwman.methods["process_spider_output"][0],
@@ -399,7 +403,7 @@ class UniversalMiddlewareManagerTest(TestCase):
 
     def test_universal_mw_no_sync(self):
         with LogCapture() as log:
-            self.mwman._add_middleware(UniversalMiddlewareNoSync)
+            self.mwman._add_middleware(UniversalMiddlewareNoSync())
         self.assertIn(
             "UniversalMiddlewareNoSync has process_spider_output_async"
             " without process_spider_output",
@@ -408,7 +412,7 @@ class UniversalMiddlewareManagerTest(TestCase):
         self.assertEqual(self.mwman.methods["process_spider_output"][0], None)
 
     def test_universal_mw_both_sync(self):
-        mw = UniversalMiddlewareBothSync
+        mw = UniversalMiddlewareBothSync()
         with LogCapture() as log:
             self.mwman._add_middleware(mw)
         self.assertIn(
@@ -422,7 +426,7 @@ class UniversalMiddlewareManagerTest(TestCase):
 
     def test_universal_mw_both_async(self):
         with LogCapture() as log:
-            self.mwman._add_middleware(UniversalMiddlewareBothAsync)
+            self.mwman._add_middleware(UniversalMiddlewareBothAsync())
         self.assertIn(
             "UniversalMiddlewareBothAsync.process_spider_output "
             "is an async generator function while process_spider_output_async exists",
