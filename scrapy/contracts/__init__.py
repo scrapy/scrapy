@@ -15,9 +15,7 @@ from scrapy.utils.spider import iterate_spider_output
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
     from twisted.python.failure import Failure
-
     from scrapy import Spider
 
 
@@ -32,57 +30,45 @@ class Contract:
         self.testcase_post = _create_testcase(method, f"@{self.name} post-hook")
         self.args: tuple[Any, ...] = args
 
+    def _wrap_callback(self, request: Request, results: TestResult, hook: str) -> Request:
+        cb = request.callback
+        assert cb is not None
+
+        @wraps(cb)
+        def wrapper(response: Response, **cb_kwargs: Any) -> list[Any]:
+            if hook == "pre":
+                self._execute_hook(self.pre_process, response, results, self.testcase_pre)
+            cb_result = cb(response, **cb_kwargs)
+            if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
+                raise TypeError("Contracts don't support async callbacks")
+            output = list(cast(Iterable[Any], iterate_spider_output(cb_result)))
+            if hook == "post":
+                self._execute_hook(self.post_process, output, results, self.testcase_post)
+            return output
+
+        request.callback = wrapper
+        return request
+
+    def _execute_hook(self, process: Callable, data: Any, results: TestResult, testcase: TestCase) -> None:
+        try:
+            results.startTest(testcase)
+            process(data)
+            results.stopTest(testcase)
+        except AssertionError:
+            results.addFailure(testcase, sys.exc_info())
+        except Exception:
+            results.addError(testcase, sys.exc_info())
+        else:
+            results.addSuccess(testcase)
+
     def add_pre_hook(self, request: Request, results: TestResult) -> Request:
         if hasattr(self, "pre_process"):
-            cb = request.callback
-            assert cb is not None
-
-            @wraps(cb)
-            def wrapper(response: Response, **cb_kwargs: Any) -> list[Any]:
-                try:
-                    results.startTest(self.testcase_pre)
-                    self.pre_process(response)
-                    results.stopTest(self.testcase_pre)
-                except AssertionError:
-                    results.addFailure(self.testcase_pre, sys.exc_info())
-                except Exception:
-                    results.addError(self.testcase_pre, sys.exc_info())
-                else:
-                    results.addSuccess(self.testcase_pre)
-                cb_result = cb(response, **cb_kwargs)
-                if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
-                    raise TypeError("Contracts don't support async callbacks")
-                return list(cast(Iterable[Any], iterate_spider_output(cb_result)))
-
-            request.callback = wrapper
-
+            return self._wrap_callback(request, results, "pre")
         return request
 
     def add_post_hook(self, request: Request, results: TestResult) -> Request:
         if hasattr(self, "post_process"):
-            cb = request.callback
-            assert cb is not None
-
-            @wraps(cb)
-            def wrapper(response: Response, **cb_kwargs: Any) -> list[Any]:
-                cb_result = cb(response, **cb_kwargs)
-                if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
-                    raise TypeError("Contracts don't support async callbacks")
-                output = list(cast(Iterable[Any], iterate_spider_output(cb_result)))
-                try:
-                    results.startTest(self.testcase_post)
-                    self.post_process(output)
-                    results.stopTest(self.testcase_post)
-                except AssertionError:
-                    results.addFailure(self.testcase_post, sys.exc_info())
-                except Exception:
-                    results.addError(self.testcase_post, sys.exc_info())
-                else:
-                    results.addSuccess(self.testcase_post)
-                return output
-
-            request.callback = wrapper
-
+            return self._wrap_callback(request, results, "post")
         return request
 
     def adjust_request_args(self, args: dict[str, Any]) -> dict[str, Any]:
@@ -98,80 +84,52 @@ class ContractsManager:
 
     def tested_methods_from_spidercls(self, spidercls: type[Spider]) -> list[str]:
         is_method = re.compile(r"^\s*@", re.MULTILINE).search
-        methods = []
-        for key, value in getmembers(spidercls):
-            if callable(value) and value.__doc__ and is_method(value.__doc__):
-                methods.append(key)
-
-        return methods
+        return [key for key, value in getmembers(spidercls) if callable(value) and value.__doc__ and is_method(value.__doc__)]
 
     def extract_contracts(self, method: Callable) -> list[Contract]:
         contracts: list[Contract] = []
         assert method.__doc__ is not None
         for line in method.__doc__.split("\n"):
             line = line.strip()
-
             if line.startswith("@"):
                 m = re.match(r"@(\w+)\s*(.*)", line)
-                if m is None:
-                    continue
-                name, args = m.groups()
-                args = re.split(r"\s+", args)
-
-                contracts.append(self.contracts[name](method, *args))
-
+                if m:
+                    name, args = m.groups()
+                    args = re.split(r"\s+", args)
+                    contracts.append(self.contracts[name](method, *args))
         return contracts
 
     def from_spider(self, spider: Spider, results: TestResult) -> list[Request | None]:
         requests: list[Request | None] = []
         for method in self.tested_methods_from_spidercls(type(spider)):
-            bound_method = spider.__getattribute__(method)
+            bound_method = getattr(spider, method)
             try:
                 requests.append(self.from_method(bound_method, results))
             except Exception:
                 case = _create_testcase(bound_method, "contract")
                 results.addError(case, sys.exc_info())
-
         return requests
 
     def from_method(self, method: Callable, results: TestResult) -> Request | None:
         contracts = self.extract_contracts(method)
         if contracts:
-            request_cls = Request
-            for contract in contracts:
-                if contract.request_cls is not None:
-                    request_cls = contract.request_cls
-
-            # calculate request args
+            request_cls = next((contract.request_cls for contract in contracts if contract.request_cls), Request)
             args, kwargs = get_spec(request_cls.__init__)
-
-            # Don't filter requests to allow
-            # testing different callbacks on the same URL.
-            kwargs["dont_filter"] = True
-            kwargs["callback"] = method
-
+            kwargs.update({"dont_filter": True, "callback": method})
             for contract in contracts:
                 kwargs = contract.adjust_request_args(kwargs)
-
             args.remove("self")
-
-            # check if all positional arguments are defined in kwargs
             if set(args).issubset(set(kwargs)):
                 request = request_cls(**kwargs)
-
-                # execute pre and post hooks in order
                 for contract in reversed(contracts):
                     request = contract.add_pre_hook(request, results)
                 for contract in contracts:
                     request = contract.add_post_hook(request, results)
-
                 self._clean_req(request, method, results)
                 return request
         return None
 
-    def _clean_req(
-        self, request: Request, method: Callable, results: TestResult
-    ) -> None:
+    def _clean_req(self, request: Request, method: Callable, results: TestResult) -> None:
         """stop the request from returning objects and records any errors"""
 
         cb = request.callback
@@ -181,7 +139,7 @@ class ContractsManager:
         def cb_wrapper(response: Response, **cb_kwargs: Any) -> None:
             try:
                 output = cb(response, **cb_kwargs)
-                output = list(cast(Iterable[Any], iterate_spider_output(output)))
+                list(cast(Iterable[Any], iterate_spider_output(output)))
             except Exception:
                 case = _create_testcase(method, "callback")
                 results.addError(case, sys.exc_info())
