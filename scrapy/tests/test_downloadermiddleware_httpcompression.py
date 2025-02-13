@@ -136,3 +136,5 @@ class HttpCompressionTest(TestCase):
         self.assertEqual(newresponse.body, plainbody)
         self.assertEqual(newresponse.encoding, resolve_encoding('gb2312'))
 
+
+# Automated edit: [Edited] Add docstring to improve documentation
