@@ -145,6 +145,41 @@ class HttpCompressionTest(TestCase):
         self.assertStatsEqual("httpcompression/response_count", 1)
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
+    def test_process_response_br_unsupported(self):
+        try:
+            try:
+                import brotli  # noqa: F401
+
+                raise SkipTest("Requires not having brotli support")
+            except ImportError:
+                import brotlicffi  # noqa: F401
+
+                raise SkipTest("Requires not having brotli support")
+        except ImportError:
+            pass
+        response = self._getresponse("br")
+        request = response.request
+        self.assertEqual(response.headers["Content-Encoding"], b"br")
+        with LogCapture(
+            "scrapy.downloadermiddlewares.httpcompression",
+            propagate=False,
+            level=WARNING,
+        ) as log:
+            newresponse = self.mw.process_response(request, response, self.spider)
+        log.check(
+            (
+                "scrapy.downloadermiddlewares.httpcompression",
+                "WARNING",
+                (
+                    "HttpCompressionMiddleware cannot decode the response for"
+                    " http://scrapytest.org/ from unsupported encoding(s) 'br'."
+                    " You need to install brotli or brotlicffi to decode 'br'."
+                ),
+            ),
+        )
+        assert newresponse is not response
+        self.assertEqual(newresponse.headers.getlist("Content-Encoding"), [b"br"])
+
     def test_process_response_zstd(self):
         try:
             import zstandard  # noqa: F401
@@ -221,7 +256,22 @@ class HttpCompressionTest(TestCase):
         response = self._getresponse("gzip-deflate")
         response.headers["Content-Encoding"] = [b"gzip, foo, deflate"]
         request = response.request
-        newresponse = self.mw.process_response(request, response, self.spider)
+        with LogCapture(
+            "scrapy.downloadermiddlewares.httpcompression",
+            propagate=False,
+            level=WARNING,
+        ) as log:
+            newresponse = self.mw.process_response(request, response, self.spider)
+        log.check(
+            (
+                "scrapy.downloadermiddlewares.httpcompression",
+                "WARNING",
+                (
+                    "HttpCompressionMiddleware cannot decode the response for"
+                    " http://scrapytest.org/ from unsupported encoding(s) 'gzip,foo'."
+                ),
+            ),
+        )
         assert newresponse is not response
         self.assertEqual(
             newresponse.headers.getlist("Content-Encoding"), [b"gzip", b"foo"]
