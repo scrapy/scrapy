@@ -4,7 +4,7 @@ import warnings
 from io import BytesIO
 from logging import WARNING
 from pathlib import Path
-from typing import Any
+from typing import Any, get_type_hints
 from unittest import mock
 
 from testfixtures import LogCapture
@@ -827,3 +827,18 @@ class NoParseMethodSpiderTest(unittest.TestCase):
         exc_msg = "Spider.parse callback is not defined"
         with self.assertRaisesRegex(NotImplementedError, exc_msg):
             spider.parse(resp)
+
+
+class CallbackDepsTest(unittest.TestCase):
+    """Making sure annotations on all non-abstract callbacks can be resolved."""
+
+    def test_callbacks(self):
+        for cb in [
+            Spider._parse,
+            CrawlSpider._parse,
+            CrawlSpider._callback,
+            XMLFeedSpider._parse,
+            CSVFeedSpider._parse,
+            SitemapSpider._parse_sitemap,
+        ]:
+            get_type_hints(cb)
