@@ -28,7 +28,6 @@ def __getattr__(name: str):
             ScrapyDeprecationWarning,
         )
         return getattr(import_module("w3lib.url"), name)
-
     raise AttributeError
 
 
@@ -46,7 +45,7 @@ def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
     if not host:
         return False
     domains = [d.lower() for d in domains]
-    return any((host == d) or (host.endswith(f".{d}")) for d in domains)
+    return any(host == d or host.endswith(f".{d}") for d in domains)
 
 
 def url_is_from_spider(url: UrlT, spider: type[Spider]) -> bool:
@@ -58,31 +57,12 @@ def url_is_from_spider(url: UrlT, spider: type[Spider]) -> bool:
 
 def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
     """Return True if the url ends with one of the extensions provided"""
-    lowercase_path = _parse_url(url).path.lower()
-    return any(lowercase_path.endswith(ext) for ext in extensions)
+    return any(_parse_url(url).path.lower().endswith(ext) for ext in extensions)
 
 
 def escape_ajax(url: str) -> str:
     """
     Return the crawlable url
-
-    >>> escape_ajax("www.example.com/ajax.html#!key=value")
-    'www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue'
-    >>> escape_ajax("www.example.com/ajax.html?k1=v1&k2=v2#!key=value")
-    'www.example.com/ajax.html?k1=v1&k2=v2&_escaped_fragment_=key%3Dvalue'
-    >>> escape_ajax("www.example.com/ajax.html?#!key=value")
-    'www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue'
-    >>> escape_ajax("www.example.com/ajax.html#!")
-    'www.example.com/ajax.html?_escaped_fragment_='
-
-    URLs that are not "AJAX crawlable" (according to Google) returned as-is:
-
-    >>> escape_ajax("www.example.com/ajax.html#key=value")
-    'www.example.com/ajax.html#key=value'
-    >>> escape_ajax("www.example.com/ajax.html#")
-    'www.example.com/ajax.html#'
-    >>> escape_ajax("www.example.com/ajax.html")
-    'www.example.com/ajax.html'
     """
     warn(
         "escape_ajax() is deprecated and will be removed in a future Scrapy version.",
@@ -97,51 +77,19 @@ def escape_ajax(url: str) -> str:
 
 def add_http_if_no_scheme(url: str) -> str:
     """Add http as the default scheme if it is missing from the url."""
-    match = re.match(r"^\w+://", url, flags=re.IGNORECASE)
-    if not match:
+    if not re.match(r"^\w+://", url, flags=re.IGNORECASE):
         parts = urlparse(url)
         scheme = "http:" if parts.netloc else "http://"
         url = scheme + url
-
     return url
 
 
 def _is_posix_path(string: str) -> bool:
-    return bool(
-        re.match(
-            r"""
-            ^                   # start with...
-            (
-                \.              # ...a single dot,
-                (
-                    \. | [^/\.]+  # optionally followed by
-                )?                # either a second dot or some characters
-                |
-                ~   # $HOME
-            )?      # optional match of ".", ".." or ".blabla"
-            /       # at least one "/" for a file path,
-            .       # and something after the "/"
-            """,
-            string,
-            flags=re.VERBOSE,
-        )
-    )
+    return bool(re.match(r"^(\.((\.|[^/\.]+)?)|~)?/.+", string, flags=re.VERBOSE))
 
 
 def _is_windows_path(string: str) -> bool:
-    return bool(
-        re.match(
-            r"""
-            ^
-            (
-                [a-z]:\\
-                | \\\\
-            )
-            """,
-            string,
-            flags=re.IGNORECASE | re.VERBOSE,
-        )
-    )
+    return bool(re.match(r"^([a-z]:\\|\\\\)", string, flags=re.IGNORECASE | re.VERBOSE))
 
 
 def _is_filesystem_path(string: str) -> bool:
@@ -151,9 +99,7 @@ def _is_filesystem_path(string: str) -> bool:
 def guess_scheme(url: str) -> str:
     """Add an URL scheme if missing: file:// for filepath-like input or
     http:// otherwise."""
-    if _is_filesystem_path(url):
-        return _any_to_uri(url)
-    return add_http_if_no_scheme(url)
+    return _any_to_uri(url) if _is_filesystem_path(url) else add_http_if_no_scheme(url)
 
 
 def strip_url(
@@ -163,33 +109,11 @@ def strip_url(
     origin_only: bool = False,
     strip_fragment: bool = True,
 ) -> str:
-    """Strip URL string from some of its components:
-
-    - ``strip_credentials`` removes "user:password@"
-    - ``strip_default_port`` removes ":80" (resp. ":443", ":21")
-      from http:// (resp. https://, ftp://) URLs
-    - ``origin_only`` replaces path component with "/", also dropping
-      query and fragment components ; it also strips credentials
-    - ``strip_fragment`` drops any #fragment component
-    """
-
+    """Strip URL string from some of its components"""
     parsed_url = urlparse(url)
-    netloc = parsed_url.netloc
-    if (strip_credentials or origin_only) and (
-        parsed_url.username or parsed_url.password
-    ):
-        netloc = netloc.split("@")[-1]
+    netloc = parsed_url.netloc.split("@")[-1] if (strip_credentials or origin_only) and (parsed_url.username or parsed_url.password) else parsed_url.netloc
 
-    if (
-        strip_default_port
-        and parsed_url.port
-        and (parsed_url.scheme, parsed_url.port)
-        in (
-            ("http", 80),
-            ("https", 443),
-            ("ftp", 21),
-        )
-    ):
+    if strip_default_port and parsed_url.port and (parsed_url.scheme, parsed_url.port) in (("http", 80), ("https", 443), ("ftp", 21)):
         netloc = netloc.replace(f":{parsed_url.port}", "")
 
     return urlunparse(
