@@ -23,7 +23,7 @@ SAMPLEDIR = Path(tests_datadir, "compressed")
 
 FORMAT = {
     "gzip": ("html-gzip.bin", "gzip"),
-    "x-gzip": ("html-gzip.bin", "gzip"),
+    "x-gzip": ("html-gzip.bin", "x-gzip"),
     "rawdeflate": ("html-rawdeflate.bin", "deflate"),
     "zlibdeflate": ("html-zlibdeflate.bin", "deflate"),
     "gzip-deflate": ("html-gzip-deflate.bin", "gzip, deflate"),

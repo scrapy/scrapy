@@ -148,6 +148,7 @@ class HttpCompressionMiddleware:
     def _split_encodings(
         self, content_encoding: list[bytes]
     ) -> tuple[list[bytes], list[bytes]]:
+        supported_encodings = {*ACCEPTED_ENCODINGS, b"x-gzip"}
         to_keep: list[bytes] = [
             encoding.strip().lower()
             for encoding in chain.from_iterable(
@@ -157,7 +158,7 @@ class HttpCompressionMiddleware:
         to_decode: list[bytes] = []
         while to_keep:
             encoding = to_keep.pop()
-            if encoding not in ACCEPTED_ENCODINGS:
+            if encoding not in supported_encodings:
                 to_keep.append(encoding)
                 return to_decode, to_keep
             to_decode.append(encoding)
