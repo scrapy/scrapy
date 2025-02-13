@@ -43,23 +43,20 @@ UrlT = Union[str, bytes, ParseResult]
 def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
     """Return True if the url belongs to any of the given domains"""
     host = _parse_url(url).netloc.lower()
-    if not host:
-        return False
     domains = [d.lower() for d in domains]
-    return any((host == d) or (host.endswith(f".{d}")) for d in domains)
+    return host and any(host == d or host.endswith(f".{d}") for d in domains)
 
 
 def url_is_from_spider(url: UrlT, spider: type[Spider]) -> bool:
     """Return True if the url belongs to the given spider"""
-    return url_is_from_any_domain(
-        url, [spider.name, *getattr(spider, "allowed_domains", [])]
-    )
+    domains = [spider.name, *getattr(spider, "allowed_domains", [])]
+    return url_is_from_any_domain(url, domains)
 
 
 def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
     """Return True if the url ends with one of the extensions provided"""
-    lowercase_path = _parse_url(url).path.lower()
-    return any(lowercase_path.endswith(ext) for ext in extensions)
+    path = _parse_url(url).path
+    return any(path.lower().endswith(ext) for ext in extensions)
 
 
 def escape_ajax(url: str) -> str:
@@ -107,41 +104,11 @@ def add_http_if_no_scheme(url: str) -> str:
 
 
 def _is_posix_path(string: str) -> bool:
-    return bool(
-        re.match(
-            r"""
-            ^                   # start with...
-            (
-                \.              # ...a single dot,
-                (
-                    \. | [^/\.]+  # optionally followed by
-                )?                # either a second dot or some characters
-                |
-                ~   # $HOME
-            )?      # optional match of ".", ".." or ".blabla"
-            /       # at least one "/" for a file path,
-            .       # and something after the "/"
-            """,
-            string,
-            flags=re.VERBOSE,
-        )
-    )
+    return bool(re.match(r"^(\.\.?[^/\.]*|~)?/.+", string))
 
 
 def _is_windows_path(string: str) -> bool:
-    return bool(
-        re.match(
-            r"""
-            ^
-            (
-                [a-z]:\\
-                | \\\\
-            )
-            """,
-            string,
-            flags=re.IGNORECASE | re.VERBOSE,
-        )
-    )
+    return bool(re.match(r"^([a-z]:\\|\\\\)", string, re.IGNORECASE))
 
 
 def _is_filesystem_path(string: str) -> bool:
@@ -163,42 +130,16 @@ def strip_url(
     origin_only: bool = False,
     strip_fragment: bool = True,
 ) -> str:
-    """Strip URL string from some of its components:
+    """Strip URL string from specified components"""
+    parsed = urlparse(url)
+    netloc = parsed.netloc.split("@")[-1] if (strip_credentials or origin_only) and "@" in parsed.netloc else parsed.netloc
+    
+    if strip_default_port and parsed.port in {("http", 80), ("https", 443), ("ftp", 21)}:
+        netloc = netloc.replace(f":{parsed.port}", "")
 
-    - ``strip_credentials`` removes "user:password@"
-    - ``strip_default_port`` removes ":80" (resp. ":443", ":21")
-      from http:// (resp. https://, ftp://) URLs
-    - ``origin_only`` replaces path component with "/", also dropping
-      query and fragment components ; it also strips credentials
-    - ``strip_fragment`` drops any #fragment component
-    """
+    path = "/" if origin_only else parsed.path
+    params = "" if origin_only else parsed.params
+    query = "" if origin_only else parsed.query
+    fragment = "" if strip_fragment else parsed.fragment
 
-    parsed_url = urlparse(url)
-    netloc = parsed_url.netloc
-    if (strip_credentials or origin_only) and (
-        parsed_url.username or parsed_url.password
-    ):
-        netloc = netloc.split("@")[-1]
-
-    if (
-        strip_default_port
-        and parsed_url.port
-        and (parsed_url.scheme, parsed_url.port)
-        in (
-            ("http", 80),
-            ("https", 443),
-            ("ftp", 21),
-        )
-    ):
-        netloc = netloc.replace(f":{parsed_url.port}", "")
-
-    return urlunparse(
-        (
-            parsed_url.scheme,
-            netloc,
-            "/" if origin_only else parsed_url.path,
-            "" if origin_only else parsed_url.params,
-            "" if origin_only else parsed_url.query,
-            "" if strip_fragment else parsed_url.fragment,
-        )
-    )
+    return urlunparse((parsed.scheme, netloc, path, params, query, fragment))
