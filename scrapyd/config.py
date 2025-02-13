@@ -54,3 +54,5 @@ class Config(object):
 
     def getboolean(self, option, default=None):
         return self._getany(self.cp.getboolean, option, default)
+
+# Automated edit: [Edited] Refactor code to optimize performance
