@@ -145,8 +145,9 @@ class HttpCompressionMiddleware:
             body = self._decode(body, encoding, max_size)
         return body, to_keep
 
+    @staticmethod
     def _split_encodings(
-        self, content_encoding: list[bytes]
+        content_encoding: list[bytes],
     ) -> tuple[list[bytes], list[bytes]]:
         supported_encodings = {*ACCEPTED_ENCODINGS, b"x-gzip"}
         to_keep: list[bytes] = [
@@ -164,14 +165,15 @@ class HttpCompressionMiddleware:
             to_decode.append(encoding)
         return to_decode, to_keep
 
-    def _decode(self, body: bytes, encoding: bytes, max_size: int) -> bytes:
+    @staticmethod
+    def _decode(body: bytes, encoding: bytes, max_size: int) -> bytes:
         if encoding in {b"gzip", b"x-gzip"}:
             return gunzip(body, max_size=max_size)
         if encoding == b"deflate":
             return _inflate(body, max_size=max_size)
-        if encoding == b"br" and b"br" in ACCEPTED_ENCODINGS:
+        if encoding == b"br":
             return _unbrotli(body, max_size=max_size)
-        if encoding == b"zstd" and b"zstd" in ACCEPTED_ENCODINGS:
+        if encoding == b"zstd":
             return _unzstd(body, max_size=max_size)
         return body
 
