@@ -362,7 +362,12 @@ HttpAuthMiddleware
             http_auth_domain = "intranet.example.com"
             name = "intranet.example.com"
 
-            # .. rest of the spider code omitted ...
+    .. reqmeta:: http_user
+    .. reqmeta:: http_pass
+
+    You can alternatively specify ``http_user`` and ``http_pass`` in
+    :attr:`Request.meta <scrapy.http.Request.meta>`, or use
+    :class:`~scrapy.downloadermiddlewares.uriuserinfo.UriUserInfoMiddleware`.
 
 .. _Basic access authentication: https://en.wikipedia.org/wiki/Basic_access_authentication
 
@@ -1226,6 +1231,16 @@ DownloaderStats
 
    To use this middleware you must enable the :setting:`DOWNLOADER_STATS`
    setting.
+
+
+UriUserInfoMiddleware
+---------------------
+
+.. module:: scrapy.downloadermiddlewares.uriuserinfo
+   :synopsis: URI Userinfo Middleware
+
+.. autoclass:: UriUserInfoMiddleware
+
 
 UserAgentMiddleware
 -------------------
