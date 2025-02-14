@@ -31,11 +31,11 @@ class SpiderLoader:
     def __init__(self, settings: BaseSettings):
         self.spider_modules: list[str] = settings.getlist("SPIDER_MODULES")
         self.warn_only: bool = settings.getbool("SPIDER_LOADER_WARN_ONLY")
-        self.load_from_location = settings.getbool("SPIDER_LOADER_LOAD_FROM_LOCATION")
+        self.load_from_path = settings.getbool("SPIDER_LOADER_LOAD_FROM_PATH")
         self._spiders: dict[str, type[Spider]] = {}
         self._found: defaultdict[str, list[tuple[str, str]]] = defaultdict(list)
 
-        if not self.load_from_location:
+        if not self.load_from_path:
             self._load_all_spiders()
 
     def _check_name_duplicates(self) -> None:
@@ -63,7 +63,7 @@ class SpiderLoader:
             self._spiders[
                 (
                     spcls.name
-                    if not self.load_from_location
+                    if not self.load_from_path
                     else f"{module.__name__}.{spcls.__name__}"
                 )
             ] = spcls
@@ -113,6 +113,6 @@ class SpiderLoader:
         """
         Return a list with the names of all spiders available in the project.
         """
-        if self.load_from_location:
+        if self.load_from_path:
             self._load_all_spiders()
         return list(self._spiders.keys())
