@@ -175,7 +175,8 @@ class HttpCompressionMiddleware:
             return _unbrotli(body, max_size=max_size)
         if encoding == b"zstd":
             return _unzstd(body, max_size=max_size)
-        return body
+        # shouldn't be reached
+        return body  # pragma: no cover
 
     def _warn_unknown_encoding(
         self, response: Response, encodings: list[bytes]

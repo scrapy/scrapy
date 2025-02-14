@@ -201,6 +201,36 @@ class HttpCompressionTest(TestCase):
             assert newresponse.body.startswith(b"<!DOCTYPE")
             assert "Content-Encoding" not in newresponse.headers
 
+    def test_process_response_zstd_unsupported(self):
+        try:
+            import zstandard  # noqa: F401
+
+            raise SkipTest("Requires not having zstandard support")
+        except ImportError:
+            pass
+        response = self._getresponse("zstd-static-content-size")
+        request = response.request
+        self.assertEqual(response.headers["Content-Encoding"], b"zstd")
+        with LogCapture(
+            "scrapy.downloadermiddlewares.httpcompression",
+            propagate=False,
+            level=WARNING,
+        ) as log:
+            newresponse = self.mw.process_response(request, response, self.spider)
+        log.check(
+            (
+                "scrapy.downloadermiddlewares.httpcompression",
+                "WARNING",
+                (
+                    "HttpCompressionMiddleware cannot decode the response for"
+                    " http://scrapytest.org/ from unsupported encoding(s) 'zstd'."
+                    " You need to install zstandard to decode 'zstd'."
+                ),
+            ),
+        )
+        assert newresponse is not response
+        self.assertEqual(newresponse.headers.getlist("Content-Encoding"), [b"zstd"])
+
     def test_process_response_rawdeflate(self):
         response = self._getresponse("rawdeflate")
         request = response.request
