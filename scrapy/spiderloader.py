@@ -94,7 +94,7 @@ class SpiderLoader:
         Return the Spider class for the given spider name. If the spider
         name is not found, raise a KeyError.
         """
-        if self.load_from_location:
+        if self.load_from_path:
             return load_object(spider_name)
         try:
             return self._spiders[spider_name]
