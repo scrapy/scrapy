@@ -207,8 +207,8 @@ class ResponseUtilsTest(unittest.TestCase):
 
 
 @pytest.mark.parametrize(
-    "input_body,output_body",
-    (
+    ("input_body", "output_body"),
+    [
         (
             b"a<!--",
             b"a",
@@ -237,7 +237,7 @@ class ResponseUtilsTest(unittest.TestCase):
             b"a<!--b--><!--c-->d",
             b"ad",
         ),
-    ),
+    ],
 )
 def test_remove_html_comments(input_body, output_body):
     assert _remove_html_comments(input_body) == output_body, (

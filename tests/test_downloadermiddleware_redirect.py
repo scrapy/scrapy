@@ -1278,7 +1278,7 @@ class MetaRefreshMiddlewareTest(Base.Test):
 
 @pytest.mark.parametrize(
     SCHEME_PARAMS,
-    (
+    [
         *REDIRECT_SCHEME_CASES,
         # data/file/ftp/s3/foo → * does not redirect
         *(
@@ -1300,7 +1300,7 @@ class MetaRefreshMiddlewareTest(Base.Test):
             for scheme in NON_HTTP_SCHEMES
             for location in ("//example.com/b", "/b")
         ),
-    ),
+    ],
 )
 def test_meta_refresh_schemes(url, location, target):
     crawler = get_crawler(Spider)

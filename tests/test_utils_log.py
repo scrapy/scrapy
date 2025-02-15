@@ -119,7 +119,7 @@ class StreamLoggerTest(unittest.TestCase):
 
 @pytest.mark.parametrize(
     ("base_extra", "log_extra", "expected_extra"),
-    (
+    [
         (
             {"spider": "test"},
             {"extra": {"log_extra": "info"}},
@@ -135,7 +135,7 @@ class StreamLoggerTest(unittest.TestCase):
             {"extra": {"spider": "test2"}},
             {"extra": {"spider": "test"}},
         ),
-    ),
+    ],
 )
 def test_spider_logger_adapter_process(
     base_extra: Mapping[str, Any], log_extra: MutableMapping, expected_extra: dict

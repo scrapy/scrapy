@@ -1,4 +1,4 @@
-from pytest import mark
+import pytest
 from twisted.internet import defer
 from twisted.trial import unittest
 
@@ -37,7 +37,7 @@ class AsyncSignalTestCase(unittest.TestCase):
         item = await get_from_asyncio_queue(item)
         self.items.append(item)
 
-    @mark.only_asyncio()
+    @pytest.mark.only_asyncio
     @defer.inlineCallbacks
     def test_simple_pipeline(self):
         crawler = get_crawler(ItemSpider)

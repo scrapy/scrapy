@@ -31,7 +31,7 @@ def custom_serializer(value):
     return str(int(value) + 2)
 
 
-class TestItem(Item):
+class MyItem(Item):
     name = Field()
     age = Field()
 
@@ -42,7 +42,7 @@ class CustomFieldItem(Item):
 
 
 @dataclasses.dataclass
-class TestDataClass:
+class MyDataClass:
     name: str
     age: int
 
@@ -54,7 +54,7 @@ class CustomFieldDataclass:
 
 
 class BaseItemExporterTest(unittest.TestCase):
-    item_class: type = TestItem
+    item_class: type = MyItem
     custom_field_item_class: type = CustomFieldItem
 
     def setUp(self):
@@ -138,7 +138,7 @@ class BaseItemExporterTest(unittest.TestCase):
 
 
 class BaseItemExporterDataclassTest(BaseItemExporterTest):
-    item_class = TestDataClass
+    item_class = MyDataClass
     custom_field_item_class = CustomFieldDataclass
 
 
@@ -207,7 +207,7 @@ class PythonItemExporterTest(BaseItemExporterTest):
 
 
 class PythonItemExporterDataclassTest(PythonItemExporterTest):
-    item_class = TestDataClass
+    item_class = MyDataClass
     custom_field_item_class = CustomFieldDataclass
 
 
@@ -222,7 +222,7 @@ class PprintItemExporterTest(BaseItemExporterTest):
 
 
 class PprintItemExporterDataclassTest(PprintItemExporterTest):
-    item_class = TestDataClass
+    item_class = MyDataClass
     custom_field_item_class = CustomFieldDataclass
 
 
@@ -259,7 +259,7 @@ class PickleItemExporterTest(BaseItemExporterTest):
 
 
 class PickleItemExporterDataclassTest(PickleItemExporterTest):
-    item_class = TestDataClass
+    item_class = MyDataClass
     custom_field_item_class = CustomFieldDataclass
 
 
@@ -286,7 +286,7 @@ class MarshalItemExporterTest(BaseItemExporterTest):
 
 
 class MarshalItemExporterDataclassTest(MarshalItemExporterTest):
-    item_class = TestDataClass
+    item_class = MyDataClass
     custom_field_item_class = CustomFieldDataclass
 
 
@@ -406,7 +406,7 @@ class CsvItemExporterTest(BaseItemExporterTest):
 
 
 class CsvItemExporterDataclassTest(CsvItemExporterTest):
-    item_class = TestDataClass
+    item_class = MyDataClass
     custom_field_item_class = CustomFieldDataclass
 
 
@@ -517,7 +517,7 @@ class XmlItemExporterTest(BaseItemExporterTest):
 
 
 class XmlItemExporterDataclassTest(XmlItemExporterTest):
-    item_class = TestDataClass
+    item_class = MyDataClass
     custom_field_item_class = CustomFieldDataclass
 
 
@@ -563,7 +563,7 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
 
 
 class JsonLinesItemExporterDataclassTest(JsonLinesItemExporterTest):
-    item_class = TestDataClass
+    item_class = MyDataClass
     custom_field_item_class = CustomFieldDataclass
 
 
@@ -595,11 +595,11 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         self.assertTwoItemsExported(ItemAdapter(self.i).asdict())
 
     def test_two_items_with_failure_between(self):
-        i1 = TestItem(name="Joseph\xa3", age="22")
-        i2 = TestItem(
+        i1 = MyItem(name="Joseph\xa3", age="22")
+        i2 = MyItem(
             name="Maria", age=1j
         )  # Invalid datetimes didn't consistently fail between Python versions
-        i3 = TestItem(name="Jesus", age="44")
+        i3 = MyItem(name="Jesus", age="44")
         self.ie.start_exporting()
         self.ie.export_item(i1)
         self.assertRaises(TypeError, self.ie.export_item, i2)
@@ -652,9 +652,9 @@ class JsonItemExporterToBytesTest(BaseItemExporterTest):
         return JsonItemExporter(self.output, **kwargs)
 
     def test_two_items_with_failure_between(self):
-        i1 = TestItem(name="Joseph", age="22")
-        i2 = TestItem(name="\u263a", age="11")
-        i3 = TestItem(name="Jesus", age="44")
+        i1 = MyItem(name="Joseph", age="22")
+        i2 = MyItem(name="\u263a", age="11")
+        i3 = MyItem(name="Jesus", age="44")
         self.ie.start_exporting()
         self.ie.export_item(i1)
         self.assertRaises(UnicodeEncodeError, self.ie.export_item, i2)
@@ -665,12 +665,12 @@ class JsonItemExporterToBytesTest(BaseItemExporterTest):
 
 
 class JsonItemExporterDataclassTest(JsonItemExporterTest):
-    item_class = TestDataClass
+    item_class = MyDataClass
     custom_field_item_class = CustomFieldDataclass
 
 
 class CustomExporterItemTest(unittest.TestCase):
-    item_class: type = TestItem
+    item_class: type = MyItem
 
     def setUp(self):
         if self.item_class is None:
@@ -700,4 +700,4 @@ class CustomExporterItemTest(unittest.TestCase):
 
 
 class CustomExporterDataclassTest(CustomExporterItemTest):
-    item_class = TestDataClass
+    item_class = MyDataClass

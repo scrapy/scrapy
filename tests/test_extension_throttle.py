@@ -13,13 +13,10 @@ from scrapy.settings.default_settings import (
     DOWNLOAD_DELAY,
 )
 from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import TestSpider
 from scrapy.utils.test import get_crawler as _get_crawler
 
 UNSET = object()
-
-
-class TestSpider(Spider):
-    name = "test"
 
 
 def get_crawler(settings=None, spidercls=None):
@@ -30,11 +27,11 @@ def get_crawler(settings=None, spidercls=None):
 
 @pytest.mark.parametrize(
     ("value", "expected"),
-    (
+    [
         (UNSET, False),
         (False, False),
         (True, True),
-    ),
+    ],
 )
 def test_enabled(value, expected):
     settings = {}
@@ -50,10 +47,10 @@ def test_enabled(value, expected):
 
 @pytest.mark.parametrize(
     "value",
-    (
+    [
         0.0,
         -1.0,
-    ),
+    ],
 )
 def test_target_concurrency_invalid(value):
     settings = {"AUTOTHROTTLE_TARGET_CONCURRENCY": value}
@@ -64,13 +61,13 @@ def test_target_concurrency_invalid(value):
 
 @pytest.mark.parametrize(
     ("spider", "setting", "expected"),
-    (
+    [
         (UNSET, UNSET, DOWNLOAD_DELAY),
         (1.0, UNSET, 1.0),
         (UNSET, 1.0, 1.0),
         (1.0, 2.0, 1.0),
         (3.0, 2.0, 3.0),
-    ),
+    ],
 )
 def test_mindelay_definition(spider, setting, expected):
     settings = {}
@@ -91,10 +88,10 @@ def test_mindelay_definition(spider, setting, expected):
 
 @pytest.mark.parametrize(
     ("value", "expected"),
-    (
+    [
         (UNSET, AUTOTHROTTLE_MAX_DELAY),
         (1.0, 1.0),
-    ),
+    ],
 )
 def test_maxdelay_definition(value, expected):
     settings = {}
@@ -108,7 +105,7 @@ def test_maxdelay_definition(value, expected):
 
 @pytest.mark.parametrize(
     ("min_spider", "min_setting", "start_setting", "expected"),
-    (
+    [
         (UNSET, UNSET, UNSET, AUTOTHROTTLE_START_DELAY),
         (AUTOTHROTTLE_START_DELAY - 1.0, UNSET, UNSET, AUTOTHROTTLE_START_DELAY),
         (AUTOTHROTTLE_START_DELAY + 1.0, UNSET, UNSET, AUTOTHROTTLE_START_DELAY + 1.0),
@@ -134,7 +131,7 @@ def test_maxdelay_definition(value, expected):
             AUTOTHROTTLE_START_DELAY + 2.0,
             AUTOTHROTTLE_START_DELAY + 2.0,
         ),
-    ),
+    ],
 )
 def test_startdelay_definition(min_spider, min_setting, start_setting, expected):
     settings = {}
@@ -158,7 +155,7 @@ def test_startdelay_definition(min_spider, min_setting, start_setting, expected)
 
 @pytest.mark.parametrize(
     ("meta", "slot"),
-    (
+    [
         ({}, None),
         ({"download_latency": 1.0}, None),
         ({"download_slot": "foo"}, None),
@@ -172,7 +169,7 @@ def test_startdelay_definition(min_spider, min_setting, start_setting, expected)
             },
             "foo",
         ),
-    ),
+    ],
 )
 def test_skipped(meta, slot):
     crawler = get_crawler()
@@ -193,7 +190,7 @@ def test_skipped(meta, slot):
 
 @pytest.mark.parametrize(
     ("download_latency", "target_concurrency", "slot_delay", "expected"),
-    (
+    [
         (2.0, 2.0, 1.0, 1.0),
         (1.0, 2.0, 1.0, 0.75),
         (4.0, 2.0, 1.0, 2.0),
@@ -201,7 +198,7 @@ def test_skipped(meta, slot):
         (2.0, 4.0, 1.0, 0.75),
         (2.0, 2.0, 0.5, 1.0),
         (2.0, 2.0, 2.0, 1.5),
-    ),
+    ],
 )
 def test_adjustment(download_latency, target_concurrency, slot_delay, expected):
     settings = {"AUTOTHROTTLE_TARGET_CONCURRENCY": target_concurrency}
@@ -227,11 +224,11 @@ def test_adjustment(download_latency, target_concurrency, slot_delay, expected):
 
 @pytest.mark.parametrize(
     ("mindelay", "maxdelay", "expected"),
-    (
+    [
         (0.5, 2.0, 1.0),
         (0.25, 0.5, 0.5),
         (2.0, 4.0, 2.0),
-    ),
+    ],
 )
 def test_adjustment_limits(mindelay, maxdelay, expected):
     download_latency, target_concurrency, slot_delay = (2.0, 2.0, 1.0)
@@ -263,11 +260,11 @@ def test_adjustment_limits(mindelay, maxdelay, expected):
 
 @pytest.mark.parametrize(
     ("download_latency", "target_concurrency", "slot_delay", "expected"),
-    (
+    [
         (2.0, 2.0, 1.0, 1.0),
         (1.0, 2.0, 1.0, 1.0),  # Instead of 0.75
         (4.0, 2.0, 1.0, 2.0),
-    ),
+    ],
 )
 def test_adjustment_bad_response(
     download_latency, target_concurrency, slot_delay, expected

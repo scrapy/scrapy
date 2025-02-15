@@ -19,7 +19,7 @@ from threading import Timer
 from typing import TYPE_CHECKING
 from unittest import mock, skipIf
 
-from pytest import mark
+import pytest
 from twisted.trial import unittest
 
 import scrapy
@@ -822,7 +822,7 @@ class MySpider(scrapy.Spider):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log
         )
 
-    @mark.requires_uvloop
+    @pytest.mark.requires_uvloop
     def test_custom_asyncio_loop_enabled_true(self):
         log = self.get_log(
             self.debug_log_spider,

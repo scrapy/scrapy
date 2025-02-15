@@ -15,7 +15,7 @@ from scrapy.squeues import (
 )
 
 
-class TestItem(Item):
+class MyItem(Item):
     name = Field()
 
 
@@ -23,8 +23,8 @@ def _test_procesor(x):
     return x + x
 
 
-class TestLoader(ItemLoader):
-    default_item_class = TestItem
+class MyLoader(ItemLoader):
+    default_item_class = MyItem
     name_out = staticmethod(_test_procesor)
 
 
@@ -80,19 +80,19 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
 
     def test_serialize_item(self):
         q = self.queue()
-        i = TestItem(name="foo")
+        i = MyItem(name="foo")
         q.push(i)
         i2 = q.pop()
-        assert isinstance(i2, TestItem)
+        assert isinstance(i2, MyItem)
         self.assertEqual(i, i2)
 
     def test_serialize_loader(self):
         q = self.queue()
-        loader = TestLoader()
+        loader = MyLoader()
         q.push(loader)
         loader2 = q.pop()
-        assert isinstance(loader2, TestLoader)
-        assert loader2.default_item_class is TestItem
+        assert isinstance(loader2, MyLoader)
+        assert loader2.default_item_class is MyItem
         self.assertEqual(loader2.name_out("x"), "xx")
 
     def test_serialize_request_recursive(self):
@@ -161,19 +161,19 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
 
     def test_serialize_item(self):
         q = self.queue()
-        i = TestItem(name="foo")
+        i = MyItem(name="foo")
         q.push(i)
         i2 = q.pop()
-        assert isinstance(i2, TestItem)
+        assert isinstance(i2, MyItem)
         self.assertEqual(i, i2)
 
     def test_serialize_loader(self):
         q = self.queue()
-        loader = TestLoader()
+        loader = MyLoader()
         q.push(loader)
         loader2 = q.pop()
-        assert isinstance(loader2, TestLoader)
-        assert loader2.default_item_class is TestItem
+        assert isinstance(loader2, MyLoader)
+        assert loader2.default_item_class is MyItem
         self.assertEqual(loader2.name_out("x"), "xx")
 
     def test_serialize_request_recursive(self):

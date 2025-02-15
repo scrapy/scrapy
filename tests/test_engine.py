@@ -42,7 +42,7 @@ from scrapy.utils.test import get_crawler
 from tests import get_testdata, tests_datadir
 
 
-class TestItem(Item):
+class MyItem(Item):
     name = Field()
     url = Field()
     price = Field()
@@ -62,7 +62,7 @@ class DataClassItem:
     price: int = 0
 
 
-class TestSpider(Spider):
+class MySpider(Spider):
     name = "scrapytest.org"
     allowed_domains = ["scrapytest.org", "localhost"]
 
@@ -70,7 +70,7 @@ class TestSpider(Spider):
     name_re = re.compile(r"<h1>(.*?)</h1>", re.MULTILINE)
     price_re = re.compile(r">Price: \$(.*?)<", re.MULTILINE)
 
-    item_cls: type = TestItem
+    item_cls: type = MyItem
 
     def parse(self, response):
         xlink = LinkExtractor()
@@ -91,24 +91,24 @@ class TestSpider(Spider):
         return adapter.item
 
 
-class TestDupeFilterSpider(TestSpider):
+class DupeFilterSpider(MySpider):
     def start_requests(self):
         return (Request(url) for url in self.start_urls)  # no dont_filter=True
 
 
-class DictItemsSpider(TestSpider):
+class DictItemsSpider(MySpider):
     item_cls = dict
 
 
-class AttrsItemsSpider(TestSpider):
+class AttrsItemsSpider(MySpider):
     item_cls = AttrsItem
 
 
-class DataClassItemsSpider(TestSpider):
+class DataClassItemsSpider(MySpider):
     item_cls = DataClassItem
 
 
-class ItemZeroDivisionErrorSpider(TestSpider):
+class ItemZeroDivisionErrorSpider(MySpider):
     custom_settings = {
         "ITEM_PIPELINES": {
             "tests.pipelines.ProcessWithZeroDivisionErrorPipeline": 300,
@@ -116,7 +116,7 @@ class ItemZeroDivisionErrorSpider(TestSpider):
     }
 
 
-class ChangeCloseReasonSpider(TestSpider):
+class ChangeCloseReasonSpider(MySpider):
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
         spider = cls(*args, **kwargs)
@@ -388,7 +388,7 @@ class EngineTest(EngineTestBase):
     @defer.inlineCallbacks
     def test_crawler(self):
         for spider in (
-            TestSpider,
+            MySpider,
             DictItemsSpider,
             AttrsItemsSpider,
             DataClassItemsSpider,
@@ -404,7 +404,7 @@ class EngineTest(EngineTestBase):
 
     @defer.inlineCallbacks
     def test_crawler_dupefilter(self):
-        run = CrawlerRun(TestDupeFilterSpider)
+        run = CrawlerRun(DupeFilterSpider)
         yield run.run()
         self._assert_scheduled_requests(run, count=8)
         self._assert_dropped_requests(run)
@@ -426,13 +426,13 @@ class EngineTest(EngineTestBase):
 
     @defer.inlineCallbacks
     def test_close_downloader(self):
-        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
+        e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
         yield e.close()
 
     @defer.inlineCallbacks
     def test_start_already_running_exception(self):
-        e = ExecutionEngine(get_crawler(TestSpider), lambda _: None)
-        yield e.open_spider(TestSpider(), [])
+        e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
+        yield e.open_spider(MySpider(), [])
         e.start()
         try:
             yield self.assertFailure(e.start(), RuntimeError).addBoth(
@@ -486,7 +486,7 @@ def test_request_scheduled_signal(caplog):
         if "drop" in request.url:
             raise IgnoreRequest
 
-    spider = TestSpider()
+    spider = MySpider()
     crawler = get_crawler(spider.__class__)
     engine = ExecutionEngine(crawler, lambda _: None)
     engine.downloader._slot_gc_loop.stop()

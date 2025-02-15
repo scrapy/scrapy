@@ -83,6 +83,8 @@ def get_ftp_content_and_delete(
 
 
 class TestSpider(Spider):
+    __test__ = False
+
     name = "test"
 
 

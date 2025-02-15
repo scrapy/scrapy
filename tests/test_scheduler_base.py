@@ -51,8 +51,8 @@ class SimpleScheduler(MinimalScheduler):
         return len(self.requests)
 
 
-class TestSpider(Spider):
-    name = "test"
+class PathsSpider(Spider):
+    name = "paths"
 
     def __init__(self, mockserver, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -155,7 +155,7 @@ class MinimalSchedulerCrawlTest(TwistedTestCase):
                 "SCHEDULER": self.scheduler_cls,
             }
             with LogCapture() as log:
-                crawler = get_crawler(TestSpider, settings)
+                crawler = get_crawler(PathsSpider, settings)
                 yield crawler.crawl(mockserver)
             for path in PATHS:
                 self.assertIn(f"{{'path': '{path}'}}", str(log))

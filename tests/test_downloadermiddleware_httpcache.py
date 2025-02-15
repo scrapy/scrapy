@@ -353,7 +353,8 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 resc = mw.storage.retrieve_response(self.spider, req0)
                 if shouldcache:
                     self.assertEqualResponse(resc, res1)
-                    assert "cached" in res2.flags and res2.status != 304
+                    assert "cached" in res2.flags
+                    assert res2.status != 304
                 else:
                     self.assertFalse(resc)
                     assert "cached" not in res2.flags
@@ -376,7 +377,8 @@ class RFC2616PolicyTest(DefaultStorageTest):
                 resc = mw.storage.retrieve_response(self.spider, req0)
                 if shouldcache:
                     self.assertEqualResponse(resc, res1)
-                    assert "cached" in res2.flags and res2.status != 304
+                    assert "cached" in res2.flags
+                    assert res2.status != 304
                 else:
                     self.assertFalse(resc)
                     assert "cached" not in res2.flags

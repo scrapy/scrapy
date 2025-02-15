@@ -4,8 +4,8 @@ import pickle
 import re
 import unittest
 
+import pytest
 from packaging.version import Version
-from pytest import mark
 from w3lib import __version__ as w3lib_version
 
 from scrapy.http import HtmlResponse, XmlResponse
@@ -930,7 +930,7 @@ class LxmlLinkExtractorTestCase(Base.LinkExtractorTestCase):
             ],
         )
 
-    @mark.skipif(
+    @pytest.mark.skipif(
         Version(w3lib_version) < Version("2.0.0"),
         reason=(
             "Before w3lib 2.0.0, w3lib.url.safe_url_string would not complain "
