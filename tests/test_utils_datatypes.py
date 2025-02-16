@@ -16,8 +16,6 @@ from scrapy.utils.datatypes import (
 )
 from scrapy.utils.python import garbage_collect
 
-__doctests__ = ["scrapy.utils.datatypes"]
-
 
 class CaseInsensitiveDictMixin:
     def test_init_dict(self):

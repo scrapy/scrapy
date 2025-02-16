@@ -15,8 +15,6 @@ from scrapy.utils.response import (
     response_status_message,
 )
 
-__doctests__ = ["scrapy.utils.response"]
-
 
 class ResponseUtilsTest(unittest.TestCase):
     dummy_response = TextResponse(url="http://example.org/", body=b"dummy_response")

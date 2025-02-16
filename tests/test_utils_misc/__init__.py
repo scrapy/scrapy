@@ -17,8 +17,6 @@ from scrapy.utils.misc import (
     walk_modules,
 )
 
-__doctests__ = ["scrapy.utils.misc"]
-
 
 class UtilsMiscTestCase(unittest.TestCase):
     def test_load_object_class(self):

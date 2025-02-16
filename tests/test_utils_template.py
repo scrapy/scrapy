@@ -5,8 +5,6 @@ from tempfile import mkdtemp
 
 from scrapy.utils.template import render_templatefile
 
-__doctests__ = ["scrapy.utils.template"]
-
 
 class UtilsRenderTemplateFileTestCase(unittest.TestCase):
     def setUp(self):

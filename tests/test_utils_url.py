@@ -17,8 +17,6 @@ from scrapy.utils.url import (  # type: ignore[attr-defined]
     url_is_from_spider,
 )
 
-__doctests__ = ["scrapy.utils.url"]
-
 
 class UrlUtilsTest(unittest.TestCase):
     def test_url_is_from_any_domain(self):
