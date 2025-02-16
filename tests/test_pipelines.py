@@ -1,6 +1,6 @@
 import asyncio
 
-from pytest import mark
+import pytest
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
 from twisted.trial import unittest
@@ -118,14 +118,14 @@ class PipelineTestCase(unittest.TestCase):
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertEqual(len(self.items), 1)
 
-    @mark.only_asyncio()
+    @pytest.mark.only_asyncio
     @defer.inlineCallbacks
     def test_asyncdef_asyncio_pipeline(self):
         crawler = self._create_crawler(AsyncDefAsyncioPipeline)
         yield crawler.crawl(mockserver=self.mockserver)
         self.assertEqual(len(self.items), 1)
 
-    @mark.only_not_asyncio()
+    @pytest.mark.only_not_asyncio
     @defer.inlineCallbacks
     def test_asyncdef_not_asyncio_pipeline(self):
         crawler = self._create_crawler(AsyncDefNotAsyncioPipeline)

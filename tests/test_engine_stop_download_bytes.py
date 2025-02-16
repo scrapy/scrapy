@@ -8,7 +8,7 @@ from tests.test_engine import (
     DataClassItemsSpider,
     DictItemsSpider,
     EngineTestBase,
-    TestSpider,
+    MySpider,
 )
 
 
@@ -22,7 +22,7 @@ class BytesReceivedEngineTest(EngineTestBase):
     @defer.inlineCallbacks
     def test_crawler(self):
         for spider in (
-            TestSpider,
+            MySpider,
             DictItemsSpider,
             AttrsItemsSpider,
             DataClassItemsSpider,

@@ -15,8 +15,6 @@ from scrapy.utils.response import (
     response_status_message,
 )
 
-__doctests__ = ["scrapy.utils.response"]
-
 
 class ResponseUtilsTest(unittest.TestCase):
     dummy_response = TextResponse(url="http://example.org/", body=b"dummy_response")
@@ -207,8 +205,8 @@ class ResponseUtilsTest(unittest.TestCase):
 
 
 @pytest.mark.parametrize(
-    "input_body,output_body",
-    (
+    ("input_body", "output_body"),
+    [
         (
             b"a<!--",
             b"a",
@@ -237,7 +235,7 @@ class ResponseUtilsTest(unittest.TestCase):
             b"a<!--b--><!--c-->d",
             b"ad",
         ),
-    ),
+    ],
 )
 def test_remove_html_comments(input_body, output_body):
     assert _remove_html_comments(input_body) == output_body, (

@@ -15,9 +15,10 @@ from unittest import TestCase, mock
 
 from twisted.trial.unittest import SkipTest
 
-from scrapy import Spider
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.boto import is_botocore_available
+from scrapy.utils.deprecate import create_deprecated_class
+from scrapy.utils.spider import DefaultSpider
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -25,6 +26,7 @@ if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
     from twisted.web.client import Response as TxResponse
 
+    from scrapy import Spider
     from scrapy.crawler import Crawler
 
 
@@ -82,8 +84,7 @@ def get_ftp_content_and_delete(
     return b"".join(ftp_data)
 
 
-class TestSpider(Spider):
-    name = "test"
+TestSpider = create_deprecated_class("TestSpider", DefaultSpider)
 
 
 def get_crawler(
@@ -101,7 +102,7 @@ def get_crawler(
     settings: dict[str, Any] = {}
     settings.update(settings_dict or {})
     runner = CrawlerRunner(settings)
-    crawler = runner.create_crawler(spidercls or TestSpider)
+    crawler = runner.create_crawler(spidercls or DefaultSpider)
     crawler._apply_settings()
     return crawler
 

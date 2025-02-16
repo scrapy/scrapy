@@ -21,7 +21,7 @@ from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 
 
-class TestItem(Item):
+class DemoItem(Item):
     name = Field()
     url = Field()
 
@@ -58,7 +58,7 @@ class CustomFormContract(Contract):
         return args
 
 
-class TestSpider(Spider):
+class DemoSpider(Spider):
     name = "demo_spider"
 
     def returns_request(self, response):
@@ -80,7 +80,7 @@ class TestSpider(Spider):
         @url http://scrapy.org
         @returns items 1 1
         """
-        return TestItem(url=response.url)
+        return DemoItem(url=response.url)
 
     def returns_request_cb_kwargs(self, response, url):
         """method which returns request
@@ -96,7 +96,7 @@ class TestSpider(Spider):
         @cb_kwargs {"name": "Scrapy"}
         @returns items 1 1
         """
-        return TestItem(name=name, url=response.url)
+        return DemoItem(name=name, url=response.url)
 
     def returns_item_cb_kwargs_error_unexpected_keyword(self, response):
         """method which returns item
@@ -104,14 +104,14 @@ class TestSpider(Spider):
         @cb_kwargs {"arg": "value"}
         @returns items 1 1
         """
-        return TestItem(url=response.url)
+        return DemoItem(url=response.url)
 
     def returns_item_cb_kwargs_error_missing_argument(self, response, arg):
         """method which returns item
         @url http://scrapy.org
         @returns items 1 1
         """
-        return TestItem(url=response.url)
+        return DemoItem(url=response.url)
 
     def returns_dict_item(self, response):
         """method which returns item
@@ -125,7 +125,7 @@ class TestSpider(Spider):
         @url http://scrapy.org
         @returns items 0 0
         """
-        return TestItem(url=response.url)
+        return DemoItem(url=response.url)
 
     def returns_dict_fail(self, response):
         """method which returns item
@@ -140,7 +140,7 @@ class TestSpider(Spider):
         @returns items 1 1
         @scrapes name url
         """
-        return TestItem(name="test", url=response.url)
+        return DemoItem(name="test", url=response.url)
 
     def scrapes_dict_item_ok(self, response):
         """returns item with name and url
@@ -156,7 +156,7 @@ class TestSpider(Spider):
         @returns items 1 1
         @scrapes name url
         """
-        return TestItem(url=response.url)
+        return DemoItem(url=response.url)
 
     def scrapes_dict_item_fail(self, response):
         """returns item with no name
@@ -212,7 +212,7 @@ class TestSpider(Spider):
         @meta {"key": "example"}
         @returns items 1 1
         """
-        return TestItem(name="example", url=response.url)
+        return DemoItem(name="example", url=response.url)
 
     def returns_error_missing_meta(self, response):
         """method which depends of metadata be defined
@@ -242,7 +242,7 @@ class CustomContractFailSpider(Spider):
         """
 
 
-class InheritsTestSpider(TestSpider):
+class InheritsDemoSpider(DemoSpider):
     name = "inherits_demo_spider"
 
 
@@ -274,7 +274,7 @@ class ContractsManagerTest(unittest.TestCase):
         self.assertTrue(self.results.errors)
 
     def test_contracts(self):
-        spider = TestSpider()
+        spider = DemoSpider()
 
         # extract contracts correctly
         contracts = self.conman.extract_contracts(spider.returns_request)
@@ -293,7 +293,7 @@ class ContractsManagerTest(unittest.TestCase):
         self.assertEqual(request, None)
 
     def test_cb_kwargs(self):
-        spider = TestSpider()
+        spider = DemoSpider()
         response = ResponseMock()
 
         # extract contracts correctly
@@ -356,7 +356,7 @@ class ContractsManagerTest(unittest.TestCase):
         self.should_error()
 
     def test_meta(self):
-        spider = TestSpider()
+        spider = DemoSpider()
 
         # extract contracts correctly
         contracts = self.conman.extract_contracts(spider.returns_request_meta)
@@ -402,7 +402,7 @@ class ContractsManagerTest(unittest.TestCase):
         self.should_error()
 
     def test_returns(self):
-        spider = TestSpider()
+        spider = DemoSpider()
         response = ResponseMock()
 
         # returns_item
@@ -431,7 +431,7 @@ class ContractsManagerTest(unittest.TestCase):
         self.should_fail()
 
     def test_returns_async(self):
-        spider = TestSpider()
+        spider = DemoSpider()
         response = ResponseMock()
 
         request = self.conman.from_method(spider.returns_request_async, self.results)
@@ -439,7 +439,7 @@ class ContractsManagerTest(unittest.TestCase):
         self.should_error()
 
     def test_scrapes(self):
-        spider = TestSpider()
+        spider = DemoSpider()
         response = ResponseMock()
 
         # scrapes_item_ok
@@ -472,7 +472,7 @@ class ContractsManagerTest(unittest.TestCase):
         assert message in self.results.failures[-1][-1]
 
     def test_regex(self):
-        spider = TestSpider()
+        spider = DemoSpider()
         response = ResponseMock()
 
         # invalid regex
@@ -494,7 +494,7 @@ class ContractsManagerTest(unittest.TestCase):
         self.should_error()
 
     def test_errback(self):
-        spider = TestSpider()
+        spider = DemoSpider()
         response = ResponseMock()
 
         try:
@@ -522,11 +522,11 @@ class ContractsManagerTest(unittest.TestCase):
 
             def parse_first(self, response):
                 self.visited += 1
-                return TestItem()
+                return DemoItem()
 
             def parse_second(self, response):
                 self.visited += 1
-                return TestItem()
+                return DemoItem()
 
         with MockServer() as mockserver:
             contract_doc = f"@url {mockserver.url('/status?n=200')}"
@@ -540,13 +540,13 @@ class ContractsManagerTest(unittest.TestCase):
         self.assertEqual(crawler.spider.visited, 2)
 
     def test_form_contract(self):
-        spider = TestSpider()
+        spider = DemoSpider()
         request = self.conman.from_method(spider.custom_form, self.results)
         self.assertEqual(request.method, "POST")
         self.assertIsInstance(request, FormRequest)
 
     def test_inherited_contracts(self):
-        spider = InheritsTestSpider()
+        spider = InheritsDemoSpider()
 
         requests = self.conman.from_spider(spider, self.results)
         self.assertTrue(requests)
@@ -571,7 +571,7 @@ class CustomContractPrePostProcess(unittest.TestCase):
         self.results = TextTestResult(stream=None, descriptions=False, verbosity=0)
 
     def test_pre_hook_keyboard_interrupt(self):
-        spider = TestSpider()
+        spider = DemoSpider()
         response = ResponseMock()
         contract = CustomFailContractPreProcess(spider.returns_request)
         conman = ContractsManager([contract])
@@ -590,7 +590,7 @@ class CustomContractPrePostProcess(unittest.TestCase):
         self.assertFalse(self.results.errors)
 
     def test_post_hook_keyboard_interrupt(self):
-        spider = TestSpider()
+        spider = DemoSpider()
         response = ResponseMock()
         contract = CustomFailContractPostProcess(spider.returns_request)
         conman = ContractsManager([contract])

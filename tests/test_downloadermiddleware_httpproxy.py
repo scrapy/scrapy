@@ -131,7 +131,8 @@ class TestHttpProxyMiddleware(TestCase):
         mw = HttpProxyMiddleware()
         req = Request("http://noproxy.com", meta={"proxy": None})
         assert mw.process_request(req, spider) is None
-        assert "proxy" in req.meta and req.meta["proxy"] is None
+        assert "proxy" in req.meta
+        assert req.meta["proxy"] is None
 
     def test_no_proxy(self):
         os.environ["http_proxy"] = "https://proxy.for.http:3128"

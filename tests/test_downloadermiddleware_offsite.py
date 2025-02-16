@@ -12,7 +12,7 @@ UNSET = object()
 
 @pytest.mark.parametrize(
     ("allowed_domain", "url", "allowed"),
-    (
+    [
         ("example.com", "http://example.com/1", True),
         ("example.com", "http://example.org/1", False),
         ("example.com", "http://sub.example.com/1", True),
@@ -24,7 +24,7 @@ UNSET = object()
         ("example.com", "http://example.com.example", False),
         ("a.example", "http://nota.example", False),
         ("b.a.example", "http://notb.a.example", False),
-    ),
+    ],
 )
 def test_process_request_domain_filtering(allowed_domain, url, allowed):
     crawler = get_crawler(Spider)
@@ -41,12 +41,12 @@ def test_process_request_domain_filtering(allowed_domain, url, allowed):
 
 @pytest.mark.parametrize(
     ("value", "filtered"),
-    (
+    [
         (UNSET, True),
         (None, True),
         (False, True),
         (True, False),
-    ),
+    ],
 )
 def test_process_request_dont_filter(value, filtered):
     crawler = get_crawler(Spider)
@@ -66,7 +66,7 @@ def test_process_request_dont_filter(value, filtered):
 
 @pytest.mark.parametrize(
     ("allow_offsite", "dont_filter", "filtered"),
-    (
+    [
         (True, UNSET, False),
         (True, None, False),
         (True, False, False),
@@ -75,7 +75,7 @@ def test_process_request_dont_filter(value, filtered):
         (False, None, True),
         (False, False, True),
         (False, True, False),
-    ),
+    ],
 )
 def test_process_request_allow_offsite(allow_offsite, dont_filter, filtered):
     crawler = get_crawler(Spider)
@@ -97,11 +97,11 @@ def test_process_request_allow_offsite(allow_offsite, dont_filter, filtered):
 
 @pytest.mark.parametrize(
     "value",
-    (
+    [
         UNSET,
         None,
         [],
-    ),
+    ],
 )
 def test_process_request_no_allowed_domains(value):
     crawler = get_crawler(Spider)
@@ -133,7 +133,7 @@ def test_process_request_invalid_domains():
 
 @pytest.mark.parametrize(
     ("allowed_domain", "url", "allowed"),
-    (
+    [
         ("example.com", "http://example.com/1", True),
         ("example.com", "http://example.org/1", False),
         ("example.com", "http://sub.example.com/1", True),
@@ -145,7 +145,7 @@ def test_process_request_invalid_domains():
         ("example.com", "http://example.com.example", False),
         ("a.example", "http://nota.example", False),
         ("b.a.example", "http://notb.a.example", False),
-    ),
+    ],
 )
 def test_request_scheduled_domain_filtering(allowed_domain, url, allowed):
     crawler = get_crawler(Spider)
@@ -162,12 +162,12 @@ def test_request_scheduled_domain_filtering(allowed_domain, url, allowed):
 
 @pytest.mark.parametrize(
     ("value", "filtered"),
-    (
+    [
         (UNSET, True),
         (None, True),
         (False, True),
         (True, False),
-    ),
+    ],
 )
 def test_request_scheduled_dont_filter(value, filtered):
     crawler = get_crawler(Spider)
@@ -187,11 +187,11 @@ def test_request_scheduled_dont_filter(value, filtered):
 
 @pytest.mark.parametrize(
     "value",
-    (
+    [
         UNSET,
         None,
         [],
-    ),
+    ],
 )
 def test_request_scheduled_no_allowed_domains(value):
     crawler = get_crawler(Spider)

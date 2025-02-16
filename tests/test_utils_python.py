@@ -20,8 +20,6 @@ from scrapy.utils.python import (
     without_none_values,
 )
 
-__doctests__ = ["scrapy.utils.python"]
-
 
 class MutableChainTest(unittest.TestCase):
     def test_mutablechain(self):

@@ -1,6 +1,6 @@
 import random
 
-from pytest import mark
+import pytest
 from twisted.internet import defer, reactor
 from twisted.python.failure import Failure
 from twisted.trial import unittest
@@ -150,7 +150,7 @@ class AsyncDefTestsuiteTest(unittest.TestCase):
     async def test_deferred_f_from_coro_f_generator(self):
         yield
 
-    @mark.xfail(reason="Checks that the test is actually executed", strict=True)
+    @pytest.mark.xfail(reason="Checks that the test is actually executed", strict=True)
     @deferred_f_from_coro_f
     async def test_deferred_f_from_coro_f_xfail(self):
         raise RuntimeError("This is expected to be raised")
