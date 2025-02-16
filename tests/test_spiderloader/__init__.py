@@ -7,6 +7,7 @@ from pathlib import Path
 from tempfile import mkdtemp
 from unittest import mock
 
+import pytest
 from twisted.trial import unittest
 from zope.interface.verify import verifyObject
 
@@ -124,9 +125,8 @@ class SpiderLoaderTest(unittest.TestCase):
             }
         )
 
-        self.assertRaisesRegex(
-            KeyError, "Spider not found", runner.create_crawler, "spider2"
-        )
+        with pytest.raises(KeyError, match="Spider not found"):
+            runner.create_crawler("spider2")
 
         crawler = runner.create_crawler("spider1")
         self.assertTrue(issubclass(crawler.spidercls, scrapy.Spider))
@@ -135,7 +135,8 @@ class SpiderLoaderTest(unittest.TestCase):
     def test_bad_spider_modules_exception(self):
         module = "tests.test_spiderloader.test_spiders.doesnotexist"
         settings = Settings({"SPIDER_MODULES": [module]})
-        self.assertRaises(ImportError, SpiderLoader.from_settings, settings)
+        with pytest.raises(ImportError):
+            SpiderLoader.from_settings(settings)
 
     def test_bad_spider_modules_warning(self):
         with warnings.catch_warnings(record=True) as w:
@@ -159,7 +160,8 @@ class SpiderLoaderTest(unittest.TestCase):
         with mock.patch.object(SpiderLoader, "_load_spiders") as m:
             m.side_effect = SyntaxError
             settings = Settings({"SPIDER_MODULES": [module]})
-            self.assertRaises(SyntaxError, SpiderLoader.from_settings, settings)
+            with pytest.raises(SyntaxError):
+                SpiderLoader.from_settings(settings)
 
     def test_syntax_error_warning(self):
         with (

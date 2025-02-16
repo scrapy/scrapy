@@ -32,9 +32,12 @@ class UtilsMiscTestCase(unittest.TestCase):
         self.assertIs(obj, load_object)
 
     def test_load_object_exceptions(self):
-        self.assertRaises(ImportError, load_object, "nomodule999.mod.function")
-        self.assertRaises(NameError, load_object, "scrapy.utils.misc.load_object999")
-        self.assertRaises(TypeError, load_object, {})
+        with pytest.raises(ImportError):
+            load_object("nomodule999.mod.function")
+        with pytest.raises(NameError):
+            load_object("scrapy.utils.misc.load_object999")
+        with pytest.raises(TypeError):
+            load_object({})
 
     def test_walk_modules(self):
         mods = walk_modules("tests.test_utils_misc.test_walk_modules")
@@ -59,7 +62,8 @@ class UtilsMiscTestCase(unittest.TestCase):
         ]
         self.assertEqual({m.__name__ for m in mods}, set(expected))
 
-        self.assertRaises(ImportError, walk_modules, "nomodule999")
+        with pytest.raises(ImportError):
+            walk_modules("nomodule999")
 
     def test_walk_modules_egg(self):
         egg = str(Path(__file__).parent / "test.egg")
@@ -148,11 +152,11 @@ class UtilsMiscTestCase(unittest.TestCase):
         create_instance(m, None, crawler, *args, **kwargs)
         m.from_settings.assert_called_once_with(crawler.settings, *args, **kwargs)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             create_instance(m, None, None)
 
         m.from_settings.return_value = None
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             create_instance(m, settings, None)
 
     def test_build_from_crawler(self):
@@ -191,7 +195,7 @@ class UtilsMiscTestCase(unittest.TestCase):
         # Check adoption of crawler
         m = mock.MagicMock(spec_set=["__qualname__", "from_crawler"])
         m.from_crawler.return_value = None
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             build_from_crawler(m, crawler, *args, **kwargs)
 
     def test_set_environ(self):

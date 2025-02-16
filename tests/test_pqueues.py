@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 
+import pytest
 import queuelib
 
 from scrapy.http.request import Request
@@ -40,9 +41,9 @@ class PriorityQueueTest(unittest.TestCase):
             self.crawler, FifoMemoryQueue, temp_dir
         )
         queue.push(Request("https://example.org"))
-        with self.assertRaises(
+        with pytest.raises(
             NotImplementedError,
-            msg="The underlying queue class does not implement 'peek'",
+            match="The underlying queue class does not implement 'peek'",
         ):
             queue.peek()
         queue.close()
@@ -129,9 +130,9 @@ class DownloaderAwarePriorityQueueTest(unittest.TestCase):
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             raise unittest.SkipTest("queuelib.queue.FifoMemoryQueue.peek is defined")
         self.queue.push(Request("https://example.org"))
-        with self.assertRaises(
+        with pytest.raises(
             NotImplementedError,
-            msg="The underlying queue class does not implement 'peek'",
+            match="The underlying queue class does not implement 'peek'",
         ):
             self.queue.peek()
 

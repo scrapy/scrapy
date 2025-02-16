@@ -6,6 +6,7 @@ Once we remove the references from scrapy, we can remove these tests.
 import unittest
 from functools import partial
 
+import pytest
 from itemloaders.processors import (
     Compose,
     Identity,
@@ -435,7 +436,8 @@ class BasicItemLoaderTest(unittest.TestCase):
             name_in = MapCompose(float)
 
         il = TestItemLoader()
-        self.assertRaises(ValueError, il.add_value, "name", ["marta", "other"])
+        with pytest.raises(ValueError):
+            il.add_value("name", ["marta", "other"])
 
     def test_error_output_processor(self):
         class TestItem(Item):
@@ -447,7 +449,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
         il = TestItemLoader()
         il.add_value("name", "marta")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             il.load_item()
 
     def test_error_processor_as_argument(self):
@@ -458,9 +460,8 @@ class BasicItemLoaderTest(unittest.TestCase):
             default_item_class = TestItem
 
         il = TestItemLoader()
-        self.assertRaises(
-            ValueError, il.add_value, "name", ["marta", "other"], Compose(float)
-        )
+        with pytest.raises(ValueError):
+            il.add_value("name", ["marta", "other"], Compose(float))
 
 
 class InitializationFromDictTest(unittest.TestCase):
@@ -630,7 +631,8 @@ class ProcessorsTest(unittest.TestCase):
 
     def test_join(self):
         proc = Join()
-        self.assertRaises(TypeError, proc, [None, "", "hello", "world"])
+        with pytest.raises(TypeError):
+            proc([None, "", "hello", "world"])
         self.assertEqual(proc(["", "hello", "world"]), " hello world")
         self.assertEqual(proc(["hello", "world"]), "hello world")
         self.assertIsInstance(proc(["hello", "world"]), str)
@@ -641,9 +643,11 @@ class ProcessorsTest(unittest.TestCase):
         proc = Compose(str.upper)
         self.assertEqual(proc(None), None)
         proc = Compose(str.upper, stop_on_none=False)
-        self.assertRaises(ValueError, proc, None)
+        with pytest.raises(ValueError):
+            proc(None)
         proc = Compose(str.upper, lambda x: x + 1)
-        self.assertRaises(ValueError, proc, "hello")
+        with pytest.raises(ValueError):
+            proc("hello")
 
     def test_mapcompose(self):
         def filter_world(x):
@@ -657,9 +661,11 @@ class ProcessorsTest(unittest.TestCase):
         proc = MapCompose(filter_world, str.upper)
         self.assertEqual(proc(None), [])
         proc = MapCompose(filter_world, str.upper)
-        self.assertRaises(ValueError, proc, [1])
+        with pytest.raises(ValueError):
+            proc([1])
         proc = MapCompose(filter_world, lambda x: x + 1)
-        self.assertRaises(ValueError, proc, "hello")
+        with pytest.raises(ValueError):
+            proc("hello")
 
 
 class SelectJmesTestCase(unittest.TestCase):

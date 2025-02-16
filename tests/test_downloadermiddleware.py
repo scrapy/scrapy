@@ -106,7 +106,8 @@ class DefaultsTest(ManagerTestCase):
                 "Location": "http://example.com/login",
             },
         )
-        self.assertRaises(OSError, self._download, request=req, response=resp)
+        with pytest.raises(OSError):
+            self._download(request=req, response=resp)
 
 
 class ResponseFromProcessRequestTest(ManagerTestCase):

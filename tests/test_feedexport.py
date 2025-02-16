@@ -233,7 +233,8 @@ class BlockingFeedStorageTest(unittest.TestCase):
         invalid_path = tests_path / "invalid_path"
         spider = self.get_test_spider({"FEED_TEMPDIR": str(invalid_path)})
 
-        self.assertRaises(OSError, b.open, spider=spider)
+        with pytest.raises(OSError):
+            b.open(spider=spider)
 
 
 @pytest.mark.requires_boto3
@@ -2437,7 +2438,8 @@ class BatchDeliveriesTest(FeedExportTestBase):
             "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
         }
         crawler = get_crawler(settings_dict=settings)
-        self.assertRaises(NotConfigured, FeedExporter, crawler)
+        with pytest.raises(NotConfigured):
+            FeedExporter(crawler)
 
     @defer.inlineCallbacks
     def test_export_no_items_not_store_empty(self):
@@ -2758,7 +2760,7 @@ class FeedExportInitTest(unittest.TestCase):
             },
         }
         crawler = get_crawler(settings_dict=settings)
-        with self.assertRaises(NotConfigured):
+        with pytest.raises(NotConfigured):
             FeedExporter.from_crawler(crawler)
 
     def test_unsupported_format(self):
@@ -2770,7 +2772,7 @@ class FeedExportInitTest(unittest.TestCase):
             },
         }
         crawler = get_crawler(settings_dict=settings)
-        with self.assertRaises(NotConfigured):
+        with pytest.raises(NotConfigured):
             FeedExporter.from_crawler(crawler)
 
     def test_absolute_pathlib_as_uri(self):
@@ -2863,7 +2865,7 @@ class URIParamsTest:
 
         with warnings.catch_warnings():
             warnings.simplefilter("error", ScrapyDeprecationWarning)
-            with self.assertRaises(KeyError):
+            with pytest.raises(KeyError):
                 feed_exporter.open_spider(spider)
 
     def test_params_as_is(self):

@@ -27,14 +27,15 @@ class BaseResponseTest(unittest.TestCase):
 
     def test_init(self):
         # Response requires url in the constructor
-        self.assertRaises(Exception, self.response_class)
+        with pytest.raises(TypeError):
+            self.response_class()
         self.assertTrue(
             isinstance(self.response_class("http://example.com/"), self.response_class)
         )
-        self.assertRaises(TypeError, self.response_class, b"http://example.com")
-        self.assertRaises(
-            TypeError, self.response_class, url="http://example.com", body={}
-        )
+        with pytest.raises(TypeError):
+            self.response_class(b"http://example.com")
+        with pytest.raises(TypeError):
+            self.response_class(url="http://example.com", body={})
         # body can be str or None
         self.assertTrue(
             isinstance(
@@ -77,12 +78,8 @@ class BaseResponseTest(unittest.TestCase):
         self.assertEqual(r.status, 301)
         r = self.response_class("http://www.example.com", status="301")
         self.assertEqual(r.status, 301)
-        self.assertRaises(
-            ValueError,
-            self.response_class,
-            "http://example.com",
-            status="lala200",
-        )
+        with pytest.raises(ValueError):
+            self.response_class("http://example.com", status="lala200")
 
     def test_copy(self):
         """Test Response copy"""
@@ -122,14 +119,12 @@ class BaseResponseTest(unittest.TestCase):
 
     def test_unavailable_meta(self):
         r1 = self.response_class("http://www.example.com", body=b"Some body")
-        with self.assertRaisesRegex(AttributeError, r"Response\.meta not available"):
+        with pytest.raises(AttributeError, match=r"Response\.meta not available"):
             r1.meta
 
     def test_unavailable_cb_kwargs(self):
         r1 = self.response_class("http://www.example.com", body=b"Some body")
-        with self.assertRaisesRegex(
-            AttributeError, r"Response\.cb_kwargs not available"
-        ):
+        with pytest.raises(AttributeError, match=r"Response\.cb_kwargs not available"):
             r1.cb_kwargs
 
     def test_copy_inherited_classes(self):
@@ -179,8 +174,10 @@ class BaseResponseTest(unittest.TestCase):
 
     def test_immutable_attributes(self):
         r = self.response_class("http://example.com")
-        self.assertRaises(AttributeError, setattr, r, "url", "http://example2.com")
-        self.assertRaises(AttributeError, setattr, r, "body", "xxx")
+        with pytest.raises(AttributeError):
+            r.url = "http://example2.com"
+        with pytest.raises(AttributeError):
+            r.body = "xxx"
 
     def test_urljoin(self):
         """Test urljoin shortcut (only for existence, since behavior equals urljoin)"""
@@ -192,10 +189,14 @@ class BaseResponseTest(unittest.TestCase):
         r = self.response_class("http://example.com", body=b"hello")
         if self.response_class == Response:
             msg = "Response content isn't text"
-            self.assertRaisesRegex(AttributeError, msg, getattr, r, "text")
-            self.assertRaisesRegex(NotSupported, msg, r.css, "body")
-            self.assertRaisesRegex(NotSupported, msg, r.xpath, "//body")
-            self.assertRaisesRegex(NotSupported, msg, r.jmespath, "body")
+            with pytest.raises(AttributeError, match=msg):
+                r.text
+            with pytest.raises(NotSupported, match=msg):
+                r.css("body")
+            with pytest.raises(NotSupported, match=msg):
+                r.xpath("//body")
+            with pytest.raises(NotSupported, match=msg):
+                r.jmespath("body")
         else:
             r.text
             r.css("body")
@@ -216,7 +217,8 @@ class BaseResponseTest(unittest.TestCase):
 
     def test_follow_None_url(self):
         r = self.response_class("http://example.com")
-        self.assertRaises(ValueError, r.follow, None)
+        with pytest.raises(ValueError):
+            r.follow(None)
 
     @pytest.mark.xfail(
         parse_version(w3lib_version) < parse_version("2.1.1"),
@@ -279,18 +281,18 @@ class BaseResponseTest(unittest.TestCase):
     def test_follow_all_invalid(self):
         r = self.response_class("http://example.com")
         if self.response_class == Response:
-            with self.assertRaises(TypeError):
+            with pytest.raises(TypeError):
                 list(r.follow_all(urls=None))
-            with self.assertRaises(TypeError):
+            with pytest.raises(TypeError):
                 list(r.follow_all(urls=12345))
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 list(r.follow_all(urls=[None]))
         else:
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 list(r.follow_all(urls=None))
-            with self.assertRaises(TypeError):
+            with pytest.raises(TypeError):
                 list(r.follow_all(urls=12345))
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 list(r.follow_all(urls=[None]))
 
     def test_follow_all_whitespace(self):
@@ -399,12 +401,8 @@ class TextResponseTest(BaseResponseTest):
             "\u043a\u0438\u0440\u0438\u043b\u043b\u0438\u0447\u0435\u0441\u043a\u0438\u0439 "
             "\u0442\u0435\u043a\u0441\u0442"
         )
-        self.assertRaises(
-            TypeError,
-            self.response_class,
-            "http://www.example.com",
-            body="unicode body",
-        )
+        with pytest.raises(TypeError):
+            self.response_class("http://www.example.com", body="unicode body")
 
         original_string = unicode_string.encode("cp1251")
         r1 = self.response_class(
@@ -483,12 +481,8 @@ class TextResponseTest(BaseResponseTest):
         self._assert_response_values(r9, "cp1252", "€")
 
         # TextResponse (and subclasses) must be passed a encoding when instantiating with unicode bodies
-        self.assertRaises(
-            TypeError,
-            self.response_class,
-            "http://www.example.com",
-            body="\xa3",
-        )
+        with pytest.raises(TypeError):
+            self.response_class("http://www.example.com", body="\xa3")
 
     def test_declared_encoding_invalid(self):
         """Check that unknown declared encodings are ignored"""
@@ -679,20 +673,18 @@ class TextResponseTest(BaseResponseTest):
                 self._assert_followed_url(sel, url, response=resp)
 
         # non-a elements are not supported
-        self.assertRaises(ValueError, resp.follow, resp.css("div")[0])
+        with pytest.raises(ValueError):
+            resp.follow(resp.css("div")[0])
 
     def test_follow_selector_list(self):
         resp = self._links_response()
-        self.assertRaisesRegex(ValueError, "SelectorList", resp.follow, resp.css("a"))
+        with pytest.raises(ValueError, match="SelectorList"):
+            resp.follow(resp.css("a"))
 
     def test_follow_selector_invalid(self):
         resp = self._links_response()
-        self.assertRaisesRegex(
-            ValueError,
-            "Unsupported",
-            resp.follow,
-            resp.xpath("count(//div)")[0],
-        )
+        with pytest.raises(ValueError, match="Unsupported"):
+            resp.follow(resp.xpath("count(//div)")[0])
 
     def test_follow_selector_attribute(self):
         resp = self._links_response()
@@ -704,7 +696,8 @@ class TextResponseTest(BaseResponseTest):
             url="http://example.com",
             body=b"<html><body><a name=123>click me</a></body></html>",
         )
-        self.assertRaisesRegex(ValueError, "no href", resp.follow, resp.css("a")[0])
+        with pytest.raises(ValueError, match="no href"):
+            resp.follow(resp.css("a")[0])
 
     def test_follow_whitespace_selector(self):
         resp = self.response_class(
@@ -812,7 +805,7 @@ class TextResponseTest(BaseResponseTest):
 
     def test_follow_all_too_many_arguments(self):
         response = self._links_response()
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             response.follow_all(
                 css='a[href*="example.com"]',
                 xpath='//a[contains(@href, "example.com")]',
@@ -825,7 +818,7 @@ class TextResponseTest(BaseResponseTest):
 
         text_body = b"""<html><body>text</body></html>"""
         text_response = self.response_class("http://www.example.com", body=text_body)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             text_response.json()
 
     def test_cache_json_response(self):
@@ -1023,10 +1016,8 @@ class CustomResponseTest(TextResponseTest):
         self.assertEqual(r4.bar, "bar")
         self.assertIsNone(r4.lost)
 
-        with self.assertRaises(TypeError) as ctx:
+        with pytest.raises(
+            TypeError,
+            match=r"__init__\(\) got an unexpected keyword argument 'unknown'",
+        ):
             r1.replace(unknown="unknown")
-        self.assertTrue(
-            str(ctx.exception).endswith(
-                "__init__() got an unexpected keyword argument 'unknown'"
-            )
-        )

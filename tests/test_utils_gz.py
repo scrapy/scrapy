@@ -1,6 +1,7 @@
 import unittest
 from pathlib import Path
 
+import pytest
 from w3lib.encoding import html_to_unicode
 
 from scrapy.http import Response
@@ -27,9 +28,8 @@ class GunzipTest(unittest.TestCase):
         assert text.endswith(b"</html")
 
     def test_gunzip_no_gzip_file_raises(self):
-        self.assertRaises(
-            OSError, gunzip, (SAMPLEDIR / "feed-sample1.xml").read_bytes()
-        )
+        with pytest.raises(OSError):
+            gunzip((SAMPLEDIR / "feed-sample1.xml").read_bytes())
 
     def test_gunzip_truncated_short(self):
         r1 = Response(

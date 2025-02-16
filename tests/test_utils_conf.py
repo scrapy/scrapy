@@ -1,5 +1,7 @@
 import unittest
 
+import pytest
+
 from scrapy.exceptions import UsageError
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.conf import (
@@ -32,7 +34,7 @@ class BuildComponentListTest(unittest.TestCase):
         )
         # Same priority raises ValueError
         duplicate_bs.set("ONE", duplicate_bs["ONE"], priority=20)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             build_component_list(duplicate_bs, convert=lambda x: x.lower())
 
     def test_valid_numbers(self):
@@ -58,21 +60,13 @@ class UtilsConfTestCase(unittest.TestCase):
 class FeedExportConfigTestCase(unittest.TestCase):
     def test_feed_export_config_invalid_format(self):
         settings = Settings()
-        self.assertRaises(
-            UsageError,
-            feed_process_params_from_cli,
-            settings,
-            ["items.dat"],
-        )
+        with pytest.raises(UsageError):
+            feed_process_params_from_cli(settings, ["items.dat"])
 
     def test_feed_export_config_mismatch(self):
         settings = Settings()
-        self.assertRaises(
-            UsageError,
-            feed_process_params_from_cli,
-            settings,
-            ["items1.dat", "items2.dat"],
-        )
+        with pytest.raises(UsageError):
+            feed_process_params_from_cli(settings, ["items1.dat", "items2.dat"])
 
     def test_feed_export_config_explicit_formats(self):
         settings = Settings()
@@ -117,11 +111,9 @@ class FeedExportConfigTestCase(unittest.TestCase):
         )
 
     def test_output_and_overwrite_output(self):
-        with self.assertRaises(UsageError):
+        with pytest.raises(UsageError):
             feed_process_params_from_cli(
-                Settings(),
-                ["output1.json"],
-                overwrite_output=["output2.json"],
+                Settings(), ["output1.json"], overwrite_output=["output2.json"]
             )
 
     def test_feed_complete_default_values_from_settings_empty(self):

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 from unittest import mock
 
+import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import inlineCallbacks
 from twisted.trial import unittest
@@ -57,8 +58,10 @@ class SpiderTest(unittest.TestCase):
 
     def test_spider_without_name(self):
         """``__init__`` method arguments are assigned to spider attributes"""
-        self.assertRaises(ValueError, self.spider_class)
-        self.assertRaises(ValueError, self.spider_class, somearg="foo")
+        with pytest.raises(ValueError):
+            self.spider_class()
+        with pytest.raises(ValueError):
+            self.spider_class(somearg="foo")
 
     def test_from_crawler_crawler_and_settings_population(self):
         crawler = get_crawler()
@@ -475,7 +478,7 @@ class CrawlSpiderTest(SpiderTest):
         spider = self.spider_class("example.com")
         spider.start_url = "https://www.example.com"
 
-        with self.assertRaisesRegex(AttributeError, r"^Crawling could not start.*$"):
+        with pytest.raises(AttributeError, match=r"^Crawling could not start.*$"):
             list(spider.start_requests())
 
 
@@ -825,5 +828,5 @@ class NoParseMethodSpiderTest(unittest.TestCase):
         resp = TextResponse(url="http://www.example.com/random_url", body=text)
 
         exc_msg = "Spider.parse callback is not defined"
-        with self.assertRaisesRegex(NotImplementedError, exc_msg):
+        with pytest.raises(NotImplementedError, match=exc_msg):
             spider.parse(resp)
