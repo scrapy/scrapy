@@ -26,6 +26,7 @@ from scrapy.spiders import (
     XMLFeedSpider,
 )
 from scrapy.spiders.init import InitSpider
+from scrapy.spiders.sitemap import regex
 from scrapy.utils.test import get_crawler
 from tests import get_testdata, tests_datadir
 
@@ -807,6 +808,58 @@ Sitemap: /sitemap-relative-url.xml
                     "(10000000 B)."
                 ),
             ),
+        )
+
+    def test_get_sitemap_urls_from_sitemapindex(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+       <sitemap>
+          <loc>http://www.example.com/sitemap1.xml.gz</loc>
+       </sitemap>
+       <sitemap>
+          <loc>http://www.example.com/sitemap2.xml.gz</loc>
+       </sitemap>
+        <sitemap>
+          <loc>http://www.example.com/sitemap3.xml.gz</loc>
+       </sitemap>
+    </sitemapindex>"""
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+        self.assertEqual(
+            [req.url for req in spider._parse_sitemap(r)],
+            [
+                "http://www.example.com/sitemap1.xml.gz",
+                "http://www.example.com/sitemap2.xml.gz",
+                "http://www.example.com/sitemap3.xml.gz",
+            ],
+        )
+
+    def test_sitemap_follow(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+       <sitemap>
+          <loc>http://www.example.com/sitemap1.xml.gz</loc>
+       </sitemap>
+       <sitemap>
+          <loc>http://www.example.com/sitemap2.xml.gz</loc>
+       </sitemap>
+        <sitemap>
+          <loc>http://www.example.com/sitemap3.xml.gz</loc>
+       </sitemap>
+    </sitemapindex>"""
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+
+        spider._follow = []
+        self.assertEqual([req.url for req in spider._parse_sitemap(r)], [])
+
+        spider._follow = [regex("sitemap[12]")]
+        self.assertEqual(
+            [req.url for req in spider._parse_sitemap(r)],
+            [
+                "http://www.example.com/sitemap1.xml.gz",
+                "http://www.example.com/sitemap2.xml.gz",
+            ],
         )
 
 
