@@ -1075,6 +1075,9 @@ Adjust retry request priority relative to original request:
 - a positive priority adjust means higher priority.
 - **a negative priority adjust (default) means lower priority.**
 
+See also: :setting:`DELAY_PRIORITY_ADJUST`, :setting:`DEPTH_PRIORITY`,
+:setting:`REDIRECT_PRIORITY_ADJUST`.
+
 
 .. _topics-dlmw-robots:
 
