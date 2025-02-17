@@ -68,11 +68,12 @@ class RequestTest(unittest.TestCase):
         self.request_class("data:,Hello%2C%20World!")
 
     def test_url_no_scheme(self):
-        with pytest.raises(ValueError):
+        msg = "Missing scheme in request url:"
+        with pytest.raises(ValueError, match=msg):
             self.request_class("foo")
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=msg):
             self.request_class("/foo/")
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=msg):
             self.request_class("/foo:bar")
 
     def test_headers(self):
@@ -412,7 +413,7 @@ class RequestTest(unittest.TestCase):
 
         # If `ignore_unknown_options` is set to `False` it raises an error with
         # the unknown options: --foo and -z
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Unrecognized options:"):
             self.request_class.from_curl(
                 'curl -X PATCH "http://example.org" --foo -z',
                 ignore_unknown_options=False,
@@ -904,7 +905,10 @@ class FormRequestTest(RequestTest):
             <input type="submit" name="clickable2" value="clicked2">
             </form>"""
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError,
+            match="Multiple elements found .* matching the criteria in clickdata",
+        ):
             self.request_class.from_response(response, clickdata={"type": "submit"})
 
     def test_from_response_non_matching_clickdata(self):
@@ -913,7 +917,9 @@ class FormRequestTest(RequestTest):
             <input type="submit" name="clickable" value="clicked">
             </form>"""
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="No clickable element matching clickdata:"
+        ):
             self.request_class.from_response(
                 response, clickdata={"nonexistent": "notme"}
             )
@@ -938,12 +944,14 @@ class FormRequestTest(RequestTest):
             </form>
             """
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="No clickable element matching clickdata:"
+        ):
             self.request_class.from_response(response, clickdata={"nr": 1})
 
     def test_from_response_errors_noform(self):
         response = _buildresponse("""<html></html>""")
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="No <form> element found in"):
             self.request_class.from_response(response)
 
     def test_from_response_invalid_html5(self):
@@ -1235,7 +1243,7 @@ class FormRequestTest(RequestTest):
         fs = _qs(r1)
         self.assertEqual(fs[b"three"], [b"3"])
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="No <form> element found with"):
             self.request_class.from_response(
                 response, formxpath="//form/input[@name='abc']"
             )
@@ -1376,7 +1384,7 @@ class FormRequestTest(RequestTest):
         fs = _qs(r1)
         self.assertEqual(fs[b"three"], [b"3"])
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="No <form> element found with"):
             self.request_class.from_response(response, formcss="input[name='abc']")
 
     def test_from_response_valid_form_methods(self):

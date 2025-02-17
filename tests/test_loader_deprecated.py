@@ -436,7 +436,12 @@ class BasicItemLoaderTest(unittest.TestCase):
             name_in = MapCompose(float)
 
         il = TestItemLoader()
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError,
+            match="Error with input processor MapCompose: .* "
+            "error='ValueError: Error in MapCompose .* "
+            "error='ValueError: could not convert",
+        ):
             il.add_value("name", ["marta", "other"])
 
     def test_error_output_processor(self):
@@ -449,7 +454,12 @@ class BasicItemLoaderTest(unittest.TestCase):
 
         il = TestItemLoader()
         il.add_value("name", "marta")
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError,
+            match="Error with output processor: .* "
+            "error='ValueError: Error in Compose .* "
+            "error='ValueError: could not convert",
+        ):
             il.load_item()
 
     def test_error_processor_as_argument(self):
@@ -460,7 +470,12 @@ class BasicItemLoaderTest(unittest.TestCase):
             default_item_class = TestItem
 
         il = TestItemLoader()
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError,
+            match=r"Error with processor Compose .* "
+            r"error='ValueError: Error in Compose .* "
+            r"error='TypeError: float\(\) argument",
+        ):
             il.add_value("name", ["marta", "other"], Compose(float))
 
 
@@ -643,10 +658,15 @@ class ProcessorsTest(unittest.TestCase):
         proc = Compose(str.upper)
         self.assertEqual(proc(None), None)
         proc = Compose(str.upper, stop_on_none=False)
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError,
+            match="Error in Compose with .* error='TypeError: descriptor 'upper'",
+        ):
             proc(None)
         proc = Compose(str.upper, lambda x: x + 1)
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="Error in Compose with .* error='TypeError: can only"
+        ):
             proc("hello")
 
     def test_mapcompose(self):
@@ -661,10 +681,15 @@ class ProcessorsTest(unittest.TestCase):
         proc = MapCompose(filter_world, str.upper)
         self.assertEqual(proc(None), [])
         proc = MapCompose(filter_world, str.upper)
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError,
+            match="Error in MapCompose with .* error='TypeError: descriptor 'upper'",
+        ):
             proc([1])
         proc = MapCompose(filter_world, lambda x: x + 1)
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="Error in MapCompose with .* error='TypeError: can only"
+        ):
             proc("hello")
 
 

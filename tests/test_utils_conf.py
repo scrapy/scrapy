@@ -34,7 +34,9 @@ class BuildComponentListTest(unittest.TestCase):
         )
         # Same priority raises ValueError
         duplicate_bs.set("ONE", duplicate_bs["ONE"], priority=20)
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="Some paths in .* convert to the same object"
+        ):
             build_component_list(duplicate_bs, convert=lambda x: x.lower())
 
     def test_valid_numbers(self):

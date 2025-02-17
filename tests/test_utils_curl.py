@@ -227,5 +227,5 @@ class CurlToRequestKwargsTest(unittest.TestCase):
             )
 
     def test_must_start_with_curl_error(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="A curl command must start"):
             curl_to_request_kwargs("carl -X POST http://example.org")

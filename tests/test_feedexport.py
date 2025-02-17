@@ -233,7 +233,7 @@ class BlockingFeedStorageTest(unittest.TestCase):
         invalid_path = tests_path / "invalid_path"
         spider = self.get_test_spider({"FEED_TEMPDIR": str(invalid_path)})
 
-        with pytest.raises(OSError):
+        with pytest.raises(OSError, match="Not a Directory:"):
             b.open(spider=spider)
 
 

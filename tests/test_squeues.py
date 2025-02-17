@@ -31,11 +31,15 @@ class MyLoader(ItemLoader):
 
 def nonserializable_object_test(self):
     q = self.queue()
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="unmarshallable object|Can't get local object"
+    ):
         q.push(lambda x: x)
     # Selectors should fail (lxml.html.HtmlElement objects can't be pickled)
     sel = Selector(text="<html><body><p>some text</p></body></html>")
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError, match="unmarshallable object|can't pickle Selector objects"
+    ):
         q.push(sel)
 
 

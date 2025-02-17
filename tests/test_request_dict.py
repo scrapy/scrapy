@@ -136,12 +136,14 @@ class RequestSerializationTest(unittest.TestCase):
 
     def test_unserializable_callback1(self):
         r = Request("http://www.example.com", callback=lambda x: x)
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="is not an instance method in: <MethodsSpider"
+        ):
             r.to_dict(spider=self.spider)
 
     def test_unserializable_callback2(self):
         r = Request("http://www.example.com", callback=self.spider.parse_item)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="is not an instance method in: None"):
             r.to_dict(spider=None)
 
     def test_unserializable_callback3(self):
@@ -156,7 +158,7 @@ class RequestSerializationTest(unittest.TestCase):
         spider = MySpider()
         r = Request("http://www.example.com", callback=spider.parse)
         spider.parse = None
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="is not an instance method in: <MySpider"):
             r.to_dict(spider=spider)
 
     def test_callback_not_available(self):
@@ -164,7 +166,9 @@ class RequestSerializationTest(unittest.TestCase):
         spider = SpiderDelegation()
         r = Request("http://www.example.com", callback=spider.delegated_callback)
         d = r.to_dict(spider=spider)
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="Method 'delegated_callback' not found in: <Spider"
+        ):
             request_from_dict(d, spider=Spider("foo"))
 
 

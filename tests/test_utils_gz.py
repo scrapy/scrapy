@@ -1,4 +1,5 @@
 import unittest
+from gzip import BadGzipFile
 from pathlib import Path
 
 import pytest
@@ -28,7 +29,7 @@ class GunzipTest(unittest.TestCase):
         assert text.endswith(b"</html")
 
     def test_gunzip_no_gzip_file_raises(self):
-        with pytest.raises(OSError):
+        with pytest.raises(BadGzipFile):
             gunzip((SAMPLEDIR / "feed-sample1.xml").read_bytes())
 
     def test_gunzip_truncated_short(self):

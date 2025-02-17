@@ -1,4 +1,5 @@
 import asyncio
+from gzip import BadGzipFile
 from unittest import mock
 
 import pytest
@@ -106,7 +107,7 @@ class DefaultsTest(ManagerTestCase):
                 "Location": "http://example.com/login",
             },
         )
-        with pytest.raises(OSError):
+        with pytest.raises(BadGzipFile):
             self._download(request=req, response=resp)
 
 

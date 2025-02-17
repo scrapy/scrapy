@@ -58,9 +58,10 @@ class SpiderTest(unittest.TestCase):
 
     def test_spider_without_name(self):
         """``__init__`` method arguments are assigned to spider attributes"""
-        with pytest.raises(ValueError):
+        msg = "must have a name"
+        with pytest.raises(ValueError, match=msg):
             self.spider_class()
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=msg):
             self.spider_class(somearg="foo")
 
     def test_from_crawler_crawler_and_settings_population(self):

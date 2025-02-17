@@ -78,7 +78,7 @@ class BaseResponseTest(unittest.TestCase):
         self.assertEqual(r.status, 301)
         r = self.response_class("http://www.example.com", status="301")
         self.assertEqual(r.status, 301)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=r"invalid literal for int\(\)"):
             self.response_class("http://example.com", status="lala200")
 
     def test_copy(self):
@@ -217,7 +217,7 @@ class BaseResponseTest(unittest.TestCase):
 
     def test_follow_None_url(self):
         r = self.response_class("http://example.com")
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="url can't be None"):
             r.follow(None)
 
     @pytest.mark.xfail(
@@ -285,14 +285,16 @@ class BaseResponseTest(unittest.TestCase):
                 list(r.follow_all(urls=None))
             with pytest.raises(TypeError):
                 list(r.follow_all(urls=12345))
-            with pytest.raises(ValueError):
+            with pytest.raises(ValueError, match="url can't be None"):
                 list(r.follow_all(urls=[None]))
         else:
-            with pytest.raises(ValueError):
+            with pytest.raises(
+                ValueError, match="Please supply exactly one of the following arguments"
+            ):
                 list(r.follow_all(urls=None))
             with pytest.raises(TypeError):
                 list(r.follow_all(urls=12345))
-            with pytest.raises(ValueError):
+            with pytest.raises(ValueError, match="url can't be None"):
                 list(r.follow_all(urls=[None]))
 
     def test_follow_all_whitespace(self):
@@ -673,7 +675,9 @@ class TextResponseTest(BaseResponseTest):
                 self._assert_followed_url(sel, url, response=resp)
 
         # non-a elements are not supported
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="Only <a> and <link> elements are supported"
+        ):
             resp.follow(resp.css("div")[0])
 
     def test_follow_selector_list(self):
@@ -805,7 +809,9 @@ class TextResponseTest(BaseResponseTest):
 
     def test_follow_all_too_many_arguments(self):
         response = self._links_response()
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="Please supply exactly one of the following arguments"
+        ):
             response.follow_all(
                 css='a[href*="example.com"]',
                 xpath='//a[contains(@href, "example.com")]',
@@ -818,7 +824,7 @@ class TextResponseTest(BaseResponseTest):
 
         text_body = b"""<html><body>text</body></html>"""
         text_response = self.response_class("http://www.example.com", body=text_body)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Expecting value: line 1"):
             text_response.json()
 
     def test_cache_json_response(self):

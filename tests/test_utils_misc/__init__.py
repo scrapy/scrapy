@@ -152,7 +152,9 @@ class UtilsMiscTestCase(unittest.TestCase):
         create_instance(m, None, crawler, *args, **kwargs)
         m.from_settings.assert_called_once_with(crawler.settings, *args, **kwargs)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(
+            ValueError, match="Specify at least one of settings and crawler"
+        ):
             create_instance(m, None, None)
 
         m.from_settings.return_value = None
