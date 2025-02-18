@@ -1,5 +1,6 @@
 import unittest
 
+import pytest
 from w3lib.http import basic_auth_header
 
 from scrapy.downloadermiddlewares.httpauth import HttpAuthMiddleware
@@ -29,8 +30,8 @@ class HttpAuthMiddlewareLegacyTest(unittest.TestCase):
         self.spider = LegacySpider("foo")
 
     def test_auth(self):
-        with self.assertRaises(AttributeError):
-            mw = HttpAuthMiddleware()
+        mw = HttpAuthMiddleware()
+        with pytest.raises(AttributeError):
             mw.spider_opened(self.spider)
 
 

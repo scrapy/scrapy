@@ -1,6 +1,7 @@
 import unittest
 import warnings
 
+import pytest
 from w3lib.http import basic_auth_header
 
 from scrapy import Request
@@ -205,11 +206,11 @@ class CurlToRequestKwargsTest(unittest.TestCase):
         self.assertEqual(curl_to_request_kwargs(curl_command), expected_result)
 
     def test_too_few_arguments_error(self):
-        self.assertRaisesRegex(
+        with pytest.raises(
             ValueError,
-            r"too few arguments|the following arguments are required:\s*url",
-            lambda: curl_to_request_kwargs("curl"),
-        )
+            match=r"too few arguments|the following arguments are required:\s*url",
+        ):
+            curl_to_request_kwargs("curl")
 
     def test_ignore_unknown_options(self):
         # case 1: ignore_unknown_options=True:
@@ -220,16 +221,11 @@ class CurlToRequestKwargsTest(unittest.TestCase):
             self.assertEqual(curl_to_request_kwargs(curl_command), expected_result)
 
         # case 2: ignore_unknown_options=False (raise exception):
-        self.assertRaisesRegex(
-            ValueError,
-            "Unrecognized options:.*--bar.*--baz",
-            lambda: curl_to_request_kwargs(
+        with pytest.raises(ValueError, match="Unrecognized options:.*--bar.*--baz"):
+            curl_to_request_kwargs(
                 "curl --bar --baz http://www.example.com", ignore_unknown_options=False
-            ),
-        )
+            )
 
     def test_must_start_with_curl_error(self):
-        self.assertRaises(
-            ValueError,
-            lambda: curl_to_request_kwargs("carl -X POST http://example.org"),
-        )
+        with pytest.raises(ValueError, match="A curl command must start"):
+            curl_to_request_kwargs("carl -X POST http://example.org")

@@ -248,5 +248,5 @@ class Https2ProxyTestCase(BaseTestClasses.Http11ProxyTestCase):
 
     @defer.inlineCallbacks
     def test_download_with_proxy_https_timeout(self):
-        with self.assertRaises(NotImplementedError):
+        with pytest.raises(NotImplementedError):
             yield super().test_download_with_proxy_https_timeout()

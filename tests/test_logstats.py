@@ -1,6 +1,8 @@
 import unittest
 from datetime import datetime
 
+import pytest
+
 from scrapy.extensions.logstats import LogStats
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
@@ -18,8 +20,9 @@ class TestLogStats(unittest.TestCase):
     def test_stats_calculations(self):
         logstats = LogStats.from_crawler(self.crawler)
 
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             logstats.pagesprev
+        with pytest.raises(AttributeError):
             logstats.itemsprev
 
         logstats.spider_opened(self.spider)

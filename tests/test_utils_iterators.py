@@ -215,7 +215,7 @@ class XmliterBaseTestCase:
         """
         response = XmlResponse(url="http://mydummycompany.com", body=body)
         my_iter = self.xmliter(response, "g:link_image")
-        with self.assertRaises(StopIteration):
+        with pytest.raises(StopIteration):
             next(my_iter)
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
@@ -228,13 +228,14 @@ class XmliterBaseTestCase:
         iter = self.xmliter(body, "product")
         next(iter)
         next(iter)
-
-        self.assertRaises(StopIteration, next, iter)
+        with pytest.raises(StopIteration):
+            next(iter)
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_objtype_exception(self):
         i = self.xmliter(42, "product")
-        self.assertRaises(TypeError, next, i)
+        with pytest.raises(TypeError):
+            next(i)
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_encoding(self):
@@ -344,7 +345,8 @@ class LxmlXmliterTestCase(XmliterBaseTestCase, unittest.TestCase):
 
     def test_xmliter_objtype_exception(self):
         i = self.xmliter(42, "product")
-        self.assertRaises(TypeError, next, i)
+        with pytest.raises(TypeError):
+            next(i)
 
 
 class UtilsCsvTestCase(unittest.TestCase):
@@ -491,8 +493,8 @@ class UtilsCsvTestCase(unittest.TestCase):
         next(iter)
         next(iter)
         next(iter)
-
-        self.assertRaises(StopIteration, next, iter)
+        with pytest.raises(StopIteration):
+            next(iter)
 
     def test_csviter_encoding(self):
         body1 = get_testdata("feeds", "feed-sample4.csv")

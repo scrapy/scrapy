@@ -72,9 +72,8 @@ class Base:
             assert isinstance(req, Request)
             assert "redirect_times" in req.meta
             self.assertEqual(req.meta["redirect_times"], 1)
-            self.assertRaises(
-                IgnoreRequest, self.mw.process_response, req, rsp, self.spider
-            )
+            with pytest.raises(IgnoreRequest):
+                self.mw.process_response(req, rsp, self.spider)
 
         def test_ttl(self):
             self.mw.max_redirect_times = 100
@@ -83,9 +82,8 @@ class Base:
 
             req = self.mw.process_response(req, rsp, self.spider)
             assert isinstance(req, Request)
-            self.assertRaises(
-                IgnoreRequest, self.mw.process_response, req, rsp, self.spider
-            )
+            with pytest.raises(IgnoreRequest):
+                self.mw.process_response(req, rsp, self.spider)
 
         def test_redirect_urls(self):
             req1 = Request("http://scrapytest.org/first")

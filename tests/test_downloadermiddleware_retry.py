@@ -1,6 +1,7 @@
 import logging
 import unittest
 
+import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.error import (
@@ -407,7 +408,7 @@ class GetRetryRequestTest(unittest.TestCase):
 
     def test_no_spider(self):
         request = Request("https://example.com")
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             get_retry_request(request)  # pylint: disable=missing-kwoa
 
     def test_max_retry_times_setting(self):

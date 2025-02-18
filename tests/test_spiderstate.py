@@ -2,6 +2,7 @@ import shutil
 from datetime import datetime, timezone
 from tempfile import mkdtemp
 
+import pytest
 from twisted.trial import unittest
 
 from scrapy.exceptions import NotConfigured
@@ -42,4 +43,5 @@ class SpiderStateTest(unittest.TestCase):
 
     def test_not_configured(self):
         crawler = get_crawler(Spider)
-        self.assertRaises(NotConfigured, SpiderState.from_crawler, crawler)
+        with pytest.raises(NotConfigured):
+            SpiderState.from_crawler(crawler)

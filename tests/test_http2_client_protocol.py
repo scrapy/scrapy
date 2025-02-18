@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from unittest import mock, skipIf
 from urllib.parse import urlencode
 
+import pytest
 from twisted.internet import reactor
 from twisted.internet.defer import (
     CancelledError,
@@ -406,7 +407,7 @@ class Https2ClientProtocolTestCase(TestCase):
             "scrapy.core.http2.protocol.PROTOCOL_NAME", return_value=b"not-h2"
         ):
             request = Request(url=self.get_url("/status?n=200"))
-            with self.assertRaises(ResponseFailed):
+            with pytest.raises(ResponseFailed):
                 yield self.make_request(request)
 
     def test_cancel_request(self):
@@ -560,7 +561,7 @@ class Https2ClientProtocolTestCase(TestCase):
         return DeferredList(d_list, consumeErrors=True, fireOnOneErrback=True)
 
     def test_invalid_request_type(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             self.make_request("https://InvalidDataTypePassed.com")
 
     def test_query_parameters(self):

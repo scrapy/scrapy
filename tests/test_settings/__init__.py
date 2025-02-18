@@ -235,9 +235,9 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertIn("key_highprio", settings)
         del settings["key_highprio"]
         self.assertNotIn("key_highprio", settings)
-        with self.assertRaises(KeyError):
+        with pytest.raises(KeyError):
             settings.delete("notkey")
-        with self.assertRaises(KeyError):
+        with pytest.raises(KeyError):
             del settings["notkey"]
 
     def test_get(self):
@@ -303,9 +303,19 @@ class BaseSettingsTest(unittest.TestCase):
         self.assertEqual(settings.getdict("TEST_DICT2"), {"key1": "val1", "ke2": 3})
         self.assertEqual(settings.getdict("TEST_DICT3"), {})
         self.assertEqual(settings.getdict("TEST_DICT3", {"key1": 5}), {"key1": 5})
-        self.assertRaises(ValueError, settings.getdict, "TEST_LIST1")
-        self.assertRaises(ValueError, settings.getbool, "TEST_ENABLED_WRONG")
-        self.assertRaises(ValueError, settings.getbool, "TEST_DISABLED_WRONG")
+        with pytest.raises(
+            ValueError,
+            match="dictionary update sequence element #0 has length 3; 2 is required|sequence of pairs expected",
+        ):
+            settings.getdict("TEST_LIST1")
+        with pytest.raises(
+            ValueError, match="Supported values for boolean settings are"
+        ):
+            settings.getbool("TEST_ENABLED_WRONG")
+        with pytest.raises(
+            ValueError, match="Supported values for boolean settings are"
+        ):
+            settings.getbool("TEST_DISABLED_WRONG")
 
     def test_getpriority(self):
         settings = BaseSettings({"key": "value"}, priority=99)
@@ -381,11 +391,10 @@ class BaseSettingsTest(unittest.TestCase):
 
     def test_freeze(self):
         self.settings.freeze()
-        with self.assertRaises(TypeError) as cm:
+        with pytest.raises(
+            TypeError, match="Trying to modify an immutable Settings object"
+        ):
             self.settings.set("TEST_BOOL", False)
-            self.assertEqual(
-                str(cm.exception), "Trying to modify an immutable Settings object"
-            )
 
     def test_frozencopy(self):
         frozencopy = self.settings.frozencopy()
@@ -476,7 +485,7 @@ class SettingsTest(unittest.TestCase):
     def test_pop_item_with_default_value(self):
         settings = Settings()
 
-        with self.assertRaises(KeyError):
+        with pytest.raises(KeyError):
             settings.pop("DUMMY_CONFIG")
 
         dummy_config_value = settings.pop("DUMMY_CONFIG", "dummy_value")
@@ -491,9 +500,7 @@ class SettingsTest(unittest.TestCase):
 
         settings.freeze()
 
-        with self.assertRaises(TypeError) as error:
+        with pytest.raises(
+            TypeError, match="Trying to modify an immutable Settings object"
+        ):
             settings.pop("OTHER_DUMMY_CONFIG")
-
-        self.assertEqual(
-            str(error.exception), "Trying to modify an immutable Settings object"
-        )

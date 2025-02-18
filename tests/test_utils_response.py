@@ -35,7 +35,8 @@ class ResponseUtilsTest(unittest.TestCase):
         assert open_in_browser(response, _openfunc=browser_open), "Browser not called"
 
         resp = Response(url, body=body)
-        self.assertRaises(TypeError, open_in_browser, resp, debug=True)
+        with pytest.raises(TypeError):
+            open_in_browser(resp, debug=True)  # pylint: disable=unexpected-keyword-arg
 
     def test_get_meta_refresh(self):
         r1 = HtmlResponse(

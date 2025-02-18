@@ -3,6 +3,7 @@ from __future__ import annotations
 from unittest import TestCase
 from urllib.parse import urljoin
 
+import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TwistedTestCase
@@ -75,13 +76,12 @@ class BaseSchedulerTest(TestCase, InterfaceCheckMixin):
     def test_methods(self):
         self.assertIsNone(self.scheduler.open(Spider("foo")))
         self.assertIsNone(self.scheduler.close("finished"))
-        self.assertRaises(NotImplementedError, self.scheduler.has_pending_requests)
-        self.assertRaises(
-            NotImplementedError,
-            self.scheduler.enqueue_request,
-            Request("https://example.org"),
-        )
-        self.assertRaises(NotImplementedError, self.scheduler.next_request)
+        with pytest.raises(NotImplementedError):
+            self.scheduler.has_pending_requests()
+        with pytest.raises(NotImplementedError):
+            self.scheduler.enqueue_request(Request("https://example.org"))
+        with pytest.raises(NotImplementedError):
+            self.scheduler.next_request()
 
 
 class MinimalSchedulerTest(TestCase, InterfaceCheckMixin):
@@ -89,15 +89,15 @@ class MinimalSchedulerTest(TestCase, InterfaceCheckMixin):
         self.scheduler = MinimalScheduler()
 
     def test_open_close(self):
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             self.scheduler.open(Spider("foo"))
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             self.scheduler.close("finished")
 
     def test_len(self):
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             self.scheduler.__len__()
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             len(self.scheduler)
 
     def test_enqueue_dequeue(self):
