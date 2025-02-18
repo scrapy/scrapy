@@ -471,6 +471,8 @@ class GCSFeedStorageTest(unittest.TestCase):
     def test_parse_settings(self):
         try:
             from google.cloud.storage import Client  # noqa: F401
+
+
         except ImportError:
             raise unittest.SkipTest("GCSFeedStorage requires google-cloud-storage")
 
