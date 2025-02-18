@@ -340,7 +340,6 @@ TELNETCONSOLE_PORT = [6023, 6073]
 TELNETCONSOLE_HOST = "127.0.0.1"
 TELNETCONSOLE_USERNAME = "scrapy"
 TELNETCONSOLE_PASSWORD = None
-#added what is after the = from none
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
 SPIDER_CONTRACTS = {}
