@@ -660,12 +660,13 @@ class ProcessorsTest(unittest.TestCase):
         proc = Compose(str.upper, stop_on_none=False)
         with pytest.raises(
             ValueError,
-            match="Error in Compose with .* error='TypeError: descriptor 'upper'",
+            match="Error in Compose with .* error='TypeError: (descriptor 'upper'|'str' object expected)",
         ):
             proc(None)
         proc = Compose(str.upper, lambda x: x + 1)
         with pytest.raises(
-            ValueError, match="Error in Compose with .* error='TypeError: can only"
+            ValueError,
+            match="Error in Compose with .* error='TypeError: (can only|unsupported operand)",
         ):
             proc("hello")
 
@@ -683,12 +684,13 @@ class ProcessorsTest(unittest.TestCase):
         proc = MapCompose(filter_world, str.upper)
         with pytest.raises(
             ValueError,
-            match="Error in MapCompose with .* error='TypeError: descriptor 'upper'",
+            match="Error in MapCompose with .* error='TypeError: (descriptor 'upper'|'str' object expected)",
         ):
             proc([1])
         proc = MapCompose(filter_world, lambda x: x + 1)
         with pytest.raises(
-            ValueError, match="Error in MapCompose with .* error='TypeError: can only"
+            ValueError,
+            match="Error in MapCompose with .* error='TypeError: (can only|unsupported operand)",
         ):
             proc("hello")
 
