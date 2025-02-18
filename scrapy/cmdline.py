@@ -4,6 +4,7 @@ import argparse
 import cProfile
 import inspect
 import os
+os.environ.setdefault("TWISTED_REACTOR", "twisted.internet.asyncioreactor.AsyncioSelectorReactor")
 import sys
 from importlib.metadata import entry_points
 from typing import TYPE_CHECKING
