@@ -49,6 +49,8 @@ CONCURRENT_REQUESTS_PER_IP = 0
 COOKIES_ENABLED = True
 COOKIES_DEBUG = False
 
+DEFAULT_DROPITEM_LOG_LEVEL = "WARNING"
+
 DEFAULT_ITEM_CLASS = "scrapy.item.Item"
 
 DEFAULT_REQUEST_HEADERS = {
@@ -331,7 +333,7 @@ TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
 
 URLLENGTH_LIMIT = 2083
 
-USER_AGENT = f'Scrapy/{import_module("scrapy").__version__} (+https://scrapy.org)'
+USER_AGENT = f"Scrapy/{import_module('scrapy').__version__} (+https://scrapy.org)"
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_PORT = [6023, 6073]

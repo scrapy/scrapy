@@ -41,7 +41,7 @@ if not H2_ENABLED:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def chdir(tmpdir):
     """Change to pytest-provided temporary directory"""
     tmpdir.chdir()

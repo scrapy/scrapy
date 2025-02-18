@@ -55,12 +55,12 @@ class Base:
             assert isinstance(req2, Request)
             self.assertEqual(req2.url, url2)
             self.assertEqual(req2.method, "GET")
-            assert (
-                "Content-Type" not in req2.headers
-            ), "Content-Type header must not be present in redirected request"
-            assert (
-                "Content-Length" not in req2.headers
-            ), "Content-Length header must not be present in redirected request"
+            assert "Content-Type" not in req2.headers, (
+                "Content-Type header must not be present in redirected request"
+            )
+            assert "Content-Length" not in req2.headers, (
+                "Content-Length header must not be present in redirected request"
+            )
             assert not req2.body, f"Redirected body must be empty, not '{req2.body}'"
 
         def test_max_redirect_times(self):
@@ -1243,12 +1243,12 @@ class MetaRefreshMiddlewareTest(Base.Test):
         assert isinstance(req2, Request)
         self.assertEqual(req2.url, "http://example.org/newpage")
         self.assertEqual(req2.method, "GET")
-        assert (
-            "Content-Type" not in req2.headers
-        ), "Content-Type header must not be present in redirected request"
-        assert (
-            "Content-Length" not in req2.headers
-        ), "Content-Length header must not be present in redirected request"
+        assert "Content-Type" not in req2.headers, (
+            "Content-Type header must not be present in redirected request"
+        )
+        assert "Content-Length" not in req2.headers, (
+            "Content-Length header must not be present in redirected request"
+        )
         assert not req2.body, f"Redirected body must be empty, not '{req2.body}'"
 
     def test_ignore_tags_default(self):
@@ -1278,7 +1278,7 @@ class MetaRefreshMiddlewareTest(Base.Test):
 
 @pytest.mark.parametrize(
     SCHEME_PARAMS,
-    (
+    [
         *REDIRECT_SCHEME_CASES,
         # data/file/ftp/s3/foo → * does not redirect
         *(
@@ -1300,7 +1300,7 @@ class MetaRefreshMiddlewareTest(Base.Test):
             for scheme in NON_HTTP_SCHEMES
             for location in ("//example.com/b", "/b")
         ),
-    ),
+    ],
 )
 def test_meta_refresh_schemes(url, location, target):
     crawler = get_crawler(Spider)

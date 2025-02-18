@@ -258,7 +258,8 @@ class Https2ClientProtocolTestCase(TestCase):
         :param path: Should have / at the starting compulsorily if not empty
         :return: Complete url
         """
-        assert len(path) > 0 and (path[0] == "/" or path[0] == "&")
+        assert len(path) > 0
+        assert path[0] == "/" or path[0] == "&"
         return f"{self.scheme}://{self.hostname}:{self.port_number}{path}"
 
     def make_request(self, request: Request) -> Deferred:

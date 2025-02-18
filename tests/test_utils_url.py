@@ -17,8 +17,6 @@ from scrapy.utils.url import (  # type: ignore[attr-defined]
     url_is_from_spider,
 )
 
-__doctests__ = ["scrapy.utils.url"]
-
 
 class UrlUtilsTest(unittest.TestCase):
     def test_url_is_from_any_domain(self):
@@ -321,9 +319,9 @@ class GuessSchemeTest(unittest.TestCase):
 def create_guess_scheme_t(args):
     def do_expected(self):
         url = guess_scheme(args[0])
-        assert url.startswith(
-            args[1]
-        ), f"Wrong scheme guessed: for `{args[0]}` got `{url}`, expected `{args[1]}...`"
+        assert url.startswith(args[1]), (
+            f"Wrong scheme guessed: for `{args[0]}` got `{url}`, expected `{args[1]}...`"
+        )
 
     return do_expected
 

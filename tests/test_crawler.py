@@ -8,9 +8,9 @@ import warnings
 from pathlib import Path
 from typing import Any
 
+import pytest
 from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
-from pytest import mark, raises
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.trial import unittest
 from w3lib import __version__ as w3lib_version
@@ -77,14 +77,14 @@ class CrawlerTestCase(BaseCrawlerTest):
         self.assertOptionIsDefault(crawler.settings, "RETRY_ENABLED")
 
     def test_crawler_rejects_spider_objects(self):
-        with raises(ValueError):
+        with pytest.raises(ValueError, match="spidercls argument must be a class"):
             Crawler(DefaultSpider())
 
     @inlineCallbacks
     def test_crawler_crawl_twice_unsupported(self):
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
         yield crawler.crawl()
-        with raises(RuntimeError, match="more than once on the same instance"):
+        with pytest.raises(RuntimeError, match="more than once on the same instance"):
             yield crawler.crawl()
 
     def test_get_addon(self):
@@ -203,7 +203,7 @@ class CrawlerTestCase(BaseCrawlerTest):
                     raise
 
         crawler = get_raw_crawler(MySpider, BASE_SETTINGS)
-        with raises(RuntimeError):
+        with pytest.raises(RuntimeError):
             yield crawler.crawl()
 
     @inlineCallbacks
@@ -282,7 +282,7 @@ class CrawlerTestCase(BaseCrawlerTest):
                     raise
 
         crawler = get_raw_crawler(MySpider, BASE_SETTINGS)
-        with raises(RuntimeError):
+        with pytest.raises(RuntimeError):
             yield crawler.crawl()
 
     @inlineCallbacks
@@ -361,7 +361,7 @@ class CrawlerTestCase(BaseCrawlerTest):
                     raise
 
         crawler = get_raw_crawler(MySpider, BASE_SETTINGS)
-        with raises(RuntimeError):
+        with pytest.raises(RuntimeError):
             yield crawler.crawl()
 
     @inlineCallbacks
@@ -440,7 +440,7 @@ class CrawlerTestCase(BaseCrawlerTest):
                     raise
 
         crawler = get_raw_crawler(MySpider, BASE_SETTINGS)
-        with raises(RuntimeError):
+        with pytest.raises(RuntimeError):
             yield crawler.crawl()
 
 
@@ -575,7 +575,7 @@ class NoRequestsSpider(scrapy.Spider):
         return []
 
 
-@mark.usefixtures("reactor_pytest")
+@pytest.mark.usefixtures("reactor_pytest")
 class CrawlerRunnerHasSpider(unittest.TestCase):
     def _runner(self):
         return CrawlerRunner()
@@ -744,7 +744,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log
         )
 
-    @mark.skipif(
+    @pytest.mark.skipif(
         parse_version(w3lib_version) >= parse_version("2.0.0"),
         reason="w3lib 2.0.0 and later do not allow invalid domains.",
     )
@@ -781,7 +781,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
             "Using reactor: twisted.internet.selectreactor.SelectReactor", log
         )
 
-    @mark.skipif(
+    @pytest.mark.skipif(
         platform.system() == "Windows", reason="PollReactor is not supported on Windows"
     )
     def test_twisted_reactor_poll(self):
@@ -820,7 +820,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
             log,
         )
 
-    @mark.requires_uvloop
+    @pytest.mark.requires_uvloop
     def test_custom_loop_asyncio(self):
         log = self.run_script("asyncio_custom_loop.py")
         self.assertIn("Spider closed (finished)", log)
@@ -829,7 +829,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         )
         self.assertIn("Using asyncio event loop: uvloop.Loop", log)
 
-    @mark.requires_uvloop
+    @pytest.mark.requires_uvloop
     def test_custom_loop_asyncio_deferred_signal(self):
         log = self.run_script("asyncio_deferred_signal.py", "uvloop.Loop")
         self.assertIn("Spider closed (finished)", log)
@@ -839,7 +839,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         self.assertIn("Using asyncio event loop: uvloop.Loop", log)
         self.assertIn("async pipeline opened!", log)
 
-    @mark.requires_uvloop
+    @pytest.mark.requires_uvloop
     def test_asyncio_enabled_reactor_same_loop(self):
         log = self.run_script("asyncio_enabled_reactor_same_loop.py")
         self.assertIn("Spider closed (finished)", log)
@@ -848,7 +848,7 @@ class CrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         )
         self.assertIn("Using asyncio event loop: uvloop.Loop", log)
 
-    @mark.requires_uvloop
+    @pytest.mark.requires_uvloop
     def test_asyncio_enabled_reactor_different_loop(self):
         log = self.run_script("asyncio_enabled_reactor_different_loop.py")
         self.assertNotIn("Spider closed (finished)", log)
@@ -924,13 +924,13 @@ class CrawlerRunnerSubprocess(ScriptRunnerMixin, unittest.TestCase):
         self.assertIn("DEBUG: Using asyncio event loop", log)
 
 
-@mark.parametrize(
-    ["settings", "items"],
-    (
+@pytest.mark.parametrize(
+    ("settings", "items"),
+    [
         ({}, default_settings.LOG_VERSIONS),
         ({"LOG_VERSIONS": ["itemadapter"]}, ["itemadapter"]),
         ({"LOG_VERSIONS": []}, None),
-    ),
+    ],
 )
 def test_log_scrapy_info(settings, items, caplog):
     with caplog.at_level("INFO"):

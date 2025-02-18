@@ -7,8 +7,8 @@ from tests.test_engine import (
     CrawlerRun,
     DataClassItemsSpider,
     DictItemsSpider,
-    EngineTest,
-    TestSpider,
+    EngineTestBase,
+    MySpider,
 )
 
 
@@ -18,11 +18,11 @@ class BytesReceivedCrawlerRun(CrawlerRun):
         raise StopDownload(fail=False)
 
 
-class BytesReceivedEngineTest(EngineTest):
+class BytesReceivedEngineTest(EngineTestBase):
     @defer.inlineCallbacks
     def test_crawler(self):
         for spider in (
-            TestSpider,
+            MySpider,
             DictItemsSpider,
             AttrsItemsSpider,
             DataClassItemsSpider,

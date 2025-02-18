@@ -24,17 +24,17 @@ class NameItem(Item):
     name = Field()
 
 
-class TestItem(NameItem):
+class SummaryItem(NameItem):
     url = Field()
     summary = Field()
 
 
 # test item loaders
 class NameItemLoader(ItemLoader):
-    default_item_class = TestItem
+    default_item_class = SummaryItem
 
 
-class TestItemLoader(NameItemLoader):
+class ProcessorItemLoader(NameItemLoader):
     name_in = MapCompose(lambda v: v.title())
 
 
@@ -51,7 +51,7 @@ def processor_with_args(value, other=None, loader_context=None):
 
 class BasicItemLoaderTest(unittest.TestCase):
     def test_load_item_using_default_loader(self):
-        i = TestItem()
+        i = SummaryItem()
         i["summary"] = "lala"
         il = ItemLoader(item=i)
         il.add_value("name", "marta")
@@ -61,7 +61,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(item["name"], ["marta"])
 
     def test_load_item_using_custom_loader(self):
-        il = TestItemLoader()
+        il = ProcessorItemLoader()
         il.add_value("name", "marta")
         item = il.load_item()
         self.assertEqual(item["name"], ["Marta"])
@@ -125,7 +125,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         )
 
     def test_add_value(self):
-        il = TestItemLoader()
+        il = ProcessorItemLoader()
         il.add_value("name", "marta")
         self.assertEqual(il.get_collected_values("name"), ["Marta"])
         self.assertEqual(il.get_output_value("name"), ["Marta"])
@@ -146,7 +146,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_collected_values("name"), [0])
 
     def test_replace_value(self):
-        il = TestItemLoader()
+        il = ProcessorItemLoader()
         il.replace_value("name", "marta")
         self.assertEqual(il.get_collected_values("name"), ["Marta"])
         self.assertEqual(il.get_output_value("name"), ["Marta"])
@@ -229,7 +229,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_output_value("name"), ["mart"])
 
     def test_input_processor_inheritance(self):
-        class ChildItemLoader(TestItemLoader):
+        class ChildItemLoader(ProcessorItemLoader):
             url_in = MapCompose(lambda v: v.lower())
 
         il = ChildItemLoader()
@@ -265,8 +265,8 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_output_value("name"), ["marta"])
 
     def test_extend_custom_input_processors(self):
-        class ChildItemLoader(TestItemLoader):
-            name_in = MapCompose(TestItemLoader.name_in, str.swapcase)
+        class ChildItemLoader(ProcessorItemLoader):
+            name_in = MapCompose(ProcessorItemLoader.name_in, str.swapcase)
 
         il = ChildItemLoader()
         il.add_value("name", "marta")
@@ -283,11 +283,11 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_output_value("name"), ["MART"])
 
     def test_output_processor_using_function(self):
-        il = TestItemLoader()
+        il = ProcessorItemLoader()
         il.add_value("name", ["mar", "ta"])
         self.assertEqual(il.get_output_value("name"), ["Mar", "Ta"])
 
-        class TakeFirstItemLoader(TestItemLoader):
+        class TakeFirstItemLoader(ProcessorItemLoader):
             name_out = " ".join
 
         il = TakeFirstItemLoader()
@@ -296,7 +296,7 @@ class BasicItemLoaderTest(unittest.TestCase):
 
     def test_output_processor_error(self):
         class TestItemLoader(ItemLoader):
-            default_item_class = TestItem
+            default_item_class = SummaryItem
             name_out = MapCompose(float)
 
         il = TestItemLoader()
@@ -319,18 +319,18 @@ class BasicItemLoaderTest(unittest.TestCase):
         assert expected_exc_str in s, s
 
     def test_output_processor_using_classes(self):
-        il = TestItemLoader()
+        il = ProcessorItemLoader()
         il.add_value("name", ["mar", "ta"])
         self.assertEqual(il.get_output_value("name"), ["Mar", "Ta"])
 
-        class TakeFirstItemLoader(TestItemLoader):
+        class TakeFirstItemLoader(ProcessorItemLoader):
             name_out = Join()
 
         il = TakeFirstItemLoader()
         il.add_value("name", ["mar", "ta"])
         self.assertEqual(il.get_output_value("name"), "Mar Ta")
 
-        class TakeFirstItemLoader2(TestItemLoader):
+        class TakeFirstItemLoader2(ProcessorItemLoader):
             name_out = Join("<br>")
 
         il = TakeFirstItemLoader2()
@@ -338,11 +338,11 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_output_value("name"), "Mar<br>Ta")
 
     def test_default_output_processor(self):
-        il = TestItemLoader()
+        il = ProcessorItemLoader()
         il.add_value("name", ["mar", "ta"])
         self.assertEqual(il.get_output_value("name"), ["Mar", "Ta"])
 
-        class LalaItemLoader(TestItemLoader):
+        class LalaItemLoader(ProcessorItemLoader):
             default_output_processor = Identity()
 
         il = LalaItemLoader()
@@ -350,7 +350,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_output_value("name"), ["Mar", "Ta"])
 
     def test_loader_context_on_declaration(self):
-        class ChildItemLoader(TestItemLoader):
+        class ChildItemLoader(ProcessorItemLoader):
             url_in = MapCompose(processor_with_args, key="val")
 
         il = ChildItemLoader()
@@ -360,7 +360,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_output_value("url"), ["val"])
 
     def test_loader_context_on_instantiation(self):
-        class ChildItemLoader(TestItemLoader):
+        class ChildItemLoader(ProcessorItemLoader):
             url_in = MapCompose(processor_with_args)
 
         il = ChildItemLoader(key="val")
@@ -370,7 +370,7 @@ class BasicItemLoaderTest(unittest.TestCase):
         self.assertEqual(il.get_output_value("url"), ["val"])
 
     def test_loader_context_on_assign(self):
-        class ChildItemLoader(TestItemLoader):
+        class ChildItemLoader(ProcessorItemLoader):
             url_in = MapCompose(processor_with_args)
 
         il = ChildItemLoader()
@@ -384,10 +384,10 @@ class BasicItemLoaderTest(unittest.TestCase):
         def processor(value, loader_context):
             return loader_context["item"]["name"]
 
-        class ChildItemLoader(TestItemLoader):
+        class ChildItemLoader(ProcessorItemLoader):
             url_in = MapCompose(processor)
 
-        it = TestItem(name="marta")
+        it = SummaryItem(name="marta")
         il = ChildItemLoader(item=it)
         il.add_value("url", "text")
         self.assertEqual(il.get_output_value("url"), ["marta"])

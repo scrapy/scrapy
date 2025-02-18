@@ -4,6 +4,7 @@ import logging
 import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
+from warnings import warn
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.job import job_dir
@@ -26,6 +27,9 @@ if TYPE_CHECKING:
 
 
 class BaseDupeFilter:
+    """Dummy duplicate request filtering class (:setting:`DUPEFILTER_CLASS`)
+    that does not filter out any request."""
+
     @classmethod
     def from_settings(cls, settings: BaseSettings) -> Self:
         warnings.warn(
@@ -50,10 +54,19 @@ class BaseDupeFilter:
 
     def log(self, request: Request, spider: Spider) -> None:
         """Log that a request has been filtered"""
+        warn(
+            "Calling BaseDupeFilter.log() is deprecated.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
 
 
 class RFPDupeFilter(BaseDupeFilter):
-    """Request Fingerprint duplicates filter"""
+    """Duplicate request filtering class (:setting:`DUPEFILTER_CLASS`) that
+    filters out requests with the canonical
+    (:func:`w3lib.url.canonicalize_url`) :attr:`~scrapy.http.Request.url`,
+    :attr:`~scrapy.http.Request.method` and :attr:`~scrapy.http.Request.body`.
+    """
 
     def __init__(
         self,
@@ -117,6 +130,7 @@ class RFPDupeFilter(BaseDupeFilter):
         return False
 
     def request_fingerprint(self, request: Request) -> str:
+        """Returns a string that uniquely identifies the specified request."""
         return self.fingerprinter.fingerprint(request).hex()
 
     def close(self, reason: str) -> None:

@@ -763,6 +763,26 @@ HttpProxyMiddleware
    Keep in mind this value will take precedence over ``http_proxy``/``https_proxy``
    environment variables, and it will also ignore ``no_proxy`` environment variable.
 
+HttpProxyMiddleware settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. setting:: HTTPPROXY_ENABLED
+.. setting:: HTTPPROXY_AUTH_ENCODING
+
+HTTPPROXY_ENABLED
+^^^^^^^^^^^^^^^^^
+
+Default: ``True``
+
+Whether or not to enable the :class:`HttpProxyMiddleware`.
+
+HTTPPROXY_AUTH_ENCODING
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``"latin-1"``
+
+The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
+
 OffsiteMiddleware
 -----------------
 
@@ -1219,58 +1239,5 @@ UserAgentMiddleware
 
    In order for a spider to override the default user agent, its ``user_agent``
    attribute must be set.
-
-.. _ajaxcrawl-middleware:
-
-AjaxCrawlMiddleware
--------------------
-
-.. module:: scrapy.downloadermiddlewares.ajaxcrawl
-
-.. class:: AjaxCrawlMiddleware
-
-   Middleware that finds 'AJAX crawlable' page variants based
-   on meta-fragment html tag.
-
-   .. note::
-
-       Scrapy finds 'AJAX crawlable' pages for URLs like
-       ``'http://example.com/!#foo=bar'`` even without this middleware.
-       AjaxCrawlMiddleware is necessary when URL doesn't contain ``'!#'``.
-       This is often a case for 'index' or 'main' website pages.
-
-AjaxCrawlMiddleware Settings
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. setting:: AJAXCRAWL_ENABLED
-
-AJAXCRAWL_ENABLED
-^^^^^^^^^^^^^^^^^
-
-Default: ``False``
-
-Whether the AjaxCrawlMiddleware will be enabled. You may want to
-enable it for :ref:`broad crawls <topics-broad-crawls>`.
-
-HttpProxyMiddleware settings
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. setting:: HTTPPROXY_ENABLED
-.. setting:: HTTPPROXY_AUTH_ENCODING
-
-HTTPPROXY_ENABLED
-^^^^^^^^^^^^^^^^^
-
-Default: ``True``
-
-Whether or not to enable the :class:`HttpProxyMiddleware`.
-
-HTTPPROXY_AUTH_ENCODING
-^^^^^^^^^^^^^^^^^^^^^^^
-
-Default: ``"latin-1"``
-
-The default encoding for proxy authentication on :class:`HttpProxyMiddleware`.
-
 
 .. _DBM: https://en.wikipedia.org/wiki/Dbm

@@ -4,11 +4,13 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from warnings import catch_warnings
 
 from testfixtures import LogCapture
 
 from scrapy.core.scheduler import Scheduler
-from scrapy.dupefilters import RFPDupeFilter
+from scrapy.dupefilters import BaseDupeFilter, RFPDupeFilter
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
@@ -252,3 +254,18 @@ class RFPDupeFilterTest(unittest.TestCase):
             )
 
             dupefilter.close("finished")
+
+
+class BaseDupeFilterTestCase(unittest.TestCase):
+    def test_log_deprecation(self):
+        dupefilter = _get_dupefilter(
+            settings={"DUPEFILTER_CLASS": BaseDupeFilter},
+        )
+        with catch_warnings(record=True) as warning_list:
+            dupefilter.log(None, None)
+        self.assertEqual(len(warning_list), 1)
+        self.assertEqual(
+            str(warning_list[0].message),
+            "Calling BaseDupeFilter.log() is deprecated.",
+        )
+        self.assertEqual(warning_list[0].category, ScrapyDeprecationWarning)

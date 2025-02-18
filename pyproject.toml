@@ -180,6 +180,7 @@ disable = [
     "unused-argument",
     "unused-import",
     "unused-variable",
+    "useless-import-alias",  # used as a hint to mypy
     "useless-return",  # https://github.com/pylint-dev/pylint/issues/6530
     "wrong-import-position",
 
@@ -199,8 +200,7 @@ disable = [
 [tool.pytest.ini_options]
 xfail_strict = true
 usefixtures = "chdir"
-python_files = ["test_*.py", "__init__.py"]
-python_classes = []
+python_files = ["test_*.py", "test_*/__init__.py"]
 addopts = [
     "--assert=plain",
     "--ignore=docs/_ext",
@@ -253,6 +253,8 @@ extend-select = [
     "PIE",
     # pylint
     "PL",
+    # flake8-pytest-style
+    "PT",
     # flake8-use-pathlib
     "PTH",
     # flake8-pyi
@@ -319,6 +321,8 @@ ignore = [
     "D403",
     # `try`-`except` within a loop incurs performance overhead
     "PERF203",
+    # Import alias does not rename original package
+    "PLC0414",
     # Too many return statements
     "PLR0911",
     # Too many branches
@@ -370,6 +374,12 @@ ignore = [
     "B904",
     # Use capitalized environment variable
     "SIM112",
+
+    # Temporarily silenced PT rules
+    # Use a regular `assert` instead of unittest-style `assertEqual`
+    "PT009",
+    # Use `pytest.raises` instead of unittest-style `assertRaises`
+    "PT027",
 ]
 
 [tool.ruff.lint.per-file-ignores]

@@ -6,7 +6,7 @@ from ipaddress import IPv4Address
 from socket import gethostbyname
 from urllib.parse import urlparse
 
-from pytest import mark
+import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.ssl import Certificate
@@ -56,12 +56,14 @@ from tests.spiders import (
 
 
 class CrawlTestCase(TestCase):
-    def setUp(self):
-        self.mockserver = MockServer()
-        self.mockserver.__enter__()
+    @classmethod
+    def setUpClass(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
 
-    def tearDown(self):
-        self.mockserver.__exit__(None, None, None)
+    @classmethod
+    def tearDownClass(cls):
+        cls.mockserver.__exit__(None, None, None)
 
     @defer.inlineCallbacks
     def test_follow_all(self):
@@ -448,12 +450,14 @@ with multiples lines
 
 
 class CrawlSpiderTestCase(TestCase):
-    def setUp(self):
-        self.mockserver = MockServer()
-        self.mockserver.__enter__()
+    @classmethod
+    def setUpClass(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
 
-    def tearDown(self):
-        self.mockserver.__exit__(None, None, None)
+    @classmethod
+    def tearDownClass(cls):
+        cls.mockserver.__exit__(None, None, None)
 
     @defer.inlineCallbacks
     def _run_spider(self, spider_cls):
@@ -532,7 +536,7 @@ class CrawlSpiderTestCase(TestCase):
             )
         self.assertIn("Got response 200", str(log))
 
-    @mark.only_asyncio()
+    @pytest.mark.only_asyncio
     @defer.inlineCallbacks
     def test_async_def_asyncio_parse(self):
         crawler = get_crawler(
@@ -547,7 +551,7 @@ class CrawlSpiderTestCase(TestCase):
             )
         self.assertIn("Got response 200", str(log))
 
-    @mark.only_asyncio()
+    @pytest.mark.only_asyncio
     @defer.inlineCallbacks
     def test_async_def_asyncio_parse_items_list(self):
         log, items, _ = yield self._run_spider(AsyncDefAsyncioReturnSpider)
@@ -555,7 +559,7 @@ class CrawlSpiderTestCase(TestCase):
         self.assertIn({"id": 1}, items)
         self.assertIn({"id": 2}, items)
 
-    @mark.only_asyncio()
+    @pytest.mark.only_asyncio
     @defer.inlineCallbacks
     def test_async_def_asyncio_parse_items_single_element(self):
         items = []
@@ -572,7 +576,7 @@ class CrawlSpiderTestCase(TestCase):
         self.assertIn("Got response 200", str(log))
         self.assertIn({"foo": 42}, items)
 
-    @mark.only_asyncio()
+    @pytest.mark.only_asyncio
     @defer.inlineCallbacks
     def test_async_def_asyncgen_parse(self):
         log, _, stats = yield self._run_spider(AsyncDefAsyncioGenSpider)
@@ -580,7 +584,7 @@ class CrawlSpiderTestCase(TestCase):
         itemcount = stats.get_value("item_scraped_count")
         self.assertEqual(itemcount, 1)
 
-    @mark.only_asyncio()
+    @pytest.mark.only_asyncio
     @defer.inlineCallbacks
     def test_async_def_asyncgen_parse_loop(self):
         log, items, stats = yield self._run_spider(AsyncDefAsyncioGenLoopSpider)
@@ -590,7 +594,7 @@ class CrawlSpiderTestCase(TestCase):
         for i in range(10):
             self.assertIn({"foo": i}, items)
 
-    @mark.only_asyncio()
+    @pytest.mark.only_asyncio
     @defer.inlineCallbacks
     def test_async_def_asyncgen_parse_exc(self):
         log, items, stats = yield self._run_spider(AsyncDefAsyncioGenExcSpider)
@@ -602,7 +606,7 @@ class CrawlSpiderTestCase(TestCase):
         for i in range(7):
             self.assertIn({"foo": i}, items)
 
-    @mark.only_asyncio()
+    @pytest.mark.only_asyncio
     @defer.inlineCallbacks
     def test_async_def_asyncgen_parse_complex(self):
         _, items, stats = yield self._run_spider(AsyncDefAsyncioGenComplexSpider)
@@ -614,20 +618,20 @@ class CrawlSpiderTestCase(TestCase):
         for i in [10, 30, 122]:
             self.assertIn({"index2": i}, items)
 
-    @mark.only_asyncio()
+    @pytest.mark.only_asyncio
     @defer.inlineCallbacks
     def test_async_def_asyncio_parse_reqs_list(self):
         log, *_ = yield self._run_spider(AsyncDefAsyncioReqsReturnSpider)
         for req_id in range(3):
             self.assertIn(f"Got response 200, req_id {req_id}", str(log))
 
-    @mark.only_not_asyncio()
+    @pytest.mark.only_not_asyncio
     @defer.inlineCallbacks
     def test_async_def_deferred_direct(self):
         _, items, _ = yield self._run_spider(AsyncDefDeferredDirectSpider)
         self.assertEqual(items, [{"code": 200}])
 
-    @mark.only_asyncio()
+    @pytest.mark.only_asyncio
     @defer.inlineCallbacks
     def test_async_def_deferred_wrapped(self):
         log, items, _ = yield self._run_spider(AsyncDefDeferredWrappedSpider)
@@ -655,7 +659,9 @@ class CrawlSpiderTestCase(TestCase):
         self.assertEqual(cert.getSubject().commonName, b"localhost")
         self.assertEqual(cert.getIssuer().commonName, b"localhost")
 
-    @mark.xfail(reason="Responses with no body return early and contain no certificate")
+    @pytest.mark.xfail(
+        reason="Responses with no body return early and contain no certificate"
+    )
     @defer.inlineCallbacks
     def test_response_ssl_certificate_empty_response(self):
         crawler = get_crawler(SingleRequestSpider)

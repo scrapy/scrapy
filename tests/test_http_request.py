@@ -187,18 +187,6 @@ class RequestTest(unittest.TestCase):
         assert isinstance(r4.body, bytes)
         self.assertEqual(r4.body, b"Price: \xa3100")
 
-    def test_ajax_url(self):
-        # ascii url
-        r = self.request_class(url="http://www.example.com/ajax.html#!key=value")
-        self.assertEqual(
-            r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue"
-        )
-        # unicode url
-        r = self.request_class(url="http://www.example.com/ajax.html#!key=value")
-        self.assertEqual(
-            r.url, "http://www.example.com/ajax.html?_escaped_fragment_=key%3Dvalue"
-        )
-
     def test_copy(self):
         """Test Request copy"""
 
@@ -226,9 +214,9 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r1.flags, r2.flags)
 
         # make sure cb_kwargs dict is shallow copied
-        assert (
-            r1.cb_kwargs is not r2.cb_kwargs
-        ), "cb_kwargs must be a shallow copy, not identical"
+        assert r1.cb_kwargs is not r2.cb_kwargs, (
+            "cb_kwargs must be a shallow copy, not identical"
+        )
         self.assertEqual(r1.cb_kwargs, r2.cb_kwargs)
 
         # make sure meta dict is shallow copied
@@ -236,9 +224,9 @@ class RequestTest(unittest.TestCase):
         self.assertEqual(r1.meta, r2.meta)
 
         # make sure headers attribute is shallow copied
-        assert (
-            r1.headers is not r2.headers
-        ), "headers must be a shallow copy, not identical"
+        assert r1.headers is not r2.headers, (
+            "headers must be a shallow copy, not identical"
+        )
         self.assertEqual(r1.headers, r2.headers)
         self.assertEqual(r1.encoding, r2.encoding)
         self.assertEqual(r1.dont_filter, r2.dont_filter)

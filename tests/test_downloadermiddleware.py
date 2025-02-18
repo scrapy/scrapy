@@ -1,7 +1,7 @@
 import asyncio
 from unittest import mock
 
-from pytest import mark
+import pytest
 from twisted.internet import defer
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
@@ -220,7 +220,7 @@ class MiddlewareUsingDeferreds(ManagerTestCase):
         self.assertFalse(download_func.called)
 
 
-@mark.usefixtures("reactor_pytest")
+@pytest.mark.usefixtures("reactor_pytest")
 class MiddlewareUsingCoro(ManagerTestCase):
     """Middlewares using asyncio coroutines should work"""
 
@@ -243,7 +243,7 @@ class MiddlewareUsingCoro(ManagerTestCase):
         self.assertIs(results[0], resp)
         self.assertFalse(download_func.called)
 
-    @mark.only_asyncio()
+    @pytest.mark.only_asyncio
     def test_asyncdef_asyncio(self):
         resp = Response("http://example.com/index.html")
 

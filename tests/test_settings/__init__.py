@@ -503,7 +503,7 @@ class SettingsTest(unittest.TestCase):
 
 @pytest.mark.parametrize(
     ("before", "name", "item", "after"),
-    (
+    [
         ({}, "FOO", "BAR", {"FOO": ["BAR"]}),
         ({"FOO": []}, "FOO", "BAR", {"FOO": ["BAR"]}),
         ({"FOO": ["BAR"]}, "FOO", "BAZ", {"FOO": ["BAR", "BAZ"]}),
@@ -513,22 +513,22 @@ class SettingsTest(unittest.TestCase):
         ({"FOO": "BAR"}, "FOO", "BAZ", {"FOO": ["BAR", "BAZ"]}),
         ({"FOO": "BAR,BAZ"}, "FOO", "BAZ", {"FOO": "BAR,BAZ"}),
         ({"FOO": "BAR,BAZ"}, "FOO", "QUX", {"FOO": ["BAR", "BAZ", "QUX"]}),
-    ),
+    ],
 )
 def test_add_to_list(before, name, item, after):
     settings = BaseSettings(before, priority=0)
     settings.add_to_list(name, item)
     expected_priority = settings.getpriority(name) or 0
     expected_settings = BaseSettings(after, priority=expected_priority)
-    assert (
-        settings == expected_settings
-    ), f"{settings[name]=} != {expected_settings[name]=}"
+    assert settings == expected_settings, (
+        f"{settings[name]=} != {expected_settings[name]=}"
+    )
     assert settings.getpriority(name) == expected_settings.getpriority(name)
 
 
 @pytest.mark.parametrize(
     ("before", "name", "item", "after"),
-    (
+    [
         ({}, "FOO", "BAR", ValueError),
         ({"FOO": ["BAR"]}, "FOO", "BAR", {"FOO": []}),
         ({"FOO": ["BAR"]}, "FOO", "BAZ", ValueError),
@@ -538,7 +538,7 @@ def test_add_to_list(before, name, item, after):
         ({"FOO": "BAR"}, "FOO", "BAR", {"FOO": []}),
         ({"FOO": "BAR"}, "FOO", "BAZ", ValueError),
         ({"FOO": "BAR,BAZ"}, "FOO", "BAR", {"FOO": ["BAZ"]}),
-    ),
+    ],
 )
 def test_remove_from_list(before, name, item, after):
     settings = BaseSettings(before, priority=0)
@@ -551,9 +551,9 @@ def test_remove_from_list(before, name, item, after):
     settings.remove_from_list(name, item)
     expected_priority = settings.getpriority(name) or 0
     expected_settings = BaseSettings(after, priority=expected_priority)
-    assert (
-        settings == expected_settings
-    ), f"{settings[name]=} != {expected_settings[name]=}"
+    assert settings == expected_settings, (
+        f"{settings[name]=} != {expected_settings[name]=}"
+    )
     assert settings.getpriority(name) == expected_settings.getpriority(name)
 
 
@@ -576,8 +576,8 @@ class Component2:
 
 
 @pytest.mark.parametrize(
-    ("before", "name", "old_cls", "new_cls", "pos", "after"),
-    (
+    ("before", "name", "old_cls", "new_cls", "priority", "after"),
+    [
         ({}, "FOO", Component1, Component2, None, KeyError),
         (
             {"FOO": {Component1: 1}},
@@ -754,26 +754,30 @@ class Component2:
             None,
             KeyError,
         ),
-    ),
+    ],
 )
-def test_replace_in_component_list(before, name, old_cls, new_cls, pos, after):
+def test_replace_in_component_priority_dictionary(
+    before, name, old_cls, new_cls, priority, after
+):
     settings = BaseSettings(before, priority=0)
 
     if isinstance(after, type) and issubclass(after, Exception):
         with pytest.raises(after):
-            settings.replace_in_component_list(name, old_cls, new_cls, pos)
+            settings.replace_in_component_priority_dictionary(
+                name, old_cls, new_cls, priority
+            )
         return
 
     expected_priority = settings.getpriority(name) or 0
-    settings.replace_in_component_list(name, old_cls, new_cls, pos)
+    settings.replace_in_component_priority_dictionary(name, old_cls, new_cls, priority)
     expected_settings = BaseSettings(after, priority=expected_priority)
     assert settings == expected_settings
     assert settings.getpriority(name) == expected_settings.getpriority(name)
 
 
 @pytest.mark.parametrize(
-    ("before", "name", "cls", "pos", "after"),
-    (
+    ("before", "name", "cls", "priority", "after"),
+    [
         # Set
         ({}, "FOO", Component1, None, {"FOO": {Component1: None}}),
         ({}, "FOO", Component1, 0, {"FOO": {Component1: 0}}),
@@ -898,22 +902,22 @@ def test_replace_in_component_list(before, name, old_cls, new_cls, pos, after):
                 }
             },
         ),
-    ),
+    ],
 )
-def test_set_in_component_list(before, name, cls, pos, after):
+def test_set_in_component_priority_dictionary(before, name, cls, priority, after):
     settings = BaseSettings(before, priority=0)
     expected_priority = settings.getpriority(name) or 0
-    settings.set_in_component_list(name, cls, pos)
+    settings.set_in_component_priority_dictionary(name, cls, priority)
     expected_settings = BaseSettings(after, priority=expected_priority)
     assert settings == expected_settings
-    assert settings.getpriority(name) == expected_settings.getpriority(
-        name
-    ), f"{settings.getpriority(name)=} != {expected_settings.getpriority(name)=}"
+    assert settings.getpriority(name) == expected_settings.getpriority(name), (
+        f"{settings.getpriority(name)=} != {expected_settings.getpriority(name)=}"
+    )
 
 
 @pytest.mark.parametrize(
-    ("before", "name", "cls", "pos", "after"),
-    (
+    ("before", "name", "cls", "priority", "after"),
+    [
         # Set
         ({}, "FOO", Component1, None, {"FOO": {Component1: None}}),
         ({}, "FOO", Component1, 0, {"FOO": {Component1: 0}}),
@@ -1045,12 +1049,14 @@ def test_set_in_component_list(before, name, cls, pos, after):
                 }"""
             },
         ),
-    ),
+    ],
 )
-def test_setdefault_in_component_list(before, name, cls, pos, after):
+def test_setdefault_in_component_priority_dictionary(
+    before, name, cls, priority, after
+):
     settings = BaseSettings(before, priority=0)
     expected_priority = settings.getpriority(name) or 0
-    settings.setdefault_in_component_list(name, cls, pos)
+    settings.setdefault_in_component_priority_dictionary(name, cls, priority)
     expected_settings = BaseSettings(after, priority=expected_priority)
     assert settings == expected_settings
     assert settings.getpriority(name) == expected_settings.getpriority(name)

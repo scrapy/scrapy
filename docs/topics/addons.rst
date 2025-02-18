@@ -32,7 +32,7 @@ This is an example where two add-ons are enabled in a project's
 Writing your own add-ons
 ========================
 
-Add-ons are Python classes that include the following method:
+Add-ons are Python classes that include one or both of the following methods:
 
 .. method:: update_settings(settings)
 
@@ -44,6 +44,15 @@ Add-ons are Python classes that include the following method:
 
     :param settings: The settings object storing Scrapy/component configuration
     :type settings: :class:`~scrapy.settings.Settings`
+
+.. classmethod:: update_pre_crawler_settings(cls, settings)
+
+    Use this class method instead of the :meth:`update_settings` method to
+    update :ref:`pre-crawler settings <pre-crawler-settings>` whose value is
+    used before the :class:`~scrapy.crawler.Crawler` object is created.
+
+    :param settings: The settings object storing Scrapy/component configuration
+    :type settings: :class:`~scrapy.settings.BaseSettings`
 
 They can also have the following method:
 
@@ -71,7 +80,7 @@ configuration.
 
 When editing the value of a setting instead of overriding it entirely, it is
 usually best to leave its priority unchanged. For example, when editing a
-:ref:`component list <component-lists>`.
+:ref:`component priority dictionary <component-priority-dictionaries>`.
 
 If the ``update_settings`` method raises
 :exc:`scrapy.exceptions.NotConfigured`, the add-on will be skipped. This makes
@@ -124,14 +133,18 @@ Set some basic configuration:
         def update_settings(self, settings):
             settings.set("DNSCACHE_ENABLED", True, "addon")
             settings.remove_from_list("METAREFRESH_IGNORE_TAGS", "noscript")
-            settings.setdefault_in_component_list("ITEM_PIPELINES", MyPipeline, 200)
+            settings.setdefault_in_component_priority_dictionary(
+                "ITEM_PIPELINES", MyPipeline, 200
+            )
 
-.. tip:: When editing a :ref:`component list <component-lists>` setting, like
-    :setting:`ITEM_PIPELINES`, consider using setting methods like
-    :meth:`~scrapy.settings.BaseSettings.replace_in_component_list`,
-    :meth:`~scrapy.settings.BaseSettings.set_in_component_list` and
-    :meth:`~scrapy.settings.BaseSettings.setdefault_in_component_list` to avoid
-    mistakes.
+.. tip:: When editing a :ref:`component priority dictionary
+    <component-priority-dictionaries>` setting, like :setting:`ITEM_PIPELINES`,
+    consider using setting methods like
+    :meth:`~scrapy.settings.BaseSettings.replace_in_component_priority_dictionary`,
+    :meth:`~scrapy.settings.BaseSettings.set_in_component_priority_dictionary`
+    and
+    :meth:`~scrapy.settings.BaseSettings.setdefault_in_component_priority_dictionary`
+    to avoid mistakes.
 
 Check dependencies:
 

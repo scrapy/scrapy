@@ -2,8 +2,8 @@ import codecs
 import unittest
 from unittest import mock
 
+import pytest
 from packaging.version import Version as parse_version
-from pytest import mark
 from w3lib import __version__ as w3lib_version
 from w3lib.encoding import resolve_encoding
 
@@ -99,9 +99,9 @@ class BaseResponseTest(unittest.TestCase):
         self.assertEqual(r1.flags, r2.flags)
 
         # make sure headers attribute is shallow copied
-        assert (
-            r1.headers is not r2.headers
-        ), "headers must be a shallow copy, not identical"
+        assert r1.headers is not r2.headers, (
+            "headers must be a shallow copy, not identical"
+        )
         self.assertEqual(r1.headers, r2.headers)
 
     def test_copy_meta(self):
@@ -218,7 +218,7 @@ class BaseResponseTest(unittest.TestCase):
         r = self.response_class("http://example.com")
         self.assertRaises(ValueError, r.follow, None)
 
-    @mark.xfail(
+    @pytest.mark.xfail(
         parse_version(w3lib_version) < parse_version("2.1.1"),
         reason="https://github.com/scrapy/w3lib/pull/207",
         strict=True,
@@ -226,7 +226,7 @@ class BaseResponseTest(unittest.TestCase):
     def test_follow_whitespace_url(self):
         self._assert_followed_url("foo ", "http://example.com/foo")
 
-    @mark.xfail(
+    @pytest.mark.xfail(
         parse_version(w3lib_version) < parse_version("2.1.1"),
         reason="https://github.com/scrapy/w3lib/pull/207",
         strict=True,
@@ -473,10 +473,8 @@ class TextResponseTest(BaseResponseTest):
         self._assert_response_encoding(r5, "utf-8")
         self._assert_response_encoding(r8, "utf-8")
         self._assert_response_encoding(r9, "cp1252")
-        assert (
-            r4._body_inferred_encoding() is not None
-            and r4._body_inferred_encoding() != "ascii"
-        )
+        assert r4._body_inferred_encoding() is not None
+        assert r4._body_inferred_encoding() != "ascii"
         self._assert_response_values(r1, "utf-8", "\xa3")
         self._assert_response_values(r2, "utf-8", "\xa3")
         self._assert_response_values(r3, "iso-8859-1", "\xa3")

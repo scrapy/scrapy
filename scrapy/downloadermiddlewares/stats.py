@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 def get_header_size(
-    headers: dict[str, list[str | bytes] | tuple[str | bytes, ...]]
+    headers: dict[str, list[str | bytes] | tuple[str | bytes, ...]],
 ) -> int:
     size = 0
     for key, value in headers.items():

@@ -1,13 +1,14 @@
 import unittest
 
+import pytest
+
 from scrapy.downloadermiddlewares.ajaxcrawl import AjaxCrawlMiddleware
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
-__doctests__ = ["scrapy.downloadermiddlewares.ajaxcrawl"]
 
-
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class AjaxCrawlMiddlewareTest(unittest.TestCase):
     def setUp(self):
         crawler = get_crawler(Spider, {"AJAXCRAWL_ENABLED": True})

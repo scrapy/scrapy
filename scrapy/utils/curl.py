@@ -22,8 +22,7 @@ class DataAction(argparse.Action):
         option_string: str | None = None,
     ) -> None:
         value = str(values)
-        if value.startswith("$"):
-            value = value[1:]
+        value = value.removeprefix("$")
         setattr(namespace, self.dest, value)
 
 
@@ -96,7 +95,7 @@ def curl_to_request_kwargs(
     parsed_args, argv = curl_parser.parse_known_args(curl_args[1:])
 
     if argv:
-        msg = f'Unrecognized options: {", ".join(argv)}'
+        msg = f"Unrecognized options: {', '.join(argv)}"
         if ignore_unknown_options:
             warnings.warn(msg)
         else:

@@ -25,7 +25,6 @@ from scrapy.utils.response import get_base_url
 from scrapy.utils.url import url_has_any_extension, url_is_from_any_domain
 
 if TYPE_CHECKING:
-
     from lxml.html import HtmlElement
 
     from scrapy import Selector

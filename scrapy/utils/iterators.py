@@ -71,7 +71,7 @@ def xmliter(obj: Response | str | bytes, nodename: str) -> Iterator[Selector]:
         nodetext = (
             document_header
             + match.group().replace(
-                nodename, f'{nodename} {" ".join(namespaces.values())}', 1
+                nodename, f"{nodename} {' '.join(namespaces.values())}", 1
             )
             + header_end
         )

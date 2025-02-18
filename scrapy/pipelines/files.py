@@ -202,7 +202,9 @@ class S3FilesStore:
         return cast(
             "Deferred[dict[str, Any]]",
             deferToThread(
-                self.s3_client.head_object, Bucket=self.bucket, Key=key_name  # type: ignore[attr-defined]
+                self.s3_client.head_object,  # type: ignore[attr-defined]
+                Bucket=self.bucket,
+                Key=key_name,
             ),
         )
 
