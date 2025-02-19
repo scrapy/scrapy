@@ -378,8 +378,6 @@ ignore = [
     # Temporarily silenced PT rules
     # Use a regular `assert` instead of unittest-style `assertEqual`
     "PT009",
-    # Use `pytest.raises` instead of unittest-style `assertRaises`
-    "PT027",
 ]
 
 [tool.ruff.lint.per-file-ignores]

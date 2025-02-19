@@ -87,7 +87,8 @@ class ToUnicodeTest(unittest.TestCase):
         self.assertEqual(to_unicode("\xf1e\xf1e\xf1e"), "\xf1e\xf1e\xf1e")
 
     def test_converting_a_strange_object_should_raise_TypeError(self):
-        self.assertRaises(TypeError, to_unicode, 423)
+        with pytest.raises(TypeError):
+            to_unicode(423)
 
     def test_errors_argument(self):
         self.assertEqual(to_unicode(b"a\xedb", "utf-8", errors="replace"), "a\ufffdb")
@@ -104,7 +105,8 @@ class ToBytesTest(unittest.TestCase):
         self.assertEqual(to_bytes(b"lel\xf1e"), b"lel\xf1e")
 
     def test_converting_a_strange_object_should_raise_TypeError(self):
-        self.assertRaises(TypeError, to_bytes, unittest)
+        with pytest.raises(TypeError):
+            to_bytes(pytest)
 
     def test_errors_argument(self):
         self.assertEqual(to_bytes("a\ufffdb", "latin-1", errors="replace"), b"a?b")

@@ -83,11 +83,10 @@ class CookiesMiddlewareTest(TestCase):
         self.assertEqual(req2.headers.get("Cookie"), b"C1=value1")
 
     def test_setting_false_cookies_enabled(self):
-        self.assertRaises(
-            NotConfigured,
-            CookiesMiddleware.from_crawler,
-            get_crawler(settings_dict={"COOKIES_ENABLED": False}),
-        )
+        with pytest.raises(NotConfigured):
+            CookiesMiddleware.from_crawler(
+                get_crawler(settings_dict={"COOKIES_ENABLED": False})
+            )
 
     def test_setting_default_cookies_enabled(self):
         self.assertIsInstance(

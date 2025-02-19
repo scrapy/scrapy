@@ -1,5 +1,6 @@
 from unittest import mock
 
+import pytest
 from twisted.internet import error, reactor
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
 from twisted.python import failure
@@ -26,7 +27,8 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
     def test_robotstxt_settings(self):
         self.crawler.settings = Settings()
         self.crawler.settings.set("USER_AGENT", "CustomAgent")
-        self.assertRaises(NotConfigured, RobotsTxtMiddleware, self.crawler)
+        with pytest.raises(NotConfigured):
+            RobotsTxtMiddleware(self.crawler)
 
     def _get_successful_crawler(self):
         crawler = self.crawler

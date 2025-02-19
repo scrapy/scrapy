@@ -1,6 +1,7 @@
 import logging
 from unittest import TestCase
 
+import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -68,9 +69,8 @@ class TestHttpErrorMiddleware(TestCase):
 
     def test_process_spider_input(self):
         self.assertIsNone(self.mw.process_spider_input(self.res200, self.spider))
-        self.assertRaises(
-            HttpError, self.mw.process_spider_input, self.res404, self.spider
-        )
+        with pytest.raises(HttpError):
+            self.mw.process_spider_input(self.res404, self.spider)
 
     def test_process_spider_exception(self):
         self.assertEqual(
@@ -105,9 +105,8 @@ class TestHttpErrorMiddlewareSettings(TestCase):
 
     def test_process_spider_input(self):
         self.assertIsNone(self.mw.process_spider_input(self.res200, self.spider))
-        self.assertRaises(
-            HttpError, self.mw.process_spider_input, self.res404, self.spider
-        )
+        with pytest.raises(HttpError):
+            self.mw.process_spider_input(self.res404, self.spider)
         self.assertIsNone(self.mw.process_spider_input(self.res402, self.spider))
 
     def test_meta_overrides_settings(self):
@@ -120,14 +119,14 @@ class TestHttpErrorMiddlewareSettings(TestCase):
         res402.request = request
 
         self.assertIsNone(self.mw.process_spider_input(res404, self.spider))
-        self.assertRaises(HttpError, self.mw.process_spider_input, res402, self.spider)
+        with pytest.raises(HttpError):
+            self.mw.process_spider_input(res402, self.spider)
 
     def test_spider_override_settings(self):
         self.spider.handle_httpstatus_list = [404]
         self.assertIsNone(self.mw.process_spider_input(self.res404, self.spider))
-        self.assertRaises(
-            HttpError, self.mw.process_spider_input, self.res402, self.spider
-        )
+        with pytest.raises(HttpError):
+            self.mw.process_spider_input(self.res402, self.spider)
 
 
 class TestHttpErrorMiddlewareHandleAll(TestCase):
@@ -151,7 +150,8 @@ class TestHttpErrorMiddlewareHandleAll(TestCase):
         res402.request = request
 
         self.assertIsNone(self.mw.process_spider_input(res404, self.spider))
-        self.assertRaises(HttpError, self.mw.process_spider_input, res402, self.spider)
+        with pytest.raises(HttpError):
+            self.mw.process_spider_input(res402, self.spider)
 
     def test_httperror_allow_all_false(self):
         crawler = get_crawler(_HttpErrorSpider)
@@ -167,7 +167,8 @@ class TestHttpErrorMiddlewareHandleAll(TestCase):
         res402 = self.res402.copy()
         res402.request = request_httpstatus_true
 
-        self.assertRaises(HttpError, mw.process_spider_input, res404, self.spider)
+        with pytest.raises(HttpError):
+            mw.process_spider_input(res404, self.spider)
         self.assertIsNone(mw.process_spider_input(res402, self.spider))
 
 
