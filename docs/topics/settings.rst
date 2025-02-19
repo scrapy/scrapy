@@ -250,6 +250,57 @@ example, proper setting names for a fictional robots.txt extension would be
 ``ROBOTSTXT_ENABLED``, ``ROBOTSTXT_OBEY``, ``ROBOTSTXT_CACHEDIR``, etc.
 
 
+.. _component-priority-dictionaries:
+
+Component priority dictionaries
+===============================
+
+A **component priority dictionary** is a :class:`dict` where keys are
+:ref:`components <topics-components>` and values are component priorities. For
+example:
+
+.. skip: next
+.. code-block:: python
+
+    {
+        "path.to.ComponentA": None,
+        ComponentB: 100,
+    }
+
+A component can be specified either as a class object or through an import
+path.
+
+.. warning:: Component priority dictionaries are regular :class:`dict` objects.
+    Be careful not to define the same component more than once, e.g. with
+    different import path strings or defining both an import path and a
+    :class:`type` object.
+
+A priority can be an :class:`int` or :data:`None`.
+
+A component with priority 1 goes *before* a component with priority 2. What
+going before entails, however, depends on the corresponding setting. For
+example, in the :setting:`DOWNLOADER_MIDDLEWARES` setting, components have
+their
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`
+method executed before that of later components, but have their
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`
+method executed after that of later components.
+
+A component with priority :data:`None` is disabled.
+
+Some component priority dictionaries get merged with some built-in value. For
+example, :setting:`DOWNLOADER_MIDDLEWARES` is merged with
+:setting:`DOWNLOADER_MIDDLEWARES_BASE`. This is where :data:`None` comes in
+handy, allowing you to disable a component from the base setting in the regular
+setting:
+
+.. code-block:: python
+
+    DOWNLOADER_MIDDLEWARES = {
+        "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": None,
+    }
+
+
 Special settings
 ================
 
