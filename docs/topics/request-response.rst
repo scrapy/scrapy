@@ -683,6 +683,7 @@ Those are:
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
+* :reqmeta:`request_delay`
 
 .. reqmeta:: bindaddress
 
@@ -725,6 +726,17 @@ max_retry_times
 The meta key is used set retry times per request. When initialized, the
 :reqmeta:`max_retry_times` meta key takes higher precedence over the
 :setting:`RETRY_TIMES` setting.
+
+.. reqmeta:: request_delay
+
+request_delay
+-------------
+
+Minimum seconds that the request must remain in the scheduler.
+
+For details about the management of request delays, such as the order in which
+delayed requests leave the scheduler, see the documentation of your scheduler
+class (:setting:`SCHEDULER`).
 
 
 .. _topics-stop-response-download:
