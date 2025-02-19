@@ -49,8 +49,8 @@ class CurlToRequestKwargsTest(unittest.TestCase):
             "ml,application/xhtml+xml,application/xml;q=0.9,image/webp,image/a"
             "png,*/*;q=0.8' -H 'Referer: http://httpbin.org/' -H 'Cookie: _gau"
             "ges_unique_year=1; _gauges_unique=1; _gauges_unique_month=1; _gau"
-            "ges_unique_hour=1; _gauges_unique_day=1' -H 'Connection: keep-ali"
-            "ve' --compressed"
+            "ges_unique_hour=1' -H 'Connection: keep-alive' --compressed -b '_"
+            "gauges_unique_day=1'"
         )
         expected_result = {
             "method": "GET",
