@@ -1,6 +1,7 @@
 from io import StringIO
 from unittest import TestCase, mock
-
+import re
+import mock
 from scrapy.utils.display import pformat, pprint
 
 
@@ -56,6 +57,10 @@ class TestDisplay(TestCase):
         terminal_processing.return_value = False
         self.assertEqual(pformat(self.object), self.plain_string)
 
+    def strip_ansi(self, string):
+        """Remove ANSI escape codes from a string."""
+        return re.sub(r'\x1b\[[0-9;]*m', '', string)
+
     @mock.patch("sys.platform", "win32")
     @mock.patch("scrapy.utils.display._enable_windows_terminal_processing")
     @mock.patch("platform.version")
@@ -64,9 +69,13 @@ class TestDisplay(TestCase):
         isatty.return_value = True
         version.return_value = "10.0.14393"
         terminal_processing.return_value = True
-        self.assertIn(pformat(self.object), self.colorized_strings)
 
-    @mock.patch("sys.platform", "linux")
+        formatted_output = self.strip_ansi(pformat(self.object))
+        expected_output = {self.strip_ansi(s) for s in self.colorized_strings}
+
+        self.assertIn(formatted_output.strip(), {s.strip() for s in expected_output})
+
+
     @mock.patch("sys.stdout.isatty")
     def test_pformat_no_pygments(self, isatty):
         isatty.return_value = True

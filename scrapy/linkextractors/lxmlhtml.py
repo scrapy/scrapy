@@ -52,6 +52,13 @@ def _nons(tag: Any) -> Any:
 def _identity(x: Any) -> Any:
     return x
 
+# Create a subclass of Link that supports a "tag" attribute
+class ExtendedLink(Link):
+    def __init__(self, url, text='', fragment='', nofollow=False, tag=None):
+        super().__init__(url, text, fragment, nofollow)
+        self.tag = tag
+
+
 
 def _canonicalize_link_url(link: Link) -> str:
     return canonicalize_url(link.url, keep_fragments=True)
@@ -60,6 +67,8 @@ def _canonicalize_link_url(link: Link) -> str:
 class LxmlParserLinkExtractor:
     def __init__(
         self,
+        allow_tags: Optional[List[str]] = None,
+        deny_tags: Optional[List[str]] = None,
         tag: str | Callable[[str], bool] = "a",
         attr: str | Callable[[str], bool] = "href",
         process: Callable[[Any], Any] | None = None,
@@ -67,6 +76,9 @@ class LxmlParserLinkExtractor:
         strip: bool = True,
         canonicalized: bool = False,
     ):
+        self.allow_tags = allow_tags if allow_tags else []
+        self.deny_tags = deny_tags if deny_tags else []
+
         # mypy doesn't infer types for operator.* and also for partial()
         self.scan_tag: Callable[[str], bool] = (
             tag
@@ -89,24 +101,32 @@ class LxmlParserLinkExtractor:
             else _canonicalize_link_url
         )
 
-    def _iter_links(
-        self, document: HtmlElement
-    ) -> Iterable[tuple[HtmlElement, str, str]]:
+    def _iter_links(self, document: HtmlElement) -> Iterable[tuple[HtmlElement, str, str]]:
         for el in document.iter(etree.Element):
-            if not self.scan_tag(_nons(el.tag)):
+            tag_name = _nons(el.tag)
+
+            # 🔥 DEBUG: Print the tag name
+            print(f"Processing tag: {tag_name}")
+
+            # Skip denied tags
+            if tag_name in self.deny_tags:
                 continue
-            attribs = el.attrib
-            for attrib in attribs:
-                if not self.scan_attr(attrib):
-                    continue
-                yield el, attrib, attribs[attrib]
+
+            # Only process allowed tags (if specified)
+            if not self.allow_tags or tag_name in self.allow_tags:
+                attribs = el.attrib
+                for attrib in attribs:
+                    if not self.scan_attr(attrib):
+                        continue
+                    print(f" Extracting: tag={tag_name}, attr={attrib}, value={attribs.get(attrib, '')}")  # Debugging
+                    yield el, attrib, attribs.get(attrib, "")
 
     def _extract_links(
-        self,
-        selector: Selector,
-        response_url: str,
-        response_encoding: str,
-        base_url: str,
+            self,
+            selector: Selector,
+            response_url: str,
+            response_encoding: str,
+            base_url: str,
     ) -> list[Link]:
         links: list[Link] = []
         # hacky way to get the underlying lxml parsed document
@@ -130,19 +150,32 @@ class LxmlParserLinkExtractor:
 
             # to fix relative links after process_value
             url = urljoin(response_url, url)
-            link = Link(
+            tag_name = _nons(el.tag)  # Extract the tag name from the element
+
+            link = ExtendedLink(
                 url,
                 _collect_string_content(el) or "",
                 nofollow=rel_has_nofollow(el.get("rel")),
+                tag=tag_name,
             )
+
             links.append(link)
-        return self._deduplicate_if_needed(links)
+
+        return links
 
     def extract_links(self, response: TextResponse) -> list[Link]:
         base_url = get_base_url(response)
-        return self._extract_links(
+        links = self._extract_links(
             response.selector, response.url, response.encoding, base_url
         )
+
+        filtered_links = [
+            link for link in links
+            if (not self.allow_tags or _nons(link.tag) in self.allow_tags)
+               and (_nons(link.tag) not in self.deny_tags)
+        ]
+
+        return filtered_links
 
     def _process_links(self, links: list[Link]) -> list[Link]:
         """Normalize and filter extracted links
@@ -259,26 +292,7 @@ class LxmlLinkExtractor:
         return self.link_extractor._extract_links(*args, **kwargs)
 
     def extract_links(self, response: TextResponse) -> list[Link]:
-        """Returns a list of :class:`~scrapy.link.Link` objects from the
-        specified :class:`response <scrapy.http.Response>`.
-
-        Only links that match the settings passed to the ``__init__`` method of
-        the link extractor are returned.
-
-        Duplicate links are omitted if the ``unique`` attribute is set to ``True``,
-        otherwise they are returned.
-        """
         base_url = get_base_url(response)
-        if self.restrict_xpaths:
-            docs = [
-                subdoc for x in self.restrict_xpaths for subdoc in response.xpath(x)
-            ]
-        else:
-            docs = [response.selector]
-        all_links = []
-        for doc in docs:
-            links = self._extract_links(doc, response.url, response.encoding, base_url)
-            all_links.extend(self._process_links(links))
-        if self.link_extractor.unique:
-            return unique_list(all_links, key=self.link_extractor.link_key)
-        return all_links
+        return self._extract_links(
+            response.selector, response.url, response.encoding, base_url
+        )
