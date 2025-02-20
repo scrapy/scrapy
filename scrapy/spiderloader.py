@@ -105,6 +105,8 @@ class SpiderLoader:
         """
         Return the list of spider names that can handle the given request.
         """
+        if self.load_from_path:
+            raise NotImplementedError("Not supported")
         return [
             name for name, cls in self._spiders.items() if cls.handles_request(request)
         ]
