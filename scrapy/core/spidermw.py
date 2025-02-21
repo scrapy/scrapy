@@ -227,7 +227,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                         f"Async iterable passed to {global_object_name(method)} was"
                         f" downgraded to a non-async one. This is deprecated and will"
                         f" stop working in a future version of Scrapy. Please see"
-                        f" https://docs.scrapy.org/en/latest/topics/coroutines.html#mixing-synchronous-and-asynchronous-spider-middlewares"
+                        f" https://docs.scrapy.org/en/latest/topics/coroutines.html#for-middleware-users"
                         f" for more information."
                     )
                     assert isinstance(result, AsyncIterable)
@@ -343,7 +343,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     f" asynchronous spider output, this is deprecated and will stop"
                     f" working in a future version of Scrapy. The middleware should"
                     f" be updated to support it. Please see"
-                    f" https://docs.scrapy.org/en/latest/topics/coroutines.html#mixing-synchronous-and-asynchronous-spider-middlewares"
+                    f" https://docs.scrapy.org/en/latest/topics/coroutines.html#for-middleware-users"
                     f" for more information."
                 )
             return normal_method
