@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from scrapy.http import Request, Response
+from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable, Iterable
@@ -19,13 +19,14 @@ if TYPE_CHECKING:
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
+    from scrapy.http import Request, Response
     from scrapy.statscollectors import StatsCollector
 
 
 logger = logging.getLogger(__name__)
 
 
-class DepthMiddleware:
+class DepthMiddleware(BaseSpiderMiddleware):
     def __init__(
         self,
         maxdepth: int,
@@ -51,15 +52,14 @@ class DepthMiddleware:
         self, response: Response, result: Iterable[Any], spider: Spider
     ) -> Iterable[Any]:
         self._init_depth(response, spider)
-        return (r for r in result if self._filter(r, response, spider))
+        yield from super().process_spider_output(response, result, spider)
 
     async def process_spider_output_async(
         self, response: Response, result: AsyncIterable[Any], spider: Spider
     ) -> AsyncIterable[Any]:
         self._init_depth(response, spider)
-        async for r in result:
-            if self._filter(r, response, spider):
-                yield r
+        async for o in super().process_spider_output_async(response, result, spider):
+            yield o
 
     def _init_depth(self, response: Response, spider: Spider) -> None:
         # base case (depth=0)
@@ -68,9 +68,9 @@ class DepthMiddleware:
             if self.verbose_stats:
                 self.stats.inc_value("request_depth_count/0", spider=spider)
 
-    def _filter(self, request: Any, response: Response, spider: Spider) -> bool:
-        if not isinstance(request, Request):
-            return True
+    def _process_request(
+        self, request: Request, response: Response, spider: Spider
+    ) -> Request | None:
         depth = response.meta["depth"] + 1
         request.meta["depth"] = depth
         if self.prio:
@@ -81,8 +81,8 @@ class DepthMiddleware:
                 {"maxdepth": self.maxdepth, "requrl": request.url},
                 extra={"spider": spider},
             )
-            return False
+            return None
         if self.verbose_stats:
             self.stats.inc_value(f"request_depth_count/{depth}", spider=spider)
         self.stats.max_value("request_depth_max", depth, spider=spider)
-        return True
+        return request
