@@ -17,14 +17,15 @@ from twisted.internet import task
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
-from scrapy.mail import MailSender
 from scrapy.utils.engine import get_engine_status
+from scrapy.utils.misc import build_from_crawler, load_object
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
+    from scrapy.mail import BaseMailSender
 
 
 logger = logging.getLogger(__name__)
@@ -48,7 +49,12 @@ class MemoryUsage:
         self.check_interval: float = crawler.settings.getfloat(
             "MEMUSAGE_CHECK_INTERVAL_SECONDS"
         )
-        self.mail: MailSender = MailSender.from_crawler(crawler)
+
+        mail_sender_class: type[BaseMailSender] = load_object(
+            crawler.settings.get("DEFAULT_MAIL_SENDER_CLASS")
+        )
+        self.mail = build_from_crawler(mail_sender_class, crawler)
+
         crawler.signals.connect(self.engine_started, signal=signals.engine_started)
         crawler.signals.connect(self.engine_stopped, signal=signals.engine_stopped)
 
