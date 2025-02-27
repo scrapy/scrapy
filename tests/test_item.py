@@ -25,7 +25,7 @@ class ItemTest(unittest.TestCase):
 
         i = TestItem()
         with pytest.raises(KeyError):
-            i.__getitem__("name")
+            i["name"]
 
         i2 = TestItem(name="john doe")
         self.assertEqual(i2["name"], "john doe")
@@ -45,9 +45,9 @@ class ItemTest(unittest.TestCase):
 
         i = TestItem()
         with pytest.raises(KeyError):
-            i.__setitem__("field", "text")
+            i["field"] = "text"
         with pytest.raises(KeyError):
-            i.__getitem__("field")
+            i["field"]
 
     def test_repr(self):
         class TestItem(Item):

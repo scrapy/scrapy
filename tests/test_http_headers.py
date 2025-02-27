@@ -16,7 +16,7 @@ class HeadersTest(unittest.TestCase):
         assert h["Content-Length"]
 
         with pytest.raises(KeyError):
-            h.__getitem__("Accept")
+            h["Accept"]
         self.assertEqual(h.get("Accept"), None)
         self.assertEqual(h.getlist("Accept"), [])
 
@@ -158,7 +158,7 @@ class HeadersTest(unittest.TestCase):
         with pytest.raises(TypeError, match="Unsupported value type"):
             Headers({"foo": object()})
         with pytest.raises(TypeError, match="Unsupported value type"):
-            Headers().__setitem__("foo", object())
+            Headers()["foo"] = object()
         with pytest.raises(TypeError, match="Unsupported value type"):
             Headers().setdefault("foo", object())
         with pytest.raises(TypeError, match="Unsupported value type"):
