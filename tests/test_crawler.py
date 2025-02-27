@@ -185,9 +185,8 @@ class CrawlerTestCase(BaseCrawlerTest):
 
     def test_get_downloader_middleware_not_crawling(self):
         crawler = get_raw_crawler(settings_dict=BASE_SETTINGS)
-        self.assertRaises(
-            RuntimeError, crawler.get_downloader_middleware, DefaultSpider
-        )
+        with pytest.raises(RuntimeError):
+            crawler.get_downloader_middleware(DefaultSpider)
 
     @inlineCallbacks
     def test_get_downloader_middleware_no_engine(self):
@@ -266,7 +265,8 @@ class CrawlerTestCase(BaseCrawlerTest):
 
     def test_get_extension_not_crawling(self):
         crawler = get_raw_crawler(settings_dict=BASE_SETTINGS)
-        self.assertRaises(RuntimeError, crawler.get_extension, DefaultSpider)
+        with pytest.raises(RuntimeError):
+            crawler.get_extension(DefaultSpider)
 
     @inlineCallbacks
     def test_get_extension_no_engine(self):
@@ -345,7 +345,8 @@ class CrawlerTestCase(BaseCrawlerTest):
 
     def test_get_item_pipeline_not_crawling(self):
         crawler = get_raw_crawler(settings_dict=BASE_SETTINGS)
-        self.assertRaises(RuntimeError, crawler.get_item_pipeline, DefaultSpider)
+        with pytest.raises(RuntimeError):
+            crawler.get_item_pipeline(DefaultSpider)
 
     @inlineCallbacks
     def test_get_item_pipeline_no_engine(self):
@@ -424,7 +425,8 @@ class CrawlerTestCase(BaseCrawlerTest):
 
     def test_get_spider_middleware_not_crawling(self):
         crawler = get_raw_crawler(settings_dict=BASE_SETTINGS)
-        self.assertRaises(RuntimeError, crawler.get_spider_middleware, DefaultSpider)
+        with pytest.raises(RuntimeError):
+            crawler.get_spider_middleware(DefaultSpider)
 
     @inlineCallbacks
     def test_get_spider_middleware_no_engine(self):
@@ -537,7 +539,8 @@ class CrawlerRunnerTestCase(BaseCrawlerTest):
                 "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
             }
         )
-        self.assertRaises(MultipleInvalid, CrawlerRunner, settings)
+        with pytest.raises(MultipleInvalid):
+            CrawlerRunner(settings)
 
     def test_crawler_runner_accepts_dict(self):
         runner = CrawlerRunner({"foo": "bar"})
@@ -630,13 +633,15 @@ class CrawlerRunnerHasSpider(unittest.TestCase):
                 }
             )
         else:
-            msg = r"The installed reactor \(.*?\) does not match the requested one \(.*?\)"
-            with self.assertRaisesRegex(Exception, msg):
-                runner = CrawlerRunner(
-                    settings={
-                        "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                    }
-                )
+            runner = CrawlerRunner(
+                settings={
+                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                }
+            )
+            with pytest.raises(
+                Exception,
+                match=r"The installed reactor \(.*?\) does not match the requested one \(.*?\)",
+            ):
                 yield runner.crawl(NoRequestsSpider)
 
 

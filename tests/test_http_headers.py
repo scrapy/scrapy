@@ -1,6 +1,8 @@
 import copy
 import unittest
 
+import pytest
+
 from scrapy.http import Headers
 
 
@@ -13,7 +15,8 @@ class HeadersTest(unittest.TestCase):
         assert h["Content-Type"]
         assert h["Content-Length"]
 
-        self.assertRaises(KeyError, h.__getitem__, "Accept")
+        with pytest.raises(KeyError):
+            h["Accept"]
         self.assertEqual(h.get("Accept"), None)
         self.assertEqual(h.getlist("Accept"), [])
 
@@ -152,15 +155,11 @@ class HeadersTest(unittest.TestCase):
         self.assertEqual(h1.getlist("hey"), [b"5"])
 
     def test_invalid_value(self):
-        self.assertRaisesRegex(
-            TypeError, "Unsupported value type", Headers, {"foo": object()}
-        )
-        self.assertRaisesRegex(
-            TypeError, "Unsupported value type", Headers().__setitem__, "foo", object()
-        )
-        self.assertRaisesRegex(
-            TypeError, "Unsupported value type", Headers().setdefault, "foo", object()
-        )
-        self.assertRaisesRegex(
-            TypeError, "Unsupported value type", Headers().setlist, "foo", [object()]
-        )
+        with pytest.raises(TypeError, match="Unsupported value type"):
+            Headers({"foo": object()})
+        with pytest.raises(TypeError, match="Unsupported value type"):
+            Headers()["foo"] = object()
+        with pytest.raises(TypeError, match="Unsupported value type"):
+            Headers().setdefault("foo", object())
+        with pytest.raises(TypeError, match="Unsupported value type"):
+            Headers().setlist("foo", [object()])

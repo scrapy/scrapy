@@ -87,8 +87,10 @@ class CaseInsensitiveDictMixin:
     def test_delete(self):
         d = self.dict_class({"key_lower": 1})
         del d["key_LOWER"]
-        self.assertRaises(KeyError, d.__getitem__, "key_LOWER")
-        self.assertRaises(KeyError, d.__getitem__, "key_lower")
+        with pytest.raises(KeyError):
+            d["key_LOWER"]
+        with pytest.raises(KeyError):
+            d["key_lower"]
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_getdefault(self):
@@ -138,7 +140,8 @@ class CaseInsensitiveDictMixin:
         d = self.dict_class()
         d["a"] = 1
         self.assertEqual(d.pop("A"), 1)
-        self.assertRaises(KeyError, d.pop, "A")
+        with pytest.raises(KeyError):
+            d.pop("A")
 
     def test_normkey(self):
         class MyDict(self.dict_class):
@@ -279,8 +282,8 @@ class SequenceExcludeTest(unittest.TestCase):
         self.assertIn(set("bar"), d)
 
         # supplied sequence is a set, so checking for list (non)inclusion fails
-        self.assertRaises(TypeError, (0, 1, 2) in d)
-        self.assertRaises(TypeError, d.__contains__, ["a", "b", "c"])
+        with pytest.raises(TypeError):
+            ["a", "b", "c"] in d  # noqa: B015
 
         for v in [-3, "test", 1.1]:
             self.assertNotIn(v, d)

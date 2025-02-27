@@ -1,6 +1,7 @@
 import pickle
 import sys
 
+import pytest
 from queuelib.tests import test_queue as t
 
 from scrapy.http import Request
@@ -30,10 +31,17 @@ class MyLoader(ItemLoader):
 
 def nonserializable_object_test(self):
     q = self.queue()
-    self.assertRaises(ValueError, q.push, lambda x: x)
+    with pytest.raises(
+        ValueError,
+        match="unmarshallable object|Can't (get|pickle) local object|Can't pickle .*: it's not found as",
+    ):
+        q.push(lambda x: x)
     # Selectors should fail (lxml.html.HtmlElement objects can't be pickled)
     sel = Selector(text="<html><body><p>some text</p></body></html>")
-    self.assertRaises(ValueError, q.push, sel)
+    with pytest.raises(
+        ValueError, match="unmarshallable object|can't pickle Selector objects"
+    ):
+        q.push(sel)
 
 
 class FifoDiskQueueTestMixin:

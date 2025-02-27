@@ -3,6 +3,8 @@ import unittest
 import warnings
 from unittest import mock
 
+import pytest
+
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.deprecate import create_deprecated_class, update_classpath
 
@@ -181,7 +183,8 @@ class WarnWhenSubclassedTest(unittest.TestCase):
         assert not issubclass(OutdatedUserClass1, OutdatedUserClass1a)
         assert not issubclass(OutdatedUserClass1a, OutdatedUserClass1)
 
-        self.assertRaises(TypeError, issubclass, object(), DeprecatedName)
+        with pytest.raises(TypeError):
+            issubclass(object(), DeprecatedName)
 
     def test_isinstance(self):
         with warnings.catch_warnings():

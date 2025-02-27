@@ -5,6 +5,8 @@ from typing import Any
 from unittest import TestCase
 from urllib.parse import urlparse
 
+import pytest
+
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
@@ -884,7 +886,7 @@ class TestSettingsPolicyByName(TestCase):
 
     def test_invalid_name(self):
         settings = Settings({"REFERRER_POLICY": "some-custom-unknown-policy"})
-        with self.assertRaises(RuntimeError):
+        with pytest.raises(RuntimeError):
             RefererMiddleware(settings)
 
     def test_multiple_policy_tokens(self):
@@ -925,7 +927,7 @@ class TestSettingsPolicyByName(TestCase):
                 )
             }
         )
-        with self.assertRaises(RuntimeError):
+        with pytest.raises(RuntimeError):
             RefererMiddleware(settings)
 
 

@@ -4,6 +4,7 @@ from logging import WARNING
 from pathlib import Path
 from unittest import SkipTest, TestCase
 
+import pytest
 from testfixtures import LogCapture
 from w3lib.encoding import resolve_encoding
 
@@ -87,11 +88,10 @@ class HttpCompressionTest(TestCase):
         )
 
     def test_setting_false_compression_enabled(self):
-        self.assertRaises(
-            NotConfigured,
-            HttpCompressionMiddleware.from_crawler,
-            get_crawler(settings_dict={"COMPRESSION_ENABLED": False}),
-        )
+        with pytest.raises(NotConfigured):
+            HttpCompressionMiddleware.from_crawler(
+                get_crawler(settings_dict={"COMPRESSION_ENABLED": False})
+            )
 
     def test_setting_default_compression_enabled(self):
         self.assertIsInstance(
@@ -520,13 +520,8 @@ class HttpCompressionTest(TestCase):
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")
-        self.assertRaises(
-            IgnoreRequest,
-            mw.process_response,
-            response.request,
-            response,
-            spider,
-        )
+        with pytest.raises(IgnoreRequest):
+            mw.process_response(response.request, response, spider)
 
     def test_compression_bomb_setting_br(self):
         try:
@@ -561,13 +556,8 @@ class HttpCompressionTest(TestCase):
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")
-        self.assertRaises(
-            IgnoreRequest,
-            mw.process_response,
-            response.request,
-            response,
-            spider,
-        )
+        with pytest.raises(IgnoreRequest):
+            mw.process_response(response.request, response, spider)
 
     def test_compression_bomb_spider_attr_br(self):
         try:
@@ -600,13 +590,8 @@ class HttpCompressionTest(TestCase):
 
         response = self._getresponse(f"bomb-{compression_id}")
         response.meta["download_maxsize"] = 10_000_000
-        self.assertRaises(
-            IgnoreRequest,
-            mw.process_response,
-            response.request,
-            response,
-            spider,
-        )
+        with pytest.raises(IgnoreRequest):
+            mw.process_response(response.request, response, spider)
 
     def test_compression_bomb_request_meta_br(self):
         try:

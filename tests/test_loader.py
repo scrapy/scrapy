@@ -4,6 +4,7 @@ import dataclasses
 import unittest
 
 import attr
+import pytest
 from itemadapter import ItemAdapter
 from itemloaders.processors import Compose, Identity, MapCompose, TakeFirst
 
@@ -69,7 +70,8 @@ def processor_with_args(value, other=None, loader_context=None):
 class BasicItemLoaderTest(unittest.TestCase):
     def test_add_value_on_unknown_field(self):
         il = ProcessorItemLoader()
-        self.assertRaises(KeyError, il.add_value, "wrong_field", ["lala", "lolo"])
+        with pytest.raises(KeyError):
+            il.add_value("wrong_field", ["lala", "lolo"])
 
     def test_load_item_using_default_loader(self):
         i = SummaryItem()
@@ -294,12 +296,18 @@ class SelectortemLoaderTest(unittest.TestCase):
 
     def test_init_method_errors(self):
         l = ProcessorItemLoader()
-        self.assertRaises(RuntimeError, l.add_xpath, "url", "//a/@href")
-        self.assertRaises(RuntimeError, l.replace_xpath, "url", "//a/@href")
-        self.assertRaises(RuntimeError, l.get_xpath, "//a/@href")
-        self.assertRaises(RuntimeError, l.add_css, "name", "#name::text")
-        self.assertRaises(RuntimeError, l.replace_css, "name", "#name::text")
-        self.assertRaises(RuntimeError, l.get_css, "#name::text")
+        with pytest.raises(RuntimeError):
+            l.add_xpath("url", "//a/@href")
+        with pytest.raises(RuntimeError):
+            l.replace_xpath("url", "//a/@href")
+        with pytest.raises(RuntimeError):
+            l.get_xpath("//a/@href")
+        with pytest.raises(RuntimeError):
+            l.add_css("name", "#name::text")
+        with pytest.raises(RuntimeError):
+            l.replace_css("name", "#name::text")
+        with pytest.raises(RuntimeError):
+            l.get_css("#name::text")
 
     def test_init_method_with_selector(self):
         sel = Selector(text="<html><body><div>marta</div></body></html>")

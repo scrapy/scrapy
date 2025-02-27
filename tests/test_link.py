@@ -1,5 +1,7 @@
 import unittest
 
+import pytest
+
 from scrapy.link import Link
 
 
@@ -53,5 +55,5 @@ class LinkTest(unittest.TestCase):
         self._assert_same_links(l1, l2)
 
     def test_bytes_url(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             Link(b"http://www.example.com/\xc2\xa3")

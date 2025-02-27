@@ -2,6 +2,8 @@ import unittest
 from abc import ABCMeta
 from unittest import mock
 
+import pytest
+
 from scrapy.item import Field, Item, ItemMeta
 
 
@@ -22,7 +24,8 @@ class ItemTest(unittest.TestCase):
             name = Field()
 
         i = TestItem()
-        self.assertRaises(KeyError, i.__getitem__, "name")
+        with pytest.raises(KeyError):
+            i["name"]
 
         i2 = TestItem(name="john doe")
         self.assertEqual(i2["name"], "john doe")
@@ -33,15 +36,18 @@ class ItemTest(unittest.TestCase):
         i4 = TestItem(i3)
         self.assertEqual(i4["name"], "john doe")
 
-        self.assertRaises(KeyError, TestItem, {"name": "john doe", "other": "foo"})
+        with pytest.raises(KeyError):
+            TestItem({"name": "john doe", "other": "foo"})
 
     def test_invalid_field(self):
         class TestItem(Item):
             pass
 
         i = TestItem()
-        self.assertRaises(KeyError, i.__setitem__, "field", "text")
-        self.assertRaises(KeyError, i.__getitem__, "field")
+        with pytest.raises(KeyError):
+            i["field"] = "text"
+        with pytest.raises(KeyError):
+            i["field"]
 
     def test_repr(self):
         class TestItem(Item):
@@ -72,14 +78,16 @@ class ItemTest(unittest.TestCase):
             name = Field()
 
         i = TestItem()
-        self.assertRaises(AttributeError, getattr, i, "name")
+        with pytest.raises(AttributeError):
+            i.name
 
     def test_raise_setattr(self):
         class TestItem(Item):
             name = Field()
 
         i = TestItem()
-        self.assertRaises(AttributeError, setattr, i, "name", "john")
+        with pytest.raises(AttributeError):
+            i.name = "john"
 
     def test_custom_methods(self):
         class TestItem(Item):
@@ -92,7 +100,8 @@ class ItemTest(unittest.TestCase):
                 self["name"] = name
 
         i = TestItem()
-        self.assertRaises(KeyError, i.get_name)
+        with pytest.raises(KeyError):
+            i.get_name()
         i["name"] = "lala"
         self.assertEqual(i.get_name(), "lala")
         i.change_name("other")
@@ -223,7 +232,8 @@ class ItemTest(unittest.TestCase):
         class D(B, C):
             pass
 
-        self.assertRaises(KeyError, D, not_allowed="value")
+        with pytest.raises(KeyError):
+            D(not_allowed="value")
         self.assertEqual(D(save="X")["save"], "X")
         self.assertEqual(D.fields, {"save": {"default": "A"}, "load": {"default": "A"}})
 
@@ -231,7 +241,8 @@ class ItemTest(unittest.TestCase):
         class E(C, B):
             pass
 
-        self.assertRaises(KeyError, E, not_allowed="value")
+        with pytest.raises(KeyError):
+            E(not_allowed="value")
         self.assertEqual(E(save="X")["save"], "X")
         self.assertEqual(E.fields, {"save": {"default": "A"}, "load": {"default": "A"}})
 

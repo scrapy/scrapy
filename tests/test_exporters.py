@@ -10,6 +10,7 @@ from io import BytesIO
 from typing import Any
 
 import lxml.etree
+import pytest
 from itemadapter import ItemAdapter
 
 from scrapy.exporters import (
@@ -147,7 +148,7 @@ class PythonItemExporterTest(BaseItemExporterTest):
         return PythonItemExporter(**kwargs)
 
     def test_invalid_option(self):
-        with self.assertRaisesRegex(TypeError, "Unexpected options: invalid_option"):
+        with pytest.raises(TypeError, match="Unexpected options: invalid_option"):
             PythonItemExporter(invalid_option="something")
 
     def test_nested_item(self):
@@ -388,7 +389,7 @@ class CsvItemExporterTest(BaseItemExporterTest):
         )
 
     def test_errors_default(self):
-        with self.assertRaises(UnicodeEncodeError):
+        with pytest.raises(UnicodeEncodeError):
             self.assertExportResult(
                 item={"text": "W\u0275\u200brd"},
                 expected=None,
@@ -549,7 +550,8 @@ class JsonLinesItemExporterTest(BaseItemExporterTest):
         self.ie = self._get_exporter(sort_keys=True)
         self.test_export_item()
         self._check_output()
-        self.assertRaises(TypeError, self._get_exporter, foo_unknown_keyword_bar=True)
+        with pytest.raises(TypeError):
+            self._get_exporter(foo_unknown_keyword_bar=True)
 
     def test_nonstring_types_item(self):
         item = self._get_nonstring_types_item()
@@ -602,7 +604,8 @@ class JsonItemExporterTest(JsonLinesItemExporterTest):
         i3 = MyItem(name="Jesus", age="44")
         self.ie.start_exporting()
         self.ie.export_item(i1)
-        self.assertRaises(TypeError, self.ie.export_item, i2)
+        with pytest.raises(TypeError):
+            self.ie.export_item(i2)
         self.ie.export_item(i3)
         self.ie.finish_exporting()
         exported = json.loads(to_unicode(self.output.getvalue()))
@@ -657,7 +660,8 @@ class JsonItemExporterToBytesTest(BaseItemExporterTest):
         i3 = MyItem(name="Jesus", age="44")
         self.ie.start_exporting()
         self.ie.export_item(i1)
-        self.assertRaises(UnicodeEncodeError, self.ie.export_item, i2)
+        with pytest.raises(UnicodeEncodeError):
+            self.ie.export_item(i2)
         self.ie.export_item(i3)
         self.ie.finish_exporting()
         exported = json.loads(to_unicode(self.output.getvalue(), encoding="latin"))
