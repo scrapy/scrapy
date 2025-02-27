@@ -45,7 +45,7 @@ class OffsiteMiddleware(BaseSpiderMiddleware):
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
 
-    def _process_request(
+    def get_processed_request(
         self, request: Request, response: Response, spider: Spider
     ) -> Request | None:
         if (

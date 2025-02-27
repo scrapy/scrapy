@@ -50,7 +50,7 @@ class UrlLengthMiddleware(BaseSpiderMiddleware):
             raise NotConfigured
         return cls(maxlength)
 
-    def _process_request(
+    def get_processed_request(
         self, request: Request, response: Response, spider: Spider
     ) -> Request | None:
         if len(request.url) <= self.maxlength:

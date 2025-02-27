@@ -369,7 +369,7 @@ class RefererMiddleware(BaseSpiderMiddleware):
         cls = _load_policy_class(policy_name, warning_only=True)
         return cls() if cls else self.default_policy()
 
-    def _process_request(
+    def get_processed_request(
         self, request: Request, response: Response, spider: Spider
     ) -> Request | None:
         referrer = self.policy(response, request).referrer(response.url, request.url)
