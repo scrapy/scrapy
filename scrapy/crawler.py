@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
 
     from scrapy.logformatter import LogFormatter
-    from scrapy.spiderloader import SpiderLoader
+    from scrapy.spiderloader import SpiderLoaderProtocol
     from scrapy.statscollectors import StatsCollector
     from scrapy.utils.request import RequestFingerprinterProtocol
 
@@ -282,19 +282,21 @@ class CrawlerRunner:
     )
 
     @staticmethod
-    def _get_spider_loader(settings: BaseSettings) -> SpiderLoader:
+    def _get_spider_loader(settings: BaseSettings) -> SpiderLoaderProtocol:
         """Get SpiderLoader instance from settings"""
         cls_path = settings.get("SPIDER_LOADER_CLASS")
         loader_cls = load_object(cls_path)
         verifyClass(ISpiderLoader, loader_cls)
-        return cast("SpiderLoader", loader_cls.from_settings(settings.frozencopy()))
+        return cast(
+            "SpiderLoaderProtocol", loader_cls.from_settings(settings.frozencopy())
+        )
 
     def __init__(self, settings: dict[str, Any] | Settings | None = None):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         AddonManager.load_pre_crawler_settings(settings)
         self.settings: Settings = settings
-        self.spider_loader: SpiderLoader = self._get_spider_loader(settings)
+        self.spider_loader: SpiderLoaderProtocol = self._get_spider_loader(settings)
         self._crawlers: set[Crawler] = set()
         self._active: set[Deferred[None]] = set()
         self.bootstrap_failed = False

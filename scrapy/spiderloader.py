@@ -3,7 +3,7 @@ from __future__ import annotations
 import traceback
 import warnings
 from collections import defaultdict
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from zope.interface import implementer
 
@@ -19,6 +19,23 @@ if TYPE_CHECKING:
 
     from scrapy import Request, Spider
     from scrapy.settings import BaseSettings
+
+
+class SpiderLoaderProtocol(Protocol):
+    @classmethod
+    def from_settings(cls, settings: BaseSettings) -> Self:
+        """Return an instance of the class for the given settings"""
+
+    def load(self, spider_name: str) -> type[Spider]:
+        """Return the Spider class for the given spider name. If the spider
+        name is not found, it must raise a KeyError."""
+
+    def list(self) -> list[str]:
+        """Return a list with the names of all spiders available in the
+        project"""
+
+    def find_by_request(self, request: Request) -> __builtins__.list[str]:
+        """Return the list of spiders names that can handle the given request"""
 
 
 @implementer(ISpiderLoader)
