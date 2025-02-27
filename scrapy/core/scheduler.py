@@ -5,10 +5,12 @@ import logging
 from abc import abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
+from warnings import warn
 
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
 from twisted.internet.defer import Deferred  # noqa: TC002
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.spiders import Spider  # noqa: TC001
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
@@ -141,6 +143,29 @@ class Scheduler(BaseScheduler):
     queue if a serialization error occurs. If the disk queue is not present, the memory one
     is used directly.
 
+    Requests with the :reqmeta:`request_delay` request metadata key are stored
+    into a separate queue, of type :setting:`SCHEDULER_DELAY_QUEUE` and backed
+    by memory queues (:setting:`SCHEDULER_MEMORY_QUEUE`), and scheduled onto
+    the scheduler priority queues when their delay time passes (which is
+    checked at the beginning of every call to :meth:`next_request`).
+
+    Once the delay time of a request passes, the order in which the request
+    leaves the scheduler follows the same rules as any other request:
+
+    -   There is no guarantee that a delayed request will leave the scheduler
+        before a request without a delay.
+
+    -   There is no guarantee that requests delayed for a longer time will
+        leave the scheduler later. It is technically possible that, given a
+        request A delayed 1 second and a request B delayed 2 seconds, request B
+        leaves the scheduler earlier.
+
+    :setting:`SCHEDULER_PRIORITY_QUEUE` determines how you can influence the
+    order of requests, but you can usually rely on request priority. For
+    example, if you wish delayed request to leave the scheduler before other
+    requests, use :setting:`DELAY_PRIORITY_ADJUST` or manually increase the
+    priority of delayed requests.
+
     :param dupefilter: An object responsible for checking and filtering duplicate requests.
                        The value for the :setting:`DUPEFILTER_CLASS` setting is used by default.
     :type dupefilter: :class:`scrapy.dupefilters.BaseDupeFilter` instance or similar:
@@ -174,6 +199,10 @@ class Scheduler(BaseScheduler):
 
     :param crawler: The crawler object corresponding to the current crawl.
     :type crawler: :class:`scrapy.crawler.Crawler`
+
+    :param dpqclass: A class to store delayed requests.
+                     The value for the :setting:`SCHEDULER_DELAY_QUEUE` setting is used by default.
+    :type dpqclass: class
     """
 
     def __init__(
@@ -186,10 +215,15 @@ class Scheduler(BaseScheduler):
         stats: StatsCollector | None = None,
         pqclass: type[ScrapyPriorityQueue] | None = None,
         crawler: Crawler | None = None,
+        *,
+        delay_priority_adjust: int = 0,
+        dpqclass: type[ScrapyPriorityQueue] | None = None,
     ):
+        self.delay_priority_adjust = delay_priority_adjust
         self.df: BaseDupeFilter = dupefilter
         self.dqdir: str | None = self._dqdir(jobdir)
         self.pqclass: type[ScrapyPriorityQueue] | None = pqclass
+        self.dpqclass: type[ScrapyPriorityQueue] | None = dpqclass
         self.dqclass: type[BaseQueue] | None = dqclass
         self.mqclass: type[BaseQueue] | None = mqclass
         self.logunser: bool = logunser
@@ -202,16 +236,39 @@ class Scheduler(BaseScheduler):
         Factory method, initializes the scheduler with arguments taken from the crawl settings
         """
         dupefilter_cls = load_object(crawler.settings["DUPEFILTER_CLASS"])
-        return cls(
-            dupefilter=build_from_crawler(dupefilter_cls, crawler),
-            jobdir=job_dir(crawler.settings),
-            dqclass=load_object(crawler.settings["SCHEDULER_DISK_QUEUE"]),
-            mqclass=load_object(crawler.settings["SCHEDULER_MEMORY_QUEUE"]),
-            logunser=crawler.settings.getbool("SCHEDULER_DEBUG"),
-            stats=crawler.stats,
-            pqclass=load_object(crawler.settings["SCHEDULER_PRIORITY_QUEUE"]),
-            crawler=crawler,
-        )
+        dupefilter = build_from_crawler(dupefilter_cls, crawler)
+        pqclass = load_object(crawler.settings["SCHEDULER_PRIORITY_QUEUE"])
+        dpa = crawler.settings.getint("DELAY_PRIORITY_ADJUST")
+        kwargs = {
+            "dupefilter": dupefilter,
+            "jobdir": job_dir(crawler.settings),
+            "dqclass": load_object(crawler.settings["SCHEDULER_DISK_QUEUE"]),
+            "mqclass": load_object(crawler.settings["SCHEDULER_MEMORY_QUEUE"]),
+            "logunser": crawler.settings.getbool("SCHEDULER_DEBUG"),
+            "stats": crawler.stats,
+            "pqclass": pqclass,
+            "crawler": crawler,
+            "delay_priority_adjust": dpa,
+            "dpqclass": load_object(crawler.settings["SCHEDULER_DELAY_QUEUE"]),
+        }
+        try:
+            return cls(**kwargs)
+        except TypeError:
+            warn(
+                (
+                    f"The scheduler class "
+                    f"{cls.__module__}.{cls.__qualname__} does not "
+                    f"support the 'delay_priority_adjust' or 'dpqclass' "
+                    "keyword arguments."
+                ),
+                ScrapyDeprecationWarning,
+            )
+            delay_priority_adjust = kwargs.pop("delay_priority_adjust")
+            dpqclass = kwargs.pop("dpqclass")
+            scheduler = cls(**kwargs)
+            scheduler.delay_priority_adjust = delay_priority_adjust
+            scheduler.dpqclass = dpqclass
+            return scheduler
 
     def has_pending_requests(self) -> bool:
         return len(self) > 0
@@ -225,6 +282,7 @@ class Scheduler(BaseScheduler):
         self.spider: Spider = spider
         self.mqs: ScrapyPriorityQueue = self._mq()
         self.dqs: ScrapyPriorityQueue | None = self._dq() if self.dqdir else None
+        self.dpqs = self._dpq()
         return self.df.open()
 
     def close(self, reason: str) -> Deferred[None] | None:
@@ -238,19 +296,7 @@ class Scheduler(BaseScheduler):
             self._write_dqs_state(self.dqdir, state)
         return self.df.close(reason)
 
-    def enqueue_request(self, request: Request) -> bool:
-        """
-        Unless the received request is filtered out by the Dupefilter, attempt to push
-        it into the disk queue, falling back to pushing it into the memory queue.
-
-        Increment the appropriate stats, such as: ``scheduler/enqueued``,
-        ``scheduler/enqueued/disk``, ``scheduler/enqueued/memory``.
-
-        Return ``True`` if the request was stored successfully, ``False`` otherwise.
-        """
-        if not request.dont_filter and self.df.request_seen(request):
-            self.df.log(request, self.spider)
-            return False
+    def _enqueue_request(self, request: Request) -> None:
         dqok = self._dqpush(request)
         assert self.stats is not None
         if dqok:
@@ -258,6 +304,48 @@ class Scheduler(BaseScheduler):
         else:
             self._mqpush(request)
             self.stats.inc_value("scheduler/enqueued/memory", spider=self.spider)
+
+    def enqueue_request(self, request: Request) -> bool:
+        """Store *request*.
+
+        Stored requests can be extracted through :meth:`next_request`.
+
+        If the :attr:`~scrapy.Request.dont_filter` attribute of *request* is
+        not ``True``, and the duplicate filter determines that *request* is a
+        duplicate of a previously-seen request, *request* is not stored and
+        ``False`` is returned. The ``dupefilter/filtered``
+        :ref:`stat <topics-stats>` accounts for these requests when the
+        duplicate filter class is :class:`scrapy.dupefilters.RFPDupeFilter`.
+
+        Otherwise, ``True`` is returned, the ``scheduler/enqueued`` stat is
+        increased, and *request* is stored in one of the following internal
+        queues:
+
+        -   If the request metadata contains :reqmeta:`request_delay`,
+            *request* is stored in the internal queue for delayed requests,
+            and the ``scheduler/enqueued/delayed/memory`` stat is increased.
+
+        -   Otherwise, *request* is stored in the internal disk-based priority
+            queue, if any, and the ``scheduler/enqueued/disk`` stat is
+            increased.
+
+        -   If there is no internal disk-based priority queue, or the
+            serialization of *request* fails, *request* is stored in the
+            internal memory-based priority queue instead, and the
+            ``scheduler/enqueued/memory`` stat is increased.
+        """
+        if not request.dont_filter and self.df.request_seen(request):
+            self.df.log(request, self.spider)
+            return False
+        assert self.stats is not None
+        if request.meta.get("request_delay"):
+            self._dpqpush(request)
+            self.stats.inc_value(
+                "scheduler/enqueued/delayed/memory", spider=self.spider
+            )
+            self.stats.inc_value("scheduler/enqueued", spider=self.spider)
+            return True
+        self._enqueue_request(request)
         self.stats.inc_value("scheduler/enqueued", spider=self.spider)
         return True
 
@@ -270,8 +358,16 @@ class Scheduler(BaseScheduler):
         Increment the appropriate stats, such as: ``scheduler/dequeued``,
         ``scheduler/dequeued/disk``, ``scheduler/dequeued/memory``.
         """
-        request: Request | None = self.mqs.pop()
+
+        delayed_request: Request | None = self.dpqs.pop()
         assert self.stats is not None
+        if delayed_request:
+            self.stats.inc_value(
+                "scheduler/dequeued/delayed/memory", spider=self.spider
+            )
+            delayed_request.priority += self.delay_priority_adjust
+            self._enqueue_request(delayed_request)
+        request: Request | None = self.mqs.pop()
         if request is not None:
             self.stats.inc_value("scheduler/dequeued/memory", spider=self.spider)
         else:
@@ -286,7 +382,11 @@ class Scheduler(BaseScheduler):
         """
         Return the total amount of enqueued requests
         """
-        return len(self.dqs) + len(self.mqs) if self.dqs is not None else len(self.mqs)
+        return (
+            len(self.dqs) + len(self.mqs) + len(self.dpqs)
+            if self.dqs is not None
+            else len(self.mqs) + len(self.dpqs)
+        )
 
     def _dqpush(self, request: Request) -> bool:
         if self.dqs is None:
@@ -314,6 +414,9 @@ class Scheduler(BaseScheduler):
 
     def _mqpush(self, request: Request) -> None:
         self.mqs.push(request)
+
+    def _dpqpush(self, request: Request) -> None:
+        self.dpqs.push(request)
 
     def _dqpop(self) -> Request | None:
         if self.dqs is not None:
@@ -351,6 +454,17 @@ class Scheduler(BaseScheduler):
                 extra={"spider": self.spider},
             )
         return q
+
+    def _dpq(self) -> ScrapyPriorityQueue:
+        """Create a new delayed requests priority queue instance, with in-memory storage"""
+        assert self.crawler
+        assert self.dpqclass
+        return build_from_crawler(
+            self.dpqclass,
+            self.crawler,
+            downstream_queue_cls=self.mqclass,
+            key="",
+        )
 
     def _dqdir(self, jobdir: str | None) -> str | None:
         """Return a folder name to keep disk queue state at"""
