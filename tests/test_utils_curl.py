@@ -1,4 +1,3 @@
-import unittest
 import warnings
 
 import pytest
@@ -8,16 +7,16 @@ from scrapy import Request
 from scrapy.utils.curl import curl_to_request_kwargs
 
 
-class CurlToRequestKwargsTest(unittest.TestCase):
+class TestCurlToRequestKwargs:
     maxDiff = 5000
 
     def _test_command(self, curl_command, expected_result):
         result = curl_to_request_kwargs(curl_command)
-        self.assertEqual(result, expected_result)
+        assert result == expected_result
         try:
             Request(**result)
         except TypeError as e:
-            self.fail(f"Request kwargs are not correct {e}")
+            pytest.fail(f"Request kwargs are not correct {e}")
 
     def test_get(self):
         curl_command = "curl http://example.org/"
@@ -203,7 +202,7 @@ class CurlToRequestKwargsTest(unittest.TestCase):
     def test_get_silent(self):
         curl_command = 'curl --silent "www.example.com"'
         expected_result = {"method": "GET", "url": "http://www.example.com"}
-        self.assertEqual(curl_to_request_kwargs(curl_command), expected_result)
+        assert curl_to_request_kwargs(curl_command) == expected_result
 
     def test_too_few_arguments_error(self):
         with pytest.raises(
@@ -218,7 +217,7 @@ class CurlToRequestKwargsTest(unittest.TestCase):
             warnings.simplefilter("ignore")
             curl_command = "curl --bar --baz http://www.example.com"
             expected_result = {"method": "GET", "url": "http://www.example.com"}
-            self.assertEqual(curl_to_request_kwargs(curl_command), expected_result)
+            assert curl_to_request_kwargs(curl_command) == expected_result
 
         # case 2: ignore_unknown_options=False (raise exception):
         with pytest.raises(ValueError, match="Unrecognized options:.*--bar.*--baz"):

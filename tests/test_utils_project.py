@@ -2,7 +2,6 @@ import contextlib
 import os
 import shutil
 import tempfile
-import unittest
 import warnings
 from pathlib import Path
 
@@ -25,21 +24,21 @@ def inside_a_project():
         shutil.rmtree(project_dir)
 
 
-class ProjectUtilsTest(unittest.TestCase):
+class TestProjectUtils:
     def test_data_path_outside_project(self):
-        self.assertEqual(str(Path(".scrapy", "somepath")), data_path("somepath"))
+        assert str(Path(".scrapy", "somepath")) == data_path("somepath")
         abspath = str(Path(os.path.sep, "absolute", "path"))
-        self.assertEqual(abspath, data_path(abspath))
+        assert abspath == data_path(abspath)
 
     def test_data_path_inside_project(self):
         with inside_a_project() as proj_path:
             expected = Path(proj_path, ".scrapy", "somepath")
-            self.assertEqual(expected.resolve(), Path(data_path("somepath")).resolve())
+            assert expected.resolve() == Path(data_path("somepath")).resolve()
             abspath = str(Path(os.path.sep, "absolute", "path").resolve())
-            self.assertEqual(abspath, data_path(abspath))
+            assert abspath == data_path(abspath)
 
 
-class GetProjectSettingsTestCase(unittest.TestCase):
+class TestGetProjectSettings:
     def test_valid_envvar(self):
         value = "tests.test_cmdline.settings"
         envvars = {

@@ -18,7 +18,7 @@ from scrapy.utils.defer import (
 )
 
 
-class MustbeDeferredTest(unittest.TestCase):
+class TestMustbeDeferred(unittest.TestCase):
     def test_success_function(self):
         steps = []
 
@@ -66,23 +66,19 @@ def eb1(failure, arg1, arg2):
     return f"(eb1 {failure.value.__class__.__name__} {arg1} {arg2})"
 
 
-class DeferUtilsTest(unittest.TestCase):
+class TestDeferUtils(unittest.TestCase):
     @defer.inlineCallbacks
     def test_process_chain(self):
         x = yield process_chain([cb1, cb2, cb3], "res", "v1", "v2")
-        self.assertEqual(x, "(cb3 (cb2 (cb1 res v1 v2) v1 v2) v1 v2)")
+        assert x == "(cb3 (cb2 (cb1 res v1 v2) v1 v2) v1 v2)"
 
-        gotexc = False
-        try:
+        with pytest.raises(TypeError):
             yield process_chain([cb1, cb_fail, cb3], "res", "v1", "v2")
-        except TypeError:
-            gotexc = True
-        self.assertTrue(gotexc)
 
     @defer.inlineCallbacks
     def test_process_parallel(self):
         x = yield process_parallel([cb1, cb2, cb3], "res", "v1", "v2")
-        self.assertEqual(x, ["(cb1 res v1 v2)", "(cb2 res v1 v2)", "(cb3 res v1 v2)"])
+        assert x == ["(cb1 res v1 v2)", "(cb2 res v1 v2)", "(cb3 res v1 v2)"]
 
     def test_process_parallel_failure(self):
         d = process_parallel([cb1, cb_fail, cb3], "res", "v1", "v2")
@@ -90,15 +86,15 @@ class DeferUtilsTest(unittest.TestCase):
         return d
 
 
-class IterErrbackTest(unittest.TestCase):
+class TestIterErrback:
     def test_iter_errback_good(self):
         def itergood():
             yield from range(10)
 
         errors = []
         out = list(iter_errback(itergood(), errors.append))
-        self.assertEqual(out, list(range(10)))
-        self.assertFalse(errors)
+        assert out == list(range(10))
+        assert not errors
 
     def test_iter_errback_bad(self):
         def iterbad():
@@ -109,12 +105,12 @@ class IterErrbackTest(unittest.TestCase):
 
         errors = []
         out = list(iter_errback(iterbad(), errors.append))
-        self.assertEqual(out, [0, 1, 2, 3, 4])
-        self.assertEqual(len(errors), 1)
-        self.assertIsInstance(errors[0].value, ZeroDivisionError)
+        assert out == [0, 1, 2, 3, 4]
+        assert len(errors) == 1
+        assert isinstance(errors[0].value, ZeroDivisionError)
 
 
-class AiterErrbackTest(unittest.TestCase):
+class TestAiterErrback(unittest.TestCase):
     @deferred_f_from_coro_f
     async def test_aiter_errback_good(self):
         async def itergood():
@@ -123,8 +119,8 @@ class AiterErrbackTest(unittest.TestCase):
 
         errors = []
         out = await collect_asyncgen(aiter_errback(itergood(), errors.append))
-        self.assertEqual(out, list(range(10)))
-        self.assertFalse(errors)
+        assert out == list(range(10))
+        assert not errors
 
     @deferred_f_from_coro_f
     async def test_iter_errback_bad(self):
@@ -136,12 +132,12 @@ class AiterErrbackTest(unittest.TestCase):
 
         errors = []
         out = await collect_asyncgen(aiter_errback(iterbad(), errors.append))
-        self.assertEqual(out, [0, 1, 2, 3, 4])
-        self.assertEqual(len(errors), 1)
-        self.assertIsInstance(errors[0].value, ZeroDivisionError)
+        assert out == [0, 1, 2, 3, 4]
+        assert len(errors) == 1
+        assert isinstance(errors[0].value, ZeroDivisionError)
 
 
-class AsyncDefTestsuiteTest(unittest.TestCase):
+class TestAsyncDefTestsuite(unittest.TestCase):
     @deferred_f_from_coro_f
     async def test_deferred_f_from_coro_f(self):
         pass
@@ -156,7 +152,7 @@ class AsyncDefTestsuiteTest(unittest.TestCase):
         raise RuntimeError("This is expected to be raised")
 
 
-class AsyncCooperatorTest(unittest.TestCase):
+class TestAsyncCooperator(unittest.TestCase):
     """This tests _AsyncCooperatorAdapter by testing parallel_async which is its only usage.
 
     parallel_async is called with the results of a callback (so an iterable of items, requests and None,
@@ -207,7 +203,7 @@ class AsyncCooperatorTest(unittest.TestCase):
             ait = self.get_async_iterable(length)
             dl = parallel_async(ait, self.CONCURRENT_ITEMS, self.callable, results)
             yield dl
-            self.assertEqual(list(range(length)), sorted(results))
+            assert list(range(length)) == sorted(results)
 
     @defer.inlineCallbacks
     def test_delays(self):
@@ -216,4 +212,4 @@ class AsyncCooperatorTest(unittest.TestCase):
             ait = self.get_async_iterable_with_delays(length)
             dl = parallel_async(ait, self.CONCURRENT_ITEMS, self.callable, results)
             yield dl
-            self.assertEqual(list(range(length)), sorted(results))
+            assert list(range(length)) == sorted(results)

@@ -1,10 +1,10 @@
 from io import StringIO
-from unittest import TestCase, mock
+from unittest import mock
 
 from scrapy.utils.display import pformat, pprint
 
 
-class TestDisplay(TestCase):
+class TestDisplay:
     object = {"a": 1}
     colorized_strings = {
         (
@@ -26,15 +26,15 @@ class TestDisplay(TestCase):
     @mock.patch("sys.stdout.isatty")
     def test_pformat(self, isatty):
         isatty.return_value = True
-        self.assertIn(pformat(self.object), self.colorized_strings)
+        assert pformat(self.object) in self.colorized_strings
 
     @mock.patch("sys.stdout.isatty")
     def test_pformat_dont_colorize(self, isatty):
         isatty.return_value = True
-        self.assertEqual(pformat(self.object, colorize=False), self.plain_string)
+        assert pformat(self.object, colorize=False) == self.plain_string
 
     def test_pformat_not_tty(self):
-        self.assertEqual(pformat(self.object), self.plain_string)
+        assert pformat(self.object) == self.plain_string
 
     @mock.patch("sys.platform", "win32")
     @mock.patch("platform.version")
@@ -42,7 +42,7 @@ class TestDisplay(TestCase):
     def test_pformat_old_windows(self, isatty, version):
         isatty.return_value = True
         version.return_value = "10.0.14392"
-        self.assertIn(pformat(self.object), self.colorized_strings)
+        assert pformat(self.object) in self.colorized_strings
 
     @mock.patch("sys.platform", "win32")
     @mock.patch("scrapy.utils.display._enable_windows_terminal_processing")
@@ -54,7 +54,7 @@ class TestDisplay(TestCase):
         isatty.return_value = True
         version.return_value = "10.0.14393"
         terminal_processing.return_value = False
-        self.assertEqual(pformat(self.object), self.plain_string)
+        assert pformat(self.object) == self.plain_string
 
     @mock.patch("sys.platform", "win32")
     @mock.patch("scrapy.utils.display._enable_windows_terminal_processing")
@@ -64,7 +64,7 @@ class TestDisplay(TestCase):
         isatty.return_value = True
         version.return_value = "10.0.14393"
         terminal_processing.return_value = True
-        self.assertIn(pformat(self.object), self.colorized_strings)
+        assert pformat(self.object) in self.colorized_strings
 
     @mock.patch("sys.platform", "linux")
     @mock.patch("sys.stdout.isatty")
@@ -81,10 +81,10 @@ class TestDisplay(TestCase):
             return real_import(name, globals, locals, fromlist, level)
 
         builtins.__import__ = mock_import
-        self.assertEqual(pformat(self.object), self.plain_string)
+        assert pformat(self.object) == self.plain_string
         builtins.__import__ = real_import
 
     def test_pprint(self):
         with mock.patch("sys.stdout", new=StringIO()) as mock_out:
             pprint(self.object)
-            self.assertEqual(mock_out.getvalue(), "{'a': 1}\n")
+            assert mock_out.getvalue() == "{'a': 1}\n"
