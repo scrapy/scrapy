@@ -34,11 +34,23 @@ _T = TypeVar("_T")
 
 
 def assert_gcs_environ() -> None:
+    warnings.warn(
+        "The assert_gcs_environ() function is deprecated and will be removed in a future version of Scrapy."
+        " Check GCS_PROJECT_ID directly.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     if "GCS_PROJECT_ID" not in os.environ:
         raise SkipTest("GCS_PROJECT_ID not found")
 
 
 def skip_if_no_boto() -> None:
+    warnings.warn(
+        "The skip_if_no_boto() function is deprecated and will be removed in a future version of Scrapy."
+        " Check scrapy.utils.boto.is_botocore_available() directly.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     if not is_botocore_available():
         raise SkipTest("missing botocore library")
 
@@ -48,6 +60,11 @@ def get_gcs_content_and_delete(
 ) -> tuple[bytes, list[dict[str, str]], Any]:
     from google.cloud import storage
 
+    warnings.warn(
+        "The get_gcs_content_and_delete() function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     client = storage.Client(project=os.environ.get("GCS_PROJECT_ID"))
     bucket = client.get_bucket(bucket)
     blob = bucket.get_blob(path)
@@ -67,6 +84,11 @@ def get_ftp_content_and_delete(
 ) -> bytes:
     from ftplib import FTP
 
+    warnings.warn(
+        "The get_ftp_content_and_delete() function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     ftp = FTP()
     ftp.connect(host, port)
     ftp.login(username, password)
@@ -149,6 +171,12 @@ def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
     classes and set their proper return values.
     """
     from google.cloud.storage import Blob, Bucket, Client
+
+    warnings.warn(
+        "The mock_google_cloud_storage() function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
 
     client_mock = mock.create_autospec(Client)
 

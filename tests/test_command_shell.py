@@ -7,10 +7,10 @@ from pexpect.popen_spawn import PopenSpawn
 from twisted.internet import defer
 from twisted.trial import unittest
 
-from scrapy.utils.testproc import ProcessTest
-from scrapy.utils.testsite import SiteTest
 from tests import NON_EXISTING_RESOLVABLE, tests_datadir
 from tests.mockserver import MockServer
+from tests.utils.testproc import ProcessTest
+from tests.utils.testsite import SiteTest
 
 
 class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
