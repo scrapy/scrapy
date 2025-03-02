@@ -432,6 +432,7 @@ Default: ``{}``
 A dictionary in which every key is a feed URI (or a :class:`pathlib.Path`
 object) and each value is a nested dictionary containing configuration
 parameters for the specific feed.
+Currently, using placeholders in :class:`pathlib.Path` object as feed URI is not supported.
 
 This setting is required for enabling the feed export feature.
 
