@@ -33,6 +33,9 @@ jobs:
         - python-version: pypy3.10
           env:
             TOXENV: pypy3
+        - python-version: pypy3.11
+          env:
+            TOXENV: pypy3
 
         # pinned deps
         - python-version: 3.9.19
@@ -54,7 +57,7 @@ jobs:
         - python-version: "3.13"
           env:
             TOXENV: extra-deps
-        - python-version: pypy3.10
+        - python-version: pypy3.11
           env:
             TOXENV: pypy3-extra-deps
         - python-version: "3.13"
