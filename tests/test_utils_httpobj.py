@@ -1,11 +1,10 @@
-import unittest
 from urllib.parse import urlparse
 
 from scrapy.http import Request
 from scrapy.utils.httpobj import urlparse_cached
 
 
-class HttpobjUtilsTest(unittest.TestCase):
+class TestHttpobjUtils:
     def test_urlparse_cached(self):
         url = "http://www.example.com/index.html"
         request1 = Request(url)

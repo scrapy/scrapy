@@ -1,9 +1,7 @@
-import unittest
-
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
 
 
-class SitemapTest(unittest.TestCase):
+class TestSitemap:
     def test_sitemap(self):
         s = Sitemap(
             b"""<?xml version="1.0" encoding="UTF-8"?>
@@ -23,23 +21,20 @@ class SitemapTest(unittest.TestCase):
 </urlset>"""
         )
         assert s.type == "urlset"
-        self.assertEqual(
-            list(s),
-            [
-                {
-                    "priority": "1",
-                    "loc": "http://www.example.com/",
-                    "lastmod": "2009-08-16",
-                    "changefreq": "daily",
-                },
-                {
-                    "priority": "0.8",
-                    "loc": "http://www.example.com/Special-Offers.html",
-                    "lastmod": "2009-08-16",
-                    "changefreq": "weekly",
-                },
-            ],
-        )
+        assert list(s) == [
+            {
+                "priority": "1",
+                "loc": "http://www.example.com/",
+                "lastmod": "2009-08-16",
+                "changefreq": "daily",
+            },
+            {
+                "priority": "0.8",
+                "loc": "http://www.example.com/Special-Offers.html",
+                "lastmod": "2009-08-16",
+                "changefreq": "weekly",
+            },
+        ]
 
     def test_sitemap_index(self):
         s = Sitemap(
@@ -56,19 +51,16 @@ class SitemapTest(unittest.TestCase):
 </sitemapindex>"""
         )
         assert s.type == "sitemapindex"
-        self.assertEqual(
-            list(s),
-            [
-                {
-                    "loc": "http://www.example.com/sitemap1.xml.gz",
-                    "lastmod": "2004-10-01T18:23:17+00:00",
-                },
-                {
-                    "loc": "http://www.example.com/sitemap2.xml.gz",
-                    "lastmod": "2005-01-01",
-                },
-            ],
-        )
+        assert list(s) == [
+            {
+                "loc": "http://www.example.com/sitemap1.xml.gz",
+                "lastmod": "2004-10-01T18:23:17+00:00",
+            },
+            {
+                "loc": "http://www.example.com/sitemap2.xml.gz",
+                "lastmod": "2005-01-01",
+            },
+        ]
 
     def test_sitemap_strip(self):
         """Assert we can deal with trailing spaces inside <loc> tags - we've
@@ -90,18 +82,15 @@ class SitemapTest(unittest.TestCase):
 </urlset>
 """
         )
-        self.assertEqual(
-            list(s),
-            [
-                {
-                    "priority": "1",
-                    "loc": "http://www.example.com/",
-                    "lastmod": "2009-08-16",
-                    "changefreq": "daily",
-                },
-                {"loc": "http://www.example.com/2", "lastmod": ""},
-            ],
-        )
+        assert list(s) == [
+            {
+                "priority": "1",
+                "loc": "http://www.example.com/",
+                "lastmod": "2009-08-16",
+                "changefreq": "daily",
+            },
+            {"loc": "http://www.example.com/2", "lastmod": ""},
+        ]
 
     def test_sitemap_wrong_ns(self):
         """We have seen sitemaps with wrongs ns. Presumably, Google still works
@@ -122,18 +111,15 @@ class SitemapTest(unittest.TestCase):
 </urlset>
 """
         )
-        self.assertEqual(
-            list(s),
-            [
-                {
-                    "priority": "1",
-                    "loc": "http://www.example.com/",
-                    "lastmod": "2009-08-16",
-                    "changefreq": "daily",
-                },
-                {"loc": "http://www.example.com/2", "lastmod": ""},
-            ],
-        )
+        assert list(s) == [
+            {
+                "priority": "1",
+                "loc": "http://www.example.com/",
+                "lastmod": "2009-08-16",
+                "changefreq": "daily",
+            },
+            {"loc": "http://www.example.com/2", "lastmod": ""},
+        ]
 
     def test_sitemap_wrong_ns2(self):
         """We have seen sitemaps with wrongs ns. Presumably, Google still works
@@ -155,18 +141,15 @@ class SitemapTest(unittest.TestCase):
 """
         )
         assert s.type == "urlset"
-        self.assertEqual(
-            list(s),
-            [
-                {
-                    "priority": "1",
-                    "loc": "http://www.example.com/",
-                    "lastmod": "2009-08-16",
-                    "changefreq": "daily",
-                },
-                {"loc": "http://www.example.com/2", "lastmod": ""},
-            ],
-        )
+        assert list(s) == [
+            {
+                "priority": "1",
+                "loc": "http://www.example.com/",
+                "lastmod": "2009-08-16",
+                "changefreq": "daily",
+            },
+            {"loc": "http://www.example.com/2", "lastmod": ""},
+        ]
 
     def test_sitemap_urls_from_robots(self):
         robots = """User-agent: *
@@ -187,15 +170,14 @@ Sitemap: /sitemap-relative-url.xml
 Disallow: /forum/search/
 Disallow: /forum/active/
 """
-        self.assertEqual(
-            list(sitemap_urls_from_robots(robots, base_url="http://example.com")),
-            [
-                "http://example.com/sitemap.xml",
-                "http://example.com/sitemap-product-index.xml",
-                "http://example.com/sitemap-uppercase.xml",
-                "http://example.com/sitemap-relative-url.xml",
-            ],
-        )
+        assert list(
+            sitemap_urls_from_robots(robots, base_url="http://example.com")
+        ) == [
+            "http://example.com/sitemap.xml",
+            "http://example.com/sitemap-product-index.xml",
+            "http://example.com/sitemap-uppercase.xml",
+            "http://example.com/sitemap-relative-url.xml",
+        ]
 
     def test_sitemap_blanklines(self):
         """Assert we can deal with starting blank lines before <xml> tag"""
@@ -224,14 +206,11 @@ Disallow: /forum/active/
 </sitemapindex>
 """
         )
-        self.assertEqual(
-            list(s),
-            [
-                {"lastmod": "2013-07-15", "loc": "http://www.example.com/sitemap1.xml"},
-                {"lastmod": "2013-07-15", "loc": "http://www.example.com/sitemap2.xml"},
-                {"lastmod": "2013-07-15", "loc": "http://www.example.com/sitemap3.xml"},
-            ],
-        )
+        assert list(s) == [
+            {"lastmod": "2013-07-15", "loc": "http://www.example.com/sitemap1.xml"},
+            {"lastmod": "2013-07-15", "loc": "http://www.example.com/sitemap2.xml"},
+            {"lastmod": "2013-07-15", "loc": "http://www.example.com/sitemap3.xml"},
+        ]
 
     def test_comment(self):
         s = Sitemap(
@@ -245,7 +224,7 @@ Disallow: /forum/active/
     </urlset>"""
         )
 
-        self.assertEqual(list(s), [{"loc": "http://www.example.com/"}])
+        assert list(s) == [{"loc": "http://www.example.com/"}]
 
     def test_alternate(self):
         s = Sitemap(
@@ -265,19 +244,16 @@ Disallow: /forum/active/
     </urlset>"""
         )
 
-        self.assertEqual(
-            list(s),
-            [
-                {
-                    "loc": "http://www.example.com/english/",
-                    "alternate": [
-                        "http://www.example.com/deutsch/",
-                        "http://www.example.com/schweiz-deutsch/",
-                        "http://www.example.com/english/",
-                    ],
-                }
-            ],
-        )
+        assert list(s) == [
+            {
+                "loc": "http://www.example.com/english/",
+                "alternate": [
+                    "http://www.example.com/deutsch/",
+                    "http://www.example.com/schweiz-deutsch/",
+                    "http://www.example.com/english/",
+                ],
+            }
+        ]
 
     def test_xml_entity_expansion(self):
         s = Sitemap(
@@ -294,4 +270,4 @@ Disallow: /forum/active/
         """
         )
 
-        self.assertEqual(list(s), [{"loc": "http://127.0.0.1:8000/"}])
+        assert list(s) == [{"loc": "http://127.0.0.1:8000/"}]
