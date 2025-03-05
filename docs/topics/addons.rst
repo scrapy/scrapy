@@ -133,17 +133,17 @@ Set some basic configuration:
         def update_settings(self, settings):
             settings.set("DNSCACHE_ENABLED", True, "addon")
             settings.remove_from_list("METAREFRESH_IGNORE_TAGS", "noscript")
-            settings.setdefault_in_component_priority_dictionary(
+            settings.setdefault_in_component_priority_dict(
                 "ITEM_PIPELINES", MyPipeline, 200
             )
 
 .. tip:: When editing a :ref:`component priority dictionary
     <component-priority-dictionaries>` setting, like :setting:`ITEM_PIPELINES`,
     consider using setting methods like
-    :meth:`~scrapy.settings.BaseSettings.replace_in_component_priority_dictionary`,
-    :meth:`~scrapy.settings.BaseSettings.set_in_component_priority_dictionary`
+    :meth:`~scrapy.settings.BaseSettings.replace_in_component_priority_dict`,
+    :meth:`~scrapy.settings.BaseSettings.set_in_component_priority_dict`
     and
-    :meth:`~scrapy.settings.BaseSettings.setdefault_in_component_priority_dictionary`
+    :meth:`~scrapy.settings.BaseSettings.setdefault_in_component_priority_dict`
     to avoid mistakes.
 
 Check dependencies:

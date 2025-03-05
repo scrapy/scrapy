@@ -328,7 +328,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
             return max(cast(int, self.getpriority(name)) for name in self)
         return get_settings_priority("default")
 
-    def replace_in_component_priority_dictionary(
+    def replace_in_component_priority_dict(
         self,
         name: _SettingsKeyT,
         old_cls: type,
@@ -353,23 +353,21 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         This change is applied regardless of the priority of the *name*
         setting. The setting priority is not affected by this change either.
         """
-        component_priority_dictionary = self.getdict(name)
+        component_priority_dict = self.getdict(name)
         old_priority = None
-        for cls_or_path in tuple(component_priority_dictionary):
+        for cls_or_path in tuple(component_priority_dict):
             if load_object(cls_or_path) != old_cls:
                 continue
-            if (old_priority := component_priority_dictionary.pop(cls_or_path)) is None:
+            if (old_priority := component_priority_dict.pop(cls_or_path)) is None:
                 break
         if old_priority is None:
             raise KeyError(
-                f"{old_cls} not found in the {name} setting ({component_priority_dictionary!r})."
+                f"{old_cls} not found in the {name} setting ({component_priority_dict!r})."
             )
-        component_priority_dictionary[new_cls] = (
+        component_priority_dict[new_cls] = (
             old_priority if priority is None else priority
         )
-        self.set(
-            name, component_priority_dictionary, priority=self.getpriority(name) or 0
-        )
+        self.set(name, component_priority_dict, priority=self.getpriority(name) or 0)
 
     def __setitem__(self, name: _SettingsKeyT, value: Any) -> None:
         self.set(name, value)
@@ -404,7 +402,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         else:
             self.attributes[name].set(value, priority)
 
-    def set_in_component_priority_dictionary(
+    def set_in_component_priority_dict(
         self, name: _SettingsKeyT, cls: type, priority: int | None
     ) -> None:
         """Set the *cls* component in the *name* :ref:`component priority
@@ -418,15 +416,15 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         This change is applied regardless of the priority of the *name*
         setting. The setting priority is not affected by this change either.
         """
-        component_priority_dictionary = self.getdict(name)
-        for cls_or_path in tuple(component_priority_dictionary):
+        component_priority_dict = self.getdict(name)
+        for cls_or_path in tuple(component_priority_dict):
             if not isinstance(cls_or_path, str):
                 continue
             _cls = load_object(cls_or_path)
             if _cls == cls:
-                del component_priority_dictionary[cls_or_path]
-        component_priority_dictionary[cls] = priority
-        self.set(name, component_priority_dictionary, self.getpriority(name) or 0)
+                del component_priority_dict[cls_or_path]
+        component_priority_dict[cls] = priority
+        self.set(name, component_priority_dict, self.getpriority(name) or 0)
 
     def setdefault(
         self,
@@ -440,7 +438,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
 
         return self.attributes[name].value
 
-    def setdefault_in_component_priority_dictionary(
+    def setdefault_in_component_priority_dict(
         self, name: _SettingsKeyT, cls: type, priority: int | None
     ) -> None:
         """Set the *cls* component in the *name* :ref:`component priority
@@ -451,12 +449,12 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         of the *name* setting. The setting priority is not affected by this
         change either.
         """
-        component_priority_dictionary = self.getdict(name)
-        for cls_or_path in tuple(component_priority_dictionary):
+        component_priority_dict = self.getdict(name)
+        for cls_or_path in tuple(component_priority_dict):
             if load_object(cls_or_path) == cls:
                 return
-        component_priority_dictionary[cls] = priority
-        self.set(name, component_priority_dictionary, self.getpriority(name) or 0)
+        component_priority_dict[cls] = priority
+        self.set(name, component_priority_dict, self.getpriority(name) or 0)
 
     def setdict(self, values: _SettingsInputT, priority: int | str = "project") -> None:
         self.update(values, priority)

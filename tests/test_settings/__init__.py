@@ -785,20 +785,20 @@ class Component4:
         ),
     ],
 )
-def test_replace_in_component_priority_dictionary(
+def test_replace_in_component_priority_dict(
     before, name, old_cls, new_cls, priority, after
 ):
     settings = BaseSettings(before, priority=0)
 
     if isinstance(after, type) and issubclass(after, Exception):
         with pytest.raises(after):
-            settings.replace_in_component_priority_dictionary(
+            settings.replace_in_component_priority_dict(
                 name, old_cls, new_cls, priority
             )
         return
 
     expected_priority = settings.getpriority(name) or 0
-    settings.replace_in_component_priority_dictionary(name, old_cls, new_cls, priority)
+    settings.replace_in_component_priority_dict(name, old_cls, new_cls, priority)
     expected_settings = BaseSettings(after, priority=expected_priority)
     assert settings == expected_settings
     assert settings.getpriority(name) == expected_settings.getpriority(name)
@@ -933,10 +933,10 @@ def test_replace_in_component_priority_dictionary(
         ),
     ],
 )
-def test_set_in_component_priority_dictionary(before, name, cls, priority, after):
+def test_set_in_component_priority_dict(before, name, cls, priority, after):
     settings = BaseSettings(before, priority=0)
     expected_priority = settings.getpriority(name) or 0
-    settings.set_in_component_priority_dictionary(name, cls, priority)
+    settings.set_in_component_priority_dict(name, cls, priority)
     expected_settings = BaseSettings(after, priority=expected_priority)
     assert settings == expected_settings
     assert settings.getpriority(name) == expected_settings.getpriority(name), (
@@ -1080,12 +1080,10 @@ def test_set_in_component_priority_dictionary(before, name, cls, priority, after
         ),
     ],
 )
-def test_setdefault_in_component_priority_dictionary(
-    before, name, cls, priority, after
-):
+def test_setdefault_in_component_priority_dict(before, name, cls, priority, after):
     settings = BaseSettings(before, priority=0)
     expected_priority = settings.getpriority(name) or 0
-    settings.setdefault_in_component_priority_dictionary(name, cls, priority)
+    settings.setdefault_in_component_priority_dict(name, cls, priority)
     expected_settings = BaseSettings(after, priority=expected_priority)
     assert settings == expected_settings
     assert settings.getpriority(name) == expected_settings.getpriority(name)
