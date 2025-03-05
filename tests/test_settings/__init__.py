@@ -575,6 +575,14 @@ class Component2:
     pass
 
 
+class Component3:
+    pass
+
+
+class Component4:
+    pass
+
+
 @pytest.mark.parametrize(
     ("before", "name", "old_cls", "new_cls", "priority", "after"),
     [
@@ -753,6 +761,27 @@ class Component2:
             Component2,
             None,
             KeyError,
+        ),
+        # Unrelated components are kept as is, as expected.
+        (
+            {
+                "FOO": {
+                    Component1: 1,
+                    "tests.test_settings.Component2": 2,
+                    Component3: 3,
+                }
+            },
+            "FOO",
+            Component3,
+            Component4,
+            None,
+            {
+                "FOO": {
+                    Component1: 1,
+                    "tests.test_settings.Component2": 2,
+                    Component4: 3,
+                }
+            },
         ),
     ],
 )
