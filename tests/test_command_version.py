@@ -4,7 +4,7 @@ from twisted.internet import defer
 from twisted.trial import unittest
 
 import scrapy
-from scrapy.utils.testproc import ProcessTest
+from tests.utils.testproc import ProcessTest
 
 
 class VersionTest(ProcessTest, unittest.TestCase):
