@@ -238,16 +238,52 @@ active spider middlewares must either have their ``process_spider_output``
 method defined as an asynchronous generator or :ref:`define a
 process_spider_output_async method <universal-spider-middleware>`.
 
-.. note:: When using third-party spider middlewares that only define a
-          synchronous ``process_spider_output`` method, consider
-          :ref:`making them universal <universal-spider-middleware>` through
-          :ref:`subclassing <tut-inheritance>`.
+.. _sync-async-spider-middleware-users:
 
+For middleware users
+--------------------
+
+If you have asynchronous callbacks or use asynchronous-only spider middlewares
+you should make sure the asynchronous-to-synchronous conversions
+:ref:`described above <sync-async-spider-middleware>` don't happen. To do this,
+make sure all spider middlewares you use support asynchronous spider output.
+Even if you don't have asynchronous callbacks and don't use asynchronous-only
+spider middlewares in your project, it's still a good idea to make sure all
+middlewares you use support asynchronous spider output, so that it will be easy
+to start using asynchronous callbacks in the future. Because of this, Scrapy
+logs a warning when it detects a synchronous-only spider middleware.
+
+If you want to update middlewares you wrote, see the :ref:`following section
+<sync-async-spider-middleware-authors>`. If you have 3rd-party middlewares that
+aren't yet updated by their authors, you can :ref:`subclass <tut-inheritance>`
+them to make them :ref:`universal <universal-spider-middleware>` and use the
+subclasses in your projects.
+
+.. _sync-async-spider-middleware-authors:
+
+For middleware authors
+----------------------
+
+If you have a spider middleware that defines a synchronous
+``process_spider_output`` method, you should update it to support asynchronous
+spider output for :ref:`better compatibility <sync-async-spider-middleware>`,
+even if you don't yet use it with asynchronous callbacks, especially if you
+publish this middleware for other people to use. You have two options for this:
+
+1. Make the middleware asynchronous, by making the ``process_spider_output``
+   method an :term:`asynchronous generator`.
+2. Make the middleware universal, as described in the :ref:`next section
+   <universal-spider-middleware>`.
+
+If your middleware won't be used in projects with synchronous-only middlewares,
+e.g. because it's an internal middleware and you know that all other
+middlewares in your projects are already updated, it's safe to choose the first
+option. Otherwise, it's better to choose the second option.
 
 .. _universal-spider-middleware:
 
 Universal spider middlewares
-============================
+----------------------------
 
 .. versionadded:: 2.7
 

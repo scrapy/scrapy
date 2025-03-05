@@ -112,7 +112,7 @@ class SelectorTestCase(unittest.TestCase):
         )
 
     def test_selector_bad_args(self):
-        with self.assertRaisesRegex(ValueError, "received both response and text"):
+        with pytest.raises(ValueError, match="received both response and text"):
             Selector(TextResponse(url="http://example.com", body=b""), text="")
 
 

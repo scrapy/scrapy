@@ -1,5 +1,7 @@
 import unittest
 
+import pytest
+
 from scrapy import Request, Spider
 from scrapy.http import FormRequest, JsonRequest
 from scrapy.utils.request import request_from_dict
@@ -134,11 +136,15 @@ class RequestSerializationTest(unittest.TestCase):
 
     def test_unserializable_callback1(self):
         r = Request("http://www.example.com", callback=lambda x: x)
-        self.assertRaises(ValueError, r.to_dict, spider=self.spider)
+        with pytest.raises(
+            ValueError, match="is not an instance method in: <MethodsSpider"
+        ):
+            r.to_dict(spider=self.spider)
 
     def test_unserializable_callback2(self):
         r = Request("http://www.example.com", callback=self.spider.parse_item)
-        self.assertRaises(ValueError, r.to_dict, spider=None)
+        with pytest.raises(ValueError, match="is not an instance method in: None"):
+            r.to_dict(spider=None)
 
     def test_unserializable_callback3(self):
         """Parser method is removed or replaced dynamically."""
@@ -152,14 +158,18 @@ class RequestSerializationTest(unittest.TestCase):
         spider = MySpider()
         r = Request("http://www.example.com", callback=spider.parse)
         spider.parse = None
-        self.assertRaises(ValueError, r.to_dict, spider=spider)
+        with pytest.raises(ValueError, match="is not an instance method in: <MySpider"):
+            r.to_dict(spider=spider)
 
     def test_callback_not_available(self):
         """Callback method is not available in the spider passed to from_dict"""
         spider = SpiderDelegation()
         r = Request("http://www.example.com", callback=spider.delegated_callback)
         d = r.to_dict(spider=spider)
-        self.assertRaises(ValueError, request_from_dict, d, spider=Spider("foo"))
+        with pytest.raises(
+            ValueError, match="Method 'delegated_callback' not found in: <Spider"
+        ):
+            request_from_dict(d, spider=Spider("foo"))
 
 
 class SpiderMixin:

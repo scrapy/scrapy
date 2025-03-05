@@ -1,7 +1,6 @@
 import dataclasses
 import datetime
 import json
-import unittest
 from decimal import Decimal
 
 import attr
@@ -11,8 +10,8 @@ from scrapy.http import Request, Response
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 
-class JsonEncoderTestCase(unittest.TestCase):
-    def setUp(self):
+class TestJsonEncoder:
+    def setup_method(self):
         self.encoder = ScrapyJSONEncoder(sort_keys=True)
 
     def test_encode_decode(self):
@@ -39,24 +38,22 @@ class JsonEncoderTestCase(unittest.TestCase):
             (s, ss),
             (dt_set, dt_sets),
         ]:
-            self.assertEqual(
-                self.encoder.encode(input), json.dumps(output, sort_keys=True)
-            )
+            assert self.encoder.encode(input) == json.dumps(output, sort_keys=True)
 
     def test_encode_deferred(self):
-        self.assertIn("Deferred", self.encoder.encode(defer.Deferred()))
+        assert "Deferred" in self.encoder.encode(defer.Deferred())
 
     def test_encode_request(self):
         r = Request("http://www.example.com/lala")
         rs = self.encoder.encode(r)
-        self.assertIn(r.method, rs)
-        self.assertIn(r.url, rs)
+        assert r.method in rs
+        assert r.url in rs
 
     def test_encode_response(self):
         r = Response("http://www.example.com/lala")
         rs = self.encoder.encode(r)
-        self.assertIn(r.url, rs)
-        self.assertIn(str(r.status), rs)
+        assert r.url in rs
+        assert str(r.status) in rs
 
     def test_encode_dataclass_item(self) -> None:
         @dataclasses.dataclass
@@ -67,9 +64,7 @@ class JsonEncoderTestCase(unittest.TestCase):
 
         item = TestDataClass(name="Product", url="http://product.org", price=1)
         encoded = self.encoder.encode(item)
-        self.assertEqual(
-            encoded, '{"name": "Product", "price": 1, "url": "http://product.org"}'
-        )
+        assert encoded == '{"name": "Product", "price": 1, "url": "http://product.org"}'
 
     def test_encode_attrs_item(self):
         @attr.s
@@ -80,6 +75,4 @@ class JsonEncoderTestCase(unittest.TestCase):
 
         item = AttrsItem(name="Product", url="http://product.org", price=1)
         encoded = self.encoder.encode(item)
-        self.assertEqual(
-            encoded, '{"name": "Product", "price": 1, "url": "http://product.org"}'
-        )
+        assert encoded == '{"name": "Product", "price": 1, "url": "http://product.org"}'

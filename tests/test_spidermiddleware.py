@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Iterable
 from unittest import mock
 
+import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.python.failure import Failure
@@ -299,12 +300,9 @@ class ProcessSpiderOutputCoroutineMiddleware:
 class ProcessSpiderOutputInvalidResult(BaseAsyncSpiderMiddlewareTestCase):
     @defer.inlineCallbacks
     def test_non_iterable(self):
-        with self.assertRaisesRegex(
+        with pytest.raises(
             _InvalidOutput,
-            (
-                r"\.process_spider_output must return an iterable, got <class "
-                r"'NoneType'>"
-            ),
+            match=r"\.process_spider_output must return an iterable, got <class 'NoneType'>",
         ):
             yield self._get_middleware_result(
                 ProcessSpiderOutputNonIterableMiddleware,
@@ -312,9 +310,9 @@ class ProcessSpiderOutputInvalidResult(BaseAsyncSpiderMiddlewareTestCase):
 
     @defer.inlineCallbacks
     def test_coroutine(self):
-        with self.assertRaisesRegex(
+        with pytest.raises(
             _InvalidOutput,
-            r"\.process_spider_output must be an asynchronous generator",
+            match=r"\.process_spider_output must be an asynchronous generator",
         ):
             yield self._get_middleware_result(
                 ProcessSpiderOutputCoroutineMiddleware,
@@ -518,8 +516,8 @@ class ProcessSpiderExceptionTest(BaseAsyncSpiderMiddlewareTestCase):
 
     @defer.inlineCallbacks
     def _test_asyncgen_nodowngrade(self, *mw_classes):
-        with self.assertRaisesRegex(
-            _InvalidOutput, "Async iterable returned from .+ cannot be downgraded"
+        with pytest.raises(
+            _InvalidOutput, match="Async iterable returned from .+ cannot be downgraded"
         ):
             yield self._get_middleware_result(*mw_classes)
 

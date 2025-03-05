@@ -7,6 +7,7 @@ from shutil import rmtree
 from tempfile import mkdtemp
 
 import attr
+import pytest
 from itemadapter import ItemAdapter
 from twisted.trial import unittest
 
@@ -146,11 +147,11 @@ class ImagesPipelineTestCase(unittest.TestCase):
         resp3 = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf3.getvalue())
         req = Request(url="https://dev.mydeco.com/mydeco.gif")
 
-        with self.assertRaises(ImageException):
+        with pytest.raises(ImageException):
             next(self.pipeline.get_images(response=resp1, request=req, info=object()))
-        with self.assertRaises(ImageException):
+        with pytest.raises(ImageException):
             next(self.pipeline.get_images(response=resp2, request=req, info=object()))
-        with self.assertRaises(ImageException):
+        with pytest.raises(ImageException):
             next(self.pipeline.get_images(response=resp3, request=req, info=object()))
 
     def test_get_images(self):

@@ -36,6 +36,7 @@ curl_parser = CurlParser()
 curl_parser.add_argument("url")
 curl_parser.add_argument("-H", "--header", dest="headers", action="append")
 curl_parser.add_argument("-X", "--request", dest="method")
+curl_parser.add_argument("-b", "--cookie", dest="cookies", action="append")
 curl_parser.add_argument("-d", "--data", "--data-raw", dest="data", action=DataAction)
 curl_parser.add_argument("-u", "--user", dest="auth")
 
@@ -67,6 +68,14 @@ def _parse_headers_and_cookies(
                 cookies[name] = morsel.value
         else:
             headers.append((name, val))
+
+    for cookie_param in parsed_args.cookies or ():
+        # curl can treat this parameter as either "key=value; key2=value2" pairs, or a filename.
+        # Scrapy will only support key-value pairs.
+        if "=" not in cookie_param:
+            continue
+        for name, morsel in SimpleCookie(cookie_param).items():
+            cookies[name] = morsel.value
 
     if parsed_args.auth:
         user, password = parsed_args.auth.split(":", 1)

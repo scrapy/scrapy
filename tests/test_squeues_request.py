@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import unittest
 
+import pytest
 import queuelib
 
 from scrapy.http import Request
@@ -69,9 +70,9 @@ class RequestQueueTestMixin:
         req = Request("http://www.example.com")
         q.push(req)
         self.assertEqual(len(q), 1)
-        with self.assertRaises(
+        with pytest.raises(
             NotImplementedError,
-            msg="The underlying queue class does not implement 'peek'",
+            match="The underlying queue class does not implement 'peek'",
         ):
             q.peek()
         self.assertEqual(q.pop().url, req.url)
@@ -120,9 +121,9 @@ class FifoQueueMixin(RequestQueueTestMixin):
         q.push(req1)
         q.push(req2)
         q.push(req3)
-        with self.assertRaises(
+        with pytest.raises(
             NotImplementedError,
-            msg="The underlying queue class does not implement 'peek'",
+            match="The underlying queue class does not implement 'peek'",
         ):
             q.peek()
         self.assertEqual(len(q), 3)
@@ -176,9 +177,9 @@ class LifoQueueMixin(RequestQueueTestMixin):
         q.push(req1)
         q.push(req2)
         q.push(req3)
-        with self.assertRaises(
+        with pytest.raises(
             NotImplementedError,
-            msg="The underlying queue class does not implement 'peek'",
+            match="The underlying queue class does not implement 'peek'",
         ):
             q.peek()
         self.assertEqual(len(q), 3)

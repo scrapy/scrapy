@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from typing import Any, NamedTuple
 
+import pytest
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
@@ -229,7 +230,10 @@ class TestMigration(unittest.TestCase):
         next_scheduler_handler.create_scheduler()
 
     def test_migration(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(
+            ValueError,
+            match="DownloaderAwarePriorityQueue accepts ``slot_startprios`` as a dict",
+        ):
             self._migration(self.tmpdir)
 
 
@@ -351,5 +355,7 @@ class TestIncompatibility(unittest.TestCase):
         scheduler.open(spider)
 
     def test_incompatibility(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(
+            ValueError, match="does not support CONCURRENT_REQUESTS_PER_IP"
+        ):
             self._incompatible()

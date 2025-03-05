@@ -5,6 +5,8 @@ import time
 import unittest
 from contextlib import contextmanager
 
+import pytest
+
 from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import HtmlResponse, Request, Response
@@ -192,9 +194,8 @@ class DummyPolicyTest(_BaseTest):
 
     def test_middleware_ignore_missing(self):
         with self._middleware(HTTPCACHE_IGNORE_MISSING=True) as mw:
-            self.assertRaises(
-                IgnoreRequest, mw.process_request, self.request, self.spider
-            )
+            with pytest.raises(IgnoreRequest):
+                mw.process_request(self.request, self.spider)
             mw.process_response(self.request, self.response, self.spider)
             response = mw.process_request(self.request, self.spider)
             assert isinstance(response, HtmlResponse)

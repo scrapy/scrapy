@@ -214,7 +214,7 @@ class DownloaderAwarePriorityQueue:
                 "DownloaderAwarePriorityQueue accepts "
                 "``slot_startprios`` as a dict; "
                 f"{slot_startprios.__class__!r} instance "
-                "is passed. Most likely, it means the state is"
+                "is passed. Most likely, it means the state is "
                 "created by an incompatible priority queue. "
                 "Only a crawl started with the same priority "
                 "queue class can be resumed."
