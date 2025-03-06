@@ -149,7 +149,8 @@ class CrawlSpider(Spider):
             warnings.warn(
                 "The CrawlSpider._parse_response method is deprecated: it "
                 "will be removed in future Scrapy releases. Please use the "
-                "CrawlSpider.parse_with_rules method instead."
+                "CrawlSpider.parse_with_rules method instead.",
+                stacklevel=2,
             )
         return self._parse_with_rules(response, callback, cb_kwargs, follow)
 
