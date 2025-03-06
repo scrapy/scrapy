@@ -1,5 +1,3 @@
-import unittest
-
 import pytest
 from w3lib.http import basic_auth_header
 
@@ -25,8 +23,8 @@ class AnyDomainSpider(Spider):
     http_auth_domain = None
 
 
-class HttpAuthMiddlewareLegacyTest(unittest.TestCase):
-    def setUp(self):
+class TestHttpAuthMiddlewareLegacy:
+    def setup_method(self):
         self.spider = LegacySpider("foo")
 
     def test_auth(self):
@@ -35,51 +33,51 @@ class HttpAuthMiddlewareLegacyTest(unittest.TestCase):
             mw.spider_opened(self.spider)
 
 
-class HttpAuthMiddlewareTest(unittest.TestCase):
-    def setUp(self):
+class TestHttpAuthMiddleware:
+    def setup_method(self):
         self.mw = HttpAuthMiddleware()
         self.spider = DomainSpider("foo")
         self.mw.spider_opened(self.spider)
 
-    def tearDown(self):
+    def teardown_method(self):
         del self.mw
 
     def test_no_auth(self):
         req = Request("http://example-noauth.com/")
         assert self.mw.process_request(req, self.spider) is None
-        self.assertNotIn("Authorization", req.headers)
+        assert "Authorization" not in req.headers
 
     def test_auth_domain(self):
         req = Request("http://example.com/")
         assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers["Authorization"], basic_auth_header("foo", "bar"))
+        assert req.headers["Authorization"] == basic_auth_header("foo", "bar")
 
     def test_auth_subdomain(self):
         req = Request("http://foo.example.com/")
         assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers["Authorization"], basic_auth_header("foo", "bar"))
+        assert req.headers["Authorization"] == basic_auth_header("foo", "bar")
 
     def test_auth_already_set(self):
         req = Request("http://example.com/", headers={"Authorization": "Digest 123"})
         assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers["Authorization"], b"Digest 123")
+        assert req.headers["Authorization"] == b"Digest 123"
 
 
-class HttpAuthAnyMiddlewareTest(unittest.TestCase):
-    def setUp(self):
+class TestHttpAuthAnyMiddleware:
+    def setup_method(self):
         self.mw = HttpAuthMiddleware()
         self.spider = AnyDomainSpider("foo")
         self.mw.spider_opened(self.spider)
 
-    def tearDown(self):
+    def teardown_method(self):
         del self.mw
 
     def test_auth(self):
         req = Request("http://example.com/")
         assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers["Authorization"], basic_auth_header("foo", "bar"))
+        assert req.headers["Authorization"] == basic_auth_header("foo", "bar")
 
     def test_auth_already_set(self):
         req = Request("http://example.com/", headers={"Authorization": "Digest 123"})
         assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers["Authorization"], b"Digest 123")
+        assert req.headers["Authorization"] == b"Digest 123"
