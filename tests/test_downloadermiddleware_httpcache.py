@@ -2,7 +2,6 @@ import email.utils
 import shutil
 import tempfile
 import time
-import unittest
 from contextlib import contextmanager
 
 import pytest
@@ -15,11 +14,11 @@ from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
 
-class _BaseTest(unittest.TestCase):
+class TestBase:
     storage_class = "scrapy.extensions.httpcache.FilesystemCacheStorage"
     policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
 
-    def setUp(self):
+    def setup_method(self):
         self.yesterday = email.utils.formatdate(time.time() - 86400)
         self.today = email.utils.formatdate()
         self.tomorrow = email.utils.formatdate(time.time() + 86400)
@@ -35,7 +34,7 @@ class _BaseTest(unittest.TestCase):
         )
         self.crawler.stats.open_spider(self.spider)
 
-    def tearDown(self):
+    def teardown_method(self):
         self.crawler.stats.close_spider(self.spider, "")
         shutil.rmtree(self.tmpdir)
 
@@ -72,44 +71,42 @@ class _BaseTest(unittest.TestCase):
             mw.spider_closed(self.spider)
 
     def assertEqualResponse(self, response1, response2):
-        self.assertEqual(response1.url, response2.url)
-        self.assertEqual(response1.status, response2.status)
-        self.assertEqual(response1.headers, response2.headers)
-        self.assertEqual(response1.body, response2.body)
+        assert response1.url == response2.url
+        assert response1.status == response2.status
+        assert response1.headers == response2.headers
+        assert response1.body == response2.body
 
     def assertEqualRequest(self, request1, request2):
-        self.assertEqual(request1.url, request2.url)
-        self.assertEqual(request1.headers, request2.headers)
-        self.assertEqual(request1.body, request2.body)
+        assert request1.url == request2.url
+        assert request1.headers == request2.headers
+        assert request1.body == request2.body
 
     def assertEqualRequestButWithCacheValidators(self, request1, request2):
-        self.assertEqual(request1.url, request2.url)
+        assert request1.url == request2.url
         assert b"If-None-Match" not in request1.headers
         assert b"If-Modified-Since" not in request1.headers
         assert any(
             h in request2.headers for h in (b"If-None-Match", b"If-Modified-Since")
         )
-        self.assertEqual(request1.body, request2.body)
+        assert request1.body == request2.body
 
     def test_dont_cache(self):
         with self._middleware() as mw:
             self.request.meta["dont_cache"] = True
             mw.process_response(self.request, self.response, self.spider)
-            self.assertEqual(
-                mw.storage.retrieve_response(self.spider, self.request), None
-            )
+            assert mw.storage.retrieve_response(self.spider, self.request) is None
 
         with self._middleware() as mw:
             self.request.meta["dont_cache"] = False
             mw.process_response(self.request, self.response, self.spider)
             if mw.policy.should_cache_response(self.response, self.request):
-                self.assertIsInstance(
+                assert isinstance(
                     mw.storage.retrieve_response(self.spider, self.request),
                     self.response.__class__,
                 )
 
 
-class DefaultStorageTest(_BaseTest):
+class TestDefaultStorage(TestBase):
     def test_storage(self):
         with self._storage() as storage:
             request2 = self.request.copy()
@@ -142,15 +139,15 @@ class DefaultStorageTest(_BaseTest):
             )
             storage.store_response(self.spider, self.request, response)
             cached_response = storage.retrieve_response(self.spider, self.request)
-            self.assertIsInstance(cached_response, HtmlResponse)
+            assert isinstance(cached_response, HtmlResponse)
             self.assertEqualResponse(response, cached_response)
 
 
-class DbmStorageTest(DefaultStorageTest):
+class TestDbmStorage(TestDefaultStorage):
     storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
 
 
-class DbmStorageWithCustomDbmModuleTest(DbmStorageTest):
+class TestDbmStorageWithCustomDbmModule(TestDbmStorage):
     dbm_module = "tests.mocks.dummydbm"
 
     def _get_settings(self, **new_settings):
@@ -160,16 +157,16 @@ class DbmStorageWithCustomDbmModuleTest(DbmStorageTest):
     def test_custom_dbm_module_loaded(self):
         # make sure our dbm module has been loaded
         with self._storage() as storage:
-            self.assertEqual(storage.dbmodule.__name__, self.dbm_module)
+            assert storage.dbmodule.__name__ == self.dbm_module
 
 
-class FilesystemStorageGzipTest(DefaultStorageTest):
+class TestFilesystemStorageGzip(TestDefaultStorage):
     def _get_settings(self, **new_settings):
         new_settings.setdefault("HTTPCACHE_GZIP", True)
         return super()._get_settings(**new_settings)
 
 
-class DummyPolicyTest(_BaseTest):
+class TestDummyPolicy(TestBase):
     policy_class = "scrapy.extensions.httpcache.DummyPolicy"
 
     def test_middleware(self):
@@ -261,7 +258,7 @@ class DummyPolicyTest(_BaseTest):
             assert "cached" in response.flags
 
 
-class RFC2616PolicyTest(DefaultStorageTest):
+class TestRFC2616Policy(TestDefaultStorage):
     policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
 
     def _process_requestresponse(self, mw, request, response):
@@ -357,7 +354,7 @@ class RFC2616PolicyTest(DefaultStorageTest):
                     assert "cached" in res2.flags
                     assert res2.status != 304
                 else:
-                    self.assertFalse(resc)
+                    assert not resc
                     assert "cached" not in res2.flags
 
         # cache unconditionally unless response contains no-store or is a 304
@@ -381,7 +378,7 @@ class RFC2616PolicyTest(DefaultStorageTest):
                     assert "cached" in res2.flags
                     assert res2.status != 304
                 else:
-                    self.assertFalse(resc)
+                    assert not resc
                     assert "cached" not in res2.flags
 
     def test_cached_and_fresh(self):

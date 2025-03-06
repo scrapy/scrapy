@@ -15,7 +15,7 @@ from scrapy.settings import Settings
 from tests.test_robotstxt_interface import rerp_available
 
 
-class RobotsTxtMiddlewareTest(unittest.TestCase):
+class TestRobotsTxtMiddleware(unittest.TestCase):
     def setUp(self):
         self.crawler = mock.MagicMock()
         self.crawler.settings = Settings()
@@ -242,11 +242,11 @@ Disallow: /some/randome/page.html
     def assertRobotsTxtRequested(self, base_url):
         calls = self.crawler.engine.download.call_args_list
         request = calls[0][0][0]
-        self.assertEqual(request.url, f"{base_url}/robots.txt")
-        self.assertEqual(request.callback, NO_CALLBACK)
+        assert request.url == f"{base_url}/robots.txt"
+        assert request.callback == NO_CALLBACK
 
 
-class RobotsTxtMiddlewareWithRerpTest(RobotsTxtMiddlewareTest):
+class TestRobotsTxtMiddlewareWithRerp(TestRobotsTxtMiddleware):
     if not rerp_available():
         skip = "Rerp parser is not installed"
 
