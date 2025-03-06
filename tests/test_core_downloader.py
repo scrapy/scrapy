@@ -30,16 +30,13 @@ from scrapy.utils.test import get_crawler
 from tests.mockserver import PayloadResource, ssl_context_factory
 
 
-class SlotTest(unittest.TestCase):
+class TestSlot:
     def test_repr(self):
         slot = Slot(concurrency=8, delay=0.1, randomize_delay=True)
-        self.assertEqual(
-            repr(slot),
-            "Slot(concurrency=8, delay=0.10, randomize_delay=True)",
-        )
+        assert repr(slot) == "Slot(concurrency=8, delay=0.10, randomize_delay=True)"
 
 
-class ContextFactoryBaseTestCase(unittest.TestCase):
+class TestContextFactoryBase(unittest.TestCase):
     context_factory = None
 
     def _listen(self, site):
@@ -90,7 +87,7 @@ class ContextFactoryBaseTestCase(unittest.TestCase):
         return await maybe_deferred_to_future(d)
 
 
-class ContextFactoryTestCase(ContextFactoryBaseTestCase):
+class TestContextFactory(TestContextFactoryBase):
     @deferred_f_from_coro_f
     async def testPayload(self):
         s = "0123456789" * 10
@@ -100,7 +97,7 @@ class ContextFactoryTestCase(ContextFactoryBaseTestCase):
         body = await self.get_page(
             self.getURL("payload"), client_context_factory, body=s
         )
-        self.assertEqual(body, to_bytes(s))
+        assert body == to_bytes(s)
 
     def test_override_getContext(self):
         class MyFactory(ScrapyClientContextFactory):
@@ -112,14 +109,14 @@ class ContextFactoryTestCase(ContextFactoryBaseTestCase):
 
         with warnings.catch_warnings(record=True) as w:
             MyFactory()
-            self.assertEqual(len(w), 1)
-            self.assertIn(
-                "Overriding ScrapyClientContextFactory.getContext() is deprecated",
-                str(w[0].message),
+            assert len(w) == 1
+            assert (
+                "Overriding ScrapyClientContextFactory.getContext() is deprecated"
+                in str(w[0].message)
             )
 
 
-class ContextFactoryTLSMethodTestCase(ContextFactoryBaseTestCase):
+class TestContextFactoryTLSMethod(TestContextFactoryBase):
     async def _assert_factory_works(
         self, client_context_factory: ScrapyClientContextFactory
     ) -> None:
@@ -127,7 +124,7 @@ class ContextFactoryTLSMethodTestCase(ContextFactoryBaseTestCase):
         body = await self.get_page(
             self.getURL("payload"), client_context_factory, body=s
         )
-        self.assertEqual(body, to_bytes(s))
+        assert body == to_bytes(s)
 
     @deferred_f_from_coro_f
     async def test_setting_default(self):
