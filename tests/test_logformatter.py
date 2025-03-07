@@ -262,18 +262,22 @@ class DropSomeItemsPipeline:
 
 
 class ShowOrSkipMessagesTestCase(TwistedTestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.mockserver.__exit__(None, None, None)
+
     def setUp(self):
-        self.mockserver = MockServer()
-        self.mockserver.__enter__()
         self.base_settings = {
             "LOG_LEVEL": "DEBUG",
             "ITEM_PIPELINES": {
                 DropSomeItemsPipeline: 300,
             },
         }
-
-    def tearDown(self):
-        self.mockserver.__exit__(None, None, None)
 
     @defer.inlineCallbacks
     def test_show_messages(self):

@@ -64,10 +64,16 @@ class FileDownloadCrawlTestCase(TestCase):
         "ed3f6538dc15d4d9179dae57319edc5f",
     }
 
-    def setUp(self):
-        self.mockserver = MockServer()
-        self.mockserver.__enter__()
+    @classmethod
+    def setUpClass(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
 
+    @classmethod
+    def tearDownClass(cls):
+        cls.mockserver.__exit__(None, None, None)
+
+    def setUp(self):
         # prepare a directory for storing files
         self.tmpmediastore = Path(mkdtemp())
         self.settings = {
@@ -80,7 +86,6 @@ class FileDownloadCrawlTestCase(TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmpmediastore)
         self.items = []
-        self.mockserver.__exit__(None, None, None)
 
     def _on_item_scraped(self, item):
         self.items.append(item)

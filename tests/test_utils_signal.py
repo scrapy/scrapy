@@ -1,7 +1,7 @@
 import asyncio
 
+import pytest
 from pydispatch import dispatcher
-from pytest import mark
 from testfixtures import LogCapture
 from twisted.internet import defer, reactor
 from twisted.python.failure import Failure
@@ -11,7 +11,7 @@ from scrapy.utils.signal import send_catch_log, send_catch_log_deferred
 from scrapy.utils.test import get_from_asyncio_queue
 
 
-class SendCatchLogTest(unittest.TestCase):
+class TestSendCatchLog(unittest.TestCase):
     @defer.inlineCallbacks
     def test_send_catch_log(self):
         test_signal = object()
@@ -29,13 +29,13 @@ class SendCatchLogTest(unittest.TestCase):
 
         assert self.error_handler in handlers_called
         assert self.ok_handler in handlers_called
-        self.assertEqual(len(log.records), 1)
+        assert len(log.records) == 1
         record = log.records[0]
-        self.assertIn("error_handler", record.getMessage())
-        self.assertEqual(record.levelname, "ERROR")
-        self.assertEqual(result[0][0], self.error_handler)
-        self.assertIsInstance(result[0][1], Failure)
-        self.assertEqual(result[1], (self.ok_handler, "OK"))
+        assert "error_handler" in record.getMessage()
+        assert record.levelname == "ERROR"
+        assert result[0][0] == self.error_handler  # pylint: disable=comparison-with-callable
+        assert isinstance(result[0][1], Failure)
+        assert result[1] == (self.ok_handler, "OK")
 
         dispatcher.disconnect(self.error_handler, signal=test_signal)
         dispatcher.disconnect(self.ok_handler, signal=test_signal)
@@ -53,7 +53,7 @@ class SendCatchLogTest(unittest.TestCase):
         return "OK"
 
 
-class SendCatchLogDeferredTest(SendCatchLogTest):
+class SendCatchLogDeferredTest(TestSendCatchLog):
     def _get_result(self, signal, *a, **kw):
         return send_catch_log_deferred(signal, *a, **kw)
 
@@ -67,7 +67,7 @@ class SendCatchLogDeferredTest2(SendCatchLogDeferredTest):
         return d
 
 
-@mark.usefixtures("reactor_pytest")
+@pytest.mark.usefixtures("reactor_pytest")
 class SendCatchLogDeferredAsyncDefTest(SendCatchLogDeferredTest):
     async def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
@@ -76,7 +76,7 @@ class SendCatchLogDeferredAsyncDefTest(SendCatchLogDeferredTest):
         return "OK"
 
 
-@mark.only_asyncio()
+@pytest.mark.only_asyncio
 class SendCatchLogDeferredAsyncioTest(SendCatchLogDeferredTest):
     async def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
@@ -85,7 +85,7 @@ class SendCatchLogDeferredAsyncioTest(SendCatchLogDeferredTest):
         return await get_from_asyncio_queue("OK")
 
 
-class SendCatchLogTest2(unittest.TestCase):
+class TestSendCatchLog2:
     def test_error_logged_if_deferred_not_supported(self):
         def test_handler():
             return defer.Deferred()
@@ -94,6 +94,6 @@ class SendCatchLogTest2(unittest.TestCase):
         dispatcher.connect(test_handler, test_signal)
         with LogCapture() as log:
             send_catch_log(test_signal)
-        self.assertEqual(len(log.records), 1)
-        self.assertIn("Cannot return deferreds from signal handler", str(log))
+        assert len(log.records) == 1
+        assert "Cannot return deferreds from signal handler" in str(log)
         dispatcher.disconnect(test_handler, test_signal)

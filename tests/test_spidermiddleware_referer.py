@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import warnings
 from typing import Any
-from unittest import TestCase
 from urllib.parse import urlparse
+
+import pytest
 
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.http import Request, Response
@@ -33,7 +34,7 @@ from scrapy.spidermiddlewares.referer import (
 from scrapy.spiders import Spider
 
 
-class TestRefererMiddleware(TestCase):
+class TestRefererMiddleware:
     req_meta: dict[str, Any] = {}
     resp_headers: dict[str, str] = {}
     settings: dict[str, Any] = {}
@@ -41,7 +42,7 @@ class TestRefererMiddleware(TestCase):
         ("http://scrapytest.org", "http://scrapytest.org/", b"http://scrapytest.org"),
     ]
 
-    def setUp(self):
+    def setup_method(self):
         self.spider = Spider("foo")
         settings = Settings(self.settings)
         self.mw = RefererMiddleware(settings)
@@ -57,7 +58,7 @@ class TestRefererMiddleware(TestCase):
             response = self.get_response(origin)
             request = self.get_request(target)
             out = list(self.mw.process_spider_output(response, [request], self.spider))
-            self.assertEqual(out[0].headers.get("Referer"), referrer)
+            assert out[0].headers.get("Referer") == referrer
 
 
 class MixinDefault:
@@ -771,7 +772,7 @@ class TestRequestMetaPrecedence003(MixinUnsafeUrl, TestRefererMiddleware):
     req_meta = {"referrer_policy": POLICY_UNSAFE_URL}
 
 
-class TestRequestMetaSettingFallback(TestCase):
+class TestRequestMetaSettingFallback:
     params = [
         (
             # When an unknown policy is referenced in Request.meta
@@ -842,14 +843,14 @@ class TestRequestMetaSettingFallback(TestCase):
 
             with warnings.catch_warnings(record=True) as w:
                 policy = mw.policy(response, request)
-                self.assertIsInstance(policy, policy_class)
+                assert isinstance(policy, policy_class)
 
                 if check_warning:
-                    self.assertEqual(len(w), 1)
-                    self.assertEqual(w[0].category, RuntimeWarning, w[0].message)
+                    assert len(w) == 1
+                    assert w[0].category is RuntimeWarning, w[0].message
 
 
-class TestSettingsPolicyByName(TestCase):
+class TestSettingsPolicyByName:
     def test_valid_name(self):
         for s, p in [
             (POLICY_SCRAPY_DEFAULT, DefaultReferrerPolicy),
@@ -864,7 +865,7 @@ class TestSettingsPolicyByName(TestCase):
         ]:
             settings = Settings({"REFERRER_POLICY": s})
             mw = RefererMiddleware(settings)
-            self.assertEqual(mw.default_policy, p)
+            assert mw.default_policy == p
 
     def test_valid_name_casevariants(self):
         for s, p in [
@@ -880,11 +881,11 @@ class TestSettingsPolicyByName(TestCase):
         ]:
             settings = Settings({"REFERRER_POLICY": s.upper()})
             mw = RefererMiddleware(settings)
-            self.assertEqual(mw.default_policy, p)
+            assert mw.default_policy == p
 
     def test_invalid_name(self):
         settings = Settings({"REFERRER_POLICY": "some-custom-unknown-policy"})
-        with self.assertRaises(RuntimeError):
+        with pytest.raises(RuntimeError):
             RefererMiddleware(settings)
 
     def test_multiple_policy_tokens(self):
@@ -900,7 +901,7 @@ class TestSettingsPolicyByName(TestCase):
             }
         )
         mw1 = RefererMiddleware(settings1)
-        self.assertEqual(mw1.default_policy, StrictOriginWhenCrossOriginPolicy)
+        assert mw1.default_policy == StrictOriginWhenCrossOriginPolicy
 
         # test parsing with space(s) after the comma
         settings2 = Settings(
@@ -913,7 +914,7 @@ class TestSettingsPolicyByName(TestCase):
             }
         )
         mw2 = RefererMiddleware(settings2)
-        self.assertEqual(mw2.default_policy, UnsafeUrlPolicy)
+        assert mw2.default_policy == UnsafeUrlPolicy
 
     def test_multiple_policy_tokens_all_invalid(self):
         settings = Settings(
@@ -925,7 +926,7 @@ class TestSettingsPolicyByName(TestCase):
                 )
             }
         )
-        with self.assertRaises(RuntimeError):
+        with pytest.raises(RuntimeError):
             RefererMiddleware(settings)
 
 
@@ -1001,7 +1002,7 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
         ),
     ]
 
-    def setUp(self):
+    def setup_method(self):
         self.spider = Spider("foo")
         settings = Settings(self.settings)
         self.referrermw = RefererMiddleware(settings)
@@ -1021,7 +1022,7 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
             out = list(
                 self.referrermw.process_spider_output(response, [request], self.spider)
             )
-            self.assertEqual(out[0].headers.get("Referer"), init_referrer)
+            assert out[0].headers.get("Referer") == init_referrer
 
             for status, url in redirections:
                 response = Response(
@@ -1033,7 +1034,7 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
                 self.referrermw.request_scheduled(request, self.spider)
 
             assert isinstance(request, Request)
-            self.assertEqual(request.headers.get("Referer"), final_referrer)
+            assert request.headers.get("Referer") == final_referrer
 
 
 class TestReferrerOnRedirectNoReferrer(TestReferrerOnRedirect):

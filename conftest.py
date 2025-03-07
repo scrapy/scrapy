@@ -13,6 +13,7 @@ def _py_files(folder):
 
 collect_ignore = [
     # not a test, but looks like a test
+    "scrapy/utils/testproc.py",
     "scrapy/utils/testsite.py",
     "tests/ftpserver.py",
     "tests/mockserver.py",
@@ -41,7 +42,7 @@ if not H2_ENABLED:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def chdir(tmpdir):
     """Change to pytest-provided temporary directory"""
     tmpdir.chdir()

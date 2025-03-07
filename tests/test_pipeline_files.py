@@ -6,8 +6,10 @@ import warnings
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
+from posixpath import split
 from shutil import rmtree
 from tempfile import mkdtemp
+from typing import Any
 from unittest import mock
 from urllib.parse import urlparse
 
@@ -27,14 +29,52 @@ from scrapy.pipelines.files import (
     S3FilesStore,
 )
 from scrapy.utils.test import (
-    assert_gcs_environ,
     get_crawler,
-    get_ftp_content_and_delete,
-    get_gcs_content_and_delete,
 )
 from tests.mockserver import MockFTPServer
 
 from .test_pipeline_media import _mocked_download_func
+
+
+def get_gcs_content_and_delete(
+    bucket: Any, path: str
+) -> tuple[bytes, list[dict[str, str]], Any]:
+    from google.cloud import storage
+
+    client = storage.Client(project=os.environ.get("GCS_PROJECT_ID"))
+    bucket = client.get_bucket(bucket)
+    blob = bucket.get_blob(path)
+    content = blob.download_as_string()
+    acl = list(blob.acl)  # loads acl before it will be deleted
+    bucket.delete_blob(path)
+    return content, acl, blob
+
+
+def get_ftp_content_and_delete(
+    path: str,
+    host: str,
+    port: int,
+    username: str,
+    password: str,
+    use_active_mode: bool = False,
+) -> bytes:
+    from ftplib import FTP
+
+    ftp = FTP()
+    ftp.connect(host, port)
+    ftp.login(username, password)
+    if use_active_mode:
+        ftp.set_pasv(False)
+    ftp_data: list[bytes] = []
+
+    def buffer_data(data: bytes) -> None:
+        ftp_data.append(data)
+
+    ftp.retrbinary(f"RETR {path}", buffer_data)
+    dirname, filename = split(path)
+    ftp.cwd(dirname)
+    ftp.delete(filename)
+    return b"".join(ftp_data)
 
 
 class FilesPipelineTestCase(unittest.TestCase):
@@ -215,7 +255,7 @@ class FilesPipelineTestCase(unittest.TestCase):
 
         class CustomFilesPipeline(FilesPipeline):
             def file_path(self, request, response=None, info=None, item=None):
-                return f'full/{item.get("path")}'
+                return f"full/{item.get('path')}"
 
         file_path = CustomFilesPipeline.from_crawler(
             get_crawler(None, {"FILES_STORE": self.tempdir})
@@ -597,10 +637,12 @@ class TestS3FilesStore(unittest.TestCase):
             stub.assert_no_pending_responses()
 
 
+@pytest.mark.skipif(
+    "GCS_PROJECT_ID" not in os.environ, reason="GCS_PROJECT_ID not found"
+)
 class TestGCSFilesStore(unittest.TestCase):
     @defer.inlineCallbacks
     def test_persist(self):
-        assert_gcs_environ()
         uri = os.environ.get("GCS_TEST_FILE_URI")
         if not uri:
             raise unittest.SkipTest("No GCS URI available for testing")
@@ -629,7 +671,6 @@ class TestGCSFilesStore(unittest.TestCase):
         """Test to make sure that paths used to store files is the same as the one used to get
         already uploaded files.
         """
-        assert_gcs_environ()
         try:
             import google.cloud.storage  # noqa: F401
         except ModuleNotFoundError:

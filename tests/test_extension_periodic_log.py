@@ -51,7 +51,7 @@ stats_dump_2 = {
 }
 
 
-class TestExtPeriodicLog(PeriodicLog):
+class CustomPeriodicLog(PeriodicLog):
     def set_a(self):
         self.stats._stats = stats_dump_1
 
@@ -62,7 +62,7 @@ class TestExtPeriodicLog(PeriodicLog):
 def extension(settings=None):
     crawler = Crawler(MetaSpider, settings=settings)
     crawler._apply_settings()
-    return TestExtPeriodicLog.from_crawler(crawler)
+    return CustomPeriodicLog.from_crawler(crawler)
 
 
 class TestPeriodicLog(unittest.TestCase):

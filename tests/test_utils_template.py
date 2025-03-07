@@ -1,18 +1,15 @@
-import unittest
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
 
 from scrapy.utils.template import render_templatefile
 
-__doctests__ = ["scrapy.utils.template"]
 
-
-class UtilsRenderTemplateFileTestCase(unittest.TestCase):
-    def setUp(self):
+class TestUtilsRenderTemplateFile:
+    def setup_method(self):
         self.tmp_path = mkdtemp()
 
-    def tearDown(self):
+    def teardown_method(self):
         rmtree(self.tmp_path)
 
     def test_simple_render(self):
@@ -28,8 +25,8 @@ class UtilsRenderTemplateFileTestCase(unittest.TestCase):
 
         render_templatefile(template_path, **context)
 
-        self.assertFalse(template_path.exists())
-        self.assertEqual(render_path.read_text(encoding="utf8"), rendered)
+        assert not template_path.exists()
+        assert render_path.read_text(encoding="utf8") == rendered
 
         render_path.unlink()
         assert not render_path.exists()  # Failure of test itself

@@ -7,13 +7,13 @@ from pexpect.popen_spawn import PopenSpawn
 from twisted.internet import defer
 from twisted.trial import unittest
 
-from scrapy.utils.testproc import ProcessTest
-from scrapy.utils.testsite import SiteTest
 from tests import NON_EXISTING_RESOLVABLE, tests_datadir
 from tests.mockserver import MockServer
+from tests.utils.testproc import ProcessTest
+from tests.utils.testsite import SiteTest
 
 
-class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
+class TestShellCommand(ProcessTest, SiteTest, unittest.TestCase):
     command = "shell"
 
     @defer.inlineCallbacks
@@ -40,14 +40,14 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
     def test_response_selector_html(self):
         xpath = "response.xpath(\"//p[@class='one']/text()\").get()"
         _, out, _ = yield self.execute([self.url("/html"), "-c", xpath])
-        self.assertEqual(out.strip(), b"Works")
+        assert out.strip() == b"Works"
 
     @defer.inlineCallbacks
     def test_response_encoding_gb18030(self):
         _, out, _ = yield self.execute(
             [self.url("/enc-gb18030"), "-c", "response.encoding"]
         )
-        self.assertEqual(out.strip(), b"gb18030")
+        assert out.strip() == b"gb18030"
 
     @defer.inlineCallbacks
     def test_redirect(self):
@@ -79,7 +79,7 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         url = self.url("/redirect-no-meta-refresh")
         code = f"fetch('{url}')"
         errcode, out, errout = yield self.execute(["-c", code])
-        self.assertEqual(errcode, 0, out)
+        assert errcode == 0, out
         assert b"Redirecting (302)" in errout
         assert b"Crawled (200)" in errout
 
@@ -89,7 +89,7 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         url = self.url("/redirect-no-meta-refresh")
         code = f"fetch('{url}', redirect=False)"
         errcode, out, errout = yield self.execute(["-c", code])
-        self.assertEqual(errcode, 0, out)
+        assert errcode == 0, out
         assert b"Crawled (302)" in errout
 
     @defer.inlineCallbacks
@@ -97,14 +97,14 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         url = self.url("/text")
         code = f"fetch('{url}') or fetch(response.request.replace(method='POST'))"
         errcode, out, _ = yield self.execute(["-c", code])
-        self.assertEqual(errcode, 0, out)
+        assert errcode == 0, out
 
     @defer.inlineCallbacks
     def test_scrapy_import(self):
         url = self.url("/text")
         code = f"fetch(scrapy.Request('{url}'))"
         errcode, out, _ = yield self.execute(["-c", code])
-        self.assertEqual(errcode, 0, out)
+        assert errcode == 0, out
 
     @defer.inlineCallbacks
     def test_local_file(self):
@@ -118,8 +118,8 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         errcode, out, err = yield self.execute(
             [filepath, "-c", "item"], check_code=False
         )
-        self.assertEqual(errcode, 1, out or err)
-        self.assertIn(b"No such file or directory", err)
+        assert errcode == 1, out or err
+        assert b"No such file or directory" in err
 
     @defer.inlineCallbacks
     def test_dns_failures(self):
@@ -127,8 +127,8 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
             raise unittest.SkipTest("Non-existing hosts are resolvable")
         url = "www.somedomainthatdoesntexi.st"
         errcode, out, err = yield self.execute([url, "-c", "item"], check_code=False)
-        self.assertEqual(errcode, 1, out or err)
-        self.assertIn(b"DNS lookup failed", err)
+        assert errcode == 1, out or err
+        assert b"DNS lookup failed" in err
 
     @defer.inlineCallbacks
     def test_shell_fetch_async(self):
@@ -137,10 +137,10 @@ class ShellTest(ProcessTest, SiteTest, unittest.TestCase):
         code = f"fetch('{url}')"
         args = ["-c", code, "--set", f"TWISTED_REACTOR={reactor_path}"]
         _, _, err = yield self.execute(args, check_code=True)
-        self.assertNotIn(b"RuntimeError: There is no current event loop in thread", err)
+        assert b"RuntimeError: There is no current event loop in thread" not in err
 
 
-class InteractiveShellTest(unittest.TestCase):
+class TestInteractiveShell:
     def test_fetch(self):
         args = (
             sys.executable,
@@ -161,4 +161,4 @@ class InteractiveShellTest(unittest.TestCase):
         p.sendeof()
         p.wait()
         logfile.seek(0)
-        self.assertNotIn("Traceback", logfile.read().decode())
+        assert "Traceback" not in logfile.read().decode()

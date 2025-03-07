@@ -16,7 +16,6 @@ from scrapy.settings import Settings, _SettingsKeyT
 from scrapy.utils.versions import get_versions
 
 if TYPE_CHECKING:
-
     from scrapy.crawler import Crawler
     from scrapy.logformatter import LogFormatterResult
 

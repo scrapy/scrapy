@@ -94,8 +94,7 @@ class Response(object_ref):
             return self.request.meta  # type: ignore[union-attr]
         except AttributeError:
             raise AttributeError(
-                "Response.meta not available, this response "
-                "is not tied to any request"
+                "Response.meta not available, this response is not tied to any request"
             )
 
     @property

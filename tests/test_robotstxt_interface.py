@@ -27,10 +27,7 @@ class BaseRobotParserTest:
 
     def test_allowed(self):
         robotstxt_robotstxt_body = (
-            b"User-agent: * \n"
-            b"Disallow: /disallowed \n"
-            b"Allow: /allowed \n"
-            b"Crawl-delay: 10"
+            b"User-agent: * \nDisallow: /disallowed \nAllow: /allowed \nCrawl-delay: 10"
         )
         rp = self.parser_cls.from_crawler(
             crawler=None, robotstxt_body=robotstxt_robotstxt_body
@@ -140,7 +137,7 @@ class DecodeRobotsTxtTest(unittest.TestCase):
         self.assertEqual(decoded_content, "User-agent: *\nDisallow: /\n")
 
     def test_decode_non_utf8(self):
-        robotstxt_body = b"User-agent: *\n\xFFDisallow: /\n"
+        robotstxt_body = b"User-agent: *\n\xffDisallow: /\n"
         decoded_content = decode_robotstxt(robotstxt_body, spider=None)
         self.assertEqual(decoded_content, "User-agent: *\nDisallow: /\n")
 

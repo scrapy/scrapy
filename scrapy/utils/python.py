@@ -119,8 +119,7 @@ def to_unicode(
         return text
     if not isinstance(text, (bytes, str)):
         raise TypeError(
-            "to_unicode must receive a bytes or str "
-            f"object, got {type(text).__name__}"
+            f"to_unicode must receive a bytes or str object, got {type(text).__name__}"
         )
     if encoding is None:
         encoding = "utf-8"
@@ -183,7 +182,7 @@ _SelfT = TypeVar("_SelfT")
 
 
 def memoizemethod_noargs(
-    method: Callable[Concatenate[_SelfT, _P], _T]
+    method: Callable[Concatenate[_SelfT, _P], _T],
 ) -> Callable[Concatenate[_SelfT, _P], _T]:
     """Decorator to cache the result of a method (without arguments) using a
     weak reference to its object
@@ -313,7 +312,7 @@ def without_none_values(iterable: Iterable[_KT]) -> Iterable[_KT]: ...
 
 
 def without_none_values(
-    iterable: Mapping[_KT, _VT] | Iterable[_KT]
+    iterable: Mapping[_KT, _VT] | Iterable[_KT],
 ) -> dict[_KT, _VT] | Iterable[_KT]:
     """Return a copy of ``iterable`` with all ``None`` entries removed.
 
@@ -327,11 +326,13 @@ def without_none_values(
 
 
 def global_object_name(obj: Any) -> str:
-    """Return the full import path of the given class.
+    """Return the full import path of the given object.
 
     >>> from scrapy import Request
     >>> global_object_name(Request)
     'scrapy.http.request.Request'
+    >>> global_object_name(Request.replace)
+    'scrapy.http.request.Request.replace'
     """
     return f"{obj.__module__}.{obj.__qualname__}"
 

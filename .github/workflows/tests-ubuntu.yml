@@ -33,9 +33,6 @@ jobs:
         - python-version: "3.14.0-alpha.3"
           env:
             TOXENV: asyncio
-        - python-version: pypy3.9
-          env:
-            TOXENV: pypy3
         - python-version: pypy3.10
           env:
             TOXENV: pypy3
@@ -47,7 +44,7 @@ jobs:
         - python-version: 3.9.19
           env:
             TOXENV: asyncio-pinned
-        - python-version: pypy3.9
+        - python-version: pypy3.10
           env:
             TOXENV: pypy3-pinned
         - python-version: 3.9.19
@@ -60,6 +57,9 @@ jobs:
         - python-version: "3.14.0-alpha.3"
           env:
             TOXENV: extra-deps
+        - python-version: pypy3.10
+          env:
+            TOXENV: pypy3-extra-deps
         - python-version: "3.14.0-alpha.3"
           env:
             TOXENV: botocore

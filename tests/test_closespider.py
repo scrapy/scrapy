@@ -13,12 +13,14 @@ from tests.spiders import (
 
 
 class TestCloseSpider(TestCase):
-    def setUp(self):
-        self.mockserver = MockServer()
-        self.mockserver.__enter__()
+    @classmethod
+    def setUpClass(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
 
-    def tearDown(self):
-        self.mockserver.__exit__(None, None, None)
+    @classmethod
+    def tearDownClass(cls):
+        cls.mockserver.__exit__(None, None, None)
 
     @defer.inlineCallbacks
     def test_closespider_itemcount(self):
@@ -26,9 +28,9 @@ class TestCloseSpider(TestCase):
         crawler = get_crawler(ItemSpider, {"CLOSESPIDER_ITEMCOUNT": close_on})
         yield crawler.crawl(mockserver=self.mockserver)
         reason = crawler.spider.meta["close_reason"]
-        self.assertEqual(reason, "closespider_itemcount")
+        assert reason == "closespider_itemcount"
         itemcount = crawler.stats.get_value("item_scraped_count")
-        self.assertTrue(itemcount >= close_on)
+        assert itemcount >= close_on
 
     @defer.inlineCallbacks
     def test_closespider_pagecount(self):
@@ -36,9 +38,9 @@ class TestCloseSpider(TestCase):
         crawler = get_crawler(FollowAllSpider, {"CLOSESPIDER_PAGECOUNT": close_on})
         yield crawler.crawl(mockserver=self.mockserver)
         reason = crawler.spider.meta["close_reason"]
-        self.assertEqual(reason, "closespider_pagecount")
+        assert reason == "closespider_pagecount"
         pagecount = crawler.stats.get_value("response_received_count")
-        self.assertTrue(pagecount >= close_on)
+        assert pagecount >= close_on
 
     @defer.inlineCallbacks
     def test_closespider_pagecount_no_item(self):
@@ -55,10 +57,10 @@ class TestCloseSpider(TestCase):
             max_items=max_items, max_requests=max_requests, mockserver=self.mockserver
         )
         reason = crawler.spider.meta["close_reason"]
-        self.assertEqual(reason, "closespider_pagecount_no_item")
+        assert reason == "closespider_pagecount_no_item"
         pagecount = crawler.stats.get_value("response_received_count")
         itemcount = crawler.stats.get_value("item_scraped_count")
-        self.assertLessEqual(pagecount, close_on + itemcount)
+        assert pagecount <= close_on + itemcount
 
     @defer.inlineCallbacks
     def test_closespider_pagecount_no_item_with_pagecount(self):
@@ -73,9 +75,9 @@ class TestCloseSpider(TestCase):
         )
         yield crawler.crawl(mockserver=self.mockserver)
         reason = crawler.spider.meta["close_reason"]
-        self.assertEqual(reason, "closespider_pagecount_no_item")
+        assert reason == "closespider_pagecount_no_item"
         pagecount = crawler.stats.get_value("response_received_count")
-        self.assertLess(pagecount, close_on_pagecount)
+        assert pagecount < close_on_pagecount
 
     @defer.inlineCallbacks
     def test_closespider_errorcount(self):
@@ -83,10 +85,10 @@ class TestCloseSpider(TestCase):
         crawler = get_crawler(ErrorSpider, {"CLOSESPIDER_ERRORCOUNT": close_on})
         yield crawler.crawl(total=1000000, mockserver=self.mockserver)
         reason = crawler.spider.meta["close_reason"]
-        self.assertEqual(reason, "closespider_errorcount")
+        assert reason == "closespider_errorcount"
         key = f"spider_exceptions/{crawler.spider.exception_cls.__name__}"
         errorcount = crawler.stats.get_value(key)
-        self.assertTrue(errorcount >= close_on)
+        assert errorcount >= close_on
 
     @defer.inlineCallbacks
     def test_closespider_timeout(self):
@@ -94,9 +96,9 @@ class TestCloseSpider(TestCase):
         crawler = get_crawler(FollowAllSpider, {"CLOSESPIDER_TIMEOUT": close_on})
         yield crawler.crawl(total=1000000, mockserver=self.mockserver)
         reason = crawler.spider.meta["close_reason"]
-        self.assertEqual(reason, "closespider_timeout")
+        assert reason == "closespider_timeout"
         total_seconds = crawler.stats.get_value("elapsed_time_seconds")
-        self.assertTrue(total_seconds >= close_on)
+        assert total_seconds >= close_on
 
     @defer.inlineCallbacks
     def test_closespider_timeout_no_item(self):
@@ -104,6 +106,6 @@ class TestCloseSpider(TestCase):
         crawler = get_crawler(SlowSpider, {"CLOSESPIDER_TIMEOUT_NO_ITEM": timeout})
         yield crawler.crawl(n=3, mockserver=self.mockserver)
         reason = crawler.spider.meta["close_reason"]
-        self.assertEqual(reason, "closespider_timeout_no_item")
+        assert reason == "closespider_timeout_no_item"
         total_seconds = crawler.stats.get_value("elapsed_time_seconds")
-        self.assertTrue(total_seconds >= timeout)
+        assert total_seconds >= timeout

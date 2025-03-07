@@ -1,5 +1,7 @@
 import unittest
 
+import pytest
+
 from scrapy import Request, Spider
 from scrapy.http import FormRequest, JsonRequest
 from scrapy.utils.request import request_from_dict
@@ -11,7 +13,7 @@ class CustomRequest(Request):
 
 class RequestSerializationTest(unittest.TestCase):
     def setUp(self):
-        self.spider = TestSpider()
+        self.spider = MethodsSpider()
 
     def test_basic(self):
         r = Request("http://www.example.com")
@@ -96,18 +98,22 @@ class RequestSerializationTest(unittest.TestCase):
     def test_private_reference_callback_serialization(self):
         r = Request(
             "http://www.example.com",
-            callback=self.spider._TestSpider__parse_item_reference,
-            errback=self.spider._TestSpider__handle_error_reference,
+            callback=self.spider._MethodsSpider__parse_item_reference,
+            errback=self.spider._MethodsSpider__handle_error_reference,
         )
         self._assert_serializes_ok(r, spider=self.spider)
         request_dict = r.to_dict(spider=self.spider)
-        self.assertEqual(request_dict["callback"], "_TestSpider__parse_item_reference")
-        self.assertEqual(request_dict["errback"], "_TestSpider__handle_error_reference")
+        self.assertEqual(
+            request_dict["callback"], "_MethodsSpider__parse_item_reference"
+        )
+        self.assertEqual(
+            request_dict["errback"], "_MethodsSpider__handle_error_reference"
+        )
 
     def test_private_callback_serialization(self):
         r = Request(
             "http://www.example.com",
-            callback=self.spider._TestSpider__parse_item_private,
+            callback=self.spider._MethodsSpider__parse_item_private,
             errback=self.spider.handle_error,
         )
         self._assert_serializes_ok(r, spider=self.spider)
@@ -115,7 +121,7 @@ class RequestSerializationTest(unittest.TestCase):
     def test_mixin_private_callback_serialization(self):
         r = Request(
             "http://www.example.com",
-            callback=self.spider._TestSpiderMixin__mixin_callback,
+            callback=self.spider._SpiderMixin__mixin_callback,
             errback=self.spider.handle_error,
         )
         self._assert_serializes_ok(r, spider=self.spider)
@@ -130,11 +136,15 @@ class RequestSerializationTest(unittest.TestCase):
 
     def test_unserializable_callback1(self):
         r = Request("http://www.example.com", callback=lambda x: x)
-        self.assertRaises(ValueError, r.to_dict, spider=self.spider)
+        with pytest.raises(
+            ValueError, match="is not an instance method in: <MethodsSpider"
+        ):
+            r.to_dict(spider=self.spider)
 
     def test_unserializable_callback2(self):
         r = Request("http://www.example.com", callback=self.spider.parse_item)
-        self.assertRaises(ValueError, r.to_dict, spider=None)
+        with pytest.raises(ValueError, match="is not an instance method in: None"):
+            r.to_dict(spider=None)
 
     def test_unserializable_callback3(self):
         """Parser method is removed or replaced dynamically."""
@@ -148,22 +158,26 @@ class RequestSerializationTest(unittest.TestCase):
         spider = MySpider()
         r = Request("http://www.example.com", callback=spider.parse)
         spider.parse = None
-        self.assertRaises(ValueError, r.to_dict, spider=spider)
+        with pytest.raises(ValueError, match="is not an instance method in: <MySpider"):
+            r.to_dict(spider=spider)
 
     def test_callback_not_available(self):
         """Callback method is not available in the spider passed to from_dict"""
-        spider = TestSpiderDelegation()
+        spider = SpiderDelegation()
         r = Request("http://www.example.com", callback=spider.delegated_callback)
         d = r.to_dict(spider=spider)
-        self.assertRaises(ValueError, request_from_dict, d, spider=Spider("foo"))
+        with pytest.raises(
+            ValueError, match="Method 'delegated_callback' not found in: <Spider"
+        ):
+            request_from_dict(d, spider=Spider("foo"))
 
 
-class TestSpiderMixin:
+class SpiderMixin:
     def __mixin_callback(self, response):  # pylint: disable=unused-private-member
         pass
 
 
-class TestSpiderDelegation:
+class SpiderDelegation:
     def delegated_callback(self, response):
         pass
 
@@ -184,7 +198,7 @@ def private_handle_error(failure):
     pass
 
 
-class TestSpider(Spider, TestSpiderMixin):
+class MethodsSpider(Spider, SpiderMixin):
     name = "test"
     parse_item_reference = parse_item
     handle_error_reference = handle_error
@@ -193,7 +207,7 @@ class TestSpider(Spider, TestSpiderMixin):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.delegated_callback = TestSpiderDelegation().delegated_callback
+        self.delegated_callback = SpiderDelegation().delegated_callback
 
     def parse_item(self, response):
         pass

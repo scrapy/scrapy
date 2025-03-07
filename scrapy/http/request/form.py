@@ -24,7 +24,6 @@ from scrapy.http.request import Request
 from scrapy.utils.python import is_listlike, to_bytes
 
 if TYPE_CHECKING:
-
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 

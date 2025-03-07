@@ -33,42 +33,48 @@ Python :ref:`import search path <tut-searchpath>`.
 Populating the settings
 =======================
 
-Settings can be populated using different mechanisms, each of which having a
-different precedence. Here is the list of them in decreasing order of
-precedence:
+Settings can be populated using different mechanisms, each of which has a
+different precedence:
 
- 1. Command line options (most precedence)
- 2. Settings per-spider
- 3. Project settings module
- 4. Settings set by add-ons
- 5. Default settings per-command
- 6. Default global settings (less precedence)
+ 1. :ref:`Command-line settings <cli-settings>` (highest precedence)
+ 2. :ref:`Spider settings <spider-settings>`
+ 3. :ref:`Project settings <project-settings>`
+ 4. :ref:`Add-on settings <addon-settings>`
+ 5. :ref:`Command-specific default settings <cmd-default-settings>`
+ 6. :ref:`Global default settings <default-settings>` (lowest precedence)
 
-The population of these settings sources is taken care of internally, but a
-manual handling is possible using API calls. See the
-:ref:`topics-api-settings` topic for reference.
+.. _cli-settings:
 
-These mechanisms are described in more detail below.
+1. Command-line settings
+------------------------
 
-1. Command line options
------------------------
+Settings set in the command line have the highest precedence, overriding any
+other settings.
 
-Arguments provided by the command line are the ones that take most precedence,
-overriding any other options. You can explicitly override one (or more)
-settings using the ``-s`` (or ``--set``) command line option.
+You can explicitly override one or more settings using the ``-s`` (or
+``--set``) command-line option.
 
 .. highlight:: sh
 
 Example::
 
-    scrapy crawl myspider -s LOG_FILE=scrapy.log
+    scrapy crawl myspider -s LOG_LEVEL=INFO -s LOG_FILE=scrapy.log
 
-2. Settings per-spider
-----------------------
+.. _spider-settings:
 
-Spiders (See the :ref:`topics-spiders` chapter for reference) can define their
-own settings that will take precedence and override the project ones. One way
-to do so is by setting their :attr:`~scrapy.Spider.custom_settings` attribute:
+2. Spider settings
+------------------
+
+:ref:`Spiders <topics-spiders>` can define their own settings that will take
+precedence and override the project ones.
+
+.. note:: :ref:`Pre-crawler settings <pre-crawler-settings>` cannot be defined
+    per spider, and :ref:`reactor settings <reactor-settings>` should not have
+    a different value per spider when :ref:`running multiple spiders in the
+    same process <run-multiple-spiders>`.
+
+One way to do so is by setting their :attr:`~scrapy.Spider.custom_settings`
+attribute:
 
 .. code-block:: python
 
@@ -83,7 +89,7 @@ to do so is by setting their :attr:`~scrapy.Spider.custom_settings` attribute:
         }
 
 It's often better to implement :meth:`~scrapy.Spider.update_settings` instead,
-and settings set there should use the "spider" priority explicitly:
+and settings set there should use the ``"spider"`` priority explicitly:
 
 .. code-block:: python
 
@@ -121,27 +127,37 @@ arguments <spiderargs>` or other logic:
                 )
             return spider
 
-3. Project settings module
---------------------------
+.. _project-settings:
 
-The project settings module is the standard configuration file for your Scrapy
-project, it's where most of your custom settings will be populated. For a
-standard Scrapy project, this means you'll be adding or changing the settings
-in the ``settings.py`` file created for your project.
+3. Project settings
+-------------------
 
-4. Settings set by add-ons
---------------------------
+Scrapy projects include a settings module, usually a file called
+``settings.py``, where you should populate most settings that apply to all your
+spiders.
+
+.. seealso:: :ref:`topics-settings-module-envvar`
+
+.. _addon-settings:
+
+4. Add-on settings
+------------------
 
 :ref:`Add-ons <topics-addons>` can modify settings. They should do this with
-this priority, though this is not enforced.
+``"addon"`` priority where possible.
 
-5. Default settings per-command
--------------------------------
+.. _cmd-default-settings:
 
-Each :doc:`Scrapy tool </topics/commands>` command can have its own default
-settings, which override the global default settings. Those custom command
-settings are specified in the ``default_settings`` attribute of the command
-class.
+5. Command-specific default settings
+------------------------------------
+
+Each :ref:`Scrapy command <topics-commands>` can have its own default settings,
+which override the :ref:`global default settings <default-settings>`.
+
+Those command-specific default settings are specified in the
+``default_settings`` attribute of each command class.
+
+.. _default-settings:
 
 6. Default global settings
 --------------------------
@@ -232,6 +248,112 @@ Rationale for setting names
 Setting names are usually prefixed with the component that they configure. For
 example, proper setting names for a fictional robots.txt extension would be
 ``ROBOTSTXT_ENABLED``, ``ROBOTSTXT_OBEY``, ``ROBOTSTXT_CACHEDIR``, etc.
+
+
+.. _component-priority-dictionaries:
+
+Component priority dictionaries
+===============================
+
+A **component priority dictionary** is a :class:`dict` where keys are
+:ref:`components <topics-components>` and values are component priorities. For
+example:
+
+.. skip: next
+.. code-block:: python
+
+    {
+        "path.to.ComponentA": None,
+        ComponentB: 100,
+    }
+
+A component can be specified either as a class object or through an import
+path.
+
+.. warning:: Component priority dictionaries are regular :class:`dict` objects.
+    Be careful not to define the same component more than once, e.g. with
+    different import path strings or defining both an import path and a
+    :class:`type` object.
+
+A priority can be an :class:`int` or :data:`None`.
+
+A component with priority 1 goes *before* a component with priority 2. What
+going before entails, however, depends on the corresponding setting. For
+example, in the :setting:`DOWNLOADER_MIDDLEWARES` setting, components have
+their
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`
+method executed before that of later components, but have their
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`
+method executed after that of later components.
+
+A component with priority :data:`None` is disabled.
+
+Some component priority dictionaries get merged with some built-in value. For
+example, :setting:`DOWNLOADER_MIDDLEWARES` is merged with
+:setting:`DOWNLOADER_MIDDLEWARES_BASE`. This is where :data:`None` comes in
+handy, allowing you to disable a component from the base setting in the regular
+setting:
+
+.. code-block:: python
+
+    DOWNLOADER_MIDDLEWARES = {
+        "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": None,
+    }
+
+
+Special settings
+================
+
+The following settings work slightly differently than all other settings.
+
+.. _pre-crawler-settings:
+
+Pre-crawler settings
+--------------------
+
+**Pre-crawler settings** are settings used before the
+:class:`~scrapy.crawler.Crawler` object is created.
+
+These settings cannot be :ref:`set from a spider <spider-settings>`.
+
+These settings are :setting:`SPIDER_LOADER_CLASS` and settings used by the
+corresponding :ref:`component <topics-components>`, e.g.
+:setting:`SPIDER_MODULES` and :setting:`SPIDER_LOADER_WARN_ONLY` for the
+default component.
+
+
+.. _reactor-settings:
+
+Reactor settings
+----------------
+
+**Reactor settings** are settings tied to the :doc:`Twisted reactor
+<twisted:core/howto/reactor-basics>`.
+
+These settings can be defined from a spider. However, because only 1 reactor
+can be used per process, these settings cannot use a different value per spider
+when :ref:`running multiple spiders in the same process
+<run-multiple-spiders>`.
+
+In general, if different spiders define different values, the first defined
+value is used. However, if two spiders request a different reactor, an
+exception is raised.
+
+These settings are:
+
+-   :setting:`ASYNCIO_EVENT_LOOP`
+
+-   :setting:`DNS_RESOLVER` and settings used by the corresponding
+    component, e.g. :setting:`DNSCACHE_ENABLED`, :setting:`DNSCACHE_SIZE`
+    and :setting:`DNS_TIMEOUT` for the default one.
+
+-   :setting:`REACTOR_THREADPOOL_MAXSIZE`
+
+-   :setting:`TWISTED_REACTOR`
+
+:setting:`ASYNCIO_EVENT_LOOP` and :setting:`TWISTED_REACTOR` are used upon
+installing the reactor. The rest of the settings are applied when starting
+the reactor.
 
 
 .. _topics-settings-ref:

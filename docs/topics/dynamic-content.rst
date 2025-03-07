@@ -14,7 +14,7 @@ from it.
 
 If you fail to do that, and you can nonetheless access the desired data through
 the :ref:`DOM <topics-livedom>` from your web browser, see
-:ref:`topics-javascript-rendering`.
+:ref:`topics-headless-browsing`.
 
 .. _topics-finding-data-source:
 
@@ -97,7 +97,7 @@ it <topics-handling-response-formats>`.
 You can reproduce any request with Scrapy. However, some times reproducing all
 necessary requests may not seem efficient in developer time. If that is your
 case, and crawling speed is not a major concern for you, you can alternatively
-consider :ref:`JavaScript pre-rendering <topics-javascript-rendering>`.
+consider :ref:`using a headless browser <topics-headless-browsing>`.
 
 If you get the expected response `sometimes`, but not always, the issue is
 probably not your request, but the target server. The target server might be
@@ -220,9 +220,9 @@ data from it:
         >>> selector.css('var[name="data"]').get()
         '<var name="data"><object><property name="field"><string>value</string></property></object></var>'
 
-.. _topics-javascript-rendering:
+.. _topics-headless-browsing:
 
-Pre-rendering JavaScript
+Using a headless browser
 ========================
 
 On webpages that fetch data from additional requests, reproducing those
@@ -232,29 +232,10 @@ network transfer.
 
 However, sometimes it can be really hard to reproduce certain requests. Or you
 may need something that no request can give you, such as a screenshot of a
-webpage as seen in a web browser.
+webpage as seen in a web browser. In this case using a `headless browser`_ will
+help.
 
-In these cases use the Splash_ JavaScript-rendering service, along with
-`scrapy-splash`_ for seamless integration.
-
-Splash returns as HTML the :ref:`DOM <topics-livedom>` of a webpage, so that
-you can parse it with :ref:`selectors <topics-selectors>`. It provides great
-flexibility through configuration_ or scripting_.
-
-If you need something beyond what Splash offers, such as interacting with the
-DOM on-the-fly from Python code instead of using a previously-written script,
-or handling multiple web browser windows, you might need to
-:ref:`use a headless browser <topics-headless-browsing>` instead.
-
-.. _configuration: https://splash.readthedocs.io/en/stable/api.html
-.. _scripting: https://splash.readthedocs.io/en/stable/scripting-tutorial.html
-
-.. _topics-headless-browsing:
-
-Using a headless browser
-========================
-
-A `headless browser`_ is a special web browser that provides an API for
+A headless browser is a special web browser that provides an API for
 automation. By installing the :ref:`asyncio reactor <install-asyncio>`,
 it is possible to integrate ``asyncio``-based libraries which handle headless browsers.
 
@@ -287,7 +268,6 @@ We recommend using `scrapy-playwright`_ for a better integration.
 .. _AJAX: https://en.wikipedia.org/wiki/Ajax_%28programming%29
 .. _CSS: https://en.wikipedia.org/wiki/Cascading_Style_Sheets
 .. _JavaScript: https://en.wikipedia.org/wiki/JavaScript
-.. _Splash: https://github.com/scrapinghub/splash
 .. _chompjs: https://github.com/Nykakin/chompjs
 .. _curl: https://curl.se/
 .. _headless browser: https://en.wikipedia.org/wiki/Headless_browser
@@ -297,7 +277,6 @@ We recommend using `scrapy-playwright`_ for a better integration.
 .. _pyppeteer: https://pyppeteer.github.io/pyppeteer/
 .. _pytesseract: https://github.com/madmaze/pytesseract
 .. _scrapy-playwright: https://github.com/scrapy-plugins/scrapy-playwright
-.. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
 .. _tabula-py: https://github.com/chezou/tabula-py
 .. _wget: https://www.gnu.org/software/wget/
 .. _wgrep: https://github.com/stav/wgrep

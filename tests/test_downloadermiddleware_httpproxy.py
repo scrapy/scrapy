@@ -1,7 +1,6 @@
 import os
 
 import pytest
-from twisted.trial.unittest import TestCase
 
 from scrapy.downloadermiddlewares.httpproxy import HttpProxyMiddleware
 from scrapy.exceptions import NotConfigured
@@ -12,13 +11,13 @@ from scrapy.utils.test import get_crawler
 spider = Spider("foo")
 
 
-class TestHttpProxyMiddleware(TestCase):
+class TestHttpProxyMiddleware:
     failureException = AssertionError  # type: ignore[assignment]
 
-    def setUp(self):
+    def setup_method(self):
         self._oldenv = os.environ.copy()
 
-    def tearDown(self):
+    def teardown_method(self):
         os.environ = self._oldenv
 
     def test_not_enabled(self):
@@ -33,8 +32,8 @@ class TestHttpProxyMiddleware(TestCase):
         for url in ("http://e.com", "https://e.com", "file:///tmp/a"):
             req = Request(url)
             assert mw.process_request(req, spider) is None
-            self.assertEqual(req.url, url)
-            self.assertEqual(req.meta, {})
+            assert req.url == url
+            assert req.meta == {}
 
     def test_environment_proxies(self):
         os.environ["http_proxy"] = http_proxy = "https://proxy.for.http:3128"
@@ -49,32 +48,32 @@ class TestHttpProxyMiddleware(TestCase):
         ]:
             req = Request(url)
             assert mw.process_request(req, spider) is None
-            self.assertEqual(req.url, url)
-            self.assertEqual(req.meta.get("proxy"), proxy)
+            assert req.url == url
+            assert req.meta.get("proxy") == proxy
 
     def test_proxy_precedence_meta(self):
         os.environ["http_proxy"] = "https://proxy.com"
         mw = HttpProxyMiddleware()
         req = Request("http://scrapytest.org", meta={"proxy": "https://new.proxy:3128"})
         assert mw.process_request(req, spider) is None
-        self.assertEqual(req.meta, {"proxy": "https://new.proxy:3128"})
+        assert req.meta == {"proxy": "https://new.proxy:3128"}
 
     def test_proxy_auth(self):
         os.environ["http_proxy"] = "https://user:pass@proxy:3128"
         mw = HttpProxyMiddleware()
         req = Request("http://scrapytest.org")
         assert mw.process_request(req, spider) is None
-        self.assertEqual(req.meta["proxy"], "https://proxy:3128")
-        self.assertEqual(req.headers.get("Proxy-Authorization"), b"Basic dXNlcjpwYXNz")
+        assert req.meta["proxy"] == "https://proxy:3128"
+        assert req.headers.get("Proxy-Authorization") == b"Basic dXNlcjpwYXNz"
         # proxy from request.meta
         req = Request(
             "http://scrapytest.org",
             meta={"proxy": "https://username:password@proxy:3128"},
         )
         assert mw.process_request(req, spider) is None
-        self.assertEqual(req.meta["proxy"], "https://proxy:3128")
-        self.assertEqual(
-            req.headers.get("Proxy-Authorization"), b"Basic dXNlcm5hbWU6cGFzc3dvcmQ="
+        assert req.meta["proxy"] == "https://proxy:3128"
+        assert (
+            req.headers.get("Proxy-Authorization") == b"Basic dXNlcm5hbWU6cGFzc3dvcmQ="
         )
 
     def test_proxy_auth_empty_passwd(self):
@@ -82,56 +81,55 @@ class TestHttpProxyMiddleware(TestCase):
         mw = HttpProxyMiddleware()
         req = Request("http://scrapytest.org")
         assert mw.process_request(req, spider) is None
-        self.assertEqual(req.meta["proxy"], "https://proxy:3128")
-        self.assertEqual(req.headers.get("Proxy-Authorization"), b"Basic dXNlcjo=")
+        assert req.meta["proxy"] == "https://proxy:3128"
+        assert req.headers.get("Proxy-Authorization") == b"Basic dXNlcjo="
         # proxy from request.meta
         req = Request(
             "http://scrapytest.org", meta={"proxy": "https://username:@proxy:3128"}
         )
         assert mw.process_request(req, spider) is None
-        self.assertEqual(req.meta["proxy"], "https://proxy:3128")
-        self.assertEqual(req.headers.get("Proxy-Authorization"), b"Basic dXNlcm5hbWU6")
+        assert req.meta["proxy"] == "https://proxy:3128"
+        assert req.headers.get("Proxy-Authorization") == b"Basic dXNlcm5hbWU6"
 
     def test_proxy_auth_encoding(self):
         # utf-8 encoding
-        os.environ["http_proxy"] = "https://m\u00E1n:pass@proxy:3128"
+        os.environ["http_proxy"] = "https://m\u00e1n:pass@proxy:3128"
         mw = HttpProxyMiddleware(auth_encoding="utf-8")
         req = Request("http://scrapytest.org")
         assert mw.process_request(req, spider) is None
-        self.assertEqual(req.meta["proxy"], "https://proxy:3128")
-        self.assertEqual(req.headers.get("Proxy-Authorization"), b"Basic bcOhbjpwYXNz")
+        assert req.meta["proxy"] == "https://proxy:3128"
+        assert req.headers.get("Proxy-Authorization") == b"Basic bcOhbjpwYXNz"
 
         # proxy from request.meta
         req = Request(
-            "http://scrapytest.org", meta={"proxy": "https://\u00FCser:pass@proxy:3128"}
+            "http://scrapytest.org", meta={"proxy": "https://\u00fcser:pass@proxy:3128"}
         )
         assert mw.process_request(req, spider) is None
-        self.assertEqual(req.meta["proxy"], "https://proxy:3128")
-        self.assertEqual(
-            req.headers.get("Proxy-Authorization"), b"Basic w7xzZXI6cGFzcw=="
-        )
+        assert req.meta["proxy"] == "https://proxy:3128"
+        assert req.headers.get("Proxy-Authorization") == b"Basic w7xzZXI6cGFzcw=="
 
         # default latin-1 encoding
         mw = HttpProxyMiddleware(auth_encoding="latin-1")
         req = Request("http://scrapytest.org")
         assert mw.process_request(req, spider) is None
-        self.assertEqual(req.meta["proxy"], "https://proxy:3128")
-        self.assertEqual(req.headers.get("Proxy-Authorization"), b"Basic beFuOnBhc3M=")
+        assert req.meta["proxy"] == "https://proxy:3128"
+        assert req.headers.get("Proxy-Authorization") == b"Basic beFuOnBhc3M="
 
         # proxy from request.meta, latin-1 encoding
         req = Request(
-            "http://scrapytest.org", meta={"proxy": "https://\u00FCser:pass@proxy:3128"}
+            "http://scrapytest.org", meta={"proxy": "https://\u00fcser:pass@proxy:3128"}
         )
         assert mw.process_request(req, spider) is None
-        self.assertEqual(req.meta["proxy"], "https://proxy:3128")
-        self.assertEqual(req.headers.get("Proxy-Authorization"), b"Basic /HNlcjpwYXNz")
+        assert req.meta["proxy"] == "https://proxy:3128"
+        assert req.headers.get("Proxy-Authorization") == b"Basic /HNlcjpwYXNz"
 
     def test_proxy_already_seted(self):
         os.environ["http_proxy"] = "https://proxy.for.http:3128"
         mw = HttpProxyMiddleware()
         req = Request("http://noproxy.com", meta={"proxy": None})
         assert mw.process_request(req, spider) is None
-        assert "proxy" in req.meta and req.meta["proxy"] is None
+        assert "proxy" in req.meta
+        assert req.meta["proxy"] is None
 
     def test_no_proxy(self):
         os.environ["http_proxy"] = "https://proxy.for.http:3128"
@@ -156,7 +154,7 @@ class TestHttpProxyMiddleware(TestCase):
         os.environ["no_proxy"] = "*"
         req = Request("http://noproxy.com", meta={"proxy": "http://proxy.com"})
         assert mw.process_request(req, spider) is None
-        self.assertEqual(req.meta, {"proxy": "http://proxy.com"})
+        assert req.meta == {"proxy": "http://proxy.com"}
 
     def test_no_proxy_invalid_values(self):
         os.environ["no_proxy"] = "/var/run/docker.sock"
@@ -171,8 +169,8 @@ class TestHttpProxyMiddleware(TestCase):
         assert middleware.process_request(request, spider) is None
         request.meta["proxy"] = "https://example.com"
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.com")
-        self.assertNotIn(b"Proxy-Authorization", request.headers)
+        assert request.meta["proxy"] == "https://example.com"
+        assert b"Proxy-Authorization" not in request.headers
 
     def test_add_proxy_with_credentials(self):
         middleware = HttpProxyMiddleware()
@@ -180,15 +178,12 @@ class TestHttpProxyMiddleware(TestCase):
         assert middleware.process_request(request, spider) is None
         request.meta["proxy"] = "https://user1:password1@example.com"
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.com")
+        assert request.meta["proxy"] == "https://example.com"
         encoded_credentials = middleware._basic_auth_header(
             "user1",
             "password1",
         )
-        self.assertEqual(
-            request.headers["Proxy-Authorization"],
-            b"Basic " + encoded_credentials,
-        )
+        assert request.headers["Proxy-Authorization"] == b"Basic " + encoded_credentials
 
     def test_remove_proxy_without_credentials(self):
         middleware = HttpProxyMiddleware()
@@ -199,8 +194,8 @@ class TestHttpProxyMiddleware(TestCase):
         assert middleware.process_request(request, spider) is None
         request.meta["proxy"] = None
         assert middleware.process_request(request, spider) is None
-        self.assertIsNone(request.meta["proxy"])
-        self.assertNotIn(b"Proxy-Authorization", request.headers)
+        assert request.meta["proxy"] is None
+        assert b"Proxy-Authorization" not in request.headers
 
     def test_remove_proxy_with_credentials(self):
         middleware = HttpProxyMiddleware()
@@ -211,8 +206,8 @@ class TestHttpProxyMiddleware(TestCase):
         assert middleware.process_request(request, spider) is None
         request.meta["proxy"] = None
         assert middleware.process_request(request, spider) is None
-        self.assertIsNone(request.meta["proxy"])
-        self.assertNotIn(b"Proxy-Authorization", request.headers)
+        assert request.meta["proxy"] is None
+        assert b"Proxy-Authorization" not in request.headers
 
     def test_add_credentials(self):
         """If the proxy request meta switches to a proxy URL with the same
@@ -227,15 +222,12 @@ class TestHttpProxyMiddleware(TestCase):
 
         request.meta["proxy"] = "https://user1:password1@example.com"
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.com")
+        assert request.meta["proxy"] == "https://example.com"
         encoded_credentials = middleware._basic_auth_header(
             "user1",
             "password1",
         )
-        self.assertEqual(
-            request.headers["Proxy-Authorization"],
-            b"Basic " + encoded_credentials,
-        )
+        assert request.headers["Proxy-Authorization"] == b"Basic " + encoded_credentials
 
     def test_change_credentials(self):
         """If the proxy request meta switches to a proxy URL with different
@@ -248,15 +240,12 @@ class TestHttpProxyMiddleware(TestCase):
         assert middleware.process_request(request, spider) is None
         request.meta["proxy"] = "https://user2:password2@example.com"
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.com")
+        assert request.meta["proxy"] == "https://example.com"
         encoded_credentials = middleware._basic_auth_header(
             "user2",
             "password2",
         )
-        self.assertEqual(
-            request.headers["Proxy-Authorization"],
-            b"Basic " + encoded_credentials,
-        )
+        assert request.headers["Proxy-Authorization"] == b"Basic " + encoded_credentials
 
     def test_remove_credentials(self):
         """If the proxy request meta switches to a proxy URL with the same
@@ -275,21 +264,18 @@ class TestHttpProxyMiddleware(TestCase):
 
         request.meta["proxy"] = "https://example.com"
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.com")
+        assert request.meta["proxy"] == "https://example.com"
         encoded_credentials = middleware._basic_auth_header(
             "user1",
             "password1",
         )
-        self.assertEqual(
-            request.headers["Proxy-Authorization"],
-            b"Basic " + encoded_credentials,
-        )
+        assert request.headers["Proxy-Authorization"] == b"Basic " + encoded_credentials
 
         request.meta["proxy"] = "https://example.com"
         del request.headers[b"Proxy-Authorization"]
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.com")
-        self.assertNotIn(b"Proxy-Authorization", request.headers)
+        assert request.meta["proxy"] == "https://example.com"
+        assert b"Proxy-Authorization" not in request.headers
 
     def test_change_proxy_add_credentials(self):
         middleware = HttpProxyMiddleware()
@@ -301,15 +287,12 @@ class TestHttpProxyMiddleware(TestCase):
 
         request.meta["proxy"] = "https://user1:password1@example.org"
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.org")
+        assert request.meta["proxy"] == "https://example.org"
         encoded_credentials = middleware._basic_auth_header(
             "user1",
             "password1",
         )
-        self.assertEqual(
-            request.headers["Proxy-Authorization"],
-            b"Basic " + encoded_credentials,
-        )
+        assert request.headers["Proxy-Authorization"] == b"Basic " + encoded_credentials
 
     def test_change_proxy_keep_credentials(self):
         middleware = HttpProxyMiddleware()
@@ -321,21 +304,18 @@ class TestHttpProxyMiddleware(TestCase):
 
         request.meta["proxy"] = "https://user1:password1@example.org"
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.org")
+        assert request.meta["proxy"] == "https://example.org"
         encoded_credentials = middleware._basic_auth_header(
             "user1",
             "password1",
         )
-        self.assertEqual(
-            request.headers["Proxy-Authorization"],
-            b"Basic " + encoded_credentials,
-        )
+        assert request.headers["Proxy-Authorization"] == b"Basic " + encoded_credentials
 
         # Make sure, indirectly, that _auth_proxy is updated.
         request.meta["proxy"] = "https://example.com"
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.com")
-        self.assertNotIn(b"Proxy-Authorization", request.headers)
+        assert request.meta["proxy"] == "https://example.com"
+        assert b"Proxy-Authorization" not in request.headers
 
     def test_change_proxy_change_credentials(self):
         middleware = HttpProxyMiddleware()
@@ -347,15 +327,12 @@ class TestHttpProxyMiddleware(TestCase):
 
         request.meta["proxy"] = "https://user2:password2@example.org"
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.org")
+        assert request.meta["proxy"] == "https://example.org"
         encoded_credentials = middleware._basic_auth_header(
             "user2",
             "password2",
         )
-        self.assertEqual(
-            request.headers["Proxy-Authorization"],
-            b"Basic " + encoded_credentials,
-        )
+        assert request.headers["Proxy-Authorization"] == b"Basic " + encoded_credentials
 
     def test_change_proxy_remove_credentials(self):
         """If the proxy request meta switches to a proxy URL with a different
@@ -368,8 +345,8 @@ class TestHttpProxyMiddleware(TestCase):
         assert middleware.process_request(request, spider) is None
         request.meta["proxy"] = "https://example.org"
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta, {"proxy": "https://example.org"})
-        self.assertNotIn(b"Proxy-Authorization", request.headers)
+        assert request.meta == {"proxy": "https://example.org"}
+        assert b"Proxy-Authorization" not in request.headers
 
     def test_change_proxy_remove_credentials_preremoved_header(self):
         """Corner case of proxy switch with credentials removal where the
@@ -387,8 +364,8 @@ class TestHttpProxyMiddleware(TestCase):
         request.meta["proxy"] = "https://example.org"
         del request.headers[b"Proxy-Authorization"]
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta, {"proxy": "https://example.org"})
-        self.assertNotIn(b"Proxy-Authorization", request.headers)
+        assert request.meta == {"proxy": "https://example.org"}
+        assert b"Proxy-Authorization" not in request.headers
 
     def test_proxy_authentication_header_undefined_proxy(self):
         middleware = HttpProxyMiddleware()
@@ -397,8 +374,8 @@ class TestHttpProxyMiddleware(TestCase):
             headers={"Proxy-Authorization": "Basic foo"},
         )
         assert middleware.process_request(request, spider) is None
-        self.assertNotIn("proxy", request.meta)
-        self.assertNotIn(b"Proxy-Authorization", request.headers)
+        assert "proxy" not in request.meta
+        assert b"Proxy-Authorization" not in request.headers
 
     def test_proxy_authentication_header_disabled_proxy(self):
         middleware = HttpProxyMiddleware()
@@ -408,8 +385,8 @@ class TestHttpProxyMiddleware(TestCase):
             meta={"proxy": None},
         )
         assert middleware.process_request(request, spider) is None
-        self.assertIsNone(request.meta["proxy"])
-        self.assertNotIn(b"Proxy-Authorization", request.headers)
+        assert request.meta["proxy"] is None
+        assert b"Proxy-Authorization" not in request.headers
 
     def test_proxy_authentication_header_proxy_without_credentials(self):
         """As long as the proxy URL in request metadata remains the same, the
@@ -422,17 +399,17 @@ class TestHttpProxyMiddleware(TestCase):
             meta={"proxy": "https://example.com"},
         )
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.com")
-        self.assertEqual(request.headers["Proxy-Authorization"], b"Basic foo")
+        assert request.meta["proxy"] == "https://example.com"
+        assert request.headers["Proxy-Authorization"] == b"Basic foo"
 
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.com")
-        self.assertEqual(request.headers["Proxy-Authorization"], b"Basic foo")
+        assert request.meta["proxy"] == "https://example.com"
+        assert request.headers["Proxy-Authorization"] == b"Basic foo"
 
         request.headers["Proxy-Authorization"] = b"Basic bar"
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.com")
-        self.assertEqual(request.headers["Proxy-Authorization"], b"Basic bar")
+        assert request.meta["proxy"] == "https://example.com"
+        assert request.headers["Proxy-Authorization"] == b"Basic bar"
 
     def test_proxy_authentication_header_proxy_with_same_credentials(self):
         middleware = HttpProxyMiddleware()
@@ -446,11 +423,8 @@ class TestHttpProxyMiddleware(TestCase):
             meta={"proxy": "https://user1:password1@example.com"},
         )
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.com")
-        self.assertEqual(
-            request.headers["Proxy-Authorization"],
-            b"Basic " + encoded_credentials,
-        )
+        assert request.meta["proxy"] == "https://example.com"
+        assert request.headers["Proxy-Authorization"] == b"Basic " + encoded_credentials
 
     def test_proxy_authentication_header_proxy_with_different_credentials(self):
         middleware = HttpProxyMiddleware()
@@ -464,12 +438,11 @@ class TestHttpProxyMiddleware(TestCase):
             meta={"proxy": "https://user2:password2@example.com"},
         )
         assert middleware.process_request(request, spider) is None
-        self.assertEqual(request.meta["proxy"], "https://example.com")
+        assert request.meta["proxy"] == "https://example.com"
         encoded_credentials2 = middleware._basic_auth_header(
             "user2",
             "password2",
         )
-        self.assertEqual(
-            request.headers["Proxy-Authorization"],
-            b"Basic " + encoded_credentials2,
+        assert (
+            request.headers["Proxy-Authorization"] == b"Basic " + encoded_credentials2
         )
