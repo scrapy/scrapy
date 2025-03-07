@@ -250,3 +250,47 @@ class DuplicateSpiderNameLoaderTest(unittest.TestCase):
 
             spiders = set(spider_loader.list())
             self.assertEqual(spiders, {"spider1", "spider2", "spider3", "spider4"})
+
+
+class SpiderLoaderFromPathTest(SpiderLoaderTest):
+    def setUp(self):
+        orig_spiders_dir = module_dir / "test_spiders"
+        self.tmpdir = Path(tempfile.mkdtemp())
+        self.spiders_dir = self.tmpdir / "test_spiders_xxx"
+        _copytree(orig_spiders_dir, self.spiders_dir)
+        sys.path.append(str(self.tmpdir))
+        settings = Settings(
+            {
+                "SPIDER_MODULES": ["test_spiders_xxx"],
+                "SPIDER_LOADER_LOAD_FROM_PATH": True,
+            }
+        )
+        self.spider_loader = SpiderLoader.from_settings(settings)
+
+    def tearDown(self):
+        del self.spider_loader
+        if "test_spiders_xxx" in sys.modules:
+            del sys.modules["test_spiders_xxx"]
+        sys.path.remove(str(self.tmpdir))
+
+    def test_list(self):
+        self.assertEqual(
+            set(self.spider_loader.list()),
+            {
+                "test_spiders_xxx.nested.spider4.Spider4",
+                "test_spiders_xxx.spider1.Spider1",
+                "test_spiders_xxx.spider2.Spider2",
+                "test_spiders_xxx.spider3.Spider3",
+            },
+        )
+
+    def test_load(self):
+        spider1 = self.spider_loader.load("test_spiders_xxx.spider1.Spider1")
+        self.assertEqual(spider1.__name__, "Spider1")
+
+    def test_find_by_request(self):
+        self.assertRaises(
+            NotImplementedError,
+            self.spider_loader.find_by_request,
+            Request("http://scrapy1.org/test"),
+        )

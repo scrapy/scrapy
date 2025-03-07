@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Protocol
 from zope.interface import implementer
 
 from scrapy.interfaces import ISpiderLoader
-from scrapy.utils.misc import walk_modules
+from scrapy.utils.misc import load_object, walk_modules
 from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
@@ -48,9 +48,12 @@ class SpiderLoader:
     def __init__(self, settings: BaseSettings):
         self.spider_modules: list[str] = settings.getlist("SPIDER_MODULES")
         self.warn_only: bool = settings.getbool("SPIDER_LOADER_WARN_ONLY")
+        self.load_from_path = settings.getbool("SPIDER_LOADER_LOAD_FROM_PATH")
         self._spiders: dict[str, type[Spider]] = {}
         self._found: defaultdict[str, list[tuple[str, str]]] = defaultdict(list)
-        self._load_all_spiders()
+
+        if not self.load_from_path:
+            self._load_all_spiders()
 
     def _check_name_duplicates(self) -> None:
         dupes = []
@@ -74,7 +77,13 @@ class SpiderLoader:
     def _load_spiders(self, module: ModuleType) -> None:
         for spcls in iter_spider_classes(module):
             self._found[spcls.name].append((module.__name__, spcls.__name__))
-            self._spiders[spcls.name] = spcls
+            self._spiders[
+                (
+                    spcls.name
+                    if not self.load_from_path
+                    else f"{module.__name__}.{spcls.__name__}"
+                )
+            ] = spcls
 
     def _load_all_spiders(self) -> None:
         for name in self.spider_modules:
@@ -102,6 +111,8 @@ class SpiderLoader:
         Return the Spider class for the given spider name. If the spider
         name is not found, raise a KeyError.
         """
+        if self.load_from_path:
+            return load_object(spider_name)
         try:
             return self._spiders[spider_name]
         except KeyError:
@@ -111,6 +122,8 @@ class SpiderLoader:
         """
         Return the list of spider names that can handle the given request.
         """
+        if self.load_from_path:
+            raise NotImplementedError("Not supported")
         return [
             name for name, cls in self._spiders.items() if cls.handles_request(request)
         ]
@@ -119,4 +132,6 @@ class SpiderLoader:
         """
         Return a list with the names of all spiders available in the project.
         """
+        if self.load_from_path:
+            self._load_all_spiders()
         return list(self._spiders.keys())
