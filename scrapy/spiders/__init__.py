@@ -28,6 +28,14 @@ if TYPE_CHECKING:
     from scrapy.utils.log import SpiderLoggerAdapter
 
 
+class classproperty:
+    def __init__(self, fget):
+        self.fget = fget
+
+    def __get__(self, cls, owner):
+        return self.fget(owner)
+
+
 class Spider(object_ref):
     """Base class for scrapy spiders. All spiders must inherit from this
     class.
@@ -44,6 +52,10 @@ class Spider(object_ref):
         self.__dict__.update(kwargs)
         if not hasattr(self, "start_urls"):
             self.start_urls: list[str] = []
+
+    @classproperty
+    def name(cls):
+        return cls.__name__
 
     @property
     def logger(self) -> SpiderLoggerAdapter:
