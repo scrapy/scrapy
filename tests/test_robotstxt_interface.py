@@ -1,4 +1,4 @@
-from twisted.trial import unittest
+import pytest
 
 from scrapy.robotstxt import decode_robotstxt
 
@@ -32,8 +32,8 @@ class BaseRobotParserTest:
         rp = self.parser_cls.from_crawler(
             crawler=None, robotstxt_body=robotstxt_robotstxt_body
         )
-        self.assertTrue(rp.allowed("https://www.site.local/allowed", "*"))
-        self.assertFalse(rp.allowed("https://www.site.local/disallowed", "*"))
+        assert rp.allowed("https://www.site.local/allowed", "*")
+        assert not rp.allowed("https://www.site.local/disallowed", "*")
 
     def test_allowed_wildcards(self):
         robotstxt_robotstxt_body = b"""User-agent: first
@@ -47,42 +47,36 @@ class BaseRobotParserTest:
             crawler=None, robotstxt_body=robotstxt_robotstxt_body
         )
 
-        self.assertTrue(rp.allowed("https://www.site.local/disallowed", "first"))
-        self.assertFalse(
-            rp.allowed("https://www.site.local/disallowed/xyz/end", "first")
-        )
-        self.assertFalse(
-            rp.allowed("https://www.site.local/disallowed/abc/end", "first")
-        )
-        self.assertTrue(
-            rp.allowed("https://www.site.local/disallowed/xyz/endinglater", "first")
-        )
+        assert rp.allowed("https://www.site.local/disallowed", "first")
+        assert not rp.allowed("https://www.site.local/disallowed/xyz/end", "first")
+        assert not rp.allowed("https://www.site.local/disallowed/abc/end", "first")
+        assert rp.allowed("https://www.site.local/disallowed/xyz/endinglater", "first")
 
-        self.assertTrue(rp.allowed("https://www.site.local/allowed", "second"))
-        self.assertTrue(rp.allowed("https://www.site.local/is_still_allowed", "second"))
-        self.assertTrue(rp.allowed("https://www.site.local/is_allowed_too", "second"))
+        assert rp.allowed("https://www.site.local/allowed", "second")
+        assert rp.allowed("https://www.site.local/is_still_allowed", "second")
+        assert rp.allowed("https://www.site.local/is_allowed_too", "second")
 
     def test_length_based_precedence(self):
         robotstxt_robotstxt_body = b"User-agent: * \nDisallow: / \nAllow: /page"
         rp = self.parser_cls.from_crawler(
             crawler=None, robotstxt_body=robotstxt_robotstxt_body
         )
-        self.assertTrue(rp.allowed("https://www.site.local/page", "*"))
+        assert rp.allowed("https://www.site.local/page", "*")
 
     def test_order_based_precedence(self):
         robotstxt_robotstxt_body = b"User-agent: * \nDisallow: / \nAllow: /page"
         rp = self.parser_cls.from_crawler(
             crawler=None, robotstxt_body=robotstxt_robotstxt_body
         )
-        self.assertFalse(rp.allowed("https://www.site.local/page", "*"))
+        assert not rp.allowed("https://www.site.local/page", "*")
 
     def test_empty_response(self):
         """empty response should equal 'allow all'"""
         rp = self.parser_cls.from_crawler(crawler=None, robotstxt_body=b"")
-        self.assertTrue(rp.allowed("https://site.local/", "*"))
-        self.assertTrue(rp.allowed("https://site.local/", "chrome"))
-        self.assertTrue(rp.allowed("https://site.local/index.html", "*"))
-        self.assertTrue(rp.allowed("https://site.local/disallowed", "*"))
+        assert rp.allowed("https://site.local/", "*")
+        assert rp.allowed("https://site.local/", "chrome")
+        assert rp.allowed("https://site.local/index.html", "*")
+        assert rp.allowed("https://site.local/disallowed", "*")
 
     def test_garbage_response(self):
         """garbage response should be discarded, equal 'allow all'"""
@@ -90,10 +84,10 @@ class BaseRobotParserTest:
         rp = self.parser_cls.from_crawler(
             crawler=None, robotstxt_body=robotstxt_robotstxt_body
         )
-        self.assertTrue(rp.allowed("https://site.local/", "*"))
-        self.assertTrue(rp.allowed("https://site.local/", "chrome"))
-        self.assertTrue(rp.allowed("https://site.local/index.html", "*"))
-        self.assertTrue(rp.allowed("https://site.local/disallowed", "*"))
+        assert rp.allowed("https://site.local/", "*")
+        assert rp.allowed("https://site.local/", "chrome")
+        assert rp.allowed("https://site.local/index.html", "*")
+        assert rp.allowed("https://site.local/disallowed", "*")
 
     def test_unicode_url_and_useragent(self):
         robotstxt_robotstxt_body = """
@@ -109,79 +103,67 @@ class BaseRobotParserTest:
         rp = self.parser_cls.from_crawler(
             crawler=None, robotstxt_body=robotstxt_robotstxt_body
         )
-        self.assertTrue(rp.allowed("https://site.local/", "*"))
-        self.assertFalse(rp.allowed("https://site.local/admin/", "*"))
-        self.assertFalse(rp.allowed("https://site.local/static/", "*"))
-        self.assertTrue(rp.allowed("https://site.local/admin/", "UnicödeBöt"))
-        self.assertFalse(
-            rp.allowed("https://site.local/wiki/K%C3%A4ytt%C3%A4j%C3%A4:", "*")
-        )
-        self.assertFalse(rp.allowed("https://site.local/wiki/Käyttäjä:", "*"))
-        self.assertTrue(rp.allowed("https://site.local/some/randome/page.html", "*"))
-        self.assertFalse(
-            rp.allowed("https://site.local/some/randome/page.html", "UnicödeBöt")
-        )
+        assert rp.allowed("https://site.local/", "*")
+        assert not rp.allowed("https://site.local/admin/", "*")
+        assert not rp.allowed("https://site.local/static/", "*")
+        assert rp.allowed("https://site.local/admin/", "UnicödeBöt")
+        assert not rp.allowed("https://site.local/wiki/K%C3%A4ytt%C3%A4j%C3%A4:", "*")
+        assert not rp.allowed("https://site.local/wiki/Käyttäjä:", "*")
+        assert rp.allowed("https://site.local/some/randome/page.html", "*")
+        assert not rp.allowed("https://site.local/some/randome/page.html", "UnicödeBöt")
 
 
-class DecodeRobotsTxtTest(unittest.TestCase):
+class TestDecodeRobotsTxt:
     def test_native_string_conversion(self):
         robotstxt_body = b"User-agent: *\nDisallow: /\n"
         decoded_content = decode_robotstxt(
             robotstxt_body, spider=None, to_native_str_type=True
         )
-        self.assertEqual(decoded_content, "User-agent: *\nDisallow: /\n")
+        assert decoded_content == "User-agent: *\nDisallow: /\n"
 
     def test_decode_utf8(self):
         robotstxt_body = b"User-agent: *\nDisallow: /\n"
         decoded_content = decode_robotstxt(robotstxt_body, spider=None)
-        self.assertEqual(decoded_content, "User-agent: *\nDisallow: /\n")
+        assert decoded_content == "User-agent: *\nDisallow: /\n"
 
     def test_decode_non_utf8(self):
         robotstxt_body = b"User-agent: *\n\xffDisallow: /\n"
         decoded_content = decode_robotstxt(robotstxt_body, spider=None)
-        self.assertEqual(decoded_content, "User-agent: *\nDisallow: /\n")
+        assert decoded_content == "User-agent: *\nDisallow: /\n"
 
 
-class PythonRobotParserTest(BaseRobotParserTest, unittest.TestCase):
-    def setUp(self):
+class TestPythonRobotParser(BaseRobotParserTest):
+    def setup_method(self):
         from scrapy.robotstxt import PythonRobotParser
 
         super()._setUp(PythonRobotParser)
 
     def test_length_based_precedence(self):
-        raise unittest.SkipTest(
+        pytest.skip(
             "RobotFileParser does not support length based directives precedence."
         )
 
     def test_allowed_wildcards(self):
-        raise unittest.SkipTest("RobotFileParser does not support wildcards.")
+        pytest.skip("RobotFileParser does not support wildcards.")
 
 
-class RerpRobotParserTest(BaseRobotParserTest, unittest.TestCase):
-    if not rerp_available():
-        skip = "Rerp parser is not installed"
-
-    def setUp(self):
+@pytest.mark.skipif(not rerp_available(), reason="Rerp parser is not installed")
+class TestRerpRobotParser(BaseRobotParserTest):
+    def setup_method(self):
         from scrapy.robotstxt import RerpRobotParser
 
         super()._setUp(RerpRobotParser)
 
     def test_length_based_precedence(self):
-        raise unittest.SkipTest(
-            "Rerp does not support length based directives precedence."
-        )
+        pytest.skip("Rerp does not support length based directives precedence.")
 
 
-class ProtegoRobotParserTest(BaseRobotParserTest, unittest.TestCase):
-    if not protego_available():
-        skip = "Protego parser is not installed"
-
-    def setUp(self):
+@pytest.mark.skipif(not protego_available(), reason="Protego parser is not installed")
+class TestProtegoRobotParser(BaseRobotParserTest):
+    def setup_method(self):
         from scrapy.robotstxt import ProtegoRobotParser
 
         super()._setUp(ProtegoRobotParser)
 
     def test_order_based_precedence(self):
-        raise unittest.SkipTest(
-            "Protego does not support order based directives precedence."
-        )
+        pytest.skip("Protego does not support order based directives precedence.")
