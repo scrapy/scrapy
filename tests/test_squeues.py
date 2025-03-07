@@ -130,6 +130,9 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
         ) as exc_info:
             q.push(sel)
         assert isinstance(exc_info.value.__context__, TypeError)
+        # This seems to help with https://github.com/scrapy/queuelib/issues/70.
+        # It will need to remain under a queuelib version check after that bug is fixed.
+        del exc_info
 
 
 class ChunkSize1PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
