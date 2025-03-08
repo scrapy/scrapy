@@ -69,46 +69,46 @@ class OffDH:
         return cls(crawler)
 
 
-class LoadTestCase(unittest.TestCase):
+class TestLoad:
     def test_enabled_handler(self):
         handlers = {"scheme": DummyDH}
         crawler = get_crawler(settings_dict={"DOWNLOAD_HANDLERS": handlers})
         dh = DownloadHandlers(crawler)
-        self.assertIn("scheme", dh._schemes)
-        self.assertIn("scheme", dh._handlers)
-        self.assertNotIn("scheme", dh._notconfigured)
+        assert "scheme" in dh._schemes
+        assert "scheme" in dh._handlers
+        assert "scheme" not in dh._notconfigured
 
     def test_not_configured_handler(self):
         handlers = {"scheme": OffDH}
         crawler = get_crawler(settings_dict={"DOWNLOAD_HANDLERS": handlers})
         dh = DownloadHandlers(crawler)
-        self.assertIn("scheme", dh._schemes)
-        self.assertNotIn("scheme", dh._handlers)
-        self.assertIn("scheme", dh._notconfigured)
+        assert "scheme" in dh._schemes
+        assert "scheme" not in dh._handlers
+        assert "scheme" in dh._notconfigured
 
     def test_disabled_handler(self):
         handlers = {"scheme": None}
         crawler = get_crawler(settings_dict={"DOWNLOAD_HANDLERS": handlers})
         dh = DownloadHandlers(crawler)
-        self.assertNotIn("scheme", dh._schemes)
+        assert "scheme" not in dh._schemes
         for scheme in handlers:  # force load handlers
             dh._get_handler(scheme)
-        self.assertNotIn("scheme", dh._handlers)
-        self.assertIn("scheme", dh._notconfigured)
+        assert "scheme" not in dh._handlers
+        assert "scheme" in dh._notconfigured
 
     def test_lazy_handlers(self):
         handlers = {"scheme": DummyLazyDH}
         crawler = get_crawler(settings_dict={"DOWNLOAD_HANDLERS": handlers})
         dh = DownloadHandlers(crawler)
-        self.assertIn("scheme", dh._schemes)
-        self.assertNotIn("scheme", dh._handlers)
+        assert "scheme" in dh._schemes
+        assert "scheme" not in dh._handlers
         for scheme in handlers:  # force load lazy handler
             dh._get_handler(scheme)
-        self.assertIn("scheme", dh._handlers)
-        self.assertNotIn("scheme", dh._notconfigured)
+        assert "scheme" in dh._handlers
+        assert "scheme" not in dh._notconfigured
 
 
-class FileTestCase(unittest.TestCase):
+class TestFile(unittest.TestCase):
     def setUp(self):
         # add a special char to check that they are handled correctly
         self.fd, self.tmpname = mkstemp(suffix="^")
@@ -122,10 +122,10 @@ class FileTestCase(unittest.TestCase):
 
     def test_download(self):
         def _test(response):
-            self.assertEqual(response.url, request.url)
-            self.assertEqual(response.status, 200)
-            self.assertEqual(response.body, b"0123456789")
-            self.assertEqual(response.protocol, None)
+            assert response.url == request.url
+            assert response.status == 200
+            assert response.body == b"0123456789"
+            assert response.protocol is None
 
         request = Request(path_to_file_uri(self.tmpname))
         assert request.url.upper().endswith("%5E")
@@ -217,7 +217,7 @@ class DuplicateHeaderResource(resource.Resource):
         return b""
 
 
-class HttpTestCase(unittest.TestCase, ABC):
+class TestHttp(unittest.TestCase, ABC):
     scheme = "http"
 
     # only used for HTTPS tests
@@ -336,8 +336,8 @@ class HttpTestCase(unittest.TestCase, ABC):
 
     def test_host_header_not_in_request_headers(self):
         def _test(response):
-            self.assertEqual(response.body, to_bytes(f"{self.host}:{self.portno}"))
-            self.assertEqual(request.headers, {})
+            assert response.body == to_bytes(f"{self.host}:{self.portno}")
+            assert not request.headers
 
         request = Request(self.getURL("host"))
         return self.download_request(request, Spider("foo")).addCallback(_test)
@@ -346,8 +346,8 @@ class HttpTestCase(unittest.TestCase, ABC):
         host = self.host + ":" + str(self.portno)
 
         def _test(response):
-            self.assertEqual(response.body, host.encode())
-            self.assertEqual(request.headers.get("Host"), host.encode())
+            assert response.body == host.encode()
+            assert request.headers.get("Host") == host.encode()
 
         request = Request(self.getURL("host"), headers={"Host": host})
         return self.download_request(request, Spider("foo")).addCallback(_test)
@@ -365,7 +365,7 @@ class HttpTestCase(unittest.TestCase, ABC):
         """
 
         def _test(response):
-            self.assertEqual(response.body, b"0")
+            assert response.body == b"0"
 
         request = Request(self.getURL("contentlength"), method="POST")
         return self.download_request(request, Spider("foo")).addCallback(_test)
@@ -376,8 +376,8 @@ class HttpTestCase(unittest.TestCase, ABC):
 
             headers = Headers(json.loads(response.text)["headers"])
             contentlengths = headers.getlist("Content-Length")
-            self.assertEqual(len(contentlengths), 1)
-            self.assertEqual(contentlengths, [b"0"])
+            assert len(contentlengths) == 1
+            assert contentlengths == [b"0"]
 
         request = Request(self.getURL("echo"), method="POST")
         return self.download_request(request, Spider("foo")).addCallback(_test)
@@ -399,7 +399,7 @@ class HttpTestCase(unittest.TestCase, ABC):
 
     def _test_response_class(self, filename, body, response_class):
         def _test(response):
-            self.assertEqual(type(response), response_class)
+            assert type(response) is response_class  # pylint: disable=unidiomatic-typecheck
 
         request = Request(self.getURL(filename), body=body)
         return self.download_request(request, Spider("foo")).addCallback(_test)
@@ -416,17 +416,14 @@ class HttpTestCase(unittest.TestCase, ABC):
 
     def test_get_duplicate_header(self):
         def _test(response):
-            self.assertEqual(
-                response.headers.getlist(b"Set-Cookie"),
-                [b"a=b", b"c=d"],
-            )
+            assert response.headers.getlist(b"Set-Cookie") == [b"a=b", b"c=d"]
 
         request = Request(self.getURL("duplicate-header"))
         return self.download_request(request, Spider("foo")).addCallback(_test)
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class Http10TestCase(HttpTestCase):
+class TestHttp10(TestHttp):
     """HTTP 1.0 test case"""
 
     @property
@@ -441,11 +438,11 @@ class Http10TestCase(HttpTestCase):
         return d
 
 
-class Https10TestCase(Http10TestCase):
+class TestHttps10(TestHttp10):
     scheme = "https"
 
 
-class Http11TestCase(HttpTestCase):
+class TestHttp11(TestHttp):
     """HTTP 1.1 test case"""
 
     @property
@@ -466,7 +463,7 @@ class Http11TestCase(HttpTestCase):
         body = b"Some plain text\ndata with tabs\t and null bytes\0"
 
         def _test_type(response):
-            self.assertEqual(type(response), TextResponse)
+            assert type(response) is TextResponse  # pylint: disable=unidiomatic-typecheck
 
         request = Request(self.getURL("nocontenttype"), body=body)
         d = self.download_request(request, Spider("foo"))
@@ -583,7 +580,7 @@ class Http11TestCase(HttpTestCase):
         return d
 
 
-class Https11TestCase(Http11TestCase):
+class TestHttps11(TestHttp11):
     scheme = "https"
 
     tls_log_message = (
@@ -611,7 +608,7 @@ class Https11TestCase(Http11TestCase):
             yield download_handler.close()
 
 
-class SimpleHttpsTest(unittest.TestCase):
+class TestSimpleHttps(unittest.TestCase):
     """Base class for special cases tested with just one simple request"""
 
     keyfile = "keys/localhost.key"
@@ -663,7 +660,7 @@ class SimpleHttpsTest(unittest.TestCase):
         return d
 
 
-class Https11WrongHostnameTestCase(SimpleHttpsTest):
+class TestHttps11WrongHostname(TestSimpleHttps):
     # above tests use a server certificate for "localhost",
     # client connection to "localhost" too.
     # here we test that even if the server certificate is for another domain,
@@ -673,7 +670,7 @@ class Https11WrongHostnameTestCase(SimpleHttpsTest):
     certfile = "keys/example-com.cert.pem"
 
 
-class Https11InvalidDNSId(SimpleHttpsTest):
+class TestHttps11InvalidDNSId(TestSimpleHttps):
     """Connect to HTTPS hosts with IP while certificate uses domain names IDs."""
 
     def setUp(self):
@@ -681,18 +678,18 @@ class Https11InvalidDNSId(SimpleHttpsTest):
         self.host = "127.0.0.1"
 
 
-class Https11InvalidDNSPattern(SimpleHttpsTest):
+class TestHttps11InvalidDNSPattern(TestSimpleHttps):
     """Connect to HTTPS hosts where the certificate are issued to an ip instead of a domain."""
 
     keyfile = "keys/localhost.ip.key"
     certfile = "keys/localhost.ip.crt"
 
 
-class Https11CustomCiphers(SimpleHttpsTest):
+class TestHttps11CustomCiphers(TestSimpleHttps):
     cipher_string = "CAMELLIA256-SHA"
 
 
-class Http11MockServerTestCase(unittest.TestCase):
+class TestHttp11MockServer(unittest.TestCase):
     """HTTP 1.1 test case with MockServer"""
 
     settings_dict: dict | None = None
@@ -719,7 +716,7 @@ class Http11MockServerTestCase(unittest.TestCase):
             )
         )
         failure = crawler.spider.meta["failure"]
-        self.assertIsInstance(failure.value, defer.CancelledError)
+        assert isinstance(failure.value, defer.CancelledError)
 
     @defer.inlineCallbacks
     def test_download(self):
@@ -728,9 +725,9 @@ class Http11MockServerTestCase(unittest.TestCase):
             seed=Request(url=self.mockserver.url("", is_secure=self.is_secure))
         )
         failure = crawler.spider.meta.get("failure")
-        self.assertTrue(failure is None)
+        assert failure is None
         reason = crawler.spider.meta["close_reason"]
-        self.assertTrue(reason, "finished")
+        assert reason == "finished"
 
 
 class UriResource(resource.Resource):
@@ -748,7 +745,7 @@ class UriResource(resource.Resource):
         return b""
 
 
-class HttpProxyTestCase(unittest.TestCase, ABC):
+class TestHttpProxy(unittest.TestCase, ABC):
     expected_http_proxy_request_body = b"http://example.com"
 
     @property
@@ -777,9 +774,9 @@ class HttpProxyTestCase(unittest.TestCase, ABC):
 
     def test_download_with_proxy(self):
         def _test(response):
-            self.assertEqual(response.status, 200)
-            self.assertEqual(response.url, request.url)
-            self.assertEqual(response.body, self.expected_http_proxy_request_body)
+            assert response.status == 200
+            assert response.url == request.url
+            assert response.body == self.expected_http_proxy_request_body
 
         http_proxy = self.getURL("")
         request = Request("http://example.com", meta={"proxy": http_proxy})
@@ -787,22 +784,22 @@ class HttpProxyTestCase(unittest.TestCase, ABC):
 
     def test_download_without_proxy(self):
         def _test(response):
-            self.assertEqual(response.status, 200)
-            self.assertEqual(response.url, request.url)
-            self.assertEqual(response.body, b"/path/to/resource")
+            assert response.status == 200
+            assert response.url == request.url
+            assert response.body == b"/path/to/resource"
 
         request = Request(self.getURL("path/to/resource"))
         return self.download_request(request, Spider("foo")).addCallback(_test)
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class Http10ProxyTestCase(HttpProxyTestCase):
+class TestHttp10Proxy(TestHttpProxy):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return HTTP10DownloadHandler
 
 
-class Http11ProxyTestCase(HttpProxyTestCase):
+class TestHttp11Proxy(TestHttpProxy):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return HTTP11DownloadHandler
@@ -817,13 +814,13 @@ class Http11ProxyTestCase(HttpProxyTestCase):
         request = Request(domain, meta={"proxy": http_proxy, "download_timeout": 0.2})
         d = self.download_request(request, Spider("foo"))
         timeout = yield self.assertFailure(d, error.TimeoutError)
-        self.assertIn(domain, timeout.osError)
+        assert domain in timeout.osError
 
     def test_download_with_proxy_without_http_scheme(self):
         def _test(response):
-            self.assertEqual(response.status, 200)
-            self.assertEqual(response.url, request.url)
-            self.assertEqual(response.body, self.expected_http_proxy_request_body)
+            assert response.status == 200
+            assert response.url == request.url
+            assert response.body == self.expected_http_proxy_request_body
 
         http_proxy = self.getURL("").replace("http://", "")
         request = Request("http://example.com", meta={"proxy": http_proxy})
@@ -839,8 +836,8 @@ class HttpDownloadHandlerMock:
 
 
 @pytest.mark.requires_botocore
-class S3AnonTestCase(unittest.TestCase):
-    def setUp(self):
+class TestS3Anon:
+    def setup_method(self):
         crawler = get_crawler()
         self.s3reqh = build_from_crawler(
             S3DownloadHandler,
@@ -854,13 +851,13 @@ class S3AnonTestCase(unittest.TestCase):
     def test_anon_request(self):
         req = Request("s3://aws-publicdatasets/")
         httpreq = self.download_request(req, self.spider)
-        self.assertEqual(hasattr(self.s3reqh, "anon"), True)
-        self.assertEqual(self.s3reqh.anon, True)
-        self.assertEqual(httpreq.url, "http://aws-publicdatasets.s3.amazonaws.com/")
+        assert hasattr(self.s3reqh, "anon")
+        assert self.s3reqh.anon
+        assert httpreq.url == "http://aws-publicdatasets.s3.amazonaws.com/"
 
 
 @pytest.mark.requires_botocore
-class S3TestCase(unittest.TestCase):
+class TestS3:
     download_handler_cls: type = S3DownloadHandler
 
     # test use same example keys than amazon developer guide
@@ -870,7 +867,7 @@ class S3TestCase(unittest.TestCase):
     AWS_ACCESS_KEY_ID = "0PN5J17HBGZHT7JJ3X82"
     AWS_SECRET_ACCESS_KEY = "uV3F3YluFJax1cknvbcGwgjvx4QpvB+leU8dUj2o"
 
-    def setUp(self):
+    def setup_method(self):
         crawler = get_crawler()
         s3reqh = build_from_crawler(
             S3DownloadHandler,
@@ -897,17 +894,13 @@ class S3TestCase(unittest.TestCase):
                 yield
 
     def test_extra_kw(self):
-        try:
-            crawler = get_crawler()
+        crawler = get_crawler()
+        with pytest.raises((TypeError, NotConfigured)):
             build_from_crawler(
                 S3DownloadHandler,
                 crawler,
                 extra_kw=True,
             )
-        except Exception as e:
-            self.assertIsInstance(e, (TypeError, NotConfigured))
-        else:
-            raise AssertionError
 
     def test_request_signing1(self):
         # gets an object from the johnsmith bucket.
@@ -915,9 +908,9 @@ class S3TestCase(unittest.TestCase):
         req = Request("s3://johnsmith/photos/puppy.jpg", headers={"Date": date})
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(
-            httpreq.headers["Authorization"],
-            b"AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA=",
+        assert (
+            httpreq.headers["Authorization"]
+            == b"AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA="
         )
 
     def test_request_signing2(self):
@@ -934,9 +927,9 @@ class S3TestCase(unittest.TestCase):
         )
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(
-            httpreq.headers["Authorization"],
-            b"AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ=",
+        assert (
+            httpreq.headers["Authorization"]
+            == b"AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ="
         )
 
     def test_request_signing3(self):
@@ -952,9 +945,9 @@ class S3TestCase(unittest.TestCase):
         )
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(
-            httpreq.headers["Authorization"],
-            b"AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4=",
+        assert (
+            httpreq.headers["Authorization"]
+            == b"AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4="
         )
 
     def test_request_signing4(self):
@@ -963,9 +956,9 @@ class S3TestCase(unittest.TestCase):
         req = Request("s3://johnsmith/?acl", method="GET", headers={"Date": date})
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(
-            httpreq.headers["Authorization"],
-            b"AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g=",
+        assert (
+            httpreq.headers["Authorization"]
+            == b"AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g="
         )
 
     def test_request_signing6(self):
@@ -991,9 +984,9 @@ class S3TestCase(unittest.TestCase):
         )
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(
-            httpreq.headers["Authorization"],
-            b"AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI=",
+        assert (
+            httpreq.headers["Authorization"]
+            == b"AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI="
         )
 
     def test_request_signing7(self):
@@ -1006,13 +999,13 @@ class S3TestCase(unittest.TestCase):
         )
         with self._mocked_date(date):
             httpreq = self.download_request(req, self.spider)
-        self.assertEqual(
-            httpreq.headers["Authorization"],
-            b"AWS 0PN5J17HBGZHT7JJ3X82:+CfvG8EZ3YccOrRVMXNaK2eKZmM=",
+        assert (
+            httpreq.headers["Authorization"]
+            == b"AWS 0PN5J17HBGZHT7JJ3X82:+CfvG8EZ3YccOrRVMXNaK2eKZmM="
         )
 
 
-class BaseFTPTestCase(unittest.TestCase):
+class TestFTPBase(unittest.TestCase):
     username = "scrapy"
     password = "passwd"
     req_meta = {"ftp_user": username, "ftp_password": password}
@@ -1068,10 +1061,10 @@ class BaseFTPTestCase(unittest.TestCase):
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
-            self.assertEqual(r.status, 200)
-            self.assertEqual(r.body, b"I have the power!")
-            self.assertEqual(r.headers, {b"Local Filename": [b""], b"Size": [b"17"]})
-            self.assertIsNone(r.protocol)
+            assert r.status == 200
+            assert r.body == b"I have the power!"
+            assert r.headers == {b"Local Filename": [b""], b"Size": [b"17"]}
+            assert r.protocol is None
 
         return self._add_test_callbacks(d, _test)
 
@@ -1083,9 +1076,9 @@ class BaseFTPTestCase(unittest.TestCase):
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
-            self.assertEqual(r.status, 200)
-            self.assertEqual(r.body, b"Moooooooooo power!")
-            self.assertEqual(r.headers, {b"Local Filename": [b""], b"Size": [b"18"]})
+            assert r.status == 200
+            assert r.body == b"Moooooooooo power!"
+            assert r.headers == {b"Local Filename": [b""], b"Size": [b"18"]}
 
         return self._add_test_callbacks(d, _test)
 
@@ -1096,7 +1089,7 @@ class BaseFTPTestCase(unittest.TestCase):
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
-            self.assertEqual(r.status, 404)
+            assert r.status == 404
 
         return self._add_test_callbacks(d, _test)
 
@@ -1111,12 +1104,10 @@ class BaseFTPTestCase(unittest.TestCase):
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
-            self.assertEqual(r.body, fname_bytes)
-            self.assertEqual(
-                r.headers, {b"Local Filename": [fname_bytes], b"Size": [b"17"]}
-            )
-            self.assertTrue(local_fname.exists())
-            self.assertEqual(local_fname.read_bytes(), b"I have the power!")
+            assert r.body == fname_bytes
+            assert r.headers == {b"Local Filename": [fname_bytes], b"Size": [b"17"]}
+            assert local_fname.exists()
+            assert local_fname.read_bytes() == b"I have the power!"
             local_fname.unlink()
 
         return self._add_test_callbacks(d, _test)
@@ -1131,7 +1122,7 @@ class BaseFTPTestCase(unittest.TestCase):
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
-            self.assertEqual(type(r), response_class)
+            assert type(r) is response_class  # pylint: disable=unidiomatic-typecheck
             local_fname.unlink()
 
         return self._add_test_callbacks(d, _test)
@@ -1143,7 +1134,7 @@ class BaseFTPTestCase(unittest.TestCase):
         return self._test_response_class("html-file-without-extension", HtmlResponse)
 
 
-class FTPTestCase(BaseFTPTestCase):
+class TestFTP(TestFTPBase):
     def test_invalid_credentials(self):
         if self.reactor_pytest == "asyncio" and sys.platform == "win32":
             raise unittest.SkipTest(
@@ -1157,12 +1148,12 @@ class FTPTestCase(BaseFTPTestCase):
         d = self.download_handler.download_request(request, None)
 
         def _test(r):
-            self.assertEqual(r.type, ConnectionLost)
+            assert r.type == ConnectionLost
 
         return self._add_test_callbacks(d, errback=_test)
 
 
-class AnonymousFTPTestCase(BaseFTPTestCase):
+class TestAnonymousFTP(TestFTPBase):
     username = "anonymous"
     req_meta = {}
 
@@ -1188,7 +1179,7 @@ class AnonymousFTPTestCase(BaseFTPTestCase):
         shutil.rmtree(self.directory)
 
 
-class DataURITestCase(unittest.TestCase):
+class TestDataURI(unittest.TestCase):
     def setUp(self):
         crawler = get_crawler()
         self.download_handler = build_from_crawler(DataURIDownloadHandler, crawler)
@@ -1199,44 +1190,44 @@ class DataURITestCase(unittest.TestCase):
         uri = "data:,A%20brief%20note"
 
         def _test(response):
-            self.assertEqual(response.url, uri)
-            self.assertFalse(response.headers)
+            assert response.url == uri
+            assert not response.headers
 
         request = Request(uri)
         return self.download_request(request, self.spider).addCallback(_test)
 
     def test_default_mediatype_encoding(self):
         def _test(response):
-            self.assertEqual(response.text, "A brief note")
-            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
-            self.assertEqual(response.encoding, "US-ASCII")
+            assert response.text == "A brief note"
+            assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+            assert response.encoding == "US-ASCII"
 
         request = Request("data:,A%20brief%20note")
         return self.download_request(request, self.spider).addCallback(_test)
 
     def test_default_mediatype(self):
         def _test(response):
-            self.assertEqual(response.text, "\u038e\u03a3\u038e")
-            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
-            self.assertEqual(response.encoding, "iso-8859-7")
+            assert response.text == "\u038e\u03a3\u038e"
+            assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+            assert response.encoding == "iso-8859-7"
 
         request = Request("data:;charset=iso-8859-7,%be%d3%be")
         return self.download_request(request, self.spider).addCallback(_test)
 
     def test_text_charset(self):
         def _test(response):
-            self.assertEqual(response.text, "\u038e\u03a3\u038e")
-            self.assertEqual(response.body, b"\xbe\xd3\xbe")
-            self.assertEqual(response.encoding, "iso-8859-7")
+            assert response.text == "\u038e\u03a3\u038e"
+            assert response.body == b"\xbe\xd3\xbe"
+            assert response.encoding == "iso-8859-7"
 
         request = Request("data:text/plain;charset=iso-8859-7,%be%d3%be")
         return self.download_request(request, self.spider).addCallback(_test)
 
     def test_mediatype_parameters(self):
         def _test(response):
-            self.assertEqual(response.text, "\u038e\u03a3\u038e")
-            self.assertEqual(type(response), responsetypes.from_mimetype("text/plain"))
-            self.assertEqual(response.encoding, "utf-8")
+            assert response.text == "\u038e\u03a3\u038e"
+            assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
+            assert response.encoding == "utf-8"
 
         request = Request(
             "data:text/plain;foo=%22foo;bar%5C%22%22;"
@@ -1247,14 +1238,14 @@ class DataURITestCase(unittest.TestCase):
 
     def test_base64(self):
         def _test(response):
-            self.assertEqual(response.text, "Hello, world.")
+            assert response.text == "Hello, world."
 
         request = Request("data:text/plain;base64,SGVsbG8sIHdvcmxkLg%3D%3D")
         return self.download_request(request, self.spider).addCallback(_test)
 
     def test_protocol(self):
         def _test(response):
-            self.assertIsNone(response.protocol)
+            assert response.protocol is None
 
         request = Request("data:,")
         return self.download_request(request, self.spider).addCallback(_test)
