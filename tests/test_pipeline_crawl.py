@@ -57,7 +57,7 @@ class RedirectedMediaDownloadSpider(MediaDownloadSpider):
         )
 
 
-class FileDownloadCrawlTestCase(TestCase):
+class TestFileDownloadCrawl(TestCase):
     pipeline_class = "scrapy.pipelines.files.FilesPipeline"
     store_setting_key = "FILES_STORE"
     media_key = "files"
@@ -103,52 +103,46 @@ class FileDownloadCrawlTestCase(TestCase):
         return crawler
 
     def _assert_files_downloaded(self, items, logs):
-        self.assertEqual(len(items), 1)
-        self.assertIn(self.media_key, items[0])
+        assert len(items) == 1
+        assert self.media_key in items[0]
 
         # check that logs show the expected number of successful file downloads
         file_dl_success = "File (downloaded): Downloaded file from"
-        self.assertEqual(logs.count(file_dl_success), 3)
+        assert logs.count(file_dl_success) == 3
 
         # check that the images/files status is `downloaded`
         for item in items:
             for i in item[self.media_key]:
-                self.assertEqual(i["status"], "downloaded")
+                assert i["status"] == "downloaded"
 
         # check that the images/files checksums are what we know they should be
         if self.expected_checksums is not None:
             checksums = {i["checksum"] for item in items for i in item[self.media_key]}
-            self.assertEqual(checksums, self.expected_checksums)
+            assert checksums == self.expected_checksums
 
         # check that the image files where actually written to the media store
         for item in items:
             for i in item[self.media_key]:
-                self.assertTrue((self.tmpmediastore / i["path"]).exists())
+                assert (self.tmpmediastore / i["path"]).exists()
 
     def _assert_files_download_failure(self, crawler, items, code, logs):
         # check that the item does NOT have the "images/files" field populated
-        self.assertEqual(len(items), 1)
-        self.assertIn(self.media_key, items[0])
-        self.assertFalse(items[0][self.media_key])
+        assert len(items) == 1
+        assert self.media_key in items[0]
+        assert not items[0][self.media_key]
 
         # check that there was 1 successful fetch and 3 other responses with non-200 code
-        self.assertEqual(
-            crawler.stats.get_value("downloader/request_method_count/GET"), 4
-        )
-        self.assertEqual(crawler.stats.get_value("downloader/response_count"), 4)
-        self.assertEqual(
-            crawler.stats.get_value("downloader/response_status_count/200"), 1
-        )
-        self.assertEqual(
-            crawler.stats.get_value(f"downloader/response_status_count/{code}"), 3
-        )
+        assert crawler.stats.get_value("downloader/request_method_count/GET") == 4
+        assert crawler.stats.get_value("downloader/response_count") == 4
+        assert crawler.stats.get_value("downloader/response_status_count/200") == 1
+        assert crawler.stats.get_value(f"downloader/response_status_count/{code}") == 3
 
         # check that logs do show the failure on the file downloads
         file_dl_failure = f"File (code: {code}): Error downloading file from"
-        self.assertEqual(logs.count(file_dl_failure), 3)
+        assert logs.count(file_dl_failure) == 3
 
         # check that no files were written to the media store
-        self.assertEqual(list(self.tmpmediastore.iterdir()), [])
+        assert not list(self.tmpmediastore.iterdir())
 
     @defer.inlineCallbacks
     def test_download_media(self):
@@ -199,9 +193,7 @@ class FileDownloadCrawlTestCase(TestCase):
                 mockserver=self.mockserver,
             )
         self._assert_files_downloaded(self.items, str(log))
-        self.assertEqual(
-            crawler.stats.get_value("downloader/response_status_count/302"), 3
-        )
+        assert crawler.stats.get_value("downloader/response_status_count/302") == 3
 
     @defer.inlineCallbacks
     def test_download_media_file_path_error(self):
@@ -223,7 +215,7 @@ class FileDownloadCrawlTestCase(TestCase):
                 media_urls_key=self.media_urls_key,
                 mockserver=self.mockserver,
             )
-        self.assertIn("ZeroDivisionError", str(log))
+        assert "ZeroDivisionError" in str(log)
 
 
 skip_pillow: str | None
@@ -235,7 +227,7 @@ else:
     skip_pillow = None
 
 
-class ImageDownloadCrawlTestCase(FileDownloadCrawlTestCase):
+class ImageDownloadCrawlTestCase(TestFileDownloadCrawl):
     skip = skip_pillow
 
     pipeline_class = "scrapy.pipelines.images.ImagesPipeline"
