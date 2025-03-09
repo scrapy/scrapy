@@ -1,5 +1,3 @@
-import unittest
-
 import pytest
 
 from scrapy import Request, Spider
@@ -11,8 +9,8 @@ class CustomRequest(Request):
     pass
 
 
-class RequestSerializationTest(unittest.TestCase):
-    def setUp(self):
+class TestRequestSerialization:
+    def setup_method(self):
         self.spider = MethodsSpider()
 
     def test_basic(self):
@@ -50,23 +48,23 @@ class RequestSerializationTest(unittest.TestCase):
         self._assert_same_request(request, request2)
 
     def _assert_same_request(self, r1, r2):
-        self.assertEqual(r1.__class__, r2.__class__)
-        self.assertEqual(r1.url, r2.url)
-        self.assertEqual(r1.callback, r2.callback)
-        self.assertEqual(r1.errback, r2.errback)
-        self.assertEqual(r1.method, r2.method)
-        self.assertEqual(r1.body, r2.body)
-        self.assertEqual(r1.headers, r2.headers)
-        self.assertEqual(r1.cookies, r2.cookies)
-        self.assertEqual(r1.meta, r2.meta)
-        self.assertEqual(r1.cb_kwargs, r2.cb_kwargs)
-        self.assertEqual(r1.encoding, r2.encoding)
-        self.assertEqual(r1._encoding, r2._encoding)
-        self.assertEqual(r1.priority, r2.priority)
-        self.assertEqual(r1.dont_filter, r2.dont_filter)
-        self.assertEqual(r1.flags, r2.flags)
+        assert r1.__class__ == r2.__class__
+        assert r1.url == r2.url
+        assert r1.callback == r2.callback
+        assert r1.errback == r2.errback
+        assert r1.method == r2.method
+        assert r1.body == r2.body
+        assert r1.headers == r2.headers
+        assert r1.cookies == r2.cookies
+        assert r1.meta == r2.meta
+        assert r1.cb_kwargs == r2.cb_kwargs
+        assert r1.encoding == r2.encoding
+        assert r1._encoding == r2._encoding
+        assert r1.priority == r2.priority
+        assert r1.dont_filter == r2.dont_filter
+        assert r1.flags == r2.flags
         if isinstance(r1, JsonRequest):
-            self.assertEqual(r1.dumps_kwargs, r2.dumps_kwargs)
+            assert r1.dumps_kwargs == r2.dumps_kwargs
 
     def test_request_class(self):
         r1 = FormRequest("http://www.example.com")
@@ -92,8 +90,8 @@ class RequestSerializationTest(unittest.TestCase):
         )
         self._assert_serializes_ok(r, spider=self.spider)
         request_dict = r.to_dict(spider=self.spider)
-        self.assertEqual(request_dict["callback"], "parse_item_reference")
-        self.assertEqual(request_dict["errback"], "handle_error_reference")
+        assert request_dict["callback"] == "parse_item_reference"
+        assert request_dict["errback"] == "handle_error_reference"
 
     def test_private_reference_callback_serialization(self):
         r = Request(
@@ -103,12 +101,8 @@ class RequestSerializationTest(unittest.TestCase):
         )
         self._assert_serializes_ok(r, spider=self.spider)
         request_dict = r.to_dict(spider=self.spider)
-        self.assertEqual(
-            request_dict["callback"], "_MethodsSpider__parse_item_reference"
-        )
-        self.assertEqual(
-            request_dict["errback"], "_MethodsSpider__handle_error_reference"
-        )
+        assert request_dict["callback"] == "_MethodsSpider__parse_item_reference"
+        assert request_dict["errback"] == "_MethodsSpider__handle_error_reference"
 
     def test_private_callback_serialization(self):
         r = Request(
