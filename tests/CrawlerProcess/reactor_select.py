@@ -9,7 +9,7 @@ selectreactor.install()
 class NoRequestsSpider(scrapy.Spider):
     name = "no_request"
 
-    def start_requests(self):
+    async def yield_seeds(self):
         return []
 
 

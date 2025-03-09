@@ -1,8 +1,7 @@
 import gzip
-import inspect
 import warnings
 from io import BytesIO
-from logging import WARNING
+from logging import ERROR, WARNING
 from pathlib import Path
 from typing import Any
 from unittest import mock
@@ -44,12 +43,6 @@ class SpiderTest(unittest.TestCase):
         spider = self.spider_class("example.com")
         self.assertEqual(spider.name, "example.com")
         self.assertEqual(spider.start_urls, [])
-
-    def test_start_requests(self):
-        spider = self.spider_class("example.com")
-        start_requests = spider.start_requests()
-        self.assertTrue(inspect.isgenerator(start_requests))
-        self.assertEqual(list(start_requests), [])
 
     def test_spider_args(self):
         """``__init__`` method arguments are assigned to spider attributes"""
@@ -475,12 +468,22 @@ class CrawlSpiderTest(SpiderTest):
         self.assertTrue(hasattr(spider, "_follow_links"))
         self.assertFalse(spider._follow_links)
 
+    @inlineCallbacks
     def test_start_url(self):
-        spider = self.spider_class("example.com")
-        spider.start_url = "https://www.example.com"
+        class TestSpider(self.spider_class):
+            name = "test"
+            start_url = "https://www.example.com"
 
-        with pytest.raises(AttributeError, match=r"^Crawling could not start.*$"):
-            list(spider.start_requests())
+        crawler = Crawler(TestSpider)
+        with LogCapture("scrapy.core.engine", propagate=False, level=ERROR) as log:
+            yield crawler.crawl()
+        log.check(
+            (
+                "scrapy.core.engine",
+                "ERROR",
+                "Error while reading seeds",
+            ),
+        )
 
 
 class SitemapSpiderTest(SpiderTest):

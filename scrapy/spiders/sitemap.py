@@ -4,7 +4,7 @@ import logging
 import re
 
 # Iterable is needed at the run time for the SitemapSpider._parse_sitemap() annotation
-from collections.abc import Iterable, Sequence  # noqa: TC003
+from collections.abc import AsyncIterator, Iterable, Sequence  # noqa: TC003
 from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.http import Request, Response, XmlResponse
@@ -52,6 +52,10 @@ class SitemapSpider(Spider):
                 c = cast("CallbackT", getattr(self, c))
             self._cbs.append((regex(r), c))
         self._follow: list[re.Pattern[str]] = [regex(x) for x in self.sitemap_follow]
+
+    async def yield_seeds(self) -> AsyncIterator[Any]:
+        async for seed in super().yield_seeds():
+            yield seed
 
     def start_requests(self) -> Iterable[Request]:
         for url in self.sitemap_urls:

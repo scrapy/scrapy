@@ -138,11 +138,60 @@ class Request(object_ref):
             )
         if not (callable(errback) or errback is None):
             raise TypeError(f"errback must be a callable, got {type(errback).__name__}")
+
+        #: :class:`~collections.abc.Callable` to parse the
+        #: :class:`~scrapy.http.Response` to this request once received.
+        #:
+        #: The callable must expect the response as its first parameter, and
+        #: support any additional keyword arguments set through
+        #: :attr:`cb_kwargs`.
+        #:
+        #: In addition to an arbitrary callable, the following values are also
+        #: supported:
+        #:
+        #: -   ``None`` (default), which indicates that the
+        #:     :meth:`~scrapy.Spider.parse` method of the spider must be used.
+        #:
+        #: -   :func:`~scrapy.http.request.NO_CALLBACK`.
+        #:
+        #: If an unhandled exception is raised during request or response
+        #: processing, i.e. by a :ref:`spider middleware
+        #: <topics-spider-middleware>`, :ref:`downloader middleware
+        #: <topics-downloader-middleware>` or download handler
+        #: (:setting:`DOWNLOAD_HANDLERS`), :attr:`errback` is called instead.
+        #:
+        #: .. tip::
+        #:     :class:`~scrapy.spidermiddlewares.httperror.HttpErrorMiddleware`
+        #:     raises exceptions for non-2xx responses by default, sending them
+        #:     to the :attr:`errback` instead.
+        #:
+        #: .. seealso::
+        #:     :ref:`topics-request-response-ref-request-callback-arguments`
         self.callback: CallbackT | None = callback
+
+        #: :class:`~collections.abc.Callable` to handle exceptions raised
+        #: during request or response processing.
+        #:
+        #: The callable must expect a :exc:`~twisted.python.failure.Failure` as
+        #: its first parameter.
+        #:
+        #: .. seealso:: :ref:`topics-request-response-ref-errbacks`
         self.errback: Callable[[Failure], Any] | None = errback
 
         self.cookies: CookiesT = cookies or {}
         self.headers: Headers = Headers(headers or {}, encoding=encoding)
+
+        #: Whether this request may be filtered out by :ref:`components
+        #: <topics-components>` that support filtering out requests (``False``,
+        #: default), or those components should not filter out this request
+        #: (``True``).
+        #:
+        #: This attribute is commonly set to ``True`` to prevent duplicate
+        #: requests from being filtered out.
+        #:
+        #: When defining the start URLs of a spider through
+        #: :attr:`~scrapy.Spider.start_urls`, this attribute is enabled by
+        #: default. See :meth:`~scrapy.Spider.yield_seeds`.
         self.dont_filter: bool = dont_filter
 
         self._meta: dict[str, Any] | None = dict(meta) if meta else None

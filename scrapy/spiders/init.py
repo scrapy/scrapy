@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterator, Iterable
 from typing import TYPE_CHECKING, Any, cast
 
 from scrapy import Request
@@ -13,6 +13,10 @@ if TYPE_CHECKING:
 
 class InitSpider(Spider):
     """Base Spider with initialization facilities"""
+
+    async def yield_seeds(self) -> AsyncIterator[Any]:
+        async for seed in super().yield_seeds():
+            yield seed
 
     def start_requests(self) -> Iterable[Request]:
         self._postinit_reqs: Iterable[Request] = super().start_requests()

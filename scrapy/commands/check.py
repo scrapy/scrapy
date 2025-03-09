@@ -80,10 +80,17 @@ class Command(ScrapyCommand):
         assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
 
+        async def yield_seeds(self):
+            requests = conman.from_spider(self, self._result)
+            for request in requests:
+                yield request
+
         with set_environ(SCRAPY_CHECK="true"):
             for spidername in args or spider_loader.list():
                 spidercls = spider_loader.load(spidername)
-                spidercls.start_requests = lambda s: conman.from_spider(s, result)  # type: ignore[assignment,method-assign,return-value]
+
+                spidercls._result = result  # type: ignore[assignment,method-assign,return-value]
+                spidercls.yield_seeds = yield_seeds  # type: ignore[assignment,method-assign,return-value]
 
                 tested_methods = conman.tested_methods_from_spidercls(spidercls)
                 if opts.list:

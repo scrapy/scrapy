@@ -228,10 +228,9 @@ with a name of the branch you want to create locally).
 See also: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/checking-out-pull-requests-locally#modifying-an-inactive-pull-request-locally.
 
 When writing GitHub pull requests, try to keep titles short but descriptive.
-E.g. For bug #411: "Scrapy hangs if an exception raises in start_requests"
-prefer "Fix hanging when exception occurs in start_requests (#411)"
-instead of "Fix for #411". Complete titles make it easy to skim through
-the issue tracker.
+E.g. For bug #411: "Scrapy hangs if an exception raises in yield_seeds" prefer
+"Fix hanging when exception occurs in yield_seeds (#411)" instead of "Fix for
+#411". Complete titles make it easy to skim through the issue tracker.
 
 Finally, try to keep aesthetic changes (:pep:`8` compliance, unused imports
 removal, etc) in separate commits from functional changes. This will make pull

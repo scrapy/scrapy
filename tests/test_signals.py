@@ -10,7 +10,7 @@ from tests.mockserver import MockServer
 class ItemSpider(Spider):
     name = "itemspider"
 
-    def start_requests(self):
+    async def yield_seeds(self):
         for index in range(10):
             yield Request(
                 self.mockserver.url(f"/status?n=200&id={index}"), meta={"index": index}

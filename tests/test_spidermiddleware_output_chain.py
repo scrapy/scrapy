@@ -36,7 +36,7 @@ class RecoverySpider(Spider):
         },
     }
 
-    def start_requests(self):
+    async def yield_seeds(self):
         yield Request(self.mockserver.url("/status?n=200"))
 
     def parse(self, response):
@@ -73,7 +73,7 @@ class ProcessSpiderInputSpiderWithoutErrback(Spider):
         }
     }
 
-    def start_requests(self):
+    async def yield_seeds(self):
         yield Request(url=self.mockserver.url("/status?n=200"), callback=self.parse)
 
     def parse(self, response):
@@ -83,7 +83,7 @@ class ProcessSpiderInputSpiderWithoutErrback(Spider):
 class ProcessSpiderInputSpiderWithErrback(ProcessSpiderInputSpiderWithoutErrback):
     name = "ProcessSpiderInputSpiderWithErrback"
 
-    def start_requests(self):
+    async def yield_seeds(self):
         yield Request(
             self.mockserver.url("/status?n=200"), self.parse, errback=self.errback
         )
@@ -103,7 +103,7 @@ class GeneratorCallbackSpider(Spider):
         },
     }
 
-    def start_requests(self):
+    async def yield_seeds(self):
         yield Request(self.mockserver.url("/status?n=200"))
 
     def parse(self, response):
@@ -140,7 +140,7 @@ class NotGeneratorCallbackSpider(Spider):
         },
     }
 
-    def start_requests(self):
+    async def yield_seeds(self):
         yield Request(self.mockserver.url("/status?n=200"))
 
     def parse(self, response):
@@ -215,7 +215,7 @@ class GeneratorOutputChainSpider(Spider):
         },
     }
 
-    def start_requests(self):
+    async def yield_seeds(self):
         yield Request(self.mockserver.url("/status?n=200"))
 
     def parse(self, response):
@@ -287,8 +287,8 @@ class NotGeneratorOutputChainSpider(Spider):
         },
     }
 
-    def start_requests(self):
-        return [Request(self.mockserver.url("/status?n=200"))]
+    async def yield_seeds(self):
+        yield Request(self.mockserver.url("/status?n=200"))
 
     def parse(self, response):
         return [
