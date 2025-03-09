@@ -413,7 +413,7 @@ class WARCCacheStorage:
         self.cache_dir: str = data_path(settings["HTTPCACHE_DIR"])
         self.use_gzip: bool = settings.getbool("HTTPCACHE_GZIP")
         self.pathname_strategy: HTTPCacheWARCPathStyle = settings.get(
-            "HTTPCACHE_WARC_PATH_STYLE", HTTPCacheWARCPathStyle.FILE_AND_HASH
+            "HTTPCACHE_WARC_PATH_STYLE", HTTPCacheWARCPathStyle.FOLDERS_AND_FILE
         )
 
     @staticmethod
@@ -463,11 +463,11 @@ class WARCCacheStorage:
         # Only create response if both request & response recs were found
         if not warc_req or not warc_resp:
             logger.warning(
-                "Incomplete WARC record found in cache%s%s (%s), request missing"
-                if not warc_req
-                else ", response missing"
+                "Incomplete WARC record found in cache%s%s (%s), "
+                "request missing" if not warc_req
+                else (", response missing"
                 if not warc_resp
-                else ""
+                else "")
             )
             return None
 
@@ -475,21 +475,20 @@ class WARCCacheStorage:
             # Extract status code from the status line
             status_line = warc_resp.http_headers.statusline
             if not status_line:
-                logger.error("Missing status line in WARC response record")
-                return None
+                logger.warning("Missing status line in WARC response record")
+                status_line = "200 OK"
 
             # Parse the status code from the status line
             # e.g., "HTTP/1.1 200 OK"
             parts = status_line.split(" ", 2)
             if len(parts) < 2:
-                logger.error("Invalid status line format: %s", status_line)
-                return None
+                logger.warning("Invalid status line format: %s", status_line)
 
             try:
                 status_code = int(parts[0])
             except ValueError:
-                logger.error("Invalid status code in status line: %s", status_line)
-                return None
+                logger.warning("Invalid status code in status line: %s", status_line)
+                status_code = 200  # being generous, here
 
             # Extract headers from HTTP headers
             resp_headers = {
@@ -502,7 +501,7 @@ class WARCCacheStorage:
             # because the content_stream() can only be read once, and it is
             # already read by ArchiveIterator for WARC record parsing
             with warc_path.open("rb") as warc_fh_body:
-                logger.warning(
+                logger.info(
                     "Retrieving existing cache file: %s *for* %s",
                     warc_path,
                     request.url,
@@ -512,6 +511,14 @@ class WARCCacheStorage:
                     if warc_rec_body.rec_type == "response":
                         # Read the response body
                         resp_body = warc_rec_body.content_stream().read()
+
+                        # We compress the entire WARC as .warc.gz, if gzipping,
+                        # but store the content uncompressed within. Scrapy
+                        # also checks Content-Encoding and will expect a
+                        # compressed body, so we dutifully re-compress it to
+                        # make the crawler happy. TODO: This is inefficient.
+                        if 'gzip' in resp_headers.get('Content-Encoding', '').lower():
+                            resp_body = gzip.compress(resp_body)
 
                         # Create the response object
                         response_class = responsetypes.from_args(
@@ -528,11 +535,12 @@ class WARCCacheStorage:
                         )
 
                         # Log the body length for debugging
-                        logger.info(
+                        logger.debug(
                             "Retrieved cached response body length: %d", len(resp_body)
                         )
 
                         break
+
         except Exception as e:
             logger.error("Error retrieving response from WARC file: %s", e)
             return None
@@ -549,7 +557,7 @@ class WARCCacheStorage:
         if not warc_path.parent.exists():
             warc_path.parent.mkdir(parents=True)
 
-        logger.warning("Writing new cache file: %s *for* %s", warc_path, request.url)
+        logger.debug("Writing new cache file: %s *for* %s", warc_path, request.url)
 
         with warc_path.open("wb") as warc_fh:
             # Generate a UUID for the WARC record
