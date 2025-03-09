@@ -18,6 +18,7 @@ from twisted.trial.unittest import SkipTest
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.deprecate import create_deprecated_class
+from scrapy.utils.reactor import is_asyncio_reactor_installed
 from scrapy.utils.spider import DefaultSpider
 
 if TYPE_CHECKING:
@@ -122,6 +123,9 @@ def get_crawler(
 
     # Set by default settings that prevent deprecation warnings.
     settings: dict[str, Any] = {}
+    if not is_asyncio_reactor_installed():
+        # _apply_settings() checks that the installed reactor matches the settings
+        settings["TWISTED_REACTOR"] = None
     settings.update(settings_dict or {})
     runner = CrawlerRunner(settings)
     crawler = runner.create_crawler(spidercls or DefaultSpider)

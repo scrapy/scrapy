@@ -3,17 +3,21 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 from tempfile import mkdtemp
+from typing import TYPE_CHECKING, Any
 
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 from w3lib.url import add_or_replace_parameter
 
-from scrapy import signals
-from scrapy.crawler import CrawlerRunner
+from scrapy import Spider, signals
 from scrapy.utils.misc import load_object
+from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 from tests.spiders import SimpleSpider
+
+if TYPE_CHECKING:
+    from scrapy.crawler import Crawler
 
 
 class MediaDownloadSpider(SimpleSpider):
@@ -80,7 +84,6 @@ class FileDownloadCrawlTestCase(TestCase):
             "ITEM_PIPELINES": {self.pipeline_class: 1},
             self.store_setting_key: str(self.tmpmediastore),
         }
-        self.runner = CrawlerRunner(self.settings)
         self.items = []
 
     def tearDown(self):
@@ -90,10 +93,12 @@ class FileDownloadCrawlTestCase(TestCase):
     def _on_item_scraped(self, item):
         self.items.append(item)
 
-    def _create_crawler(self, spider_class, runner=None, **kwargs):
-        if runner is None:
-            runner = self.runner
-        crawler = runner.create_crawler(spider_class, **kwargs)
+    def _create_crawler(
+        self, spider_class: type[Spider], settings: dict[str, Any] | None = None
+    ) -> Crawler:
+        if settings is None:
+            settings = self.settings
+        crawler = get_crawler(spider_class, settings)
         crawler.signals.connect(self._on_item_scraped, signals.item_scraped)
         return crawler
 
@@ -181,10 +186,11 @@ class FileDownloadCrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_download_media_redirected_allowed(self):
-        settings = dict(self.settings)
-        settings.update({"MEDIA_ALLOW_REDIRECTS": True})
-        runner = CrawlerRunner(settings)
-        crawler = self._create_crawler(RedirectedMediaDownloadSpider, runner=runner)
+        settings = {
+            **self.settings,
+            "MEDIA_ALLOW_REDIRECTS": True,
+        }
+        crawler = self._create_crawler(RedirectedMediaDownloadSpider, settings)
         with LogCapture() as log:
             yield crawler.crawl(
                 self.mockserver.url("/files/images/"),
@@ -209,8 +215,7 @@ class FileDownloadCrawlTestCase(TestCase):
             **self.settings,
             "ITEM_PIPELINES": {ExceptionRaisingMediaPipeline: 1},
         }
-        runner = CrawlerRunner(settings)
-        crawler = self._create_crawler(MediaDownloadSpider, runner=runner)
+        crawler = self._create_crawler(MediaDownloadSpider, settings)
         with LogCapture() as log:
             yield crawler.crawl(
                 self.mockserver.url("/files/images/"),

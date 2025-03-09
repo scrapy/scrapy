@@ -1,9 +1,11 @@
-import datetime
-import typing
-import unittest
+from __future__ import annotations
 
-from scrapy.crawler import Crawler
+import datetime
+import unittest
+from typing import Any, Callable
+
 from scrapy.extensions.periodic_log import PeriodicLog
+from scrapy.utils.test import get_crawler
 
 from .spiders import MetaSpider
 
@@ -59,9 +61,8 @@ class CustomPeriodicLog(PeriodicLog):
         self.stats._stats = stats_dump_2
 
 
-def extension(settings=None):
-    crawler = Crawler(MetaSpider, settings=settings)
-    crawler._apply_settings()
+def extension(settings: dict[str, Any] | None = None) -> CustomPeriodicLog:
+    crawler = get_crawler(MetaSpider, settings)
     return CustomPeriodicLog.from_crawler(crawler)
 
 
@@ -94,7 +95,7 @@ class TestPeriodicLog(unittest.TestCase):
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
 
-        def check(settings: dict, condition: typing.Callable):
+        def check(settings: dict[str, Any], condition: Callable) -> None:
             ext, a, b = emulate(settings)
             assert list(a["delta"].keys()) == [
                 k for k, v in ext.stats._stats.items() if condition(k, v)
@@ -151,7 +152,7 @@ class TestPeriodicLog(unittest.TestCase):
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
 
-        def check(settings: dict, condition: typing.Callable):
+        def check(settings: dict[str, Any], condition: Callable) -> None:
             ext, a, b = emulate(settings)
             assert list(a["stats"].keys()) == [
                 k for k, v in ext.stats._stats.items() if condition(k, v)
