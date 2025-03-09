@@ -50,9 +50,9 @@ class FifoDiskQueueTestMixin:
         q.push("a")
         q.push(123)
         q.push({"a": "dict"})
-        self.assertEqual(q.pop(), "a")
-        self.assertEqual(q.pop(), 123)
-        self.assertEqual(q.pop(), {"a": "dict"})
+        assert q.pop() == "a"
+        assert q.pop() == 123
+        assert q.pop() == {"a": "dict"}
 
     test_nonserializable_object = nonserializable_object_test
 
@@ -92,7 +92,7 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
         q.push(i)
         i2 = q.pop()
         assert isinstance(i2, MyItem)
-        self.assertEqual(i, i2)
+        assert i == i2
 
     def test_serialize_loader(self):
         q = self.queue()
@@ -101,7 +101,7 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
         loader2 = q.pop()
         assert isinstance(loader2, MyLoader)
         assert loader2.default_item_class is MyItem
-        self.assertEqual(loader2.name_out("x"), "xx")
+        assert loader2.name_out("x") == "xx"
 
     def test_serialize_request_recursive(self):
         q = self.queue()
@@ -110,23 +110,29 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
         q.push(r)
         r2 = q.pop()
         assert isinstance(r2, Request)
-        self.assertEqual(r.url, r2.url)
+        assert r.url == r2.url
         assert r2.meta["request"] is r2
 
     def test_non_pickable_object(self):
         q = self.queue()
-        try:
+        with pytest.raises(
+            ValueError,
+            match="Can't (get|pickle) local object|Can't pickle .*: it's not found as",
+        ) as exc_info:
             q.push(lambda x: x)
-        except ValueError as exc:
-            if hasattr(sys, "pypy_version_info"):
-                self.assertIsInstance(exc.__context__, pickle.PicklingError)
-            else:
-                self.assertIsInstance(exc.__context__, AttributeError)
+        if hasattr(sys, "pypy_version_info"):
+            assert isinstance(exc_info.value.__context__, pickle.PicklingError)
+        else:
+            assert isinstance(exc_info.value.__context__, AttributeError)
         sel = Selector(text="<html><body><p>some text</p></body></html>")
-        try:
+        with pytest.raises(
+            ValueError, match="can't pickle Selector objects"
+        ) as exc_info:
             q.push(sel)
-        except ValueError as exc:
-            self.assertIsInstance(exc.__context__, TypeError)
+        assert isinstance(exc_info.value.__context__, TypeError)
+        # This seems to help with https://github.com/scrapy/queuelib/issues/70.
+        # It will need to remain under a queuelib version check after that bug is fixed.
+        del exc_info
 
 
 class ChunkSize1PickleFifoDiskQueueTest(PickleFifoDiskQueueTest):
@@ -151,9 +157,9 @@ class LifoDiskQueueTestMixin:
         q.push("a")
         q.push(123)
         q.push({"a": "dict"})
-        self.assertEqual(q.pop(), {"a": "dict"})
-        self.assertEqual(q.pop(), 123)
-        self.assertEqual(q.pop(), "a")
+        assert q.pop() == {"a": "dict"}
+        assert q.pop() == 123
+        assert q.pop() == "a"
 
     test_nonserializable_object = nonserializable_object_test
 
@@ -173,7 +179,7 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
         q.push(i)
         i2 = q.pop()
         assert isinstance(i2, MyItem)
-        self.assertEqual(i, i2)
+        assert i == i2
 
     def test_serialize_loader(self):
         q = self.queue()
@@ -182,7 +188,7 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
         loader2 = q.pop()
         assert isinstance(loader2, MyLoader)
         assert loader2.default_item_class is MyItem
-        self.assertEqual(loader2.name_out("x"), "xx")
+        assert loader2.name_out("x") == "xx"
 
     def test_serialize_request_recursive(self):
         q = self.queue()
@@ -191,5 +197,5 @@ class PickleLifoDiskQueueTest(t.LifoDiskQueueTest, LifoDiskQueueTestMixin):
         q.push(r)
         r2 = q.pop()
         assert isinstance(r2, Request)
-        self.assertEqual(r.url, r2.url)
+        assert r.url == r2.url
         assert r2.meta["request"] is r2
