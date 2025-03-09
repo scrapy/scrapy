@@ -1,11 +1,10 @@
-import unittest
 from urllib.parse import urlparse
 
 
-class UrlparseTestCase(unittest.TestCase):
+class TestUrlparse:
     def test_s3_url(self):
         p = urlparse("s3://bucket/key/name?param=value")
-        self.assertEqual(p.scheme, "s3")
-        self.assertEqual(p.hostname, "bucket")
-        self.assertEqual(p.path, "/key/name")
-        self.assertEqual(p.query, "param=value")
+        assert p.scheme == "s3"
+        assert p.hostname == "bucket"
+        assert p.path == "/key/name"
+        assert p.query == "param=value"

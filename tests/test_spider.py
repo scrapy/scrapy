@@ -137,6 +137,7 @@ class TestSpider(unittest.TestCase):
         mock_logger.log.assert_called_once_with("INFO", "test log msg")
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestInitSpider(TestSpider):
     spider_class = InitSpider
 
