@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import warnings
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, cast
-import warnings
 
 from scrapy import Request
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.spiders import Spider
 from scrapy.utils.spider import iterate_spider_output
-from scrapy.exceptions import ScrapyDeprecationWarning
 
 if TYPE_CHECKING:
     from scrapy.http import Response
@@ -16,8 +16,8 @@ if TYPE_CHECKING:
 class InitSpider(Spider):
     """Base Spider with initialization facilities
 
-       .. warning:: This class is deprecated. Copy its code into your project if needed.
-       It will be removed in a future Scrapy version.
+    .. warning:: This class is deprecated. Copy its code into your project if needed.
+    It will be removed in a future Scrapy version.
     """
 
     def __init__(self, *args, **kwargs):
@@ -26,7 +26,7 @@ class InitSpider(Spider):
             "InitSpider is deprecated. Copy its code from Scrapy's source if needed. "
             "Will be removed in a future version.",
             ScrapyDeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
 
     def start_requests(self) -> Iterable[Request]:
