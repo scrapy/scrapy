@@ -325,7 +325,9 @@ class SpiderMiddlewareManager(MiddlewareManager):
         return dfd2
 
     @inlineCallbacks
-    def process_seeds(self, spider: Spider) -> Deferred[AsyncIterator[Any]]:
+    def process_seeds(
+        self, spider: Spider
+    ) -> Generator[Deferred[Any], Any, AsyncIterator[Any]]:
         self._check_deprecated_start_requests_use(spider)
         seeds = yield self._iter_seeds(spider)
         seeds = yield self._process_chain("process_seeds", seeds)

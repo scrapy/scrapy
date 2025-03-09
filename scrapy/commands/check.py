@@ -89,7 +89,7 @@ class Command(ScrapyCommand):
             for spidername in args or spider_loader.list():
                 spidercls = spider_loader.load(spidername)
 
-                spidercls._result = result  # type: ignore[assignment,method-assign,return-value]
+                spidercls._result = result  # type: ignore[assignment,attr-defined,method-assign,return-value]
                 spidercls.yield_seeds = yield_seeds  # type: ignore[assignment,method-assign,return-value]
 
                 tested_methods = conman.tested_methods_from_spidercls(spidercls)

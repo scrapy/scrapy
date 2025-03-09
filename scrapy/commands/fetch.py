@@ -93,8 +93,8 @@ class Command(ScrapyCommand):
         async def yield_seeds(self):
             yield self._request
 
-        spidercls._request = request  # type: ignore[assignment]
-        spidercls.yield_seeds = yield_seeds
+        spidercls._request = request  # type: ignore[assignment,attr-defined]
+        spidercls.yield_seeds = yield_seeds  # type: ignore[method-assign,attr-defined]
 
         self.crawler_process.crawl(spidercls)
         self.crawler_process.start()
