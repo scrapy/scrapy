@@ -1,20 +1,26 @@
 from __future__ import annotations
 
+import enum
 import gzip
 import logging
 import pickle
-from email.utils import mktime_tz, parsedate_tz
+import re
+import uuid
+from email.utils import formatdate, mktime_tz, parsedate_tz
 from importlib import import_module
+from io import BytesIO
 from pathlib import Path
 from time import time
-from typing import IO, TYPE_CHECKING, Any, cast
+from typing import IO, TYPE_CHECKING, Any, LiteralString, cast
 from weakref import WeakKeyDictionary
 
 from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
+from warcio import ArchiveIterator, StatusAndHeaders, WARCWriter
+from warcio.recordbuilder import RecordBuilder
 
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
-from scrapy.utils.httpobj import urlparse_cached
+from scrapy.utils.httpobj import HTTP_STATUS_MSGS, urlparse_cached
 from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode
 
@@ -33,6 +39,16 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+class HTTPCacheWARCPathStyle(enum.Enum):
+    FILE_ONLY = "FILE_ONLY"
+    FILE_AND_HASH = "FILE_AND_HASH"
+    FOLDERS_AND_FILE = "FOLDERS_AND_FILE"
+    FOLDERS_FILE_AND_HASH = "FOLDERS_FILE_AND_HASH"
+
+
+URL_TO_FILE_SAFE_RX = re.compile(r"[^a-z0-9_\-.]+", re.ASCII | re.IGNORECASE)
 
 
 class DummyPolicy:
@@ -390,6 +406,261 @@ class FilesystemCacheStorage:
             return None  # expired
         with self._open(metapath, "rb") as f:
             return cast(dict[str, Any], pickle.load(f))  # noqa: S301
+
+
+class WARCCacheStorage:
+    def __init__(self, settings: BaseSettings):
+        self.cachedir: str = data_path(settings["HTTPCACHE_DIR"])
+        self.expiration_secs: int = settings.getint("HTTPCACHE_EXPIRATION_SECS")
+        self.use_gzip: bool = settings.getbool("HTTPCACHE_GZIP")
+        self.tree_path: bool = settings.getbool("HTTPCACHE_TREE_PATH")
+        self.pathname_strategy: HTTPCacheWARCPathStyle = settings.get(
+            "HTTPCACHE_WARC_PATH_STYLE", HTTPCacheWARCPathStyle.FILE_AND_HASH
+        )
+
+    @staticmethod
+    def http_headers_cleaner(
+        scrapy_headers: dict[bytes, bytes],
+    ) -> dict[str | bytes, LiteralString | str | bytes]:
+        """Convert Scrapy headers to a format suitable for WARC records."""
+        rv = {}
+        for k, v in scrapy_headers.items():
+            if v is not None:
+                key = k.decode("ascii") if isinstance(k, bytes) else k
+                val = v.decode("ascii") if isinstance(v, bytes) else v
+                if isinstance(v, list):
+                    val = ", ".join(el.decode("ascii") for el in v)
+                rv[key] = val
+        return rv
+
+    def open_spider(self, spider: Spider) -> None:
+        logger.debug(
+            "Using WARC cache storage in %(cachedir)s",
+            {"cachedir": self.cachedir},
+            extra={"spider": spider},
+        )
+
+        assert spider.crawler.request_fingerprinter
+
+    def close_spider(self, spider: Spider) -> None:
+        pass
+
+    def retrieve_response(self, spider: Spider, request: Request) -> Response | None:
+        """Return response if present in cache, or None otherwise."""
+
+        warc_path, url_parts = self._get_warc_path(spider, request)
+
+        if not warc_path.exists():
+            return None
+
+        response, warc_req, warc_resp = None, None, None
+
+        with warc_path.open("rb") as warc_fh:
+            for warc_rec in ArchiveIterator(warc_fh):
+                if warc_rec.rec_type == "response":
+                    warc_resp = warc_rec
+                elif warc_rec.rec_type == "request":
+                    warc_req = warc_rec
+
+        # Only create response if both request & response recs were found
+        if not warc_req or not warc_resp:
+            logger.warning(
+                "Incomplete WARC record found in cache%s%s (%s), request missing"
+                if not warc_req
+                else ", response missing"
+                if not warc_resp
+                else ""
+            )
+            return None
+
+        try:
+            # Extract status code from the status line
+            status_line = warc_resp.http_headers.statusline
+            if not status_line:
+                logger.error("Missing status line in WARC response record")
+                return None
+
+            # Parse the status code from the status line
+            # e.g., "HTTP/1.1 200 OK"
+            parts = status_line.split(" ", 2)
+            if len(parts) < 2:
+                logger.error("Invalid status line format: %s", status_line)
+                return None
+
+            try:
+                status_code = int(parts[0])
+            except ValueError:
+                logger.error("Invalid status code in status line: %s", status_line)
+                return None
+
+            # Extract headers from HTTP headers
+            resp_headers = {
+                name: value
+                for name, value in warc_resp.http_headers.headers
+                if name.lower() != "status"  # Skip status line
+            }
+
+            # We need to reopen the WARC file to read the response body
+            # because the content_stream() can only be read once, and it is
+            # already read by ArchiveIterator for WARC record parsing
+            with warc_path.open("rb") as warc_fh_body:
+                logger.warning(
+                    "Retrieving existing cache file: %s *for* %s",
+                    warc_path,
+                    request.url,
+                )
+
+                for warc_rec_body in ArchiveIterator(warc_fh_body):
+                    if warc_rec_body.rec_type == "response":
+                        # Read the response body
+                        resp_body = warc_rec_body.content_stream().read()
+
+                        # Create the response object
+                        response_class = responsetypes.from_args(
+                            headers=Headers(resp_headers),
+                            url=warc_resp.rec_headers.get_header("WARC-Target-URI"),
+                        )
+                        response = response_class(
+                            url=warc_resp.rec_headers.get_header("WARC-Target-URI"),
+                            status=status_code,
+                            headers=Headers(resp_headers),
+                            body=resp_body,
+                            request=request,
+                            protocol="HTTP/1.1",  # Default to HTTP/1.1
+                        )
+
+                        # Log the body length for debugging
+                        logger.info(
+                            "Retrieved cached response body length: %d", len(resp_body)
+                        )
+
+                        break
+        except Exception as e:
+            logger.error("Error retrieving response from WARC file: %s", e)
+            return None
+
+        return response
+
+    def store_response(
+        self, spider: Spider, request: Request, response: Response
+    ) -> None:
+        """Store the given response in the cache."""
+        warc_path, url_parts = self._get_warc_path(spider, request)
+
+        # Ensure cache folder exists
+        if not warc_path.parent.exists():
+            warc_path.parent.mkdir(parents=True)
+
+        logger.warning("Writing new cache file: %s *for* %s", warc_path, request.url)
+
+        with warc_path.open("wb") as warc_fh:
+            # Generate a UUID for the WARC record
+            record_id = f"<urn:uuid:{uuid.uuid4()}>"
+
+            # Create HTTP headers for the request
+            headers = WARCCacheStorage.http_headers_cleaner(request.headers)
+
+            # Reconstruct the request line, since Scrapy doesn't provide it
+            request_path = (
+                url_parts.path + ("?" if url_parts.query else "") + url_parts.query
+            )
+            request_headers = StatusAndHeaders(
+                statusline=f"{request.method} {request_path} HTTP/1.1",
+                headers=headers,
+                protocol="",  # Requests append the protocol, not prepend
+            )
+
+            # Create the request record
+            content_type = request.headers.get("Content-Type", b"")
+            content_type_str: str = (
+                content_type.decode("ascii")
+                if content_type
+                else "application/http; msgtype=request"
+            )
+            request_rec = RecordBuilder().create_warc_record(
+                uri=request.url,
+                record_type="request",
+                payload=BytesIO(request.body),
+                warc_headers_dict={
+                    "WARC-Date": formatdate(time(), localtime=False, usegmt=True),
+                    "WARC-Record-ID": record_id,
+                    "Content-Type": content_type_str,
+                },
+                http_headers=request_headers,
+            )
+
+            # Copy HTTP headers for the response
+            resp_hdrs_cleaned = WARCCacheStorage.http_headers_cleaner(response.headers)
+            status_msg = HTTP_STATUS_MSGS.get(response.status, "")
+            status_line = f"{response.status} {status_msg}"
+
+            response_headers = StatusAndHeaders(
+                statusline=status_line, headers=resp_hdrs_cleaned, protocol="HTTP/1.1"
+            )
+
+            # Handle gzipped content, most clients process the response body
+            # based on the Content-Type and Content-Encoding
+            if "gzip" in resp_hdrs_cleaned.get("Content-Encoding", ""):
+                resp_body = gzip.decompress(response.body)
+            else:
+                resp_body = response.body
+
+            # Get content type
+            content_type = request.headers.get("Content-Type", b"")
+            resp_content_type: str = (
+                content_type.decode("ascii") if content_type else "text/html"
+            )
+            if ";" in resp_content_type:
+                resp_type, _ = resp_content_type.split(";", 1)
+
+            # Create the response record
+            response_rec = RecordBuilder().create_warc_record(
+                uri=response.url,
+                record_type="response",
+                payload=BytesIO(resp_body),
+                warc_headers_dict={
+                    "WARC-Date": formatdate(time(), localtime=False, usegmt=True),
+                    "WARC-Record-ID": f"<urn:uuid:{uuid.uuid4()}>",
+                    "Scrapy-Response-Class": response.__class__.__name__,
+                    "Content-Type": resp_content_type,
+                },
+                http_headers=response_headers,
+            )
+
+            # Write the request and response records to the WARC file
+            writer = WARCWriter(filebuf=warc_fh, gzip=self.use_gzip)
+            writer.write_record(response_rec)
+            writer.write_record(request_rec)
+
+    def _get_warc_path(self, spider: Spider, request: Request) -> tuple[Path, Any]:
+        url_parts = urlparse_cached(request)
+        filesafe_path = URL_TO_FILE_SAFE_RX.sub("_", url_parts.path).strip("_")
+        path = Path(self.cachedir, url_parts.netloc)
+        query = "?" + url_parts.query if url_parts.query else ""
+
+        strat = self.pathname_strategy
+        if strat == HTTPCacheWARCPathStyle.FILE_ONLY.name:
+            path /= filesafe_path + query
+        elif strat == HTTPCacheWARCPathStyle.FILE_AND_HASH.name:
+            request_hash = spider.crawler.request_fingerprinter.fingerprint(
+                request
+            ).hex()
+            path /= filesafe_path + query + f"-{request_hash}"
+        elif strat == HTTPCacheWARCPathStyle.FOLDERS_AND_FILE.name:
+            path /= Path(*(str(url_parts.path) + query).split("/"))
+        elif strat == HTTPCacheWARCPathStyle.FOLDERS_FILE_AND_HASH.name:
+            request_hash = spider.crawler.request_fingerprinter.fingerprint(
+                request
+            ).hex()
+            hyphen = "-" if query or not url_parts.path.endswith("/") else ""
+            path /= Path(
+                *(str(url_parts.path) + query + f"{hyphen}{request_hash}").split("/")
+            )
+        else:
+            raise ValueError(f"Unknown path style: {self.pathname_strategy}")
+
+        warc_path = Path(str(path) + ".warc" + (".gz" if self.use_gzip else ""))
+        return warc_path, url_parts
 
 
 def parse_cachecontrol(header: bytes) -> dict[bytes, bytes | None]:

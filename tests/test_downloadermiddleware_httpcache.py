@@ -3,14 +3,19 @@ import shutil
 import tempfile
 import time
 from contextlib import contextmanager
+from pathlib import Path
+from unittest import TestCase
+from unittest.mock import Mock
 
 import pytest
 
 from scrapy.downloadermiddlewares.httpcache import HttpCacheMiddleware
 from scrapy.exceptions import IgnoreRequest
+from scrapy.extensions.httpcache import HTTPCacheWARCPathStyle, WARCCacheStorage
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
+from scrapy.utils.request import RequestFingerprinter
 from scrapy.utils.test import get_crawler
 
 
@@ -164,6 +169,213 @@ class TestFilesystemStorageGzip(TestDefaultStorage):
     def _get_settings(self, **new_settings):
         new_settings.setdefault("HTTPCACHE_GZIP", True)
         return super()._get_settings(**new_settings)
+
+
+class WARCCacheStorageTest(TestCase):
+    def setUp(self):
+        # Create a temporary directory for the cache
+        self.test_dir = tempfile.mkdtemp()
+
+        # Initialize settings
+        self.settings = Settings()
+        self.settings.set("HTTPCACHE_DIR", self.test_dir)
+        self.settings.set("HTTPCACHE_GZIP", False)  # Disable gzip, initially
+        self.settings.set("HTTPCACHE_WARC_PATH_STYLE", "FILE_ONLY")
+
+        # Initialize the storage
+        self.storage = WARCCacheStorage(self.settings)
+
+        # Create a mock spider
+        self.spider = Spider(name="test_spider")
+        self.spider.crawler = Mock()
+        self.spider.crawler.request_fingerprinter = RequestFingerprinter()
+
+        # Open the spider
+        self.storage.open_spider(self.spider)
+
+        # Create a test request and response
+        self.request = Request(url="https://example.com/")
+        self.response = Response(
+            url="https://example.com/",
+            status=200,
+            headers={
+                "Content-Type": "text/html",
+                "Content-Length": "1234",
+                "Date": "Wed, 01 Jan 2025 00:00:00 GMT",
+            },
+            body=b"<html><body>Test</body></html>",
+            request=self.request,
+            protocol="HTTP/1.1",
+        )
+
+    def tearDown(self):
+        # Close the spider
+        self.storage.close_spider(self.spider)
+
+        # Remove the temporary directory
+        shutil.rmtree(self.test_dir)
+
+    def test_store_and_retrieve_response(self):
+        """Test storing and retrieving a response."""
+        # Store the response
+        self.storage.store_response(self.spider, self.request, self.response)
+
+        # Get the WARC file path
+        warc_path, _ = self.storage._get_warc_path(self.spider, self.request)
+
+        # Check if the WARC file was created
+        self.assertTrue(warc_path.exists(), f"WARC file not created: {warc_path}")
+
+        # Retrieve the response
+        cached_response = self.storage.retrieve_response(self.spider, self.request)
+
+        # Check if the response was retrieved
+        self.assertIsNotNone(cached_response, "Failed to retrieve response from cache")
+
+        # Check if the response properties match
+        self.assertEqual(cached_response.url, self.response.url, "URLs don't match")
+        self.assertEqual(
+            cached_response.status, self.response.status, "Status codes don't match"
+        )
+        self.assertEqual(
+            cached_response.body, self.response.body, "Body content doesn't match"
+        )
+
+        # Check if the headers match
+        for name, value in self.response.headers.items():
+            self.assertEqual(
+                cached_response.headers.getlist(name),
+                [value] if not isinstance(value, list) else value,
+                f"Header {name} doesn't match",
+            )
+
+    def test_retrieve_nonexistent_response(self):
+        """Test retrieving a response that doesn't exist in the cache."""
+        # Retrieve a response that hasn't been stored
+        cached_response = self.storage.retrieve_response(self.spider, self.request)
+
+        # Check if the response is None
+        self.assertIsNone(cached_response, "Retrieved a response that shouldn't exist")
+
+    def test_gzip_compression(self):
+        """Test that gzip compression works correctly."""
+        # Enable gzip compression
+        self.settings.set("HTTPCACHE_GZIP", True)
+
+        # Reinitialize the storage with the new settings
+        self.storage = WARCCacheStorage(self.settings)
+        self.storage.open_spider(self.spider)
+
+        # Store the response
+        self.storage.store_response(self.spider, self.request, self.response)
+
+        # Get the WARC file path
+        warc_path, _ = self.storage._get_warc_path(self.spider, self.request)
+
+        # Check if the WARC file was created with the .gz extension
+        self.assertTrue(
+            str(warc_path).endswith(".warc.gz"), "WARC file not compressed with gzip"
+        )
+
+        # Retrieve the response
+        cached_response = self.storage.retrieve_response(self.spider, self.request)
+
+        # Check if the response was retrieved
+        self.assertIsNotNone(
+            cached_response, "Failed to retrieve response from gzipped cache"
+        )
+
+        # Check if the response properties match
+        self.assertEqual(
+            cached_response.url, self.response.url, "URLs don't match with gzip"
+        )
+        self.assertEqual(
+            cached_response.status,
+            self.response.status,
+            "Status codes don't match with gzip",
+        )
+        self.assertEqual(
+            cached_response.body,
+            self.response.body,
+            "Body content doesn't match with gzip",
+        )
+
+    def test_warc_path_styles(self):
+        """Test that the WARC path is generated correctly for each URL style,
+        with and without query strings, with and without .gz suffix.
+
+        https://books.toscrape.com/catalogue/the-secret-garden_413/index.html
+        https://books.toscrape.com/catalogue/the-secret-garden_413/index.html?query=1
+        https://books.toscrape.com/catalogue/category/books/classics_6/
+        https://books.toscrape.com/catalogue/category/books/classics_6/?query=2
+        """
+
+        # Together with will_gzip, 32 cache path conversion tests are performed
+        base1 = "books.toscrape.com/catalogue_the-secret-garden_413"
+        base1a = "books.toscrape.com/catalogue/the-secret-garden_413"
+        base2 = "books.toscrape.com/catalogue_category_books_classics_6"
+        base2a = "books.toscrape.com/catalogue/category/books/classics_6"
+        style_checks = {
+            "with_file": {
+                "url": "https://books.toscrape.com/catalogue/the-secret-garden_413/index.html",
+                HTTPCacheWARCPathStyle.FILE_ONLY: f"{base1}_index.html.warc",
+                HTTPCacheWARCPathStyle.FILE_AND_HASH: f"{base1}_index.html-ebb83fb345cc199c596fdcb575cf0713888341fb.warc",
+                HTTPCacheWARCPathStyle.FOLDERS_AND_FILE: f"{base1a}/index.html.warc",
+                HTTPCacheWARCPathStyle.FOLDERS_FILE_AND_HASH: f"{base1a}/index.html-ebb83fb345cc199c596fdcb575cf0713888341fb.warc",
+            },
+            "with_file_and_query": {
+                "url": "https://books.toscrape.com/catalogue/the-secret-garden_413/index.html?query=1",
+                HTTPCacheWARCPathStyle.FILE_ONLY: f"{base1}_index.html?query=1.warc",
+                HTTPCacheWARCPathStyle.FILE_AND_HASH: f"{base1}_index.html?query=1-e40e1263d9ce7da163a12093cb13e005f4dafda4.warc",
+                HTTPCacheWARCPathStyle.FOLDERS_AND_FILE: f"{base1a}/index.html?query=1.warc",
+                HTTPCacheWARCPathStyle.FOLDERS_FILE_AND_HASH: f"{base1a}/index.html?query=1-e40e1263d9ce7da163a12093cb13e005f4dafda4.warc",
+            },
+            "without_file": {
+                "url": "https://books.toscrape.com/catalogue/category/books/classics_6/",
+                HTTPCacheWARCPathStyle.FILE_ONLY: f"{base2}.warc",
+                HTTPCacheWARCPathStyle.FILE_AND_HASH: f"{base2}-098ba1a7e5b853d67e6894d185ecc90e84e86b17.warc",
+                HTTPCacheWARCPathStyle.FOLDERS_AND_FILE: f"{base2a}.warc",
+                HTTPCacheWARCPathStyle.FOLDERS_FILE_AND_HASH: f"{base2a}/098ba1a7e5b853d67e6894d185ecc90e84e86b17.warc",
+            },
+            "without_file_with_query": {
+                "url": "https://books.toscrape.com/catalogue/category/books/classics_6/?query=2",
+                HTTPCacheWARCPathStyle.FILE_ONLY: f"{base2}?query=2.warc",
+                HTTPCacheWARCPathStyle.FILE_AND_HASH: f"{base2}?query=2-2850eaee108c35ef7ad6a04977852cd694fd30a8.warc",
+                HTTPCacheWARCPathStyle.FOLDERS_AND_FILE: f"{base2a}/?query=2.warc",
+                HTTPCacheWARCPathStyle.FOLDERS_FILE_AND_HASH: f"{base2a}/?query=2-2850eaee108c35ef7ad6a04977852cd694fd30a8.warc",
+            },
+        }
+
+        for url_type, expected in style_checks.items():
+            url = expected["url"]
+            self.request = Request(url=url)
+            for style in HTTPCacheWARCPathStyle:
+                for will_gzip in [False, True]:
+                    with self.subTest(
+                        msg=f"url_type={url_type}, path style={style.name}",
+                        url_type=url_type,
+                        style=style.name,
+                    ):
+                        self.storage.open_spider(self.spider)
+                        self.settings.set("HTTPCACHE_WARC_PATH_STYLE", style.name)
+                        self.settings.set("HTTPCACHE_GZIP", will_gzip)
+                        self.storage = WARCCacheStorage(self.settings)
+
+                        # Get the WARC file path
+                        warc_path, _ = self.storage._get_warc_path(
+                            self.spider, self.request
+                        )
+                        print(style.name, warc_path)
+
+                        # Prefix HTTPCACHE_DIR setting, to match generated
+                        expected_path = Path(self.settings.get("HTTPCACHE_DIR")) / (
+                            expected[style] + (".gz" if will_gzip else "")
+                        )
+
+                        # Check if the generated path matches expected path
+                        self.assertEqual(
+                            expected_path, warc_path, f"{style.name} path not correct"
+                        )
 
 
 class TestDummyPolicy(TestBase):
