@@ -1,18 +1,16 @@
-import unittest
-
 import pytest
 
 from scrapy.link import Link
 
 
-class LinkTest(unittest.TestCase):
+class TestLink:
     def _assert_same_links(self, link1, link2):
-        self.assertEqual(link1, link2)
-        self.assertEqual(hash(link1), hash(link2))
+        assert link1 == link2
+        assert hash(link1) == hash(link2)
 
     def _assert_different_links(self, link1, link2):
-        self.assertNotEqual(link1, link2)
-        self.assertNotEqual(hash(link1), hash(link2))
+        assert link1 != link2
+        assert hash(link1) != hash(link2)
 
     def test_eq_and_hash(self):
         l1 = Link("http://www.example.com")
