@@ -16,15 +16,19 @@ asyncio reactor <install-asyncio>`, you may use :mod:`asyncio` and
 Installing the asyncio reactor
 ==============================
 
-To enable :mod:`asyncio` support, set the :setting:`TWISTED_REACTOR` setting to
-``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``.
+To enable :mod:`asyncio` support, your :setting:`TWISTED_REACTOR` setting needs
+to be set to ``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'`` which
+is the default value.
 
 If you are using :class:`~scrapy.crawler.CrawlerRunner`, you also need to
 install the :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`
 reactor manually. You can do that using
-:func:`~scrapy.utils.reactor.install_reactor`::
+:func:`~scrapy.utils.reactor.install_reactor`:
 
-    install_reactor('twisted.internet.asyncioreactor.AsyncioSelectorReactor')
+.. skip: next
+.. code-block:: python
+
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
 
 
 .. _asyncio-preinstalled-reactor:
@@ -144,3 +148,14 @@ Using custom asyncio loops
 You can also use custom asyncio event loops with the asyncio reactor. Set the
 :setting:`ASYNCIO_EVENT_LOOP` setting to the import path of the desired event
 loop class to use it instead of the default asyncio event loop.
+
+
+.. _disable-asyncio:
+
+Switching to a non-asyncio reactor
+==================================
+
+If for some reason your code doesn't work with the asyncio reactor you can use
+a different reactor by setting the :setting:`TWISTED_REACTOR` setting to its
+import path (e.g. ``'twisted.internet.epollreactor.EPollReactor'``) or to
+``None``, which will use the default reactor for your platform.

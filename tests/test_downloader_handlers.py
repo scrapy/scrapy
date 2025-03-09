@@ -307,7 +307,7 @@ class HttpTestCase(unittest.TestCase, ABC):
 
     @defer.inlineCallbacks
     def test_timeout_download_from_spider_nodata_rcvd(self):
-        if self.reactor_pytest == "asyncio" and sys.platform == "win32":
+        if self.reactor_pytest != "default" and sys.platform == "win32":
             # https://twistedmatrix.com/trac/ticket/10279
             raise unittest.SkipTest(
                 "This test produces DirtyReactorAggregateError on Windows with asyncio"
@@ -322,7 +322,7 @@ class HttpTestCase(unittest.TestCase, ABC):
 
     @defer.inlineCallbacks
     def test_timeout_download_from_spider_server_hangs(self):
-        if self.reactor_pytest == "asyncio" and sys.platform == "win32":
+        if self.reactor_pytest != "default" and sys.platform == "win32":
             # https://twistedmatrix.com/trac/ticket/10279
             raise unittest.SkipTest(
                 "This test produces DirtyReactorAggregateError on Windows with asyncio"
@@ -1145,7 +1145,7 @@ class BaseFTPTestCase(unittest.TestCase):
 
 class FTPTestCase(BaseFTPTestCase):
     def test_invalid_credentials(self):
-        if self.reactor_pytest == "asyncio" and sys.platform == "win32":
+        if self.reactor_pytest != "default" and sys.platform == "win32":
             raise unittest.SkipTest(
                 "This test produces DirtyReactorAggregateError on Windows with asyncio"
             )

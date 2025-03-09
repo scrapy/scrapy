@@ -626,13 +626,7 @@ class TestCrawlerRunnerHasSpider(unittest.TestCase):
 
     @inlineCallbacks
     def test_crawler_runner_asyncio_enabled_true(self):
-        if self.reactor_pytest == "asyncio":
-            CrawlerRunner(
-                settings={
-                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                }
-            )
-        else:
+        if self.reactor_pytest == "default":
             runner = CrawlerRunner(
                 settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
@@ -643,6 +637,12 @@ class TestCrawlerRunnerHasSpider(unittest.TestCase):
                 match=r"The installed reactor \(.*?\) does not match the requested one \(.*?\)",
             ):
                 yield runner.crawl(NoRequestsSpider)
+        else:
+            CrawlerRunner(
+                settings={
+                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                }
+            )
 
 
 class ScriptRunnerMixin:
@@ -672,7 +672,7 @@ class TestCrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         assert "Spider closed (finished)" in log
         assert (
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-            not in log
+            in log
         )
 
     def test_multi(self):
@@ -680,18 +680,17 @@ class TestCrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         assert "Spider closed (finished)" in log
         assert (
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-            not in log
+            in log
         )
         assert "ReactorAlreadyInstalledError" not in log
 
     def test_reactor_default(self):
         log = self.run_script("reactor_default.py")
-        assert "Spider closed (finished)" in log
+        assert "Spider closed (finished)" not in log
         assert (
-            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-            not in log
-        )
-        assert "ReactorAlreadyInstalledError" not in log
+            "does not match the requested one "
+            "(twisted.internet.asyncioreactor.AsyncioSelectorReactor)"
+        ) in log
 
     def test_reactor_default_twisted_reactor_select(self):
         log = self.run_script("reactor_default_twisted_reactor_select.py")
@@ -716,8 +715,11 @@ class TestCrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
 
     def test_reactor_select(self):
         log = self.run_script("reactor_select.py")
-        assert "Spider closed (finished)" in log
-        assert "ReactorAlreadyInstalledError" not in log
+        assert "Spider closed (finished)" not in log
+        assert (
+            "does not match the requested one "
+            "(twisted.internet.asyncioreactor.AsyncioSelectorReactor)"
+        ) in log
 
     def test_reactor_select_twisted_reactor_select(self):
         log = self.run_script("reactor_select_twisted_reactor_select.py")
