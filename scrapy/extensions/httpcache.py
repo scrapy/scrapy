@@ -338,8 +338,8 @@ class FilesystemCacheStorage:
 
     def open_spider(self, spider: Spider) -> None:
         logger.debug(
-            "Using filesystem cache storage in %(cachedir)s",
-            {"cachedir": self.cachedir},
+            "Using filesystem cache storage in %(cache_dir)s",
+            {"cache_dir": self.cachedir},
             extra={"spider": spider},
         )
 
@@ -410,10 +410,8 @@ class FilesystemCacheStorage:
 
 class WARCCacheStorage:
     def __init__(self, settings: BaseSettings):
-        self.cachedir: str = data_path(settings["HTTPCACHE_DIR"])
-        self.expiration_secs: int = settings.getint("HTTPCACHE_EXPIRATION_SECS")
+        self.cache_dir: str = data_path(settings["HTTPCACHE_DIR"])
         self.use_gzip: bool = settings.getbool("HTTPCACHE_GZIP")
-        self.tree_path: bool = settings.getbool("HTTPCACHE_TREE_PATH")
         self.pathname_strategy: HTTPCacheWARCPathStyle = settings.get(
             "HTTPCACHE_WARC_PATH_STYLE", HTTPCacheWARCPathStyle.FILE_AND_HASH
         )
@@ -435,8 +433,8 @@ class WARCCacheStorage:
 
     def open_spider(self, spider: Spider) -> None:
         logger.debug(
-            "Using WARC cache storage in %(cachedir)s",
-            {"cachedir": self.cachedir},
+            "Using WARC cache storage in %(cache_dir)s",
+            {"cache_dir": self.cache_dir},
             extra={"spider": spider},
         )
 
@@ -635,7 +633,7 @@ class WARCCacheStorage:
     def _get_warc_path(self, spider: Spider, request: Request) -> tuple[Path, Any]:
         url_parts = urlparse_cached(request)
         filesafe_path = URL_TO_FILE_SAFE_RX.sub("_", url_parts.path).strip("_")
-        path = Path(self.cachedir, url_parts.netloc)
+        path = Path(self.cache_dir, url_parts.netloc)
         query = "?" + url_parts.query if url_parts.query else ""
 
         strat = self.pathname_strategy
