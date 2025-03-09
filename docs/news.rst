@@ -299,6 +299,9 @@ Deprecations
 -   ``scrapy.extensions.feedexport.build_storage()`` is now deprecated. You can
     instead call the builder callable directly.
     (:issue:`6540`)
+-   ``scrapy.spiders.InitSpider`` is now deprecated.
+    Copy its code from Scrapy's source if needed.
+    (:issue:`6708`)
 
 New features
 ~~~~~~~~~~~~

@@ -28,7 +28,9 @@ from scrapy.spiders import (
 )
 from scrapy.spiders.init import InitSpider
 from scrapy.utils.test import get_crawler
+from scrapy.exceptions import ScrapyDeprecationWarning
 from tests import get_testdata, tests_datadir
+
 
 
 class TestSpider(unittest.TestCase):
@@ -146,6 +148,13 @@ class TestSpider(unittest.TestCase):
 
 class TestInitSpider(TestSpider):
     spider_class = InitSpider
+
+    def setUp(self):
+        super().setUp()
+        warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning)
+
+    def tearDown(self):
+        super().tearDown()
 
 
 class TestXMLFeedSpider(TestSpider):
