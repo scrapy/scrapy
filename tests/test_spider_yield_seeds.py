@@ -11,11 +11,13 @@ from scrapy.utils.test import get_crawler
 
 
 class MainTestCase(TestCase):
+    item = {"a": "b"}
+
     @inlineCallbacks
-    def _test_scenario(self, scenario):
+    def _test(self, yield_seeds_):
         class TestSpider(Spider):
             name = "test"
-            yield_seeds = scenario.yield_seeds
+            yield_seeds = yield_seeds_
 
         actual_items = []
 
@@ -26,38 +28,30 @@ class MainTestCase(TestCase):
         crawler.signals.connect(track_item, signals.item_scraped)
         yield crawler.crawl()
         assert crawler.stats.get_value("finish_reason") == "finished"
-        assert actual_items == scenario.expected_items
+        assert actual_items == [self.item]
 
     @pytest.mark.only_asyncio
     @inlineCallbacks
     def test_asyncio_delayed(self):
-        class Scenario:
-            expected_items = [{"a": "b"}]
-            only_asyncio = True
+        async def yield_seeds(spider):
+            await sleep(ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.01)
+            yield self.item
 
-            async def yield_seeds(self):
-                await sleep(ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.01)
-                yield {"a": "b"}
-
-        yield self._test_scenario(Scenario)
+        yield self._test(yield_seeds)
 
     @inlineCallbacks
     def test_twisted_delayed(self):
         def twisted_sleep(seconds):
-            d = Deferred()
             from twisted.internet import reactor
 
+            d = Deferred()
             reactor.callLater(seconds, d.callback, None)
             return d
 
-        class Scenario:
-            expected_items = [{"a": "b"}]
-            only_asyncio = True
+        async def yield_seeds(spider):
+            await maybe_deferred_to_future(
+                twisted_sleep(ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.01)
+            )
+            yield self.item
 
-            async def yield_seeds(self):
-                await maybe_deferred_to_future(
-                    twisted_sleep(ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.01)
-                )
-                yield {"a": "b"}
-
-        yield self._test_scenario(Scenario)
+        yield self._test(yield_seeds)
