@@ -17,8 +17,8 @@ Installing the asyncio reactor
 ==============================
 
 To enable :mod:`asyncio` support, your :setting:`TWISTED_REACTOR` setting needs
-to be set to ``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'`` which
-is the default value.
+to be set to ``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``,
+which is the default value.
 
 If you are using :class:`~scrapy.crawler.CrawlerRunner`, you also need to
 install the :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`
@@ -155,7 +155,7 @@ loop class to use it instead of the default asyncio event loop.
 Switching to a non-asyncio reactor
 ==================================
 
-If for some reason your code doesn't work with the asyncio reactor you can use
+If for some reason your code doesn't work with the asyncio reactor, you can use
 a different reactor by setting the :setting:`TWISTED_REACTOR` setting to its
 import path (e.g. ``'twisted.internet.epollreactor.EPollReactor'``) or to
 ``None``, which will use the default reactor for your platform.
