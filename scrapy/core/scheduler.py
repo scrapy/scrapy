@@ -56,7 +56,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
 
     The original sources of said requests are:
 
-    * Spider: ``start_requests`` method, requests created for URLs in the ``start_urls`` attribute, request callbacks
+    * Spider: ``yield_seeds`` method, requests created for URLs in the ``start_urls`` attribute, request callbacks
     * Spider middleware: ``process_spider_output`` and ``process_spider_exception`` methods
     * Downloader middleware: ``process_request``, ``process_response`` and ``process_exception`` methods
 

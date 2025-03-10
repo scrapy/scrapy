@@ -8,10 +8,10 @@ For more information see docs/topics/architecture.rst
 from __future__ import annotations
 
 import logging
+from enum import Enum
 from time import time
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
-from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
 from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
@@ -20,12 +20,13 @@ from scrapy import signals
 from scrapy.core.scraper import Scraper, _HandleOutputDeferred
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
+from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterable, Iterator
+    from collections.abc import AsyncIterator, Callable, Generator
 
     from scrapy.core.downloader import Downloader
     from scrapy.core.scheduler import BaseScheduler
@@ -44,18 +45,19 @@ _T = TypeVar("_T")
 class Slot:
     def __init__(
         self,
-        start_requests: Iterable[Request],
         close_if_idle: bool,
-        nextcall: CallLaterOnce[None],
+        nextcall: CallLaterOnce[Deferred[None]],
         scheduler: BaseScheduler,
+        *,
+        seeds: AsyncIterator[Any] | None,
     ) -> None:
         self.closing: Deferred[None] | None = None
         self.inprogress: set[Request] = set()
-        self.start_requests: Iterator[Request] | None = iter(start_requests)
         self.close_if_idle: bool = close_if_idle
-        self.nextcall: CallLaterOnce[None] = nextcall
+        self.nextcall: CallLaterOnce[Deferred[None]] = nextcall
         self.scheduler: BaseScheduler = scheduler
         self.heartbeat: LoopingCall = LoopingCall(nextcall.schedule)
+        self.seeds: AsyncIterator[Any] | None = seeds
 
     def add_request(self, request: Request) -> None:
         self.inprogress.add(request)
@@ -78,7 +80,16 @@ class Slot:
             self.closing.callback(None)
 
 
+class _SeedingPolicy(Enum):
+    lazy = "lazy"
+    front_load = "front-load"
+    greedy = "greedy"
+    serial = "serial"
+
+
 class ExecutionEngine:
+    _SLOT_HEARTBEAT_INTERVAL: float = 5.0
+
     def __init__(
         self,
         crawler: Crawler,
@@ -103,6 +114,18 @@ class ExecutionEngine:
             spider_closed_callback
         )
         self.start_time: float | None = None
+        self._load_seeding_policy()
+
+    def _load_seeding_policy(self) -> None:
+        try:
+            self._seeding_policy = _SeedingPolicy(self.settings["SEEDING_POLICY"])
+        except ValueError:
+            supported_values = ", ".join(policy.value for policy in _SeedingPolicy)
+            raise ValueError(
+                f"The value of the SEEDING_POLICY setting "
+                f"({self.settings['SEEDING_POLICY']!r}) is not supported. "
+                f"Supported values: {supported_values}."
+            )
 
     def _get_scheduler_class(self, settings: BaseSettings) -> type[BaseScheduler]:
         from scrapy.core.scheduler import BaseScheduler
@@ -164,7 +187,8 @@ class ExecutionEngine:
     def unpause(self) -> None:
         self.paused = False
 
-    def _next_request(self) -> None:
+    @inlineCallbacks
+    def _next_request(self) -> Generator[Deferred[Any], Any, None]:
         if self.slot is None:
             return
 
@@ -179,29 +203,28 @@ class ExecutionEngine:
         ):
             pass
 
-        if self.slot.start_requests is not None and not self._needs_backout():
+        if self.slot.seeds is not None and not self._needs_backout():
             try:
-                request_or_item = next(self.slot.start_requests)
-            except StopIteration:
-                self.slot.start_requests = None
+                request_or_item = yield deferred_from_coro(self.slot.seeds.__anext__())
+            except StopAsyncIteration:
+                self.slot.seeds = None
+            except RuntimeError:
+                # “RuntimeError: anext(): asynchronous generator is already
+                # running” happens if yield_seeds is taking long to yield the
+                # next seed.
+                pass
             except Exception:
-                self.slot.start_requests = None
+                self.slot.seeds = None
                 logger.error(
-                    "Error while obtaining start requests",
+                    "Error while reading seeds",
                     exc_info=True,
                     extra={"spider": self.spider},
                 )
             else:
                 if isinstance(request_or_item, Request):
                     self.crawl(request_or_item)
-                elif is_item(request_or_item):
-                    self.scraper.start_itemproc(request_or_item, response=None)
                 else:
-                    logger.error(
-                        f"Got {request_or_item!r} among start requests. Only "
-                        f"requests and items are supported. It will be "
-                        f"ignored."
-                    )
+                    self.scraper.start_itemproc(request_or_item, response=None)
 
         if self.spider_is_idle() and self.slot.close_if_idle:
             self._spider_idle()
@@ -289,7 +312,7 @@ class ExecutionEngine:
             return False
         if self.downloader.active:  # downloader has pending requests
             return False
-        if self.slot.start_requests is not None:  # not all start requests are handled
+        if self.slot.seeds is not None:  # not all start requests are handled
             return False
         return not self.slot.scheduler.has_pending_requests()
 
@@ -373,7 +396,6 @@ class ExecutionEngine:
     def open_spider(
         self,
         spider: Spider,
-        start_requests: Iterable[Request] = (),
         close_if_idle: bool = True,
     ) -> Generator[Deferred[Any], Any, None]:
         if self.slot is not None:
@@ -381,10 +403,8 @@ class ExecutionEngine:
         logger.info("Spider opened", extra={"spider": spider})
         nextcall = CallLaterOnce(self._next_request)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
-        start_requests = yield self.scraper.spidermw.process_start_requests(
-            start_requests, spider
-        )
-        self.slot = Slot(start_requests, close_if_idle, nextcall, scheduler)
+        seeds = yield self.scraper.spidermw.process_seeds(spider)
+        self.slot = Slot(close_if_idle, nextcall, scheduler, seeds=seeds)
         self.spider = spider
         if hasattr(scheduler, "open") and (d := scheduler.open(spider)):
             yield d
@@ -393,7 +413,7 @@ class ExecutionEngine:
         self.crawler.stats.open_spider(spider)
         yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
         self.slot.nextcall.schedule()
-        self.slot.heartbeat.start(5)
+        self.slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
 
     def _spider_idle(self) -> None:
         """

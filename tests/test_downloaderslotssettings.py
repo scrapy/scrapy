@@ -28,7 +28,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         },
     }
 
-    def start_requests(self):
+    async def yield_seeds(self):
         self.times = {None: []}
 
         slots = [*self.custom_settings.get("DOWNLOAD_SLOTS", {}), None]

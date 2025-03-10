@@ -43,14 +43,13 @@ class ${ProjectName}SpiderMiddleware:
         # Should return either None or an iterable of Request or item objects.
         pass
 
-    def process_start_requests(self, start_requests, spider):
-        # Called with the start requests of the spider, and works
-        # similarly to the process_spider_output() method, except
-        # that it doesn’t have a response associated.
+    async def process_seeds(self, seeds):
+        # Called with the seeds from the spider yield_seeds() method or with
+        # the output of the maching method of an earlier spider middleware.
 
         # Must return only requests (not items).
-        for r in start_requests:
-            yield r
+        async for seed in seeds:
+            yield seed
 
     def spider_opened(self, spider):
         spider.logger.info("Spider opened: %s" % spider.name)

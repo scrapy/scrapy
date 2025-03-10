@@ -92,8 +92,9 @@ class MySpider(Spider):
 
 
 class DupeFilterSpider(MySpider):
-    def start_requests(self):
-        return (Request(url) for url in self.start_urls)  # no dont_filter=True
+    async def yield_seeds(self):
+        for url in self.start_urls:
+            yield Request(url)  # no dont_filter=True
 
 
 class DictItemsSpider(MySpider):
@@ -490,7 +491,12 @@ def test_request_scheduled_signal(caplog):
     engine = ExecutionEngine(crawler, lambda _: None)
     engine.downloader._slot_gc_loop.stop()
     scheduler = TestScheduler()
-    engine.slot = Slot((), None, Mock(), scheduler)
+
+    async def seeds():
+        return
+        yield
+
+    engine.slot = Slot(None, Mock(), scheduler, seeds=seeds)
     crawler.signals.connect(signal_handler, request_scheduled)
     keep_request = Request("https://keep.example")
     engine._schedule_request(keep_request, spider)

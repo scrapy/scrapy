@@ -1752,6 +1752,74 @@ Soft limit (in bytes) for response data being processed.
 While the sum of the sizes of all responses being processed is above this value,
 Scrapy does not process new requests.
 
+.. setting:: SEEDING_POLICY
+
+SEEDING_POLICY
+--------------
+
+.. versionadded:: VERSION
+
+Default: ``"lazy"``
+
+The way :meth:`Spider.yield_seeds <scrapy.Spider.yield_seeds>` is iterated:
+
+-   .. _lazy-seeding:
+
+    ``"lazy"``: Seeds are only read while the :ref:`scheduler
+    <topics-scheduler>` is empty and the number of ongoing requests is
+    lower than :setting:`CONCURRENT_REQUESTS`.
+
+    This seeding policy aims to:
+
+    -   Maximize crawl speed by maxing out concurrent requests as often
+        as possible.
+
+    -   Minimize the number of requests in the scheduler at any given
+        time by prioritizing scheduler requests over seeds, to minimize
+        resource usage (memory or disk, depending on
+        :setting:`JOBDIR`).
+
+    This seeding policy is best used when seed request priority is not
+    important. Switching to :ref:`serial <serial-seeding>` may lower
+    resource usage further at the cost of also lowering crawl speed.
+
+-   .. _front-load-seeding:
+
+    ``"front-load"``: The spider does not start until all seeds have
+    been read and loaded into the scheduler.
+
+    This seeding policy aims to give the :ref:`scheduler
+    <topics-scheduler>` full control over request order, at the cost of
+    a higher resource usage and a delayed crawl start.
+
+    This seeding policy is best used when having all requests go
+    through the scheduler is more important than resource usage and
+    crawl speed.
+
+-   .. _greedy-seeding:
+
+    ``"greedy"``: While the :ref:`scheduler <topics-scheduler>` is
+    empty and the number of ongoing requests is lower than
+    :setting:`CONCURRENT_REQUESTS`, seeds are read and sent directly
+    (bypassing the scheduler). While the scheduler has requests, seeds
+    are fed into the scheduler.
+
+    This seeding policy is similar to :ref:`front-load
+    <front-load-seeding>`, but it bypasses the scheduler for the first
+    few requests to avoid delaying the crawl start.
+
+-   .. _serial-seeding:
+
+    ``"serial"``: A single seed is read whenever the :ref:`scheduler
+    <topics-scheduler>` is empty and there are no ongoing requests.
+    That is, a new seed is not read until all requests triggered by the
+    previous seed, directly or indirectly, have been processed.
+
+    This seeding policy is similar to :ref:`lazy <lazy-seeding>`, but
+    it prioritizes resource savings over crawl speed. It is
+    functionally equivalent to running the spider multiple times in a
+    row, one per seed request.
+
 .. setting:: SPIDER_CONTRACTS
 
 SPIDER_CONTRACTS
@@ -1969,7 +2037,7 @@ In order to use the reactor installed by Scrapy:
             self.timeout = int(kwargs.pop("timeout", "60"))
             super(QuotesSpider, self).__init__(*args, **kwargs)
 
-        def start_requests(self):
+        async def yield_seeds(self):
             reactor.callLater(self.timeout, self.stop)
 
             urls = ["https://quotes.toscrape.com/page/1"]
@@ -1998,7 +2066,7 @@ which raises :exc:`Exception`, becomes:
             self.timeout = int(kwargs.pop("timeout", "60"))
             super(QuotesSpider, self).__init__(*args, **kwargs)
 
-        def start_requests(self):
+        async def yield_seeds(self):
             from twisted.internet import reactor
 
             reactor.callLater(self.timeout, self.stop)

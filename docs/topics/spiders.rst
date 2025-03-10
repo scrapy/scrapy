@@ -12,16 +12,16 @@ parsing pages for a particular site (or, in some cases, a group of sites).
 
 For spiders, the scraping cycle goes through something like this:
 
-1. You start by generating the initial Requests to crawl the first URLs, and
+1. You start by generating the initial requests to crawl the first URLs, and
    specify a callback function to be called with the response downloaded from
    those requests.
 
-   The first requests to perform are obtained by calling the
-   :meth:`~scrapy.Spider.start_requests` method which (by default)
-   generates :class:`~scrapy.Request` for the URLs specified in the
-   :attr:`~scrapy.Spider.start_urls` and the
-   :attr:`~scrapy.Spider.parse` method as callback function for the
-   Requests.
+   The first requests to perform are obtained by iterating the
+   :meth:`~scrapy.Spider.yield_seeds` method, which by default yields a
+   :class:`~scrapy.Request` object for each URL in the
+   :attr:`~scrapy.Spider.start_urls` spider attribute, with the
+   :attr:`~scrapy.Spider.parse` method set as :attr:`~scrapy.Request.callback`
+   function to handle each :class:`~scrapy.http.Response`.
 
 2. In the callback function, you parse the response (web page) and return
    :ref:`item objects <topics-items>`,
@@ -48,14 +48,7 @@ scrapy.Spider
 =============
 
 .. class:: scrapy.spiders.Spider
-.. class:: scrapy.Spider()
-
-   This is the simplest spider, and the one from which every other spider
-   must inherit (including spiders that come bundled with Scrapy, as well as spiders
-   that you write yourself). It doesn't provide any special functionality. It just
-   provides a default :meth:`start_requests` implementation which sends requests from
-   the :attr:`start_urls` spider attribute and calls the spider's method ``parse``
-   for each of the resulting responses.
+.. autoclass:: scrapy.Spider
 
    .. attribute:: name
 
@@ -81,12 +74,7 @@ scrapy.Spider
        Let's say your target url is ``https://www.example.com/1.html``,
        then add ``'example.com'`` to the list.
 
-   .. attribute:: start_urls
-
-       A list of URLs where the spider will begin to crawl from, when no
-       particular URLs are specified. So, the first pages downloaded will be those
-       listed here. The subsequent :class:`~scrapy.Request` will be generated successively from data
-       contained in the start URLs.
+   .. autoattribute:: start_urls
 
    .. attribute:: custom_settings
 
@@ -149,7 +137,7 @@ scrapy.Spider
 
            The final settings and the initialized
            :class:`~scrapy.crawler.Crawler` attributes are available in the
-           :meth:`start_requests` method, handlers of the
+           :meth:`yield_seeds` method, handlers of the
            :signal:`engine_started` signal and later.
 
        :param crawler: crawler to which the spider will be bound
@@ -201,42 +189,7 @@ scrapy.Spider
                    super().update_settings(settings)
                    settings.setdefault("FEEDS", {}).update(cls.custom_feed)
 
-   .. method:: start_requests()
-
-       This method must return an iterable with the first Requests to crawl and/or with :ref:`item objects
-       <topics-items>` for
-       this spider. It is called by Scrapy when the spider is opened for
-       scraping. Scrapy calls it only once, so it is safe to implement
-       :meth:`start_requests` as a generator.
-
-       The default implementation generates ``Request(url, dont_filter=True)``
-       for each url in :attr:`start_urls`.
-
-       If you want to change the Requests used to start scraping a domain, this is
-       the method to override. For example, if you need to start by logging in using
-       a POST request, you could do:
-
-       .. code-block:: python
-
-           import scrapy
-
-
-           class MySpider(scrapy.Spider):
-               name = "myspider"
-
-               def start_requests(self):
-                   return [
-                       scrapy.FormRequest(
-                           "http://www.example.com/login",
-                           formdata={"user": "john", "pass": "secret"},
-                           callback=self.logged_in,
-                       )
-                   ]
-
-               def logged_in(self, response):
-                   # here you would extract links to follow and return Requests for
-                   # each of them, with another callback
-                   pass
+   .. automethod:: yield_seeds
 
    .. method:: parse(response)
 
@@ -308,7 +261,7 @@ Return multiple Requests and items from a single callback:
             for href in response.xpath("//a/@href").getall():
                 yield scrapy.Request(response.urljoin(href), self.parse)
 
-Instead of :attr:`~.start_urls` you can use :meth:`~.start_requests` directly;
+Instead of :attr:`~.start_urls` you can use :meth:`~.yield_seeds` directly;
 to give data more structure you can use :class:`~scrapy.Item` objects:
 
 .. skip: next
@@ -322,7 +275,7 @@ to give data more structure you can use :class:`~scrapy.Item` objects:
         name = "example.com"
         allowed_domains = ["example.com"]
 
-        def start_requests(self):
+        async def yield_seeds(self):
             yield scrapy.Request("http://www.example.com/1.html", self.parse)
             yield scrapy.Request("http://www.example.com/2.html", self.parse)
             yield scrapy.Request("http://www.example.com/3.html", self.parse)
@@ -376,11 +329,11 @@ The above example can also be written as follows:
     class MySpider(scrapy.Spider):
         name = "myspider"
 
-        def start_requests(self):
+        async def yield_seeds(self):
             yield scrapy.Request(f"http://www.example.com/categories/{self.category}")
 
-If you are :ref:`running Scrapy from a script <run-from-script>`, you can 
-specify spider arguments when calling 
+If you are :ref:`running Scrapy from a script <run-from-script>`, you can
+specify spider arguments when calling
 :class:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
 :class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`:
 
@@ -940,10 +893,11 @@ Combine SitemapSpider with other sources of urls:
 
         other_urls = ["http://www.example.com/about"]
 
-        def start_requests(self):
-            requests = list(super(MySpider, self).start_requests())
-            requests += [scrapy.Request(x, self.parse_other) for x in self.other_urls]
-            return requests
+        async def yield_seeds(self):
+            async for seed in super().yield_seeds():
+                yield seed
+            for url in self.other_urls:
+                yield Request(url, self.parse_other)
 
         def parse_shop(self, response):
             pass  # ... scrape shop here ...

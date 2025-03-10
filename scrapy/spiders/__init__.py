@@ -15,7 +15,7 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import AsyncIterator, Iterable
 
     from twisted.internet.defer import Deferred
 
@@ -29,12 +29,18 @@ if TYPE_CHECKING:
 
 
 class Spider(object_ref):
-    """Base class for scrapy spiders. All spiders must inherit from this
-    class.
+    """Base class that any spider must subclass.
+
+    It provides a default :meth:`yield_seeds` implementation that sends
+    requests based on the :attr:`start_urls` class attribute and calls the
+    :meth:`parse` method for each response.
     """
 
     name: str
     custom_settings: dict[_SettingsKeyT, Any] | None = None
+
+    #: Seed URLs. See :meth:`yield_seeds`.
+    start_urls: list[str] = []
 
     def __init__(self, name: str | None = None, **kwargs: Any):
         if name is not None:
@@ -42,8 +48,6 @@ class Spider(object_ref):
         elif not getattr(self, "name", None):
             raise ValueError(f"{type(self).__name__} must have a name")
         self.__dict__.update(kwargs)
-        if not hasattr(self, "start_urls"):
-            self.start_urls: list[str] = []
 
     @property
     def logger(self) -> SpiderLoggerAdapter:
@@ -72,7 +76,48 @@ class Spider(object_ref):
         self.settings: BaseSettings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
 
-    def start_requests(self) -> Iterable[Request]:
+    async def yield_seeds(self) -> AsyncIterator[Any]:
+        """Yield the initial :class:`~scrapy.Request` objects to send.
+
+        .. versionadded:: VERSION
+
+        For example:
+
+        .. code-block:: python
+
+            from scrapy import Request, Spider
+
+
+            class MySpider(Spider):
+                name = "myspider"
+
+                async def yield_seeds(self):
+                    yield Request("https://toscrape.com/")
+
+        The default implementation reads URLs from :attr:`start_urls` and
+        yields a request for each with :attr:`~scrapy.Request.dont_filter`
+        enabled. It is functionally equivalent to:
+
+        .. code-block:: python
+
+            async def yield_seeds(self):
+                for url in self.start_urls:
+                    yield Request(url, dont_filter=True)
+
+        You can also yield :ref:`items <topics-items>`. For example:
+
+        .. code-block:: python
+
+            async def yield_seeds(self):
+                yield {"foo": "bar"}
+
+        Use :setting:`SEEDING_POLICY` to set how :meth:`yield_seeds` is
+        iterated.
+        """
+        for seed in self.start_requests():
+            yield seed
+
+    def start_requests(self) -> Iterable[Any]:
         if not self.start_urls and hasattr(self, "start_url"):
             raise AttributeError(
                 "Crawling could not start: 'start_urls' not found "

@@ -34,7 +34,7 @@ class QPSSpider(Spider):
         elif self.download_delay is not None:
             self.download_delay = float(self.download_delay)
 
-    def start_requests(self):
+    async def yield_seeds(self):
         url = self.benchurl
         if self.latency is not None:
             url += f"?latency={self.latency}"
