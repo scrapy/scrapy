@@ -46,7 +46,7 @@ class Slot:
     def __init__(
         self,
         close_if_idle: bool,
-        nextcall: CallLaterOnce[None],
+        nextcall: CallLaterOnce[Deferred[None]],
         scheduler: BaseScheduler,
         *,
         seeds: AsyncIterator[Any] | None,
@@ -54,7 +54,7 @@ class Slot:
         self.closing: Deferred[None] | None = None
         self.inprogress: set[Request] = set()
         self.close_if_idle: bool = close_if_idle
-        self.nextcall: CallLaterOnce[None] = nextcall
+        self.nextcall: CallLaterOnce[Deferred[None]] = nextcall
         self.scheduler: BaseScheduler = scheduler
         self.heartbeat: LoopingCall = LoopingCall(nextcall.schedule)
         self.seeds: AsyncIterator[Any] | None = seeds
