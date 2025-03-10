@@ -1,5 +1,3 @@
-from unittest import TestCase
-
 from testfixtures import LogCapture
 
 from scrapy.http import Request, Response
@@ -8,8 +6,8 @@ from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
 
-class TestUrlLengthMiddleware(TestCase):
-    def setUp(self):
+class TestUrlLengthMiddleware:
+    def setup_method(self):
         self.maxlength = 25
         crawler = get_crawler(Spider, {"URLLENGTH_LIMIT": self.maxlength})
         self.spider = crawler._create_spider("foo")
@@ -27,7 +25,7 @@ class TestUrlLengthMiddleware(TestCase):
         )
 
     def test_middleware_works(self):
-        self.assertEqual(self.process_spider_output(), [self.short_url_req])
+        assert self.process_spider_output() == [self.short_url_req]
 
     def test_logging(self):
         with LogCapture() as log:
@@ -36,6 +34,6 @@ class TestUrlLengthMiddleware(TestCase):
         ric = self.stats.get_value(
             "urllength/request_ignored_count", spider=self.spider
         )
-        self.assertEqual(ric, 1)
+        assert ric == 1
 
-        self.assertIn(f"Ignoring link (url length > {self.maxlength})", str(log))
+        assert f"Ignoring link (url length > {self.maxlength})" in str(log)

@@ -1,22 +1,22 @@
 from twisted.internet import defer
 from twisted.trial import unittest
 
-from scrapy.utils.testproc import ProcessTest
-from scrapy.utils.testsite import SiteTest
+from tests.utils.testproc import ProcessTest
+from tests.utils.testsite import SiteTest
 
 
-class FetchTest(ProcessTest, SiteTest, unittest.TestCase):
+class TestFetchCommand(ProcessTest, SiteTest, unittest.TestCase):
     command = "fetch"
 
     @defer.inlineCallbacks
     def test_output(self):
         _, out, _ = yield self.execute([self.url("/text")])
-        self.assertEqual(out.strip(), b"Works")
+        assert out.strip() == b"Works"
 
     @defer.inlineCallbacks
     def test_redirect_default(self):
         _, out, _ = yield self.execute([self.url("/redirect")])
-        self.assertEqual(out.strip(), b"Redirected here")
+        assert out.strip() == b"Redirected here"
 
     @defer.inlineCallbacks
     def test_redirect_disabled(self):
@@ -24,8 +24,8 @@ class FetchTest(ProcessTest, SiteTest, unittest.TestCase):
             ["--no-redirect", self.url("/redirect-no-meta-refresh")]
         )
         err = err.strip()
-        self.assertIn(b"downloader/response_status_count/302", err, err)
-        self.assertNotIn(b"downloader/response_status_count/200", err, err)
+        assert b"downloader/response_status_count/302" in err, err
+        assert b"downloader/response_status_count/200" not in err, err
 
     @defer.inlineCallbacks
     def test_headers(self):

@@ -76,7 +76,7 @@ class CrawlTestCase(TestCase):
             for k, v in slots.items()
         }
 
-        self.assertTrue(max(list(error_delta.values())) < tolerance)
+        assert max(list(error_delta.values())) < tolerance
 
 
 def test_params():

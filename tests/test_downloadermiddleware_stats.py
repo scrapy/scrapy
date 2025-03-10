@@ -1,5 +1,3 @@
-from unittest import TestCase
-
 from scrapy.downloadermiddlewares.stats import DownloaderStats
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
@@ -10,8 +8,8 @@ class MyException(Exception):
     pass
 
 
-class TestDownloaderStats(TestCase):
-    def setUp(self):
+class TestDownloaderStats:
+    def setup_method(self):
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider("scrapytest.org")
         self.mw = DownloaderStats(self.crawler.stats)
@@ -22,10 +20,8 @@ class TestDownloaderStats(TestCase):
         self.res = Response("scrapytest.org", status=400)
 
     def assertStatsEqual(self, key, value):
-        self.assertEqual(
-            self.crawler.stats.get_value(key, spider=self.spider),
-            value,
-            str(self.crawler.stats.get_stats(self.spider)),
+        assert self.crawler.stats.get_value(key, spider=self.spider) == value, str(
+            self.crawler.stats.get_stats(self.spider)
         )
 
     def test_process_request(self):
@@ -44,5 +40,5 @@ class TestDownloaderStats(TestCase):
             1,
         )
 
-    def tearDown(self):
+    def teardown_method(self):
         self.crawler.stats.close_spider(self.spider, "")

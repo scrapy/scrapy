@@ -1,5 +1,6 @@
 from unittest import TextTestResult
 
+import pytest
 from twisted.internet import defer
 from twisted.python import failure
 from twisted.trial import unittest
@@ -246,7 +247,7 @@ class InheritsDemoSpider(DemoSpider):
     name = "inherits_demo_spider"
 
 
-class ContractsManagerTest(unittest.TestCase):
+class TestContractsManager(unittest.TestCase):
     contracts = [
         UrlContract,
         CallbackKeywordArgumentsContract,
@@ -263,34 +264,33 @@ class ContractsManagerTest(unittest.TestCase):
         self.results = TextTestResult(stream=None, descriptions=False, verbosity=0)
 
     def should_succeed(self):
-        self.assertFalse(self.results.failures)
-        self.assertFalse(self.results.errors)
+        assert not self.results.failures
+        assert not self.results.errors
 
     def should_fail(self):
-        self.assertTrue(self.results.failures)
-        self.assertFalse(self.results.errors)
+        assert self.results.failures
+        assert not self.results.errors
 
     def should_error(self):
-        self.assertTrue(self.results.errors)
+        assert self.results.errors
 
     def test_contracts(self):
         spider = DemoSpider()
 
         # extract contracts correctly
         contracts = self.conman.extract_contracts(spider.returns_request)
-        self.assertEqual(len(contracts), 2)
-        self.assertEqual(
-            frozenset(type(x) for x in contracts),
-            frozenset([UrlContract, ReturnsContract]),
+        assert len(contracts) == 2
+        assert frozenset(type(x) for x in contracts) == frozenset(
+            [UrlContract, ReturnsContract]
         )
 
         # returns request for valid method
         request = self.conman.from_method(spider.returns_request, self.results)
-        self.assertNotEqual(request, None)
+        assert request is not None
 
         # no request for missing url
         request = self.conman.from_method(spider.parse_no_url, self.results)
-        self.assertEqual(request, None)
+        assert request is None
 
     def test_cb_kwargs(self):
         spider = DemoSpider()
@@ -298,35 +298,31 @@ class ContractsManagerTest(unittest.TestCase):
 
         # extract contracts correctly
         contracts = self.conman.extract_contracts(spider.returns_request_cb_kwargs)
-        self.assertEqual(len(contracts), 3)
-        self.assertEqual(
-            frozenset(type(x) for x in contracts),
-            frozenset([UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]),
+        assert len(contracts) == 3
+        assert frozenset(type(x) for x in contracts) == frozenset(
+            [UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]
         )
 
         contracts = self.conman.extract_contracts(spider.returns_item_cb_kwargs)
-        self.assertEqual(len(contracts), 3)
-        self.assertEqual(
-            frozenset(type(x) for x in contracts),
-            frozenset([UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]),
+        assert len(contracts) == 3
+        assert frozenset(type(x) for x in contracts) == frozenset(
+            [UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]
         )
 
         contracts = self.conman.extract_contracts(
             spider.returns_item_cb_kwargs_error_unexpected_keyword
         )
-        self.assertEqual(len(contracts), 3)
-        self.assertEqual(
-            frozenset(type(x) for x in contracts),
-            frozenset([UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]),
+        assert len(contracts) == 3
+        assert frozenset(type(x) for x in contracts) == frozenset(
+            [UrlContract, CallbackKeywordArgumentsContract, ReturnsContract]
         )
 
         contracts = self.conman.extract_contracts(
             spider.returns_item_cb_kwargs_error_missing_argument
         )
-        self.assertEqual(len(contracts), 2)
-        self.assertEqual(
-            frozenset(type(x) for x in contracts),
-            frozenset([UrlContract, ReturnsContract]),
+        assert len(contracts) == 2
+        assert frozenset(type(x) for x in contracts) == frozenset(
+            [UrlContract, ReturnsContract]
         )
 
         # returns_request
@@ -360,17 +356,15 @@ class ContractsManagerTest(unittest.TestCase):
 
         # extract contracts correctly
         contracts = self.conman.extract_contracts(spider.returns_request_meta)
-        self.assertEqual(len(contracts), 3)
-        self.assertEqual(
-            frozenset(type(x) for x in contracts),
-            frozenset([UrlContract, MetadataContract, ReturnsContract]),
+        assert len(contracts) == 3
+        assert frozenset(type(x) for x in contracts) == frozenset(
+            [UrlContract, MetadataContract, ReturnsContract]
         )
 
         contracts = self.conman.extract_contracts(spider.returns_item_meta)
-        self.assertEqual(len(contracts), 3)
-        self.assertEqual(
-            frozenset(type(x) for x in contracts),
-            frozenset([UrlContract, MetadataContract, ReturnsContract]),
+        assert len(contracts) == 3
+        assert frozenset(type(x) for x in contracts) == frozenset(
+            [UrlContract, MetadataContract, ReturnsContract]
         )
 
         response = ResponseMetaMock()
@@ -505,8 +499,8 @@ class ContractsManagerTest(unittest.TestCase):
         request = self.conman.from_method(spider.returns_request, self.results)
         request.errback(failure_mock)
 
-        self.assertFalse(self.results.failures)
-        self.assertTrue(self.results.errors)
+        assert not self.results.failures
+        assert self.results.errors
 
     @defer.inlineCallbacks
     def test_same_url(self):
@@ -537,19 +531,19 @@ class ContractsManagerTest(unittest.TestCase):
             crawler = get_crawler(TestSameUrlSpider)
             yield crawler.crawl()
 
-        self.assertEqual(crawler.spider.visited, 2)
+        assert crawler.spider.visited == 2
 
     def test_form_contract(self):
         spider = DemoSpider()
         request = self.conman.from_method(spider.custom_form, self.results)
-        self.assertEqual(request.method, "POST")
-        self.assertIsInstance(request, FormRequest)
+        assert request.method == "POST"
+        assert isinstance(request, FormRequest)
 
     def test_inherited_contracts(self):
         spider = InheritsDemoSpider()
 
         requests = self.conman.from_spider(spider, self.results)
-        self.assertTrue(requests)
+        assert requests
 
 
 class CustomFailContractPreProcess(Contract):
@@ -566,8 +560,8 @@ class CustomFailContractPostProcess(Contract):
         raise KeyboardInterrupt("Post-process exception")
 
 
-class CustomContractPrePostProcess(unittest.TestCase):
-    def setUp(self):
+class TestCustomContractPrePostProcess:
+    def setup_method(self):
         self.results = TextTestResult(stream=None, descriptions=False, verbosity=0)
 
     def test_pre_hook_keyboard_interrupt(self):
@@ -576,18 +570,13 @@ class CustomContractPrePostProcess(unittest.TestCase):
         contract = CustomFailContractPreProcess(spider.returns_request)
         conman = ContractsManager([contract])
 
-        try:
-            request = conman.from_method(spider.returns_request, self.results)
-            contract.add_pre_hook(request, self.results)
-            # Expect this to raise a KeyboardInterrupt
+        request = conman.from_method(spider.returns_request, self.results)
+        contract.add_pre_hook(request, self.results)
+        with pytest.raises(KeyboardInterrupt, match="Pre-process exception"):
             request.callback(response, **request.cb_kwargs)
-        except KeyboardInterrupt as e:
-            self.assertEqual(str(e), "Pre-process exception")
-        else:
-            self.fail("KeyboardInterrupt not raised")
 
-        self.assertFalse(self.results.failures)
-        self.assertFalse(self.results.errors)
+        assert not self.results.failures
+        assert not self.results.errors
 
     def test_post_hook_keyboard_interrupt(self):
         spider = DemoSpider()
@@ -595,15 +584,10 @@ class CustomContractPrePostProcess(unittest.TestCase):
         contract = CustomFailContractPostProcess(spider.returns_request)
         conman = ContractsManager([contract])
 
-        try:
-            request = conman.from_method(spider.returns_request, self.results)
-            contract.add_post_hook(request, self.results)
-            # Expect this to raise a KeyboardInterrupt
+        request = conman.from_method(spider.returns_request, self.results)
+        contract.add_post_hook(request, self.results)
+        with pytest.raises(KeyboardInterrupt, match="Post-process exception"):
             request.callback(response, **request.cb_kwargs)
-        except KeyboardInterrupt as e:
-            self.assertEqual(str(e), "Post-process exception")
-        else:
-            self.fail("KeyboardInterrupt not raised")
 
-        self.assertFalse(self.results.failures)
-        self.assertFalse(self.results.errors)
+        assert not self.results.failures
+        assert not self.results.errors

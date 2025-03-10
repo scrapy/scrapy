@@ -22,7 +22,8 @@ def build_component_list(
     *,
     convert: Callable[[Any], Any] = update_classpath,
 ) -> list[Any]:
-    """Compose a component list from a { class: order } dictionary."""
+    """Compose a component list from a :ref:`component priority dictionary
+    <component-priority-dictionaries>`."""
 
     def _check_components(complist: Collection[Any]) -> None:
         if len({convert(c) for c in complist}) != len(complist):

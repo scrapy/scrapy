@@ -111,6 +111,8 @@ class HttpCompressionMiddleware:
                         f"({len(decoded_body)} B) is larger than the "
                         f"download warning size ({warn_size} B)."
                     )
+                if content_encoding:
+                    self._warn_unknown_encoding(response, content_encoding)
                 response.headers["Content-Encoding"] = content_encoding
                 if self.stats:
                     self.stats.inc_value(
@@ -143,9 +145,11 @@ class HttpCompressionMiddleware:
             body = self._decode(body, encoding, max_size)
         return body, to_keep
 
+    @staticmethod
     def _split_encodings(
-        self, content_encoding: list[bytes]
+        content_encoding: list[bytes],
     ) -> tuple[list[bytes], list[bytes]]:
+        supported_encodings = {*ACCEPTED_ENCODINGS, b"x-gzip"}
         to_keep: list[bytes] = [
             encoding.strip().lower()
             for encoding in chain.from_iterable(
@@ -155,19 +159,35 @@ class HttpCompressionMiddleware:
         to_decode: list[bytes] = []
         while to_keep:
             encoding = to_keep.pop()
-            if encoding not in ACCEPTED_ENCODINGS:
+            if encoding not in supported_encodings:
                 to_keep.append(encoding)
                 return to_decode, to_keep
             to_decode.append(encoding)
         return to_decode, to_keep
 
-    def _decode(self, body: bytes, encoding: bytes, max_size: int) -> bytes:
+    @staticmethod
+    def _decode(body: bytes, encoding: bytes, max_size: int) -> bytes:
         if encoding in {b"gzip", b"x-gzip"}:
             return gunzip(body, max_size=max_size)
         if encoding == b"deflate":
             return _inflate(body, max_size=max_size)
-        if encoding == b"br" and b"br" in ACCEPTED_ENCODINGS:
+        if encoding == b"br":
             return _unbrotli(body, max_size=max_size)
-        if encoding == b"zstd" and b"zstd" in ACCEPTED_ENCODINGS:
+        if encoding == b"zstd":
             return _unzstd(body, max_size=max_size)
-        return body
+        # shouldn't be reached
+        return body  # pragma: no cover
+
+    def _warn_unknown_encoding(
+        self, response: Response, encodings: list[bytes]
+    ) -> None:
+        encodings_str = b",".join(encodings).decode()
+        msg = (
+            f"{self.__class__.__name__} cannot decode the response for {response.url} "
+            f"from unsupported encoding(s) '{encodings_str}'."
+        )
+        if b"br" in encodings:
+            msg += " You need to install brotli or brotlicffi to decode 'br'."
+        if b"zstd" in encodings:
+            msg += " You need to install zstandard to decode 'zstd'."
+        logger.warning(msg)

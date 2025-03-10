@@ -14,7 +14,7 @@ from itertools import chain
 from pathlib import Path
 from shutil import copytree, rmtree
 from stat import S_IWRITE as ANYONE_WRITE_PERMISSION
-from tempfile import TemporaryFile, mkdtemp
+from tempfile import TemporaryDirectory, TemporaryFile, mkdtemp
 from threading import Timer
 from typing import TYPE_CHECKING
 from unittest import mock, skipIf
@@ -35,8 +35,8 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
-class CommandSettings(unittest.TestCase):
-    def setUp(self):
+class TestCommandSettings:
+    def setup_method(self):
         self.command = ScrapyCommand()
         self.command.settings = Settings()
         self.parser = argparse.ArgumentParser(
@@ -50,10 +50,8 @@ class CommandSettings(unittest.TestCase):
             args=["-s", f"FEEDS={feeds_json}", "spider.py"]
         )
         self.command.process_options(args, opts)
-        self.assertIsInstance(
-            self.command.settings["FEEDS"], scrapy.settings.BaseSettings
-        )
-        self.assertEqual(dict(self.command.settings["FEEDS"]), json.loads(feeds_json))
+        assert isinstance(self.command.settings["FEEDS"], scrapy.settings.BaseSettings)
+        assert dict(self.command.settings["FEEDS"]) == json.loads(feeds_json)
 
     def test_help_formatter(self):
         formatter = ScrapyHelpFormatter(prog="scrapy")
@@ -64,17 +62,14 @@ class CommandSettings(unittest.TestCase):
             "\n",
             "Global Options:\n",
         ]
-        self.assertEqual(
-            formatter._join_parts(part_strings),
-            (
-                "Usage\n=====\n  scrapy genspider [options] <name> <domain>\n\n\n"
-                "Optional Arguments\n==================\n\n"
-                "Global Options\n--------------\n"
-            ),
+        assert formatter._join_parts(part_strings) == (
+            "Usage\n=====\n  scrapy genspider [options] <name> <domain>\n\n\n"
+            "Optional Arguments\n==================\n\n"
+            "Global Options\n--------------\n"
         )
 
 
-class ProjectTest(unittest.TestCase):
+class TestProjectBase(unittest.TestCase):
     project_name = "testproject"
 
     def setUp(self):
@@ -130,12 +125,12 @@ class ProjectTest(unittest.TestCase):
         return None
 
 
-class StartprojectTest(ProjectTest):
+class TestStartprojectCommand(TestProjectBase):
     def test_startproject(self):
         p, out, err = self.proc("startproject", self.project_name)
         print(out)
         print(err, file=sys.stderr)
-        self.assertEqual(p.returncode, 0)
+        assert p.returncode == 0
 
         assert Path(self.proj_path, "scrapy.cfg").exists()
         assert Path(self.proj_path, "testproject").exists()
@@ -145,13 +140,13 @@ class StartprojectTest(ProjectTest):
         assert Path(self.proj_mod_path, "settings.py").exists()
         assert Path(self.proj_mod_path, "spiders", "__init__.py").exists()
 
-        self.assertEqual(1, self.call("startproject", self.project_name))
-        self.assertEqual(1, self.call("startproject", "wrong---project---name"))
-        self.assertEqual(1, self.call("startproject", "sys"))
+        assert self.call("startproject", self.project_name) == 1
+        assert self.call("startproject", "wrong---project---name") == 1
+        assert self.call("startproject", "sys") == 1
 
     def test_startproject_with_project_dir(self):
         project_dir = mkdtemp()
-        self.assertEqual(0, self.call("startproject", self.project_name, project_dir))
+        assert self.call("startproject", self.project_name, project_dir) == 0
 
         assert Path(project_dir, "scrapy.cfg").exists()
         assert Path(project_dir, "testproject").exists()
@@ -161,20 +156,16 @@ class StartprojectTest(ProjectTest):
         assert Path(project_dir, self.project_name, "settings.py").exists()
         assert Path(project_dir, self.project_name, "spiders", "__init__.py").exists()
 
-        self.assertEqual(
-            0, self.call("startproject", self.project_name, project_dir + "2")
-        )
+        assert self.call("startproject", self.project_name, project_dir + "2") == 0
 
-        self.assertEqual(1, self.call("startproject", self.project_name, project_dir))
-        self.assertEqual(
-            1, self.call("startproject", self.project_name + "2", project_dir)
-        )
-        self.assertEqual(1, self.call("startproject", "wrong---project---name"))
-        self.assertEqual(1, self.call("startproject", "sys"))
-        self.assertEqual(2, self.call("startproject"))
-        self.assertEqual(
-            2,
-            self.call("startproject", self.project_name, project_dir, "another_params"),
+        assert self.call("startproject", self.project_name, project_dir) == 1
+        assert self.call("startproject", self.project_name + "2", project_dir) == 1
+        assert self.call("startproject", "wrong---project---name") == 1
+        assert self.call("startproject", "sys") == 1
+        assert self.call("startproject") == 2
+        assert (
+            self.call("startproject", self.project_name, project_dir, "another_params")
+            == 2
         )
 
     def test_existing_project_dir(self):
@@ -186,7 +177,7 @@ class StartprojectTest(ProjectTest):
         p, out, err = self.proc("startproject", project_name, cwd=project_dir)
         print(out)
         print(err, file=sys.stderr)
-        self.assertEqual(p.returncode, 0)
+        assert p.returncode == 0
 
         assert Path(project_path, "scrapy.cfg").exists()
         assert Path(project_path, project_name).exists()
@@ -224,7 +215,7 @@ def get_permissions_dict(
     return permissions_dict
 
 
-class StartprojectTemplatesTest(ProjectTest):
+class TestStartprojectTemplates(TestProjectBase):
     maxDiff = None
 
     def setUp(self):
@@ -239,11 +230,10 @@ class StartprojectTemplatesTest(ProjectTest):
 
         args = ["--set", f"TEMPLATES_DIR={self.tmpl}"]
         p, out, err = self.proc("startproject", self.project_name, *args)
-        self.assertIn(
-            f"New Scrapy project '{self.project_name}', using template directory",
-            out,
+        assert (
+            f"New Scrapy project '{self.project_name}', using template directory" in out
         )
-        self.assertIn(self.tmpl_proj, out)
+        assert self.tmpl_proj in out
         assert Path(self.proj_path, "root_template").exists()
 
     def test_startproject_permissions_from_writable(self):
@@ -280,7 +270,7 @@ class StartprojectTemplatesTest(ProjectTest):
         project_dir = Path(destination, project_name)
         actual_permissions = get_permissions_dict(project_dir)
 
-        self.assertEqual(actual_permissions, expected_permissions)
+        assert actual_permissions == expected_permissions
 
     def test_startproject_permissions_from_read_only(self):
         """Check that generated files have the right permissions when the
@@ -333,7 +323,7 @@ class StartprojectTemplatesTest(ProjectTest):
         project_dir = Path(destination, project_name)
         actual_permissions = get_permissions_dict(project_dir)
 
-        self.assertEqual(actual_permissions, expected_permissions)
+        assert actual_permissions == expected_permissions
 
     def test_startproject_permissions_unchanged_in_destination(self):
         """Check that preexisting folders and files in the destination folder
@@ -391,7 +381,7 @@ class StartprojectTemplatesTest(ProjectTest):
 
         actual_permissions = get_permissions_dict(project_dir)
 
-        self.assertEqual(actual_permissions, expected_permissions)
+        assert actual_permissions == expected_permissions
 
     def test_startproject_permissions_umask_022(self):
         """Check that generated files have the right permissions when the
@@ -435,10 +425,10 @@ class StartprojectTemplatesTest(ProjectTest):
             project_dir = Path(destination, project_name)
             actual_permissions = get_permissions_dict(project_dir)
 
-            self.assertEqual(actual_permissions, expected_permissions)
+            assert actual_permissions == expected_permissions
 
 
-class CommandTest(ProjectTest):
+class TestCommandBase(TestProjectBase):
     def setUp(self):
         super().setUp()
         self.call("startproject", self.project_name)
@@ -446,13 +436,13 @@ class CommandTest(ProjectTest):
         self.env["SCRAPY_SETTINGS_MODULE"] = f"{self.project_name}.settings"
 
 
-class GenspiderCommandTest(CommandTest):
+class TestGenspiderCommand(TestCommandBase):
     def test_arguments(self):
         # only pass one argument. spider script shouldn't be created
-        self.assertEqual(2, self.call("genspider", "test_name"))
+        assert self.call("genspider", "test_name") == 2
         assert not Path(self.proj_mod_path, "spiders", "test_name.py").exists()
         # pass two arguments <name> <domain>. spider script should be created
-        self.assertEqual(0, self.call("genspider", "test_name", "test.com"))
+        assert self.call("genspider", "test_name", "test.com") == 0
         assert Path(self.proj_mod_path, "spiders", "test_name.py").exists()
 
     def test_template(self, tplname="crawl"):
@@ -460,20 +450,20 @@ class GenspiderCommandTest(CommandTest):
         spname = "test_spider"
         spmodule = f"{self.project_name}.spiders.{spname}"
         p, out, err = self.proc("genspider", spname, "test.com", *args)
-        self.assertIn(
-            f"Created spider {spname!r} using template {tplname!r} in module:{os.linesep}  {spmodule}",
-            out,
+        assert (
+            f"Created spider {spname!r} using template {tplname!r} in module:{os.linesep}  {spmodule}"
+            in out
         )
-        self.assertTrue(Path(self.proj_mod_path, "spiders", "test_spider.py").exists())
+        assert Path(self.proj_mod_path, "spiders", "test_spider.py").exists()
         modify_time_before = (
             Path(self.proj_mod_path, "spiders", "test_spider.py").stat().st_mtime
         )
         p, out, err = self.proc("genspider", spname, "test.com", *args)
-        self.assertIn(f"Spider {spname!r} already exists in module", out)
+        assert f"Spider {spname!r} already exists in module" in out
         modify_time_after = (
             Path(self.proj_mod_path, "spiders", "test_spider.py").stat().st_mtime
         )
-        self.assertEqual(modify_time_after, modify_time_before)
+        assert modify_time_after == modify_time_before
 
     def test_template_basic(self):
         self.test_template("basic")
@@ -485,14 +475,14 @@ class GenspiderCommandTest(CommandTest):
         self.test_template("xmlfeed")
 
     def test_list(self):
-        self.assertEqual(0, self.call("genspider", "--list"))
+        assert self.call("genspider", "--list") == 0
 
     def test_dump(self):
-        self.assertEqual(0, self.call("genspider", "--dump=basic"))
-        self.assertEqual(0, self.call("genspider", "-d", "basic"))
+        assert self.call("genspider", "--dump=basic") == 0
+        assert self.call("genspider", "-d", "basic") == 0
 
     def test_same_name_as_project(self):
-        self.assertEqual(2, self.call("genspider", self.project_name))
+        assert self.call("genspider", self.project_name) == 2
         assert not Path(
             self.proj_mod_path, "spiders", f"{self.project_name}.py"
         ).exists()
@@ -500,7 +490,7 @@ class GenspiderCommandTest(CommandTest):
     def test_same_filename_as_existing_spider(self, force=False):
         file_name = "example"
         file_path = Path(self.proj_mod_path, "spiders", f"{file_name}.py")
-        self.assertEqual(0, self.call("genspider", file_name, "example.com"))
+        assert self.call("genspider", file_name, "example.com") == 0
         assert file_path.exists()
 
         # change name of spider but not its file name
@@ -515,39 +505,39 @@ class GenspiderCommandTest(CommandTest):
 
         if force:
             p, out, err = self.proc("genspider", "--force", file_name, "example.com")
-            self.assertIn(
-                f"Created spider {file_name!r} using template 'basic' in module", out
+            assert (
+                f"Created spider {file_name!r} using template 'basic' in module" in out
             )
             modify_time_after = file_path.stat().st_mtime
-            self.assertNotEqual(modify_time_after, modify_time_before)
+            assert modify_time_after != modify_time_before
             file_contents_after = file_path.read_text(encoding="utf-8")
-            self.assertNotEqual(file_contents_after, file_contents_before)
+            assert file_contents_after != file_contents_before
         else:
             p, out, err = self.proc("genspider", file_name, "example.com")
-            self.assertIn(f"{file_path.resolve()} already exists", out)
+            assert f"{file_path.resolve()} already exists" in out
             modify_time_after = file_path.stat().st_mtime
-            self.assertEqual(modify_time_after, modify_time_before)
+            assert modify_time_after == modify_time_before
             file_contents_after = file_path.read_text(encoding="utf-8")
-            self.assertEqual(file_contents_after, file_contents_before)
+            assert file_contents_after == file_contents_before
 
     def test_same_filename_as_existing_spider_force(self):
         self.test_same_filename_as_existing_spider(force=True)
 
     def test_url(self, url="test.com", domain="test.com"):
-        self.assertEqual(0, self.call("genspider", "--force", "test_name", url))
-        self.assertEqual(
-            domain,
+        assert self.call("genspider", "--force", "test_name", url) == 0
+        assert (
             self.find_in_file(
                 Path(self.proj_mod_path, "spiders", "test_name.py"),
                 r"allowed_domains\s*=\s*\[['\"](.+)['\"]\]",
-            ).group(1),
+            ).group(1)
+            == domain
         )
-        self.assertEqual(
-            f"https://{domain}",
+        assert (
             self.find_in_file(
                 Path(self.proj_mod_path, "spiders", "test_name.py"),
                 r"start_urls\s*=\s*\[['\"](.+)['\"]\]",
-            ).group(1),
+            ).group(1)
+            == f"https://{domain}"
         )
 
     def test_url_schema(self):
@@ -556,15 +546,13 @@ class GenspiderCommandTest(CommandTest):
     def test_template_start_urls(
         self, url="test.com", expected="https://test.com", template="basic"
     ):
-        self.assertEqual(
-            0, self.call("genspider", "-t", template, "--force", "test_name", url)
-        )
-        self.assertEqual(
-            expected,
+        assert self.call("genspider", "-t", template, "--force", "test_name", url) == 0
+        assert (
             self.find_in_file(
                 Path(self.proj_mod_path, "spiders", "test_name.py"),
                 r"start_urls\s*=\s*\[['\"](.+)['\"]\]",
-            ).group(1),
+            ).group(1)
+            == expected
         )
 
     def test_genspider_basic_start_urls(self):
@@ -611,7 +599,7 @@ class GenspiderCommandTest(CommandTest):
         )
 
 
-class GenspiderStandaloneCommandTest(ProjectTest):
+class TestGenspiderStandaloneCommand(TestProjectBase):
     def test_generate_standalone_spider(self):
         self.call("genspider", "example", "example.com")
         assert Path(self.temp_path, "example.py").exists()
@@ -620,7 +608,7 @@ class GenspiderStandaloneCommandTest(ProjectTest):
         file_name = "example"
         file_path = Path(self.temp_path, file_name + ".py")
         p, out, err = self.proc("genspider", file_name, "example.com")
-        self.assertIn(f"Created spider {file_name!r} using template 'basic' ", out)
+        assert f"Created spider {file_name!r} using template 'basic' " in out
         assert file_path.exists()
         modify_time_before = file_path.stat().st_mtime
         file_contents_before = file_path.read_text(encoding="utf-8")
@@ -630,29 +618,29 @@ class GenspiderStandaloneCommandTest(ProjectTest):
             p, out, err = self.proc(
                 "genspider", "--force", "-t", "crawl", file_name, "example.com"
             )
-            self.assertIn(f"Created spider {file_name!r} using template 'crawl' ", out)
+            assert f"Created spider {file_name!r} using template 'crawl' " in out
             modify_time_after = file_path.stat().st_mtime
-            self.assertNotEqual(modify_time_after, modify_time_before)
+            assert modify_time_after != modify_time_before
             file_contents_after = file_path.read_text(encoding="utf-8")
-            self.assertNotEqual(file_contents_after, file_contents_before)
+            assert file_contents_after != file_contents_before
         else:
             p, out, err = self.proc("genspider", file_name, "example.com")
-            self.assertIn(
-                f"{Path(self.temp_path, file_name + '.py').resolve()} already exists",
-                out,
+            assert (
+                f"{Path(self.temp_path, file_name + '.py').resolve()} already exists"
+                in out
             )
             modify_time_after = file_path.stat().st_mtime
-            self.assertEqual(modify_time_after, modify_time_before)
+            assert modify_time_after == modify_time_before
             file_contents_after = file_path.read_text(encoding="utf-8")
-            self.assertEqual(file_contents_after, file_contents_before)
+            assert file_contents_after == file_contents_before
 
     def test_same_name_as_existing_file_force(self):
         self.test_same_name_as_existing_file(force=True)
 
 
-class MiscCommandsTest(CommandTest):
+class TestMiscCommands(TestCommandBase):
     def test_list(self):
-        self.assertEqual(0, self.call("list"))
+        assert self.call("list") == 0
 
     def test_command_not_found(self):
         na_msg = """
@@ -670,10 +658,10 @@ Unknown command: abc
         for cmdname, inproject, message in params:
             with mock.patch("sys.stdout", new=StringIO()) as out:
                 _print_unknown_command_msg(Settings(), cmdname, inproject)
-                self.assertEqual(out.getvalue().strip(), message.strip())
+                assert out.getvalue().strip() == message.strip()
 
 
-class RunSpiderCommandTest(CommandTest):
+class TestRunSpiderCommand(TestCommandBase):
     spider_filename = "myspider.py"
 
     debug_log_spider = """
@@ -697,18 +685,14 @@ class BadSpider(scrapy.Spider):
         """
 
     @contextmanager
-    def _create_file(self, content, name=None) -> Iterator[str]:
-        tmpdir = Path(self.mktemp())
-        tmpdir.mkdir()
-        if name:
-            fname = (tmpdir / name).resolve()
-        else:
-            fname = (tmpdir / self.spider_filename).resolve()
-        fname.write_text(content, encoding="utf-8")
-        try:
+    def _create_file(self, content: str, name: str | None = None) -> Iterator[str]:
+        with TemporaryDirectory() as tmpdir:
+            if name:
+                fname = Path(tmpdir, name).resolve()
+            else:
+                fname = Path(tmpdir, self.spider_filename).resolve()
+            fname.write_text(content, encoding="utf-8")
             yield str(fname)
-        finally:
-            rmtree(tmpdir)
 
     def runspider(self, code, name=None, args=()):
         with self._create_file(code, name) as fname:
@@ -720,29 +704,29 @@ class BadSpider(scrapy.Spider):
 
     def test_runspider(self):
         log = self.get_log(self.debug_log_spider)
-        self.assertIn("DEBUG: It Works!", log)
-        self.assertIn("INFO: Spider opened", log)
-        self.assertIn("INFO: Closing spider (finished)", log)
-        self.assertIn("INFO: Spider closed (finished)", log)
+        assert "DEBUG: It Works!" in log
+        assert "INFO: Spider opened" in log
+        assert "INFO: Closing spider (finished)" in log
+        assert "INFO: Spider closed (finished)" in log
 
     def test_run_fail_spider(self):
         proc, _, _ = self.runspider(
             "import scrapy\n" + inspect.getsource(ExceptionSpider)
         )
         ret = proc.returncode
-        self.assertNotEqual(ret, 0)
+        assert ret != 0
 
     def test_run_good_spider(self):
         proc, _, _ = self.runspider(
             "import scrapy\n" + inspect.getsource(NoRequestsSpider)
         )
         ret = proc.returncode
-        self.assertEqual(ret, 0)
+        assert ret == 0
 
     def test_runspider_log_level(self):
         log = self.get_log(self.debug_log_spider, args=("-s", "LOG_LEVEL=INFO"))
-        self.assertNotIn("DEBUG: It Works!", log)
-        self.assertIn("INFO: Spider opened", log)
+        assert "DEBUG: It Works!" not in log
+        assert "INFO: Spider opened" in log
 
     def test_runspider_dnscache_disabled(self):
         # see https://github.com/scrapy/scrapy/issues/2811
@@ -761,36 +745,36 @@ class MySpider(scrapy.Spider):
         return {'test': 'value'}
 """
         log = self.get_log(dnscache_spider, args=("-s", "DNSCACHE_ENABLED=False"))
-        self.assertNotIn("DNSLookupError", log)
-        self.assertIn("INFO: Spider opened", log)
+        assert "DNSLookupError" not in log
+        assert "INFO: Spider opened" in log
 
     def test_runspider_log_short_names(self):
         log1 = self.get_log(self.debug_log_spider, args=("-s", "LOG_SHORT_NAMES=1"))
-        self.assertIn("[myspider] DEBUG: It Works!", log1)
-        self.assertIn("[scrapy]", log1)
-        self.assertNotIn("[scrapy.core.engine]", log1)
+        assert "[myspider] DEBUG: It Works!" in log1
+        assert "[scrapy]" in log1
+        assert "[scrapy.core.engine]" not in log1
 
         log2 = self.get_log(self.debug_log_spider, args=("-s", "LOG_SHORT_NAMES=0"))
-        self.assertIn("[myspider] DEBUG: It Works!", log2)
-        self.assertNotIn("[scrapy]", log2)
-        self.assertIn("[scrapy.core.engine]", log2)
+        assert "[myspider] DEBUG: It Works!" in log2
+        assert "[scrapy]" not in log2
+        assert "[scrapy.core.engine]" in log2
 
     def test_runspider_no_spider_found(self):
         log = self.get_log("from scrapy.spiders import Spider\n")
-        self.assertIn("No spider found in file", log)
+        assert "No spider found in file" in log
 
     def test_runspider_file_not_found(self):
         _, _, log = self.proc("runspider", "some_non_existent_file")
-        self.assertIn("File not found: some_non_existent_file", log)
+        assert "File not found: some_non_existent_file" in log
 
     def test_runspider_unable_to_load(self):
         log = self.get_log("", name="myspider.txt")
-        self.assertIn("Unable to load", log)
+        assert "Unable to load" in log
 
     def test_start_requests_errors(self):
         log = self.get_log(self.badspider, name="badspider.py")
-        self.assertIn("start_requests", log)
-        self.assertIn("badspider.py", log)
+        assert "start_requests" in log
+        assert "badspider.py" in log
 
     def test_asyncio_enabled_true(self):
         log = self.get_log(
@@ -800,14 +784,16 @@ class MySpider(scrapy.Spider):
                 "TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor",
             ],
         )
-        self.assertIn(
-            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
         )
 
     def test_asyncio_enabled_default(self):
         log = self.get_log(self.debug_log_spider, args=[])
-        self.assertIn(
-            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
         )
 
     def test_asyncio_enabled_false(self):
@@ -815,11 +801,10 @@ class MySpider(scrapy.Spider):
             self.debug_log_spider,
             args=["-s", "TWISTED_REACTOR=twisted.internet.selectreactor.SelectReactor"],
         )
-        self.assertIn(
-            "Using reactor: twisted.internet.selectreactor.SelectReactor", log
-        )
-        self.assertNotIn(
-            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor", log
+        assert "Using reactor: twisted.internet.selectreactor.SelectReactor" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            not in log
         )
 
     @pytest.mark.requires_uvloop
@@ -833,7 +818,7 @@ class MySpider(scrapy.Spider):
                 "ASYNCIO_EVENT_LOOP=uvloop.Loop",
             ],
         )
-        self.assertIn("Using asyncio event loop: uvloop.Loop", log)
+        assert "Using asyncio event loop: uvloop.Loop" in log
 
     def test_custom_asyncio_loop_enabled_false(self):
         log = self.get_log(
@@ -849,9 +834,9 @@ class MySpider(scrapy.Spider):
             loop = asyncio.new_event_loop()
         else:
             loop = asyncio.SelectorEventLoop()
-        self.assertIn(
-            f"Using asyncio event loop: {loop.__module__}.{loop.__class__.__name__}",
-            log,
+        assert (
+            f"Using asyncio event loop: {loop.__module__}.{loop.__class__.__name__}"
+            in log
         )
 
     def test_output(self):
@@ -867,9 +852,7 @@ class MySpider(scrapy.Spider):
 """
         args = ["-o", "example.json"]
         log = self.get_log(spider_code, args=args)
-        self.assertIn(
-            "[myspider] DEBUG: FEEDS: {'example.json': {'format': 'json'}}", log
-        )
+        assert "[myspider] DEBUG: FEEDS: {'example.json': {'format': 'json'}}" in log
 
     def test_overwrite_output(self):
         spider_code = """
@@ -890,13 +873,13 @@ class MySpider(scrapy.Spider):
         Path(self.cwd, "example.json").write_text("not empty", encoding="utf-8")
         args = ["-O", "example.json"]
         log = self.get_log(spider_code, args=args)
-        self.assertIn(
-            '[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}',
-            log,
+        assert (
+            '[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}'
+            in log
         )
         with Path(self.cwd, "example.json").open(encoding="utf-8") as f2:
             first_line = f2.readline()
-        self.assertNotEqual(first_line, "not empty")
+        assert first_line != "not empty"
 
     def test_output_and_overwrite_output(self):
         spider_code = """
@@ -910,8 +893,8 @@ class MySpider(scrapy.Spider):
 """
         args = ["-o", "example1.json", "-O", "example2.json"]
         log = self.get_log(spider_code, args=args)
-        self.assertIn(
-            "error: Please use only one of -o/--output and -O/--overwrite-output", log
+        assert (
+            "error: Please use only one of -o/--output and -O/--overwrite-output" in log
         )
 
     def test_output_stdout(self):
@@ -927,7 +910,7 @@ class MySpider(scrapy.Spider):
 """
         args = ["-o", "-:json"]
         log = self.get_log(spider_code, args=args)
-        self.assertIn("[myspider] DEBUG: FEEDS: {'stdout:': {'format': 'json'}}", log)
+        assert "[myspider] DEBUG: FEEDS: {'stdout:': {'format': 'json'}}" in log
 
     @skipIf(platform.system() == "Windows", reason="Linux only")
     def test_absolute_path_linux(self):
@@ -946,16 +929,16 @@ class MySpider(scrapy.Spider):
 
         args = ["-o", f"{temp_dir}/output1.json:json"]
         log = self.get_log(spider_code, args=args)
-        self.assertIn(
-            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}/output1.json",
-            log,
+        assert (
+            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}/output1.json"
+            in log
         )
 
         args = ["-o", f"{temp_dir}/output2.json"]
         log = self.get_log(spider_code, args=args)
-        self.assertIn(
-            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}/output2.json",
-            log,
+        assert (
+            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}/output2.json"
+            in log
         )
 
     @skipIf(platform.system() != "Windows", reason="Windows only")
@@ -975,16 +958,16 @@ class MySpider(scrapy.Spider):
 
         args = ["-o", f"{temp_dir}\\output1.json:json"]
         log = self.get_log(spider_code, args=args)
-        self.assertIn(
-            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}\\output1.json",
-            log,
+        assert (
+            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}\\output1.json"
+            in log
         )
 
         args = ["-o", f"{temp_dir}\\output2.json"]
         log = self.get_log(spider_code, args=args)
-        self.assertIn(
-            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}\\output2.json",
-            log,
+        assert (
+            f"[scrapy.extensions.feedexport] INFO: Stored json feed (1 items) in: {temp_dir}\\output2.json"
+            in log
         )
 
     def test_args_change_settings(self):
@@ -1006,11 +989,11 @@ class MySpider(scrapy.Spider):
 """
         args = ["-a", "foo=42"]
         log = self.get_log(spider_code, args=args)
-        self.assertIn("Spider closed (finished)", log)
-        self.assertIn("The value of FOO is 42", log)
+        assert "Spider closed (finished)" in log
+        assert "The value of FOO is 42" in log
 
 
-class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
+class TestWindowsRunSpiderCommand(TestRunSpiderCommand):
     spider_filename = "myspider.pyw"
 
     def setUp(self):
@@ -1020,24 +1003,24 @@ class WindowsRunSpiderCommandTest(RunSpiderCommandTest):
 
     def test_start_requests_errors(self):
         log = self.get_log(self.badspider, name="badspider.pyw")
-        self.assertIn("start_requests", log)
-        self.assertIn("badspider.pyw", log)
+        assert "start_requests" in log
+        assert "badspider.pyw" in log
 
     def test_runspider_unable_to_load(self):
         raise unittest.SkipTest("Already Tested in 'RunSpiderCommandTest' ")
 
 
-class BenchCommandTest(CommandTest):
+class TestBenchCommand(TestCommandBase):
     def test_run(self):
         _, _, log = self.proc(
             "bench", "-s", "LOGSTATS_INTERVAL=0.001", "-s", "CLOSESPIDER_TIMEOUT=0.01"
         )
-        self.assertIn("INFO: Crawled", log)
-        self.assertNotIn("Unhandled Error", log)
-        self.assertNotIn("log_count/ERROR", log)
+        assert "INFO: Crawled" in log
+        assert "Unhandled Error" not in log
+        assert "log_count/ERROR" not in log
 
 
-class ViewCommandTest(CommandTest):
+class TestViewCommand(TestCommandBase):
     def test_methods(self):
         command = view.Command()
         command.settings = Settings()
@@ -1048,13 +1031,11 @@ class ViewCommandTest(CommandTest):
             conflict_handler="resolve",
         )
         command.add_options(parser)
-        self.assertEqual(command.short_desc(), "Open URL in browser, as seen by Scrapy")
-        self.assertIn(
-            "URL using the Scrapy downloader and show its", command.long_desc()
-        )
+        assert command.short_desc() == "Open URL in browser, as seen by Scrapy"
+        assert "URL using the Scrapy downloader and show its" in command.long_desc()
 
 
-class CrawlCommandTest(CommandTest):
+class TestCrawlCommand(TestCommandBase):
     def crawl(self, code, args=()):
         Path(self.proj_mod_path, "spiders", "myspider.py").write_text(
             code, encoding="utf-8"
@@ -1077,7 +1058,7 @@ class MySpider(scrapy.Spider):
         return []
 """
         log = self.get_log(spider_code)
-        self.assertIn("[myspider] DEBUG: It works!", log)
+        assert "[myspider] DEBUG: It works!" in log
 
     def test_output(self):
         spider_code = """
@@ -1092,9 +1073,7 @@ class MySpider(scrapy.Spider):
 """
         args = ["-o", "example.json"]
         log = self.get_log(spider_code, args=args)
-        self.assertIn(
-            "[myspider] DEBUG: FEEDS: {'example.json': {'format': 'json'}}", log
-        )
+        assert "[myspider] DEBUG: FEEDS: {'example.json': {'format': 'json'}}" in log
 
     def test_overwrite_output(self):
         spider_code = """
@@ -1115,13 +1094,13 @@ class MySpider(scrapy.Spider):
         Path(self.cwd, "example.json").write_text("not empty", encoding="utf-8")
         args = ["-O", "example.json"]
         log = self.get_log(spider_code, args=args)
-        self.assertIn(
-            '[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}',
-            log,
+        assert (
+            '[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}'
+            in log
         )
         with Path(self.cwd, "example.json").open(encoding="utf-8") as f2:
             first_line = f2.readline()
-        self.assertNotEqual(first_line, "not empty")
+        assert first_line != "not empty"
 
     def test_output_and_overwrite_output(self):
         spider_code = """
@@ -1135,12 +1114,12 @@ class MySpider(scrapy.Spider):
 """
         args = ["-o", "example1.json", "-O", "example2.json"]
         log = self.get_log(spider_code, args=args)
-        self.assertIn(
-            "error: Please use only one of -o/--output and -O/--overwrite-output", log
+        assert (
+            "error: Please use only one of -o/--output and -O/--overwrite-output" in log
         )
 
 
-class HelpMessageTest(CommandTest):
+class TestHelpMessage(TestCommandBase):
     def setUp(self):
         super().setUp()
         self.commands = [
@@ -1163,30 +1142,30 @@ class HelpMessageTest(CommandTest):
     def test_help_messages(self):
         for command in self.commands:
             _, out, _ = self.proc(command, "-h")
-            self.assertIn("Usage", out)
+            assert "Usage" in out
 
 
-class PopCommandNameTest(unittest.TestCase):
+class TestPopCommandName:
     def test_valid_command(self):
         argv = ["scrapy", "crawl", "my_spider"]
         command = _pop_command_name(argv)
-        self.assertEqual(command, "crawl")
-        self.assertEqual(argv, ["scrapy", "my_spider"])
+        assert command == "crawl"
+        assert argv == ["scrapy", "my_spider"]
 
     def test_no_command(self):
         argv = ["scrapy"]
         command = _pop_command_name(argv)
-        self.assertIsNone(command)
-        self.assertEqual(argv, ["scrapy"])
+        assert command is None
+        assert argv == ["scrapy"]
 
     def test_option_before_command(self):
         argv = ["scrapy", "-h", "crawl"]
         command = _pop_command_name(argv)
-        self.assertEqual(command, "crawl")
-        self.assertEqual(argv, ["scrapy", "-h"])
+        assert command == "crawl"
+        assert argv == ["scrapy", "-h"]
 
     def test_option_after_command(self):
         argv = ["scrapy", "crawl", "-h"]
         command = _pop_command_name(argv)
-        self.assertEqual(command, "crawl")
-        self.assertEqual(argv, ["scrapy", "-h"])
+        assert command == "crawl"
+        assert argv == ["scrapy", "-h"]

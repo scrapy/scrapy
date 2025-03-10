@@ -324,9 +324,9 @@ class TestSpiderMiddleware(TestCase):
         was enqueued from the recovery middleware)
         """
         log = yield self.crawl_log(RecoverySpider)
-        self.assertIn("Middleware: TabError exception caught", str(log))
-        self.assertEqual(str(log).count("Middleware: TabError exception caught"), 1)
-        self.assertIn("'item_scraped_count': 3", str(log))
+        assert "Middleware: TabError exception caught" in str(log)
+        assert str(log).count("Middleware: TabError exception caught") == 1
+        assert "'item_scraped_count': 3" in str(log)
 
     @defer.inlineCallbacks
     def test_recovery_asyncgen(self):
@@ -334,9 +334,9 @@ class TestSpiderMiddleware(TestCase):
         Same as test_recovery but with an async callback.
         """
         log = yield self.crawl_log(RecoveryAsyncGenSpider)
-        self.assertIn("Middleware: TabError exception caught", str(log))
-        self.assertEqual(str(log).count("Middleware: TabError exception caught"), 1)
-        self.assertIn("'item_scraped_count': 3", str(log))
+        assert "Middleware: TabError exception caught" in str(log)
+        assert str(log).count("Middleware: TabError exception caught") == 1
+        assert "'item_scraped_count': 3" in str(log)
 
     @defer.inlineCallbacks
     def test_process_spider_input_without_errback(self):
@@ -345,8 +345,8 @@ class TestSpiderMiddleware(TestCase):
         process_spider_exception chain from the start if the Request has no errback
         """
         log1 = yield self.crawl_log(ProcessSpiderInputSpiderWithoutErrback)
-        self.assertIn("Middleware: will raise IndexError", str(log1))
-        self.assertIn("Middleware: IndexError exception caught", str(log1))
+        assert "Middleware: will raise IndexError" in str(log1)
+        assert "Middleware: IndexError exception caught" in str(log1)
 
     @defer.inlineCallbacks
     def test_process_spider_input_with_errback(self):
@@ -355,12 +355,12 @@ class TestSpiderMiddleware(TestCase):
         process_spider_exception chain if the Request has an errback
         """
         log1 = yield self.crawl_log(ProcessSpiderInputSpiderWithErrback)
-        self.assertNotIn("Middleware: IndexError exception caught", str(log1))
-        self.assertIn("Middleware: will raise IndexError", str(log1))
-        self.assertIn("Got a Failure on the Request errback", str(log1))
-        self.assertIn("{'from': 'errback'}", str(log1))
-        self.assertNotIn("{'from': 'callback'}", str(log1))
-        self.assertIn("'item_scraped_count': 1", str(log1))
+        assert "Middleware: IndexError exception caught" not in str(log1)
+        assert "Middleware: will raise IndexError" in str(log1)
+        assert "Got a Failure on the Request errback" in str(log1)
+        assert "{'from': 'errback'}" in str(log1)
+        assert "{'from': 'callback'}" not in str(log1)
+        assert "'item_scraped_count': 1" in str(log1)
 
     @defer.inlineCallbacks
     def test_generator_callback(self):
@@ -370,8 +370,8 @@ class TestSpiderMiddleware(TestCase):
         exception is raised should be processed normally.
         """
         log2 = yield self.crawl_log(GeneratorCallbackSpider)
-        self.assertIn("Middleware: ImportError exception caught", str(log2))
-        self.assertIn("'item_scraped_count': 2", str(log2))
+        assert "Middleware: ImportError exception caught" in str(log2)
+        assert "'item_scraped_count': 2" in str(log2)
 
     @defer.inlineCallbacks
     def test_async_generator_callback(self):
@@ -379,8 +379,8 @@ class TestSpiderMiddleware(TestCase):
         Same as test_generator_callback but with an async callback.
         """
         log2 = yield self.crawl_log(AsyncGeneratorCallbackSpider)
-        self.assertIn("Middleware: ImportError exception caught", str(log2))
-        self.assertIn("'item_scraped_count': 2", str(log2))
+        assert "Middleware: ImportError exception caught" in str(log2)
+        assert "'item_scraped_count': 2" in str(log2)
 
     @defer.inlineCallbacks
     def test_generator_callback_right_after_callback(self):
@@ -389,8 +389,8 @@ class TestSpiderMiddleware(TestCase):
         even if the middleware is placed right after the spider
         """
         log21 = yield self.crawl_log(GeneratorCallbackSpiderMiddlewareRightAfterSpider)
-        self.assertIn("Middleware: ImportError exception caught", str(log21))
-        self.assertIn("'item_scraped_count': 2", str(log21))
+        assert "Middleware: ImportError exception caught" in str(log21)
+        assert "'item_scraped_count': 2" in str(log21)
 
     @defer.inlineCallbacks
     def test_not_a_generator_callback(self):
@@ -399,8 +399,8 @@ class TestSpiderMiddleware(TestCase):
         be caught by the process_spider_exception chain. No items should be processed.
         """
         log3 = yield self.crawl_log(NotGeneratorCallbackSpider)
-        self.assertIn("Middleware: ZeroDivisionError exception caught", str(log3))
-        self.assertNotIn("item_scraped_count", str(log3))
+        assert "Middleware: ZeroDivisionError exception caught" in str(log3)
+        assert "item_scraped_count" not in str(log3)
 
     @defer.inlineCallbacks
     def test_not_a_generator_callback_right_after_callback(self):
@@ -411,8 +411,8 @@ class TestSpiderMiddleware(TestCase):
         log31 = yield self.crawl_log(
             NotGeneratorCallbackSpiderMiddlewareRightAfterSpider
         )
-        self.assertIn("Middleware: ZeroDivisionError exception caught", str(log31))
-        self.assertNotIn("item_scraped_count", str(log31))
+        assert "Middleware: ZeroDivisionError exception caught" in str(log31)
+        assert "item_scraped_count" not in str(log31)
 
     @defer.inlineCallbacks
     def test_generator_output_chain(self):
@@ -425,22 +425,22 @@ class TestSpiderMiddleware(TestCase):
         process_spider_exception chain)
         """
         log4 = yield self.crawl_log(GeneratorOutputChainSpider)
-        self.assertIn("'item_scraped_count': 2", str(log4))
-        self.assertIn(
-            "GeneratorRecoverMiddleware.process_spider_exception: LookupError caught",
-            str(log4),
+        assert "'item_scraped_count': 2" in str(log4)
+        assert (
+            "GeneratorRecoverMiddleware.process_spider_exception: LookupError caught"
+            in str(log4)
         )
-        self.assertIn(
-            "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: LookupError caught",
-            str(log4),
+        assert (
+            "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: LookupError caught"
+            in str(log4)
         )
-        self.assertNotIn(
-            "GeneratorFailMiddleware.process_spider_exception: LookupError caught",
-            str(log4),
+        assert (
+            "GeneratorFailMiddleware.process_spider_exception: LookupError caught"
+            not in str(log4)
         )
-        self.assertNotIn(
-            "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: LookupError caught",
-            str(log4),
+        assert (
+            "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: LookupError caught"
+            not in str(log4)
         )
         item_from_callback = {
             "processed": [
@@ -457,9 +457,9 @@ class TestSpiderMiddleware(TestCase):
                 "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_output",
             ]
         }
-        self.assertIn(str(item_from_callback), str(log4))
-        self.assertIn(str(item_recovered), str(log4))
-        self.assertNotIn("parse-second-item", str(log4))
+        assert str(item_from_callback) in str(log4)
+        assert str(item_recovered) in str(log4)
+        assert "parse-second-item" not in str(log4)
 
     @defer.inlineCallbacks
     def test_not_a_generator_output_chain(self):
@@ -472,22 +472,22 @@ class TestSpiderMiddleware(TestCase):
         from the spider callback are lost)
         """
         log5 = yield self.crawl_log(NotGeneratorOutputChainSpider)
-        self.assertIn("'item_scraped_count': 1", str(log5))
-        self.assertIn(
-            "GeneratorRecoverMiddleware.process_spider_exception: ReferenceError caught",
-            str(log5),
+        assert "'item_scraped_count': 1" in str(log5)
+        assert (
+            "GeneratorRecoverMiddleware.process_spider_exception: ReferenceError caught"
+            in str(log5)
         )
-        self.assertIn(
-            "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: ReferenceError caught",
-            str(log5),
+        assert (
+            "GeneratorDoNothingAfterFailureMiddleware.process_spider_exception: ReferenceError caught"
+            in str(log5)
         )
-        self.assertNotIn(
-            "GeneratorFailMiddleware.process_spider_exception: ReferenceError caught",
-            str(log5),
+        assert (
+            "GeneratorFailMiddleware.process_spider_exception: ReferenceError caught"
+            not in str(log5)
         )
-        self.assertNotIn(
-            "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: ReferenceError caught",
-            str(log5),
+        assert (
+            "GeneratorDoNothingAfterRecoveryMiddleware.process_spider_exception: ReferenceError caught"
+            not in str(log5)
         )
         item_recovered = {
             "processed": [
@@ -495,6 +495,6 @@ class TestSpiderMiddleware(TestCase):
                 "NotGeneratorDoNothingAfterRecoveryMiddleware.process_spider_output",
             ]
         }
-        self.assertIn(str(item_recovered), str(log5))
-        self.assertNotIn("parse-first-item", str(log5))
-        self.assertNotIn("parse-second-item", str(log5))
+        assert str(item_recovered) in str(log5)
+        assert "parse-first-item" not in str(log5)
+        assert "parse-second-item" not in str(log5)
