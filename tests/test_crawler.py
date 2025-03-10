@@ -25,7 +25,7 @@ from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
-from scrapy.utils.test import get_crawler
+from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests.mockserver import MockServer, get_mockserver_env
 
 BASE_SETTINGS: dict[str, Any] = {}
@@ -35,6 +35,7 @@ def get_raw_crawler(spidercls=None, settings_dict=None):
     """get_crawler alternative that only calls the __init__ method of the
     crawler."""
     settings = Settings()
+    settings.setdict(get_reactor_settings())
     settings.setdict(settings_dict or {})
     return Crawler(spidercls or DefaultSpider, settings)
 
@@ -48,7 +49,12 @@ class TestBaseCrawler(unittest.TestCase):
 class TestCrawler(TestBaseCrawler):
     def test_populate_spidercls_settings(self):
         spider_settings = {"TEST1": "spider", "TEST2": "spider"}
-        project_settings = {**BASE_SETTINGS, "TEST1": "project", "TEST3": "project"}
+        project_settings = {
+            **BASE_SETTINGS,
+            "TEST1": "project",
+            "TEST3": "project",
+            **get_reactor_settings(),
+        }
 
         class CustomSettingsSpider(DefaultSpider):
             custom_settings = spider_settings
@@ -581,7 +587,7 @@ class NoRequestsSpider(scrapy.Spider):
 @pytest.mark.usefixtures("reactor_pytest")
 class TestCrawlerRunnerHasSpider(unittest.TestCase):
     def _runner(self):
-        return CrawlerRunner()
+        return CrawlerRunner(get_reactor_settings())
 
     @inlineCallbacks
     def test_crawler_runner_bootstrap_successful(self):
@@ -626,13 +632,7 @@ class TestCrawlerRunnerHasSpider(unittest.TestCase):
 
     @inlineCallbacks
     def test_crawler_runner_asyncio_enabled_true(self):
-        if self.reactor_pytest == "asyncio":
-            CrawlerRunner(
-                settings={
-                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-                }
-            )
-        else:
+        if self.reactor_pytest == "default":
             runner = CrawlerRunner(
                 settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
@@ -643,6 +643,12 @@ class TestCrawlerRunnerHasSpider(unittest.TestCase):
                 match=r"The installed reactor \(.*?\) does not match the requested one \(.*?\)",
             ):
                 yield runner.crawl(NoRequestsSpider)
+        else:
+            CrawlerRunner(
+                settings={
+                    "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+                }
+            )
 
 
 class ScriptRunnerMixin:
@@ -672,7 +678,7 @@ class TestCrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         assert "Spider closed (finished)" in log
         assert (
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-            not in log
+            in log
         )
 
     def test_multi(self):
@@ -680,18 +686,17 @@ class TestCrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         assert "Spider closed (finished)" in log
         assert (
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-            not in log
+            in log
         )
         assert "ReactorAlreadyInstalledError" not in log
 
     def test_reactor_default(self):
         log = self.run_script("reactor_default.py")
-        assert "Spider closed (finished)" in log
+        assert "Spider closed (finished)" not in log
         assert (
-            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-            not in log
-        )
-        assert "ReactorAlreadyInstalledError" not in log
+            "does not match the requested one "
+            "(twisted.internet.asyncioreactor.AsyncioSelectorReactor)"
+        ) in log
 
     def test_reactor_default_twisted_reactor_select(self):
         log = self.run_script("reactor_default_twisted_reactor_select.py")
@@ -716,8 +721,11 @@ class TestCrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
 
     def test_reactor_select(self):
         log = self.run_script("reactor_select.py")
-        assert "Spider closed (finished)" in log
-        assert "ReactorAlreadyInstalledError" not in log
+        assert "Spider closed (finished)" not in log
+        assert (
+            "does not match the requested one "
+            "(twisted.internet.asyncioreactor.AsyncioSelectorReactor)"
+        ) in log
 
     def test_reactor_select_twisted_reactor_select(self):
         log = self.run_script("reactor_select_twisted_reactor_select.py")

@@ -1,3 +1,9 @@
+# ruff: noqa: E402
+
+from scrapy.utils.reactor import install_reactor
+
+install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+
 from urllib.parse import urlparse
 
 from twisted.internet import reactor

@@ -29,7 +29,7 @@ jobs:
             TOXENV: py
         - python-version: "3.13"
           env:
-            TOXENV: asyncio
+            TOXENV: default-reactor
 
     steps:
     - uses: actions/checkout@v4

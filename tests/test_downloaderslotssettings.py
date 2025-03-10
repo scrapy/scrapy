@@ -64,7 +64,7 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_delay(self):
-        crawler = CrawlerRunner().create_crawler(DownloaderSlotsSettingsTestSpider)
+        crawler = get_crawler(DownloaderSlotsSettingsTestSpider)
         yield crawler.crawl(mockserver=self.mockserver)
         slots = crawler.engine.downloader.slots
         times = crawler.spider.times
