@@ -1,11 +1,12 @@
 from asyncio import sleep
 
 import pytest
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from scrapy import Spider, signals
 from scrapy.core.engine import ExecutionEngine
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
 
@@ -36,6 +37,27 @@ class MainTestCase(TestCase):
 
             async def yield_seeds(self):
                 await sleep(ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.01)
+                yield {"a": "b"}
+
+        yield self._test_scenario(Scenario)
+
+    @inlineCallbacks
+    def test_twisted_delayed(self):
+        def twisted_sleep(seconds):
+            d = Deferred()
+            from twisted.internet import reactor
+
+            reactor.callLater(seconds, d.callback, None)
+            return d
+
+        class Scenario:
+            expected_items = [{"a": "b"}]
+            only_asyncio = True
+
+            async def yield_seeds(self):
+                await maybe_deferred_to_future(
+                    twisted_sleep(ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.01)
+                )
                 yield {"a": "b"}
 
         yield self._test_scenario(Scenario)
