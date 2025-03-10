@@ -4,7 +4,6 @@ from unittest import mock
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer, error, reactor
-from twisted.trial import unittest
 from twisted.web import server
 from twisted.web.error import SchemeNotSupported
 from twisted.web.http import H2_ENABLED
@@ -28,25 +27,25 @@ class BaseTestClasses:
     # A hack to prevent tests from the imported classes to run here too.
     # See https://stackoverflow.com/q/1323455/113586 for other ways.
     from tests.test_downloader_handlers import (
-        Http11MockServerTestCase as Http11MockServerTestCase,
+        TestHttp11MockServer as TestHttp11MockServer,
     )
     from tests.test_downloader_handlers import (
-        Http11ProxyTestCase as Http11ProxyTestCase,
+        TestHttp11Proxy as TestHttp11Proxy,
     )
     from tests.test_downloader_handlers import (
-        Https11CustomCiphers as Https11CustomCiphers,
+        TestHttps11 as TestHttps11,
     )
     from tests.test_downloader_handlers import (
-        Https11InvalidDNSId as Https11InvalidDNSId,
+        TestHttps11CustomCiphers as TestHttps11CustomCiphers,
     )
     from tests.test_downloader_handlers import (
-        Https11InvalidDNSPattern as Https11InvalidDNSPattern,
+        TestHttps11InvalidDNSId as TestHttps11InvalidDNSId,
     )
     from tests.test_downloader_handlers import (
-        Https11TestCase as Https11TestCase,
+        TestHttps11InvalidDNSPattern as TestHttps11InvalidDNSPattern,
     )
     from tests.test_downloader_handlers import (
-        Https11WrongHostnameTestCase as Https11WrongHostnameTestCase,
+        TestHttps11WrongHostname as TestHttps11WrongHostname,
     )
 
 
@@ -56,7 +55,7 @@ def _get_dh() -> type[DownloadHandlerProtocol]:
     return H2DownloadHandler
 
 
-class Https2TestCase(BaseTestClasses.Https11TestCase):
+class TestHttps2(BaseTestClasses.TestHttps11):
     scheme = "https"
     HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
 
@@ -97,22 +96,22 @@ class Https2TestCase(BaseTestClasses.Https11TestCase):
         yield self.assertFailure(d, SchemeNotSupported)
 
     def test_download_broken_content_cause_data_loss(self, url="broken"):
-        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
+        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
     def test_download_broken_chunked_content_cause_data_loss(self):
-        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
+        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
     def test_download_broken_content_allow_data_loss(self, url="broken"):
-        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
+        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
     def test_download_broken_chunked_content_allow_data_loss(self):
-        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
+        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
     def test_download_broken_content_allow_data_loss_via_setting(self, url="broken"):
-        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
+        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
     def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
-        raise unittest.SkipTest(self.HTTP2_DATALOSS_SKIP_REASON)
+        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
     def test_concurrent_requests_same_domain(self):
         spider = Spider("foo")
@@ -180,31 +179,31 @@ class Https2TestCase(BaseTestClasses.Https11TestCase):
         return d
 
 
-class Https2WrongHostnameTestCase(BaseTestClasses.Https11WrongHostnameTestCase):
+class Https2WrongHostnameTestCase(BaseTestClasses.TestHttps11WrongHostname):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return _get_dh()
 
 
-class Https2InvalidDNSId(BaseTestClasses.Https11InvalidDNSId):
+class Https2InvalidDNSId(BaseTestClasses.TestHttps11InvalidDNSId):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return _get_dh()
 
 
-class Https2InvalidDNSPattern(BaseTestClasses.Https11InvalidDNSPattern):
+class Https2InvalidDNSPattern(BaseTestClasses.TestHttps11InvalidDNSPattern):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return _get_dh()
 
 
-class Https2CustomCiphers(BaseTestClasses.Https11CustomCiphers):
+class Https2CustomCiphers(BaseTestClasses.TestHttps11CustomCiphers):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return _get_dh()
 
 
-class Http2MockServerTestCase(BaseTestClasses.Http11MockServerTestCase):
+class Http2MockServerTestCase(BaseTestClasses.TestHttp11MockServer):
     """HTTP 2.0 test case with MockServer"""
 
     settings_dict = {
@@ -215,7 +214,7 @@ class Http2MockServerTestCase(BaseTestClasses.Http11MockServerTestCase):
     is_secure = True
 
 
-class Https2ProxyTestCase(BaseTestClasses.Http11ProxyTestCase):
+class Https2ProxyTestCase(BaseTestClasses.TestHttp11Proxy):
     # only used for HTTPS tests
     keyfile = "keys/localhost.key"
     certfile = "keys/localhost.crt"

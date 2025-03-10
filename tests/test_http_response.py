@@ -1,5 +1,4 @@
 import codecs
-import unittest
 from unittest import mock
 
 import pytest
@@ -22,62 +21,56 @@ from scrapy.utils.python import to_unicode
 from tests import get_testdata
 
 
-class BaseResponseTest(unittest.TestCase):
+class TestResponseBase:
     response_class = Response
 
     def test_init(self):
         # Response requires url in the constructor
         with pytest.raises(TypeError):
             self.response_class()
-        self.assertTrue(
-            isinstance(self.response_class("http://example.com/"), self.response_class)
+        assert isinstance(
+            self.response_class("http://example.com/"), self.response_class
         )
         with pytest.raises(TypeError):
             self.response_class(b"http://example.com")
         with pytest.raises(TypeError):
             self.response_class(url="http://example.com", body={})
         # body can be str or None
-        self.assertTrue(
-            isinstance(
-                self.response_class("http://example.com/", body=b""),
-                self.response_class,
-            )
+        assert isinstance(
+            self.response_class("http://example.com/", body=b""),
+            self.response_class,
         )
-        self.assertTrue(
-            isinstance(
-                self.response_class("http://example.com/", body=b"body"),
-                self.response_class,
-            )
+        assert isinstance(
+            self.response_class("http://example.com/", body=b"body"),
+            self.response_class,
         )
         # test presence of all optional parameters
-        self.assertTrue(
-            isinstance(
-                self.response_class(
-                    "http://example.com/", body=b"", headers={}, status=200
-                ),
-                self.response_class,
-            )
+        assert isinstance(
+            self.response_class(
+                "http://example.com/", body=b"", headers={}, status=200
+            ),
+            self.response_class,
         )
 
         r = self.response_class("http://www.example.com")
         assert isinstance(r.url, str)
-        self.assertEqual(r.url, "http://www.example.com")
-        self.assertEqual(r.status, 200)
+        assert r.url == "http://www.example.com"
+        assert r.status == 200
 
         assert isinstance(r.headers, Headers)
-        self.assertEqual(r.headers, {})
+        assert not r.headers
 
         headers = {"foo": "bar"}
         body = b"a body"
         r = self.response_class("http://www.example.com", headers=headers, body=body)
 
         assert r.headers is not headers
-        self.assertEqual(r.headers[b"foo"], b"bar")
+        assert r.headers[b"foo"] == b"bar"
 
         r = self.response_class("http://www.example.com", status=301)
-        self.assertEqual(r.status, 301)
+        assert r.status == 301
         r = self.response_class("http://www.example.com", status="301")
-        self.assertEqual(r.status, 301)
+        assert r.status == 301
         with pytest.raises(ValueError, match=r"invalid literal for int\(\)"):
             self.response_class("http://example.com", status="lala200")
 
@@ -88,18 +81,18 @@ class BaseResponseTest(unittest.TestCase):
         r1.flags.append("cached")
         r2 = r1.copy()
 
-        self.assertEqual(r1.status, r2.status)
-        self.assertEqual(r1.body, r2.body)
+        assert r1.status == r2.status
+        assert r1.body == r2.body
 
         # make sure flags list is shallow copied
         assert r1.flags is not r2.flags, "flags must be a shallow copy, not identical"
-        self.assertEqual(r1.flags, r2.flags)
+        assert r1.flags == r2.flags
 
         # make sure headers attribute is shallow copied
         assert r1.headers is not r2.headers, (
             "headers must be a shallow copy, not identical"
         )
-        self.assertEqual(r1.headers, r2.headers)
+        assert r1.headers == r2.headers
 
     def test_copy_meta(self):
         req = Request("http://www.example.com")
@@ -144,16 +137,16 @@ class BaseResponseTest(unittest.TestCase):
         r1 = self.response_class("http://www.example.com")
         r2 = r1.replace(status=301, body=b"New body", headers=hdrs)
         assert r1.body == b""
-        self.assertEqual(r1.url, r2.url)
-        self.assertEqual((r1.status, r2.status), (200, 301))
-        self.assertEqual((r1.body, r2.body), (b"", b"New body"))
-        self.assertEqual((r1.headers, r2.headers), ({}, hdrs))
+        assert r1.url == r2.url
+        assert (r1.status, r2.status) == (200, 301)
+        assert (r1.body, r2.body) == (b"", b"New body")
+        assert (r1.headers, r2.headers) == ({}, hdrs)
 
         # Empty attributes (which may fail if not compared properly)
         r3 = self.response_class("http://www.example.com", flags=["cached"])
         r4 = r3.replace(body=b"", flags=[])
-        self.assertEqual(r4.body, b"")
-        self.assertEqual(r4.flags, [])
+        assert r4.body == b""
+        assert not r4.flags
 
     def _assert_response_values(self, response, encoding, body):
         if isinstance(body, str):
@@ -166,11 +159,11 @@ class BaseResponseTest(unittest.TestCase):
         assert isinstance(response.body, bytes)
         assert isinstance(response.text, str)
         self._assert_response_encoding(response, encoding)
-        self.assertEqual(response.body, body_bytes)
-        self.assertEqual(response.text, body_unicode)
+        assert response.body == body_bytes
+        assert response.text == body_unicode
 
     def _assert_response_encoding(self, response, encoding):
-        self.assertEqual(response.encoding, resolve_encoding(encoding))
+        assert response.encoding == resolve_encoding(encoding)
 
     def test_immutable_attributes(self):
         r = self.response_class("http://example.com")
@@ -183,7 +176,7 @@ class BaseResponseTest(unittest.TestCase):
         """Test urljoin shortcut (only for existence, since behavior equals urljoin)"""
         joined = self.response_class("http://www.example.com").urljoin("/test")
         absolute = "http://www.example.com/test"
-        self.assertEqual(joined, absolute)
+        assert joined == absolute
 
     def test_shortcut_attributes(self):
         r = self.response_class("http://example.com", body=b"hello")
@@ -241,7 +234,7 @@ class BaseResponseTest(unittest.TestCase):
     def test_follow_flags(self):
         res = self.response_class("http://example.com/")
         fol = res.follow("http://example.com/", flags=["cached", "allowed"])
-        self.assertEqual(fol.flags, ["cached", "allowed"])
+        assert fol.flags == ["cached", "allowed"]
 
     # Response.follow_all
 
@@ -276,7 +269,7 @@ class BaseResponseTest(unittest.TestCase):
 
     def test_follow_all_empty(self):
         r = self.response_class("http://example.com")
-        self.assertEqual([], list(r.follow_all([])))
+        assert not list(r.follow_all([]))
 
     def test_follow_all_invalid(self):
         r = self.response_class("http://example.com")
@@ -327,13 +320,13 @@ class BaseResponseTest(unittest.TestCase):
         ]
         fol = re.follow_all(urls, flags=["cached", "allowed"])
         for req in fol:
-            self.assertEqual(req.flags, ["cached", "allowed"])
+            assert req.flags == ["cached", "allowed"]
 
     def _assert_followed_url(self, follow_obj, target_url, response=None):
         if response is None:
             response = self._links_response()
         req = response.follow(follow_obj)
-        self.assertEqual(req.url, target_url)
+        assert req.url == target_url
         return req
 
     def _assert_followed_all_urls(self, follow_obj, target_urls, response=None):
@@ -341,7 +334,7 @@ class BaseResponseTest(unittest.TestCase):
             response = self._links_response()
         followed = response.follow_all(follow_obj)
         for req, target in zip(followed, target_urls):
-            self.assertEqual(req.url, target)
+            assert req.url == target
             yield req
 
     def _links_response(self):
@@ -353,7 +346,7 @@ class BaseResponseTest(unittest.TestCase):
         return self.response_class("http://example.com/index", body=body)
 
 
-class TextResponseTest(BaseResponseTest):
+class TestTextResponse(TestResponseBase):
     response_class = TextResponse
 
     def test_replace(self):
@@ -365,10 +358,10 @@ class TextResponseTest(BaseResponseTest):
         r3 = r1.replace(url="http://www.example.com/other", encoding="latin1")
 
         assert isinstance(r2, self.response_class)
-        self.assertEqual(r2.url, "http://www.example.com/other")
+        assert r2.url == "http://www.example.com/other"
         self._assert_response_encoding(r2, "cp852")
-        self.assertEqual(r3.url, "http://www.example.com/other")
-        self.assertEqual(r3._declared_encoding(), "latin1")
+        assert r3.url == "http://www.example.com/other"
+        assert r3._declared_encoding() == "latin1"
 
     def test_unicode_url(self):
         # instantiate with unicode url without encoding (should set default encoding)
@@ -382,21 +375,21 @@ class TextResponseTest(BaseResponseTest):
         resp = self.response_class(
             url="http://www.example.com/price/\xa3", encoding="utf-8"
         )
-        self.assertEqual(resp.url, to_unicode(b"http://www.example.com/price/\xc2\xa3"))
+        assert resp.url == to_unicode(b"http://www.example.com/price/\xc2\xa3")
         resp = self.response_class(
             url="http://www.example.com/price/\xa3", encoding="latin-1"
         )
-        self.assertEqual(resp.url, "http://www.example.com/price/\xa3")
+        assert resp.url == "http://www.example.com/price/\xa3"
         resp = self.response_class(
             "http://www.example.com/price/\xa3",
             headers={"Content-type": ["text/html; charset=utf-8"]},
         )
-        self.assertEqual(resp.url, to_unicode(b"http://www.example.com/price/\xc2\xa3"))
+        assert resp.url == to_unicode(b"http://www.example.com/price/\xc2\xa3")
         resp = self.response_class(
             "http://www.example.com/price/\xa3",
             headers={"Content-type": ["text/html; charset=iso-8859-1"]},
         )
-        self.assertEqual(resp.url, "http://www.example.com/price/\xa3")
+        assert resp.url == "http://www.example.com/price/\xa3"
 
     def test_unicode_body(self):
         unicode_string = (
@@ -412,8 +405,8 @@ class TextResponseTest(BaseResponseTest):
         )
 
         # check response.text
-        self.assertTrue(isinstance(r1.text, str))
-        self.assertEqual(r1.text, unicode_string)
+        assert isinstance(r1.text, str)
+        assert r1.text == unicode_string
 
     def test_encoding(self):
         r1 = self.response_class(
@@ -458,18 +451,18 @@ class TextResponseTest(BaseResponseTest):
             },
         )
 
-        self.assertEqual(r1._headers_encoding(), "utf-8")
-        self.assertEqual(r2._headers_encoding(), None)
-        self.assertEqual(r2._declared_encoding(), "utf-8")
+        assert r1._headers_encoding() == "utf-8"
+        assert r2._headers_encoding() is None
+        assert r2._declared_encoding() == "utf-8"
         self._assert_response_encoding(r2, "utf-8")
-        self.assertEqual(r3._headers_encoding(), "cp1252")
-        self.assertEqual(r3._declared_encoding(), "cp1252")
-        self.assertEqual(r4._headers_encoding(), None)
-        self.assertEqual(r5._headers_encoding(), None)
-        self.assertEqual(r8._headers_encoding(), "cp1251")
-        self.assertEqual(r9._headers_encoding(), None)
-        self.assertEqual(r8._declared_encoding(), "utf-8")
-        self.assertEqual(r9._declared_encoding(), None)
+        assert r3._headers_encoding() == "cp1252"
+        assert r3._declared_encoding() == "cp1252"
+        assert r4._headers_encoding() is None
+        assert r5._headers_encoding() is None
+        assert r8._headers_encoding() == "cp1251"
+        assert r9._headers_encoding() is None
+        assert r8._declared_encoding() == "utf-8"
+        assert r9._declared_encoding() is None
         self._assert_response_encoding(r5, "utf-8")
         self._assert_response_encoding(r8, "utf-8")
         self._assert_response_encoding(r9, "cp1252")
@@ -493,7 +486,7 @@ class TextResponseTest(BaseResponseTest):
             headers={"Content-type": ["text/html; charset=UNKNOWN"]},
             body=b"\xc2\xa3",
         )
-        self.assertEqual(r._declared_encoding(), None)
+        assert r._declared_encoding() is None
         self._assert_response_values(r, "utf-8", "\xa3")
 
     def test_utf16(self):
@@ -511,14 +504,11 @@ class TextResponseTest(BaseResponseTest):
             headers={"Content-type": ["text/html; charset=utf-8"]},
             body=b"\xef\xbb\xbfWORD\xe3\xab",
         )
-        self.assertEqual(r6.encoding, "utf-8")
-        self.assertIn(
-            r6.text,
-            {
-                "WORD\ufffd\ufffd",  # w3lib < 1.19.0
-                "WORD\ufffd",  # w3lib >= 1.19.0
-            },
-        )
+        assert r6.encoding == "utf-8"
+        assert r6.text in {
+            "WORD\ufffd\ufffd",  # w3lib < 1.19.0
+            "WORD\ufffd",  # w3lib >= 1.19.0
+        }
 
     def test_bom_is_removed_from_body(self):
         # Inferring encoding from body also cache decoded body as sideeffect,
@@ -532,21 +522,21 @@ class TextResponseTest(BaseResponseTest):
 
         # Test response without content-type and BOM encoding
         response = self.response_class(url, body=body)
-        self.assertEqual(response.encoding, "utf-8")
-        self.assertEqual(response.text, "WORD")
+        assert response.encoding == "utf-8"
+        assert response.text == "WORD"
         response = self.response_class(url, body=body)
-        self.assertEqual(response.text, "WORD")
-        self.assertEqual(response.encoding, "utf-8")
+        assert response.text == "WORD"
+        assert response.encoding == "utf-8"
 
         # Body caching sideeffect isn't triggered when encoding is declared in
         # content-type header but BOM still need to be removed from decoded
         # body
         response = self.response_class(url, headers=headers, body=body)
-        self.assertEqual(response.encoding, "utf-8")
-        self.assertEqual(response.text, "WORD")
+        assert response.encoding == "utf-8"
+        assert response.text == "WORD"
         response = self.response_class(url, headers=headers, body=body)
-        self.assertEqual(response.text, "WORD")
-        self.assertEqual(response.encoding, "utf-8")
+        assert response.text == "WORD"
+        assert response.encoding == "utf-8"
 
     def test_replace_wrong_encoding(self):
         """Test invalid chars are replaced properly"""
@@ -577,49 +567,47 @@ class TextResponseTest(BaseResponseTest):
         body = b"<html><head><title>Some page</title><body></body></html>"
         response = self.response_class("http://www.example.com", body=body)
 
-        self.assertIsInstance(response.selector, Selector)
-        self.assertEqual(response.selector.type, "html")
-        self.assertIs(response.selector, response.selector)  # property is cached
-        self.assertIs(response.selector.response, response)
+        assert isinstance(response.selector, Selector)
+        assert response.selector.type == "html"
+        assert response.selector is response.selector  # property is cached
+        assert response.selector.response is response
 
-        self.assertEqual(
-            response.selector.xpath("//title/text()").getall(), ["Some page"]
-        )
-        self.assertEqual(response.selector.css("title::text").getall(), ["Some page"])
-        self.assertEqual(response.selector.re("Some (.*)</title>"), ["page"])
+        assert response.selector.xpath("//title/text()").getall() == ["Some page"]
+        assert response.selector.css("title::text").getall() == ["Some page"]
+        assert response.selector.re("Some (.*)</title>") == ["page"]
 
     def test_selector_shortcuts(self):
         body = b"<html><head><title>Some page</title><body></body></html>"
         response = self.response_class("http://www.example.com", body=body)
 
-        self.assertEqual(
-            response.xpath("//title/text()").getall(),
-            response.selector.xpath("//title/text()").getall(),
+        assert (
+            response.xpath("//title/text()").getall()
+            == response.selector.xpath("//title/text()").getall()
         )
-        self.assertEqual(
-            response.css("title::text").getall(),
-            response.selector.css("title::text").getall(),
+        assert (
+            response.css("title::text").getall()
+            == response.selector.css("title::text").getall()
         )
 
     def test_selector_shortcuts_kwargs(self):
         body = b'<html><head><title>Some page</title><body><p class="content">A nice paragraph.</p></body></html>'
         response = self.response_class("http://www.example.com", body=body)
 
-        self.assertEqual(
+        assert (
             response.xpath(
                 "normalize-space(//p[@class=$pclass])", pclass="content"
-            ).getall(),
-            response.xpath('normalize-space(//p[@class="content"])').getall(),
+            ).getall()
+            == response.xpath('normalize-space(//p[@class="content"])').getall()
         )
-        self.assertEqual(
+        assert (
             response.xpath(
                 "//title[count(following::p[@class=$pclass])=$pcount]/text()",
                 pclass="content",
                 pcount=1,
-            ).getall(),
-            response.xpath(
+            ).getall()
+            == response.xpath(
                 '//title[count(following::p[@class="content"])=1]/text()'
-            ).getall(),
+            ).getall()
         )
 
     def test_urljoin_with_base_url(self):
@@ -629,21 +617,21 @@ class TextResponseTest(BaseResponseTest):
             "/test"
         )
         absolute = "https://example.net/test"
-        self.assertEqual(joined, absolute)
+        assert joined == absolute
 
         body = b'<html><body><base href="/elsewhere"></body></html>'
         joined = self.response_class("http://www.example.com", body=body).urljoin(
             "test"
         )
         absolute = "http://www.example.com/test"
-        self.assertEqual(joined, absolute)
+        assert joined == absolute
 
         body = b'<html><body><base href="/elsewhere/"></body></html>'
         joined = self.response_class("http://www.example.com", body=body).urljoin(
             "test"
         )
         absolute = "http://www.example.com/elsewhere/test"
-        self.assertEqual(joined, absolute)
+        assert joined == absolute
 
     def test_follow_selector(self):
         resp = self._links_response()
@@ -728,7 +716,7 @@ class TextResponseTest(BaseResponseTest):
             "http://example.com/foo?%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82",
             response=resp1,
         )
-        self.assertEqual(req.encoding, "utf8")
+        assert req.encoding == "utf8"
 
         resp2 = self.response_class(
             "http://example.com",
@@ -742,12 +730,12 @@ class TextResponseTest(BaseResponseTest):
             "http://example.com/foo?%EF%F0%E8%E2%E5%F2",
             response=resp2,
         )
-        self.assertEqual(req.encoding, "cp1251")
+        assert req.encoding == "cp1251"
 
     def test_follow_flags(self):
         res = self.response_class("http://example.com/")
         fol = res.follow("http://example.com/", flags=["cached", "allowed"])
-        self.assertEqual(fol.flags, ["cached", "allowed"])
+        assert fol.flags == ["cached", "allowed"]
 
     def test_follow_all_flags(self):
         re = self.response_class("http://www.example.com/")
@@ -758,7 +746,7 @@ class TextResponseTest(BaseResponseTest):
         ]
         fol = re.follow_all(urls, flags=["cached", "allowed"])
         for req in fol:
-            self.assertEqual(req.flags, ["cached", "allowed"])
+            assert req.flags == ["cached", "allowed"]
 
     def test_follow_all_css(self):
         expected = [
@@ -767,7 +755,7 @@ class TextResponseTest(BaseResponseTest):
         ]
         response = self._links_response()
         extracted = [r.url for r in response.follow_all(css='a[href*="example.com"]')]
-        self.assertEqual(expected, extracted)
+        assert expected == extracted
 
     def test_follow_all_css_skip_invalid(self):
         expected = [
@@ -777,9 +765,9 @@ class TextResponseTest(BaseResponseTest):
         ]
         response = self._links_response_no_href()
         extracted1 = [r.url for r in response.follow_all(css=".pagination a")]
-        self.assertEqual(expected, extracted1)
+        assert expected == extracted1
         extracted2 = [r.url for r in response.follow_all(response.css(".pagination a"))]
-        self.assertEqual(expected, extracted2)
+        assert expected == extracted2
 
     def test_follow_all_xpath(self):
         expected = [
@@ -788,7 +776,7 @@ class TextResponseTest(BaseResponseTest):
         ]
         response = self._links_response()
         extracted = response.follow_all(xpath='//a[contains(@href, "example.com")]')
-        self.assertEqual(expected, [r.url for r in extracted])
+        assert expected == [r.url for r in extracted]
 
     def test_follow_all_xpath_skip_invalid(self):
         expected = [
@@ -800,12 +788,12 @@ class TextResponseTest(BaseResponseTest):
         extracted1 = [
             r.url for r in response.follow_all(xpath='//div[@id="pagination"]/a')
         ]
-        self.assertEqual(expected, extracted1)
+        assert expected == extracted1
         extracted2 = [
             r.url
             for r in response.follow_all(response.xpath('//div[@id="pagination"]/a'))
         ]
-        self.assertEqual(expected, extracted2)
+        assert expected == extracted2
 
     def test_follow_all_too_many_arguments(self):
         response = self._links_response()
@@ -820,7 +808,7 @@ class TextResponseTest(BaseResponseTest):
     def test_json_response(self):
         json_body = b"""{"ip": "109.187.217.200"}"""
         json_response = self.response_class("http://www.example.com", body=json_body)
-        self.assertEqual(json_response.json(), {"ip": "109.187.217.200"})
+        assert json_response.json() == {"ip": "109.187.217.200"}
 
         text_body = b"""<html><body>text</body></html>"""
         text_response = self.response_class("http://www.example.com", body=text_body)
@@ -842,7 +830,7 @@ class TextResponseTest(BaseResponseTest):
                 mock_json.assert_called_once_with(json_body)
 
 
-class HtmlResponseTest(TextResponseTest):
+class TestHtmlResponse(TestTextResponse):
     response_class = HtmlResponse
 
     def test_html_encoding(self):
@@ -883,7 +871,7 @@ class HtmlResponseTest(TextResponseTest):
         self._assert_response_values(r1, "gb2312", body)
 
 
-class XmlResponseTest(TextResponseTest):
+class TestXmlResponse(TestTextResponse):
     response_class = XmlResponse
 
     def test_xml_encoding(self):
@@ -917,20 +905,20 @@ class XmlResponseTest(TextResponseTest):
         body = b'<?xml version="1.0" encoding="utf-8"?><xml><elem>value</elem></xml>'
         response = self.response_class("http://www.example.com", body=body)
 
-        self.assertIsInstance(response.selector, Selector)
-        self.assertEqual(response.selector.type, "xml")
-        self.assertIs(response.selector, response.selector)  # property is cached
-        self.assertIs(response.selector.response, response)
+        assert isinstance(response.selector, Selector)
+        assert response.selector.type == "xml"
+        assert response.selector is response.selector  # property is cached
+        assert response.selector.response is response
 
-        self.assertEqual(response.selector.xpath("//elem/text()").getall(), ["value"])
+        assert response.selector.xpath("//elem/text()").getall() == ["value"]
 
     def test_selector_shortcuts(self):
         body = b'<?xml version="1.0" encoding="utf-8"?><xml><elem>value</elem></xml>'
         response = self.response_class("http://www.example.com", body=body)
 
-        self.assertEqual(
-            response.xpath("//elem/text()").getall(),
-            response.selector.xpath("//elem/text()").getall(),
+        assert (
+            response.xpath("//elem/text()").getall()
+            == response.selector.xpath("//elem/text()").getall()
         )
 
     def test_selector_shortcuts_kwargs(self):
@@ -940,21 +928,21 @@ class XmlResponseTest(TextResponseTest):
         </xml>"""
         response = self.response_class("http://www.example.com", body=body)
 
-        self.assertEqual(
+        assert (
             response.xpath(
                 "//s:elem/text()", namespaces={"s": "http://scrapy.org"}
-            ).getall(),
-            response.selector.xpath(
+            ).getall()
+            == response.selector.xpath(
                 "//s:elem/text()", namespaces={"s": "http://scrapy.org"}
-            ).getall(),
+            ).getall()
         )
 
         response.selector.register_namespace("s2", "http://scrapy.org")
-        self.assertEqual(
+        assert (
             response.xpath(
                 "//s1:elem/text()", namespaces={"s1": "http://scrapy.org"}
-            ).getall(),
-            response.selector.xpath("//s2:elem/text()").getall(),
+            ).getall()
+            == response.selector.xpath("//s2:elem/text()").getall()
         )
 
 
@@ -968,7 +956,7 @@ class CustomResponse(TextResponse):
         super().__init__(*args, **kwargs)
 
 
-class CustomResponseTest(TextResponseTest):
+class TestCustomResponse(TestTextResponse):
     response_class = CustomResponse
 
     def test_copy(self):
@@ -981,11 +969,11 @@ class CustomResponseTest(TextResponseTest):
             lost="lost",
         )
         r2 = r1.copy()
-        self.assertIsInstance(r2, self.response_class)
-        self.assertEqual(r1.foo, r2.foo)
-        self.assertEqual(r1.bar, r2.bar)
-        self.assertEqual(r1.lost, "lost")
-        self.assertIsNone(r2.lost)
+        assert isinstance(r2, self.response_class)
+        assert r1.foo == r2.foo
+        assert r1.bar == r2.bar
+        assert r1.lost == "lost"
+        assert r2.lost is None
 
     def test_replace(self):
         super().test_replace()
@@ -998,31 +986,31 @@ class CustomResponseTest(TextResponseTest):
         )
 
         r2 = r1.replace(foo="new-foo", bar="new-bar", lost="new-lost")
-        self.assertIsInstance(r2, self.response_class)
-        self.assertEqual(r1.foo, "foo")
-        self.assertEqual(r1.bar, "bar")
-        self.assertEqual(r1.lost, "lost")
-        self.assertEqual(r2.foo, "new-foo")
-        self.assertEqual(r2.bar, "new-bar")
-        self.assertEqual(r2.lost, "new-lost")
+        assert isinstance(r2, self.response_class)
+        assert r1.foo == "foo"
+        assert r1.bar == "bar"
+        assert r1.lost == "lost"
+        assert r2.foo == "new-foo"
+        assert r2.bar == "new-bar"
+        assert r2.lost == "new-lost"
 
         r3 = r1.replace(foo="new-foo", bar="new-bar")
-        self.assertIsInstance(r3, self.response_class)
-        self.assertEqual(r1.foo, "foo")
-        self.assertEqual(r1.bar, "bar")
-        self.assertEqual(r1.lost, "lost")
-        self.assertEqual(r3.foo, "new-foo")
-        self.assertEqual(r3.bar, "new-bar")
-        self.assertIsNone(r3.lost)
+        assert isinstance(r3, self.response_class)
+        assert r1.foo == "foo"
+        assert r1.bar == "bar"
+        assert r1.lost == "lost"
+        assert r3.foo == "new-foo"
+        assert r3.bar == "new-bar"
+        assert r3.lost is None
 
         r4 = r1.replace(foo="new-foo")
-        self.assertIsInstance(r4, self.response_class)
-        self.assertEqual(r1.foo, "foo")
-        self.assertEqual(r1.bar, "bar")
-        self.assertEqual(r1.lost, "lost")
-        self.assertEqual(r4.foo, "new-foo")
-        self.assertEqual(r4.bar, "bar")
-        self.assertIsNone(r4.lost)
+        assert isinstance(r4, self.response_class)
+        assert r1.foo == "foo"
+        assert r1.bar == "bar"
+        assert r1.lost == "lost"
+        assert r4.foo == "new-foo"
+        assert r4.bar == "bar"
+        assert r4.lost is None
 
         with pytest.raises(
             TypeError,

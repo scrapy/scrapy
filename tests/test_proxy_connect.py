@@ -6,6 +6,7 @@ from pathlib import Path
 from subprocess import PIPE, Popen
 from urllib.parse import urlsplit, urlunsplit
 
+import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
@@ -61,7 +62,7 @@ def _wrong_credentials(proxy_url):
     return urlunsplit(bad_auth_proxy)
 
 
-class ProxyConnectTestCase(TestCase):
+class TestProxyConnect(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mockserver = MockServer()
@@ -75,7 +76,7 @@ class ProxyConnectTestCase(TestCase):
         try:
             import mitmproxy  # noqa: F401
         except ImportError:
-            self.skipTest("mitmproxy is not installed")
+            pytest.skip("mitmproxy is not installed")
 
         self._oldenv = os.environ.copy()
 
@@ -113,12 +114,12 @@ class ProxyConnectTestCase(TestCase):
             yield crawler.crawl(seed=request)
         self._assert_got_response_code(200, log)
         echo = json.loads(crawler.spider.meta["responses"][0].text)
-        self.assertTrue("Proxy-Authorization" not in echo["headers"])
+        assert "Proxy-Authorization" not in echo["headers"]
 
     def _assert_got_response_code(self, code, log):
         print(log)
-        self.assertEqual(str(log).count(f"Crawled ({code})"), 1)
+        assert str(log).count(f"Crawled ({code})") == 1
 
     def _assert_got_tunnel_error(self, log):
         print(log)
-        self.assertIn("TunnelError", str(log))
+        assert "TunnelError" in str(log)
