@@ -48,6 +48,14 @@ def chdir(tmpdir):
     tmpdir.chdir()
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--reactor",
+        default="default",
+        choices=["default", "asyncio"],
+    )
+
+
 @pytest.fixture(scope="class")
 def reactor_pytest(request):
     if not request.cls:
@@ -58,11 +66,8 @@ def reactor_pytest(request):
 
 
 @pytest.fixture(autouse=True)
-def only_asyncio(request):
-    if (
-        request.node.get_closest_marker("only_asyncio")
-        and request.config.getoption("--reactor") != "asyncio"
-    ):
+def only_asyncio(request, reactor_pytest):
+    if request.node.get_closest_marker("only_asyncio") and reactor_pytest != "asyncio":
         pytest.skip("This test is only run with --reactor=asyncio")
 
 

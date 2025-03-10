@@ -1,51 +1,41 @@
 from asyncio import sleep
 
 import pytest
-from pytest_twisted import ensureDeferred
+from twisted.internet.defer import inlineCallbacks
+from twisted.trial.unittest import TestCase
 
 from scrapy import Spider, signals
 from scrapy.core.engine import ExecutionEngine
 from scrapy.utils.test import get_crawler
 
 
-class Scenario:
-    pass
+class MainTestCase(TestCase):
+    @inlineCallbacks
+    def _test_scenario(self, scenario):
+        class TestSpider(Spider):
+            name = "test"
+            yield_seeds = scenario.yield_seeds
 
+        actual_items = []
 
-class AsyncioScenario(Scenario):
-    expected_items = [{"a": "b"}]
-    only_asyncio = True
+        def track_item(item, response, spider):
+            actual_items.append(item)
 
-    async def yield_seeds(self):
-        await sleep(ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.01)
-        yield {"a": "b"}
+        crawler = get_crawler(TestSpider)
+        crawler.signals.connect(track_item, signals.item_scraped)
+        yield crawler.crawl()
+        assert crawler.stats.get_value("finish_reason") == "finished"
+        assert actual_items == scenario.expected_items
 
+    @pytest.mark.only_asyncio
+    @inlineCallbacks
+    def test_asyncio_delayed(self):
+        class Scenario:
+            expected_items = [{"a": "b"}]
+            only_asyncio = True
 
-@pytest.mark.parametrize(
-    "scenario",
-    [
-        pytest.param(
-            scenario,
-            marks=pytest.mark.only_asyncio
-            if getattr(scenario, "only_asyncio", False)
-            else [],
-        )
-        for scenario in Scenario.__subclasses__()
-    ],
-)
-@ensureDeferred
-async def test_main(scenario):
-    class TestSpider(Spider):
-        name = "test"
-        yield_seeds = scenario.yield_seeds
+            async def yield_seeds(self):
+                await sleep(ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.01)
+                yield {"a": "b"}
 
-    actual_items = []
-
-    def track_item(item, response, spider):
-        actual_items.append(item)
-
-    crawler = get_crawler(TestSpider)
-    crawler.signals.connect(track_item, signals.item_scraped)
-    await crawler.crawl()
-    assert crawler.stats.get_value("finish_reason") == "finished"
-    assert actual_items == scenario.expected_items
+        yield self._test_scenario(Scenario)
