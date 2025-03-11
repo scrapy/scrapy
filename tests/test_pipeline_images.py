@@ -314,13 +314,7 @@ class TestImagesPipelineCustomSettings:
         "IMAGES_RESULT_FIELD": "images",
     }
 
-    def setup_method(self):
-        self.tempdir = mkdtemp()
-
-    def teardown_method(self):
-        rmtree(self.tempdir)
-
-    def _generate_fake_settings(self, prefix=None):
+    def _generate_fake_settings(self, tmp_path, prefix=None):
         """
         :param prefix: string for setting keys
         :return: dictionary of image pipeline settings
@@ -331,7 +325,7 @@ class TestImagesPipelineCustomSettings:
 
         settings = {
             "IMAGES_EXPIRES": random.randint(100, 1000),
-            "IMAGES_STORE": self.tempdir,
+            "IMAGES_STORE": tmp_path,
             "IMAGES_RESULT_FIELD": random_string(),
             "IMAGES_URLS_FIELD": random_string(),
             "IMAGES_MIN_WIDTH": random.randint(1, 1000),
@@ -368,13 +362,13 @@ class TestImagesPipelineCustomSettings:
 
         return UserDefinedImagePipeline
 
-    def test_different_settings_for_different_instances(self):
+    def test_different_settings_for_different_instances(self, tmp_path):
         """
         If there are two instances of ImagesPipeline class with different settings, they should
         have different settings.
         """
-        custom_settings = self._generate_fake_settings()
-        default_sts_pipe = ImagesPipeline(self.tempdir, crawler=get_crawler(None))
+        custom_settings = self._generate_fake_settings(tmp_path)
+        default_sts_pipe = ImagesPipeline(tmp_path, crawler=get_crawler(None))
         user_sts_pipe = ImagesPipeline.from_crawler(get_crawler(None, custom_settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_default_value = self.default_pipeline_settings.get(pipe_attr)
@@ -385,14 +379,14 @@ class TestImagesPipelineCustomSettings:
             )
             assert getattr(user_sts_pipe, pipe_attr.lower()) == custom_value
 
-    def test_subclass_attrs_preserved_default_settings(self):
+    def test_subclass_attrs_preserved_default_settings(self, tmp_path):
         """
         If image settings are not defined at all subclass of ImagePipeline takes values
         from class attributes.
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
         pipeline = pipeline_cls.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": self.tempdir})
+            get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to class attribute (uppercase).
@@ -400,13 +394,13 @@ class TestImagesPipelineCustomSettings:
             assert attr_value != self.default_pipeline_settings[pipe_attr]
             assert attr_value == getattr(pipeline, pipe_attr)
 
-    def test_subclass_attrs_preserved_custom_settings(self):
+    def test_subclass_attrs_preserved_custom_settings(self, tmp_path):
         """
         If image settings are defined but they are not defined for subclass default
         values taken from settings should be preserved.
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
-        settings = self._generate_fake_settings()
+        settings = self._generate_fake_settings(tmp_path)
         pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to
@@ -416,7 +410,7 @@ class TestImagesPipelineCustomSettings:
             setings_value = settings.get(settings_attr)
             assert value == setings_value
 
-    def test_no_custom_settings_for_subclasses(self):
+    def test_no_custom_settings_for_subclasses(self, tmp_path):
         """
         If there are no settings for subclass and no subclass attributes, pipeline should use
         attributes of base class.
@@ -426,14 +420,14 @@ class TestImagesPipelineCustomSettings:
             pass
 
         user_pipeline = UserDefinedImagePipeline.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": self.tempdir})
+            get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = self.default_pipeline_settings.get(pipe_attr.upper())
             assert getattr(user_pipeline, pipe_attr.lower()) == custom_value
 
-    def test_custom_settings_for_subclasses(self):
+    def test_custom_settings_for_subclasses(self, tmp_path):
         """
         If there are custom settings for subclass and NO class attributes, pipeline should use custom
         settings.
@@ -443,7 +437,7 @@ class TestImagesPipelineCustomSettings:
             pass
 
         prefix = UserDefinedImagePipeline.__name__.upper()
-        settings = self._generate_fake_settings(prefix=prefix)
+        settings = self._generate_fake_settings(tmp_path, prefix=prefix)
         user_pipeline = UserDefinedImagePipeline.from_crawler(
             get_crawler(None, settings)
         )
@@ -453,27 +447,27 @@ class TestImagesPipelineCustomSettings:
             assert custom_value != self.default_pipeline_settings[pipe_attr]
             assert getattr(user_pipeline, pipe_attr.lower()) == custom_value
 
-    def test_custom_settings_and_class_attrs_for_subclasses(self):
+    def test_custom_settings_and_class_attrs_for_subclasses(self, tmp_path):
         """
         If there are custom settings for subclass AND class attributes
         setting keys are preferred and override attributes.
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
         prefix = pipeline_cls.__name__.upper()
-        settings = self._generate_fake_settings(prefix=prefix)
+        settings = self._generate_fake_settings(tmp_path, prefix=prefix)
         user_pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             custom_value = settings.get(prefix + "_" + settings_attr)
             assert custom_value != self.default_pipeline_settings[pipe_attr]
             assert getattr(user_pipeline, pipe_attr.lower()) == custom_value
 
-    def test_cls_attrs_with_DEFAULT_prefix(self):
+    def test_cls_attrs_with_DEFAULT_prefix(self, tmp_path):
         class UserDefinedImagePipeline(ImagesPipeline):
             DEFAULT_IMAGES_URLS_FIELD = "something"
             DEFAULT_IMAGES_RESULT_FIELD = "something_else"
 
         pipeline = UserDefinedImagePipeline.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": self.tempdir})
+            get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
         assert (
             pipeline.images_result_field
@@ -484,12 +478,12 @@ class TestImagesPipelineCustomSettings:
             == UserDefinedImagePipeline.DEFAULT_IMAGES_URLS_FIELD
         )
 
-    def test_user_defined_subclass_default_key_names(self):
+    def test_user_defined_subclass_default_key_names(self, tmp_path):
         """Test situation when user defines subclass of ImagePipeline,
         but uses attribute names for default pipeline (without prefixing
         them with pipeline class name).
         """
-        settings = self._generate_fake_settings()
+        settings = self._generate_fake_settings(tmp_path)
 
         class UserPipe(ImagesPipeline):
             pass

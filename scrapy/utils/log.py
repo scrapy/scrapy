@@ -182,11 +182,9 @@ def log_scrapy_info(settings: Settings) -> None:
 
 
 def log_reactor_info() -> None:
-    from twisted.internet import reactor
+    from twisted.internet import asyncioreactor, reactor
 
     logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
-    from twisted.internet import asyncioreactor
-
     if isinstance(reactor, asyncioreactor.AsyncioSelectorReactor):
         logger.debug(
             "Using asyncio event loop: %s.%s",

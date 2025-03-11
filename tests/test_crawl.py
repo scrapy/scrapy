@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 import unittest
 from ipaddress import IPv4Address
 from socket import gethostbyname
@@ -19,7 +18,7 @@ from scrapy.exceptions import StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.python import to_unicode
-from scrapy.utils.test import get_crawler
+from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import NON_EXISTING_RESOLVABLE
 from tests.mockserver import MockServer
 from tests.spiders import (
@@ -195,23 +194,16 @@ class TestCrawl(TestCase):
 
     @defer.inlineCallbacks
     def test_start_requests_unsupported_output(self):
+        """Anything that is not a request is assumed to be an item, avoiding a
+        potentially expensive call to itemadapter.is_item, and letting instead
+        things fail when ItemAdapter is actually used on the corresponding
+        non-item object."""
+
         with LogCapture("scrapy", level=logging.ERROR) as log:
             crawler = get_crawler(StartRequestsGoodAndBadOutput)
             yield crawler.crawl(mockserver=self.mockserver)
 
-        assert len(log.records) == 2
-        assert log.records[0].msg == (
-            "Got 'data:,b' among start requests. Only requests and items "
-            "are supported. It will be ignored."
-        )
-        assert re.match(
-            (
-                r"^Got <object object at 0x[0-9a-fA-F]+> among start "
-                r"requests\. Only requests and items are supported\. It "
-                r"will be ignored\.$"
-            ),
-            log.records[1].msg,
-        )
+        assert len(log.records) == 0
 
     @defer.inlineCallbacks
     def test_start_requests_laziness(self):
@@ -420,7 +412,7 @@ with multiples lines
 
     @defer.inlineCallbacks
     def test_crawl_multiple(self):
-        runner = CrawlerRunner()
+        runner = CrawlerRunner(get_reactor_settings())
         runner.crawl(
             SimpleSpider,
             self.mockserver.url("/status?n=200"),

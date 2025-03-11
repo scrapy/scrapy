@@ -33,7 +33,7 @@ class TestScrapyUtils:
         tox_config_file_path = Path(__file__).parent / ".." / "tox.ini"
         config_parser = ConfigParser()
         config_parser.read(tox_config_file_path)
-        pattern = r"Twisted\[http2\]==([\d.]+)"
+        pattern = r"Twisted==([\d.]+)"
         match = re.search(pattern, config_parser["pinned"]["deps"])
         pinned_twisted_version_string = match[1]
 
