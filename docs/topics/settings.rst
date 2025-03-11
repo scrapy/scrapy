@@ -1911,7 +1911,7 @@ TWISTED_REACTOR
 
 .. versionadded:: 2.0
 
-Default: ``None``
+Default: ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``
 
 Import path of a given :mod:`~twisted.internet.reactor`.
 
@@ -1996,16 +1996,18 @@ which raises :exc:`Exception`, becomes:
             self.crawler.engine.close_spider(self, "timeout")
 
 
-The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
-means that Scrapy will use the existing reactor if one is already installed, or
-install the default reactor defined by Twisted for the current platform. This
-is to maintain backward compatibility and avoid possible problems caused by
-using a non-default reactor.
+If this setting is set ``None``, Scrapy will use the existing reactor if one is
+already installed, or install the default reactor defined by Twisted for the
+current platform.
 
 .. versionchanged:: 2.7
    The :command:`startproject` command now sets this setting to
    ``twisted.internet.asyncioreactor.AsyncioSelectorReactor`` in the generated
    ``settings.py`` file.
+
+.. versionchanged:: VERSION
+   The default value was changed from ``None`` to
+   ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``.
 
 For additional information, see :doc:`core/howto/choosing-reactor`.
 

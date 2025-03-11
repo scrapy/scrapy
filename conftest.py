@@ -51,7 +51,7 @@ def chdir(tmpdir):
 def pytest_addoption(parser):
     parser.addoption(
         "--reactor",
-        default="default",
+        default="asyncio",
         choices=["default", "asyncio"],
     )
 
@@ -67,17 +67,17 @@ def reactor_pytest(request):
 
 @pytest.fixture(autouse=True)
 def only_asyncio(request, reactor_pytest):
-    if request.node.get_closest_marker("only_asyncio") and reactor_pytest != "asyncio":
-        pytest.skip("This test is only run with --reactor=asyncio")
+    if request.node.get_closest_marker("only_asyncio") and reactor_pytest == "default":
+        pytest.skip("This test is only run without --reactor=default")
 
 
 @pytest.fixture(autouse=True)
 def only_not_asyncio(request, reactor_pytest):
     if (
         request.node.get_closest_marker("only_not_asyncio")
-        and reactor_pytest == "asyncio"
+        and reactor_pytest != "default"
     ):
-        pytest.skip("This test is only run without --reactor=asyncio")
+        pytest.skip("This test is only run with --reactor=default")
 
 
 @pytest.fixture(autouse=True)
@@ -117,7 +117,7 @@ def requires_boto3(request):
 
 
 def pytest_configure(config):
-    if config.getoption("--reactor") == "asyncio":
+    if config.getoption("--reactor") != "default":
         install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
 
 

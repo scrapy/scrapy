@@ -18,6 +18,7 @@ from twisted.trial.unittest import SkipTest
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.deprecate import create_deprecated_class
+from scrapy.utils.reactor import is_asyncio_reactor_installed
 from scrapy.utils.spider import DefaultSpider
 
 if TYPE_CHECKING:
@@ -109,6 +110,19 @@ def get_ftp_content_and_delete(
 TestSpider = create_deprecated_class("TestSpider", DefaultSpider)
 
 
+def get_reactor_settings() -> dict[str, Any]:
+    """Return a settings dict that works with the installed reactor.
+
+    ``Crawler._apply_settings()`` checks that the installed reactor matches the
+    settings, so tests that run the crawler in the current process may need to
+    pass a correct ``"TWISTED_REACTOR"`` setting value when creating it.
+    """
+    settings: dict[str, Any] = {}
+    if not is_asyncio_reactor_installed():
+        settings["TWISTED_REACTOR"] = None
+    return settings
+
+
 def get_crawler(
     spidercls: type[Spider] | None = None,
     settings_dict: dict[str, Any] | None = None,
@@ -120,9 +134,12 @@ def get_crawler(
     """
     from scrapy.crawler import CrawlerRunner
 
-    # Set by default settings that prevent deprecation warnings.
-    settings: dict[str, Any] = {}
-    settings.update(settings_dict or {})
+    # When needed, useful settings can be added here, e.g. ones that prevent
+    # deprecation warnings.
+    settings: dict[str, Any] = {
+        **get_reactor_settings(),
+        **(settings_dict or {}),
+    }
     runner = CrawlerRunner(settings)
     crawler = runner.create_crawler(spidercls or DefaultSpider)
     crawler._apply_settings()

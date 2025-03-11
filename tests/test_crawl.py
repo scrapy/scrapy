@@ -18,7 +18,7 @@ from scrapy.exceptions import StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.python import to_unicode
-from scrapy.utils.test import get_crawler
+from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import NON_EXISTING_RESOLVABLE
 from tests.mockserver import MockServer
 from tests.spiders import (
@@ -412,7 +412,7 @@ with multiples lines
 
     @defer.inlineCallbacks
     def test_crawl_multiple(self):
-        runner = CrawlerRunner()
+        runner = CrawlerRunner(get_reactor_settings())
         runner.crawl(
             SimpleSpider,
             self.mockserver.url("/status?n=200"),
