@@ -156,7 +156,7 @@ def assert_samelines(
         category=ScrapyDeprecationWarning,
         stacklevel=2,
     )
-    testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
+    testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)  # noqa: PT009
 
 
 def get_from_asyncio_queue(value: _T) -> Awaitable[_T]:
