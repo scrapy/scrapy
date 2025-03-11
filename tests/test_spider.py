@@ -819,6 +819,41 @@ class DeprecationTest(unittest.TestCase):
         assert issubclass(CrawlSpider, Spider)
         assert isinstance(CrawlSpider(name="foo"), Spider)
 
+    class MyCrawlSpider(CrawlSpider):
+        name = "mycrawlspider"
+        start_urls = ["http://www.example.com/"]
+
+    class MyOtherCrawlSpider(CrawlSpider):
+        name = "myothercrawlspider"
+        start_urls = ["http://www.example.com/"]
+
+        def _parse_response(self, response, callback, cb_kwargs, follow=True):
+            return super()._parse_response(response, callback, cb_kwargs, follow)
+
+    def test_call_parse_response_raises_warning(self):
+        with warnings.catch_warnings(record=True) as w:
+            spider1 = self.MyCrawlSpider()
+            self.assertEqual(len(w), 0)
+            spider1._parse_response(
+                TextResponse("http://www.example.com/", body=b""), None, None
+            )
+            self.assertEqual(len(w), 1)
+
+    def test_override_parse_response_raises_warning(self):
+        with warnings.catch_warnings(record=True) as w:
+            self.assertEqual(len(w), 0)
+            self.MyOtherCrawlSpider()
+            self.assertEqual(len(w), 1)
+
+    def test_override_and_call_parse_response_raises_only_one_warning(self):
+        with warnings.catch_warnings(record=True) as w:
+            self.assertEqual(len(w), 0)
+            spider3 = self.MyOtherCrawlSpider()
+            spider3._parse_response(
+                TextResponse("http://www.example.com/", body=b""), None, None
+            )
+            self.assertEqual(len(w), 1)
+
 
 class NoParseMethodSpiderTest(unittest.TestCase):
     spider_class = Spider
