@@ -14,13 +14,14 @@ from time import time
 from typing import IO, TYPE_CHECKING, Any, cast
 from weakref import WeakKeyDictionary
 
+from twisted.web.http import RESPONSES
 from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
 from warcio import ArchiveIterator, StatusAndHeaders, WARCWriter
 from warcio.recordbuilder import RecordBuilder
 
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
-from scrapy.utils.httpobj import HTTP_STATUS_MSGS, urlparse_cached
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.project import data_path
 from scrapy.utils.python import to_bytes, to_unicode
 
@@ -595,7 +596,7 @@ class WARCCacheStorage:
 
             # Copy HTTP headers for the response
             resp_hdrs_cleaned = WARCCacheStorage.http_headers_cleaner(response.headers)
-            status_msg = HTTP_STATUS_MSGS.get(response.status, "")
+            status_msg = RESPONSES.get(response.status, "")
             status_line = f"{response.status} {status_msg}"
 
             response_headers = StatusAndHeaders(
