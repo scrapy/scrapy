@@ -111,7 +111,7 @@ Once you've installed `Anaconda`_ or `Miniconda`_, install Scrapy with::
 To install Scrapy on Windows using ``pip``:
 
 .. warning::
-    This installation method requires “Microsoft Visual C++” for installing some 
+    This installation method requires “Microsoft Visual C++” for installing some
     Scrapy dependencies, which demands significantly more disk space than Anaconda.
 
 #. Download and execute `Microsoft C++ Build Tools`_ to install the Visual Studio Installer.
@@ -123,7 +123,7 @@ To install Scrapy on Windows using ``pip``:
 #. Check the installation details and make sure following packages are selected as optional components:
 
     * **MSVC**  (e.g MSVC v142 - VS 2019 C++ x64/x86 build tools (v14.23) )
-    
+
     * **Windows SDK**  (e.g Windows 10 SDK (10.0.18362.0))
 
 #. Install the Visual Studio Build Tools.

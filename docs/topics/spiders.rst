@@ -379,8 +379,8 @@ The above example can also be written as follows:
         def start_requests(self):
             yield scrapy.Request(f"http://www.example.com/categories/{self.category}")
 
-If you are :ref:`running Scrapy from a script <run-from-script>`, you can 
-specify spider arguments when calling 
+If you are :ref:`running Scrapy from a script <run-from-script>`, you can
+specify spider arguments when calling
 :class:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
 :class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`:
 

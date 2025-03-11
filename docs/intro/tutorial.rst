@@ -292,7 +292,7 @@ As an alternative, you could've written:
     >>> response.css("title::text")[0].get()
     'Quotes to Scrape'
 
-Accessing an index on a :class:`~scrapy.selector.SelectorList` instance will 
+Accessing an index on a :class:`~scrapy.selector.SelectorList` instance will
 raise an :exc:`IndexError` exception if there are no results:
 
 .. code-block:: pycon
@@ -302,8 +302,8 @@ raise an :exc:`IndexError` exception if there are no results:
     ...
     IndexError: list index out of range
 
-You might want to use ``.get()`` directly on the 
-:class:`~scrapy.selector.SelectorList` instance instead, which returns ``None`` 
+You might want to use ``.get()`` directly on the
+:class:`~scrapy.selector.SelectorList` instance instead, which returns ``None``
 if there are no results:
 
 .. code-block:: pycon
