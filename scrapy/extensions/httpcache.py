@@ -11,7 +11,7 @@ from importlib import import_module
 from io import BytesIO
 from pathlib import Path
 from time import time
-from typing import IO, TYPE_CHECKING, Any, LiteralString, cast
+from typing import IO, TYPE_CHECKING, Any, cast
 from weakref import WeakKeyDictionary
 
 from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
@@ -419,9 +419,9 @@ class WARCCacheStorage:
     @staticmethod
     def http_headers_cleaner(
         scrapy_headers: dict[bytes, bytes],
-    ) -> dict[str | bytes, LiteralString | str | bytes]:
+    ) -> dict[str | bytes, str | bytes]:
         """Convert Scrapy headers to a format suitable for WARC records."""
-        rv = {}
+        rv: dict[str | bytes, str | bytes] = {}
         for k, v in scrapy_headers.items():
             if v is not None:
                 key = k.decode("ascii") if isinstance(k, bytes) else k
@@ -463,11 +463,9 @@ class WARCCacheStorage:
         # Only create response if both request & response recs were found
         if not warc_req or not warc_resp:
             logger.warning(
-                "Incomplete WARC record found in cache%s%s (%s), "
-                "request missing" if not warc_req
-                else (", response missing"
-                if not warc_resp
-                else "")
+                "Incomplete WARC record found in cache%s%s (%s), request missing"
+                if not warc_req
+                else (", response missing" if not warc_resp else "")
             )
             return None
 
@@ -517,7 +515,7 @@ class WARCCacheStorage:
                         # also checks Content-Encoding and will expect a
                         # compressed body, so we dutifully re-compress it to
                         # make the crawler happy. TODO: This is inefficient.
-                        if 'gzip' in resp_headers.get('Content-Encoding', '').lower():
+                        if "gzip" in resp_headers.get("Content-Encoding", "").lower():
                             resp_body = gzip.compress(resp_body)
 
                         # Create the response object
