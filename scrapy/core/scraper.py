@@ -8,7 +8,6 @@ from collections import deque
 from collections.abc import AsyncIterable, Iterator
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
-from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
@@ -298,17 +297,10 @@ class Scraper:
         if isinstance(output, Request):
             assert self.crawler.engine is not None  # typing
             self.crawler.engine.crawl(request=output)
-        elif is_item(output):
-            return self.start_itemproc(output, response=response)
         elif output is None:
             pass
         else:
-            typename = type(output).__name__
-            logger.error(
-                "Spider must return request, item, or None, got %(typename)r in %(request)s",
-                {"request": request, "typename": typename},
-                extra={"spider": spider},
-            )
+            return self.start_itemproc(output, response=response)
         return None
 
     def start_itemproc(self, item: Any, *, response: Response | None) -> Deferred[Any]:

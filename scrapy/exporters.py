@@ -356,12 +356,12 @@ class PythonItemExporter(BaseItemExporter):
     def _serialize_value(self, value: Any) -> Any:
         if isinstance(value, Item):
             return self.export_item(value)
+        if isinstance(value, (str, bytes)):
+            return to_unicode(value, encoding=self.encoding)
         if is_item(value):
             return dict(self._serialize_item(value))
         if is_listlike(value):
             return [self._serialize_value(v) for v in value]
-        if isinstance(value, (str, bytes)):
-            return to_unicode(value, encoding=self.encoding)
         return value
 
     def _serialize_item(self, item: Any) -> Iterable[tuple[str | bytes, Any]]:
