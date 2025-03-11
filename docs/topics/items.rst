@@ -384,9 +384,8 @@ Supporting All Item Types
 In code that receives an item, such as methods of :ref:`item pipelines
 <topics-item-pipeline>` or :ref:`spider middlewares
 <topics-spider-middleware>`, it is a good practice to use the
-:class:`~itemadapter.ItemAdapter` class and the
-:func:`~itemadapter.is_item` function to write code that works for
-any supported item type.
+:class:`~itemadapter.ItemAdapter` class to write code that works for any
+supported item type.
 
 Other classes related to items
 ==============================

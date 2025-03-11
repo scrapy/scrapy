@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 import unittest
 from ipaddress import IPv4Address
 from socket import gethostbyname
@@ -195,23 +194,16 @@ class TestCrawl(TestCase):
 
     @defer.inlineCallbacks
     def test_start_requests_unsupported_output(self):
+        """Anything that is not a request is assumed to be an item, avoiding a
+        potentially expensive call to itemadapter.is_item, and letting instead
+        things fail when ItemAdapter is actually used on the corresponding
+        non-item object."""
+
         with LogCapture("scrapy", level=logging.ERROR) as log:
             crawler = get_crawler(StartRequestsGoodAndBadOutput)
             yield crawler.crawl(mockserver=self.mockserver)
 
-        assert len(log.records) == 2
-        assert log.records[0].msg == (
-            "Got 'data:,b' among start requests. Only requests and items "
-            "are supported. It will be ignored."
-        )
-        assert re.match(
-            (
-                r"^Got <object object at 0x[0-9a-fA-F]+> among start "
-                r"requests\. Only requests and items are supported\. It "
-                r"will be ignored\.$"
-            ),
-            log.records[1].msg,
-        )
+        assert len(log.records) == 0
 
     @defer.inlineCallbacks
     def test_start_requests_laziness(self):
