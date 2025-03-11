@@ -31,23 +31,12 @@ Request objects
         If the URL is invalid, a :exc:`ValueError` exception is raised.
     :type url: str
 
-    :param callback: the function that will be called with the response of this
-       request (once it's downloaded) as its first parameter.
+    :param callback: sets :attr:`callback`, defaults to ``None``.
 
-       In addition to a function, the following values are supported:
-
-       -   ``None`` (default), which indicates that the spider's
-           :meth:`~scrapy.Spider.parse` method must be used.
-
-       -   :func:`~scrapy.http.request.NO_CALLBACK`
-
-       For more information, see
-       :ref:`topics-request-response-ref-request-callback-arguments`.
-
-       .. note:: If exceptions are raised during processing, ``errback`` is
-                 called instead.
-
-    :type callback: collections.abc.Callable
+        .. versionchanged:: 2.0
+            The *callback* parameter is no longer required when the *errback*
+            parameter is specified.
+    :type callback: Callable[Concatenate[Response, ...], Any] | None
 
     :param method: the HTTP method of this request. Defaults to ``'GET'``.
     :type method: str
@@ -144,23 +133,15 @@ Request objects
        Negative values are allowed in order to indicate relatively low-priority.
     :type priority: int
 
-    :param dont_filter: indicates that this request should not be filtered by
-       the scheduler or some middlewares. This is used when you want to perform
-       an identical request multiple times, to ignore the duplicates filter.
-       Use it with care, or you will get into crawling loops. Default to ``False``.
+    :param dont_filter: sets :attr:`dont_filter`, defaults to ``False``.
     :type dont_filter: bool
 
-    :param errback: a function that will be called if any exception was
-       raised while processing the request. This includes pages that failed
-       with 404 HTTP errors and such. It receives a
-       :exc:`~twisted.python.failure.Failure` as first parameter.
-       For more information,
-       see :ref:`topics-request-response-ref-errbacks` below.
+    :param errback: sets :attr:`errback`, defaults to ``None``.
 
-       .. versionchanged:: 2.0
-          The *callback* parameter is no longer required when the *errback*
-          parameter is specified.
-    :type errback: collections.abc.Callable
+        .. versionchanged:: 2.0
+            The *callback* parameter is no longer required when the *errback*
+            parameter is specified.
+    :type errback: Callable[[Failure], Any] | None
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
     :type flags: list
@@ -193,6 +174,25 @@ Request objects
 
         This attribute is read-only. To change the body of a Request use
         :meth:`replace`.
+
+    .. autoattribute:: callback
+
+    .. autoattribute:: errback
+
+    .. attribute:: Request.cb_kwargs
+
+        A dictionary that contains arbitrary metadata for this request. Its contents
+        will be passed to the Request's callback as keyword arguments. It is empty
+        for new Requests, which means by default callbacks only get a
+        :class:`~scrapy.http.Response` object as argument.
+
+        This dict is :doc:`shallow copied <library/copy>` when the request is
+        cloned using the ``copy()`` or ``replace()`` methods, and can also be
+        accessed, in your spider, from the ``response.cb_kwargs`` attribute.
+
+        In case of a failure to process the request, this dict can be accessed as
+        ``failure.request.cb_kwargs`` in the request's errback. For more information,
+        see :ref:`errback-cb_kwargs`.
 
     .. attribute:: Request.meta
        :value: {}
@@ -237,20 +237,7 @@ Request objects
         Also mind that the :meth:`copy` and :meth:`replace` request methods
         :doc:`shallow-copy <library/copy>` request metadata.
 
-    .. attribute:: Request.cb_kwargs
-
-        A dictionary that contains arbitrary metadata for this request. Its contents
-        will be passed to the Request's callback as keyword arguments. It is empty
-        for new Requests, which means by default callbacks only get a
-        :class:`~scrapy.http.Response` object as argument.
-
-        This dict is :doc:`shallow copied <library/copy>` when the request is
-        cloned using the ``copy()`` or ``replace()`` methods, and can also be
-        accessed, in your spider, from the ``response.cb_kwargs`` attribute.
-
-        In case of a failure to process the request, this dict can be accessed as
-        ``failure.request.cb_kwargs`` in the request's errback. For more information,
-        see :ref:`errback-cb_kwargs`.
+    .. autoattribute:: dont_filter
 
     .. autoattribute:: Request.attributes
 
