@@ -9,6 +9,21 @@ from scrapy.core.engine import ExecutionEngine
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
+# These are the minimum seconds necessary to wait to reproduce the issue that
+# has been solved by catching the RuntimeError exception in the
+# ExecutionEngine._next_request() method. A lower value makes these tests pass
+# even if we remove that exception handling, but they start failing with this
+# much delay.
+ASYNC_GEN_ERROR_MINIMUM_SECONDS = ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.01
+
+
+def twisted_sleep(seconds):
+    from twisted.internet import reactor
+
+    d = Deferred()
+    reactor.callLater(seconds, d.callback, None)
+    return d
+
 
 class MainTestCase(TestCase):
     item = {"a": "b"}
@@ -34,23 +49,16 @@ class MainTestCase(TestCase):
     @inlineCallbacks
     def test_asyncio_delayed(self):
         async def yield_seeds(spider):
-            await sleep(ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.01)
+            await sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS)
             yield self.item
 
         yield self._test(yield_seeds)
 
     @inlineCallbacks
     def test_twisted_delayed(self):
-        def twisted_sleep(seconds):
-            from twisted.internet import reactor
-
-            d = Deferred()
-            reactor.callLater(seconds, d.callback, None)
-            return d
-
         async def yield_seeds(spider):
             await maybe_deferred_to_future(
-                twisted_sleep(ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.01)
+                twisted_sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS)
             )
             yield self.item
 
