@@ -12,10 +12,11 @@ extensions and middlewares.
 Crawler API
 ===========
 
-The main entry point to Scrapy API is the :class:`~scrapy.crawler.Crawler`
-object, passed to extensions through the ``from_crawler`` class method. This
-object provides access to all Scrapy core components, and it's the only way for
-extensions to access them and hook their functionality into Scrapy.
+The main entry point to the Scrapy API is the :class:`~scrapy.crawler.Crawler`
+object, which :ref:`components <topics-components>` can :ref:`get for
+initialization <from-crawler>`. It provides access to all Scrapy core
+components, and it is the only way for components to access them and hook their
+functionality into Scrapy.
 
 .. module:: scrapy.crawler
    :synopsis: The Scrapy crawler

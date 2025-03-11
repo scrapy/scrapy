@@ -4,34 +4,21 @@
 Extensions
 ==========
 
-The extensions framework provides a mechanism for inserting your own
-custom functionality into Scrapy.
+Extensions are :ref:`components <topics-components>` that allow inserting your
+own custom functionality into Scrapy.
 
-Extensions are just regular classes.
+Unlike other components, extensions do not have a specific role in Scrapy. They
+are “wildcard” components that can be used for anything that does not fit the
+role of any other type of component.
 
-Extension settings
-==================
+Loading and activating extensions
+=================================
 
-Extensions use the :ref:`Scrapy settings <topics-settings>` to manage their
-settings, just like any other Scrapy code.
+Extensions are loaded at startup by creating a single instance of the extension
+class per spider being run.
 
-It is customary for extensions to prefix their settings with their own name, to
-avoid collision with existing (and future) extensions. For example, a
-hypothetical extension to handle `Google Sitemaps`_ would use settings like
-``GOOGLESITEMAP_ENABLED``, ``GOOGLESITEMAP_DEPTH``, and so on.
-
-.. _Google Sitemaps: https://en.wikipedia.org/wiki/Sitemaps
-
-Loading & activating extensions
-===============================
-
-Extensions are loaded and activated at startup by instantiating a single
-instance of the extension class per spider being run. All the extension
-initialization code must be performed in the class ``__init__`` method.
-
-To make an extension available, add it to the :setting:`EXTENSIONS` setting in
-your Scrapy settings. In :setting:`EXTENSIONS`, each extension is represented
-by a string: the full Python path to the extension's class name. For example:
+To enable an extension, add it to the :setting:`EXTENSIONS` setting. For
+example:
 
 .. code-block:: python
 
@@ -40,54 +27,23 @@ by a string: the full Python path to the extension's class name. For example:
         "scrapy.extensions.telnet.TelnetConsole": 500,
     }
 
-
-As you can see, the :setting:`EXTENSIONS` setting is a dict where the keys are
-the extension paths, and their values are the orders, which define the
-extension *loading* order. The :setting:`EXTENSIONS` setting is merged with the
-:setting:`EXTENSIONS_BASE` setting defined in Scrapy (and not meant to be
-overridden) and then sorted by order to get the final sorted list of enabled
-extensions.
+:setting:`EXTENSIONS` is merged with :setting:`EXTENSIONS_BASE` (not meant to
+be overridden), and the priorities in the resulting value determine the
+*loading* order.
 
 As extensions typically do not depend on each other, their loading order is
 irrelevant in most cases. This is why the :setting:`EXTENSIONS_BASE` setting
-defines all extensions with the same order (``0``). However, this feature can
-be exploited if you need to add an extension which depends on other extensions
-already loaded.
-
-Available, enabled and disabled extensions
-==========================================
-
-Not all available extensions will be enabled. Some of them usually depend on a
-particular setting. For example, the HTTP Cache extension is available by default
-but disabled unless the :setting:`HTTPCACHE_ENABLED` setting is set.
-
-Disabling an extension
-======================
-
-In order to disable an extension that comes enabled by default (i.e. those
-included in the :setting:`EXTENSIONS_BASE` setting) you must set its order to
-``None``. For example:
-
-.. code-block:: python
-
-    EXTENSIONS = {
-        "scrapy.extensions.corestats.CoreStats": None,
-    }
+defines all extensions with the same order (``0``). However, you may need to
+carefully use priorities if you add an extension that depends on other
+extensions being already loaded.
 
 Writing your own extension
 ==========================
 
-Each extension is a Python class. The main entry point for a Scrapy extension
-(this also includes middlewares and pipelines) is the ``from_crawler``
-class method which receives a ``Crawler`` instance. Through the Crawler object
-you can access settings, signals, stats, and also control the crawling behaviour.
+Each extension is a :ref:`component <topics-components>`.
 
 Typically, extensions connect to :ref:`signals <topics-signals>` and perform
 tasks triggered by them.
-
-Finally, if the ``from_crawler`` method raises the
-:exc:`~scrapy.exceptions.NotConfigured` exception, the extension will be
-disabled. Otherwise, the extension will be enabled.
 
 Sample extension
 ----------------

@@ -463,34 +463,16 @@ import path.
 Writing your own request fingerprinter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A request fingerprinter is a class that must implement the following method:
+A request fingerprinter is a :ref:`component <topics-components>` that must
+implement the following method:
 
 .. currentmodule:: None
 
-.. method:: fingerprint(self, request)
+.. method:: fingerprint(self, request: scrapy.Request)
 
    Return a :class:`bytes` object that uniquely identifies *request*.
 
    See also :ref:`request-fingerprint-restrictions`.
-
-   :param request: request to fingerprint
-   :type request: scrapy.Request
-
-Additionally, it may also implement the following method:
-
-.. classmethod:: from_crawler(cls, crawler)
-   :noindex:
-
-   If present, this class method is called to create a request fingerprinter
-   instance from a :class:`~scrapy.crawler.Crawler` object. It must return a
-   new instance of the request fingerprinter.
-
-   *crawler* provides access to all Scrapy core components like settings and
-   signals; it is a way for the request fingerprinter to access them and hook
-   its functionality into Scrapy.
-
-   :param crawler: crawler that uses this request fingerprinter
-   :type crawler: :class:`~scrapy.crawler.Crawler` object
 
 .. currentmodule:: scrapy.http
 
