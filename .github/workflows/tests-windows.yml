@@ -1,5 +1,10 @@
 name: Windows
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - master
+    - '[0-9]+.[0-9]+'
+  pull_request:
 
 concurrency:
   group: ${{github.workflow}}-${{ github.ref }}
