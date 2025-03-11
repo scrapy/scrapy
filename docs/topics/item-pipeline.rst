@@ -23,7 +23,8 @@ Typical uses of item pipelines are:
 Writing your own item pipeline
 ==============================
 
-Each item pipeline component is a Python class that must implement the following method:
+Each item pipeline is a :ref:`component <topics-components>` that must
+implement the following method:
 
 .. method:: process_item(self, item, spider)
 
@@ -59,17 +60,6 @@ Additionally, they may also implement the following methods:
 
    :param spider: the spider which was closed
    :type spider: :class:`~scrapy.Spider` object
-
-.. classmethod:: from_crawler(cls, crawler)
-
-   If present, this class method is called to create a pipeline instance
-   from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
-   of the pipeline. Crawler object provides access to all Scrapy core
-   components like settings and signals; it is a way for pipeline to
-   access them and hook its functionality into Scrapy.
-
-   :param crawler: crawler that uses this pipeline
-   :type crawler: :class:`~scrapy.crawler.Crawler` object
 
 
 Item pipeline example
@@ -139,8 +129,8 @@ In this example we'll write items to MongoDB_ using pymongo_.
 MongoDB address and database name are specified in Scrapy settings;
 MongoDB collection is named after item class.
 
-The main point of this example is to show how to use :meth:`from_crawler`
-method and how to clean up the resources properly.
+The main point of this example is to show how to :ref:`get the crawler
+<from-crawler>` and how to clean up the resources properly.
 
 .. skip: next
 .. code-block:: python

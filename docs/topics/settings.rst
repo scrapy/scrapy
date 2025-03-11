@@ -204,7 +204,7 @@ How to access settings
 
 .. highlight:: python
 
-In a spider, the settings are available through ``self.settings``:
+In a spider, settings are available through ``self.settings``:
 
 .. code-block:: python
 
@@ -217,37 +217,17 @@ In a spider, the settings are available through ``self.settings``:
 
 .. note::
     The ``settings`` attribute is set in the base Spider class after the spider
-    is initialized.  If you want to use the settings before the initialization
+    is initialized.  If you want to use settings before the initialization
     (e.g., in your spider's ``__init__()`` method), you'll need to override the
     :meth:`~scrapy.Spider.from_crawler` method.
 
-Settings can be accessed through the :attr:`scrapy.crawler.Crawler.settings`
-attribute of the Crawler that is passed to ``from_crawler`` method in
-extensions, middlewares and item pipelines:
+:ref:`Components <topics-components>` can also :ref:`access settings
+<component-settings>`.
 
-.. code-block:: python
-
-    class MyExtension:
-        def __init__(self, log_is_enabled=False):
-            if log_is_enabled:
-                print("log is enabled!")
-
-        @classmethod
-        def from_crawler(cls, crawler):
-            settings = crawler.settings
-            return cls(settings.getbool("LOG_ENABLED"))
-
-The settings object can be used like a dict (e.g.,
-``settings['LOG_ENABLED']``), but it's usually preferred to extract the setting
-in the format you need it to avoid type errors, using one of the methods
-provided by the :class:`~scrapy.settings.Settings` API.
-
-Rationale for setting names
-===========================
-
-Setting names are usually prefixed with the component that they configure. For
-example, proper setting names for a fictional robots.txt extension would be
-``ROBOTSTXT_ENABLED``, ``ROBOTSTXT_OBEY``, ``ROBOTSTXT_CACHEDIR``, etc.
+The ``settings`` object can be used like a :class:`dict` (e.g.
+``settings["LOG_ENABLED"]``). However, to support non-string setting values,
+which may be passed from the command line as strings, it is recommended to use
+one of the methods provided by the :class:`~scrapy.settings.Settings` API.
 
 
 .. _component-priority-dictionaries:
@@ -1211,7 +1191,8 @@ EXTENSIONS
 
 Default:: ``{}``
 
-A dict containing the extensions enabled in your project, and their orders.
+:ref:`Component priority dictionary <component-priority-dictionaries>` of
+enabled extensions. See :ref:`topics-extensions`.
 
 .. setting:: EXTENSIONS_BASE
 
