@@ -22,14 +22,14 @@ from scrapy.squeues import (
 from scrapy.utils.test import get_crawler
 
 
-class BaseQueueTestCase(unittest.TestCase):
-    def setUp(self):
+class TestBaseQueue:
+    def setup_method(self):
         self.tmpdir = tempfile.mkdtemp(prefix="scrapy-queue-tests-")
         self.qpath = self.tempfilename()
         self.qdir = tempfile.mkdtemp()
         self.crawler = get_crawler(Spider)
 
-    def tearDown(self):
+    def teardown_method(self):
         shutil.rmtree(self.tmpdir)
 
     def tempfilename(self):
@@ -48,36 +48,36 @@ class RequestQueueTestMixin:
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             raise unittest.SkipTest("The queuelib queues do not define peek")
         q = self.queue()
-        self.assertEqual(len(q), 0)
-        self.assertIsNone(q.peek())
-        self.assertIsNone(q.pop())
+        assert len(q) == 0
+        assert q.peek() is None
+        assert q.pop() is None
         req = Request("http://www.example.com")
         q.push(req)
-        self.assertEqual(len(q), 1)
-        self.assertEqual(q.peek().url, req.url)
-        self.assertEqual(q.pop().url, req.url)
-        self.assertEqual(len(q), 0)
-        self.assertIsNone(q.peek())
-        self.assertIsNone(q.pop())
+        assert len(q) == 1
+        assert q.peek().url == req.url
+        assert q.pop().url == req.url
+        assert len(q) == 0
+        assert q.peek() is None
+        assert q.pop() is None
         q.close()
 
     def test_one_element_without_peek(self):
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             raise unittest.SkipTest("The queuelib queues define peek")
         q = self.queue()
-        self.assertEqual(len(q), 0)
-        self.assertIsNone(q.pop())
+        assert len(q) == 0
+        assert q.pop() is None
         req = Request("http://www.example.com")
         q.push(req)
-        self.assertEqual(len(q), 1)
+        assert len(q) == 1
         with pytest.raises(
             NotImplementedError,
             match="The underlying queue class does not implement 'peek'",
         ):
             q.peek()
-        self.assertEqual(q.pop().url, req.url)
-        self.assertEqual(len(q), 0)
-        self.assertIsNone(q.pop())
+        assert q.pop().url == req.url
+        assert len(q) == 0
+        assert q.pop() is None
         q.close()
 
 
@@ -86,35 +86,35 @@ class FifoQueueMixin(RequestQueueTestMixin):
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             raise unittest.SkipTest("The queuelib queues do not define peek")
         q = self.queue()
-        self.assertEqual(len(q), 0)
-        self.assertIsNone(q.peek())
-        self.assertIsNone(q.pop())
+        assert len(q) == 0
+        assert q.peek() is None
+        assert q.pop() is None
         req1 = Request("http://www.example.com/1")
         req2 = Request("http://www.example.com/2")
         req3 = Request("http://www.example.com/3")
         q.push(req1)
         q.push(req2)
         q.push(req3)
-        self.assertEqual(len(q), 3)
-        self.assertEqual(q.peek().url, req1.url)
-        self.assertEqual(q.pop().url, req1.url)
-        self.assertEqual(len(q), 2)
-        self.assertEqual(q.peek().url, req2.url)
-        self.assertEqual(q.pop().url, req2.url)
-        self.assertEqual(len(q), 1)
-        self.assertEqual(q.peek().url, req3.url)
-        self.assertEqual(q.pop().url, req3.url)
-        self.assertEqual(len(q), 0)
-        self.assertIsNone(q.peek())
-        self.assertIsNone(q.pop())
+        assert len(q) == 3
+        assert q.peek().url == req1.url
+        assert q.pop().url == req1.url
+        assert len(q) == 2
+        assert q.peek().url == req2.url
+        assert q.pop().url == req2.url
+        assert len(q) == 1
+        assert q.peek().url == req3.url
+        assert q.pop().url == req3.url
+        assert len(q) == 0
+        assert q.peek() is None
+        assert q.pop() is None
         q.close()
 
     def test_fifo_without_peek(self):
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             raise unittest.SkipTest("The queuelib queues do not define peek")
         q = self.queue()
-        self.assertEqual(len(q), 0)
-        self.assertIsNone(q.pop())
+        assert len(q) == 0
+        assert q.pop() is None
         req1 = Request("http://www.example.com/1")
         req2 = Request("http://www.example.com/2")
         req3 = Request("http://www.example.com/3")
@@ -126,14 +126,14 @@ class FifoQueueMixin(RequestQueueTestMixin):
             match="The underlying queue class does not implement 'peek'",
         ):
             q.peek()
-        self.assertEqual(len(q), 3)
-        self.assertEqual(q.pop().url, req1.url)
-        self.assertEqual(len(q), 2)
-        self.assertEqual(q.pop().url, req2.url)
-        self.assertEqual(len(q), 1)
-        self.assertEqual(q.pop().url, req3.url)
-        self.assertEqual(len(q), 0)
-        self.assertIsNone(q.pop())
+        assert len(q) == 3
+        assert q.pop().url == req1.url
+        assert len(q) == 2
+        assert q.pop().url == req2.url
+        assert len(q) == 1
+        assert q.pop().url == req3.url
+        assert len(q) == 0
+        assert q.pop() is None
         q.close()
 
 
@@ -142,35 +142,35 @@ class LifoQueueMixin(RequestQueueTestMixin):
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             raise unittest.SkipTest("The queuelib queues do not define peek")
         q = self.queue()
-        self.assertEqual(len(q), 0)
-        self.assertIsNone(q.peek())
-        self.assertIsNone(q.pop())
+        assert len(q) == 0
+        assert q.peek() is None
+        assert q.pop() is None
         req1 = Request("http://www.example.com/1")
         req2 = Request("http://www.example.com/2")
         req3 = Request("http://www.example.com/3")
         q.push(req1)
         q.push(req2)
         q.push(req3)
-        self.assertEqual(len(q), 3)
-        self.assertEqual(q.peek().url, req3.url)
-        self.assertEqual(q.pop().url, req3.url)
-        self.assertEqual(len(q), 2)
-        self.assertEqual(q.peek().url, req2.url)
-        self.assertEqual(q.pop().url, req2.url)
-        self.assertEqual(len(q), 1)
-        self.assertEqual(q.peek().url, req1.url)
-        self.assertEqual(q.pop().url, req1.url)
-        self.assertEqual(len(q), 0)
-        self.assertIsNone(q.peek())
-        self.assertIsNone(q.pop())
+        assert len(q) == 3
+        assert q.peek().url == req3.url
+        assert q.pop().url == req3.url
+        assert len(q) == 2
+        assert q.peek().url == req2.url
+        assert q.pop().url == req2.url
+        assert len(q) == 1
+        assert q.peek().url == req1.url
+        assert q.pop().url == req1.url
+        assert len(q) == 0
+        assert q.peek() is None
+        assert q.pop() is None
         q.close()
 
     def test_lifo_without_peek(self):
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             raise unittest.SkipTest("The queuelib queues do not define peek")
         q = self.queue()
-        self.assertEqual(len(q), 0)
-        self.assertIsNone(q.pop())
+        assert len(q) == 0
+        assert q.pop() is None
         req1 = Request("http://www.example.com/1")
         req2 = Request("http://www.example.com/2")
         req3 = Request("http://www.example.com/3")
@@ -182,46 +182,46 @@ class LifoQueueMixin(RequestQueueTestMixin):
             match="The underlying queue class does not implement 'peek'",
         ):
             q.peek()
-        self.assertEqual(len(q), 3)
-        self.assertEqual(q.pop().url, req3.url)
-        self.assertEqual(len(q), 2)
-        self.assertEqual(q.pop().url, req2.url)
-        self.assertEqual(len(q), 1)
-        self.assertEqual(q.pop().url, req1.url)
-        self.assertEqual(len(q), 0)
-        self.assertIsNone(q.pop())
+        assert len(q) == 3
+        assert q.pop().url == req3.url
+        assert len(q) == 2
+        assert q.pop().url == req2.url
+        assert len(q) == 1
+        assert q.pop().url == req1.url
+        assert len(q) == 0
+        assert q.pop() is None
         q.close()
 
 
-class PickleFifoDiskQueueRequestTest(FifoQueueMixin, BaseQueueTestCase):
+class TestPickleFifoDiskQueueRequest(FifoQueueMixin, TestBaseQueue):
     def queue(self):
         return PickleFifoDiskQueue.from_crawler(crawler=self.crawler, key="pickle/fifo")
 
 
-class PickleLifoDiskQueueRequestTest(LifoQueueMixin, BaseQueueTestCase):
+class TestPickleLifoDiskQueueRequest(LifoQueueMixin, TestBaseQueue):
     def queue(self):
         return PickleLifoDiskQueue.from_crawler(crawler=self.crawler, key="pickle/lifo")
 
 
-class MarshalFifoDiskQueueRequestTest(FifoQueueMixin, BaseQueueTestCase):
+class TestMarshalFifoDiskQueueRequest(FifoQueueMixin, TestBaseQueue):
     def queue(self):
         return MarshalFifoDiskQueue.from_crawler(
             crawler=self.crawler, key="marshal/fifo"
         )
 
 
-class MarshalLifoDiskQueueRequestTest(LifoQueueMixin, BaseQueueTestCase):
+class TestMarshalLifoDiskQueueRequest(LifoQueueMixin, TestBaseQueue):
     def queue(self):
         return MarshalLifoDiskQueue.from_crawler(
             crawler=self.crawler, key="marshal/lifo"
         )
 
 
-class FifoMemoryQueueRequestTest(FifoQueueMixin, BaseQueueTestCase):
+class TestFifoMemoryQueueRequest(FifoQueueMixin, TestBaseQueue):
     def queue(self):
         return FifoMemoryQueue.from_crawler(crawler=self.crawler)
 
 
-class LifoMemoryQueueRequestTest(LifoQueueMixin, BaseQueueTestCase):
+class TestLifoMemoryQueueRequest(LifoQueueMixin, TestBaseQueue):
     def queue(self):
         return LifoMemoryQueue.from_crawler(crawler=self.crawler)

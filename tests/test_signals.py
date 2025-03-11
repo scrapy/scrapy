@@ -20,7 +20,7 @@ class ItemSpider(Spider):
         return {"index": response.meta["index"]}
 
 
-class AsyncSignalTestCase(unittest.TestCase):
+class TestAsyncSignal(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mockserver = MockServer()
@@ -43,6 +43,6 @@ class AsyncSignalTestCase(unittest.TestCase):
         crawler = get_crawler(ItemSpider)
         crawler.signals.connect(self._on_item_scraped, signals.item_scraped)
         yield crawler.crawl(mockserver=self.mockserver)
-        self.assertEqual(len(self.items), 10)
+        assert len(self.items) == 10
         for index in range(10):
-            self.assertIn({"index": index}, self.items)
+            assert {"index": index} in self.items

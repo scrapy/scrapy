@@ -38,22 +38,22 @@ class TestCatching(TestCase):
     def test_success(self):
         crawler = get_crawler(SignalCatcherSpider)
         yield crawler.crawl(self.mockserver.url("/status?n=200"))
-        self.assertEqual(crawler.spider.caught_times, 1)
+        assert crawler.spider.caught_times == 1
 
     @defer.inlineCallbacks
     def test_timeout(self):
         crawler = get_crawler(SignalCatcherSpider, {"DOWNLOAD_TIMEOUT": 0.1})
         yield crawler.crawl(self.mockserver.url("/delay?n=0.2"))
-        self.assertEqual(crawler.spider.caught_times, 1)
+        assert crawler.spider.caught_times == 1
 
     @defer.inlineCallbacks
     def test_disconnect(self):
         crawler = get_crawler(SignalCatcherSpider)
         yield crawler.crawl(self.mockserver.url("/drop"))
-        self.assertEqual(crawler.spider.caught_times, 1)
+        assert crawler.spider.caught_times == 1
 
     @defer.inlineCallbacks
     def test_noconnect(self):
         crawler = get_crawler(SignalCatcherSpider)
         yield crawler.crawl("http://thereisdefinetelynosuchdomain.com")
-        self.assertEqual(crawler.spider.caught_times, 1)
+        assert crawler.spider.caught_times == 1

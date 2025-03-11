@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import shutil
 import tempfile
-import unittest
+from abc import ABC, abstractmethod
 from typing import Any, NamedTuple
 
 import pytest
@@ -65,9 +65,13 @@ class MockCrawler(Crawler):
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
 
-class SchedulerHandler:
-    priority_queue_cls: str | None = None
+class SchedulerHandler(ABC):
     jobdir = None
+
+    @property
+    @abstractmethod
+    def priority_queue_cls(self) -> str:
+        raise NotImplementedError
 
     def create_scheduler(self):
         self.mock_crawler = MockCrawler(self.priority_queue_cls, self.jobdir)
@@ -80,10 +84,10 @@ class SchedulerHandler:
         self.mock_crawler.stop()
         self.mock_crawler.engine.downloader.close()
 
-    def setUp(self):
+    def setup_method(self):
         self.create_scheduler()
 
-    def tearDown(self):
+    def teardown_method(self):
         self.close_scheduler()
 
 
@@ -99,16 +103,16 @@ _PRIORITIES = [
 _URLS = {"http://foo.com/a", "http://foo.com/b", "http://foo.com/c"}
 
 
-class BaseSchedulerInMemoryTester(SchedulerHandler):
+class TestSchedulerInMemoryBase(SchedulerHandler):
     def test_length(self):
-        self.assertFalse(self.scheduler.has_pending_requests())
-        self.assertEqual(len(self.scheduler), 0)
+        assert not self.scheduler.has_pending_requests()
+        assert len(self.scheduler) == 0
 
         for url in _URLS:
             self.scheduler.enqueue_request(Request(url))
 
-        self.assertTrue(self.scheduler.has_pending_requests())
-        self.assertEqual(len(self.scheduler), len(_URLS))
+        assert self.scheduler.has_pending_requests()
+        assert len(self.scheduler) == len(_URLS)
 
     def test_dequeue(self):
         for url in _URLS:
@@ -118,7 +122,7 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         while self.scheduler.has_pending_requests():
             urls.add(self.scheduler.next_request().url)
 
-        self.assertEqual(urls, _URLS)
+        assert urls == _URLS
 
     def test_dequeue_priorities(self):
         for url, priority in _PRIORITIES:
@@ -128,25 +132,23 @@ class BaseSchedulerInMemoryTester(SchedulerHandler):
         while self.scheduler.has_pending_requests():
             priorities.append(self.scheduler.next_request().priority)
 
-        self.assertEqual(
-            priorities, sorted([x[1] for x in _PRIORITIES], key=lambda x: -x)
-        )
+        assert priorities == sorted([x[1] for x in _PRIORITIES], key=lambda x: -x)
 
 
-class BaseSchedulerOnDiskTester(SchedulerHandler):
-    def setUp(self):
+class TestSchedulerOnDiskBase(SchedulerHandler):
+    def setup_method(self):
         self.jobdir = tempfile.mkdtemp()
         self.create_scheduler()
 
-    def tearDown(self):
+    def teardown_method(self):
         self.close_scheduler()
 
         shutil.rmtree(self.jobdir)
         self.jobdir = None
 
     def test_length(self):
-        self.assertFalse(self.scheduler.has_pending_requests())
-        self.assertEqual(len(self.scheduler), 0)
+        assert not self.scheduler.has_pending_requests()
+        assert len(self.scheduler) == 0
 
         for url in _URLS:
             self.scheduler.enqueue_request(Request(url))
@@ -154,8 +156,8 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         self.close_scheduler()
         self.create_scheduler()
 
-        self.assertTrue(self.scheduler.has_pending_requests())
-        self.assertEqual(len(self.scheduler), len(_URLS))
+        assert self.scheduler.has_pending_requests()
+        assert len(self.scheduler) == len(_URLS)
 
     def test_dequeue(self):
         for url in _URLS:
@@ -168,7 +170,7 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         while self.scheduler.has_pending_requests():
             urls.add(self.scheduler.next_request().url)
 
-        self.assertEqual(urls, _URLS)
+        assert urls == _URLS
 
     def test_dequeue_priorities(self):
         for url, priority in _PRIORITIES:
@@ -181,17 +183,19 @@ class BaseSchedulerOnDiskTester(SchedulerHandler):
         while self.scheduler.has_pending_requests():
             priorities.append(self.scheduler.next_request().priority)
 
-        self.assertEqual(
-            priorities, sorted([x[1] for x in _PRIORITIES], key=lambda x: -x)
-        )
+        assert priorities == sorted([x[1] for x in _PRIORITIES], key=lambda x: -x)
 
 
-class TestSchedulerInMemory(BaseSchedulerInMemoryTester, unittest.TestCase):
-    priority_queue_cls = "scrapy.pqueues.ScrapyPriorityQueue"
+class TestSchedulerInMemory(TestSchedulerInMemoryBase):
+    @property
+    def priority_queue_cls(self) -> str:
+        return "scrapy.pqueues.ScrapyPriorityQueue"
 
 
-class TestSchedulerOnDisk(BaseSchedulerOnDiskTester, unittest.TestCase):
-    priority_queue_cls = "scrapy.pqueues.ScrapyPriorityQueue"
+class TestSchedulerOnDisk(TestSchedulerOnDiskBase):
+    @property
+    def priority_queue_cls(self) -> str:
+        return "scrapy.pqueues.ScrapyPriorityQueue"
 
 
 _URLS_WITH_SLOTS = [
@@ -204,37 +208,34 @@ _URLS_WITH_SLOTS = [
 ]
 
 
-class TestMigration(unittest.TestCase):
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
+class TestMigration:
+    def test_migration(self, tmpdir):
+        class PrevSchedulerHandler(SchedulerHandler):
+            jobdir = tmpdir
 
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir)
+            @property
+            def priority_queue_cls(self) -> str:
+                return "scrapy.pqueues.ScrapyPriorityQueue"
 
-    def _migration(self, tmp_dir):
-        prev_scheduler_handler = SchedulerHandler()
-        prev_scheduler_handler.priority_queue_cls = "scrapy.pqueues.ScrapyPriorityQueue"
-        prev_scheduler_handler.jobdir = tmp_dir
+        class NextSchedulerHandler(SchedulerHandler):
+            jobdir = tmpdir
 
+            @property
+            def priority_queue_cls(self) -> str:
+                return "scrapy.pqueues.DownloaderAwarePriorityQueue"
+
+        prev_scheduler_handler = PrevSchedulerHandler()
         prev_scheduler_handler.create_scheduler()
         for url in _URLS:
             prev_scheduler_handler.scheduler.enqueue_request(Request(url))
         prev_scheduler_handler.close_scheduler()
 
-        next_scheduler_handler = SchedulerHandler()
-        next_scheduler_handler.priority_queue_cls = (
-            "scrapy.pqueues.DownloaderAwarePriorityQueue"
-        )
-        next_scheduler_handler.jobdir = tmp_dir
-
-        next_scheduler_handler.create_scheduler()
-
-    def test_migration(self):
+        next_scheduler_handler = NextSchedulerHandler()
         with pytest.raises(
             ValueError,
             match="DownloaderAwarePriorityQueue accepts ``slot_startprios`` as a dict",
         ):
-            self._migration(self.tmpdir)
+            next_scheduler_handler.create_scheduler()
 
 
 def _is_scheduling_fair(enqueued_slots, dequeued_slots):
@@ -263,8 +264,11 @@ def _is_scheduling_fair(enqueued_slots, dequeued_slots):
 
 
 class DownloaderAwareSchedulerTestMixin:
-    priority_queue_cls: str | None = "scrapy.pqueues.DownloaderAwarePriorityQueue"
     reopen = False
+
+    @property
+    def priority_queue_cls(self) -> str:
+        return "scrapy.pqueues.DownloaderAwarePriorityQueue"
 
     def test_logic(self):
         for url, slot in _URLS_WITH_SLOTS:
@@ -290,20 +294,18 @@ class DownloaderAwareSchedulerTestMixin:
             slot = downloader.get_slot_key(request)
             downloader.decrement(slot)
 
-        self.assertTrue(
-            _is_scheduling_fair([s for u, s in _URLS_WITH_SLOTS], dequeued_slots)
-        )
-        self.assertEqual(sum(len(s.active) for s in downloader.slots.values()), 0)
+        assert _is_scheduling_fair([s for u, s in _URLS_WITH_SLOTS], dequeued_slots)
+        assert sum(len(s.active) for s in downloader.slots.values()) == 0
 
 
 class TestSchedulerWithDownloaderAwareInMemory(
-    DownloaderAwareSchedulerTestMixin, BaseSchedulerInMemoryTester, unittest.TestCase
+    DownloaderAwareSchedulerTestMixin, TestSchedulerInMemoryBase
 ):
     pass
 
 
 class TestSchedulerWithDownloaderAwareOnDisk(
-    DownloaderAwareSchedulerTestMixin, BaseSchedulerOnDiskTester, unittest.TestCase
+    DownloaderAwareSchedulerTestMixin, TestSchedulerOnDiskBase
 ):
     reopen = True
 
@@ -337,13 +339,12 @@ class TestIntegrationWithDownloaderAwareInMemory(TestCase):
             url = mockserver.url("/status?n=200", is_secure=False)
             start_urls = [url] * 6
             yield self.crawler.crawl(start_urls)
-            self.assertEqual(
-                self.crawler.stats.get_value("downloader/response_count"),
-                len(start_urls),
+            assert self.crawler.stats.get_value("downloader/response_count") == len(
+                start_urls
             )
 
 
-class TestIncompatibility(unittest.TestCase):
+class TestIncompatibility:
     def _incompatible(self):
         settings = {
             "SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.DownloaderAwarePriorityQueue",
