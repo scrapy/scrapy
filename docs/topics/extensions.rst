@@ -256,14 +256,14 @@ Spider state extension
 Manages spider state data by loading it before a crawl and saving it after.
 
 Give a value to the :setting:`JOBDIR` setting to enable this extension.
-When enabled, this extension manages the :attr:`~scrapy.Spider.state` 
+When enabled, this extension manages the :attr:`~scrapy.Spider.state`
 attribute of your :class:`~scrapy.Spider` instance:
-    
--   When your spider closes (:signal:`spider_closed`), the contents of its 
-    :attr:`~scrapy.Spider.state` attribute are serialized into a file named 
+
+-   When your spider closes (:signal:`spider_closed`), the contents of its
+    :attr:`~scrapy.Spider.state` attribute are serialized into a file named
     ``spider.state`` in the :setting:`JOBDIR` folder.
--   When your spider opens (:signal:`spider_opened`), if a previously-generated 
-    ``spider.state`` file exists in the :setting:`JOBDIR` folder, it is loaded 
+-   When your spider opens (:signal:`spider_opened`), if a previously-generated
+    ``spider.state`` file exists in the :setting:`JOBDIR` folder, it is loaded
     into the :attr:`~scrapy.Spider.state` attribute.
 
 
@@ -291,8 +291,8 @@ settings:
 
 .. note::
 
-   When a certain closing condition is met, requests which are 
-   currently in the downloader queue (up to :setting:`CONCURRENT_REQUESTS` 
+   When a certain closing condition is met, requests which are
+   currently in the downloader queue (up to :setting:`CONCURRENT_REQUESTS`
    requests) are still processed.
 
 .. setting:: CLOSESPIDER_TIMEOUT

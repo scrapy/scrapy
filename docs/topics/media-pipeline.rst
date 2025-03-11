@@ -414,7 +414,7 @@ class name. E.g. given pipeline class called MyPipeline you can set setting key:
 
 and pipeline class MyPipeline will have expiration time set to 180.
 
-The last modified time from the file is used to determine the age of the file in days, 
+The last modified time from the file is used to determine the age of the file in days,
 which is then compared to the set expiration time to determine if the file is expired.
 
 .. _topics-images-thumbnails:
@@ -519,7 +519,7 @@ See here the methods that you can override in your custom Files Pipeline:
 
       In addition to ``response``, this method receives the original
       :class:`request <scrapy.Request>`,
-      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and 
+      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and
       :class:`item <scrapy.Item>`
 
       You can override this method to customize the download path of each file.
@@ -541,9 +541,9 @@ See here the methods that you can override in your custom Files Pipeline:
             def file_path(self, request, response=None, info=None, *, item=None):
                 return "files/" + PurePosixPath(urlparse_cached(request).path).name
 
-      Similarly, you can use the ``item`` to determine the file path based on some item 
+      Similarly, you can use the ``item`` to determine the file path based on some item
       property.
-      
+
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
 
@@ -677,7 +677,7 @@ See here the methods that you can override in your custom Images Pipeline:
 
       In addition to ``response``, this method receives the original
       :class:`request <scrapy.Request>`,
-      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and 
+      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and
       :class:`item <scrapy.Item>`
 
       You can override this method to customize the download path of each file.
@@ -699,9 +699,9 @@ See here the methods that you can override in your custom Images Pipeline:
             def file_path(self, request, response=None, info=None, *, item=None):
                 return "files/" + PurePosixPath(urlparse_cached(request).path).name
 
-      Similarly, you can use the ``item`` to determine the file path based on some item 
+      Similarly, you can use the ``item`` to determine the file path based on some item
       property.
-      
+
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
 

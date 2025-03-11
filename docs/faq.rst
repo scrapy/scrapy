@@ -410,7 +410,7 @@ How can I make a blank request?
 -------------------------------
 
 .. code-block:: python
-    
+
     from scrapy import Request
 
 

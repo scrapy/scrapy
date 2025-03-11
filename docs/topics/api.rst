@@ -88,7 +88,7 @@ how you :ref:`configure the downloader middlewares
         The execution engine, which coordinates the core crawling logic
         between the scheduler, downloader and spiders.
 
-        Some extension may want to access the Scrapy engine, to inspect  or 
+        Some extension may want to access the Scrapy engine, to inspect  or
         modify the downloader and scheduler behaviour, although this is an
         advanced use and this API is not yet stable.
 
