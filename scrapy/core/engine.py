@@ -104,6 +104,7 @@ class ExecutionEngine:
         )
         self.start_time: float | None = None
         self._seeds: AsyncIterable[Any] | None = None
+        self._waiting_for_seed: bool = False
 
     def _get_scheduler_class(self, settings: BaseSettings) -> type[BaseScheduler]:
         from scrapy.core.scheduler import BaseScheduler
@@ -172,15 +173,13 @@ class ExecutionEngine:
 
     @inlineCallbacks
     def _process_next_seed(self):
+        if self._waiting_for_seed:
+            return
+        self._waiting_for_seed = True
         try:
             seed = yield deferred_from_coro(self._seeds.__anext__())
         except StopAsyncIteration:
             self._seeds = None
-        except RuntimeError:
-            # “RuntimeError: anext(): asynchronous generator is already
-            # running” happens if yield_seeds is taking long to yield the
-            # next seed.
-            pass
         except Exception:
             self._seeds = None
             logger.error(
@@ -194,6 +193,8 @@ class ExecutionEngine:
             else:
                 self.scraper.start_itemproc(seed, response=None)
                 self._slot.nextcall.schedule()
+        finally:
+            self._waiting_for_seed = False
 
     @inlineCallbacks
     def _start_next_requests(self) -> Generator[Deferred[Any], Any, None]:
