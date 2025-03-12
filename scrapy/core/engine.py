@@ -187,45 +187,42 @@ class ExecutionEngine:
     def unpause(self) -> None:
         self.paused = False
 
+    def _start_scheduled_requests(self):
+        while not self._needs_backout():
+            if self._start_scheduled_request() is None:
+                break
+
     @inlineCallbacks
-    def _next_request(self) -> Generator[Deferred[Any], Any, None]:
-        if self.slot is None:
-            return
-
-        assert self.spider is not None  # typing
-
-        if self.paused:
-            return
-
-        while (
-            not self._needs_backout()
-            and self._next_request_from_scheduler() is not None
-        ):
+    def _process_next_seed(self):
+        try:
+            seed = yield deferred_from_coro(self.slot.seeds.__anext__())
+        except StopAsyncIteration:
+            self.slot.seeds = None
+        except RuntimeError:
+            # “RuntimeError: anext(): asynchronous generator is already
+            # running” happens if yield_seeds is taking long to yield the
+            # next seed.
             pass
-
-        if self.slot.seeds is not None and not self._needs_backout():
-            try:
-                request_or_item = yield deferred_from_coro(self.slot.seeds.__anext__())
-            except StopAsyncIteration:
-                self.slot.seeds = None
-            except RuntimeError:
-                # “RuntimeError: anext(): asynchronous generator is already
-                # running” happens if yield_seeds is taking long to yield the
-                # next seed.
-                pass
-            except Exception:
-                self.slot.seeds = None
-                logger.error(
-                    "Error while reading seeds",
-                    exc_info=True,
-                    extra={"spider": self.spider},
-                )
+        except Exception:
+            self.slot.seeds = None
+            logger.error(
+                "Error while reading seeds",
+                exc_info=True,
+                extra={"spider": self.spider},
+            )
+        else:
+            if isinstance(seed, Request):
+                self.crawl(seed)
             else:
-                if isinstance(request_or_item, Request):
-                    self.crawl(request_or_item)
-                else:
-                    self.scraper.start_itemproc(request_or_item, response=None)
+                self.scraper.start_itemproc(seed, response=None)
 
+    @inlineCallbacks
+    def _start_next_requests(self) -> Generator[Deferred[Any], Any, None]:
+        if self.slot is None or self.paused:
+            return
+        self._start_scheduled_requests()
+        if self.slot.seeds is not None and not self._needs_backout():
+            yield self._process_next_seed()
         if self.spider_is_idle() and self.slot.close_if_idle:
             self._spider_idle()
 
@@ -239,7 +236,7 @@ class ExecutionEngine:
             or self.scraper.slot.needs_backout()
         )
 
-    def _next_request_from_scheduler(self) -> Deferred[None] | None:
+    def _start_scheduled_request(self) -> Deferred[None] | None:
         assert self.slot is not None  # typing
         assert self.spider is not None  # typing
 
@@ -401,7 +398,7 @@ class ExecutionEngine:
         if self.slot is not None:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={"spider": spider})
-        nextcall = CallLaterOnce(self._next_request)
+        nextcall = CallLaterOnce(self._start_next_requests)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
         seeds = yield self.scraper.spidermw.process_seeds(spider)
         self.slot = Slot(close_if_idle, nextcall, scheduler, seeds=seeds)
