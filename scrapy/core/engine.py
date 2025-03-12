@@ -415,10 +415,11 @@ class ExecutionEngine:
         }
         if DontCloseSpider in detected_ex:
             return
+
         if self.spider_is_idle():
             ex = detected_ex.get(CloseSpider, CloseSpider(reason="finished"))
             assert isinstance(ex, CloseSpider)  # typing
-            self.close_spider(self.spider, reason=ex.reason)
+            self.close_spider(self.spider, reason=str(ex))  # Convert to string so that it can be saved correctly
 
     def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred[None]:
         """Close (cancel) spider and clear all its outstanding requests"""
@@ -428,11 +429,10 @@ class ExecutionEngine:
         if self.slot.closing is not None:
             return self.slot.closing
 
+        reason = str(reason)  # If the exception is raised, then it will be saved as String
         logger.info(
             "Closing spider (%(reason)s)", {"reason": reason}, extra={"spider": spider}
         )
-
-        dfd = self.slot.close()
 
         def log_failure(msg: str) -> Callable[[Failure], None]:
             def errback(failure: Failure) -> None:
