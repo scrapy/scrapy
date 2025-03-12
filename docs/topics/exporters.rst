@@ -224,7 +224,7 @@ BaseItemExporter
       .. [1] Not all exporters respect the specified field order.
       .. [2] When using :ref:`item objects <item-types>` that do not expose
              all their possible fields, exporters that do not support exporting
-             a different subset of fields per item will only export the fields 
+             a different subset of fields per item will only export the fields
              found in the first item exported.
 
    .. attribute:: export_empty_fields

@@ -200,8 +200,7 @@ disable = [
 [tool.pytest.ini_options]
 xfail_strict = true
 usefixtures = "chdir"
-python_files = ["test_*.py", "__init__.py"]
-python_classes = []
+python_files = ["test_*.py", "test_*/__init__.py"]
 addopts = [
     "--assert=plain",
     "--ignore=docs/_ext",
@@ -254,6 +253,8 @@ extend-select = [
     "PIE",
     # pylint
     "PL",
+    # flake8-pytest-style
+    "PT",
     # flake8-use-pathlib
     "PTH",
     # flake8-pyi

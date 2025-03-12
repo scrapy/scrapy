@@ -7,8 +7,8 @@ from tests.test_engine import (
     CrawlerRun,
     DataClassItemsSpider,
     DictItemsSpider,
-    EngineTestBase,
-    TestSpider,
+    MySpider,
+    TestEngineBase,
 )
 
 
@@ -18,11 +18,11 @@ class HeadersReceivedCrawlerRun(CrawlerRun):
         raise StopDownload(fail=False)
 
 
-class HeadersReceivedEngineTest(EngineTestBase):
+class TestHeadersReceivedEngine(TestEngineBase):
     @defer.inlineCallbacks
     def test_crawler(self):
         for spider in (
-            TestSpider,
+            MySpider,
             DictItemsSpider,
             AttrsItemsSpider,
             DataClassItemsSpider,
@@ -60,10 +60,12 @@ class HeadersReceivedEngineTest(EngineTestBase):
             self._assert_bytes_received(run)
             self._assert_headers_received(run)
 
-    def _assert_bytes_received(self, run: CrawlerRun):
-        self.assertEqual(0, len(run.bytes))
+    @staticmethod
+    def _assert_bytes_received(run: CrawlerRun) -> None:
+        assert len(run.bytes) == 0
 
-    def _assert_visited_urls(self, run: CrawlerRun):
+    @staticmethod
+    def _assert_visited_urls(run: CrawlerRun) -> None:
         must_be_visited = ["/", "/redirect", "/redirected"]
         urls_visited = {rp[0].url for rp in run.respplug}
         urls_expected = {run.geturl(p) for p in must_be_visited}

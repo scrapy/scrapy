@@ -1,5 +1,4 @@
 import logging
-from unittest import TestCase
 
 import pytest
 from testfixtures import LogCapture
@@ -53,19 +52,19 @@ def _cookies_to_set_cookie_list(cookies):
     return filter(None, (_cookie_to_set_cookie_value(cookie) for cookie in cookies))
 
 
-class CookiesMiddlewareTest(TestCase):
+class TestCookiesMiddleware:
     def assertCookieValEqual(self, first, second, msg=None):
         def split_cookies(cookies):
             return sorted([s.strip() for s in to_bytes(cookies).split(b";")])
 
-        return self.assertEqual(split_cookies(first), split_cookies(second), msg=msg)
+        assert split_cookies(first) == split_cookies(second), msg
 
-    def setUp(self):
+    def setup_method(self):
         self.spider = Spider("foo")
         self.mw = CookiesMiddleware()
         self.redirect_middleware = RedirectMiddleware(settings=Settings())
 
-    def tearDown(self):
+    def teardown_method(self):
         del self.mw
         del self.redirect_middleware
 
@@ -80,22 +79,21 @@ class CookiesMiddlewareTest(TestCase):
 
         req2 = Request("http://scrapytest.org/sub1/")
         assert self.mw.process_request(req2, self.spider) is None
-        self.assertEqual(req2.headers.get("Cookie"), b"C1=value1")
+        assert req2.headers.get("Cookie") == b"C1=value1"
 
     def test_setting_false_cookies_enabled(self):
-        self.assertRaises(
-            NotConfigured,
-            CookiesMiddleware.from_crawler,
-            get_crawler(settings_dict={"COOKIES_ENABLED": False}),
-        )
+        with pytest.raises(NotConfigured):
+            CookiesMiddleware.from_crawler(
+                get_crawler(settings_dict={"COOKIES_ENABLED": False})
+            )
 
     def test_setting_default_cookies_enabled(self):
-        self.assertIsInstance(
+        assert isinstance(
             CookiesMiddleware.from_crawler(get_crawler()), CookiesMiddleware
         )
 
     def test_setting_true_cookies_enabled(self):
-        self.assertIsInstance(
+        assert isinstance(
             CookiesMiddleware.from_crawler(
                 get_crawler(settings_dict={"COOKIES_ENABLED": True})
             ),
@@ -162,7 +160,7 @@ class CookiesMiddlewareTest(TestCase):
 
         req2 = Request("http://scrapytest.org/sub1/")
         assert self.mw.process_request(req2, self.spider) is None
-        self.assertIn("Cookie", req2.headers)
+        assert "Cookie" in req2.headers
 
     def test_dont_merge_cookies(self):
         # merge some cookies into jar
@@ -186,12 +184,12 @@ class CookiesMiddlewareTest(TestCase):
         # check that cookies are merged back
         req = Request("http://scrapytest.org/mergeme")
         assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers.get("Cookie"), b"C1=value1")
+        assert req.headers.get("Cookie") == b"C1=value1"
 
         # check that cookies are merged when dont_merge_cookies is passed as 0
         req = Request("http://scrapytest.org/mergeme", meta={"dont_merge_cookies": 0})
         assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers.get("Cookie"), b"C1=value1")
+        assert req.headers.get("Cookie") == b"C1=value1"
 
     def test_complex_cookies(self):
         # merge some cookies into jar
@@ -231,7 +229,7 @@ class CookiesMiddlewareTest(TestCase):
         # embed C2 for scrapytest.org/bar
         req = Request("http://scrapytest.org/bar")
         self.mw.process_request(req, self.spider)
-        self.assertEqual(req.headers.get("Cookie"), b"C2=value2")
+        assert req.headers.get("Cookie") == b"C2=value2"
 
         # embed nothing for scrapytest.org/baz
         req = Request("http://scrapytest.org/baz")
@@ -241,7 +239,7 @@ class CookiesMiddlewareTest(TestCase):
     def test_merge_request_cookies(self):
         req = Request("http://scrapytest.org/", cookies={"galleta": "salada"})
         assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers.get("Cookie"), b"galleta=salada")
+        assert req.headers.get("Cookie") == b"galleta=salada"
 
         headers = {"Set-Cookie": "C1=value1; path=/"}
         res = Response("http://scrapytest.org/", headers=headers)
@@ -261,7 +259,7 @@ class CookiesMiddlewareTest(TestCase):
             meta={"cookiejar": "store1"},
         )
         assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers.get("Cookie"), b"galleta=salada")
+        assert req.headers.get("Cookie") == b"galleta=salada"
 
         headers = {"Set-Cookie": "C1=value1; path=/"}
         res = Response("http://scrapytest.org/", headers=headers, request=req)
@@ -279,7 +277,7 @@ class CookiesMiddlewareTest(TestCase):
             meta={"cookiejar": "store2"},
         )
         assert self.mw.process_request(req3, self.spider) is None
-        self.assertEqual(req3.headers.get("Cookie"), b"galleta=dulce")
+        assert req3.headers.get("Cookie") == b"galleta=dulce"
 
         headers = {"Set-Cookie": "C2=value2; path=/"}
         res2 = Response("http://scrapytest.org/", headers=headers, request=req3)
@@ -303,22 +301,22 @@ class CookiesMiddlewareTest(TestCase):
 
         req5_2 = Request("http://scrapytest.org:1104/some-redirected-path")
         assert self.mw.process_request(req5_2, self.spider) is None
-        self.assertEqual(req5_2.headers.get("Cookie"), b"C1=value1")
+        assert req5_2.headers.get("Cookie") == b"C1=value1"
 
         req5_3 = Request("http://scrapytest.org/some-redirected-path")
         assert self.mw.process_request(req5_3, self.spider) is None
-        self.assertEqual(req5_3.headers.get("Cookie"), b"C1=value1")
+        assert req5_3.headers.get("Cookie") == b"C1=value1"
 
         # skip cookie retrieval for not http request
         req6 = Request("file:///scrapy/sometempfile")
         assert self.mw.process_request(req6, self.spider) is None
-        self.assertEqual(req6.headers.get("Cookie"), None)
+        assert req6.headers.get("Cookie") is None
 
     def test_local_domain(self):
         request = Request("http://example-host/", cookies={"currencyCookie": "USD"})
         assert self.mw.process_request(request, self.spider) is None
-        self.assertIn("Cookie", request.headers)
-        self.assertEqual(b"currencyCookie=USD", request.headers["Cookie"])
+        assert "Cookie" in request.headers
+        assert request.headers["Cookie"] == b"currencyCookie=USD"
 
     @pytest.mark.xfail(reason="Cookie header is not currently being processed")
     def test_keep_cookie_from_default_request_headers_middleware(self):
@@ -475,7 +473,7 @@ class CookiesMiddlewareTest(TestCase):
         request1 = Request(cookies=input_cookies, **source)
         self.mw.process_request(request1, self.spider)
         cookies = request1.headers.get("Cookie")
-        self.assertEqual(cookies, b"a=b" if cookies1 else None)
+        assert cookies == (b"a=b" if cookies1 else None)
 
         response = Response(
             headers={
@@ -483,21 +481,18 @@ class CookiesMiddlewareTest(TestCase):
             },
             **target,
         )
-        self.assertEqual(
-            self.mw.process_response(request1, response, self.spider),
-            response,
-        )
+        assert self.mw.process_response(request1, response, self.spider) == response
 
         request2 = self.redirect_middleware.process_response(
             request1,
             response,
             self.spider,
         )
-        self.assertIsInstance(request2, Request)
+        assert isinstance(request2, Request)
 
         self.mw.process_request(request2, self.spider)
         cookies = request2.headers.get("Cookie")
-        self.assertEqual(cookies, b"a=b" if cookies2 else None)
+        assert cookies == (b"a=b" if cookies2 else None)
 
     def test_cookie_redirect_same_domain(self):
         self._test_cookie_redirect(
@@ -574,10 +569,10 @@ class CookiesMiddlewareTest(TestCase):
             response,
             self.spider,
         )
-        self.assertIsInstance(request2, Request)
+        assert isinstance(request2, Request)
 
         cookies = request2.headers.get("Cookie")
-        self.assertEqual(cookies, b"a=b" if cookies2 else None)
+        assert cookies == (b"a=b" if cookies2 else None)
 
     def test_cookie_header_redirect_same_domain(self):
         self._test_cookie_header_redirect(
@@ -627,12 +622,12 @@ class CookiesMiddlewareTest(TestCase):
         request1 = Request(url1, cookies=input_cookies)
         self.mw.process_request(request1, self.spider)
         cookies = request1.headers.get("Cookie")
-        self.assertEqual(cookies, b"a=b" if cookies1 else None)
+        assert cookies == (b"a=b" if cookies1 else None)
 
         request2 = Request(url2)
         self.mw.process_request(request2, self.spider)
         cookies = request2.headers.get("Cookie")
-        self.assertEqual(cookies, b"a=b" if cookies2 else None)
+        assert cookies == (b"a=b" if cookies2 else None)
 
     def test_user_set_cookie_domain_suffix_private(self):
         self._test_user_set_cookie_domain_followup(
@@ -693,15 +688,12 @@ class CookiesMiddlewareTest(TestCase):
             "Set-Cookie": _cookies_to_set_cookie_list(input_cookies),
         }
         response = Response(url1, status=200, headers=headers)
-        self.assertEqual(
-            self.mw.process_response(request1, response, self.spider),
-            response,
-        )
+        assert self.mw.process_response(request1, response, self.spider) == response
 
         request2 = Request(url2)
         self.mw.process_request(request2, self.spider)
         actual_cookies = request2.headers.get("Cookie")
-        self.assertEqual(actual_cookies, b"a=b" if cookies else None)
+        assert actual_cookies == (b"a=b" if cookies else None)
 
     def test_server_set_cookie_domain_suffix_private(self):
         self._test_server_set_cookie_domain_followup(
@@ -753,30 +745,27 @@ class CookiesMiddlewareTest(TestCase):
         request1 = Request(f"{from_scheme}://a.example", cookies=input_cookies)
         self.mw.process_request(request1, self.spider)
         cookies = request1.headers.get("Cookie")
-        self.assertEqual(cookies, b"a=b" if cookies1 else None)
+        assert cookies == (b"a=b" if cookies1 else None)
 
         response = Response(
             f"{from_scheme}://a.example",
             headers={"Location": f"{to_scheme}://a.example"},
             status=301,
         )
-        self.assertEqual(
-            self.mw.process_response(request1, response, self.spider),
-            response,
-        )
+        assert self.mw.process_response(request1, response, self.spider) == response
 
         request2 = self.redirect_middleware.process_response(
             request1,
             response,
             self.spider,
         )
-        self.assertIsInstance(request2, Request)
+        assert isinstance(request2, Request)
         cookies = request2.headers.get("Cookie")
-        self.assertEqual(cookies, b"a=b" if cookies2 else None)
+        assert cookies == (b"a=b" if cookies2 else None)
 
         self.mw.process_request(request2, self.spider)
         cookies = request2.headers.get("Cookie")
-        self.assertEqual(cookies, b"a=b" if cookies3 else None)
+        assert cookies == (b"a=b" if cookies3 else None)
 
     def test_cookie_redirect_secure_undefined_downgrade(self):
         self._test_cookie_redirect_scheme_change(

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from unittest import mock, skipIf
 from urllib.parse import urlencode
 
+import pytest
 from twisted.internet import reactor
 from twisted.internet.defer import (
     CancelledError,
@@ -184,7 +185,7 @@ def get_client_certificate(
 
 
 @skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
-class Https2ClientProtocolTestCase(TestCase):
+class TestHttps2ClientProtocol(TestCase):
     scheme = "https"
     key_file = Path(__file__).parent / "keys" / "localhost.key"
     certificate_file = Path(__file__).parent / "keys" / "localhost.crt"
@@ -258,7 +259,8 @@ class Https2ClientProtocolTestCase(TestCase):
         :param path: Should have / at the starting compulsorily if not empty
         :return: Complete url
         """
-        assert len(path) > 0 and (path[0] == "/" or path[0] == "&")
+        assert len(path) > 0
+        assert path[0] == "/" or path[0] == "&"
         return f"{self.scheme}://{self.hostname}:{self.port_number}{path}"
 
     def make_request(self, request: Request) -> Deferred:
@@ -275,14 +277,14 @@ class Https2ClientProtocolTestCase(TestCase):
 
     def _check_GET(self, request: Request, expected_body, expected_status):
         def check_response(response: Response):
-            self.assertEqual(response.status, expected_status)
-            self.assertEqual(response.body, expected_body)
-            self.assertEqual(response.request, request)
+            assert response.status == expected_status
+            assert response.body == expected_body
+            assert response.request == request
 
             content_length_header = response.headers.get("Content-Length")
             assert content_length_header is not None
             content_length = int(content_length_header)
-            self.assertEqual(len(response.body), content_length)
+            assert len(response.body) == content_length
 
         d = self.make_request(request)
         d.addCallback(check_response)
@@ -323,35 +325,35 @@ class Https2ClientProtocolTestCase(TestCase):
         d = self.make_request(request)
 
         def assert_response(response: Response):
-            self.assertEqual(response.status, expected_status)
-            self.assertEqual(response.request, request)
+            assert response.status == expected_status
+            assert response.request == request
 
             content_length_header = response.headers.get("Content-Length")
             assert content_length_header is not None
             content_length = int(content_length_header)
-            self.assertEqual(len(response.body), content_length)
+            assert len(response.body) == content_length
 
             # Parse the body
             content_encoding_header = response.headers[b"Content-Encoding"]
             assert content_encoding_header is not None
             content_encoding = str(content_encoding_header, "utf-8")
             body = json.loads(str(response.body, content_encoding))
-            self.assertIn("request-body", body)
-            self.assertIn("extra-data", body)
-            self.assertIn("request-headers", body)
+            assert "request-body" in body
+            assert "extra-data" in body
+            assert "request-headers" in body
 
             request_body = body["request-body"]
-            self.assertEqual(request_body, expected_request_body)
+            assert request_body == expected_request_body
 
             extra_data = body["extra-data"]
-            self.assertEqual(extra_data, expected_extra_data)
+            assert extra_data == expected_extra_data
 
             # Check if headers were sent successfully
             request_headers = body["request-headers"]
             for k, v in request.headers.items():
                 k_str = str(k, "utf-8")
-                self.assertIn(k_str, request_headers)
-                self.assertEqual(request_headers[k_str], str(v[0], "utf-8"))
+                assert k_str in request_headers
+                assert request_headers[k_str] == str(v[0], "utf-8")
 
         d.addCallback(assert_response)
         d.addErrback(self.fail)
@@ -405,15 +407,15 @@ class Https2ClientProtocolTestCase(TestCase):
             "scrapy.core.http2.protocol.PROTOCOL_NAME", return_value=b"not-h2"
         ):
             request = Request(url=self.get_url("/status?n=200"))
-            with self.assertRaises(ResponseFailed):
+            with pytest.raises(ResponseFailed):
                 yield self.make_request(request)
 
     def test_cancel_request(self):
         request = Request(url=self.get_url("/get-data-html-large"))
 
         def assert_response(response: Response):
-            self.assertEqual(response.status, 499)
-            self.assertEqual(response.request, request)
+            assert response.status == 499
+            assert response.request == request
 
         d = self.make_request(request)
         d.addCallback(assert_response)
@@ -428,12 +430,12 @@ class Https2ClientProtocolTestCase(TestCase):
         )
 
         def assert_cancelled_error(failure):
-            self.assertIsInstance(failure.value, CancelledError)
+            assert isinstance(failure.value, CancelledError)
             error_pattern = re.compile(
                 rf"Cancelling download of {request.url}: received response "
                 rf"size \(\d*\) larger than download max size \(1000\)"
             )
-            self.assertEqual(len(re.findall(error_pattern, str(failure.value))), 1)
+            assert len(re.findall(error_pattern, str(failure.value))) == 1
 
         d = self.make_request(request)
         d.addCallback(self.fail)
@@ -446,14 +448,12 @@ class Https2ClientProtocolTestCase(TestCase):
         request = Request(url=self.get_url("/dataloss"))
 
         def assert_failure(failure: Failure):
-            self.assertTrue(len(failure.value.reasons) > 0)
+            assert len(failure.value.reasons) > 0
             from h2.exceptions import InvalidBodyLengthError
 
-            self.assertTrue(
-                any(
-                    isinstance(error, InvalidBodyLengthError)
-                    for error in failure.value.reasons
-                )
+            assert any(
+                isinstance(error, InvalidBodyLengthError)
+                for error in failure.value.reasons
             )
 
         d = self.make_request(request)
@@ -465,10 +465,10 @@ class Https2ClientProtocolTestCase(TestCase):
         request = Request(url=self.get_url("/no-content-length-header"))
 
         def assert_content_length(response: Response):
-            self.assertEqual(response.status, 200)
-            self.assertEqual(response.body, Data.NO_CONTENT_LENGTH)
-            self.assertEqual(response.request, request)
-            self.assertNotIn("Content-Length", response.headers)
+            assert response.status == 200
+            assert response.body == Data.NO_CONTENT_LENGTH
+            assert response.request == request
+            assert "Content-Length" not in response.headers
 
         d = self.make_request(request)
         d.addCallback(assert_content_length)
@@ -479,14 +479,12 @@ class Https2ClientProtocolTestCase(TestCase):
     def _check_log_warnsize(self, request, warn_pattern, expected_body):
         with self.assertLogs("scrapy.core.http2.stream", level="WARNING") as cm:
             response = yield self.make_request(request)
-            self.assertEqual(response.status, 200)
-            self.assertEqual(response.request, request)
-            self.assertEqual(response.body, expected_body)
+            assert response.status == 200
+            assert response.request == request
+            assert response.body == expected_body
 
             # Check the warning is raised only once for this request
-            self.assertEqual(
-                sum(len(re.findall(warn_pattern, log)) for log in cm.output), 1
-            )
+            assert sum(len(re.findall(warn_pattern, log)) for log in cm.output) == 1
 
     @inlineCallbacks
     def test_log_expected_warnsize(self):
@@ -532,11 +530,11 @@ class Https2ClientProtocolTestCase(TestCase):
         d_list = []
 
         def assert_inactive_stream(failure):
-            self.assertIsNotNone(failure.check(ResponseFailed))
+            assert failure.check(ResponseFailed) is not None
             from scrapy.core.http2.stream import InactiveStreamClosed
 
-            self.assertTrue(
-                any(isinstance(e, InactiveStreamClosed) for e in failure.value.reasons)
+            assert any(
+                isinstance(e, InactiveStreamClosed) for e in failure.value.reasons
             )
 
         # Send 100 request (we do not check the result)
@@ -559,7 +557,7 @@ class Https2ClientProtocolTestCase(TestCase):
         return DeferredList(d_list, consumeErrors=True, fireOnOneErrback=True)
 
     def test_invalid_request_type(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             self.make_request("https://InvalidDataTypePassed.com")
 
     def test_query_parameters(self):
@@ -576,7 +574,7 @@ class Https2ClientProtocolTestCase(TestCase):
             assert content_encoding_header is not None
             content_encoding = str(content_encoding_header, "utf-8")
             data = json.loads(str(response.body, content_encoding))
-            self.assertEqual(data, params)
+            assert data == params
 
         d = self.make_request(request)
         d.addCallback(assert_query_params)
@@ -586,7 +584,7 @@ class Https2ClientProtocolTestCase(TestCase):
 
     def test_status_codes(self):
         def assert_response_status(response: Response, expected_status: int):
-            self.assertEqual(response.status, expected_status)
+            assert response.status == expected_status
 
         d_list = []
         for status in [200, 404]:
@@ -602,21 +600,18 @@ class Https2ClientProtocolTestCase(TestCase):
         request = Request(self.get_url("/status?n=200"))
 
         def assert_metadata(response: Response):
-            self.assertEqual(response.request, request)
-            self.assertIsInstance(response.certificate, Certificate)
-            assert response.certificate  # typing
-            self.assertIsNotNone(response.certificate.original)
-            self.assertEqual(
-                response.certificate.getIssuer(), self.client_certificate.getIssuer()
+            assert response.request == request
+            assert isinstance(response.certificate, Certificate)
+            assert response.certificate.original is not None
+            assert (
+                response.certificate.getIssuer() == self.client_certificate.getIssuer()
             )
-            self.assertTrue(
-                response.certificate.getPublicKey().matches(
-                    self.client_certificate.getPublicKey()
-                )
+            assert response.certificate.getPublicKey().matches(
+                self.client_certificate.getPublicKey()
             )
 
-            self.assertIsInstance(response.ip_address, IPv4Address)
-            self.assertEqual(str(response.ip_address), "127.0.0.1")
+            assert isinstance(response.ip_address, IPv4Address)
+            assert str(response.ip_address) == "127.0.0.1"
 
         d = self.make_request(request)
         d.addCallback(assert_metadata)
@@ -630,11 +625,11 @@ class Https2ClientProtocolTestCase(TestCase):
         def assert_invalid_hostname(failure: Failure):
             from scrapy.core.http2.stream import InvalidHostname
 
-            self.assertIsNotNone(failure.check(InvalidHostname))
+            assert failure.check(InvalidHostname) is not None
             error_msg = str(failure.value)
-            self.assertIn("localhost", error_msg)
-            self.assertIn("127.0.0.1", error_msg)
-            self.assertIn(str(request), error_msg)
+            assert "localhost" in error_msg
+            assert "127.0.0.1" in error_msg
+            assert str(request) in error_msg
 
         d = self.make_request(request)
         d.addCallback(self.fail)
@@ -670,13 +665,13 @@ class Https2ClientProtocolTestCase(TestCase):
                 from scrapy.core.http2.protocol import H2ClientProtocol
 
                 if isinstance(err, TimeoutError):
-                    self.assertIn(
-                        f"Connection was IDLE for more than {H2ClientProtocol.IDLE_TIMEOUT}s",
-                        str(err),
+                    assert (
+                        f"Connection was IDLE for more than {H2ClientProtocol.IDLE_TIMEOUT}s"
+                        in str(err)
                     )
                     break
             else:
-                self.fail()
+                pytest.fail("No TimeoutError raised.")
 
         d.addCallback(self.fail)
         d.addErrback(assert_timeout_error)
@@ -690,15 +685,15 @@ class Https2ClientProtocolTestCase(TestCase):
         d = self.make_request(request)
 
         def assert_request_headers(response: Response):
-            self.assertEqual(response.status, 200)
-            self.assertEqual(response.request, request)
+            assert response.status == 200
+            assert response.request == request
 
             response_headers = json.loads(str(response.body, "utf-8"))
-            self.assertIsInstance(response_headers, dict)
+            assert isinstance(response_headers, dict)
             for k, v in request.headers.items():
                 k, v = str(k, "utf-8"), str(v[0], "utf-8")
-                self.assertIn(k, response_headers)
-                self.assertEqual(v, response_headers[k])
+                assert k in response_headers
+                assert v == response_headers[k]
 
         d.addErrback(self.fail)
         d.addCallback(assert_request_headers)

@@ -7,7 +7,6 @@ import sys
 import unittest
 from io import StringIO
 from typing import TYPE_CHECKING, Any
-from unittest import TestCase
 
 import pytest
 from testfixtures import LogCapture
@@ -27,7 +26,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping, MutableMapping
 
 
-class FailureToExcInfoTest(unittest.TestCase):
+class TestFailureToExcInfo:
     def test_failure(self):
         try:
             0 / 0
@@ -35,14 +34,14 @@ class FailureToExcInfoTest(unittest.TestCase):
             exc_info = sys.exc_info()
             failure = Failure()
 
-        self.assertTupleEqual(exc_info, failure_to_exc_info(failure))
+        assert exc_info == failure_to_exc_info(failure)
 
     def test_non_failure(self):
-        self.assertIsNone(failure_to_exc_info("test"))
+        assert failure_to_exc_info("test") is None
 
 
-class TopLevelFormatterTest(unittest.TestCase):
-    def setUp(self):
+class TestTopLevelFormatter:
+    def setup_method(self):
         self.handler = LogCapture()
         self.handler.addFilter(TopLevelFormatter(["test"]))
 
@@ -71,8 +70,8 @@ class TopLevelFormatterTest(unittest.TestCase):
         log.check(("different", "WARNING", "test log msg"))
 
 
-class LogCounterHandlerTest(unittest.TestCase):
-    def setUp(self):
+class TestLogCounterHandler:
+    def setup_method(self):
         settings = {"LOG_LEVEL": "WARNING"}
         self.logger = logging.getLogger("test")
         self.logger.setLevel(logging.NOTSET)
@@ -81,24 +80,24 @@ class LogCounterHandlerTest(unittest.TestCase):
         self.handler = LogCounterHandler(self.crawler)
         self.logger.addHandler(self.handler)
 
-    def tearDown(self):
+    def teardown_method(self):
         self.logger.propagate = True
         self.logger.removeHandler(self.handler)
 
     def test_init(self):
-        self.assertIsNone(self.crawler.stats.get_value("log_count/DEBUG"))
-        self.assertIsNone(self.crawler.stats.get_value("log_count/INFO"))
-        self.assertIsNone(self.crawler.stats.get_value("log_count/WARNING"))
-        self.assertIsNone(self.crawler.stats.get_value("log_count/ERROR"))
-        self.assertIsNone(self.crawler.stats.get_value("log_count/CRITICAL"))
+        assert self.crawler.stats.get_value("log_count/DEBUG") is None
+        assert self.crawler.stats.get_value("log_count/INFO") is None
+        assert self.crawler.stats.get_value("log_count/WARNING") is None
+        assert self.crawler.stats.get_value("log_count/ERROR") is None
+        assert self.crawler.stats.get_value("log_count/CRITICAL") is None
 
     def test_accepted_level(self):
         self.logger.error("test log msg")
-        self.assertEqual(self.crawler.stats.get_value("log_count/ERROR"), 1)
+        assert self.crawler.stats.get_value("log_count/ERROR") == 1
 
     def test_filtered_out_level(self):
         self.logger.debug("test log msg")
-        self.assertIsNone(self.crawler.stats.get_value("log_count/INFO"))
+        assert self.crawler.stats.get_value("log_count/INFO") is None
 
 
 class StreamLoggerTest(unittest.TestCase):
@@ -119,7 +118,7 @@ class StreamLoggerTest(unittest.TestCase):
 
 @pytest.mark.parametrize(
     ("base_extra", "log_extra", "expected_extra"),
-    (
+    [
         (
             {"spider": "test"},
             {"extra": {"log_extra": "info"}},
@@ -135,7 +134,7 @@ class StreamLoggerTest(unittest.TestCase):
             {"extra": {"spider": "test2"}},
             {"extra": {"spider": "test"}},
         ),
-    ),
+    ],
 )
 def test_spider_logger_adapter_process(
     base_extra: Mapping[str, Any], log_extra: MutableMapping, expected_extra: dict
@@ -152,8 +151,8 @@ def test_spider_logger_adapter_process(
     assert result_kwargs == expected_extra
 
 
-class LoggingTestCase(TestCase):
-    def setUp(self):
+class TestLogging:
+    def setup_method(self):
         self.log_stream = StringIO()
         handler = logging.StreamHandler(self.log_stream)
         logger = logging.getLogger("log_spider")
@@ -163,7 +162,7 @@ class LoggingTestCase(TestCase):
         self.logger = logger
         self.spider = LogSpider()
 
-    def tearDown(self):
+    def teardown_method(self):
         self.logger.removeHandler(self.handler)
 
     def test_debug_logging(self):
@@ -202,8 +201,8 @@ class LoggingTestCase(TestCase):
         assert log_contents == f"{log_message}\n"
 
 
-class LoggingWithExtraTestCase(TestCase):
-    def setUp(self):
+class TestLoggingWithExtra:
+    def setup_method(self):
         self.log_stream = StringIO()
         handler = logging.StreamHandler(self.log_stream)
         formatter = logging.Formatter(
@@ -218,7 +217,7 @@ class LoggingWithExtraTestCase(TestCase):
         self.spider = LogSpider()
         self.regex_pattern = re.compile(r"^<LogSpider\s'log_spider'\sat\s[^>]+>$")
 
-    def tearDown(self):
+    def teardown_method(self):
         self.logger.removeHandler(self.handler)
 
     def test_debug_logging(self):

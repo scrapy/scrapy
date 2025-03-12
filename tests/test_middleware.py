@@ -1,5 +1,3 @@
-from twisted.trial import unittest
-
 from scrapy.exceptions import NotConfigured
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.test import get_crawler
@@ -40,7 +38,7 @@ class MOff:
         raise NotConfigured("foo")
 
 
-class TestMiddlewareManager(MiddlewareManager):
+class MyMiddlewareManager(MiddlewareManager):
     @classmethod
     def _get_mwlist_from_settings(cls, settings):
         return [M1, MOff, M3]
@@ -51,37 +49,27 @@ class TestMiddlewareManager(MiddlewareManager):
             self.methods["process"].append(mw.process)
 
 
-class MiddlewareManagerTest(unittest.TestCase):
+class TestMiddlewareManager:
     def test_init(self):
         m1, m2, m3 = M1(), M2(), M3()
-        mwman = TestMiddlewareManager(m1, m2, m3)
-        self.assertEqual(
-            list(mwman.methods["open_spider"]), [m1.open_spider, m2.open_spider]
-        )
-        self.assertEqual(
-            list(mwman.methods["close_spider"]), [m2.close_spider, m1.close_spider]
-        )
-        self.assertEqual(list(mwman.methods["process"]), [m1.process, m3.process])
+        mwman = MyMiddlewareManager(m1, m2, m3)
+        assert list(mwman.methods["open_spider"]) == [m1.open_spider, m2.open_spider]
+        assert list(mwman.methods["close_spider"]) == [m2.close_spider, m1.close_spider]
+        assert list(mwman.methods["process"]) == [m1.process, m3.process]
 
     def test_methods(self):
-        mwman = TestMiddlewareManager(M1(), M2(), M3())
-        self.assertEqual(
-            [x.__self__.__class__ for x in mwman.methods["open_spider"]], [M1, M2]
-        )
-        self.assertEqual(
-            [x.__self__.__class__ for x in mwman.methods["close_spider"]], [M2, M1]
-        )
-        self.assertEqual(
-            [x.__self__.__class__ for x in mwman.methods["process"]], [M1, M3]
-        )
+        mwman = MyMiddlewareManager(M1(), M2(), M3())
+        assert [x.__self__.__class__ for x in mwman.methods["open_spider"]] == [M1, M2]
+        assert [x.__self__.__class__ for x in mwman.methods["close_spider"]] == [M2, M1]
+        assert [x.__self__.__class__ for x in mwman.methods["process"]] == [M1, M3]
 
     def test_enabled(self):
         m1, m2, m3 = M1(), M2(), M3()
         mwman = MiddlewareManager(m1, m2, m3)
-        self.assertEqual(mwman.middlewares, (m1, m2, m3))
+        assert mwman.middlewares == (m1, m2, m3)
 
     def test_enabled_from_settings(self):
         crawler = get_crawler()
-        mwman = TestMiddlewareManager.from_crawler(crawler)
+        mwman = MyMiddlewareManager.from_crawler(crawler)
         classes = [x.__class__ for x in mwman.middlewares]
-        self.assertEqual(classes, [M1, M3])
+        assert classes == [M1, M3]

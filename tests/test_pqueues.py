@@ -1,6 +1,6 @@
 import tempfile
-import unittest
 
+import pytest
 import queuelib
 
 from scrapy.http.request import Request
@@ -11,8 +11,8 @@ from scrapy.utils.test import get_crawler
 from tests.test_scheduler import MockDownloader, MockEngine
 
 
-class PriorityQueueTest(unittest.TestCase):
-    def setUp(self):
+class TestPriorityQueue:
+    def setup_method(self):
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider("foo")
 
@@ -21,81 +21,81 @@ class PriorityQueueTest(unittest.TestCase):
         queue = ScrapyPriorityQueue.from_crawler(
             self.crawler, FifoMemoryQueue, temp_dir
         )
-        self.assertIsNone(queue.pop())
-        self.assertEqual(len(queue), 0)
+        assert queue.pop() is None
+        assert len(queue) == 0
         req1 = Request("https://example.org/1", priority=1)
         queue.push(req1)
-        self.assertEqual(len(queue), 1)
+        assert len(queue) == 1
         dequeued = queue.pop()
-        self.assertEqual(len(queue), 0)
-        self.assertEqual(dequeued.url, req1.url)
-        self.assertEqual(dequeued.priority, req1.priority)
-        self.assertEqual(queue.close(), [])
+        assert len(queue) == 0
+        assert dequeued.url == req1.url
+        assert dequeued.priority == req1.priority
+        assert not queue.close()
 
     def test_no_peek_raises(self):
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            raise unittest.SkipTest("queuelib.queue.FifoMemoryQueue.peek is defined")
+            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is defined")
         temp_dir = tempfile.mkdtemp()
         queue = ScrapyPriorityQueue.from_crawler(
             self.crawler, FifoMemoryQueue, temp_dir
         )
         queue.push(Request("https://example.org"))
-        with self.assertRaises(
+        with pytest.raises(
             NotImplementedError,
-            msg="The underlying queue class does not implement 'peek'",
+            match="The underlying queue class does not implement 'peek'",
         ):
             queue.peek()
         queue.close()
 
     def test_peek(self):
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            raise unittest.SkipTest("queuelib.queue.FifoMemoryQueue.peek is undefined")
+            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is undefined")
         temp_dir = tempfile.mkdtemp()
         queue = ScrapyPriorityQueue.from_crawler(
             self.crawler, FifoMemoryQueue, temp_dir
         )
-        self.assertEqual(len(queue), 0)
-        self.assertIsNone(queue.peek())
+        assert len(queue) == 0
+        assert queue.peek() is None
         req1 = Request("https://example.org/1")
         req2 = Request("https://example.org/2")
         req3 = Request("https://example.org/3")
         queue.push(req1)
         queue.push(req2)
         queue.push(req3)
-        self.assertEqual(len(queue), 3)
-        self.assertEqual(queue.peek().url, req1.url)
-        self.assertEqual(queue.pop().url, req1.url)
-        self.assertEqual(len(queue), 2)
-        self.assertEqual(queue.peek().url, req2.url)
-        self.assertEqual(queue.pop().url, req2.url)
-        self.assertEqual(len(queue), 1)
-        self.assertEqual(queue.peek().url, req3.url)
-        self.assertEqual(queue.pop().url, req3.url)
-        self.assertEqual(queue.close(), [])
+        assert len(queue) == 3
+        assert queue.peek().url == req1.url
+        assert queue.pop().url == req1.url
+        assert len(queue) == 2
+        assert queue.peek().url == req2.url
+        assert queue.pop().url == req2.url
+        assert len(queue) == 1
+        assert queue.peek().url == req3.url
+        assert queue.pop().url == req3.url
+        assert not queue.close()
 
     def test_queue_push_pop_priorities(self):
         temp_dir = tempfile.mkdtemp()
         queue = ScrapyPriorityQueue.from_crawler(
             self.crawler, FifoMemoryQueue, temp_dir, [-1, -2, -3]
         )
-        self.assertIsNone(queue.pop())
-        self.assertEqual(len(queue), 0)
+        assert queue.pop() is None
+        assert len(queue) == 0
         req1 = Request("https://example.org/1", priority=1)
         req2 = Request("https://example.org/2", priority=2)
         req3 = Request("https://example.org/3", priority=3)
         queue.push(req1)
         queue.push(req2)
         queue.push(req3)
-        self.assertEqual(len(queue), 3)
+        assert len(queue) == 3
         dequeued = queue.pop()
-        self.assertEqual(len(queue), 2)
-        self.assertEqual(dequeued.url, req3.url)
-        self.assertEqual(dequeued.priority, req3.priority)
-        self.assertEqual(queue.close(), [-1, -2])
+        assert len(queue) == 2
+        assert dequeued.url == req3.url
+        assert dequeued.priority == req3.priority
+        assert queue.close() == [-1, -2]
 
 
-class DownloaderAwarePriorityQueueTest(unittest.TestCase):
-    def setUp(self):
+class TestDownloaderAwarePriorityQueue:
+    def setup_method(self):
         crawler = get_crawler(Spider)
         crawler.engine = MockEngine(downloader=MockDownloader())
         self.queue = DownloaderAwarePriorityQueue.from_crawler(
@@ -104,54 +104,54 @@ class DownloaderAwarePriorityQueueTest(unittest.TestCase):
             key="foo/bar",
         )
 
-    def tearDown(self):
+    def teardown_method(self):
         self.queue.close()
 
     def test_push_pop(self):
-        self.assertEqual(len(self.queue), 0)
-        self.assertIsNone(self.queue.pop())
+        assert len(self.queue) == 0
+        assert self.queue.pop() is None
         req1 = Request("http://www.example.com/1")
         req2 = Request("http://www.example.com/2")
         req3 = Request("http://www.example.com/3")
         self.queue.push(req1)
         self.queue.push(req2)
         self.queue.push(req3)
-        self.assertEqual(len(self.queue), 3)
-        self.assertEqual(self.queue.pop().url, req1.url)
-        self.assertEqual(len(self.queue), 2)
-        self.assertEqual(self.queue.pop().url, req2.url)
-        self.assertEqual(len(self.queue), 1)
-        self.assertEqual(self.queue.pop().url, req3.url)
-        self.assertEqual(len(self.queue), 0)
-        self.assertIsNone(self.queue.pop())
+        assert len(self.queue) == 3
+        assert self.queue.pop().url == req1.url
+        assert len(self.queue) == 2
+        assert self.queue.pop().url == req2.url
+        assert len(self.queue) == 1
+        assert self.queue.pop().url == req3.url
+        assert len(self.queue) == 0
+        assert self.queue.pop() is None
 
     def test_no_peek_raises(self):
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            raise unittest.SkipTest("queuelib.queue.FifoMemoryQueue.peek is defined")
+            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is defined")
         self.queue.push(Request("https://example.org"))
-        with self.assertRaises(
+        with pytest.raises(
             NotImplementedError,
-            msg="The underlying queue class does not implement 'peek'",
+            match="The underlying queue class does not implement 'peek'",
         ):
             self.queue.peek()
 
     def test_peek(self):
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            raise unittest.SkipTest("queuelib.queue.FifoMemoryQueue.peek is undefined")
-        self.assertEqual(len(self.queue), 0)
+            pytest.skip("queuelib.queue.FifoMemoryQueue.peek is undefined")
+        assert len(self.queue) == 0
         req1 = Request("https://example.org/1")
         req2 = Request("https://example.org/2")
         req3 = Request("https://example.org/3")
         self.queue.push(req1)
         self.queue.push(req2)
         self.queue.push(req3)
-        self.assertEqual(len(self.queue), 3)
-        self.assertEqual(self.queue.peek().url, req1.url)
-        self.assertEqual(self.queue.pop().url, req1.url)
-        self.assertEqual(len(self.queue), 2)
-        self.assertEqual(self.queue.peek().url, req2.url)
-        self.assertEqual(self.queue.pop().url, req2.url)
-        self.assertEqual(len(self.queue), 1)
-        self.assertEqual(self.queue.peek().url, req3.url)
-        self.assertEqual(self.queue.pop().url, req3.url)
-        self.assertIsNone(self.queue.peek())
+        assert len(self.queue) == 3
+        assert self.queue.peek().url == req1.url
+        assert self.queue.pop().url == req1.url
+        assert len(self.queue) == 2
+        assert self.queue.peek().url == req2.url
+        assert self.queue.pop().url == req2.url
+        assert len(self.queue) == 1
+        assert self.queue.peek().url == req3.url
+        assert self.queue.pop().url == req3.url
+        assert self.queue.peek() is None

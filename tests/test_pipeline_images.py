@@ -7,110 +7,108 @@ from shutil import rmtree
 from tempfile import mkdtemp
 
 import attr
+import pytest
 from itemadapter import ItemAdapter
-from twisted.trial import unittest
 
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.images import ImageException, ImagesPipeline
 from scrapy.utils.test import get_crawler
 
-skip_pillow: str | None
 try:
     from PIL import Image
 except ImportError:
-    skip_pillow = "Missing Python Imaging Library, install https://pypi.org/pypi/Pillow"
+    pytest.skip(
+        "Missing Python Imaging Library, install https://pypi.org/pypi/Pillow",
+        allow_module_level=True,
+    )
 else:
     encoders = {"jpeg_encoder", "jpeg_decoder"}
     if not encoders.issubset(set(Image.core.__dict__)):  # type: ignore[attr-defined]
-        skip_pillow = "Missing JPEG encoders"
-    else:
-        skip_pillow = None
+        pytest.skip("Missing JPEG encoders", allow_module_level=True)
 
 
-class ImagesPipelineTestCase(unittest.TestCase):
-    skip = skip_pillow
-
-    def setUp(self):
+class TestImagesPipeline:
+    def setup_method(self):
         self.tempdir = mkdtemp()
         crawler = get_crawler()
         self.pipeline = ImagesPipeline(self.tempdir, crawler=crawler)
 
-    def tearDown(self):
+    def teardown_method(self):
         rmtree(self.tempdir)
 
     def test_file_path(self):
         file_path = self.pipeline.file_path
-        self.assertEqual(
-            file_path(Request("https://dev.mydeco.com/mydeco.gif")),
-            "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg",
+        assert (
+            file_path(Request("https://dev.mydeco.com/mydeco.gif"))
+            == "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
         )
-        self.assertEqual(
+        assert (
             file_path(
                 Request(
                     "http://www.maddiebrown.co.uk///catalogue-items//image_54642_12175_95307.jpg"
                 )
-            ),
-            "full/0ffcd85d563bca45e2f90becd0ca737bc58a00b2.jpg",
+            )
+            == "full/0ffcd85d563bca45e2f90becd0ca737bc58a00b2.jpg"
         )
-        self.assertEqual(
+        assert (
             file_path(
                 Request("https://dev.mydeco.com/two/dirs/with%20spaces%2Bsigns.gif")
-            ),
-            "full/b250e3a74fff2e4703e310048a5b13eba79379d2.jpg",
+            )
+            == "full/b250e3a74fff2e4703e310048a5b13eba79379d2.jpg"
         )
-        self.assertEqual(
+        assert (
             file_path(
                 Request(
                     "http://www.dfsonline.co.uk/get_prod_image.php?img=status_0907_mdm.jpg"
                 )
-            ),
-            "full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg",
+            )
+            == "full/4507be485f38b0da8a0be9eb2e1dfab8a19223f2.jpg"
         )
-        self.assertEqual(
-            file_path(Request("http://www.dorma.co.uk/images/product_details/2532/")),
-            "full/97ee6f8a46cbbb418ea91502fd24176865cf39b2.jpg",
+        assert (
+            file_path(Request("http://www.dorma.co.uk/images/product_details/2532/"))
+            == "full/97ee6f8a46cbbb418ea91502fd24176865cf39b2.jpg"
         )
-        self.assertEqual(
-            file_path(Request("http://www.dorma.co.uk/images/product_details/2532")),
-            "full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg",
+        assert (
+            file_path(Request("http://www.dorma.co.uk/images/product_details/2532"))
+            == "full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg"
         )
-        self.assertEqual(
+        assert (
             file_path(
                 Request("http://www.dorma.co.uk/images/product_details/2532"),
                 response=Response("http://www.dorma.co.uk/images/product_details/2532"),
                 info=object(),
-            ),
-            "full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg",
+            )
+            == "full/244e0dd7d96a3b7b01f54eded250c9e272577aa1.jpg"
         )
 
     def test_thumbnail_name(self):
         thumb_path = self.pipeline.thumb_path
         name = "50"
-        self.assertEqual(
-            thumb_path(Request("file:///tmp/foo.jpg"), name),
-            "thumbs/50/38a86208c36e59d4404db9e37ce04be863ef0335.jpg",
+        assert (
+            thumb_path(Request("file:///tmp/foo.jpg"), name)
+            == "thumbs/50/38a86208c36e59d4404db9e37ce04be863ef0335.jpg"
         )
-        self.assertEqual(
-            thumb_path(Request("file://foo.png"), name),
-            "thumbs/50/e55b765eba0ec7348e50a1df496040449071b96a.jpg",
+        assert (
+            thumb_path(Request("file://foo.png"), name)
+            == "thumbs/50/e55b765eba0ec7348e50a1df496040449071b96a.jpg"
         )
-        self.assertEqual(
-            thumb_path(Request("file:///tmp/foo"), name),
-            "thumbs/50/0329ad83ebb8e93ea7c7906d46e9ed55f7349a50.jpg",
+        assert (
+            thumb_path(Request("file:///tmp/foo"), name)
+            == "thumbs/50/0329ad83ebb8e93ea7c7906d46e9ed55f7349a50.jpg"
         )
-        self.assertEqual(
-            thumb_path(Request("file:///tmp/some.name/foo"), name),
-            "thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg",
+        assert (
+            thumb_path(Request("file:///tmp/some.name/foo"), name)
+            == "thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg"
         )
-        self.assertEqual(
+        assert (
             thumb_path(
                 Request("file:///tmp/some.name/foo"),
                 name,
                 response=Response("file:///tmp/some.name/foo"),
                 info=object(),
-            ),
-            "thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg",
+            )
+            == "thumbs/50/850233df65a5b83361798f532f1fc549cd13cbe9.jpg"
         )
 
     def test_thumbnail_name_from_item(self):
@@ -129,8 +127,8 @@ class ImagesPipelineTestCase(unittest.TestCase):
         ).thumb_path
         item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
-        self.assertEqual(
-            thumb_path(request, "small", item=item), "thumb/small/path-to-store-file"
+        assert (
+            thumb_path(request, "small", item=item) == "thumb/small/path-to-store-file"
         )
 
     def test_get_images_exception(self):
@@ -146,11 +144,11 @@ class ImagesPipelineTestCase(unittest.TestCase):
         resp3 = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf3.getvalue())
         req = Request(url="https://dev.mydeco.com/mydeco.gif")
 
-        with self.assertRaises(ImageException):
+        with pytest.raises(ImageException):
             next(self.pipeline.get_images(response=resp1, request=req, info=object()))
-        with self.assertRaises(ImageException):
+        with pytest.raises(ImageException):
             next(self.pipeline.get_images(response=resp2, request=req, info=object()))
-        with self.assertRaises(ImageException):
+        with pytest.raises(ImageException):
             next(self.pipeline.get_images(response=resp3, request=req, info=object()))
 
     def test_get_images(self):
@@ -168,16 +166,13 @@ class ImagesPipelineTestCase(unittest.TestCase):
         )
 
         path, new_im, new_buf = next(get_images_gen)
-        self.assertEqual(path, "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg")
-        self.assertEqual(orig_im, new_im)
-        self.assertEqual(buf.getvalue(), new_buf.getvalue())
+        assert path == "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
+        assert orig_im == new_im
+        assert buf.getvalue() == new_buf.getvalue()
 
         thumb_path, thumb_img, thumb_buf = next(get_images_gen)
-        self.assertEqual(
-            thumb_path, "thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
-        )
-        self.assertEqual(thumb_img, thumb_img)
-        self.assertEqual(orig_thumb_buf.getvalue(), thumb_buf.getvalue())
+        assert thumb_path == "thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
+        assert orig_thumb_buf.getvalue() == thumb_buf.getvalue()
 
     def test_convert_image(self):
         SIZE = (100, 100)
@@ -185,37 +180,35 @@ class ImagesPipelineTestCase(unittest.TestCase):
         COLOUR = (0, 127, 255)
         im, buf = _create_image("JPEG", "RGB", SIZE, COLOUR)
         converted, converted_buf = self.pipeline.convert_image(im, response_body=buf)
-        self.assertEqual(converted.mode, "RGB")
-        self.assertEqual(converted.getcolors(), [(10000, COLOUR)])
+        assert converted.mode == "RGB"
+        assert converted.getcolors() == [(10000, COLOUR)]
         # check that we don't convert JPEGs again
-        self.assertEqual(converted_buf, buf)
+        assert converted_buf == buf
 
         # check that thumbnail keep image ratio
         thumbnail, _ = self.pipeline.convert_image(
             converted, size=(10, 25), response_body=converted_buf
         )
-        self.assertEqual(thumbnail.mode, "RGB")
-        self.assertEqual(thumbnail.size, (10, 10))
+        assert thumbnail.mode == "RGB"
+        assert thumbnail.size == (10, 10)
 
         # transparency case: RGBA and PNG
         COLOUR = (0, 127, 255, 50)
         im, buf = _create_image("PNG", "RGBA", SIZE, COLOUR)
         converted, _ = self.pipeline.convert_image(im, response_body=buf)
-        self.assertEqual(converted.mode, "RGB")
-        self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
+        assert converted.mode == "RGB"
+        assert converted.getcolors() == [(10000, (205, 230, 255))]
 
         # transparency case with palette: P and PNG
         COLOUR = (0, 127, 255, 50)
         im, buf = _create_image("PNG", "RGBA", SIZE, COLOUR)
         im = im.convert("P")
         converted, _ = self.pipeline.convert_image(im, response_body=buf)
-        self.assertEqual(converted.mode, "RGB")
-        self.assertEqual(converted.getcolors(), [(10000, (205, 230, 255))])
+        assert converted.mode == "RGB"
+        assert converted.getcolors() == [(10000, (205, 230, 255))]
 
 
 class ImagesPipelineTestCaseFieldsMixin:
-    skip = skip_pillow
-
     def test_item_fields_default(self):
         url = "http://www.example.com/images/1.jpg"
         item = self.item_class(name="item1", image_urls=[url])
@@ -223,12 +216,12 @@ class ImagesPipelineTestCaseFieldsMixin:
             get_crawler(None, {"IMAGES_STORE": "s3://example/images/"})
         )
         requests = list(pipeline.get_media_requests(item, None))
-        self.assertEqual(requests[0].url, url)
+        assert requests[0].url == url
         results = [(True, {"url": url})]
         item = pipeline.item_completed(results, item, None)
         images = ItemAdapter(item).get("images")
-        self.assertEqual(images, [results[0][1]])
-        self.assertIsInstance(item, self.item_class)
+        assert images == [results[0][1]]
+        assert isinstance(item, self.item_class)
 
     def test_item_fields_override_settings(self):
         url = "http://www.example.com/images/1.jpg"
@@ -244,17 +237,15 @@ class ImagesPipelineTestCaseFieldsMixin:
             )
         )
         requests = list(pipeline.get_media_requests(item, None))
-        self.assertEqual(requests[0].url, url)
+        assert requests[0].url == url
         results = [(True, {"url": url})]
         item = pipeline.item_completed(results, item, None)
         custom_images = ItemAdapter(item).get("custom_images")
-        self.assertEqual(custom_images, [results[0][1]])
-        self.assertIsInstance(item, self.item_class)
+        assert custom_images == [results[0][1]]
+        assert isinstance(item, self.item_class)
 
 
-class ImagesPipelineTestCaseFieldsDict(
-    ImagesPipelineTestCaseFieldsMixin, unittest.TestCase
-):
+class TestImagesPipelineFieldsDict(ImagesPipelineTestCaseFieldsMixin):
     item_class = dict
 
 
@@ -268,9 +259,7 @@ class ImagesPipelineTestItem(Item):
     custom_images = Field()
 
 
-class ImagesPipelineTestCaseFieldsItem(
-    ImagesPipelineTestCaseFieldsMixin, unittest.TestCase
-):
+class TestImagesPipelineFieldsItem(ImagesPipelineTestCaseFieldsMixin):
     item_class = ImagesPipelineTestItem
 
 
@@ -285,9 +274,7 @@ class ImagesPipelineTestDataClass:
     custom_images: list = dataclasses.field(default_factory=list)
 
 
-class ImagesPipelineTestCaseFieldsDataClass(
-    ImagesPipelineTestCaseFieldsMixin, unittest.TestCase
-):
+class TestImagesPipelineFieldsDataClass(ImagesPipelineTestCaseFieldsMixin):
     item_class = ImagesPipelineTestDataClass
 
 
@@ -302,15 +289,11 @@ class ImagesPipelineTestAttrsItem:
     custom_images: list[dict[str, str]] = attr.ib(default=list)
 
 
-class ImagesPipelineTestCaseFieldsAttrsItem(
-    ImagesPipelineTestCaseFieldsMixin, unittest.TestCase
-):
+class TestImagesPipelineFieldsAttrsItem(ImagesPipelineTestCaseFieldsMixin):
     item_class = ImagesPipelineTestAttrsItem
 
 
-class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
-    skip = skip_pillow
-
+class TestImagesPipelineCustomSettings:
     img_cls_attribute_names = [
         # Pipeline attribute names with corresponding setting names.
         ("EXPIRES", "IMAGES_EXPIRES"),
@@ -331,13 +314,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
         "IMAGES_RESULT_FIELD": "images",
     }
 
-    def setUp(self):
-        self.tempdir = mkdtemp()
-
-    def tearDown(self):
-        rmtree(self.tempdir)
-
-    def _generate_fake_settings(self, prefix=None):
+    def _generate_fake_settings(self, tmp_path, prefix=None):
         """
         :param prefix: string for setting keys
         :return: dictionary of image pipeline settings
@@ -348,7 +325,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
 
         settings = {
             "IMAGES_EXPIRES": random.randint(100, 1000),
-            "IMAGES_STORE": self.tempdir,
+            "IMAGES_STORE": tmp_path,
             "IMAGES_RESULT_FIELD": random_string(),
             "IMAGES_URLS_FIELD": random_string(),
             "IMAGES_MIN_WIDTH": random.randint(1, 1000),
@@ -385,55 +362,55 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
 
         return UserDefinedImagePipeline
 
-    def test_different_settings_for_different_instances(self):
+    def test_different_settings_for_different_instances(self, tmp_path):
         """
         If there are two instances of ImagesPipeline class with different settings, they should
         have different settings.
         """
-        custom_settings = self._generate_fake_settings()
-        default_sts_pipe = ImagesPipeline(self.tempdir, crawler=get_crawler(None))
+        custom_settings = self._generate_fake_settings(tmp_path)
+        default_sts_pipe = ImagesPipeline(tmp_path, crawler=get_crawler(None))
         user_sts_pipe = ImagesPipeline.from_crawler(get_crawler(None, custom_settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_default_value = self.default_pipeline_settings.get(pipe_attr)
             custom_value = custom_settings.get(settings_attr)
-            self.assertNotEqual(expected_default_value, custom_value)
-            self.assertEqual(
-                getattr(default_sts_pipe, pipe_attr.lower()), expected_default_value
+            assert expected_default_value != custom_value
+            assert (
+                getattr(default_sts_pipe, pipe_attr.lower()) == expected_default_value
             )
-            self.assertEqual(getattr(user_sts_pipe, pipe_attr.lower()), custom_value)
+            assert getattr(user_sts_pipe, pipe_attr.lower()) == custom_value
 
-    def test_subclass_attrs_preserved_default_settings(self):
+    def test_subclass_attrs_preserved_default_settings(self, tmp_path):
         """
         If image settings are not defined at all subclass of ImagePipeline takes values
         from class attributes.
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
         pipeline = pipeline_cls.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": self.tempdir})
+            get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to class attribute (uppercase).
             attr_value = getattr(pipeline, pipe_attr.lower())
-            self.assertNotEqual(attr_value, self.default_pipeline_settings[pipe_attr])
-            self.assertEqual(attr_value, getattr(pipeline, pipe_attr))
+            assert attr_value != self.default_pipeline_settings[pipe_attr]
+            assert attr_value == getattr(pipeline, pipe_attr)
 
-    def test_subclass_attrs_preserved_custom_settings(self):
+    def test_subclass_attrs_preserved_custom_settings(self, tmp_path):
         """
         If image settings are defined but they are not defined for subclass default
         values taken from settings should be preserved.
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
-        settings = self._generate_fake_settings()
+        settings = self._generate_fake_settings(tmp_path)
         pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to
             # value defined in settings.
             value = getattr(pipeline, pipe_attr.lower())
-            self.assertNotEqual(value, self.default_pipeline_settings[pipe_attr])
+            assert value != self.default_pipeline_settings[pipe_attr]
             setings_value = settings.get(settings_attr)
-            self.assertEqual(value, setings_value)
+            assert value == setings_value
 
-    def test_no_custom_settings_for_subclasses(self):
+    def test_no_custom_settings_for_subclasses(self, tmp_path):
         """
         If there are no settings for subclass and no subclass attributes, pipeline should use
         attributes of base class.
@@ -443,14 +420,14 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             pass
 
         user_pipeline = UserDefinedImagePipeline.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": self.tempdir})
+            get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = self.default_pipeline_settings.get(pipe_attr.upper())
-            self.assertEqual(getattr(user_pipeline, pipe_attr.lower()), custom_value)
+            assert getattr(user_pipeline, pipe_attr.lower()) == custom_value
 
-    def test_custom_settings_for_subclasses(self):
+    def test_custom_settings_for_subclasses(self, tmp_path):
         """
         If there are custom settings for subclass and NO class attributes, pipeline should use custom
         settings.
@@ -460,53 +437,53 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
             pass
 
         prefix = UserDefinedImagePipeline.__name__.upper()
-        settings = self._generate_fake_settings(prefix=prefix)
+        settings = self._generate_fake_settings(tmp_path, prefix=prefix)
         user_pipeline = UserDefinedImagePipeline.from_crawler(
             get_crawler(None, settings)
         )
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = settings.get(prefix + "_" + settings_attr)
-            self.assertNotEqual(custom_value, self.default_pipeline_settings[pipe_attr])
-            self.assertEqual(getattr(user_pipeline, pipe_attr.lower()), custom_value)
+            assert custom_value != self.default_pipeline_settings[pipe_attr]
+            assert getattr(user_pipeline, pipe_attr.lower()) == custom_value
 
-    def test_custom_settings_and_class_attrs_for_subclasses(self):
+    def test_custom_settings_and_class_attrs_for_subclasses(self, tmp_path):
         """
         If there are custom settings for subclass AND class attributes
         setting keys are preferred and override attributes.
         """
         pipeline_cls = self._generate_fake_pipeline_subclass()
         prefix = pipeline_cls.__name__.upper()
-        settings = self._generate_fake_settings(prefix=prefix)
+        settings = self._generate_fake_settings(tmp_path, prefix=prefix)
         user_pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             custom_value = settings.get(prefix + "_" + settings_attr)
-            self.assertNotEqual(custom_value, self.default_pipeline_settings[pipe_attr])
-            self.assertEqual(getattr(user_pipeline, pipe_attr.lower()), custom_value)
+            assert custom_value != self.default_pipeline_settings[pipe_attr]
+            assert getattr(user_pipeline, pipe_attr.lower()) == custom_value
 
-    def test_cls_attrs_with_DEFAULT_prefix(self):
+    def test_cls_attrs_with_DEFAULT_prefix(self, tmp_path):
         class UserDefinedImagePipeline(ImagesPipeline):
             DEFAULT_IMAGES_URLS_FIELD = "something"
             DEFAULT_IMAGES_RESULT_FIELD = "something_else"
 
         pipeline = UserDefinedImagePipeline.from_crawler(
-            get_crawler(None, {"IMAGES_STORE": self.tempdir})
+            get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
-        self.assertEqual(
-            pipeline.images_result_field,
-            UserDefinedImagePipeline.DEFAULT_IMAGES_RESULT_FIELD,
+        assert (
+            pipeline.images_result_field
+            == UserDefinedImagePipeline.DEFAULT_IMAGES_RESULT_FIELD
         )
-        self.assertEqual(
-            pipeline.images_urls_field,
-            UserDefinedImagePipeline.DEFAULT_IMAGES_URLS_FIELD,
+        assert (
+            pipeline.images_urls_field
+            == UserDefinedImagePipeline.DEFAULT_IMAGES_URLS_FIELD
         )
 
-    def test_user_defined_subclass_default_key_names(self):
+    def test_user_defined_subclass_default_key_names(self, tmp_path):
         """Test situation when user defines subclass of ImagePipeline,
         but uses attribute names for default pipeline (without prefixing
         them with pipeline class name).
         """
-        settings = self._generate_fake_settings()
+        settings = self._generate_fake_settings(tmp_path)
 
         class UserPipe(ImagesPipeline):
             pass
@@ -515,7 +492,7 @@ class ImagesPipelineTestCaseCustomSettings(unittest.TestCase):
 
         for pipe_attr, settings_attr in self.img_cls_attribute_names:
             expected_value = settings.get(settings_attr)
-            self.assertEqual(getattr(pipeline_cls, pipe_attr.lower()), expected_value)
+            assert getattr(pipeline_cls, pipe_attr.lower()) == expected_value
 
 
 def _create_image(format, *a, **kw):

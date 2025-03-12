@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from unittest import TestCase
 from urllib.parse import urljoin
 
+import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.trial.unittest import TestCase as TwistedTestCase
+from twisted.trial.unittest import TestCase
 
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.http import Request
@@ -51,8 +51,8 @@ class SimpleScheduler(MinimalScheduler):
         return len(self.requests)
 
 
-class TestSpider(Spider):
-    name = "test"
+class PathsSpider(Spider):
+    name = "paths"
 
     def __init__(self, mockserver, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -64,88 +64,87 @@ class TestSpider(Spider):
 
 class InterfaceCheckMixin:
     def test_scheduler_class(self):
-        self.assertTrue(isinstance(self.scheduler, BaseScheduler))
-        self.assertTrue(issubclass(self.scheduler.__class__, BaseScheduler))
+        assert isinstance(self.scheduler, BaseScheduler)
+        assert issubclass(self.scheduler.__class__, BaseScheduler)
 
 
-class BaseSchedulerTest(TestCase, InterfaceCheckMixin):
-    def setUp(self):
+class TestBaseScheduler(InterfaceCheckMixin):
+    def setup_method(self):
         self.scheduler = BaseScheduler()
 
     def test_methods(self):
-        self.assertIsNone(self.scheduler.open(Spider("foo")))
-        self.assertIsNone(self.scheduler.close("finished"))
-        self.assertRaises(NotImplementedError, self.scheduler.has_pending_requests)
-        self.assertRaises(
-            NotImplementedError,
-            self.scheduler.enqueue_request,
-            Request("https://example.org"),
-        )
-        self.assertRaises(NotImplementedError, self.scheduler.next_request)
+        assert self.scheduler.open(Spider("foo")) is None
+        assert self.scheduler.close("finished") is None
+        with pytest.raises(NotImplementedError):
+            self.scheduler.has_pending_requests()
+        with pytest.raises(NotImplementedError):
+            self.scheduler.enqueue_request(Request("https://example.org"))
+        with pytest.raises(NotImplementedError):
+            self.scheduler.next_request()
 
 
-class MinimalSchedulerTest(TestCase, InterfaceCheckMixin):
-    def setUp(self):
+class TestMinimalScheduler(InterfaceCheckMixin):
+    def setup_method(self):
         self.scheduler = MinimalScheduler()
 
     def test_open_close(self):
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             self.scheduler.open(Spider("foo"))
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             self.scheduler.close("finished")
 
     def test_len(self):
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             self.scheduler.__len__()
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             len(self.scheduler)
 
     def test_enqueue_dequeue(self):
-        self.assertFalse(self.scheduler.has_pending_requests())
+        assert not self.scheduler.has_pending_requests()
         for url in URLS:
-            self.assertTrue(self.scheduler.enqueue_request(Request(url)))
-            self.assertFalse(self.scheduler.enqueue_request(Request(url)))
-        self.assertTrue(self.scheduler.has_pending_requests)
+            assert self.scheduler.enqueue_request(Request(url))
+            assert not self.scheduler.enqueue_request(Request(url))
+        assert self.scheduler.has_pending_requests
 
         dequeued = []
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
             dequeued.append(request.url)
-        self.assertEqual(set(dequeued), set(URLS))
-        self.assertFalse(self.scheduler.has_pending_requests())
+        assert set(dequeued) == set(URLS)
+        assert not self.scheduler.has_pending_requests()
 
 
-class SimpleSchedulerTest(TwistedTestCase, InterfaceCheckMixin):
+class SimpleSchedulerTest(TestCase, InterfaceCheckMixin):
     def setUp(self):
         self.scheduler = SimpleScheduler()
 
     @defer.inlineCallbacks
     def test_enqueue_dequeue(self):
         open_result = yield self.scheduler.open(Spider("foo"))
-        self.assertEqual(open_result, "open")
-        self.assertFalse(self.scheduler.has_pending_requests())
+        assert open_result == "open"
+        assert not self.scheduler.has_pending_requests()
 
         for url in URLS:
-            self.assertTrue(self.scheduler.enqueue_request(Request(url)))
-            self.assertFalse(self.scheduler.enqueue_request(Request(url)))
+            assert self.scheduler.enqueue_request(Request(url))
+            assert not self.scheduler.enqueue_request(Request(url))
 
-        self.assertTrue(self.scheduler.has_pending_requests())
-        self.assertEqual(len(self.scheduler), len(URLS))
+        assert self.scheduler.has_pending_requests()
+        assert len(self.scheduler) == len(URLS)
 
         dequeued = []
         while self.scheduler.has_pending_requests():
             request = self.scheduler.next_request()
             dequeued.append(request.url)
-        self.assertEqual(set(dequeued), set(URLS))
+        assert set(dequeued) == set(URLS)
 
-        self.assertFalse(self.scheduler.has_pending_requests())
-        self.assertEqual(len(self.scheduler), 0)
+        assert not self.scheduler.has_pending_requests()
+        assert len(self.scheduler) == 0
 
         close_result = yield self.scheduler.close("")
-        self.assertEqual(close_result, "close")
+        assert close_result == "close"
 
 
-class MinimalSchedulerCrawlTest(TwistedTestCase):
+class MinimalSchedulerCrawlTest(TestCase):
     scheduler_cls = MinimalScheduler
 
     @defer.inlineCallbacks
@@ -155,11 +154,11 @@ class MinimalSchedulerCrawlTest(TwistedTestCase):
                 "SCHEDULER": self.scheduler_cls,
             }
             with LogCapture() as log:
-                crawler = get_crawler(TestSpider, settings)
+                crawler = get_crawler(PathsSpider, settings)
                 yield crawler.crawl(mockserver)
             for path in PATHS:
-                self.assertIn(f"{{'path': '{path}'}}", str(log))
-            self.assertIn(f"'item_scraped_count': {len(PATHS)}", str(log))
+                assert f"{{'path': '{path}'}}" in str(log)
+            assert f"'item_scraped_count': {len(PATHS)}" in str(log)
 
 
 class SimpleSchedulerCrawlTest(MinimalSchedulerCrawlTest):

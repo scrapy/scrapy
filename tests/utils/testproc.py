@@ -2,25 +2,16 @@ from __future__ import annotations
 
 import os
 import sys
-import warnings
 from typing import TYPE_CHECKING, cast
 
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ProcessTerminated
 from twisted.internet.protocol import ProcessProtocol
 
-from scrapy.exceptions import ScrapyDeprecationWarning
-
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from twisted.python.failure import Failure
-
-
-warnings.warn(
-    "The scrapy.utils.testproc module is deprecated.",
-    ScrapyDeprecationWarning,
-)
 
 
 class ProcessTest:

@@ -1,5 +1,7 @@
+from typing import Any
 from unittest import mock
 
+import pytest
 from twisted.internet import error, reactor
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
 from twisted.python import failure
@@ -14,7 +16,7 @@ from scrapy.settings import Settings
 from tests.test_robotstxt_interface import rerp_available
 
 
-class RobotsTxtMiddlewareTest(unittest.TestCase):
+class TestRobotsTxtMiddleware(unittest.TestCase):
     def setUp(self):
         self.crawler = mock.MagicMock()
         self.crawler.settings = Settings()
@@ -26,7 +28,8 @@ class RobotsTxtMiddlewareTest(unittest.TestCase):
     def test_robotstxt_settings(self):
         self.crawler.settings = Settings()
         self.crawler.settings.set("USER_AGENT", "CustomAgent")
-        self.assertRaises(NotConfigured, RobotsTxtMiddleware, self.crawler)
+        with pytest.raises(NotConfigured):
+            RobotsTxtMiddleware(self.crawler)
 
     def _get_successful_crawler(self):
         crawler = self.crawler
@@ -169,7 +172,11 @@ Disallow: /some/randome/page.html
         middleware = RobotsTxtMiddleware(self.crawler)
         middleware._logerror = mock.MagicMock(side_effect=middleware._logerror)
         deferred = middleware.process_request(Request("http://site.local"), None)
-        deferred.addCallback(lambda _: self.assertTrue(middleware._logerror.called))
+
+        def check_called(_: Any) -> None:
+            assert middleware._logerror.called
+
+        deferred.addCallback(check_called)
         return deferred
 
     def test_robotstxt_immediate_error(self):
@@ -200,7 +207,11 @@ Disallow: /some/randome/page.html
         mw_module_logger.error = mock.MagicMock()
 
         d = self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
-        d.addCallback(lambda _: self.assertFalse(mw_module_logger.error.called))
+
+        def check_not_called(_: Any) -> None:
+            assert not mw_module_logger.error.called  # type: ignore[attr-defined]
+
+        d.addCallback(check_not_called)
         return d
 
     def test_robotstxt_user_agent_setting(self):
@@ -240,11 +251,11 @@ Disallow: /some/randome/page.html
     def assertRobotsTxtRequested(self, base_url):
         calls = self.crawler.engine.download.call_args_list
         request = calls[0][0][0]
-        self.assertEqual(request.url, f"{base_url}/robots.txt")
-        self.assertEqual(request.callback, NO_CALLBACK)
+        assert request.url == f"{base_url}/robots.txt"
+        assert request.callback == NO_CALLBACK
 
 
-class RobotsTxtMiddlewareWithRerpTest(RobotsTxtMiddlewareTest):
+class TestRobotsTxtMiddlewareWithRerp(TestRobotsTxtMiddleware):
     if not rerp_available():
         skip = "Rerp parser is not installed"
 

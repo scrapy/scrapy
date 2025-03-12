@@ -64,7 +64,7 @@ class CrawlTestCase(TestCase):
 
     @defer.inlineCallbacks
     def test_delay(self):
-        crawler = CrawlerRunner().create_crawler(DownloaderSlotsSettingsTestSpider)
+        crawler = get_crawler(DownloaderSlotsSettingsTestSpider)
         yield crawler.crawl(mockserver=self.mockserver)
         slots = crawler.engine.downloader.slots
         times = crawler.spider.times
@@ -76,7 +76,7 @@ class CrawlTestCase(TestCase):
             for k, v in slots.items()
         }
 
-        self.assertTrue(max(list(error_delta.values())) < tolerance)
+        assert max(list(error_delta.values())) < tolerance
 
 
 def test_params():

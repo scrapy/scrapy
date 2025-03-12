@@ -36,7 +36,7 @@ from tests.mockserver import (
     PayloadResource,
     ssl_context_factory,
 )
-from tests.test_core_downloader import ContextFactoryBaseTestCase
+from tests.test_core_downloader import TestContextFactoryBase
 
 
 def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
@@ -63,7 +63,7 @@ def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class ScrapyHTTPPageGetterTests(unittest.TestCase):
+class TestScrapyHTTPPageGetter:
     def test_earlyHeaders(self):
         # basic test stolen from twisted HTTPageGetter
         factory = client.ScrapyHTTPClientFactory(
@@ -177,9 +177,7 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
         protocol = client.ScrapyHTTPPageGetter()
         protocol.factory = factory
         protocol.makeConnection(transport)
-        self.assertEqual(
-            set(transport.value().splitlines()), set(testvalue.splitlines())
-        )
+        assert set(transport.value().splitlines()) == set(testvalue.splitlines())
         return testvalue
 
     def test_non_standard_line_endings(self):
@@ -192,9 +190,7 @@ class ScrapyHTTPPageGetterTests(unittest.TestCase):
         protocol.dataReceived(b"Hello: World\n")
         protocol.dataReceived(b"Foo: Bar\n")
         protocol.dataReceived(b"\n")
-        self.assertEqual(
-            protocol.headers, Headers({"Hello": ["World"], "Foo": ["Bar"]})
-        )
+        assert protocol.headers == Headers({"Hello": ["World"], "Foo": ["Bar"]})
 
 
 class EncodingResource(resource.Resource):
@@ -207,7 +203,7 @@ class EncodingResource(resource.Resource):
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class WebClientTestCase(unittest.TestCase):
+class TestWebClient(unittest.TestCase):
     def _listen(self, site):
         return reactor.listenTCP(0, site, interface="127.0.0.1")
 
@@ -319,7 +315,7 @@ class WebClientTestCase(unittest.TestCase):
         return getPage(self.getURL("notsuchfile")).addCallback(self._cbNoSuchFile)
 
     def _cbNoSuchFile(self, pageData):
-        self.assertIn(b"404 - No Such Resource", pageData)
+        assert b"404 - No Such Resource" in pageData
 
     def testFactoryInfo(self):
         url = self.getURL("file")
@@ -329,20 +325,20 @@ class WebClientTestCase(unittest.TestCase):
         return factory.deferred.addCallback(self._cbFactoryInfo, factory)
 
     def _cbFactoryInfo(self, ignoredResult, factory):
-        self.assertEqual(factory.status, b"200")
-        self.assertTrue(factory.version.startswith(b"HTTP/"))
-        self.assertEqual(factory.message, b"OK")
-        self.assertEqual(factory.response_headers[b"content-length"], b"10")
+        assert factory.status == b"200"
+        assert factory.version.startswith(b"HTTP/")
+        assert factory.message == b"OK"
+        assert factory.response_headers[b"content-length"] == b"10"
 
     def testRedirect(self):
         return getPage(self.getURL("redirect")).addCallback(self._cbRedirect)
 
     def _cbRedirect(self, pageData):
-        self.assertEqual(
-            pageData,
-            b'\n<html>\n    <head>\n        <meta http-equiv="refresh" content="0;URL=/file">\n'
+        assert (
+            pageData
+            == b'\n<html>\n    <head>\n        <meta http-equiv="refresh" content="0;URL=/file">\n'
             b'    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
-            b'<a href="/file">click here</a>\n    </body>\n</html>\n',
+            b'<a href="/file">click here</a>\n    </body>\n</html>\n'
         )
 
     def test_encoding(self):
@@ -356,14 +352,12 @@ class WebClientTestCase(unittest.TestCase):
 
     def _check_Encoding(self, response, original_body):
         content_encoding = to_unicode(response.headers[b"Content-Encoding"])
-        self.assertEqual(content_encoding, EncodingResource.out_encoding)
-        self.assertEqual(
-            response.body.decode(content_encoding), to_unicode(original_body)
-        )
+        assert content_encoding == EncodingResource.out_encoding
+        assert response.body.decode(content_encoding) == to_unicode(original_body)
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class WebClientSSLTestCase(ContextFactoryBaseTestCase):
+class WebClientSSLTestCase(TestContextFactoryBase):
     def testPayload(self):
         s = "0123456789" * 10
         return getPage(self.getURL("payload"), body=s).addCallback(

@@ -32,7 +32,8 @@ This is an example where two add-ons are enabled in a project's
 Writing your own add-ons
 ========================
 
-Add-ons are Python classes that include one or both of the following methods:
+Add-ons are :ref:`components <topics-components>` that include one or both of
+the following methods:
 
 .. method:: update_settings(settings)
 
@@ -54,20 +55,6 @@ Add-ons are Python classes that include one or both of the following methods:
     :param settings: The settings object storing Scrapy/component configuration
     :type settings: :class:`~scrapy.settings.BaseSettings`
 
-They can also have the following method:
-
-.. classmethod:: from_crawler(cls, crawler)
-   :noindex:
-
-   If present, this class method is called to create an add-on instance
-   from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
-   of the add-on. The crawler object provides access to all Scrapy core
-   components like settings and signals; it is a way for the add-on to access
-   them and hook its functionality into Scrapy.
-
-   :param crawler: The crawler that uses this add-on
-   :type crawler: :class:`~scrapy.crawler.Crawler`
-
 The settings set by the add-on should use the ``addon`` priority (see
 :ref:`populating-settings` and :func:`scrapy.settings.BaseSettings.set`)::
 
@@ -76,15 +63,11 @@ The settings set by the add-on should use the ``addon`` priority (see
             settings.set("DNSCACHE_ENABLED", True, "addon")
 
 This allows users to override these settings in the project or spider
-configuration. This is not possible with settings that are mutable objects,
-such as the dict that is a value of :setting:`ITEM_PIPELINES`. In these cases
-you can provide an add-on-specific setting that governs whether the add-on will
-modify :setting:`ITEM_PIPELINES`::
+configuration.
 
-    class MyAddon:
-        def update_settings(self, settings):
-            if settings.getbool("MYADDON_ENABLE_PIPELINE"):
-                settings["ITEM_PIPELINES"]["path.to.mypipeline"] = 200
+When editing the value of a setting instead of overriding it entirely, it is
+usually best to leave its priority unchanged. For example, when editing a
+:ref:`component priority dictionary <component-priority-dictionaries>`.
 
 If the ``update_settings`` method raises
 :exc:`scrapy.exceptions.NotConfigured`, the add-on will be skipped. This makes
@@ -127,12 +110,28 @@ Add-on examples
 
 Set some basic configuration:
 
+.. skip: next
 .. code-block:: python
+
+    from myproject.pipelines import MyPipeline
+
 
     class MyAddon:
         def update_settings(self, settings):
-            settings["ITEM_PIPELINES"]["path.to.mypipeline"] = 200
             settings.set("DNSCACHE_ENABLED", True, "addon")
+            settings.remove_from_list("METAREFRESH_IGNORE_TAGS", "noscript")
+            settings.setdefault_in_component_priority_dict(
+                "ITEM_PIPELINES", MyPipeline, 200
+            )
+
+.. tip:: When editing a :ref:`component priority dictionary
+    <component-priority-dictionaries>` setting, like :setting:`ITEM_PIPELINES`,
+    consider using setting methods like
+    :meth:`~scrapy.settings.BaseSettings.replace_in_component_priority_dict`,
+    :meth:`~scrapy.settings.BaseSettings.set_in_component_priority_dict`
+    and
+    :meth:`~scrapy.settings.BaseSettings.setdefault_in_component_priority_dict`
+    to avoid mistakes.
 
 Check dependencies:
 
