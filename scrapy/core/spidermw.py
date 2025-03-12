@@ -56,11 +56,55 @@ class SpiderMiddlewareManager(MiddlewareManager):
     def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
         return build_component_list(settings.getwithbase("SPIDER_MIDDLEWARES"))
 
+    def __init__(self, *middlewares: Any) -> None:
+        self._check_deprecated_process_start_requests_use(middlewares)
+        super().__init__(*middlewares)
+
+    def _check_deprecated_process_start_requests_use(
+        self, middlewares: list[Any]
+    ) -> None:
+        deprecated_middlewares = [
+            middleware
+            for middleware in middlewares
+            if hasattr(middleware, "process_start_requests")
+            and not hasattr(middleware, "process_seeds")
+        ]
+        self._use_start_requests = bool(deprecated_middlewares)
+        if self._use_start_requests:
+            deprecated_middleware_list = ", ".join(
+                global_object_name(middleware.__class__)
+                for middleware in deprecated_middlewares
+            )
+            warn(
+                f"The following enabled spider middlewares, directly or "
+                f"through their parent classes, define the deprecated "
+                f"process_start_requests() method: "
+                f"{deprecated_middleware_list}. process_start_requests() has "
+                f"been deprecated in favor of a new method, process_seeds(), "
+                f"to support asynchronous code execution. "
+                f"process_start_requests() will stop being called in a future "
+                f"version of Scrapy. If you use Scrapy VERSION or higher "
+                f"only, replace process_start_requests() with "
+                f"process_seeds(); note that process_seeds() is a coroutine "
+                f"(async def). If you need to maintain compatibility with "
+                f"lower Scrapy versions, when defining "
+                f"process_start_requests() in a spider middleware class, "
+                f"define process_seeds() as well. See the release notes of "
+                f"Scrapy VERSION for details: "
+                f"https://docs.scrapy.org/en/VERSION/news.html",
+                ScrapyDeprecationWarning,
+            )
+
     def _add_middleware(self, mw: Any) -> None:
         super()._add_middleware(mw)
         if hasattr(mw, "process_spider_input"):
             self.methods["process_spider_input"].append(mw.process_spider_input)
-        if hasattr(mw, "process_seeds"):
+        if self._use_start_requests:
+            if hasattr(mw, "process_start_requests"):
+                self.methods["process_start_requests"].appendleft(
+                    mw.process_start_requests
+                )
+        elif hasattr(mw, "process_seeds"):
             self.methods["process_seeds"].appendleft(mw.process_seeds)
         process_spider_output = self._get_async_method_pair(mw, "process_spider_output")
         self.methods["process_spider_output"].appendleft(process_spider_output)
@@ -329,12 +373,16 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self, spider: Spider
     ) -> Generator[Deferred[Any], Any, AsyncIterator[Any]]:
         self._check_deprecated_start_requests_use(spider)
-        seeds = yield self._iter_seeds(spider)
-        seeds = yield self._process_chain("process_seeds", seeds)
+        if self._use_start_requests:
+            seeds = iter(spider.start_requests())
+            seeds = yield self._process_chain("process_start_requests", seeds, spider)
+            seeds = as_async_generator(seeds)
+        else:
+            seeds = yield self._iter_seeds(spider)
+            seeds = yield self._process_chain("process_seeds", seeds)
         return seeds
 
-    @staticmethod
-    def _check_deprecated_start_requests_use(spider: Spider):
+    def _check_deprecated_start_requests_use(self, spider: Spider):
         start_requests_cls = None
         yield_seeds_cls = None
         spidercls = spider.__class__
@@ -376,6 +424,32 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 f"copy-pasting. See the release notes of Scrapy VERSION for "
                 f"details: https://docs.scrapy.org/en/VERSION/news.html",
                 ScrapyDeprecationWarning,
+            )
+
+        if (
+            self._use_start_requests
+            and yield_seeds_cls is not Spider
+            and start_requests_cls is not yield_seeds_cls
+            and mro.index(yield_seeds_cls) < mro.index(start_requests_cls)
+        ):
+            src = global_object_name(yield_seeds_cls)
+            if yield_seeds_cls is not spidercls:
+                src += f" (inherited by {global_object_name(spidercls)})"
+            raise ValueError(
+                f"{src} does not define the deprecated start_requests() "
+                f"method. However, one or more of your enabled spider "
+                f"middlewares (reported in an earlier deprecation warning) "
+                f"define the process_start_requests() method, and not the "
+                f"process_seeds() method, making them only compatible with "
+                f"(deprecated) spiders that define the start_requests() "
+                f"method. To solve this issue, disable the offending spider "
+                f"middlewares, upgrade them as described in that earlier "
+                f"deprecation warning, or make your spider compatible with "
+                f"deprecated spider middlewares (and earlier Scrapy versions) "
+                f"by defining a sync start_requests() method that works "
+                f"similarly to its existing yield_seeds() method. See the "
+                f"release notes of Scrapy VERSION for details: "
+                f"https://docs.scrapy.org/en/VERSION/news.html"
             )
 
     @staticmethod

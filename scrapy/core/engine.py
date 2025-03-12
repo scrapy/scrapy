@@ -215,6 +215,7 @@ class ExecutionEngine:
                 self.crawl(seed)
             else:
                 self.scraper.start_itemproc(seed, response=None)
+                self.slot.nextcall.schedule()
 
     @inlineCallbacks
     def _start_next_requests(self) -> Generator[Deferred[Any], Any, None]:
