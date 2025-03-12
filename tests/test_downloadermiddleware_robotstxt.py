@@ -1,3 +1,4 @@
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -171,7 +172,11 @@ Disallow: /some/randome/page.html
         middleware = RobotsTxtMiddleware(self.crawler)
         middleware._logerror = mock.MagicMock(side_effect=middleware._logerror)
         deferred = middleware.process_request(Request("http://site.local"), None)
-        deferred.addCallback(lambda _: self.assertTrue(middleware._logerror.called))
+
+        def check_called(_: Any) -> None:
+            assert middleware._logerror.called
+
+        deferred.addCallback(check_called)
         return deferred
 
     def test_robotstxt_immediate_error(self):
@@ -202,7 +207,11 @@ Disallow: /some/randome/page.html
         mw_module_logger.error = mock.MagicMock()
 
         d = self.assertNotIgnored(Request("http://site.local/allowed"), middleware)
-        d.addCallback(lambda _: self.assertFalse(mw_module_logger.error.called))
+
+        def check_not_called(_: Any) -> None:
+            assert not mw_module_logger.error.called  # type: ignore[attr-defined]
+
+        d.addCallback(check_not_called)
         return d
 
     def test_robotstxt_user_agent_setting(self):

@@ -375,10 +375,6 @@ ignore = [
     "B904",
     # Use capitalized environment variable
     "SIM112",
-
-    # Temporarily silenced PT rules
-    # Use a regular `assert` instead of unittest-style `assertEqual`
-    "PT009",
 ]
 
 [tool.ruff.lint.per-file-ignores]

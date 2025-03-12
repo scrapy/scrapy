@@ -73,8 +73,8 @@ Alternative Public API Proposal
 - ``ItemLoader.get_stored_values()`` or ``ItemLoader.get_values()`` *(returns the ``ItemLoader values)*
 - ``ItemLoader.get_output_value()``
 
-- ``ItemLoader.get_input_processor()`` or ``ItemLoader.get_in_processor()`` *(short version)* 
-- ``ItemLoader.get_output_processor()`` or ``ItemLoader.get_out_processor()`` *(short version)* 
+- ``ItemLoader.get_input_processor()`` or ``ItemLoader.get_in_processor()`` *(short version)*
+- ``ItemLoader.get_output_processor()`` or ``ItemLoader.get_out_processor()`` *(short version)*
 
 - ``ItemLoader.context``
 
