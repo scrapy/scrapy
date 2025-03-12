@@ -79,7 +79,7 @@ one or more of these methods:
 
         .. code-block:: python
 
-            async def process_seeds(self, seeds) -> AsyncIterator[Any]:
+            async def process_seeds(self, seeds):
                 async for seed in seeds:
                     yield seed
 
@@ -96,7 +96,7 @@ one or more of these methods:
 
         .. code-block:: python
 
-            def process_start_requests(self, seeds, spider) -> Iterable[Request]:
+            def process_start_requests(self, seeds, spider):
                 yield from seeds
 
     .. method:: process_spider_input(response, spider)
