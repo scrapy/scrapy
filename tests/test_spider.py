@@ -453,7 +453,7 @@ class TestCrawlSpider(TestSpider):
             name = "test"
             start_url = "https://www.example.com"
 
-        crawler = Crawler(TestSpider)
+        crawler = get_crawler(TestSpider)
         with LogCapture("scrapy.core.engine", propagate=False, level=ERROR) as log:
             yield crawler.crawl()
         log.check(
