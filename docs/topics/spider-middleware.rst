@@ -75,7 +75,13 @@ one or more of these methods:
 
         Iterate over the output of :meth:`~scrapy.Spider.yield_seeds` or that
         of the :meth:`process_seeds` method of an earlier spider middleware,
-        overriding it.
+        overriding it. For example:
+
+        .. code-block:: python
+
+            async def process_seeds(self, seeds) -> AsyncIterator[Any]:
+                async for seed in seeds:
+                    yield seed
 
         You may yield :class:`~scrapy.Request` or :ref:`item <topics-items>`
         objects, same as :meth:`~scrapy.Spider.yield_seeds`, from *seeds* or
@@ -83,6 +89,15 @@ one or more of these methods:
 
         As with :meth:`~scrapy.Spider.yield_seeds`, how this method is iterated
         is controlled by :setting:`SEEDING_POLICY`.
+
+        To write spider middlewares that work on Scrapy versions lower than
+        VERSION, define also a synchronous ``process_start_requests()`` method
+        that returns an iterable. For example:
+
+        .. code-block:: python
+
+            def process_start_requests(self, seeds, spider) -> Iterable[Request]:
+                yield from seeds
 
     .. method:: process_spider_input(response, spider)
 
@@ -143,6 +158,7 @@ one or more of these methods:
         :type spider: :class:`~scrapy.Spider` object
 
     .. method:: process_spider_output_async(response, result, spider)
+        :async:
 
         .. versionadded:: 2.7
 

@@ -10,86 +10,61 @@ Scrapy VERSION (unreleased)
 
 Highlights:
 
--   Replaced ``start_requests`` with :meth:`~scrapy.Spider.yield_seeds`
+-   Replaced ``start_requests`` (sync) with :meth:`~scrapy.Spider.yield_seeds`
+    (async)
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--   The second parameter of
-    ``scrapy.core.engine.ExecutionEngine.open_spider()``, ``start_requests``,
-    has been removed. The starting requests are determined by the ``spider``
-    parameter instead.
+-   In ``scrapy.core.spidermw.SpiderMiddlewareManager``,
+    ``process_start_requests()`` has been replaced by ``process_seeds()``.
 
--   ``scrapy.core.spidermw.SpiderMiddlewareManager.process_start_requests()``
-    has been replaced by
-    ``scrapy.core.spidermw.SpiderMiddlewareManager.process_seeds()``.
+-   In ``scrapy.core.engine.ExecutionEngine``:
 
--   ``scrapy.core.engine.Slot`` has been renamed to
-    ``scrapy.core.engine._Slot`` and should not be used.
+    -   The second parameter of ``open_spider()``, ``start_requests``, has been
+        removed. The starting requests are determined by the ``spider``
+        parameter instead (see :meth:`~scrapy.Spider.yield_seeds`).
 
--   ``scrapy.core.engine.ExecutionEngine.slot`` has been renamed to
-    ``scrapy.core.engine.ExecutionEngine._slot`` and should not be used.
+    -   The ``slot`` attribute has been renamed to ``_slot`` and should not be
+        used.
+
+-   In ``scrapy.core.engine``, the ``Slot`` class has been renamed to ``_Slot``
+    and should not be used.
 
 -   The ``slot`` :ref:`telnet variable <telnet-vars>` has been removed.
 
 Deprecations
 ~~~~~~~~~~~~
 
--   ``scrapy.Spider.start_requests`` is deprecated, use
-    :meth:`~scrapy.Spider.yield_seeds` instead.
+-   The ``start_requests()`` method of :class:`~scrapy.Spider` is deprecated,
+    use :meth:`~scrapy.Spider.yield_seeds` instead, or both to maintain support
+    for lower Scrapy versions.
 
-    To make spiders compatible with older Scrapy versions while avoiding a
-    deprecation warning on Scrapy VERSION and higher, you can define both
-    methods. For example:
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`)
 
-    .. code-block:: python
-
-        async def yield_seeds(self) -> AsyncIterator[Any]:
-            for seed in self.start_requests():
-                yield seed
-
-
-        def start_requests(self) -> Iterable[Request]:
-            yield Request(url="https://toscrape.com")
-
-    (:issue:`456`, :issue:`3237`, :issue:`5627`, …)
-
--   The ``process_start_requests`` method of :ref:`spider middlewares
+-   The ``process_start_requests()`` method of :ref:`spider middlewares
     <topics-spider-middleware>` is deprecated, use
-    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seed` instead.
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds` instead, or
+    both to maintain support for lower Scrapy versions.
 
-    Defining both methods is OK, e.g. to support older Scrapy versions, but
-    only :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds` is
-    used by Scrapy VERSION and higher.
-
-    (:issue:`456`, :issue:`3237`, :issue:`5627`, …)
-
--   The ``scrapy.spiders.init.InitSpider`` spider class is deprecated.
-
-..
-    TODO: Update the related issues lists including #456 to include other
-    related issues.
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`)
 
 New features
 ~~~~~~~~~~~~
 
 -   You can now yield the start requests and items of a spider from the
-    :meth:`~scrapy.Spider.yield_seeds` asynchronous generator.
+    :meth:`~scrapy.Spider.yield_seeds` spider method and from the
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds` spider
+    middleware method, both asynchronous generators.
 
     This makes it possible to use asynchronous code to generate those start
     requests and items, e.g. reading them from a queue service or database
-    using an asynchronous client, without the need to use a workaround such as
-    yielding the start requests and items from a spider callback instead.
+    using an asynchronous client, without workarounds.
 
-    (:issue:`456`, :issue:`3237`, :issue:`5627`, …)
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`)
 
 -   The new :setting:`SEEDING_POLICY` setting allows customizing how spider
     start requests and items are consumed.
-
-    Additionally, related new settings have been added:
-    :setting:`SEEDING_INITIAL_TIMEOUT`, :setting:`SEEDING_TIMEOUT`.
-
-    (:issue:`456`, :issue:`3237`, :issue:`5627`, …)
 
 
 .. _release-2.12.0:
