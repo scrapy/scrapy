@@ -308,8 +308,6 @@ SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ScrapyPriorityQueue"
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
 
-SEEDING_POLICY = "lazy"
-
 SPIDER_LOADER_CLASS = "scrapy.spiderloader.SpiderLoader"
 SPIDER_LOADER_WARN_ONLY = False
 

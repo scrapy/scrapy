@@ -194,10 +194,10 @@ class TestCrawl(TestCase):
 
     @defer.inlineCallbacks
     def test_yield_seeds_unsupported_output(self):
-        """Anything that is not a request or a seeding policy is assumed to be
-        an item, avoiding a potentially expensive call to itemadapter.is_item,
-        and letting instead things fail when ItemAdapter is actually used on
-        the corresponding non-item object."""
+        """Anything that is not a request is assumed to be an item, avoiding a
+        potentially expensive call to itemadapter.is_item, and letting instead
+        things fail when ItemAdapter is actually used on the corresponding
+        non-item object."""
         with LogCapture("scrapy", level=logging.ERROR) as log:
             crawler = get_crawler(YieldSeedsGoodAndBadOutput)
             yield crawler.crawl(mockserver=self.mockserver)

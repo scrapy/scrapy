@@ -113,9 +113,6 @@ class Spider(object_ref):
             async def yield_seeds(self):
                 yield {"foo": "bar"}
 
-        Use :setting:`SEEDING_POLICY` to set how :meth:`yield_seeds` is
-        iterated.
-
         To write spiders that work on Scrapy versions lower than VERSION,
         define also a synchronous ``start_requests()`` method that returns an
         iterable. For example:

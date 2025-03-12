@@ -8,7 +8,6 @@ For more information see docs/topics/architecture.rst
 from __future__ import annotations
 
 import logging
-from enum import Enum
 from time import time
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
@@ -77,13 +76,6 @@ class _Slot:
             self.closing.callback(None)
 
 
-class _SeedingPolicy(Enum):
-    lazy = "lazy"
-    front_load = "front-load"
-    greedy = "greedy"
-    serial = "serial"
-
-
 class ExecutionEngine:
     _SLOT_HEARTBEAT_INTERVAL: float = 5.0
 
@@ -111,19 +103,7 @@ class ExecutionEngine:
             spider_closed_callback
         )
         self.start_time: float | None = None
-        self._load_seeding_policy()
         self._seeds: AsyncIterator[Any] | None = None
-
-    def _load_seeding_policy(self) -> None:
-        try:
-            self._seeding_policy = _SeedingPolicy(self.settings["SEEDING_POLICY"])
-        except ValueError:
-            supported_values = ", ".join(policy.value for policy in _SeedingPolicy)
-            raise ValueError(
-                f"The value of the SEEDING_POLICY setting "
-                f"({self.settings['SEEDING_POLICY']!r}) is not supported. "
-                f"Supported values: {supported_values}."
-            )
 
     def _get_scheduler_class(self, settings: BaseSettings) -> type[BaseScheduler]:
         from scrapy.core.scheduler import BaseScheduler

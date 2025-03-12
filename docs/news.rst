@@ -63,9 +63,6 @@ New features
 
     (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`)
 
--   The new :setting:`SEEDING_POLICY` setting allows customizing how spider
-    start requests and items are consumed.
-
 
 .. _release-2.12.0:
 

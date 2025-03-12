@@ -87,9 +87,6 @@ one or more of these methods:
         objects, same as :meth:`~scrapy.Spider.yield_seeds`, from *seeds* or
         not.
 
-        As with :meth:`~scrapy.Spider.yield_seeds`, how this method is iterated
-        is controlled by :setting:`SEEDING_POLICY`.
-
         To write spider middlewares that work on Scrapy versions lower than
         VERSION, define also a synchronous ``process_start_requests()`` method
         that returns an iterable. For example:
