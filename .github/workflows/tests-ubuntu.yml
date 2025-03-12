@@ -59,13 +59,13 @@ jobs:
           env:
             TOXENV: botocore-pinned
 
-        - python-version: "3.14.0-alpha.4"
+        - python-version: "3.14.0-alpha.5"
           env:
             TOXENV: extra-deps
         - python-version: pypy3.10
           env:
             TOXENV: pypy3-extra-deps
-        - python-version: "3.14.0-alpha.4"
+        - python-version: "3.14.0-alpha.5"
           env:
             TOXENV: botocore
 
@@ -81,7 +81,7 @@ jobs:
       if: contains(matrix.python-version, 'pypy') || contains(matrix.env.TOXENV, 'pinned') || contains(matrix.python-version, '3.14')
       run: |
         sudo apt-get update
-        sudo apt-get install libxml2-dev libxslt-dev
+        sudo apt-get install libxml2-dev libxslt-dev libjpeg-dev
 
     - name: Run tests
       env: ${{ matrix.env }}
