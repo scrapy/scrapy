@@ -70,7 +70,7 @@ one or more of these methods:
 
 .. class:: SpiderMiddleware
 
-    .. method:: process_seeds(seeds: AsyncIterator[Any], /) -> AsyncIterator[Any]
+    .. method:: process_seeds(seeds: AsyncIterable[Any], /) -> AsyncIterable[Any]
         :async:
 
         Iterate over the output of :meth:`~scrapy.Spider.yield_seeds` or that
