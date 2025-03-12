@@ -335,6 +335,23 @@ These settings are:
 installing the reactor. The rest of the settings are applied when starting
 the reactor.
 
+**Note:** The following settings can only be used with the :class:`~scrapy.crawler.CrawlerProcess`
+and will be ignored when using :class:`~scrapy.crawler.CrawlerRunner`. If you are using
+:class:`~scrapy.crawler.CrawlerRunner`, these settings won't have any effect:
+
+-   :setting:`DNS_RESOLVER`
+-   :setting:`REACTOR_THREADPOOL_MAXSIZE`
+
+These settings should be configured when instantiating a :class:`~scrapy.crawler.CrawlerProcess`. Also, 
+you cannot modify these settings on a per-spider basis using the `update_settings()` 
+method. 
+
+Additionally, when using :class:`~scrapy.crawler.CrawlerProcess`, note that the first value defined for the following settings will be the one used when the reactor is installed:
+
+-   :setting:`ASYNCIO_EVENT_LOOP`
+-   :setting:`TWISTED_REACTOR`
+
+This is because the reactor is installed during the first call to `CrawlerProcess.crawl()`. Any subsequent values for these settings will be ignored.
 
 .. _topics-settings-ref:
 
