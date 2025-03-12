@@ -25,7 +25,7 @@ from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Generator
+    from collections.abc import AsyncIterable, Callable, Generator
 
     from scrapy.core.downloader import Downloader
     from scrapy.core.scheduler import BaseScheduler
@@ -103,7 +103,7 @@ class ExecutionEngine:
             spider_closed_callback
         )
         self.start_time: float | None = None
-        self._seeds: AsyncIterator[Any] | None = None
+        self._seeds: AsyncIterable[Any] | None = None
 
     def _get_scheduler_class(self, settings: BaseSettings) -> type[BaseScheduler]:
         from scrapy.core.scheduler import BaseScheduler

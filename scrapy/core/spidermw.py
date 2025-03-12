@@ -7,7 +7,7 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterable, AsyncIterator, Callable, Iterable
+from collections.abc import AsyncIterable, Callable, Iterable
 from inspect import isasyncgenfunction, iscoroutine, iscoroutinefunction
 from itertools import islice
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
@@ -371,7 +371,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
     @inlineCallbacks
     def process_seeds(
         self, spider: Spider
-    ) -> Generator[Deferred[Any], Any, AsyncIterator[Any]]:
+    ) -> Generator[Deferred[Any], Any, AsyncIterable[Any]]:
         self._check_deprecated_start_requests_use(spider)
         if self._use_start_requests:
             sync_seeds = iter(spider.start_requests())
