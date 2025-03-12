@@ -42,14 +42,12 @@ logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 
-class Slot:
+class _Slot:
     def __init__(
         self,
         close_if_idle: bool,
         nextcall: CallLaterOnce[Deferred[None]],
         scheduler: BaseScheduler,
-        *,
-        seeds: AsyncIterator[Any] | None,
     ) -> None:
         self.closing: Deferred[None] | None = None
         self.inprogress: set[Request] = set()
@@ -57,7 +55,6 @@ class Slot:
         self.nextcall: CallLaterOnce[Deferred[None]] = nextcall
         self.scheduler: BaseScheduler = scheduler
         self.heartbeat: LoopingCall = LoopingCall(nextcall.schedule)
-        self.seeds: AsyncIterator[Any] | None = seeds
 
     def add_request(self, request: Request) -> None:
         self.inprogress.add(request)
@@ -100,7 +97,7 @@ class ExecutionEngine:
         self.signals: SignalManager = crawler.signals
         assert crawler.logformatter
         self.logformatter: LogFormatter = crawler.logformatter
-        self.slot: Slot | None = None
+        self._slot: _Slot | None = None
         self.spider: Spider | None = None
         self.running: bool = False
         self.paused: bool = False
@@ -115,6 +112,7 @@ class ExecutionEngine:
         )
         self.start_time: float | None = None
         self._load_seeding_policy()
+        self._seeds: AsyncIterator[Any] | None = None
 
     def _load_seeding_policy(self) -> None:
         try:
@@ -195,16 +193,16 @@ class ExecutionEngine:
     @inlineCallbacks
     def _process_next_seed(self):
         try:
-            seed = yield deferred_from_coro(self.slot.seeds.__anext__())
+            seed = yield deferred_from_coro(self._seeds.__anext__())
         except StopAsyncIteration:
-            self.slot.seeds = None
+            self._seeds = None
         except RuntimeError:
             # “RuntimeError: anext(): asynchronous generator is already
             # running” happens if yield_seeds is taking long to yield the
             # next seed.
             pass
         except Exception:
-            self.slot.seeds = None
+            self._seeds = None
             logger.error(
                 "Error while reading seeds",
                 exc_info=True,
@@ -215,33 +213,33 @@ class ExecutionEngine:
                 self.crawl(seed)
             else:
                 self.scraper.start_itemproc(seed, response=None)
-                self.slot.nextcall.schedule()
+                self._slot.nextcall.schedule()
 
     @inlineCallbacks
     def _start_next_requests(self) -> Generator[Deferred[Any], Any, None]:
-        if self.slot is None or self.paused:
+        if self._slot is None or self._slot.closing is not None or self.paused:
             return
         self._start_scheduled_requests()
-        if self.slot.seeds is not None and not self._needs_backout():
+        if self._seeds is not None and not self._needs_backout():
             yield self._process_next_seed()
-        if self.spider_is_idle() and self.slot.close_if_idle:
+        if self.spider_is_idle() and self._slot.close_if_idle:
             self._spider_idle()
 
     def _needs_backout(self) -> bool:
-        assert self.slot is not None  # typing
+        assert self._slot is not None  # typing
         assert self.scraper.slot is not None  # typing
         return (
             not self.running
-            or bool(self.slot.closing)
+            or bool(self._slot.closing)
             or self.downloader.needs_backout()
             or self.scraper.slot.needs_backout()
         )
 
     def _start_scheduled_request(self) -> Deferred[None] | None:
-        assert self.slot is not None  # typing
+        assert self._slot is not None  # typing
         assert self.spider is not None  # typing
 
-        request = self.slot.scheduler.next_request()
+        request = self._slot.scheduler.next_request()
         if request is None:
             return None
 
@@ -256,8 +254,8 @@ class ExecutionEngine:
         )
 
         def _remove_request(_: Any) -> None:
-            assert self.slot
-            self.slot.remove_request(request)
+            assert self._slot
+            self._slot.remove_request(request)
 
         d2: Deferred[None] = d.addBoth(_remove_request)
         d2.addErrback(
@@ -267,7 +265,7 @@ class ExecutionEngine:
                 extra={"spider": self.spider},
             )
         )
-        slot = self.slot
+        slot = self._slot
         d2.addBoth(lambda _: slot.nextcall.schedule())
         d2.addErrback(
             lambda f: logger.info(
@@ -304,22 +302,22 @@ class ExecutionEngine:
         return d
 
     def spider_is_idle(self) -> bool:
-        if self.slot is None:
+        if self._slot is None:
             raise RuntimeError("Engine slot not assigned")
         if not self.scraper.slot.is_idle():  # type: ignore[union-attr]
             return False
         if self.downloader.active:  # downloader has pending requests
             return False
-        if self.slot.seeds is not None:  # not all start requests are handled
+        if self._seeds is not None:  # not all start requests are handled
             return False
-        return not self.slot.scheduler.has_pending_requests()
+        return not self._slot.scheduler.has_pending_requests()
 
     def crawl(self, request: Request) -> None:
         """Inject the request into the spider <-> downloader pipeline"""
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
         self._schedule_request(request, self.spider)
-        self.slot.nextcall.schedule()  # type: ignore[union-attr]
+        self._slot.nextcall.schedule()  # type: ignore[union-attr]
 
     def _schedule_request(self, request: Request, spider: Spider) -> None:
         request_scheduled_result = self.signals.send_catch_log(
@@ -331,7 +329,7 @@ class ExecutionEngine:
         for handler, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
-        if not self.slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
+        if not self._slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
             self.signals.send_catch_log(
                 signals.request_dropped, request=request, spider=spider
             )
@@ -348,14 +346,14 @@ class ExecutionEngine:
     def _downloaded(
         self, result: Response | Request | Failure, request: Request
     ) -> Deferred[Response] | Response | Failure:
-        assert self.slot is not None  # typing
-        self.slot.remove_request(request)
+        assert self._slot is not None  # typing
+        self._slot.remove_request(request)
         return self.download(result) if isinstance(result, Request) else result
 
     def _download(self, request: Request) -> Deferred[Response | Request]:
-        assert self.slot is not None  # typing
+        assert self._slot is not None  # typing
 
-        self.slot.add_request(request)
+        self._slot.add_request(request)
 
         def _on_success(result: Response | Request) -> Response | Request:
             if not isinstance(result, (Response, Request)):
@@ -380,8 +378,8 @@ class ExecutionEngine:
             return result
 
         def _on_complete(_: _T) -> _T:
-            assert self.slot is not None
-            self.slot.nextcall.schedule()
+            assert self._slot is not None
+            self._slot.nextcall.schedule()
             return _
 
         assert self.spider is not None
@@ -396,13 +394,13 @@ class ExecutionEngine:
         spider: Spider,
         close_if_idle: bool = True,
     ) -> Generator[Deferred[Any], Any, None]:
-        if self.slot is not None:
+        if self._slot is not None:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={"spider": spider})
         nextcall = CallLaterOnce(self._start_next_requests)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
-        seeds = yield self.scraper.spidermw.process_seeds(spider)
-        self.slot = Slot(close_if_idle, nextcall, scheduler, seeds=seeds)
+        self._seeds = yield self.scraper.spidermw.process_seeds(spider)
+        self._slot = _Slot(close_if_idle, nextcall, scheduler)
         self.spider = spider
         if hasattr(scheduler, "open") and (d := scheduler.open(spider)):
             yield d
@@ -410,8 +408,8 @@ class ExecutionEngine:
         assert self.crawler.stats
         self.crawler.stats.open_spider(spider)
         yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
-        self.slot.nextcall.schedule()
-        self.slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
+        self._slot.nextcall.schedule()
+        self._slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
 
     def _spider_idle(self) -> None:
         """
@@ -440,17 +438,17 @@ class ExecutionEngine:
 
     def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred[None]:
         """Close (cancel) spider and clear all its outstanding requests"""
-        if self.slot is None:
+        if self._slot is None:
             raise RuntimeError("Engine slot not assigned")
 
-        if self.slot.closing is not None:
-            return self.slot.closing
+        if self._slot.closing is not None:
+            return self._slot.closing
 
         logger.info(
             "Closing spider (%(reason)s)", {"reason": reason}, extra={"spider": spider}
         )
 
-        dfd = self.slot.close()
+        dfd = self._slot.close()
 
         def log_failure(msg: str) -> Callable[[Failure], None]:
             def errback(failure: Failure) -> None:
@@ -466,8 +464,8 @@ class ExecutionEngine:
         dfd.addBoth(lambda _: self.scraper.close_spider(spider))
         dfd.addErrback(log_failure("Scraper close failure"))
 
-        if hasattr(self.slot.scheduler, "close"):
-            dfd.addBoth(lambda _: cast(Slot, self.slot).scheduler.close(reason))
+        if hasattr(self._slot.scheduler, "close"):
+            dfd.addBoth(lambda _: cast(_Slot, self._slot).scheduler.close(reason))
             dfd.addErrback(log_failure("Scheduler close failure"))
 
         dfd.addBoth(

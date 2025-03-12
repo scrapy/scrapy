@@ -46,8 +46,6 @@ class ${ProjectName}SpiderMiddleware:
     async def process_seeds(self, seeds):
         # Called with the seeds from the spider yield_seeds() method or with
         # the output of the maching method of an earlier spider middleware.
-
-        # Must return only requests (not items).
         async for seed in seeds:
             yield seed
 

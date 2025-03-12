@@ -672,7 +672,8 @@ class MySpider(scrapy.Spider):
 
     async def yield_seeds(self):
         self.logger.debug("It Works!")
-        return []
+        return
+        yield
 """
 
     badspider = """
@@ -848,7 +849,8 @@ class MySpider(scrapy.Spider):
 
     async def yield_seeds(self):
         self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
-        return []
+        return
+        yield
 """
         args = ["-o", "example.json"]
         log = self.get_log(spider_code, args=args)
@@ -868,7 +870,8 @@ class MySpider(scrapy.Spider):
                 json.dumps(self.settings.getdict('FEEDS'), sort_keys=True)
             )
         )
-        return []
+        return
+        yield
 """
         Path(self.cwd, "example.json").write_text("not empty", encoding="utf-8")
         args = ["-O", "example.json"]
@@ -889,7 +892,8 @@ class MySpider(scrapy.Spider):
     name = 'myspider'
 
     async def yield_seeds(self):
-        return []
+        return
+        yield
 """
         args = ["-o", "example1.json", "-O", "example2.json"]
         log = self.get_log(spider_code, args=args)
@@ -906,7 +910,8 @@ class MySpider(scrapy.Spider):
 
     async def yield_seeds(self):
         self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
-        return []
+        return
+        yield
 """
         args = ["-o", "-:json"]
         log = self.get_log(spider_code, args=args)
@@ -985,7 +990,8 @@ class MySpider(scrapy.Spider):
 
     async def yield_seeds(self):
         self.logger.info(f"The value of FOO is {self.settings.getint('FOO')}")
-        return []
+        return
+        yield
 """
         args = ["-a", "foo=42"]
         log = self.get_log(spider_code, args=args)
@@ -1055,7 +1061,8 @@ class MySpider(scrapy.Spider):
 
     async def yield_seeds(self):
         self.logger.debug('It works!')
-        return []
+        return
+        yield
 """
         log = self.get_log(spider_code)
         assert "[myspider] DEBUG: It works!" in log
@@ -1069,7 +1076,8 @@ class MySpider(scrapy.Spider):
 
     async def yield_seeds(self):
         self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
-        return []
+        return
+        yield
 """
         args = ["-o", "example.json"]
         log = self.get_log(spider_code, args=args)
@@ -1089,7 +1097,8 @@ class MySpider(scrapy.Spider):
                 json.dumps(self.settings.getdict('FEEDS'), sort_keys=True)
             )
         )
-        return []
+        return
+        yield
 """
         Path(self.cwd, "example.json").write_text("not empty", encoding="utf-8")
         args = ["-O", "example.json"]
@@ -1110,7 +1119,8 @@ class MySpider(scrapy.Spider):
     name = 'myspider'
 
     async def yield_seeds(self):
-        return []
+        return
+        yield
 """
         args = ["-o", "example1.json", "-O", "example2.json"]
         log = self.get_log(spider_code, args=args)

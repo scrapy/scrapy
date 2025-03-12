@@ -29,7 +29,7 @@ from twisted.trial import unittest
 from twisted.web import server, static, util
 
 from scrapy import signals
-from scrapy.core.engine import ExecutionEngine, Slot
+from scrapy.core.engine import ExecutionEngine, _Slot
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import CloseSpider, IgnoreRequest
 from scrapy.http import Request
@@ -498,7 +498,8 @@ def test_request_scheduled_signal(caplog):
         return
         yield
 
-    engine.slot = Slot(None, Mock(), scheduler, seeds=seeds)
+    engine._seeds = seeds()
+    engine._slot = _Slot(False, Mock(), scheduler)
     crawler.signals.connect(signal_handler, request_scheduled)
     keep_request = Request("https://keep.example")
     engine._schedule_request(keep_request, spider)

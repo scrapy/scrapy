@@ -81,8 +81,7 @@ class Command(ScrapyCommand):
         spider_loader = self.crawler_process.spider_loader
 
         async def yield_seeds(self):
-            requests = conman.from_spider(self, self._result)
-            for request in requests:
+            for request in conman.from_spider(self, self._result):
                 yield request
 
         with set_environ(SCRAPY_CHECK="true"):

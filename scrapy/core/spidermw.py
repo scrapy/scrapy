@@ -61,7 +61,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         super().__init__(*middlewares)
 
     def _check_deprecated_process_start_requests_use(
-        self, middlewares: list[Any]
+        self, middlewares: tuple[Any]
     ) -> None:
         deprecated_middlewares = [
             middleware
@@ -374,9 +374,11 @@ class SpiderMiddlewareManager(MiddlewareManager):
     ) -> Generator[Deferred[Any], Any, AsyncIterator[Any]]:
         self._check_deprecated_start_requests_use(spider)
         if self._use_start_requests:
-            seeds = iter(spider.start_requests())
-            seeds = yield self._process_chain("process_start_requests", seeds, spider)
-            seeds = as_async_generator(seeds)
+            sync_seeds = iter(spider.start_requests())
+            sync_seeds = yield self._process_chain(
+                "process_start_requests", sync_seeds, spider
+            )
+            seeds = as_async_generator(sync_seeds)
         else:
             seeds = yield self._iter_seeds(spider)
             seeds = yield self._process_chain("process_seeds", seeds)

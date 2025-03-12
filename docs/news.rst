@@ -15,9 +15,22 @@ Highlights:
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--   ``scrapy.core.engine.Slot.start_requests` and its matching
-    ``Slot.__init__()`` parameter have been removed, replaced by
-    ``seeds_iterator``.
+-   The second parameter of
+    ``scrapy.core.engine.ExecutionEngine.open_spider()``, ``start_requests``,
+    has been removed. The starting requests are determined by the ``spider``
+    parameter instead.
+
+-   ``scrapy.core.spidermw.SpiderMiddlewareManager.process_start_requests()``
+    has been replaced by
+    ``scrapy.core.spidermw.SpiderMiddlewareManager.process_seeds()``.
+
+-   ``scrapy.core.engine.Slot`` has been renamed to
+    ``scrapy.core.engine._Slot`` and should not be used.
+
+-   ``scrapy.core.engine.ExecutionEngine.slot`` has been renamed to
+    ``scrapy.core.engine.ExecutionEngine._slot`` and should not be used.
+
+-   The ``slot`` :ref:`telnet variable <telnet-vars>` has been removed.
 
 Deprecations
 ~~~~~~~~~~~~

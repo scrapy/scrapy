@@ -98,10 +98,10 @@ class MainTestCase(TestCase):
                 await maybe_deferred_to_future(twisted_sleep(sleep_seconds))
                 yield Request("data:,a")
                 await maybe_deferred_to_future(twisted_sleep(sleep_seconds))
-                self.crawler.engine.slot.scheduler.enqueue_request(Request("data:,b"))
+                self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
                 await maybe_deferred_to_future(twisted_sleep(sleep_seconds))
                 yield Request("data:,c")
-                self.crawler.engine.slot.scheduler.stop = True
+                self.crawler.engine._slot.scheduler.stop = True
 
             def parse(self, response):
                 pass

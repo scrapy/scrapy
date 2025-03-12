@@ -11,7 +11,8 @@ class NoRequestsSpider(Spider):
     }
 
     async def yield_seeds(self):
-        return []
+        return
+        yield
 
 
 configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s", "LOG_LEVEL": "DEBUG"})

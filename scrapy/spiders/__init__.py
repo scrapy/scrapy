@@ -40,7 +40,7 @@ class Spider(object_ref):
     custom_settings: dict[_SettingsKeyT, Any] | None = None
 
     #: Seed URLs. See :meth:`yield_seeds`.
-    start_urls: list[str] = []
+    start_urls: list[str]
 
     def __init__(self, name: str | None = None, **kwargs: Any):
         if name is not None:
@@ -48,6 +48,8 @@ class Spider(object_ref):
         elif not getattr(self, "name", None):
             raise ValueError(f"{type(self).__name__} must have a name")
         self.__dict__.update(kwargs)
+        if not hasattr(self, "start_urls"):
+            self.start_urls: list[str] = []
 
     @property
     def logger(self) -> SpiderLoggerAdapter:

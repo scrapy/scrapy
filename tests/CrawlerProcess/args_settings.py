@@ -15,7 +15,8 @@ class NoRequestsSpider(scrapy.Spider):
 
     async def yield_seeds(self):
         self.logger.info(f"The value of FOO is {self.settings.getint('FOO')}")
-        return []
+        return
+        yield
 
 
 process = CrawlerProcess(settings={})
