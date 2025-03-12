@@ -1746,60 +1746,52 @@ The way :meth:`Spider.yield_seeds <scrapy.Spider.yield_seeds>` is iterated:
 
 -   .. _lazy-seeding:
 
-    ``"lazy"``: Seeds are only read while the :ref:`scheduler
-    <topics-scheduler>` is empty and the number of ongoing requests is
-    lower than :setting:`CONCURRENT_REQUESTS`.
+    ``"lazy"``: Processing scheduled requests takes priority over iterating
+    seeds.
 
-    This seeding policy aims to:
-
-    -   Maximize crawl speed by maxing out concurrent requests as often
-        as possible.
-
-    -   Minimize the number of requests in the scheduler at any given
-        time by prioritizing scheduler requests over seeds, to minimize
-        resource usage (memory or disk, depending on
-        :setting:`JOBDIR`).
-
-    This seeding policy is best used when seed request priority is not
-    important. Switching to :ref:`serial <serial-seeding>` may lower
+    This seeding policy aims to minimize the number of requests in the
+    scheduler at any given time, to minimize resource usage (memory or disk,
+    depending on :setting:`JOBDIR`). It is best used when seed request priority
+    is not important. Switching to :ref:`idle <idle-seeding>` may lower
     resource usage further at the cost of also lowering crawl speed.
-
--   .. _front-load-seeding:
-
-    ``"front-load"``: The spider does not start until all seeds have
-    been read and loaded into the scheduler.
-
-    This seeding policy aims to give the :ref:`scheduler
-    <topics-scheduler>` full control over request order, at the cost of
-    a higher resource usage and a delayed crawl start.
-
-    This seeding policy is best used when having all requests go
-    through the scheduler is more important than resource usage and
-    crawl speed.
 
 -   .. _greedy-seeding:
 
-    ``"greedy"``: While the :ref:`scheduler <topics-scheduler>` is
-    empty and the number of ongoing requests is lower than
-    :setting:`CONCURRENT_REQUESTS`, seeds are read and sent directly
-    (bypassing the scheduler). While the scheduler has requests, seeds
-    are fed into the scheduler.
+    ``"greedy"``: Iterating seeds takes priority over processing scheduled
+    requests.
 
-    This seeding policy is similar to :ref:`front-load
-    <front-load-seeding>`, but it bypasses the scheduler for the first
-    few requests to avoid delaying the crawl start.
+    Every time a seed request is iterated, it is scheduled, and then the next
+    request from the scheduler is sent.
 
--   .. _serial-seeding:
+    .. note:: That request sent may not be the schedueld seed request
+        depending on the priority of scheduled requests, on the configured
+        :setting:`SCHEDULER` and on certain scheduler settings (e.g.
+        :setting:`SCHEDULER_MEMORY_QUEUE`).
 
-    ``"serial"``: A single seed is read whenever the :ref:`scheduler
-    <topics-scheduler>` is empty and there are no ongoing requests.
+    This seeding policy is best used when prioritizing seed requests is
+    important, and seed requests may be sent as they come.
+
+-   .. _front-load-seeding:
+
+    ``"front-load"``: The spider does not start until all seed requests have
+    been scheduled.
+
+    This seeding policy aims to give the :ref:`scheduler <topics-scheduler>`
+    full control over request order from the start. Some custom schedulers may
+    require this seeding policy to work as designed.
+
+-   .. _idle-seeding:
+
+    ``"idle"``: A single seed is read only when there are neither scheduled nor
+    on-going requests.
+
     That is, a new seed is not read until all requests triggered by the
     previous seed, directly or indirectly, have been processed.
 
-    This seeding policy is similar to :ref:`lazy <lazy-seeding>`, but
-    it prioritizes resource savings over crawl speed. It is
-    functionally equivalent to running the spider multiple times in a
-    row, one per seed request.
+    This seeding policy is similar to :ref:`lazy <lazy-seeding>`, but it
+    prioritizes resource savings over crawl speed. It is functionally
+    equivalent to running your spider multiple times in a row, one per seed
+    request.
 
 .. setting:: SPIDER_CONTRACTS
 
