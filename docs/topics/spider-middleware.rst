@@ -63,27 +63,12 @@ particular setting. See each middleware documentation for more info.
 Writing your own spider middleware
 ==================================
 
-Each spider middleware is a Python class that defines one or more of the
-methods defined below.
-
-The main entry point is the ``from_crawler`` class method, which receives a
-:class:`~scrapy.crawler.Crawler` instance. The :class:`~scrapy.crawler.Crawler`
-object gives you access, for example, to the :ref:`settings <topics-settings>`.
+Each spider middleware is a :ref:`component <topics-components>` that defines
+one or more of these methods:
 
 .. module:: scrapy.spidermiddlewares
 
 .. class:: SpiderMiddleware
-
-    .. method:: from_crawler(cls, crawler)
-
-       If present, this classmethod is called to create a middleware instance
-       from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
-       of the middleware. Crawler object provides access to all Scrapy core
-       components like settings and signals; it is a way for middleware to
-       access them and hook its functionality into Scrapy.
-
-       :param crawler: crawler that uses this middleware
-       :type crawler: :class:`~scrapy.crawler.Crawler` object
 
     .. method:: process_seeds(seeds: AsyncIterator[Any], /) -> AsyncIterator[Any]
         :async:

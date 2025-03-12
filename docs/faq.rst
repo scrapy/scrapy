@@ -361,16 +361,18 @@ method for this purpose. For example:
 
     from copy import deepcopy
 
-    from itemadapter import is_item, ItemAdapter
+    from itemadapter import ItemAdapter
+    from scrapy import Request
 
 
     class MultiplyItemsMiddleware:
         def process_spider_output(self, response, result, spider):
-            for item in result:
-                if is_item(item):
-                    adapter = ItemAdapter(item)
-                    for _ in range(adapter["multiply_by"]):
-                        yield deepcopy(item)
+            for item_or_request in result:
+                if isinstance(item_or_request, Request):
+                    continue
+                adapter = ItemAdapter(item)
+                for _ in range(adapter["multiply_by"]):
+                    yield deepcopy(item)
 
 Does Scrapy support IPv6 addresses?
 -----------------------------------
@@ -410,7 +412,7 @@ How can I make a blank request?
 -------------------------------
 
 .. code-block:: python
-    
+
     from scrapy import Request
 
 

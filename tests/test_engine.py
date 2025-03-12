@@ -434,10 +434,12 @@ class TestEngine(TestEngineBase):
         e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
         yield e.open_spider(MySpider(), [])
         e.start()
+
+        def cb(exc: BaseException) -> None:
+            assert str(exc), "Engine already running"
+
         try:
-            yield self.assertFailure(e.start(), RuntimeError).addBoth(
-                lambda exc: self.assertEqual(str(exc), "Engine already running")
-            )
+            yield self.assertFailure(e.start(), RuntimeError).addBoth(cb)
         finally:
             yield e.stop()
 

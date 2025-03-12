@@ -559,7 +559,7 @@ For example, suppose you want to extract all ``<p>`` elements inside ``<div>``
 elements. First, you would get all ``<div>`` elements:
 
 .. code-block:: pycon
-    
+
     >>> divs = response.xpath("//div")
 
 At first, you may be tempted to use the following approach, which is wrong, as
@@ -610,7 +610,7 @@ As it turns out, Scrapy selectors allow you to chain selectors, so most of the t
 you can just select by class using CSS and then switch to XPath when needed:
 
 .. code-block:: pycon
-    
+
     >>> from scrapy import Selector
     >>> sel = Selector(
     ...     text='<div class="hero shout"><time datetime="2014-07-23 19:00">Special date</time></div>'
@@ -1032,7 +1032,7 @@ whereas the CSS lookup is translated into XPath and thus runs more efficiently,
 so performance-wise its uses are limited to situations that are not easily
 described with CSS selectors.
 
-Parsel also simplifies adding your own XPath extensions with 
+Parsel also simplifies adding your own XPath extensions with
 :func:`~parsel.xpathfuncs.set_xpathfunc`.
 
 .. _topics-selectors-ref:

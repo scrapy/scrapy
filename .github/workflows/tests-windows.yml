@@ -1,7 +1,9 @@
 name: Windows
 on:
   push:
-    branches: [ master ]
+    branches:
+    - master
+    - '[0-9]+.[0-9]+'
   pull_request:
 
 concurrency:
@@ -17,7 +19,7 @@ jobs:
         include:
         - python-version: "3.9"
           env:
-            TOXENV: windows-pinned
+            TOXENV: py
         - python-version: "3.10"
           env:
             TOXENV: py
@@ -32,7 +34,19 @@ jobs:
             TOXENV: py
         - python-version: "3.13"
           env:
-            TOXENV: asyncio
+            TOXENV: default-reactor
+
+        # pinned deps
+        - python-version: "3.9.13"
+          env:
+            TOXENV: pinned
+        - python-version: "3.9.13"
+          env:
+            TOXENV: extra-deps-pinned
+
+        - python-version: "3.13"
+          env:
+            TOXENV: extra-deps
 
     steps:
     - uses: actions/checkout@v4

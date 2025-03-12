@@ -26,7 +26,7 @@ from scrapy.spiders import (
     XMLFeedSpider,
 )
 from scrapy.spiders.init import InitSpider
-from scrapy.utils.test import get_crawler
+from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import get_testdata, tests_datadir
 
 
@@ -101,7 +101,11 @@ class TestSpider(unittest.TestCase):
     @inlineCallbacks
     def test_settings_in_from_crawler(self):
         spider_settings = {"TEST1": "spider", "TEST2": "spider"}
-        project_settings = {"TEST1": "project", "TEST3": "project"}
+        project_settings = {
+            "TEST1": "project",
+            "TEST3": "project",
+            **get_reactor_settings(),
+        }
 
         class TestSpider(self.spider_class):
             name = "test"
