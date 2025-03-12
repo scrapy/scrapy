@@ -1,12 +1,13 @@
 from asyncio import sleep
 
 import pytest
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred
 from twisted.trial.unittest import TestCase
 
 from scrapy import Spider, signals
 from scrapy.core.engine import ExecutionEngine
-from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
 # These are the minimum seconds necessary to wait to reproduce the issue that
@@ -15,6 +16,9 @@ from scrapy.utils.test import get_crawler
 # even if we remove that exception handling, but they start failing with this
 # much delay.
 ASYNC_GEN_ERROR_MINIMUM_SECONDS = ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.01
+
+ITEM_A = {"id": "a"}
+ITEM_B = {"id": "b"}
 
 
 def twisted_sleep(seconds):
@@ -26,40 +30,124 @@ def twisted_sleep(seconds):
 
 
 class MainTestCase(TestCase):
-    item = {"a": "b"}
-
-    @inlineCallbacks
-    def _test(self, yield_seeds_):
-        class TestSpider(Spider):
-            name = "test"
-            yield_seeds = yield_seeds_
-
+    async def _test_spider(self, spider, expected_items=None):
         actual_items = []
+        expected_items = [] if expected_items is None else expected_items
 
         def track_item(item, response, spider):
             actual_items.append(item)
 
-        crawler = get_crawler(TestSpider)
+        crawler = get_crawler(spider)
         crawler.signals.connect(track_item, signals.item_scraped)
-        yield crawler.crawl()
+        await maybe_deferred_to_future(crawler.crawl())
         assert crawler.stats.get_value("finish_reason") == "finished"
-        assert actual_items == [self.item]
+        assert actual_items == expected_items
+
+    async def _test_yield_seeds(self, yield_seeds_, expected_items=None):
+        class TestSpider(Spider):
+            name = "test"
+            yield_seeds = yield_seeds_
+
+        await self._test_spider(TestSpider, expected_items)
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
-    def test_asyncio_delayed(self):
+    @deferred_f_from_coro_f
+    async def test_asyncio_delayed(self):
         async def yield_seeds(spider):
             await sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS)
-            yield self.item
+            yield ITEM_A
 
-        yield self._test(yield_seeds)
+        await self._test_yield_seeds(yield_seeds, [ITEM_A])
 
-    @inlineCallbacks
-    def test_twisted_delayed(self):
+    @deferred_f_from_coro_f
+    async def test_twisted_delayed(self):
         async def yield_seeds(spider):
             await maybe_deferred_to_future(
                 twisted_sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS)
             )
-            yield self.item
+            yield ITEM_A
 
-        yield self._test(yield_seeds)
+        await self._test_yield_seeds(yield_seeds, [ITEM_A])
+
+    @deferred_f_from_coro_f
+    async def test_start_urls(self):
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+
+            async def parse(self, response):
+                yield ITEM_A
+
+        await self._test_spider(TestSpider, [ITEM_A])
+
+    @deferred_f_from_coro_f
+    async def test_yield_seeds(self):
+        class TestSpider(Spider):
+            name = "test"
+
+            async def yield_seeds(self):
+                yield ITEM_A
+
+        await self._test_spider(TestSpider, [ITEM_A])
+
+    @deferred_f_from_coro_f
+    async def test_yield_seeds_subclass(self):
+        class BaseSpider(Spider):
+            async def yield_seeds(self):
+                yield ITEM_A
+
+        class TestSpider(BaseSpider):
+            name = "test"
+
+        await self._test_spider(TestSpider, [ITEM_A])
+
+    @deferred_f_from_coro_f
+    async def test_start_requests(self):
+        class TestSpider(Spider):
+            name = "test"
+
+            def start_requests(self):
+                yield ITEM_A
+
+        with pytest.warns(ScrapyDeprecationWarning):
+            await self._test_spider(TestSpider, [ITEM_A])
+
+    @deferred_f_from_coro_f
+    async def test_start_requests_subclass(self):
+        class BaseSpider(Spider):
+            def start_requests(self):
+                yield ITEM_A
+
+        class TestSpider(BaseSpider):
+            name = "test"
+
+        # The warning must be about the base class and not the subclass.
+        with pytest.warns(ScrapyDeprecationWarning, match="BaseSpider"):
+            await self._test_spider(TestSpider, [ITEM_A])
+
+    @deferred_f_from_coro_f
+    async def test_universal(self):
+        class TestSpider(Spider):
+            name = "test"
+
+            async def yield_seeds(self):
+                yield ITEM_A
+
+            def start_requests(self):
+                yield ITEM_B
+
+        await self._test_spider(TestSpider, [ITEM_A])
+
+    @deferred_f_from_coro_f
+    async def test_universal_subclass(self):
+        class BaseSpider(Spider):
+            async def yield_seeds(self):
+                yield ITEM_A
+
+            def start_requests(self):
+                yield ITEM_B
+
+        class TestSpider(BaseSpider):
+            name = "test"
+
+        await self._test_spider(TestSpider, [ITEM_A])
