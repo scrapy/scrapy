@@ -354,10 +354,10 @@ class TestProcessSeedsSimple(TestBaseAsyncSpiderMiddleware):
     def test_simple(self):
         """Simple mw"""
         seeds = yield self._get_processed_seeds(self.MW_SIMPLE)
-        self.assertTrue(isasyncgen(seeds))
+        assert isasyncgen(seeds)
         seed_list = yield deferred_from_coro(collect_asyncgen(seeds))
-        self.assertEqual(len(seed_list), self.RESULT_COUNT)
-        self.assertIsInstance(seed_list[0], self.ITEM_TYPE)
+        assert len(seed_list) == self.RESULT_COUNT
+        assert isinstance(seed_list[0], self.ITEM_TYPE)
 
 
 class UniversalMiddlewareNoSync:
