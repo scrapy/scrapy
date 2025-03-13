@@ -80,14 +80,6 @@ New features
     (:issue:`740`, :issue:`1051`, :issue:`1443`, :issue:`3237`, :issue:`4467`,
     :issue:`5282`, :issue:`6715`)
 
-Bug fixes
-~~~~~~~~~
-
--   The first :setting:`CONCURRENT_REQUESTS` start requests are no longer sent
-    in reserve order by default.
-
-    (:issue:`6715`, :issue:`6729`)
-
 
 .. _release-2.12.0:
 
