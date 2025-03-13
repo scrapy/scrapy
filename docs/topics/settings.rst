@@ -1740,7 +1740,7 @@ SEEDING_POLICY
 
 .. versionadded:: VERSION
 
-Default: :py:enum:mem:`SeedingPolicy.lazy <scrapy.SeedingPolicy.lazy>`
+Default: :py:enum:mem:`SeedingPolicy.greedy <scrapy.SeedingPolicy.greedy>`
 
 Determines the way :meth:`Spider.yield_seeds <scrapy.Spider.yield_seeds>` is
 iterated.

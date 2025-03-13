@@ -32,6 +32,45 @@ class MainTestCase(TestCase):
     timeout = ExecutionEngine._SLOT_HEARTBEAT_INTERVAL
 
     @deferred_f_from_coro_f
+    async def test_greedy(self):
+        class TestScheduler(BaseScheduler):
+            def __init__(self, *args, **kwargs):
+                self.requests = deque((Request("data:,b"),))
+
+            def enqueue_request(self, request: Request) -> bool:
+                self.requests.append(request)
+                return True
+
+            def has_pending_requests(self) -> bool:
+                return bool(self.requests)
+
+            def next_request(self) -> Request | None:
+                try:
+                    return self.requests.pop()
+                except IndexError:
+                    return None
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,a"]
+
+            def parse(self, response):
+                pass
+
+        actual_urls = []
+
+        def track_url(request, spider):
+            actual_urls.append(request.url)
+
+        settings = {"SCHEDULER": TestScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+        crawler.signals.connect(track_url, signals.request_reached_downloader)
+        await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.stats.get_value("finish_reason") == "finished"
+        expected_urls = ["data:,a", "data:,b"]
+        assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
+
+    @deferred_f_from_coro_f
     async def test_lazy(self):
         class TestScheduler(BaseScheduler):
             def __init__(self, *args, **kwargs):
@@ -62,7 +101,7 @@ class MainTestCase(TestCase):
         def track_url(request, spider):
             actual_urls.append(request.url)
 
-        settings = {"SCHEDULER": TestScheduler}
+        settings = {"SCHEDULER": TestScheduler, "SEEDING_POLICY": "lazy"}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
         await maybe_deferred_to_future(crawler.crawl())
@@ -115,7 +154,7 @@ class MainTestCase(TestCase):
         def track_url(request, spider):
             actual_urls.append(request.url)
 
-        settings = {"SCHEDULER": TestScheduler}
+        settings = {"SCHEDULER": TestScheduler, "SEEDING_POLICY": "lazy"}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
         await maybe_deferred_to_future(crawler.crawl())
@@ -140,50 +179,12 @@ class MainTestCase(TestCase):
         def track_url(request, spider):
             actual_urls.append(request.url)
 
-        crawler = get_crawler(TestSpider)
-        crawler.signals.connect(track_url, signals.request_reached_downloader)
-        await maybe_deferred_to_future(crawler.crawl())
-        assert crawler.stats.get_value("finish_reason") == "finished"
-        expected_urls = ["data:,a", "data:,b", "data:,c"]
-        assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
-
-    @deferred_f_from_coro_f
-    async def test_greedy(self):
-        class TestScheduler(BaseScheduler):
-            def __init__(self, *args, **kwargs):
-                self.requests = deque((Request("data:,b"),))
-
-            def enqueue_request(self, request: Request) -> bool:
-                self.requests.append(request)
-                return True
-
-            def has_pending_requests(self) -> bool:
-                return bool(self.requests)
-
-            def next_request(self) -> Request | None:
-                try:
-                    return self.requests.pop()
-                except IndexError:
-                    return None
-
-        class TestSpider(Spider):
-            name = "test"
-            start_urls = ["data:,a"]
-
-            def parse(self, response):
-                pass
-
-        actual_urls = []
-
-        def track_url(request, spider):
-            actual_urls.append(request.url)
-
-        settings = {"SCHEDULER": TestScheduler, "SEEDING_POLICY": "greedy"}
+        settings = {"SEEDING_POLICY": "lazy"}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
         await maybe_deferred_to_future(crawler.crawl())
         assert crawler.stats.get_value("finish_reason") == "finished"
-        expected_urls = ["data:,a", "data:,b"]
+        expected_urls = ["data:,a", "data:,b", "data:,c"]
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
     @deferred_f_from_coro_f
@@ -276,7 +277,7 @@ class MainTestCase(TestCase):
         def track_url(request, spider):
             actual_urls.append(request.url)
 
-        settings = {"SCHEDULER": TestScheduler}
+        settings = {"SCHEDULER": TestScheduler, "SEEDING_POLICY": "lazy"}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_item, signals.item_scraped)
         crawler.signals.connect(track_url, signals.request_reached_downloader)

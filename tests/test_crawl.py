@@ -207,7 +207,7 @@ class TestCrawl(TestCase):
 
     @defer.inlineCallbacks
     def test_yield_seeds_laziness(self):
-        settings = {"CONCURRENT_REQUESTS": 1}
+        settings = {"CONCURRENT_REQUESTS": 1, "SEEDING_POLICY": "lazy"}
         crawler = get_crawler(BrokenYieldSeedsSpider, settings)
         yield crawler.crawl(mockserver=self.mockserver)
         assert crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(

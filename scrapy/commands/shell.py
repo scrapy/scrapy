@@ -9,6 +9,7 @@ from __future__ import annotations
 from threading import Thread
 from typing import TYPE_CHECKING, Any
 
+from scrapy import SeedingPolicy
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
 from scrapy.shell import Shell
@@ -24,9 +25,10 @@ if TYPE_CHECKING:
 class Command(ScrapyCommand):
     requires_project = False
     default_settings = {
+        "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
         "KEEP_ALIVE": True,
         "LOGSTATS_INTERVAL": 0,
-        "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
+        "SEEDING_POLICY": SeedingPolicy.lazy,
     }
 
     def syntax(self) -> str:
