@@ -11,13 +11,16 @@ Scrapy VERSION (unreleased)
 Highlights:
 
 -   Replaced ``start_requests`` (sync) with :meth:`~scrapy.Spider.yield_seeds`
-    (async)
+    (async) and changed how it is iterated by default.
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--   In ``scrapy.core.spidermw.SpiderMiddlewareManager``,
-    ``process_start_requests()`` has been replaced by ``process_seeds()``.
+-   By default, the iteration of start requests and items no longer stops once
+    there are requests in the scheduler.
+
+    You can restore the previous behavior by setting :setting:`SEEDING_POLICY`
+    to :py:enum:mem:`~scrapy.SeedingPolicy.lazy`.
 
 -   In ``scrapy.core.engine.ExecutionEngine``:
 
@@ -33,6 +36,9 @@ Backward-incompatible changes
 
 -   The ``slot`` :ref:`telnet variable <telnet-vars>` has been removed.
 
+-   In ``scrapy.core.spidermw.SpiderMiddlewareManager``,
+    ``process_start_requests()`` has been replaced by ``process_seeds()``.
+
 Deprecations
 ~~~~~~~~~~~~
 
@@ -40,16 +46,14 @@ Deprecations
     use :meth:`~scrapy.Spider.yield_seeds` instead, or both to maintain support
     for lower Scrapy versions.
 
-    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6715`,
-    :issue:`6729`)
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
 
 -   The ``process_start_requests()`` method of :ref:`spider middlewares
     <topics-spider-middleware>` is deprecated, use
     :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds` instead, or
     both to maintain support for lower Scrapy versions.
 
-    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6715`,
-    :issue:`6729`)
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
 
 New features
 ~~~~~~~~~~~~
@@ -63,7 +67,22 @@ New features
     requests and items, e.g. reading them from a queue service or database
     using an asynchronous client, without workarounds.
 
-    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`)
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
+
+-   The new :setting:`SEEDING_POLICY` setting allows customizing how start
+    requests and items are iterated.
+
+    You can also override the active seeding policy from
+    :meth:`Spider.yield_seeds <scrapy.Spider.yield_seeds>` and from
+    :meth:`SpiderMiddleware.process_seeds
+    <scrapy.spidermiddlewares.SpiderMiddleware.process_seeds>`.
+
+    .. note:: Some third-party spider middlewares may need to be updated for
+        Scrapy VERSION support before you can use them in combination with the
+        ability to override the active seeding policy.
+
+    (:issue:`740`, :issue:`1051`, :issue:`1443`, :issue:`3237`, :issue:`4467`,
+    :issue:`5282`, :issue:`6730`)
 
 Bug fixes
 ~~~~~~~~~
@@ -72,7 +91,7 @@ Bug fixes
     equivalent) no longer delays the next iteration of starting requests and
     items by up to 5 seconds.
 
-    (:issue:`6715`, :issue:`6729`)
+    (:issue:`6729`)
 
 
 .. _release-2.12.0:

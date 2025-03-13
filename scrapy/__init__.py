@@ -7,6 +7,7 @@ import sys
 import warnings
 
 # Declare top-level shortcuts
+from scrapy.core._seeding import SeedingPolicy
 from scrapy.http import FormRequest, Request
 from scrapy.item import Field, Item
 from scrapy.selector import Selector
@@ -17,6 +18,7 @@ __all__ = [
     "FormRequest",
     "Item",
     "Request",
+    "SeedingPolicy",
     "Selector",
     "Spider",
     "__version__",
