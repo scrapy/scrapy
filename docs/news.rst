@@ -80,6 +80,15 @@ New features
     (:issue:`740`, :issue:`1051`, :issue:`1443`, :issue:`3237`, :issue:`4467`,
     :issue:`5282`, :issue:`6715`)
 
+Bug fixes
+~~~~~~~~~
+
+-   Yielding an start item (i.e. from :meth:`~scrapy.Spider.yield_seeds` or an
+    equivalent) no longer delays the next iteration of starting requests and
+    items by up to 5 seconds.
+
+    (:issue:`6715`, :issue:`6729`)
+
 
 .. _release-2.12.0:
 
