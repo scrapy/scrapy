@@ -40,14 +40,16 @@ Deprecations
     use :meth:`~scrapy.Spider.yield_seeds` instead, or both to maintain support
     for lower Scrapy versions.
 
-    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`)
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6715`,
+    :issue:`6729`)
 
 -   The ``process_start_requests()`` method of :ref:`spider middlewares
     <topics-spider-middleware>` is deprecated, use
     :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds` instead, or
     both to maintain support for lower Scrapy versions.
 
-    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`)
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6715`,
+    :issue:`6729`)
 
 New features
 ~~~~~~~~~~~~
@@ -62,6 +64,15 @@ New features
     using an asynchronous client, without workarounds.
 
     (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`)
+
+Bug fixes
+~~~~~~~~~
+
+-   Yielding a start item (i.e. from :meth:`~scrapy.Spider.yield_seeds` or an
+    equivalent) no longer delays the next iteration of starting requests and
+    items by up to 5 seconds.
+
+    (:issue:`6715`, :issue:`6729`)
 
 
 .. _release-2.12.0:
