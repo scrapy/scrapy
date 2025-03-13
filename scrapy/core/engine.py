@@ -8,7 +8,6 @@ For more information see docs/topics/architecture.rst
 from __future__ import annotations
 
 import logging
-from enum import Enum
 from time import time
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
@@ -24,6 +23,8 @@ from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.reactor import CallLaterOnce
+
+from ._seeding import SeedingPolicy
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable, Callable, Generator
@@ -77,13 +78,6 @@ class _Slot:
             self.closing.callback(None)
 
 
-class _SeedingPolicy(Enum):
-    front_load = "front-load"
-    greedy = "greedy"
-    idle = "idle"
-    lazy = "lazy"
-
-
 class ExecutionEngine:
     _SLOT_HEARTBEAT_INTERVAL: float = 5.0
 
@@ -117,9 +111,9 @@ class ExecutionEngine:
 
     def _load_seeding_policy(self) -> None:
         try:
-            self._seeding_policy = _SeedingPolicy(self.settings["SEEDING_POLICY"])
+            self._seeding_policy = SeedingPolicy(self.settings["SEEDING_POLICY"])
         except ValueError:
-            supported_values = ", ".join(policy.value for policy in _SeedingPolicy)
+            supported_values = ", ".join(policy.value for policy in SeedingPolicy)
             raise ValueError(
                 f"The value of the SEEDING_POLICY setting "
                 f"({self.settings['SEEDING_POLICY']!r}) is not supported. "
@@ -206,7 +200,7 @@ class ExecutionEngine:
             if isinstance(seed, Request):
                 self.crawl(seed)
                 if (
-                    self._seeding_policy is not _SeedingPolicy.front_load
+                    self._seeding_policy is not SeedingPolicy.front_load
                     and not self._needs_backout()
                 ):
                     self._start_scheduled_request()
@@ -215,7 +209,7 @@ class ExecutionEngine:
                 self._slot.nextcall.schedule()
         finally:
             self._waiting_for_seed = False
-        if self._seeding_policy is _SeedingPolicy.front_load and self._seeds is None:
+        if self._seeding_policy is SeedingPolicy.front_load and self._seeds is None:
             self._slot.nextcall.schedule()
 
     @inlineCallbacks
@@ -223,7 +217,7 @@ class ExecutionEngine:
         if self._slot is None or self._slot.closing is not None or self.paused:
             return
 
-        if self._seeding_policy in {_SeedingPolicy.idle, _SeedingPolicy.lazy}:
+        if self._seeding_policy in {SeedingPolicy.idle, SeedingPolicy.lazy}:
             while not self._needs_backout():
                 if self._start_scheduled_request() is None:
                     break
@@ -231,15 +225,15 @@ class ExecutionEngine:
                 self._seeds is not None
                 and not self._needs_backout()
                 and (
-                    self._seeding_policy is not _SeedingPolicy.idle
+                    self._seeding_policy is not SeedingPolicy.idle
                     or (not self._waiting_for_seed and not self.downloader.active)
                 )
             ):
                 yield self._process_next_seed()
         else:
             assert self._seeding_policy in {
-                _SeedingPolicy.front_load,
-                _SeedingPolicy.greedy,
+                SeedingPolicy.front_load,
+                SeedingPolicy.greedy,
             }
             if self._seeds is not None:
                 if not self._needs_backout():

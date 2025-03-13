@@ -27,6 +27,7 @@ author = "Scrapy developers"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
+    "enum_tools.autoenum",
     "hoverxref.extension",
     "notfound.extension",
     "scrapydocs",
