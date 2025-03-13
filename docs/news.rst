@@ -67,7 +67,7 @@ New features
     requests and items, e.g. reading them from a queue service or database
     using an asynchronous client, without workarounds.
 
-    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`)
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
 
 -   The new :setting:`SEEDING_POLICY` setting allows customizing how start
     requests and items are iterated.
@@ -82,7 +82,7 @@ New features
         ability to override the active seeding policy.
 
     (:issue:`740`, :issue:`1051`, :issue:`1443`, :issue:`3237`, :issue:`4467`,
-    :issue:`5282`, :issue:`6715`)
+    :issue:`5282`, :issue:`6730`)
 
 Bug fixes
 ~~~~~~~~~
