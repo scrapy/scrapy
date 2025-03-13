@@ -83,7 +83,7 @@ New features
 Bug fixes
 ~~~~~~~~~
 
--   Yielding an start item (i.e. from :meth:`~scrapy.Spider.yield_seeds` or an
+-   Yielding a start item (i.e. from :meth:`~scrapy.Spider.yield_seeds` or an
     equivalent) no longer delays the next iteration of starting requests and
     items by up to 5 seconds.
 
