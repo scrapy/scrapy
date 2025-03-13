@@ -231,7 +231,11 @@ class MainTestCase(TestCase):
 
 
 class MockServerTestCase(TestCase):
+    # See the comment on the matching line above.
     timeout = ExecutionEngine._SLOT_HEARTBEAT_INTERVAL
+    # If requests are too fast, test_idle will fail because the outcome will
+    # match that of the lazy seeding policy.
+    delay = 0.2
 
     @classmethod
     def setUpClass(cls):
@@ -245,7 +249,7 @@ class MockServerTestCase(TestCase):
     @deferred_f_from_coro_f
     async def test_idle(self):
         def _url(id):
-            return self.mockserver.url(f"/delay?n=0.1&{id}")
+            return self.mockserver.url(f"/delay?n={self.delay}&{id}")
 
         class TestScheduler(BaseScheduler):
             def __init__(self, *args, **kwargs):
