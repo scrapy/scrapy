@@ -120,7 +120,7 @@ class TestCloseSpider(TestCase):
 
             async def yield_seeds(self):
                 raise CloseSpider("foo")
-                yield
+                yield  # pylint: disable=unreachable
 
         close_reasons = []
 

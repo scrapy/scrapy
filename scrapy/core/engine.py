@@ -269,6 +269,7 @@ class ExecutionEngine:
             self._slot.nextcall.schedule()
             return
         except CloseSpider as exception:
+            assert self.spider is not None  # typing
             self.close_spider(self.spider, reason=exception.reason)
             return
 
