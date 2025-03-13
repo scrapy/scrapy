@@ -193,6 +193,9 @@ class ExecutionEngine:
             seed = yield deferred_from_coro(self._seeds.__anext__())
         except StopAsyncIteration:
             self._seeds = None
+        except CloseSpider:
+            self._seeds = None
+            raise
         except Exception:
             self._seeds = None
             logger.error(
@@ -264,6 +267,9 @@ class ExecutionEngine:
                             break
         except _SeedingPolicyChange:
             self._slot.nextcall.schedule()
+            return
+        except CloseSpider as exception:
+            self.close_spider(self.spider, reason=exception.reason)
             return
 
         if self.spider_is_idle() and self._slot.close_if_idle:

@@ -84,7 +84,8 @@ one or more of these methods:
                     yield seed
 
         You may yield the same type of objects as
-        :meth:`~scrapy.Spider.yield_seeds`.
+        :meth:`~scrapy.Spider.yield_seeds`. It may also raise
+        :exc:`~scrapy.exceptions.CloseSpider`.
 
         As with :meth:`~scrapy.Spider.yield_seeds`, how this method is iterated
         by default is controlled by :setting:`SEEDING_POLICY`. It is also

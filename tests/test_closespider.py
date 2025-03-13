@@ -1,6 +1,9 @@
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
+from scrapy import Spider, signals
+from scrapy.exceptions import CloseSpider
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 from tests.spiders import (
@@ -109,3 +112,43 @@ class TestCloseSpider(TestCase):
         assert reason == "closespider_timeout_no_item"
         total_seconds = crawler.stats.get_value("elapsed_time_seconds")
         assert total_seconds >= timeout
+
+    @deferred_f_from_coro_f
+    async def test_yield_seeds(self):
+        class TestSpider(Spider):
+            name = "test"
+
+            async def yield_seeds(self):
+                raise CloseSpider("foo")
+                yield
+
+        close_reasons = []
+
+        def track_close_reason(spider, reason):
+            close_reasons.append(reason)
+
+        crawler = get_crawler(TestSpider)
+        crawler.signals.connect(track_close_reason, signal=signals.spider_closed)
+        await maybe_deferred_to_future(crawler.crawl())
+        assert len(close_reasons) == 1
+        assert close_reasons[0] == "foo"
+
+    @deferred_f_from_coro_f
+    async def test_callback(self):
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+
+            def parse(self, response):
+                raise CloseSpider("foo")
+
+        close_reasons = []
+
+        def track_close_reason(spider, reason):
+            close_reasons.append(reason)
+
+        crawler = get_crawler(TestSpider)
+        crawler.signals.connect(track_close_reason, signal=signals.spider_closed)
+        await maybe_deferred_to_future(crawler.crawl())
+        assert len(close_reasons) == 1
+        assert close_reasons[0] == "foo"

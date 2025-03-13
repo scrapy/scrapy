@@ -84,6 +84,12 @@ New features
     (:issue:`740`, :issue:`1051`, :issue:`1443`, :issue:`3237`, :issue:`4467`,
     :issue:`5282`, :issue:`6730`)
 
+-   You can now raise :exc:`~scrapy.exceptions.CloseSpider` from
+    :meth:`~scrapy.Spider.yield_seeds` and from
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds`.
+
+    (:issue:`3463`, :issue:`4058`, :issue:`6148`, :issue:`6715`, :issue:`6728`)
+
 Bug fixes
 ~~~~~~~~~
 

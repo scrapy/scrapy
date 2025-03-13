@@ -127,6 +127,18 @@ class Spider(object_ref):
                 yield self.crawler.settings["SEEDING_POLICY"]
                 yield Request("https://c.example")
 
+        It is also possible to raise :exc:`~scrapy.exceptions.CloseSpider`, for
+        example to customize the close reason when there are no seeds to yield:
+
+        .. code-block:: python
+
+            async def yield_seeds(self):
+                seeds = await queue_service_client.get_seed_batch()
+                if not seeds:
+                    raise CloseSpider("no_seeds")
+                for seed in seeds:
+                    yield seed
+
         To write spiders that work on Scrapy versions lower than VERSION,
         define also a synchronous ``start_requests()`` method that returns an
         iterable. For example:
