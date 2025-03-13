@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from collections import defaultdict, deque
+from logging import ERROR
 
+from testfixtures import LogCapture
 from twisted.trial.unittest import TestCase
 
-from scrapy import Request, Spider, signals
+from scrapy import Request, SeedingPolicy, Spider, signals
 from scrapy.core.engine import ExecutionEngine
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
@@ -221,12 +223,72 @@ class MainTestCase(TestCase):
         def track_url(request, spider):
             actual_urls.append(request.url)
 
-        settings = {"SCHEDULER": TestScheduler, "SEEDING_POLICY": "front-load"}
+        settings = {"SCHEDULER": TestScheduler, "SEEDING_POLICY": "front_load"}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
         await maybe_deferred_to_future(crawler.crawl())
         assert crawler.stats.get_value("finish_reason") == "finished"
         expected_urls = ["data:,a", "data:,b"]
+        assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
+
+    @deferred_f_from_coro_f
+    async def test_override(self):
+        class TestScheduler(BaseScheduler):
+            def __init__(self, *args, **kwargs):
+                self.requests = defaultdict(deque)
+
+            def enqueue_request(self, request: Request) -> bool:
+                self.requests[request.priority].append(request)
+                return True
+
+            def has_pending_requests(self) -> bool:
+                return bool(self.requests)
+
+            def next_request(self) -> Request | None:
+                if not self.requests:
+                    return None
+                priority = max(self.requests)
+                request = self.requests[priority].popleft()
+                if not self.requests[priority]:
+                    del self.requests[priority]
+                return request
+
+        class TestSpider(Spider):
+            name = "test"
+
+            async def yield_seeds(self):
+                yield "front-load"  # typo
+                yield SeedingPolicy.front_load
+                yield Request("data:,b", priority=1)
+                yield Request("data:,a", priority=2)
+                yield self.crawler.settings["SEEDING_POLICY"]
+                yield Request("data:,c", priority=3)
+
+            def parse(self, response):
+                pass
+
+        actual_items = []
+        actual_urls = []
+
+        def track_item(item, response, spider):
+            actual_items.append(item)
+
+        def track_url(request, spider):
+            actual_urls.append(request.url)
+
+        settings = {"SCHEDULER": TestScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+        crawler.signals.connect(track_item, signals.item_scraped)
+        crawler.signals.connect(track_url, signals.request_reached_downloader)
+        with LogCapture(level=ERROR) as log:
+            await maybe_deferred_to_future(crawler.crawl())
+        assert len(log.records) == 1
+        assert "must be valid seeding policies" in str(log.records[0])
+        assert crawler.stats.get_value("finish_reason") == "finished"
+        assert not actual_items, (
+            f"{actual_items=} should be empty, policies are not items"
+        )
+        expected_urls = ["data:,a", "data:,b", "data:,c"]
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
 

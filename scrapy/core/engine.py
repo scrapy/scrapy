@@ -43,6 +43,10 @@ logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 
+class _SeedingPolicyChange(Exception):
+    pass
+
+
 class _Slot:
     def __init__(
         self,
@@ -204,6 +208,21 @@ class ExecutionEngine:
                     and not self._needs_backout()
                 ):
                     self._start_scheduled_request()
+            elif isinstance(seed, (str, SeedingPolicy)):
+                try:
+                    self._seeding_policy = SeedingPolicy(seed)
+                except ValueError:
+                    valid_policy_strings = ", ".join(
+                        policy.value for policy in SeedingPolicy
+                    )
+                    logger.error(
+                        f"Seed {seed!r} has been ignored. Seeds of {str} type "
+                        f"must be valid seeding policies "
+                        f"({valid_policy_strings})."
+                    )
+                    self._slot.nextcall.schedule()
+                else:
+                    raise _SeedingPolicyChange
             else:
                 self.scraper.start_itemproc(seed, response=None)
                 self._slot.nextcall.schedule()
@@ -217,31 +236,35 @@ class ExecutionEngine:
         if self._slot is None or self._slot.closing is not None or self.paused:
             return
 
-        if self._seeding_policy in {SeedingPolicy.idle, SeedingPolicy.lazy}:
-            while not self._needs_backout():
-                if self._start_scheduled_request() is None:
-                    break
-            if (
-                self._seeds is not None
-                and not self._needs_backout()
-                and (
-                    self._seeding_policy is not SeedingPolicy.idle
-                    or (not self._waiting_for_seed and not self.downloader.active)
-                )
-            ):
-                yield self._process_next_seed()
-        else:
-            assert self._seeding_policy in {
-                SeedingPolicy.front_load,
-                SeedingPolicy.greedy,
-            }
-            if self._seeds is not None:
-                if not self._needs_backout():
-                    yield self._process_next_seed()
-            else:
+        try:
+            if self._seeding_policy in {SeedingPolicy.idle, SeedingPolicy.lazy}:
                 while not self._needs_backout():
                     if self._start_scheduled_request() is None:
                         break
+                if (
+                    self._seeds is not None
+                    and not self._needs_backout()
+                    and (
+                        self._seeding_policy is not SeedingPolicy.idle
+                        or (not self._waiting_for_seed and not self.downloader.active)
+                    )
+                ):
+                    yield self._process_next_seed()
+            else:
+                assert self._seeding_policy in {
+                    SeedingPolicy.front_load,
+                    SeedingPolicy.greedy,
+                }
+                if self._seeds is not None:
+                    if not self._needs_backout():
+                        yield self._process_next_seed()
+                else:
+                    while not self._needs_backout():
+                        if self._start_scheduled_request() is None:
+                            break
+        except _SeedingPolicyChange:
+            self._slot.nextcall.schedule()
+            return
 
         if self.spider_is_idle() and self._slot.close_if_idle:
             self._spider_idle()

@@ -15,7 +15,7 @@ else:
 
 @document_enum
 class SeedingPolicy(Enum):
-    front_load = "front-load"
+    front_load = "front_load"
     """The crawl does not start until all seed requests have been scheduled.
 
     Aims to give the :ref:`scheduler <topics-scheduler>` full control over

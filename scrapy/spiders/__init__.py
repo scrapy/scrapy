@@ -114,7 +114,18 @@ class Spider(object_ref):
                 yield {"foo": "bar"}
 
         Use :setting:`SEEDING_POLICY` to set how :meth:`yield_seeds` is
-        iterated.
+        iterated by default. It is also
+        possible to yield a :class:`~scrapy.SeedingPolicy` enum or a matching
+        string to change the active seeding policy, for example:
+
+        .. code-block:: python
+
+            async def yield_seeds(self):
+                yield "front_load"
+                yield Request("https://a.example")
+                yield Request("https://b.example")
+                yield self.crawler.settings["SEEDING_POLICY"]
+                yield Request("https://c.example")
 
         To write spiders that work on Scrapy versions lower than VERSION,
         define also a synchronous ``start_requests()`` method that returns an

@@ -1746,9 +1746,12 @@ Determines the way :meth:`Spider.yield_seeds <scrapy.Spider.yield_seeds>` is
 iterated.
 
 Its value may be defined as a member of the :class:`~scrapy.SeedingPolicy` enum
-(e.g. :py:enum:mem:`SeedingPolicy.front_load
-<scrapy.SeedingPolicy.front_load>`) or as the corresponding string (e.g.
-``"front-load"``).
+(e.g. :py:enum:mem:`SeedingPolicy.lazy <scrapy.SeedingPolicy.lazy>`) or as a
+matching string (e.g. ``"lazy"``).
+
+You can also override the active seeding policy from :meth:`Spider.yield_seeds
+<scrapy.Spider.yield_seeds>` and from :meth:`SpiderMiddleware.process_seeds
+<scrapy.spidermiddlewares.SpiderMiddleware.process_seeds>`.
 
 .. autoenum:: scrapy.SeedingPolicy
     :members:

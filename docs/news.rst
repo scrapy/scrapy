@@ -40,14 +40,16 @@ Deprecations
     use :meth:`~scrapy.Spider.yield_seeds` instead, or both to maintain support
     for lower Scrapy versions.
 
-    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`)
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6715`,
+    :issue:`6729`)
 
 -   The ``process_start_requests()`` method of :ref:`spider middlewares
     <topics-spider-middleware>` is deprecated, use
     :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds` instead, or
     both to maintain support for lower Scrapy versions.
 
-    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`)
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6715`,
+    :issue:`6729`)
 
 New features
 ~~~~~~~~~~~~
@@ -65,6 +67,26 @@ New features
 
 -   The new :setting:`SEEDING_POLICY` setting allows customizing how spider
     start requests and items are consumed.
+
+    You can also override the active seeding policy from
+    :meth:`Spider.yield_seeds <scrapy.Spider.yield_seeds>` and from
+    :meth:`SpiderMiddleware.process_seeds
+    <scrapy.spidermiddlewares.SpiderMiddleware.process_seeds>`.
+
+    .. note:: Some third-party spider middlewares may need to be updated for
+        Scrapy VERSION support before you can use them in combination with the
+        ability to override the active seeding policy.
+
+    (:issue:`740`, :issue:`1051`, :issue:`1443`, :issue:`3237`, :issue:`4467`,
+    :issue:`5282`, :issue:`6715`)
+
+Bug fixes
+~~~~~~~~~
+
+-   The first :setting:`CONCURRENT_REQUESTS` start requests are no longer sent
+    in reserve order by default.
+
+    (:issue:`6715`, :issue:`6729`)
 
 
 .. _release-2.12.0:
