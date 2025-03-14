@@ -116,6 +116,8 @@ example:
                     f"of Scrapy for more information."
                 )
 
+.. autofunction:: scrapy.utils.reactor.is_asyncio_reactor_installed
+
 
 .. _asyncio-windows:
 
