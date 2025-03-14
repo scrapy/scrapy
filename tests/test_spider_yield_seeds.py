@@ -136,18 +136,59 @@ class MainTestCase(TestCase):
 
         await self._test_yield_seeds(yield_seeds, [ITEM_A])
 
-    # Exceptions
+    # Bad definitions.
 
     @deferred_f_from_coro_f
-    async def test_non_generator_async_def(self):
-        class TestSpider(Spider):
-            name = "test"
+    async def test_async_function(self):
+        async def yield_seeds(spider):
+            return
 
-            async def yield_seeds(self):
-                return
-
-        crawler = get_crawler(TestSpider)
         with LogCapture() as log:
-            await maybe_deferred_to_future(crawler.crawl())
-        assert crawler.stats.get_value("finish_reason") == "finished"
-        assert "TestSpider.yield_seeds must be an async generator function" in str(log)
+            await self._test_yield_seeds(yield_seeds, [])
+
+        assert ".yield_seeds must be an async generator function" in str(log)
+
+    @deferred_f_from_coro_f
+    async def test_sync_function(self):
+        def yield_seeds(spider):
+            return []
+
+        with LogCapture() as log:
+            await self._test_yield_seeds(yield_seeds, [])
+
+        assert ".yield_seeds must be an async generator function" in str(log)
+
+    @deferred_f_from_coro_f
+    async def test_sync_generator(self):
+        def yield_seeds(spider):
+            return
+            yield
+
+        with LogCapture() as log:
+            await self._test_yield_seeds(yield_seeds, [])
+
+        assert ".yield_seeds must be an async generator function" in str(log)
+
+    # Exceptions during iteration.
+
+    @deferred_f_from_coro_f
+    async def test_exception_before_yield(self):
+        async def yield_seeds(spider):
+            raise RuntimeError
+            yield
+
+        with LogCapture() as log:
+            await self._test_yield_seeds(yield_seeds, [])
+
+        assert "in yield_seeds\n    raise RuntimeError" in str(log), log
+
+    @deferred_f_from_coro_f
+    async def test_exception_after_yield(self):
+        async def yield_seeds(spider):
+            yield ITEM_A
+            raise RuntimeError
+
+        with LogCapture() as log:
+            await self._test_yield_seeds(yield_seeds, [ITEM_A])
+
+        assert "in yield_seeds\n    raise RuntimeError" in str(log), log
