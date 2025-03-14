@@ -102,6 +102,8 @@ class DeprecatedWrapSpiderMiddleware:
 
 
 class MainTestCase(TestCase):
+    # Helper methods
+
     async def _test(self, spider_middlewares, spider_cls, expected_items):
         actual_items = []
 
@@ -116,6 +118,17 @@ class MainTestCase(TestCase):
         await maybe_deferred_to_future(crawler.crawl())
         assert crawler.stats.get_value("finish_reason") == "finished"
         assert actual_items == expected_items, f"{actual_items=} != {expected_items=}"
+
+    async def _test_process_seeds(self, _process_seeds, expected_items=None):
+        class TestSpiderMiddleware:
+            process_seeds = _process_seeds
+
+        class TestSpider(Spider):
+            name = "test"
+
+        await self._test([TestSpiderMiddleware], TestSpider, expected_items)
+
+    # Deprecation and universal
 
     async def _test_wrap(self, spider_middleware, spider_cls, expected_items=None):
         expected_items = (
@@ -190,6 +203,8 @@ class MainTestCase(TestCase):
         ):
             await self._test_wrap(DeprecatedWrapSpiderMiddleware, DeprecatedWrapSpider)
 
+    # Sleep tests
+
     async def _test_sleep(self, spider_middlewares):
         class TestSpider(Spider):
             name = "test"
@@ -220,3 +235,60 @@ class MainTestCase(TestCase):
         await self._test_sleep(
             [NoOpSpiderMiddleware, TwistedSleepSpiderMiddleware, NoOpSpiderMiddleware]
         )
+
+    # Bad definitions.
+
+    @deferred_f_from_coro_f
+    async def test_async_function(self):
+        async def process_seeds(mw, seeds):
+            return
+
+        with LogCapture() as log:
+            await self._test_process_seeds(process_seeds, [])
+
+        assert ".process_seeds must be an async generator function" in str(log), log
+
+    @deferred_f_from_coro_f
+    async def test_sync_function(self):
+        def process_seeds(mw, spider):
+            return []
+
+        with LogCapture() as log:
+            await self._test_process_seeds(process_seeds, [])
+
+        assert ".process_seeds must be an async generator function" in str(log)
+
+    @deferred_f_from_coro_f
+    async def test_sync_generator(self):
+        def process_seeds(mw, spider):
+            return
+            yield
+
+        with LogCapture() as log:
+            await self._test_process_seeds(process_seeds, [])
+
+        assert ".process_seeds must be an async generator function" in str(log)
+
+    # Exceptions during iteration.
+
+    @deferred_f_from_coro_f
+    async def test_exception_before_yield(self):
+        async def process_seeds(mw, seeds):
+            raise RuntimeError
+            yield
+
+        with LogCapture() as log:
+            await self._test_process_seeds(process_seeds, [])
+
+        assert "in process_seeds\n    raise RuntimeError" in str(log), log
+
+    @deferred_f_from_coro_f
+    async def test_exception_after_yield(self):
+        async def process_seeds(mw, spider):
+            yield ITEM_A
+            raise RuntimeError
+
+        with LogCapture() as log:
+            await self._test_process_seeds(process_seeds, [ITEM_A])
+
+        assert "in process_seeds\n    raise RuntimeError" in str(log), log

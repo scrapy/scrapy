@@ -372,7 +372,11 @@ class SpiderMiddlewareManager(MiddlewareManager):
     def process_seeds(
         self, spider: Spider
     ) -> Generator[Deferred[Any], Any, AsyncIterator[Any] | None]:
-        self._check_deprecated_start_requests_use(spider)
+        try:
+            self._check_deprecated_start_requests_use(spider)
+        except ValueError as exception:
+            logger.error(exception)
+            return None
         seeds: AsyncIterator[Any]
         if self._use_start_requests:
             sync_seeds = iter(spider.start_requests())
@@ -381,15 +385,19 @@ class SpiderMiddlewareManager(MiddlewareManager):
             )
             seeds = as_async_generator(sync_seeds)
         else:
-            if not isasyncgenfunction(spider.yield_seeds):
+            error_found = False
+            for fn in (spider.yield_seeds, *self.methods["process_seeds"]):
+                if isasyncgenfunction(fn):
+                    continue
                 logger.error(
-                    f"{global_object_name(spider.yield_seeds)} must be an "
-                    f"async generator function, i.e. an async def function "
-                    f"with yield statements."
+                    f"{global_object_name(fn)} must be an async generator "
+                    f"function, i.e. an async def function with yield "
+                    f"statements."
                 )
+                error_found = True
+            if error_found:
                 return None
-            seeds = spider.yield_seeds()
-            seeds = yield self._process_chain("process_seeds", seeds)
+            seeds = yield self._process_chain("process_seeds", spider.yield_seeds())
         return seeds
 
     def _check_deprecated_start_requests_use(self, spider: Spider):
