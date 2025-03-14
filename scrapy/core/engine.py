@@ -27,7 +27,7 @@ from scrapy.utils.reactor import CallLaterOnce
 from ._seeding import SeedingPolicy
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Callable, Generator
+    from collections.abc import AsyncIterator, Callable, Generator
 
     from scrapy.core.downloader import Downloader
     from scrapy.core.scheduler import BaseScheduler
@@ -110,7 +110,7 @@ class ExecutionEngine:
         )
         self.start_time: float | None = None
         self._load_seeding_policy()
-        self._seeds: AsyncIterable[Any] | None = None
+        self._seeds: AsyncIterator[Any] | None = None
         self._waiting_for_seed: bool = False
 
     def _load_seeding_policy(self) -> None:

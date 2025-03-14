@@ -1,6 +1,7 @@
 from asyncio import sleep
 
 import pytest
+from testfixtures import LogCapture
 from twisted.trial.unittest import TestCase
 
 from scrapy import Spider, signals
@@ -117,7 +118,9 @@ class MainTestCase(TestCase):
         assert actual_items == expected_items, f"{actual_items=} != {expected_items=}"
 
     async def _test_wrap(self, spider_middleware, spider_cls, expected_items=None):
-        expected_items = expected_items or [ITEM_A, ITEM_B, ITEM_C]
+        expected_items = (
+            [ITEM_A, ITEM_B, ITEM_C] if expected_items is None else expected_items
+        )
         await self._test([spider_middleware], spider_cls, expected_items)
 
     @deferred_f_from_coro_f
@@ -153,14 +156,16 @@ class MainTestCase(TestCase):
     @deferred_f_from_coro_f
     async def test_deprecated_mw_modern_spider(self):
         with (
+            LogCapture() as log,
             pytest.warns(
                 ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
             ),
-            pytest.raises(
-                ValueError, match=r"only compatible with \(deprecated\) spiders"
-            ),
         ):
-            await self._test_wrap(DeprecatedWrapSpiderMiddleware, ModernWrapSpider)
+            await self._test_wrap(
+                DeprecatedWrapSpiderMiddleware, ModernWrapSpider, expected_items=[]
+            )
+
+        assert "only compatible with (deprecated) spiders" in str(log)
 
     @deferred_f_from_coro_f
     async def test_deprecated_mw_universal_spider(self):

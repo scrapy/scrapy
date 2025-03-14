@@ -1,6 +1,7 @@
 from asyncio import sleep
 
 import pytest
+from testfixtures import LogCapture
 from twisted.internet.defer import Deferred
 from twisted.trial.unittest import TestCase
 
@@ -30,6 +31,8 @@ def twisted_sleep(seconds):
 
 
 class MainTestCase(TestCase):
+    # Utility methods
+
     async def _test_spider(self, spider, expected_items=None):
         actual_items = []
         expected_items = [] if expected_items is None else expected_items
@@ -43,6 +46,15 @@ class MainTestCase(TestCase):
         assert crawler.stats.get_value("finish_reason") == "finished"
         assert actual_items == expected_items
 
+    async def _test_yield_seeds(self, yield_seeds_, expected_items=None):
+        class TestSpider(Spider):
+            name = "test"
+            yield_seeds = yield_seeds_
+
+        await self._test_spider(TestSpider, expected_items)
+
+    # Basic usage
+
     @deferred_f_from_coro_f
     async def test_start_urls(self):
         class TestSpider(Spider):
@@ -55,7 +67,7 @@ class MainTestCase(TestCase):
         await self._test_spider(TestSpider, [ITEM_A])
 
     @deferred_f_from_coro_f
-    async def test_yield_seeds(self):
+    async def test_main(self):
         class TestSpider(Spider):
             name = "test"
 
@@ -64,16 +76,7 @@ class MainTestCase(TestCase):
 
         await self._test_spider(TestSpider, [ITEM_A])
 
-    @deferred_f_from_coro_f
-    async def test_yield_seeds_subclass(self):
-        class BaseSpider(Spider):
-            async def yield_seeds(self):
-                yield ITEM_A
-
-        class TestSpider(BaseSpider):
-            name = "test"
-
-        await self._test_spider(TestSpider, [ITEM_A])
+    # Deprecation of start_requests and universal implementation support.
 
     @deferred_f_from_coro_f
     async def test_deprecated(self):
@@ -112,26 +115,7 @@ class MainTestCase(TestCase):
 
         await self._test_spider(TestSpider, [ITEM_A])
 
-    @deferred_f_from_coro_f
-    async def test_universal_subclass(self):
-        class BaseSpider(Spider):
-            async def yield_seeds(self):
-                yield ITEM_A
-
-            def start_requests(self):
-                yield ITEM_B
-
-        class TestSpider(BaseSpider):
-            name = "test"
-
-        await self._test_spider(TestSpider, [ITEM_A])
-
-    async def _test_yield_seeds(self, yield_seeds_, expected_items=None):
-        class TestSpider(Spider):
-            name = "test"
-            yield_seeds = yield_seeds_
-
-        await self._test_spider(TestSpider, expected_items)
+    # Delays.
 
     @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
@@ -151,3 +135,19 @@ class MainTestCase(TestCase):
             yield ITEM_A
 
         await self._test_yield_seeds(yield_seeds, [ITEM_A])
+
+    # Exceptions
+
+    @deferred_f_from_coro_f
+    async def test_non_generator_async_def(self):
+        class TestSpider(Spider):
+            name = "test"
+
+            async def yield_seeds(self):
+                return
+
+        crawler = get_crawler(TestSpider)
+        with LogCapture() as log:
+            await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.stats.get_value("finish_reason") == "finished"
+        assert "TestSpider.yield_seeds must be an async generator function" in str(log)
