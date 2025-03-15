@@ -748,6 +748,7 @@ class TestCrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             in log
         )
+        assert "RuntimeError" not in log
 
     def test_asyncio_enabled_reactor(self):
         log = self.run_script("asyncio_enabled_reactor.py")
@@ -756,6 +757,7 @@ class TestCrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             in log
         )
+        assert "RuntimeError" not in log
 
     @pytest.mark.skipif(
         parse_version(w3lib_version) >= parse_version("2.0.0"),
