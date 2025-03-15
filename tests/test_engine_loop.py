@@ -11,9 +11,9 @@ from scrapy import Request, SeedingPolicy, Spider, signals
 from scrapy.core.engine import ExecutionEngine
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
-from tests.test_scheduler import MemoryScheduler, PriorityScheduler
 
 from .mockserver import MockServer
+from .test_scheduler import MemoryScheduler, PriorityScheduler
 
 
 def sleep(seconds: float = ExecutionEngine._MIN_BACK_IN_SECONDS):
@@ -389,7 +389,10 @@ class MainTestCase(TestCase):
 
         class TestSpider(Spider):
             name = "test"
-            start_urls = ["data:,c"]
+
+            async def yield_seeds(self):
+                await sleep()
+                yield Request("data:,c")
 
             def parse(self, response):
                 pass
