@@ -1662,10 +1662,9 @@ the user agent to use in the robots.txt file.
 SCHEDULER
 ---------
 
-Default: ``'scrapy.core.scheduler.Scheduler'``
+Default: :class:`~scrapy.core.scheduler.Scheduler`
 
-The scheduler class to be used for crawling.
-See the :ref:`topics-scheduler` topic for details.
+See :ref:`scheduler <topics-scheduler>`.
 
 .. setting:: SCHEDULER_DEBUG
 
@@ -1710,14 +1709,19 @@ Type of in-memory queue used by scheduler. Other available type is:
 
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
-Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
 
-Type of priority queue used by the scheduler. Another available type is
-``scrapy.pqueues.DownloaderAwarePriorityQueue``.
-``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
-``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
-domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
-does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
+Default: :class:`~scrapy.pqueues.ScrapyPriorityQueue`
+
+Queue used by the :ref:`scheduler <topics-scheduler>` to sort scheduled
+requests by :attr:`Request.priority <scrapy.Request.priority>`.
+
+Scheduled requests with the same priority are stored in nested queues, either
+:setting:`SCHEDULER_MEMORY_QUEUE` or :setting:`SCHEDULER_DISK_QUEUE`.
+
+The following built-in priority queues are available:
+
+.. autoclass:: scrapy.pqueues.ScrapyPriorityQueue
+.. autoclass:: scrapy.pqueues.DownloaderAwarePriorityQueue
 
 .. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
 

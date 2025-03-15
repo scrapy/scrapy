@@ -130,6 +130,14 @@ class Request(object_ref):
         self._set_body(body)
         if not isinstance(priority, int):
             raise TypeError(f"Request priority not an integer: {priority!r}")
+
+        #: Value that the :ref:`scheduler <topics-scheduler>` may use for
+        #: request prioritization.
+        #:
+        #: Built-in schedulers prioritize requests with a higher priority
+        #: value.
+        #:
+        #: Negative values are allowed.
         self.priority: int = priority
 
         if not (callable(callback) or callback is None):

@@ -50,9 +50,9 @@ class QueueProtocol(Protocol):
 
 
 class ScrapyPriorityQueue:
-    """A priority queue implemented using multiple internal queues (typically,
-    FIFO queues). It uses one internal queue for each priority value. The internal
-    queue must implement the following methods:
+    """Default scheduler priority queue (:setting:`SCHEDULER_PRIORITY_QUEUE`).
+
+    The internal queue must implement the following methods:
 
         * push(obj)
         * pop()
@@ -185,6 +185,13 @@ class DownloaderAwarePriorityQueue:
     """PriorityQueue which takes Downloader activity into account:
     domains (slots) with the least amount of active downloads are dequeued
     first.
+
+    Another available type is
+    ``scrapy.pqueues.DownloaderAwarePriorityQueue``.
+    ``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
+    ``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
+    domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
+    does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
     """
 
     @classmethod
