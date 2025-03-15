@@ -249,6 +249,16 @@ class ExecutionEngine:
             and not self._needs_backout()
         )
 
+    def _scheduler_has_pending_requests(self) -> bool:
+        try:
+            return self._slot.scheduler.has_pending_requests()
+        except Exception as exception:
+            exception_traceback = format_exc()
+            logger.error(
+                f"{global_object_name(self._slot.scheduler.has_pending_requests)} raised an exception: {exception}.\n{exception_traceback}"
+            )
+            return False
+
     @inlineCallbacks
     def _run_loop(self) -> Generator[Deferred[Any], Any, None]:
         """Sends new requests from seeds or from the scheduler based on the
@@ -288,7 +298,7 @@ class ExecutionEngine:
             self._spider_idle()
         elif self._needs_backout():
             self._back_in_seconds = self._MIN_BACK_IN_SECONDS
-        elif self._slot.scheduler.has_pending_requests():
+        elif self._scheduler_has_pending_requests():
             # If the scheduler reports having pending requests but did not
             # actually return one, use exponential backoff to schedule a new
             # call to this method, to see if the scheduler finally returns a
@@ -391,7 +401,7 @@ class ExecutionEngine:
             return False
         if self._seeds is not None:  # not all start requests are handled
             return False
-        return not self._slot.scheduler.has_pending_requests()
+        return not self._scheduler_has_pending_requests()
 
     def crawl(self, request: Request) -> None:
         """Inject the request into the spider <-> downloader pipeline"""
@@ -410,7 +420,15 @@ class ExecutionEngine:
         for handler, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
-        if not self._slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
+        try:
+            request_was_enqueued = self._slot.scheduler.enqueue_request(request)
+        except Exception as exception:
+            exception_traceback = format_exc()
+            logger.error(
+                f"{global_object_name(self._slot.scheduler.enqueue_request)} raised an exception: {exception}\n{exception_traceback}"
+            )
+            request_was_enqueued = False
+        if not request_was_enqueued:
             self.signals.send_catch_log(
                 signals.request_dropped, request=request, spider=spider
             )

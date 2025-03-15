@@ -309,6 +309,73 @@ class MainTestCase(TestCase):
         expected_urls = ["data:,a", "data:,b", "data:,c"]
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
+    # Unexpected scheduler exceptions
+
+    @deferred_f_from_coro_f
+    async def test_scheduler_has_pending_requests_exception(self):
+        """If Scheduler.has_pending_requests() raises an exception while
+        checking if the spider is idle, consider the return value to be False
+        (i.e. the spider is indeed idle), and log a traceback."""
+
+        class TestScheduler(MemoryScheduler):
+            def has_pending_requests(self):
+                raise RuntimeError
+
+            def next_request(self):
+                return None
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = []
+
+            def parse(self, response):
+                pass
+
+        actual_urls = []
+
+        def track_url(request, spider):
+            actual_urls.append(request.url)
+
+        settings = {"SCHEDULER": TestScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+        crawler.signals.connect(track_url, signals.request_reached_downloader)
+        with LogCapture() as log:
+            await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.stats.get_value("finish_reason") == "finished"
+        expected_urls = []
+        assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
+        assert "in has_pending_requests\n    raise RuntimeError" in str(log), log
+
+    @deferred_f_from_coro_f
+    async def test_scheduler_enqueue_request_exception(self):
+        class TestScheduler(MemoryScheduler):
+            def enqueue_request(self, request):
+                raise RuntimeError
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+
+            def parse(self, response):
+                pass
+
+        actual_dropped_urls = []
+
+        def track_dropped_url(request, spider):
+            actual_dropped_urls.append(request.url)
+
+        settings = {"SCHEDULER": TestScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+        crawler.signals.connect(track_dropped_url, signals.request_dropped)
+        with LogCapture() as log:
+            await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.stats.get_value("finish_reason") == "finished"
+        expected_dropped_urls = ["data:,"]
+        assert actual_dropped_urls == expected_dropped_urls, (
+            f"{actual_dropped_urls=} != {expected_dropped_urls=}"
+        )
+        assert "in enqueue_request\n    raise RuntimeError" in str(log), log
+
     @deferred_f_from_coro_f
     async def test_scheduler_next_request_exception(self):
         class TestScheduler(MemoryScheduler):
