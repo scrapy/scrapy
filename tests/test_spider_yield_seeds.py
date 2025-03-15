@@ -11,6 +11,8 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
+from .test_scheduler import MemoryScheduler
+
 # These are the minimum seconds necessary to wait to reproduce the issue that
 # has been solved by catching the RuntimeError exception in the
 # ExecutionEngine._next_request() method. A lower value makes these tests pass
@@ -33,18 +35,19 @@ def twisted_sleep(seconds):
 class MainTestCase(TestCase):
     # Utility methods
 
-    async def _test_spider(self, spider, expected_items=None):
+    async def _test_spider(self, spider, expected_items=None, settings=None):
         actual_items = []
         expected_items = [] if expected_items is None else expected_items
+        settings = settings or {}
 
         def track_item(item, response, spider):
             actual_items.append(item)
 
-        crawler = get_crawler(spider)
+        crawler = get_crawler(spider, settings_dict=settings)
         crawler.signals.connect(track_item, signals.item_scraped)
         await maybe_deferred_to_future(crawler.crawl())
         assert crawler.stats.get_value("finish_reason") == "finished"
-        assert actual_items == expected_items
+        assert actual_items == expected_items, f"{actual_items=} != {expected_items=}"
 
     async def _test_yield_seeds(self, yield_seeds_, expected_items=None):
         class TestSpider(Spider):
@@ -168,6 +171,31 @@ class MainTestCase(TestCase):
             await self._test_yield_seeds(yield_seeds, [])
 
         assert ".yield_seeds must be an async generator function" in str(log)
+
+    @deferred_f_from_coro_f
+    async def test_bad_definition_continuance(self):
+        """Even if yield_seeds (or process_seeds) are not correctly defined,
+        blocking the iteration of seeds, requests from the scheduler are still
+        consumed."""
+
+        class TestScheduler(MemoryScheduler):
+            queue = ["data:,"]
+
+        class TestSpider(Spider):
+            name = "test"
+
+            async def yield_seeds(self):
+                return
+
+            async def parse(self, response):
+                yield ITEM_A
+
+        settings = {"SCHEDULER": TestScheduler}
+
+        with LogCapture() as log:
+            await self._test_spider(TestSpider, [ITEM_A], settings=settings)
+
+        assert ".yield_seeds must be an async generator function" in str(log), log
 
     # Exceptions during iteration.
 

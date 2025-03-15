@@ -90,6 +90,18 @@ New features
 
     (:issue:`3463`, :issue:`4058`, :issue:`6148`, :issue:`6715`, :issue:`6728`)
 
+-   Unlike its precedesors, if :meth:`~scrapy.Spider.yield_seeds` or
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds` are not
+    asynchronous generators, the crawl starts nonetheless, without seeds.
+
+    This aligns with the behavior of spider callbacks, and allows the crawl to
+    process requests from the scheduler, e.g. when :ref:`resuming a paused job
+    <topics-jobs>`.
+
+    The logged errors have also been improved.
+
+    (:issue:`5426`)
+
 Bug fixes
 ~~~~~~~~~
 
