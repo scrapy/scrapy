@@ -275,7 +275,7 @@ class MainTestCase(TestCase):
     async def test_exception_before_yield(self):
         async def process_seeds(mw, seeds):
             raise RuntimeError
-            yield
+            yield  # pylint: disable=unreachable
 
         with LogCapture() as log:
             await self._test_process_seeds(process_seeds, [])

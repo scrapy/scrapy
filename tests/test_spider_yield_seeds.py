@@ -203,7 +203,7 @@ class MainTestCase(TestCase):
     async def test_exception_before_yield(self):
         async def yield_seeds(spider):
             raise RuntimeError
-            yield
+            yield  # pylint: disable=unreachable
 
         with LogCapture() as log:
             await self._test_yield_seeds(yield_seeds, [])
