@@ -236,24 +236,34 @@ class ExecutionEngine:
         if self._seeding_policy is SeedingPolicy.front_load and self._seeds is None:
             self._slot.nextcall.schedule()
 
+    def _process_scheduler_requests(self):
+        while not self._needs_backout():
+            if self._start_scheduled_request() is None:
+                break
+
+    def _can_process_next_seed(self) -> bool:
+        return (
+            not self._waiting_for_seed
+            and self._seeds is not None
+            and not self._needs_backout()
+        )
+
     @inlineCallbacks
-    def _start_next_requests(self) -> Generator[Deferred[Any], Any, None]:
+    def _run_loop(self) -> Generator[Deferred[Any], Any, None]:
+        """Sends new requests from seeds or from the scheduler based on the
+        configured seeding policy and on whether or not there is room for them,
+        e.g. on whether there are fewer active requests than the configured
+        maximum concurrency or if the total size of responses being processed
+        is below the configured limit."""
         if self._slot is None or self._slot.closing is not None or self.paused:
             return
 
         try:
             if self._seeding_policy in {SeedingPolicy.idle, SeedingPolicy.lazy}:
-                while not self._needs_backout():
-                    if self._start_scheduled_request() is None:
-                        break
-                if (
-                    not self._waiting_for_seed
-                    and self._seeds is not None
-                    and not self._needs_backout()
-                    and (
-                        self._seeding_policy is not SeedingPolicy.idle
-                        or (not self._waiting_for_seed and not self.downloader.active)
-                    )
+                self._process_scheduler_requests()
+                if self._can_process_next_seed() and (
+                    self._seeding_policy is not SeedingPolicy.idle
+                    or not self.downloader.active
                 ):
                     yield self._process_next_seed()
             else:
@@ -261,13 +271,10 @@ class ExecutionEngine:
                     SeedingPolicy.front_load,
                     SeedingPolicy.greedy,
                 }
-                if not self._waiting_for_seed and self._seeds is not None:
-                    if not self._needs_backout():
-                        yield self._process_next_seed()
+                if self._can_process_next_seed():
+                    yield self._process_next_seed()
                 else:
-                    while not self._needs_backout():
-                        if self._start_scheduled_request() is None:
-                            break
+                    self._process_scheduler_requests()
         except _SeedingPolicyChange:
             self._slot.nextcall.schedule()
             return
@@ -463,7 +470,7 @@ class ExecutionEngine:
         if self._slot is not None:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={"spider": spider})
-        nextcall = CallLaterOnce(self._start_next_requests)
+        nextcall = CallLaterOnce(self._run_loop)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
         self._seeds = yield self.scraper.spidermw.process_seeds(spider)
         self._slot = _Slot(close_if_idle, nextcall, scheduler)
