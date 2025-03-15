@@ -27,7 +27,7 @@ class MemoryScheduler(BaseScheduler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.queue = deque(
-            value if isinstance(value, Request) else Request(value)
+            Request(value) if isinstance(value, str) else value
             for value in getattr(self, "queue", [])
         )
 

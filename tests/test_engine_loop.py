@@ -309,6 +309,39 @@ class MainTestCase(TestCase):
         expected_urls = ["data:,a", "data:,b", "data:,c"]
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
+    @deferred_f_from_coro_f
+    async def test_scheduler_next_request_exception(self):
+        class TestScheduler(MemoryScheduler):
+            queue = ["data:,b", RuntimeError(), "data:,a"]
+
+            def next_request(self):
+                request = super().next_request()
+                if isinstance(request, Exception):
+                    raise request
+                return request
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,c"]
+
+            def parse(self, response):
+                pass
+
+        actual_urls = []
+
+        def track_url(request, spider):
+            actual_urls.append(request.url)
+
+        settings = {"SCHEDULER": TestScheduler, "SEEDING_POLICY": "lazy"}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+        crawler.signals.connect(track_url, signals.request_reached_downloader)
+        with LogCapture() as log:
+            await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.stats.get_value("finish_reason") == "finished"
+        expected_urls = ["data:,a", "data:,b", "data:,c"]
+        assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
+        assert "in next_request\n    raise request" in str(log), log
+
 
 class MockServerTestCase(TestCase):
     # If requests are too fast, test_idle will fail because the outcome will

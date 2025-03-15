@@ -22,6 +22,7 @@ from scrapy.http import Request, Response
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import CallLaterOnce
 
 from ._seeding import SeedingPolicy
@@ -312,7 +313,14 @@ class ExecutionEngine:
         assert self._slot is not None  # typing
         assert self.spider is not None  # typing
 
-        request = self._slot.scheduler.next_request()
+        try:
+            request = self._slot.scheduler.next_request()
+        except Exception as exception:
+            exception_traceback = format_exc()
+            logger.exception(
+                f"{global_object_name(self._slot.scheduler.next_request)} raised an exception: {exception}\n{exception_traceback}"
+            )
+            return None
         if request is None:
             return None
 
