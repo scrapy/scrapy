@@ -151,8 +151,7 @@ class Crawler:
             self._apply_settings()
             self._update_root_log_handler()
             self.engine = self._create_engine()
-            start_requests = iter(self.spider.start_requests())
-            yield self.engine.open_spider(self.spider, start_requests)
+            yield self.engine.open_spider(self.spider)
             yield maybeDeferred(self.engine.start)
         except Exception:
             self.crawling = False

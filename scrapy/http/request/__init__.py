@@ -191,7 +191,7 @@ class Request(object_ref):
         #:
         #: When defining the start URLs of a spider through
         #: :attr:`~scrapy.Spider.start_urls`, this attribute is enabled by
-        #: default. See :meth:`~scrapy.Spider.start_requests`.
+        #: default. See :meth:`~scrapy.Spider.yield_seeds`.
         self.dont_filter: bool = dont_filter
 
         self._meta: dict[str, Any] | None = dict(meta) if meta else None

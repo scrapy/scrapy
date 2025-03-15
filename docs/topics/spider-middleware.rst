@@ -70,30 +70,31 @@ one or more of these methods:
 
 .. class:: SpiderMiddleware
 
-    .. method:: process_start_requests(start_requests, spider)
+    .. method:: process_seeds(seeds: AsyncIterable[Any], /) -> AsyncIterable[Any]
+        :async:
 
-        This method is called with the start requests of the spider, and works
-        similarly to the :meth:`process_spider_output` method, except that it
-        doesn't have a response associated and must return only requests (not
-        items).
+        Iterate over the output of :meth:`~scrapy.Spider.yield_seeds` or that
+        of the :meth:`process_seeds` method of an earlier spider middleware,
+        overriding it. For example:
 
-        It receives an iterable (in the ``start_requests`` parameter) and must
-        return another iterable of :class:`~scrapy.Request` objects and/or :ref:`item objects <topics-items>`.
+        .. code-block:: python
 
-        .. note:: When implementing this method in your spider middleware, you
-           should always return an iterable (that follows the input one) and
-           not consume all ``start_requests`` iterator because it can be very
-           large (or even unbounded) and cause a memory overflow. The Scrapy
-           engine is designed to pull start requests while it has capacity to
-           process them, so the start requests iterator can be effectively
-           endless where there is some other condition for stopping the spider
-           (like a time limit or item/page count).
+            async def process_seeds(self, seeds):
+                async for seed in seeds:
+                    yield seed
 
-        :param start_requests: the start requests
-        :type start_requests: an iterable of :class:`~scrapy.Request`
+        You may yield :class:`~scrapy.Request` or :ref:`item <topics-items>`
+        objects, same as :meth:`~scrapy.Spider.yield_seeds`, from *seeds* or
+        not.
 
-        :param spider: the spider to whom the start requests belong
-        :type spider: :class:`~scrapy.Spider` object
+        To write spider middlewares that work on Scrapy versions lower than
+        VERSION, define also a synchronous ``process_start_requests()`` method
+        that returns an iterable. For example:
+
+        .. code-block:: python
+
+            def process_start_requests(self, seeds, spider):
+                yield from seeds
 
     .. method:: process_spider_input(response, spider)
 
@@ -154,6 +155,7 @@ one or more of these methods:
         :type spider: :class:`~scrapy.Spider` object
 
     .. method:: process_spider_output_async(response, result, spider)
+        :async:
 
         .. versionadded:: 2.7
 

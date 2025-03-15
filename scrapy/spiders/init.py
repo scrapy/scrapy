@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 from typing import TYPE_CHECKING, Any, cast
 
 from scrapy import Request
@@ -28,6 +28,10 @@ class InitSpider(Spider):
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
+
+    async def yield_seeds(self) -> AsyncIterable[Any]:
+        for seed in self.start_requests():
+            yield seed
 
     def start_requests(self) -> Iterable[Request]:
         self._postinit_reqs: Iterable[Request] = super().start_requests()

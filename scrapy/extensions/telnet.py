@@ -104,7 +104,6 @@ class TelnetConsole(protocol.ServerFactory):
         telnet_vars: dict[str, Any] = {
             "engine": self.crawler.engine,
             "spider": self.crawler.engine.spider,
-            "slot": self.crawler.engine.slot,
             "crawler": self.crawler,
             "extensions": self.crawler.extensions,
             "stats": self.crawler.stats,

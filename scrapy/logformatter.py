@@ -98,7 +98,7 @@ class LogFormatter:
         """Logs a message when an item is scraped by a spider."""
         src: Any
         if response is None:
-            src = f"{global_object_name(spider.__class__)}.start_requests"
+            src = f"{global_object_name(spider.__class__)}.yield_seeds"
         elif isinstance(response, Failure):
             src = response.getErrorMessage()
         else:

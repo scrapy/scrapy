@@ -670,9 +670,10 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    def start_requests(self):
+    async def yield_seeds(self):
         self.logger.debug("It Works!")
-        return []
+        return
+        yield
 """
 
     badspider = """
@@ -680,7 +681,7 @@ import scrapy
 
 class BadSpider(scrapy.Spider):
     name = "bad"
-    def start_requests(self):
+    async def yield_seeds(self):
         raise Exception("oops!")
         """
 
@@ -771,9 +772,9 @@ class MySpider(scrapy.Spider):
         log = self.get_log("", name="myspider.txt")
         assert "Unable to load" in log
 
-    def test_start_requests_errors(self):
+    def test_yield_seeds_errors(self):
         log = self.get_log(self.badspider, name="badspider.py")
-        assert "start_requests" in log
+        assert "yield_seeds" in log
         assert "badspider.py" in log
 
     def test_asyncio_enabled_true(self):
@@ -846,9 +847,10 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    def start_requests(self):
+    async def yield_seeds(self):
         self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
-        return []
+        return
+        yield
 """
         args = ["-o", "example.json"]
         log = self.get_log(spider_code, args=args)
@@ -862,13 +864,14 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    def start_requests(self):
+    async def yield_seeds(self):
         self.logger.debug(
             'FEEDS: {}'.format(
                 json.dumps(self.settings.getdict('FEEDS'), sort_keys=True)
             )
         )
-        return []
+        return
+        yield
 """
         Path(self.cwd, "example.json").write_text("not empty", encoding="utf-8")
         args = ["-O", "example.json"]
@@ -888,8 +891,9 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    def start_requests(self):
-        return []
+    async def yield_seeds(self):
+        return
+        yield
 """
         args = ["-o", "example1.json", "-O", "example2.json"]
         log = self.get_log(spider_code, args=args)
@@ -904,9 +908,10 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    def start_requests(self):
+    async def yield_seeds(self):
         self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
-        return []
+        return
+        yield
 """
         args = ["-o", "-:json"]
         log = self.get_log(spider_code, args=args)
@@ -983,9 +988,10 @@ class MySpider(scrapy.Spider):
         spider.settings.set("FOO", kwargs.get("foo"))
         return spider
 
-    def start_requests(self):
+    async def yield_seeds(self):
         self.logger.info(f"The value of FOO is {self.settings.getint('FOO')}")
-        return []
+        return
+        yield
 """
         args = ["-a", "foo=42"]
         log = self.get_log(spider_code, args=args)
@@ -1001,9 +1007,9 @@ class TestWindowsRunSpiderCommand(TestRunSpiderCommand):
             raise unittest.SkipTest("Windows required for .pyw files")
         return super().setUp()
 
-    def test_start_requests_errors(self):
+    def test_yield_seeds_errors(self):
         log = self.get_log(self.badspider, name="badspider.pyw")
-        assert "start_requests" in log
+        assert "yield_seeds" in log
         assert "badspider.pyw" in log
 
     def test_runspider_unable_to_load(self):
@@ -1053,9 +1059,10 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    def start_requests(self):
+    async def yield_seeds(self):
         self.logger.debug('It works!')
-        return []
+        return
+        yield
 """
         log = self.get_log(spider_code)
         assert "[myspider] DEBUG: It works!" in log
@@ -1067,9 +1074,10 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    def start_requests(self):
+    async def yield_seeds(self):
         self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
-        return []
+        return
+        yield
 """
         args = ["-o", "example.json"]
         log = self.get_log(spider_code, args=args)
@@ -1083,13 +1091,14 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    def start_requests(self):
+    async def yield_seeds(self):
         self.logger.debug(
             'FEEDS: {}'.format(
                 json.dumps(self.settings.getdict('FEEDS'), sort_keys=True)
             )
         )
-        return []
+        return
+        yield
 """
         Path(self.cwd, "example.json").write_text("not empty", encoding="utf-8")
         args = ["-O", "example.json"]
@@ -1109,8 +1118,9 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    def start_requests(self):
-        return []
+    async def yield_seeds(self):
+        return
+        yield
 """
         args = ["-o", "example1.json", "-O", "example2.json"]
         log = self.get_log(spider_code, args=args)

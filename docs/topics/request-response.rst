@@ -353,7 +353,7 @@ errors if needed:
             "https://example.invalid/",  # DNS error expected
         ]
 
-        def start_requests(self):
+        async def yield_seeds(self):
             for u in self.start_urls:
                 yield scrapy.Request(
                     u,

@@ -6,8 +6,8 @@ Coroutines
 
 .. versionadded:: 2.0
 
-Scrapy has :ref:`partial support <coroutine-support>` for the
-:ref:`coroutine syntax <async>`.
+Scrapy has :ref:`partial support <coroutine-support>` for the :ref:`coroutine
+syntax <async>` (i.e. ``async def``).
 
 .. _coroutine-support:
 
@@ -16,6 +16,10 @@ Supported callables
 
 The following callables may be defined as coroutines using ``async def``, and
 hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
+
+-   The :meth:`~scrapy.spiders.Spider.yield_seeds` spider method.
+
+    .. versionadded: VERSION
 
 -   :class:`~scrapy.Request` callbacks.
 
@@ -37,8 +41,6 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     methods of
     :ref:`downloader middlewares <topics-downloader-middleware-custom>`.
 
--   :ref:`Signal handlers that support deferreds <signal-deferred>`.
-
 -   The
     :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
     method of :ref:`spider middlewares <topics-spider-middleware>`.
@@ -50,6 +52,13 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     :ref:`universal-spider-middleware`.
 
     .. versionadded:: 2.7
+
+-   The :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds` method
+    of :ref:`spider middlewares <custom-spider-middleware>`.
+
+    .. versionadded:: VERSION
+
+-   :ref:`Signal handlers that support deferreds <signal-deferred>`.
 
 General usage
 =============
@@ -123,8 +132,9 @@ This means you can use many useful Python libraries providing such code:
 
 Common use cases for asynchronous code include:
 
-* requesting data from websites, databases and other services (in callbacks,
-  pipelines and middlewares);
+* requesting data from websites, databases and other services (in
+  :meth:`~scrapy.spiders.Spider.yield_seeds`, callbacks, pipelines and
+  middlewares);
 * storing data in databases (in pipelines and middlewares);
 * delaying the spider initialization until some external event (in the
   :signal:`spider_opened` handler);

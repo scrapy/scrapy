@@ -10,8 +10,9 @@ class NoRequestsSpider(Spider):
         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
     }
 
-    def start_requests(self):
-        return []
+    async def yield_seeds(self):
+        return
+        yield
 
 
 configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s", "LOG_LEVEL": "DEBUG"})
