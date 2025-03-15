@@ -19,7 +19,7 @@ from .mockserver import MockServer
 def sleep(seconds: float = ExecutionEngine._MIN_BACK_IN_SECONDS):
     from twisted.internet import reactor
 
-    deferred = Deferred()
+    deferred: Deferred[None] = Deferred()
     reactor.callLater(seconds, deferred.callback, None)
     return maybe_deferred_to_future(deferred)
 

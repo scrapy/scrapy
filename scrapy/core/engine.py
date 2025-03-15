@@ -250,6 +250,7 @@ class ExecutionEngine:
         )
 
     def _scheduler_has_pending_requests(self) -> bool:
+        assert self._slot is not None  # typing
         try:
             return self._slot.scheduler.has_pending_requests()
         except Exception as exception:
@@ -411,6 +412,7 @@ class ExecutionEngine:
         self._slot.nextcall.schedule()  # type: ignore[union-attr]
 
     def _schedule_request(self, request: Request, spider: Spider) -> None:
+        assert self._slot is not None  # typing
         request_scheduled_result = self.signals.send_catch_log(
             signals.request_scheduled,
             request=request,
