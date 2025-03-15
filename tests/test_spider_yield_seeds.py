@@ -220,3 +220,17 @@ class MainTestCase(TestCase):
             await self._test_yield_seeds(yield_seeds, [ITEM_A])
 
         assert "in yield_seeds\n    raise RuntimeError" in str(log), log
+
+    @deferred_f_from_coro_f
+    async def test_start_url(self):
+        class TestSpider(Spider):
+            name = "test"
+            start_url = "https://toscrape.com"
+
+        with LogCapture() as log:
+            await self._test_spider(TestSpider, [])
+
+        assert "Error while reading seeds" in str(log), log
+        assert "found 'start_url' attribute instead, did you miss an 's'?" in str(
+            log
+        ), log
