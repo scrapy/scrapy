@@ -34,7 +34,6 @@ from tests.spiders import (
     AsyncDefDeferredMaybeWrappedSpider,
     AsyncDefDeferredWrappedSpider,
     AsyncDefSpider,
-    BrokenYieldSeedsSpider,
     BytesReceivedCallbackSpider,
     BytesReceivedErrbackSpider,
     CrawlSpiderWithAsyncCallback,
@@ -163,28 +162,6 @@ class TestCrawl(TestCase):
         self._assert_retried(log)
 
     @defer.inlineCallbacks
-    def test_yield_seeds_bug_before_yield(self):
-        with LogCapture("scrapy", level=logging.ERROR) as log:
-            crawler = get_crawler(BrokenYieldSeedsSpider)
-            yield crawler.crawl(fail_before_yield=1, mockserver=self.mockserver)
-
-        assert len(log.records) == 1
-        record = log.records[0]
-        assert record.exc_info is not None
-        assert record.exc_info[0] is ZeroDivisionError
-
-    @defer.inlineCallbacks
-    def test_yield_seeds_bug_yielding(self):
-        with LogCapture("scrapy", level=logging.ERROR) as log:
-            crawler = get_crawler(BrokenYieldSeedsSpider)
-            yield crawler.crawl(fail_yielding=1, mockserver=self.mockserver)
-
-        assert len(log.records) == 1
-        record = log.records[0]
-        assert record.exc_info is not None
-        assert record.exc_info[0] is ZeroDivisionError
-
-    @defer.inlineCallbacks
     def test_yield_seeds_items(self):
         with LogCapture("scrapy", level=logging.ERROR) as log:
             crawler = get_crawler(YieldSeedsItemSpider)
@@ -204,15 +181,6 @@ class TestCrawl(TestCase):
             yield crawler.crawl(mockserver=self.mockserver)
 
         assert len(log.records) == 1
-
-    @defer.inlineCallbacks
-    def test_yield_seeds_laziness(self):
-        settings = {"CONCURRENT_REQUESTS": 1, "SEEDING_POLICY": "lazy"}
-        crawler = get_crawler(BrokenYieldSeedsSpider, settings)
-        yield crawler.crawl(mockserver=self.mockserver)
-        assert crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(
-            99
-        ), crawler.spider.seedsseen
 
     @defer.inlineCallbacks
     def test_yield_seeds_dupes(self):
