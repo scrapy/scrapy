@@ -2,7 +2,9 @@ from asyncio import sleep
 
 import pytest
 from testfixtures import LogCapture
+from twisted import version as TWISTED_VERSION
 from twisted.internet.defer import Deferred
+from twisted.python.versions import Version
 from twisted.trial.unittest import TestCase
 
 from scrapy import Spider, signals
@@ -22,6 +24,8 @@ ASYNC_GEN_ERROR_MINIMUM_SECONDS = ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.0
 
 ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
+
+TWISTED_KEEPS_TRACEBACKS = TWISTED_VERSION >= Version("twisted", 24, 10, 0)
 
 
 def twisted_sleep(seconds):
@@ -208,7 +212,10 @@ class MainTestCase(TestCase):
         with LogCapture() as log:
             await self._test_yield_seeds(yield_seeds, [])
 
-        assert "in yield_seeds\n    raise RuntimeError" in str(log), log
+        if TWISTED_KEEPS_TRACEBACKS:
+            assert "in yield_seeds\n    raise RuntimeError" in str(log), log
+        else:
+            assert "in _process_next_seed\n    seed =" in str(log), log
 
     @deferred_f_from_coro_f
     async def test_exception_after_yield(self):
@@ -219,7 +226,10 @@ class MainTestCase(TestCase):
         with LogCapture() as log:
             await self._test_yield_seeds(yield_seeds, [ITEM_A])
 
-        assert "in yield_seeds\n    raise RuntimeError" in str(log), log
+        if TWISTED_KEEPS_TRACEBACKS:
+            assert "in yield_seeds\n    raise RuntimeError" in str(log), log
+        else:
+            assert "in _process_next_seed\n    seed =" in str(log), log
 
     @deferred_f_from_coro_f
     async def test_start_url(self):
