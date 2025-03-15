@@ -4,6 +4,7 @@ from collections import deque
 from logging import ERROR
 
 from testfixtures import LogCapture
+from twisted.internet.defer import Deferred
 from twisted.trial.unittest import TestCase
 
 from scrapy import Request, SeedingPolicy, Spider, signals
@@ -15,21 +16,15 @@ from tests.test_scheduler import MemoryScheduler, PriorityScheduler
 from .mockserver import MockServer
 
 
-class MainTestCase(TestCase):
-    # If the test ends before the heartbeat, it may mean that the logic to
-    # re-schecule a new call of _start_next_requests under the right
-    # ciscumstances is not properly implemented, and the hearatbeat is working
-    # as a workaround for that issue. This is a performance issue and should
-    # be addressed.
-    #
-    # It could also happen that, on some CI runners, some tests (e.g. those
-    # below using a mock server) run too slow and proper handling overlaps with
-    # the heartbeat. If that is the case, it may be worth considering
-    # increasing the heartbeat time. It should be safe, since in most real live
-    # scenarios the heartbeat should never make a difference, and we may
-    # eventually remove the heartbeat altogether.
-    timeout = ExecutionEngine._SLOT_HEARTBEAT_INTERVAL
+def sleep(seconds: float = ExecutionEngine._MIN_BACK_IN_SECONDS):
+    from twisted.internet import reactor
 
+    deferred = Deferred()
+    reactor.callLater(seconds, deferred.callback, None)
+    return maybe_deferred_to_future(deferred)
+
+
+class MainTestCase(TestCase):
     @deferred_f_from_coro_f
     async def test_greedy(self):
         class TestScheduler(MemoryScheduler):
@@ -54,6 +49,114 @@ class MainTestCase(TestCase):
         assert crawler.stats.get_value("finish_reason") == "finished"
         expected_urls = ["data:,a", "data:,b"]
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
+
+    @deferred_f_from_coro_f
+    async def test_greedy_sleep(self):
+        """If the seeds sleep long enough, scheduler requests should be
+        processed in the meantime."""
+
+        class TestScheduler(MemoryScheduler):
+            queue = ["data:,b"]
+
+        class TestSpider(Spider):
+            name = "test"
+
+            async def yield_seeds(self):
+                yield Request("data:,a")
+                await sleep(ExecutionEngine._MIN_BACK_IN_SECONDS * 2)
+                yield Request("data:,c")
+
+            def parse(self, response):
+                pass
+
+        actual_urls = []
+
+        def track_url(request, spider):
+            actual_urls.append(request.url)
+
+        settings = {"SCHEDULER": TestScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+        crawler.signals.connect(track_url, signals.request_reached_downloader)
+        with LogCapture() as log:
+            await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.stats.get_value("finish_reason") == "finished"
+        expected_urls = ["data:,a", "data:,b", "data:,c"]
+        assert actual_urls == expected_urls, (
+            f"{actual_urls=} != {expected_urls=}\n{log}"
+        )
+
+    @deferred_f_from_coro_f
+    async def test_greedy_scheduler_sleep(self):
+        """If the scheduler sleeps but not longer than the seeds, its
+        processing should resume before that of the seeds, instead of being
+        blocked by the seeds finishing processing."""
+
+        class TestScheduler(MemoryScheduler):
+            pause = True
+            queue = ["data:,a"]
+
+        class TestSpider(Spider):
+            name = "test"
+
+            async def yield_seeds(self):
+                seconds = ExecutionEngine._MIN_BACK_IN_SECONDS
+                await sleep(seconds)
+                self.crawler.engine._slot.scheduler.pause = False
+                await sleep(seconds)
+                yield Request("data:,b")
+
+            def parse(self, response):
+                pass
+
+        actual_urls = []
+
+        def track_url(request, spider):
+            actual_urls.append(request.url)
+
+        settings = {"SCHEDULER": TestScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+        crawler.signals.connect(track_url, signals.request_reached_downloader)
+        with LogCapture() as log:
+            await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.stats.get_value("finish_reason") == "finished"
+        expected_urls = ["data:,a", "data:,b"]
+        assert actual_urls == expected_urls, (
+            f"{actual_urls=} != {expected_urls=}\n{log}"
+        )
+
+    @deferred_f_from_coro_f
+    async def test_greedy_exception(self):
+        """If the seeds raise an unhandled exception, scheduler requests should
+        still be processed."""
+
+        class TestScheduler(MemoryScheduler):
+            queue = ["data:,b"]
+
+        class TestSpider(Spider):
+            name = "test"
+
+            async def yield_seeds(self):
+                yield Request("data:,a")
+                raise RuntimeError
+
+            def parse(self, response):
+                pass
+
+        actual_urls = []
+
+        def track_url(request, spider):
+            actual_urls.append(request.url)
+
+        settings = {"SCHEDULER": TestScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+        crawler.signals.connect(track_url, signals.request_reached_downloader)
+        with LogCapture() as log:
+            await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.stats.get_value("finish_reason") == "finished"
+        expected_urls = ["data:,a", "data:,b"]
+        assert actual_urls == expected_urls, (
+            f"{actual_urls=} != {expected_urls=}\n{log}"
+        )
 
     @deferred_f_from_coro_f
     async def test_lazy(self):
@@ -81,26 +184,21 @@ class MainTestCase(TestCase):
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
     @deferred_f_from_coro_f
-    async def test_lazy_blocking(self):
+    async def test_lazy_sleep(self):
         """If the scheduler reports having requests but yields none, the lazy
         policy schedules requests from seeds."""
 
         class TestScheduler(MemoryScheduler):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                self.stop = False
-
-            def has_pending_requests(self) -> bool:
-                return not self.stop
+            queue = ["data:,b"]
+            pause = True
 
         class TestSpider(Spider):
             name = "test"
 
             async def yield_seeds(self):
-                self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
+                self.crawler.engine._slot.scheduler.pause = False
                 yield Request("data:,a")
                 yield Request("data:,c")
-                self.crawler.engine._slot.scheduler.stop = True
 
             def parse(self, response):
                 pass
@@ -213,8 +311,6 @@ class MainTestCase(TestCase):
 
 
 class MockServerTestCase(TestCase):
-    # See the comment on the matching line above.
-    timeout = ExecutionEngine._SLOT_HEARTBEAT_INTERVAL
     # If requests are too fast, test_idle will fail because the outcome will
     # match that of the lazy seeding policy.
     delay = 0.2

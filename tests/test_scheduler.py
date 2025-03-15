@@ -22,6 +22,8 @@ from tests.mockserver import MockServer
 
 
 class MemoryScheduler(BaseScheduler):
+    pause = False
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.queue = deque(
@@ -34,9 +36,11 @@ class MemoryScheduler(BaseScheduler):
         return True
 
     def has_pending_requests(self) -> bool:
-        return bool(self.queue)
+        return self.pause or bool(self.queue)
 
     def next_request(self) -> Request | None:
+        if self.pause:
+            return None
         try:
             return self.queue.pop()
         except IndexError:

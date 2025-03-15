@@ -13,7 +13,6 @@ from traceback import format_exc
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
-from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
 
 from scrapy import signals
@@ -60,7 +59,6 @@ class _Slot:
         self.close_if_idle: bool = close_if_idle
         self.nextcall: CallLaterOnce[Deferred[None]] = nextcall
         self.scheduler: BaseScheduler = scheduler
-        self.heartbeat: LoopingCall = LoopingCall(nextcall.schedule)
 
     def add_request(self, request: Request) -> None:
         self.inprogress.add(request)
@@ -78,13 +76,12 @@ class _Slot:
         if self.closing is not None and not self.inprogress:
             if self.nextcall:
                 self.nextcall.cancel()
-                if self.heartbeat.running:
-                    self.heartbeat.stop()
             self.closing.callback(None)
 
 
 class ExecutionEngine:
-    _SLOT_HEARTBEAT_INTERVAL: float = 5.0
+    _MIN_BACK_IN_SECONDS = 0.001
+    _MAX_BACK_IN_SECONDS = 5.0
 
     def __init__(
         self,
@@ -113,6 +110,7 @@ class ExecutionEngine:
         self._load_seeding_policy()
         self._seeds: AsyncIterator[Any] | None = None
         self._waiting_for_seed: bool = False
+        self._back_in_seconds = self._MIN_BACK_IN_SECONDS
 
     def _load_seeding_policy(self) -> None:
         try:
@@ -190,6 +188,10 @@ class ExecutionEngine:
         if self._waiting_for_seed:
             return
         self._waiting_for_seed = True
+        # Schedule a new call for next requests while waiting for
+        # self._seeds.__anext__(), so that if it takes long enough and there
+        # are pending scheduler requests we can process those.
+        self._slot.nextcall.schedule(self._MIN_BACK_IN_SECONDS)
         try:
             seed = yield deferred_from_coro(self._seeds.__anext__())
         except StopAsyncIteration:
@@ -245,7 +247,8 @@ class ExecutionEngine:
                     if self._start_scheduled_request() is None:
                         break
                 if (
-                    self._seeds is not None
+                    not self._waiting_for_seed
+                    and self._seeds is not None
                     and not self._needs_backout()
                     and (
                         self._seeding_policy is not SeedingPolicy.idle
@@ -258,7 +261,7 @@ class ExecutionEngine:
                     SeedingPolicy.front_load,
                     SeedingPolicy.greedy,
                 }
-                if self._seeds is not None:
+                if not self._waiting_for_seed and self._seeds is not None:
                     if not self._needs_backout():
                         yield self._process_next_seed()
                 else:
@@ -275,6 +278,18 @@ class ExecutionEngine:
 
         if self.spider_is_idle() and self._slot.close_if_idle:
             self._spider_idle()
+        elif self._needs_backout():
+            self._back_in_seconds = self._MIN_BACK_IN_SECONDS
+        elif self._slot.scheduler.has_pending_requests():
+            # If the scheduler reports having pending requests but did not
+            # actually return one, use exponential backoff to schedule a new
+            # call to this method, to see if the scheduler finally returns a
+            # pending request or stops reporting that it has some.
+            self._slot.nextcall.schedule(self._back_in_seconds)
+            if self._back_in_seconds != self._MAX_BACK_IN_SECONDS:
+                self._back_in_seconds = min(
+                    self._back_in_seconds**2, self._MAX_BACK_IN_SECONDS
+                )
 
     def _needs_backout(self) -> bool:
         assert self._slot is not None  # typing
@@ -460,7 +475,6 @@ class ExecutionEngine:
         self.crawler.stats.open_spider(spider)
         yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
         self._slot.nextcall.schedule()
-        self._slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
 
     def _spider_idle(self) -> None:
         """

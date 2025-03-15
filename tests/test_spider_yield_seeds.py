@@ -1,39 +1,20 @@
-from asyncio import sleep
-
 import pytest
 from testfixtures import LogCapture
 from twisted import version as TWISTED_VERSION
-from twisted.internet.defer import Deferred
 from twisted.python.versions import Version
 from twisted.trial.unittest import TestCase
 
 from scrapy import Spider, signals
-from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
 from .test_scheduler import MemoryScheduler
 
-# These are the minimum seconds necessary to wait to reproduce the issue that
-# has been solved by catching the RuntimeError exception in the
-# ExecutionEngine._next_request() method. A lower value makes these tests pass
-# even if we remove that exception handling, but they start failing with this
-# much delay.
-ASYNC_GEN_ERROR_MINIMUM_SECONDS = ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.01
-
 ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
 
 TWISTED_KEEPS_TRACEBACKS = TWISTED_VERSION >= Version("twisted", 24, 10, 0)
-
-
-def twisted_sleep(seconds):
-    from twisted.internet import reactor
-
-    d = Deferred()
-    reactor.callLater(seconds, d.callback, None)
-    return d
 
 
 class MainTestCase(TestCase):
@@ -121,27 +102,6 @@ class MainTestCase(TestCase):
                 yield ITEM_B
 
         await self._test_spider(TestSpider, [ITEM_A])
-
-    # Delays.
-
-    @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
-    async def test_asyncio_delayed(self):
-        async def yield_seeds(spider):
-            await sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS)
-            yield ITEM_A
-
-        await self._test_yield_seeds(yield_seeds, [ITEM_A])
-
-    @deferred_f_from_coro_f
-    async def test_twisted_delayed(self):
-        async def yield_seeds(spider):
-            await maybe_deferred_to_future(
-                twisted_sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS)
-            )
-            yield ITEM_A
-
-        await self._test_yield_seeds(yield_seeds, [ITEM_A])
 
     # Bad definitions.
 

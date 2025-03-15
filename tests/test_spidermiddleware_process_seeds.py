@@ -1,5 +1,3 @@
-from asyncio import sleep
-
 import pytest
 from testfixtures import LogCapture
 from twisted.trial.unittest import TestCase
@@ -10,45 +8,13 @@ from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
 from .test_spider_yield_seeds import (
-    ASYNC_GEN_ERROR_MINIMUM_SECONDS,
     TWISTED_KEEPS_TRACEBACKS,
-    twisted_sleep,
 )
 
 ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
 ITEM_C = {"id": "c"}
 ITEM_D = {"id": "d"}
-
-
-class AsyncioSleepSpiderMiddleware:
-    async def process_seeds(self, seeds):
-        await sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS)
-        async for seed in seeds:
-            yield seed
-
-
-class NoOpSpiderMiddleware:
-    async def process_seeds(self, seeds):
-        async for seed in seeds:
-            yield seed
-
-
-class TwistedSleepSpiderMiddleware:
-    async def process_seeds(self, seeds):
-        await maybe_deferred_to_future(twisted_sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS))
-        async for seed in seeds:
-            yield seed
-
-
-class UniversalSpiderMiddleware:
-    async def process_seeds(self, seeds):
-        async for seed in seeds:
-            yield seed
-
-    def process_start_requests(self, start_requests, spider):
-        raise NotImplementedError
-
 
 # Spiders and spider middlewares for MainTestCase._test_wrap
 
@@ -206,39 +172,6 @@ class MainTestCase(TestCase):
             ),
         ):
             await self._test_wrap(DeprecatedWrapSpiderMiddleware, DeprecatedWrapSpider)
-
-    # Sleep tests
-
-    async def _test_sleep(self, spider_middlewares):
-        class TestSpider(Spider):
-            name = "test"
-
-            async def yield_seeds(self):
-                yield ITEM_A
-
-        await self._test(spider_middlewares, TestSpider, [ITEM_A])
-
-    @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
-    async def test_asyncio_sleep_single(self):
-        await self._test_sleep([AsyncioSleepSpiderMiddleware])
-
-    @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
-    async def test_asyncio_sleep_multiple(self):
-        await self._test_sleep(
-            [NoOpSpiderMiddleware, AsyncioSleepSpiderMiddleware, NoOpSpiderMiddleware]
-        )
-
-    @deferred_f_from_coro_f
-    async def test_twisted_sleep_single(self):
-        await self._test_sleep([TwistedSleepSpiderMiddleware])
-
-    @deferred_f_from_coro_f
-    async def test_twisted_sleep_multiple(self):
-        await self._test_sleep(
-            [NoOpSpiderMiddleware, TwistedSleepSpiderMiddleware, NoOpSpiderMiddleware]
-        )
 
     # Bad definitions.
 
