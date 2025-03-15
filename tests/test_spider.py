@@ -1,7 +1,7 @@
 import gzip
 import warnings
 from io import BytesIO
-from logging import ERROR, WARNING
+from logging import WARNING
 from pathlib import Path
 from typing import Any
 from unittest import mock
@@ -446,23 +446,6 @@ class TestCrawlSpider(TestSpider):
         spider = self.spider_class.from_crawler(crawler, "example.com")
         assert hasattr(spider, "_follow_links")
         assert not spider._follow_links
-
-    @inlineCallbacks
-    def test_start_url(self):
-        class TestSpider(self.spider_class):
-            name = "test"
-            start_url = "https://www.example.com"
-
-        crawler = get_crawler(TestSpider)
-        with LogCapture("scrapy.core.engine", propagate=False, level=ERROR) as log:
-            yield crawler.crawl()
-        log.check(
-            (
-                "scrapy.core.engine",
-                "ERROR",
-                "Error while reading seeds",
-            ),
-        )
 
 
 class TestSitemapSpider(TestSpider):

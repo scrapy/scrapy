@@ -676,15 +676,6 @@ class MySpider(scrapy.Spider):
         yield
 """
 
-    badspider = """
-import scrapy
-
-class BadSpider(scrapy.Spider):
-    name = "bad"
-    async def yield_seeds(self):
-        raise Exception("oops!")
-        """
-
     @contextmanager
     def _create_file(self, content: str, name: str | None = None) -> Iterator[str]:
         with TemporaryDirectory() as tmpdir:
@@ -771,11 +762,6 @@ class MySpider(scrapy.Spider):
     def test_runspider_unable_to_load(self):
         log = self.get_log("", name="myspider.txt")
         assert "Unable to load" in log
-
-    def test_yield_seeds_errors(self):
-        log = self.get_log(self.badspider, name="badspider.py")
-        assert "yield_seeds" in log
-        assert "badspider.py" in log
 
     def test_asyncio_enabled_true(self):
         log = self.get_log(
@@ -1006,11 +992,6 @@ class TestWindowsRunSpiderCommand(TestRunSpiderCommand):
         if platform.system() != "Windows":
             raise unittest.SkipTest("Windows required for .pyw files")
         return super().setUp()
-
-    def test_yield_seeds_errors(self):
-        log = self.get_log(self.badspider, name="badspider.pyw")
-        assert "yield_seeds" in log
-        assert "badspider.pyw" in log
 
     def test_runspider_unable_to_load(self):
         raise unittest.SkipTest("Already Tested in 'RunSpiderCommandTest' ")

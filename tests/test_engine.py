@@ -30,7 +30,6 @@ from twisted.web import server, static, util
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine, _Slot
-from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import CloseSpider, IgnoreRequest
 from scrapy.http import Request
 from scrapy.item import Field, Item
@@ -40,6 +39,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
 from tests import get_testdata, tests_datadir
+from tests.test_scheduler import MemoryScheduler
 
 
 class MyItem(Item):
@@ -476,14 +476,6 @@ class TestEngine(TestEngineBase):
 
 
 def test_request_scheduled_signal(caplog):
-    class TestScheduler(BaseScheduler):
-        def __init__(self):
-            self.enqueued = []
-
-        def enqueue_request(self, request: Request) -> bool:
-            self.enqueued.append(request)
-            return True
-
     def signal_handler(request: Request, spider: Spider) -> None:
         if "drop" in request.url:
             raise IgnoreRequest
@@ -492,7 +484,7 @@ def test_request_scheduled_signal(caplog):
     crawler = get_crawler(spider.__class__)
     engine = ExecutionEngine(crawler, lambda _: None)
     engine.downloader._slot_gc_loop.stop()
-    scheduler = TestScheduler()
+    scheduler = MemoryScheduler()
 
     async def seeds():
         return
@@ -506,8 +498,8 @@ def test_request_scheduled_signal(caplog):
     drop_request = Request("https://drop.example")
     caplog.set_level(DEBUG)
     engine._schedule_request(drop_request, spider)
-    assert scheduler.enqueued == [keep_request], (
-        f"{scheduler.enqueued!r} != [{keep_request!r}]"
+    assert list(scheduler.queue) == [keep_request], (
+        f"{list(scheduler.queue)!r} != [{keep_request!r}]"
     )
     crawler.signals.disconnect(signal_handler, request_scheduled)
 

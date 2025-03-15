@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import defaultdict, deque
+from collections import deque
 from logging import ERROR
 
 from testfixtures import LogCapture
@@ -8,12 +8,11 @@ from twisted.trial.unittest import TestCase
 
 from scrapy import Request, SeedingPolicy, Spider, signals
 from scrapy.core.engine import ExecutionEngine
-from scrapy.core.scheduler import BaseScheduler
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
+from tests.test_scheduler import MemoryScheduler, PriorityScheduler
 
 from .mockserver import MockServer
-from .test_spider_yield_seeds import twisted_sleep
 
 
 class MainTestCase(TestCase):
@@ -33,22 +32,8 @@ class MainTestCase(TestCase):
 
     @deferred_f_from_coro_f
     async def test_greedy(self):
-        class TestScheduler(BaseScheduler):
-            def __init__(self, *args, **kwargs):
-                self.requests = deque((Request("data:,b"),))
-
-            def enqueue_request(self, request: Request) -> bool:
-                self.requests.append(request)
-                return True
-
-            def has_pending_requests(self) -> bool:
-                return bool(self.requests)
-
-            def next_request(self) -> Request | None:
-                try:
-                    return self.requests.pop()
-                except IndexError:
-                    return None
+        class TestScheduler(MemoryScheduler):
+            queue = ["data:,b"]
 
         class TestSpider(Spider):
             name = "test"
@@ -72,22 +57,8 @@ class MainTestCase(TestCase):
 
     @deferred_f_from_coro_f
     async def test_lazy(self):
-        class TestScheduler(BaseScheduler):
-            def __init__(self, *args, **kwargs):
-                self.requests = deque((Request("data:,a"),))
-
-            def enqueue_request(self, request: Request) -> bool:
-                self.requests.append(request)
-                return True
-
-            def has_pending_requests(self) -> bool:
-                return bool(self.requests)
-
-            def next_request(self) -> Request | None:
-                try:
-                    return self.requests.popleft()
-                except IndexError:
-                    return None
+        class TestScheduler(MemoryScheduler):
+            queue = ["data:,a"]
 
         class TestSpider(Spider):
             name = "test"
@@ -114,35 +85,20 @@ class MainTestCase(TestCase):
         """If the scheduler reports having requests but yields none, the lazy
         policy schedules requests from seeds."""
 
-        class TestScheduler(BaseScheduler):
+        class TestScheduler(MemoryScheduler):
             def __init__(self, *args, **kwargs):
-                self.requests = deque()
+                super().__init__(*args, **kwargs)
                 self.stop = False
-
-            def enqueue_request(self, request: Request) -> bool:
-                self.requests.append(request)
-                return True
 
             def has_pending_requests(self) -> bool:
                 return not self.stop
-
-            def next_request(self) -> Request | None:
-                try:
-                    return self.requests.popleft()
-                except IndexError:
-                    return None
-
-        sleep_seconds = 0.0001
 
         class TestSpider(Spider):
             name = "test"
 
             async def yield_seeds(self):
-                await maybe_deferred_to_future(twisted_sleep(sleep_seconds))
-                yield Request("data:,a")
-                await maybe_deferred_to_future(twisted_sleep(sleep_seconds))
                 self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
-                await maybe_deferred_to_future(twisted_sleep(sleep_seconds))
+                yield Request("data:,a")
                 yield Request("data:,c")
                 self.crawler.engine._slot.scheduler.stop = True
 
@@ -157,10 +113,13 @@ class MainTestCase(TestCase):
         settings = {"SCHEDULER": TestScheduler, "SEEDING_POLICY": "lazy"}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
-        await maybe_deferred_to_future(crawler.crawl())
+        with LogCapture() as log:
+            await maybe_deferred_to_future(crawler.crawl())
         assert crawler.stats.get_value("finish_reason") == "finished"
         expected_urls = ["data:,a", "data:,b", "data:,c"]
-        assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
+        assert actual_urls == expected_urls, (
+            f"{actual_urls=} != {expected_urls=}\n{log}"
+        )
 
     @deferred_f_from_coro_f
     async def test_lazy_seed_order(self):
@@ -189,26 +148,6 @@ class MainTestCase(TestCase):
 
     @deferred_f_from_coro_f
     async def test_front_load(self):
-        class TestScheduler(BaseScheduler):
-            def __init__(self, *args, **kwargs):
-                self.requests = defaultdict(deque)
-
-            def enqueue_request(self, request: Request) -> bool:
-                self.requests[request.priority].append(request)
-                return True
-
-            def has_pending_requests(self) -> bool:
-                return bool(self.requests)
-
-            def next_request(self) -> Request | None:
-                if not self.requests:
-                    return None
-                priority = max(self.requests)
-                request = self.requests[priority].popleft()
-                if not self.requests[priority]:
-                    del self.requests[priority]
-                return request
-
         class TestSpider(Spider):
             name = "test"
 
@@ -224,7 +163,7 @@ class MainTestCase(TestCase):
         def track_url(request, spider):
             actual_urls.append(request.url)
 
-        settings = {"SCHEDULER": TestScheduler, "SEEDING_POLICY": "front_load"}
+        settings = {"SCHEDULER": PriorityScheduler, "SEEDING_POLICY": "front_load"}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
         await maybe_deferred_to_future(crawler.crawl())
@@ -234,26 +173,6 @@ class MainTestCase(TestCase):
 
     @deferred_f_from_coro_f
     async def test_override(self):
-        class TestScheduler(BaseScheduler):
-            def __init__(self, *args, **kwargs):
-                self.requests = defaultdict(deque)
-
-            def enqueue_request(self, request: Request) -> bool:
-                self.requests[request.priority].append(request)
-                return True
-
-            def has_pending_requests(self) -> bool:
-                return bool(self.requests)
-
-            def next_request(self) -> Request | None:
-                if not self.requests:
-                    return None
-                priority = max(self.requests)
-                request = self.requests[priority].popleft()
-                if not self.requests[priority]:
-                    del self.requests[priority]
-                return request
-
         class TestSpider(Spider):
             name = "test"
 
@@ -277,7 +196,7 @@ class MainTestCase(TestCase):
         def track_url(request, spider):
             actual_urls.append(request.url)
 
-        settings = {"SCHEDULER": TestScheduler, "SEEDING_POLICY": "lazy"}
+        settings = {"SCHEDULER": PriorityScheduler, "SEEDING_POLICY": "lazy"}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_item, signals.item_scraped)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
@@ -314,35 +233,21 @@ class MockServerTestCase(TestCase):
         def _url(id):
             return self.mockserver.url(f"/delay?n={self.delay}&{id}")
 
-        class TestScheduler(BaseScheduler):
-            def __init__(self, *args, **kwargs):
-                self.requests = deque((Request(_url("a")),))
-
-            def enqueue_request(self, request: Request) -> bool:
-                self.requests.append(request)
-                return True
-
-            def has_pending_requests(self) -> bool:
-                return bool(self.requests)
-
-            def next_request(self) -> Request | None:
-                try:
-                    return self.requests.popleft()
-                except IndexError:
-                    return None
+        class TestScheduler(MemoryScheduler):
+            queue = [_url("a")]
 
         class TestSpider(Spider):
             name = "test"
             start_urls = [_url("b"), _url("d")]
-            queue = deque((Request(_url("c")),))
+            queue = deque([_url("c")])
 
             def parse(self, response):
                 try:
-                    request = self.queue.popleft()
+                    url = self.queue.popleft()
                 except IndexError:
                     pass
                 else:
-                    yield request
+                    yield Request(url)
 
         actual_urls = []
 

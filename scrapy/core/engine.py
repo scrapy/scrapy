@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from time import time
+from traceback import format_exc
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
@@ -27,7 +28,7 @@ from scrapy.utils.reactor import CallLaterOnce
 from ._seeding import SeedingPolicy
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Callable, Generator
+    from collections.abc import AsyncIterator, Callable, Generator
 
     from scrapy.core.downloader import Downloader
     from scrapy.core.scheduler import BaseScheduler
@@ -110,7 +111,7 @@ class ExecutionEngine:
         )
         self.start_time: float | None = None
         self._load_seeding_policy()
-        self._seeds: AsyncIterable[Any] | None = None
+        self._seeds: AsyncIterator[Any] | None = None
         self._waiting_for_seed: bool = False
 
     def _load_seeding_policy(self) -> None:
@@ -193,12 +194,14 @@ class ExecutionEngine:
             seed = yield deferred_from_coro(self._seeds.__anext__())
         except StopAsyncIteration:
             self._seeds = None
-        except Exception:
+        except CloseSpider:
             self._seeds = None
+            raise
+        except Exception as exception:
+            self._seeds = None
+            exception_traceback = format_exc()
             logger.error(
-                "Error while reading seeds",
-                exc_info=True,
-                extra={"spider": self.spider},
+                f"Error while reading seeds: {exception}.\n{exception_traceback}"
             )
         else:
             if isinstance(seed, Request):
@@ -264,6 +267,10 @@ class ExecutionEngine:
                             break
         except _SeedingPolicyChange:
             self._slot.nextcall.schedule()
+            return
+        except CloseSpider as exception:
+            assert self.spider is not None  # typing
+            self.close_spider(self.spider, reason=exception.reason)
             return
 
         if self.spider_is_idle() and self._slot.close_if_idle:
