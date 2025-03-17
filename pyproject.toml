@@ -21,7 +21,7 @@ dependencies = [
     "itemadapter>=0.1.0",
     "packaging",
     "tldextract",
-    "lxml>=4.6.0",
+    "lxml>=4.9.3",
     "defusedxml>=0.7.1",
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',

@@ -63,7 +63,7 @@ class MainTestCase(TestCase):
 
             async def yield_seeds(self):
                 yield Request("data:,a")
-                await sleep(ExecutionEngine._MIN_BACK_IN_SECONDS * 2)
+                await sleep(ExecutionEngine._MIN_BACK_IN_SECONDS * 2**2)
                 yield Request("data:,c")
 
             def parse(self, response):
@@ -129,13 +129,11 @@ class MainTestCase(TestCase):
         """If the seeds raise an unhandled exception, scheduler requests should
         still be processed."""
 
-        class TestScheduler(MemoryScheduler):
-            queue = ["data:,b"]
-
         class TestSpider(Spider):
             name = "test"
 
             async def yield_seeds(self):
+                self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
                 yield Request("data:,a")
                 raise RuntimeError
 
@@ -147,7 +145,7 @@ class MainTestCase(TestCase):
         def track_url(request, spider):
             actual_urls.append(request.url)
 
-        settings = {"SCHEDULER": TestScheduler}
+        settings = {"SCHEDULER": MemoryScheduler}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
         with LogCapture() as log:

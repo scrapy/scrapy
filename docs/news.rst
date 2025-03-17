@@ -13,6 +13,13 @@ Highlights:
 -   Replaced ``start_requests`` (sync) with :meth:`~scrapy.Spider.yield_seeds`
     (async) and changed how it is iterated by default.
 
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   Minimum versions increased for these dependencies:
+
+    -   lxml_: 4.6.0 → 4.9.3
+
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
