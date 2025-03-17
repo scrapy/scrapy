@@ -520,6 +520,9 @@ This setting also affects :setting:`DOWNLOAD_DELAY` and
 :ref:`topics-autothrottle`: if :setting:`CONCURRENT_REQUESTS_PER_IP`
 is non-zero, download delay is enforced per IP, not per domain.
 
+Cannot work with :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue`.
+
+
 .. setting:: DEFAULT_DROPITEM_LOG_LEVEL
 
 DEFAULT_DROPITEM_LOG_LEVEL
@@ -1673,11 +1676,10 @@ SCHEDULER_DEBUG
 
 Default: ``False``
 
-Setting to ``True`` will log debug information about the requests scheduler.
-This currently logs (only once) if the requests cannot be serialized to disk.
-Stats counter (``scheduler/unserializable``) tracks the number of times this happens.
+Asks the :ref:`scheduler <topics-scheduler>` to log debug messages.
 
-Example entry in logs::
+Causes the default scheduler, :class:`~scrapy.core.scheduler.Scheduler`, to log
+a message about the first unserializable request. For example::
 
     1956-01-31 00:00:00+0800 [scrapy.core.scheduler] ERROR: Unable to serialize request:
     <GET http://example.com> - reason: cannot serialize <Request at 0x9a7c7ec>
@@ -1690,20 +1692,35 @@ Example entry in logs::
 SCHEDULER_DISK_QUEUE
 --------------------
 
-Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
+Default: :class:`~scrapy.squeues.PickleLifoDiskQueue`
 
-Type of disk queue that will be used by scheduler. Other available types are
-``scrapy.squeues.PickleFifoDiskQueue``, ``scrapy.squeues.MarshalFifoDiskQueue``,
-``scrapy.squeues.MarshalLifoDiskQueue``.
+Queue that :ref:`scheduling components <topics-scheduler>` should use to store
+scheduled requests on disk. The queue also determines the order in which those
+requests are returned. See :ref:`disk-queues` and :ref:`custom-internal-queue`.
+
+When :setting:`JOBDIR` is set, :ref:`built-in priority queues
+<priority-queues>` use this component for each set of
+same-:attr:`~scrapy.Request.priority` requests.
+
 
 .. setting:: SCHEDULER_MEMORY_QUEUE
 
 SCHEDULER_MEMORY_QUEUE
 ----------------------
-Default: ``'scrapy.squeues.LifoMemoryQueue'``
 
-Type of in-memory queue used by scheduler. Other available type is:
-``scrapy.squeues.FifoMemoryQueue``.
+Default: :class:`~scrapy.squeues.LifoMemoryQueue`
+
+Queue that :ref:`scheduling components <topics-scheduler>` should use to store
+scheduled requests in memory. The queue also determines the order in which
+those requests are returned. See :ref:`memory-queues` and
+:ref:`custom-internal-queue`.
+
+When :setting:`JOBDIR` is *not* set, :ref:`built-in priority queues
+<priority-queues>` use this component for sets of
+same-:attr:`~scrapy.Request.priority` requests. When :setting:`JOBDIR` *is*
+set, they are also used, as a fallback for requests that
+:setting:`SCHEDULER_DISK_QUEUE` cannot serialize.
+
 
 .. setting:: SCHEDULER_PRIORITY_QUEUE
 
@@ -1712,16 +1729,13 @@ SCHEDULER_PRIORITY_QUEUE
 
 Default: :class:`~scrapy.pqueues.ScrapyPriorityQueue`
 
-Queue used by the :ref:`scheduler <topics-scheduler>` to sort scheduled
-requests by :attr:`Request.priority <scrapy.Request.priority>`.
+Queue that :ref:`scheduling components <topics-scheduler>` should use for
+request prioritization. See :ref:`priority-queues` and
+:ref:`custom-priority-queue`.
 
-Scheduled requests with the same priority are stored in nested queues, either
-:setting:`SCHEDULER_MEMORY_QUEUE` or :setting:`SCHEDULER_DISK_QUEUE`.
+The default scheduler, :class:`~scrapy.core.scheduler.Scheduler`, uses this
+component.
 
-The following built-in priority queues are available:
-
-.. autoclass:: scrapy.pqueues.ScrapyPriorityQueue
-.. autoclass:: scrapy.pqueues.DownloaderAwarePriorityQueue
 
 .. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
 

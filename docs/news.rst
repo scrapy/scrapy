@@ -723,7 +723,7 @@ Bug fixes
 
 -   During :ref:`feed export <topics-feed-exports>`, do not close the
     underlying file from :ref:`built-in post-processing plugins
-    <builtin-plugins>`.
+    <post-processing-plugins>`.
     (:issue:`5932`, :issue:`6178`, :issue:`6239`)
 
 -   :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
@@ -2042,8 +2042,9 @@ New features
     :issue:`5161`, :issue:`5203`)
 
 -   You can now apply :ref:`post-processing <post-processing>` to feeds, and
-    :ref:`built-in post-processing plugins <builtin-plugins>` are provided for
-    output file compression. (:issue:`2174`, :issue:`5168`, :issue:`5190`)
+    :ref:`built-in post-processing plugins <post-processing-plugins>` are
+    provided for output file compression.
+    (:issue:`2174`, :issue:`5168`, :issue:`5190`)
 
 -   The :setting:`FEEDS` setting now supports :class:`pathlib.Path` objects as
     keys. (:issue:`5383`, :issue:`5384`)

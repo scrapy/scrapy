@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import TYPE_CHECKING, Protocol, cast
+from typing import TYPE_CHECKING, Any, Protocol, cast
+
+# typing.Self requires Python 3.11
+from typing_extensions import Self
 
 from scrapy import Request
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
 
     from scrapy.core.downloader import Downloader
     from scrapy.crawler import Crawler
@@ -38,41 +38,119 @@ def _path_safe(text: str) -> str:
 
 
 class QueueProtocol(Protocol):
-    """Protocol for downstream queues of ``ScrapyPriorityQueue``."""
+    """:class:`~typing.Protocol` of queues for the
+    :setting:`SCHEDULER_MEMORY_QUEUE` and :setting:`SCHEDULER_DISK_QUEUE`
+    settings.
 
-    def push(self, request: Request) -> None: ...
+    Queues may also define a ``peek()`` method, identical to :meth:`pop` except
+    that the returned request is not removed from the queue.
+    """
 
-    def pop(self) -> Request | None: ...
+    def push(self, request: Request) -> None:
+        """Add *request* to the queue.
 
-    def close(self) -> None: ...
+        Raise :exc:`ValueError` if *request* cannot be stored, e.g. if
+        the queue stores requests on disk but it cannot serialize *request*.
+        """
 
-    def __len__(self) -> int: ...
+    def pop(self) -> Request | None:
+        """Remove the next request from the queue and return it, or return
+        ``None`` if there are no requests."""
+
+    def close(self) -> None:
+        """Called when the queue is closed. May be used for cleanup code."""
+
+    def __len__(self) -> int:
+        """Return the number of requests that are currently in the queue."""
+
+
+class PriorityQueueProtocol(Protocol):
+    """:class:`~typing.Protocol` of queues for the
+    :setting:`SCHEDULER_PRIORITY_QUEUE` setting."""
+
+    @classmethod
+    def from_crawler(
+        cls,
+        crawler: Crawler,
+        downstream_queue_cls: type[QueueProtocol],
+        key: str,
+        startprios: Any = None,
+    ) -> Self:
+        """Create an instance of the queue.
+
+        See :meth:`__init__` for details.
+        """
+
+    def __init__(
+        self,
+        crawler: Crawler,
+        downstream_queue_cls: type[QueueProtocol],
+        key: str,
+        startprios: Any = None,
+    ):
+        """Initializes the queue.
+
+        *crawler* is the running crawler.
+
+        *downstream_queue_cls* is an :ref:`internal queue
+        <custom-internal-queue>`, e.g. a :ref:`memory queue <memory-queues>` or
+        a :ref:`disk queue <disk-queues>`. Each set of same-priority requests
+        should be stored in an instance of this queue.
+
+        *key* is the path where the queue should serialize requests, if the
+        queue uses disk storage. Queues that do not use disk storage may ignore
+        this parameter.
+
+        If :ref:`resuming a job <topics-jobs>`, *startprios* is the return
+        value of the previous call to :meth:`close`. Otherwise, it is a falsy
+        value (e.g. ``None`` or an empty :class:`list`).
+        """
+
+    def push(self, request: Request) -> None:
+        """Add *request* to the queue.
+
+        Raise :exc:`ValueError` if *request* cannot be stored, e.g. if
+        the queue stores requests on disk but it cannot serialize *request*.
+        """
+
+    def pop(self) -> Request | None:
+        """Remove the next request from the queue and return it, or return
+        ``None`` if there are no requests."""
+
+    def close(self) -> Any:
+        """Called when closing the queue if the priority queue was initialized
+        with a disk-based internal queue.
+
+        It must return JSON-serializable data representing the internal state
+        of the queue. The returned data will be passed back to :meth:`__init__`
+        as *startprio* when :ref:`resuming a job <topics-jobs>`.
+        """
+
+    def __len__(self) -> int:
+        """Return the number of requests that are currently in the queue."""
 
 
 class ScrapyPriorityQueue:
     """Default scheduler priority queue (:setting:`SCHEDULER_PRIORITY_QUEUE`).
 
-    The internal queue must implement the following methods:
+    Sorts requests based solely on :attr:`Request.priority
+    <scrapy.Request.priority>`.
 
-        * push(obj)
-        * pop()
-        * close()
-        * __len__()
+    Requests with the same :attr:`Request.priority <scrapy.Request.priority>`
+    value are sorted by the corresponding internal queue,
+    :setting:`SCHEDULER_MEMORY_QUEUE` or :setting:`SCHEDULER_DISK_QUEUE`.
 
-    Optionally, the queue could provide a ``peek`` method, that should return the
-    next object to be returned by ``pop``, but without removing it from the queue.
+    Which internal queue is used depends on the value of :setting:`JOBDIR`:
 
-    ``__init__`` method of ScrapyPriorityQueue receives a downstream_queue_cls
-    argument, which is a class used to instantiate a new (internal) queue when
-    a new priority is allocated.
+    -   If :setting:`JOBDIR` is not set, :setting:`SCHEDULER_MEMORY_QUEUE` is
+        always used.
 
-    Only integer priorities should be used. Lower numbers are higher
-    priorities.
+    -   If :setting:`JOBDIR` is set, :setting:`SCHEDULER_DISK_QUEUE` is used by
+        default, while :setting:`SCHEDULER_MEMORY_QUEUE` is used as a fallback
+        for requests that :setting:`SCHEDULER_DISK_QUEUE` cannot serialize.
 
-    startprios is a sequence of priorities to start with. If the queue was
-    previously closed leaving some priority buckets non-empty, those priorities
-    should be passed in startprios.
-
+        When returning a request, memory requests always take precedence over
+        disk requests.
     """
 
     @classmethod
@@ -182,16 +260,18 @@ class DownloaderInterface:
 
 
 class DownloaderAwarePriorityQueue:
-    """PriorityQueue which takes Downloader activity into account:
-    domains (slots) with the least amount of active downloads are dequeued
-    first.
+    """Scheduler priority queue (:setting:`SCHEDULER_PRIORITY_QUEUE`) that
+    accounts for the download slot (usually the domain name) of active requests
+    (i.e. requests being downloaded).
 
-    Another available type is
-    ``scrapy.pqueues.DownloaderAwarePriorityQueue``.
-    ``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
-    ``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
-    domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
-    does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
+    It prioritizes requests that have their download slot in common with
+    *fewer* active requests. Otherwise, it works like
+    :class:`ScrapyPriorityQueue`.
+
+    It works better than :class:`ScrapyPriorityQueue` for :ref:`broad crawls
+    <broad-crawls>`.
+
+    Cannot work with :setting:`CONCURRENT_REQUESTS_PER_IP`.
     """
 
     @classmethod

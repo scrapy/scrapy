@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
     from scrapy.dupefilters import BaseDupeFilter
     from scrapy.http.request import Request
-    from scrapy.pqueues import ScrapyPriorityQueue
+    from scrapy.pqueues import PriorityQueueProtocol
     from scrapy.statscollectors import StatsCollector
 
 
@@ -50,7 +50,8 @@ class BaseSchedulerMeta(type):
 
 
 class BaseScheduler(metaclass=BaseSchedulerMeta):
-    """Base class for :ref:`schedulers <topics-scheduler>`."""
+    """Base class for :ref:`scheduler <topics-scheduler>` :ref:`components
+    <topics-components>`."""
 
     @abstractmethod
     def enqueue_request(self, request: Request) -> bool:
@@ -122,14 +123,7 @@ class Scheduler(BaseScheduler):
     Requests are dropped if :attr:`~scrapy.Request.dont_filter` is ``False``
     and :setting:`DUPEFILTER_CLASS` flags them as duplicate requests.
 
-    :setting:`SCHEDULER_PRIORITY_QUEUE` handles request prioritization. For
-    same-priority requests, their prioritization depends on
-    :setting:`SCHEDULER_MEMORY_QUEUE`, and also on
-    :setting:`SCHEDULER_DISK_QUEUE` if :setting:`JOBDIR` is set.
-
-    If :setting:`JOBDIR` is set, :setting:`SCHEDULER_MEMORY_QUEUE` is used for
-    requests that cannot be serialized to disk. Memory requests always take
-    priority over disk requests.
+    :setting:`SCHEDULER_PRIORITY_QUEUE` handles request prioritization.
 
     The following stats are generated:
 
@@ -144,7 +138,7 @@ class Scheduler(BaseScheduler):
         scheduler/unserializable
 
     If the value of the ``scheduler/unserializable`` stat is non-zero, consider
-    enabling :setting:`SCHEDULER_DEBUG` to log a warning messages with details
+    enabling :setting:`SCHEDULER_DEBUG` to log a warning message with details
     about the first unserializable request, to try and figure out how to make
     it serializable.
 
@@ -159,12 +153,12 @@ class Scheduler(BaseScheduler):
         mqclass: type[BaseQueue] | None = None,
         logunser: bool = False,
         stats: StatsCollector | None = None,
-        pqclass: type[ScrapyPriorityQueue] | None = None,
+        pqclass: type[PriorityQueueProtocol] | None = None,
         crawler: Crawler | None = None,
     ):
         self.df: BaseDupeFilter = dupefilter
         self.dqdir: str | None = self._dqdir(jobdir)
-        self.pqclass: type[ScrapyPriorityQueue] | None = pqclass
+        self.pqclass: type[PriorityQueueProtocol] | None = pqclass
         self.dqclass: type[BaseQueue] | None = dqclass
         self.mqclass: type[BaseQueue] | None = mqclass
         self.logunser: bool = logunser
@@ -190,8 +184,8 @@ class Scheduler(BaseScheduler):
 
     def open(self, spider: Spider) -> Deferred[None] | None:
         self.spider: Spider = spider
-        self.mqs: ScrapyPriorityQueue = self._mq()
-        self.dqs: ScrapyPriorityQueue | None = self._dq() if self.dqdir else None
+        self.mqs: PriorityQueueProtocol = self._mq()
+        self.dqs: PriorityQueueProtocol | None = self._dq() if self.dqdir else None
         return self.df.open()
 
     def close(self, reason: str) -> Deferred[None] | None:
@@ -263,7 +257,7 @@ class Scheduler(BaseScheduler):
             return self.dqs.pop()
         return None
 
-    def _mq(self) -> ScrapyPriorityQueue:
+    def _mq(self) -> PriorityQueueProtocol:
         """Create a new priority queue instance, with in-memory storage"""
         assert self.crawler
         assert self.pqclass
@@ -274,7 +268,7 @@ class Scheduler(BaseScheduler):
             key="",
         )
 
-    def _dq(self) -> ScrapyPriorityQueue:
+    def _dq(self) -> PriorityQueueProtocol:
         """Create a new priority queue instance, with disk storage"""
         assert self.crawler
         assert self.dqdir
@@ -304,13 +298,13 @@ class Scheduler(BaseScheduler):
             return str(dqdir)
         return None
 
-    def _read_dqs_state(self, dqdir: str) -> list[int]:
+    def _read_dqs_state(self, dqdir: str) -> Any:
         path = Path(dqdir, "active.json")
         if not path.exists():
             return []
         with path.open(encoding="utf-8") as f:
-            return cast(list[int], json.load(f))
+            return cast(Any, json.load(f))
 
-    def _write_dqs_state(self, dqdir: str, state: list[int]) -> None:
+    def _write_dqs_state(self, dqdir: str, state: Any) -> None:
         with Path(dqdir, "active.json").open("w", encoding="utf-8") as f:
             json.dump(state, f)

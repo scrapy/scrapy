@@ -341,14 +341,15 @@ ItemFilter
 
 .. _post-processing:
 
-Post-Processing
+Post-processing
 ===============
 
 .. versionadded:: 2.6.0
 
-Scrapy provides an option to activate plugins to post-process feeds before they are exported
-to feed storages. In addition to using :ref:`builtin plugins <builtin-plugins>`, you
-can create your own :ref:`plugins <custom-plugins>`.
+Scrapy provides an option to activate plugins to post-process feeds before they
+are exported to feed storages. In addition to using :ref:`built-in plugins
+<post-processing-plugins>`, you can create your own :ref:`plugins
+<custom-post-processing-plugin>`.
 
 These plugins can be activated through the ``postprocessing`` option of a feed.
 The option must be passed a list of post-processing plugins in the order you want
@@ -356,10 +357,10 @@ the feed to be processed. These plugins can be declared either as an import stri
 or with the imported class of the plugin. Parameters to plugins can be passed
 through the feed options. See :ref:`feed options <feed-options>` for examples.
 
-.. _builtin-plugins:
+.. _post-processing-plugins:
 
-Built-in Plugins
-----------------
+Built-in post-processing plugins
+--------------------------------
 
 .. autoclass:: scrapy.extensions.postprocessing.GzipPlugin
 
@@ -367,39 +368,16 @@ Built-in Plugins
 
 .. autoclass:: scrapy.extensions.postprocessing.Bz2Plugin
 
-.. _custom-plugins:
 
-Custom Plugins
---------------
+.. _custom-post-processing-plugin:
 
-Each plugin is a class that must implement the following methods:
+Writing a post-processing plugin
+--------------------------------
 
-.. method:: __init__(self, file, feed_options)
-
-    Initialize the plugin.
-
-    :param file: file-like object having at least the `write`, `tell` and `close` methods implemented
-
-    :param feed_options: feed-specific :ref:`options <feed-options>`
-    :type feed_options: :class:`dict`
-
-.. method:: write(self, data)
-
-   Process and write `data` (:class:`bytes` or :class:`memoryview`) into the plugin's target file.
-   It must return number of bytes written.
-
-.. method:: close(self)
-
-    Clean up the plugin.
-
-    For example, you might want to close a file wrapper that you might have
-    used to compress data written into the file received in the ``__init__``
-    method.
-
-    .. warning:: Do not close the file from the ``__init__`` method.
-
-To pass a parameter to your plugin, use :ref:`feed options <feed-options>`. You
-can then access those parameters from the ``__init__`` method of your plugin.
+.. autoclass:: scrapy.extensions.postprocessing.PostprocessingPluginProtocol()
+    :members:
+    :special-members: __init__
+    :member-order: bysource
 
 
 Settings

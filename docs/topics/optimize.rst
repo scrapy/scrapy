@@ -1,8 +1,30 @@
+.. _optimize:
+
+=============
+Optimizations
+=============
+
+Scrapy offers different ways to optimize crawls based on :ref:`resource
+constraints <optimize-resources>` and :ref:`use cases <broad-crawls>`.
+
+.. _optimize-resources:
+
+Lowering resource usage
+=======================
+
+…
+
+..
+    TODO:
+        Network input and output
+            optional compression packages
+
+
+.. _broad-crawls:
 .. _topics-broad-crawls:
 
-============
-Broad crawls
-============
+Optimizing broad crawls
+=======================
 
 While Scrapy is well suited for **broad crawls**, i.e. crawls that target many
 websites, the default :ref:`settings <topics-settings>` are optimized for
@@ -18,7 +40,7 @@ For broad crawls, consider these adjustments:
 .. _broad-crawls-concurrency:
 
 Increase concurrency
-====================
+--------------------
 
 Concurrency is the number of requests that are processed in parallel. There is
 a global limit (:setting:`CONCURRENT_REQUESTS`) and an additional limit that
@@ -49,7 +71,7 @@ concern, you might need to lower your global concurrency limit accordingly.
 
 
 Increase Twisted IO thread pool maximum size
-============================================
+--------------------------------------------
 
 Currently Scrapy does DNS resolution in a blocking way with usage of thread
 pool. With higher concurrency levels the crawling could be slow or even fail
@@ -64,7 +86,7 @@ To increase maximum thread pool size use:
     REACTOR_THREADPOOL_MAXSIZE = 20
 
 Setup your own DNS
-==================
+------------------
 
 If you have multiple crawling processes and single central DNS, it can act
 like DoS attack on the DNS server resulting to slow down of entire network or
@@ -72,7 +94,7 @@ even blocking your machines. To avoid this setup your own DNS server with
 local cache and upstream to some large DNS like OpenDNS or Verizon.
 
 Reduce log level
-================
+----------------
 
 When doing broad crawls you are often only interested in the crawl rates you
 get and any errors found. These stats are reported by Scrapy when using the
@@ -88,7 +110,7 @@ To set the log level use:
     LOG_LEVEL = "INFO"
 
 Disable cookies
-===============
+---------------
 
 Disable cookies unless you *really* need. Cookies are often not needed when
 doing broad crawls (search engine crawlers ignore them), and they improve
@@ -102,7 +124,7 @@ To disable cookies use:
     COOKIES_ENABLED = False
 
 Disable retries
-===============
+---------------
 
 Retrying failed HTTP requests can slow down the crawls substantially, specially
 when sites causes are very slow (or fail) to respond, thus causing a timeout
@@ -116,7 +138,7 @@ To disable retries use:
     RETRY_ENABLED = False
 
 Reduce download timeout
-=======================
+-----------------------
 
 Unless you are crawling from a very slow connection (which shouldn't be the
 case for broad crawls) reduce the download timeout so that stuck requests are
@@ -129,7 +151,7 @@ To reduce the download timeout use:
     DOWNLOAD_TIMEOUT = 15
 
 Disable redirects
-=================
+-----------------
 
 Consider disabling redirects, unless you are interested in following them. When
 doing broad crawls it's common to save redirects and resolve them when
@@ -146,7 +168,7 @@ To disable redirects use:
 .. _broad-crawls-bfo:
 
 Crawl in BFO order
-==================
+------------------
 
 :ref:`Scrapy crawls in DFO order by default <faq-bfo-dfo>`.
 
@@ -158,7 +180,7 @@ final depth is reached, which can significantly increase memory usage.
 
 
 Be mindful of memory leaks
-==========================
+--------------------------
 
 If your broad crawl shows a high memory usage, in addition to :ref:`crawling in
 BFO order <broad-crawls-bfo>` and :ref:`lowering concurrency
@@ -167,7 +189,7 @@ BFO order <broad-crawls-bfo>` and :ref:`lowering concurrency
 
 
 Install a specific Twisted reactor
-==================================
+----------------------------------
 
 If the crawl is exceeding the system's capabilities, you might want to try
 installing a specific Twisted reactor, via the :setting:`TWISTED_REACTOR` setting.
