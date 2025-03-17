@@ -154,6 +154,7 @@ intersphinx_mapping = {
     "tox": ("https://tox.wiki/en/latest/", None),
     "twisted": ("https://docs.twisted.org/en/stable/", None),
     "twistedapi": ("https://docs.twisted.org/en/stable/api/", None),
+    "uvloop": ("https://uvloop.readthedocs.io", None),
     "w3lib": ("https://w3lib.readthedocs.io/en/latest", None),
 }
 intersphinx_disabled_reftypes: Sequence[str] = []
