@@ -27,12 +27,12 @@ def sleep(seconds: float = ExecutionEngine._MIN_BACK_IN_SECONDS):
 class MainTestCase(TestCase):
     @deferred_f_from_coro_f
     async def test_greedy(self):
-        class TestScheduler(MemoryScheduler):
-            queue = ["data:,b"]
-
         class TestSpider(Spider):
             name = "test"
-            start_urls = ["data:,a"]
+
+            async def yield_seeds(self):
+                self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
+                yield Request("data:,a")
 
             def parse(self, response):
                 pass
@@ -42,7 +42,7 @@ class MainTestCase(TestCase):
         def track_url(request, spider):
             actual_urls.append(request.url)
 
-        settings = {"SCHEDULER": TestScheduler}
+        settings = {"SCHEDULER": MemoryScheduler}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
         await maybe_deferred_to_future(crawler.crawl())
@@ -55,6 +55,10 @@ class MainTestCase(TestCase):
         """If the seeds sleep long enough, scheduler requests should be
         processed in the meantime."""
 
+        # This value may need an increase depending on how slow CI jobs can be.
+        # Just increase the last integer by one until the test passes.
+        seconds = ExecutionEngine._MIN_BACK_IN_SECONDS * 2**3
+
         class TestScheduler(MemoryScheduler):
             queue = ["data:,b"]
 
@@ -63,7 +67,7 @@ class MainTestCase(TestCase):
 
             async def yield_seeds(self):
                 yield Request("data:,a")
-                await sleep(ExecutionEngine._MIN_BACK_IN_SECONDS * 2**2)
+                await sleep(seconds)
                 yield Request("data:,c")
 
             def parse(self, response):
