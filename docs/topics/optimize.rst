@@ -1,8 +1,8 @@
 .. _optimize:
 
-=============
-Optimizations
-=============
+============
+Optimization
+============
 
 Scrapy offers different ways to speed up crawls for specific :ref:`use cases
 <broad-crawls>` and to :ref:`lower resource usage <optimize-resources>`.
@@ -73,42 +73,25 @@ For broad crawls, consider these adjustments:
 Lowering resource usage
 =======================
 
-General tips
-------------
-
--   Try :ref:`using the asyncio reactor <install-asyncio>`, installing
-    :doc:`uvloop <uvloop:index>` and setting :setting:`ASYNCIO_EVENT_LOOP` to
-    :class:`uvloop.Loop`.
-
-    Alternatively, try switching :setting:`TWISTED_REACTOR` to :doc:`some other
-    reactor <core/howto/choosing-reactor>`.
-
--   Disable unused :ref:`components <topics-components>`.
-
-    For example, set :setting:`COOKIES_ENABLED` to ``False`` unless you need
-    cookies.
-
-
-Lowering CPU usage
-------------------
-
--   Set :setting:`LOG_LEVEL` to ``"INFO"`` or higher.
-
-
 Lowering memory usage
 ---------------------
 
--   If lowering your crawl speed is OK:
+-   Lower :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE`.
+
+-   Lower the number of :ref:`scheduled requests <topics-scheduler>` held in
+    memory:
 
     -   Increase the :attr:`~scrapy.Request.priority` of requests whose
-        :attr:`~scrapy.Request.callback` cannot yield additional requests.
+        :attr:`~scrapy.Request.callback` cannot yield additional
+        requests.
 
     -   If you have many seed requests (see
-        :meth:`~scrapy.Spider.yield_seeds`), set :setting:`SEEDING_POLICY` to
+        :meth:`~scrapy.Spider.yield_seeds`), set
+        :setting:`SEEDING_POLICY` to
         :class:`~scrapy.SeedingPolicy.lazy` or
         :class:`~scrapy.SeedingPolicy.idle`.
 
-    -   Lower :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE`.
+    -   Set :setting:`JOBDIR` to offload all scheduled requests to disk.
 
 -   Be in the lookout for :ref:`memory leaks <topics-leaks>`.
 
@@ -123,3 +106,25 @@ Lowering network usage
     .. _brotli: https://pypi.org/project/Brotli/
     .. _zstd-compressed: https://www.ietf.org/rfc/rfc8478.txt
     .. _zstandard: https://pypi.org/project/zstandard/
+
+
+Lowering CPU usage
+------------------
+
+-   Set :setting:`LOG_LEVEL` to ``"INFO"`` or higher.
+
+
+Other tips
+----------
+
+-   Try :ref:`using the asyncio reactor <install-asyncio>`, installing
+    :doc:`uvloop <uvloop:index>` and setting :setting:`ASYNCIO_EVENT_LOOP` to
+    :class:`uvloop.Loop`.
+
+    Alternatively, try switching :setting:`TWISTED_REACTOR` to :doc:`some other
+    reactor <core/howto/choosing-reactor>`.
+
+-   Disable unused :ref:`components <topics-components>`.
+
+    For example, set :setting:`COOKIES_ENABLED` to ``False`` unless you need
+    cookies.
