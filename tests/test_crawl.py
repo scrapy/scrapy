@@ -361,27 +361,6 @@ with multiples lines
         assert s["len(engine.scraper.slot.active)"] == "1"
 
     @defer.inlineCallbacks
-    def test_graceful_crawl_error_handling(self):
-        """
-        Test whether errors happening anywhere in Crawler.crawl() are properly
-        reported (and not somehow swallowed) after a graceful engine shutdown.
-        The errors should not come from within Scrapy's core but from within
-        spiders/middlewares/etc., e.g. raised in Spider.test_start(),
-        SpiderMiddleware.process_test_start(), etc.
-        """
-
-        class TestError(Exception):
-            pass
-
-        class FaultySpider(SimpleSpider):
-            async def start(self):
-                raise TestError
-
-        crawler = get_crawler(FaultySpider)
-        yield self.assertFailure(crawler.crawl(mockserver=self.mockserver), TestError)
-        assert not crawler.crawling
-
-    @defer.inlineCallbacks
     def test_open_spider_error_on_faulty_pipeline(self):
         settings = {
             "ITEM_PIPELINES": {

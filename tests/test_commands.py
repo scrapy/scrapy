@@ -683,6 +683,7 @@ class BadSpider(scrapy.Spider):
     name = "bad"
     async def start(self):
         raise Exception("oops!")
+        yield
         """
 
     @contextmanager
@@ -775,7 +776,7 @@ class MySpider(scrapy.Spider):
     def test_start_errors(self):
         log = self.get_log(self.badspider, name="badspider.py")
         assert "start" in log
-        assert "badspider.py" in log
+        assert "badspider.py" in log, log
 
     def test_asyncio_enabled_true(self):
         log = self.get_log(
