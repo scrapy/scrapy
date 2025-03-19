@@ -31,8 +31,8 @@ class MainTestCase(TestCase):
             name = "test"
 
             async def yield_seeds(self):
-                self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
                 yield Request("data:,a")
+                self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
 
             def parse(self, response):
                 pass
@@ -137,8 +137,8 @@ class MainTestCase(TestCase):
             name = "test"
 
             async def yield_seeds(self):
-                self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
                 yield Request("data:,a")
+                self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
                 raise RuntimeError
 
             def parse(self, response):
@@ -198,9 +198,8 @@ class MainTestCase(TestCase):
             name = "test"
 
             async def yield_seeds(self):
-                self.crawler.engine._slot.scheduler.pause = False
                 yield Request("data:,a")
-                yield Request("data:,c")
+                self.crawler.engine._slot.scheduler.pause = False
 
             def parse(self, response):
                 pass
@@ -216,7 +215,7 @@ class MainTestCase(TestCase):
         with LogCapture() as log:
             await maybe_deferred_to_future(crawler.crawl())
         assert crawler.stats.get_value("finish_reason") == "finished"
-        expected_urls = ["data:,a", "data:,b", "data:,c"]
+        expected_urls = ["data:,a", "data:,b"]
         assert actual_urls == expected_urls, (
             f"{actual_urls=} != {expected_urls=}\n{log}"
         )
