@@ -107,10 +107,10 @@ class Command(ScrapyCommand):
                     for method in sorted(methods):
                         print(f"  * {method}")
             else:
-                start = time.time()
+                start_time = time.time()
                 self.crawler_process.start()
                 stop = time.time()
 
                 result.printErrors()
-                result.printSummary(start, stop)
+                result.printSummary(start_time, stop)
                 self.exitcode = int(not result.wasSuccessful())
