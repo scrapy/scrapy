@@ -86,8 +86,10 @@ class TestCloseSpider(TestCase):
         yield crawler.crawl(total=1000000, mockserver=self.mockserver)
         reason = crawler.spider.meta["close_reason"]
         assert reason == "closespider_errorcount"
-        key = f"spider_exceptions/{crawler.spider.exception_cls.__name__}"
+        prefix = "spider_exceptions"
+        key = f"{prefix}/{crawler.spider.exception_cls.__name__}"
         errorcount = crawler.stats.get_value(key)
+        assert crawler.stats.get_value(f"{prefix}/exception_count") == 5
         assert errorcount >= close_on
 
     @defer.inlineCallbacks
