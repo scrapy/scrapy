@@ -320,19 +320,19 @@ class TestProcessSpiderOutputInvalidResult(TestBaseAsyncSpiderMiddleware):
             )
 
 
-class ProcessYieldSeedsSimpleMiddleware:
+class ProcessStartSimpleMiddleware:
     def process_test_start(self, test_start, spider):
         yield from test_start
 
 
-class TestProcessSeedsSimple(TestBaseAsyncSpiderMiddleware):
+class TestProcessStartSimple(TestBaseAsyncSpiderMiddleware):
     """process_start tests for simple start"""
 
     ITEM_TYPE = (Request, dict)
-    MW_SIMPLE = ProcessYieldSeedsSimpleMiddleware
+    MW_SIMPLE = ProcessStartSimpleMiddleware
 
     @inlineCallbacks
-    def _get_processed_seeds(self, *mw_classes):
+    def _get_processed_start(self, *mw_classes):
         class TestSpider(Spider):
             name = "test"
 
@@ -353,11 +353,11 @@ class TestProcessSeedsSimple(TestBaseAsyncSpiderMiddleware):
     @inlineCallbacks
     def test_simple(self):
         """Simple mw"""
-        seeds = yield self._get_processed_seeds(self.MW_SIMPLE)
-        assert isasyncgen(seeds)
-        seed_list = yield deferred_from_coro(collect_asyncgen(seeds))
-        assert len(seed_list) == self.RESULT_COUNT
-        assert isinstance(seed_list[0], self.ITEM_TYPE)
+        start = yield self._get_processed_start(self.MW_SIMPLE)
+        assert isasyncgen(start)
+        start_list = yield deferred_from_coro(collect_asyncgen(start))
+        assert len(start_list) == self.RESULT_COUNT
+        assert isinstance(start_list[0], self.ITEM_TYPE)
 
 
 class UniversalMiddlewareNoSync:

@@ -460,7 +460,7 @@ class TestCrawlSpider(TestSpider):
             (
                 "scrapy.core.engine",
                 "ERROR",
-                "Error while reading seeds",
+                "Error while reading start items and requests",
             ),
         )
 

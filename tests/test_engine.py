@@ -494,11 +494,11 @@ def test_request_scheduled_signal(caplog):
     engine.downloader._slot_gc_loop.stop()
     scheduler = TestScheduler()
 
-    async def seeds():
+    async def start():
         return
         yield
 
-    engine._seeds = seeds()
+    engine._start = start()
     engine._slot = _Slot(False, Mock(), scheduler)
     crawler.signals.connect(signal_handler, request_scheduled)
     keep_request = Request("https://keep.example")

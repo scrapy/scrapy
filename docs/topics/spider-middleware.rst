@@ -70,7 +70,7 @@ one or more of these methods:
 
 .. class:: SpiderMiddleware
 
-    .. method:: process_start(seeds: AsyncIterable[Any], /) -> AsyncIterable[Any]
+    .. method:: process_start(start: AsyncIterable[Any], /) -> AsyncIterable[Any]
         :async:
 
         Iterate over the output of :meth:`~scrapy.Spider.start` or that
@@ -79,12 +79,12 @@ one or more of these methods:
 
         .. code-block:: python
 
-            async def process_start(self, seeds):
-                async for seed in seeds:
-                    yield seed
+            async def process_start(self, start):
+                async for item_or_request in start:
+                    yield item_or_request
 
         You may yield :class:`~scrapy.Request` or :ref:`item <topics-items>`
-        objects, same as :meth:`~scrapy.Spider.start`, from *seeds* or
+        objects, same as :meth:`~scrapy.Spider.start`, from *start* or
         not.
 
         To write spider middlewares that work on Scrapy versions lower than
@@ -93,8 +93,8 @@ one or more of these methods:
 
         .. code-block:: python
 
-            def process_start_requests(self, seeds, spider):
-                yield from seeds
+            def process_start_requests(self, start, spider):
+                yield from start
 
     .. method:: process_spider_input(response, spider)
 

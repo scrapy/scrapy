@@ -34,7 +34,7 @@ from tests.spiders import (
     AsyncDefDeferredMaybeWrappedSpider,
     AsyncDefDeferredWrappedSpider,
     AsyncDefSpider,
-    BrokenYieldSeedsSpider,
+    BrokenStartSpider,
     BytesReceivedCallbackSpider,
     BytesReceivedErrbackSpider,
     CrawlSpiderWithAsyncCallback,
@@ -43,14 +43,14 @@ from tests.spiders import (
     CrawlSpiderWithParseMethod,
     CrawlSpiderWithProcessRequestCallbackKeywordArguments,
     DelaySpider,
-    DuplicateYieldSeedsSpider,
+    DuplicateStartSpider,
     FollowAllSpider,
     HeadersReceivedCallbackSpider,
     HeadersReceivedErrbackSpider,
     SimpleSpider,
     SingleRequestSpider,
-    YieldSeedsGoodAndBadOutput,
-    YieldSeedsItemSpider,
+    StartGoodAndBadOutput,
+    StartItemSpider,
 )
 
 
@@ -165,7 +165,7 @@ class TestCrawl(TestCase):
     @defer.inlineCallbacks
     def test_start_bug_before_yield(self):
         with LogCapture("scrapy", level=logging.ERROR) as log:
-            crawler = get_crawler(BrokenYieldSeedsSpider)
+            crawler = get_crawler(BrokenStartSpider)
             yield crawler.crawl(fail_before_yield=1, mockserver=self.mockserver)
 
         assert len(log.records) == 1
@@ -176,7 +176,7 @@ class TestCrawl(TestCase):
     @defer.inlineCallbacks
     def test_start_bug_yielding(self):
         with LogCapture("scrapy", level=logging.ERROR) as log:
-            crawler = get_crawler(BrokenYieldSeedsSpider)
+            crawler = get_crawler(BrokenStartSpider)
             yield crawler.crawl(fail_yielding=1, mockserver=self.mockserver)
 
         assert len(log.records) == 1
@@ -187,7 +187,7 @@ class TestCrawl(TestCase):
     @defer.inlineCallbacks
     def test_start_items(self):
         with LogCapture("scrapy", level=logging.ERROR) as log:
-            crawler = get_crawler(YieldSeedsItemSpider)
+            crawler = get_crawler(StartItemSpider)
             yield crawler.crawl(mockserver=self.mockserver)
 
         assert len(log.records) == 0
@@ -199,7 +199,7 @@ class TestCrawl(TestCase):
         things fail when ItemAdapter is actually used on the corresponding
         non-item object."""
         with LogCapture("scrapy", level=logging.ERROR) as log:
-            crawler = get_crawler(YieldSeedsGoodAndBadOutput)
+            crawler = get_crawler(StartGoodAndBadOutput)
             yield crawler.crawl(mockserver=self.mockserver)
 
         assert len(log.records) == 0
@@ -207,7 +207,7 @@ class TestCrawl(TestCase):
     @defer.inlineCallbacks
     def test_start_laziness(self):
         settings = {"CONCURRENT_REQUESTS": 1}
-        crawler = get_crawler(BrokenYieldSeedsSpider, settings)
+        crawler = get_crawler(BrokenStartSpider, settings)
         yield crawler.crawl(mockserver=self.mockserver)
         assert crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(
             99
@@ -216,13 +216,13 @@ class TestCrawl(TestCase):
     @defer.inlineCallbacks
     def test_start_dupes(self):
         settings = {"CONCURRENT_REQUESTS": 1}
-        crawler = get_crawler(DuplicateYieldSeedsSpider, settings)
+        crawler = get_crawler(DuplicateStartSpider, settings)
         yield crawler.crawl(
             dont_filter=True, distinct_urls=2, dupe_factor=3, mockserver=self.mockserver
         )
         assert crawler.spider.visited == 6
 
-        crawler = get_crawler(DuplicateYieldSeedsSpider, settings)
+        crawler = get_crawler(DuplicateStartSpider, settings)
         yield crawler.crawl(
             dont_filter=False,
             distinct_urls=3,

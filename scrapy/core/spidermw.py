@@ -394,15 +394,15 @@ class SpiderMiddlewareManager(MiddlewareManager):
     ) -> Generator[Deferred[Any], Any, AsyncIterable[Any]]:
         self._check_deprecated_start_requests_use(spider)
         if self._use_start_requests:
-            sync_seeds = iter(spider.start_requests())
-            sync_seeds = yield self._process_chain(
-                "process_start_requests", sync_seeds, spider
+            sync_start = iter(spider.start_requests())
+            sync_start = yield self._process_chain(
+                "process_start_requests", sync_start, spider
             )
-            seeds = as_async_generator(sync_seeds)
+            start = as_async_generator(sync_start)
         else:
-            seeds = yield _maybe_sync_generator_to_async(spider.start)()
-            seeds = yield self._process_chain("process_start", seeds)
-        return seeds
+            start = yield _maybe_sync_generator_to_async(spider.start)()
+            start = yield self._process_chain("process_start", start)
+        return start
 
     def _check_deprecated_start_requests_use(self, spider: Spider):
         start_requests_cls = None

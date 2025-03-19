@@ -15,9 +15,9 @@ from .test_spider_start import twisted_sleep
 
 class MainTestCase(TestCase):
     @inlineCallbacks
-    def test_scheduler_priority_over_seeds_simple(self):
-        """Scrapy reads seeds into the scheduler while the scheduler is empty,
-        but otherwise prioritizes requests already in the scheduler.
+    def test_scheduler_priority_over_start_simple(self):
+        """Scrapy reads start() into the scheduler while the scheduler is
+        empty, but otherwise prioritizes requests already in the scheduler.
 
         This test shows how, given a scheduler pre-filled with a request, that
         request is sent before sending the first seed request.
@@ -61,13 +61,13 @@ class MainTestCase(TestCase):
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
     @inlineCallbacks
-    def test_scheduler_priority_over_seeds_complex(self):
-        """Although Scrapy reads seeds into the scheduler while the scheduler
+    def test_scheduler_priority_over_start_complex(self):
+        """Although Scrapy reads start() into the scheduler while the scheduler
         is empty and otherwise prioritizes requests already in the scheduler,
         this is done in a non-blocking way.
 
         That is, if the scheduler reports having requests but yields none,
-        requests from seeds will be scheduled.
+        requests from start() will be scheduled.
         """
 
         class TestScheduler(BaseScheduler):

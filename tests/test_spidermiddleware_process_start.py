@@ -17,29 +17,29 @@ ITEM_D = {"id": "d"}
 
 
 class AsyncioSleepSpiderMiddleware:
-    async def process_start(self, seeds):
+    async def process_start(self, start):
         await sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS)
-        async for seed in seeds:
-            yield seed
+        async for item_or_request in start:
+            yield item_or_request
 
 
 class NoOpSpiderMiddleware:
-    async def process_start(self, seeds):
-        async for seed in seeds:
-            yield seed
+    async def process_start(self, start):
+        async for item_or_request in start:
+            yield item_or_request
 
 
 class TwistedSleepSpiderMiddleware:
-    async def process_start(self, seeds):
+    async def process_start(self, start):
         await maybe_deferred_to_future(twisted_sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS))
-        async for seed in seeds:
-            yield seed
+        async for item_or_request in start:
+            yield item_or_request
 
 
 class UniversalSpiderMiddleware:
-    async def process_start(self, seeds):
-        async for seed in seeds:
-            yield seed
+    async def process_start(self, start):
+        async for item_or_request in start:
+            yield item_or_request
 
     def process_start_requests(self, start_requests, spider):
         raise NotImplementedError
@@ -73,30 +73,30 @@ class DeprecatedWrapSpider(Spider):
 
 
 class ModernWrapSpiderMiddleware:
-    async def process_start(self, seeds):
+    async def process_start(self, start):
         yield ITEM_A
-        async for seed in seeds:
-            yield seed
+        async for item_or_request in start:
+            yield item_or_request
         yield ITEM_C
 
 
 class UniversalWrapSpiderMiddleware:
-    async def process_start(self, seeds):
+    async def process_start(self, start):
         yield ITEM_A
-        async for seed in seeds:
-            yield seed
+        async for item_or_request in start:
+            yield item_or_request
         yield ITEM_C
 
-    def process_start_requests(self, seeds, spider):
+    def process_start_requests(self, start, spider):
         yield ITEM_A
-        yield from seeds
+        yield from start
         yield ITEM_C
 
 
 class DeprecatedWrapSpiderMiddleware:
-    def process_start_requests(self, seeds, spider):
+    def process_start_requests(self, start, spider):
         yield ITEM_A
-        yield from seeds
+        yield from start
         yield ITEM_C
 
 

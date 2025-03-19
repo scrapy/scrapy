@@ -103,7 +103,7 @@ class ExecutionEngine:
             spider_closed_callback
         )
         self.start_time: float | None = None
-        self._seeds: AsyncIterable[Any] | None = None
+        self._start: AsyncIterable[Any] | None = None
         self._waiting_for_seed: bool = False
 
     def _get_scheduler_class(self, settings: BaseSettings) -> type[BaseScheduler]:
@@ -177,13 +177,13 @@ class ExecutionEngine:
             return
         self._waiting_for_seed = True
         try:
-            seed = yield deferred_from_coro(self._seeds.__anext__())
+            seed = yield deferred_from_coro(self._start.__anext__())
         except StopAsyncIteration:
-            self._seeds = None
+            self._start = None
         except Exception:
-            self._seeds = None
+            self._start = None
             logger.error(
-                "Error while reading seeds",
+                "Error while reading start items and requests",
                 exc_info=True,
                 extra={"spider": self.spider},
             )
@@ -201,7 +201,7 @@ class ExecutionEngine:
         if self._slot is None or self._slot.closing is not None or self.paused:
             return
         self._start_scheduled_requests()
-        if self._seeds is not None and not self._needs_backout():
+        if self._start is not None and not self._needs_backout():
             yield self._process_next_seed()
         if self.spider_is_idle() and self._slot.close_if_idle:
             self._spider_idle()
@@ -289,7 +289,7 @@ class ExecutionEngine:
             return False
         if self.downloader.active:  # downloader has pending requests
             return False
-        if self._seeds is not None:  # not all start requests are handled
+        if self._start is not None:  # not all start requests are handled
             return False
         return not self._slot.scheduler.has_pending_requests()
 
@@ -380,7 +380,7 @@ class ExecutionEngine:
         logger.info("Spider opened", extra={"spider": spider})
         nextcall = CallLaterOnce(self._start_next_requests)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
-        self._seeds = yield self.scraper.spidermw.process_start(spider)
+        self._start = yield self.scraper.spidermw.process_start(spider)
         self._slot = _Slot(close_if_idle, nextcall, scheduler)
         self.spider = spider
         if hasattr(scheduler, "open") and (d := scheduler.open(spider)):

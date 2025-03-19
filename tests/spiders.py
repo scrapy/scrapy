@@ -319,7 +319,7 @@ class ErrorSpider(FollowAllSpider):
             self.raise_exception()
 
 
-class BrokenYieldSeedsSpider(FollowAllSpider):
+class BrokenStartSpider(FollowAllSpider):
     fail_before_yield = False
     fail_yielding = False
 
@@ -345,12 +345,12 @@ class BrokenYieldSeedsSpider(FollowAllSpider):
         yield from super().parse(response)
 
 
-class YieldSeedsItemSpider(FollowAllSpider):
+class StartItemSpider(FollowAllSpider):
     async def start(self):
         yield {"name": "test item"}
 
 
-class YieldSeedsGoodAndBadOutput(FollowAllSpider):
+class StartGoodAndBadOutput(FollowAllSpider):
     async def start(self):
         yield {"a": "a"}
         yield Request("data:,a")
@@ -384,7 +384,7 @@ class SingleRequestSpider(MetaSpider):
         return None
 
 
-class DuplicateYieldSeedsSpider(MockServerSpider):
+class DuplicateStartSpider(MockServerSpider):
     dont_filter = True
     name = "duplicatestartrequests"
     distinct_urls = 2
