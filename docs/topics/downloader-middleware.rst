@@ -977,6 +977,8 @@ To retry requests from a spider callback, you can use the
 
 .. autofunction:: get_retry_request
 
+.. _retry-settings:
+
 RetryMiddleware Settings
 ~~~~~~~~~~~~~~~~~~~~~~~~
 

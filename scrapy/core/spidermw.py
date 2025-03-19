@@ -7,8 +7,8 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterable, Callable, Iterable
-from inspect import isasyncgenfunction, iscoroutine, iscoroutinefunction
+from collections.abc import AsyncIterable, AsyncIterator, Callable, Iterable
+from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 from warnings import warn
@@ -371,8 +371,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
     @inlineCallbacks
     def process_seeds(
         self, spider: Spider
-    ) -> Generator[Deferred[Any], Any, AsyncIterable[Any]]:
-        self._check_deprecated_start_requests_use(spider)
+    ) -> Generator[Deferred[Any], Any, AsyncIterator[Any] | None]:
+        try:
+            self._check_deprecated_start_requests_use(spider)
+        except ValueError as exception:
+            logger.error(exception)
+            return None
+        seeds: AsyncIterator[Any]
         if self._use_start_requests:
             sync_seeds = iter(spider.start_requests())
             sync_seeds = yield self._process_chain(
@@ -380,8 +385,19 @@ class SpiderMiddlewareManager(MiddlewareManager):
             )
             seeds = as_async_generator(sync_seeds)
         else:
-            seeds = yield self._iter_seeds(spider)
-            seeds = yield self._process_chain("process_seeds", seeds)
+            error_found = False
+            for fn in (spider.yield_seeds, *self.methods["process_seeds"]):
+                if isasyncgenfunction(fn):
+                    continue
+                logger.error(
+                    f"{global_object_name(fn)} must be an async generator "
+                    f"function, i.e. an async def function with yield "
+                    f"statements."
+                )
+                error_found = True
+            if error_found:
+                return None
+            seeds = yield self._process_chain("process_seeds", spider.yield_seeds())
         return seeds
 
     def _check_deprecated_start_requests_use(self, spider: Spider):
@@ -453,14 +469,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 f"release notes of Scrapy VERSION for details: "
                 f"https://docs.scrapy.org/en/VERSION/news.html"
             )
-
-    @staticmethod
-    def _iter_seeds(spider: Spider):
-        fn = spider.yield_seeds
-        if isasyncgenfunction(fn):
-            return fn().__aiter__()
-        assert iscoroutinefunction(fn)
-        return deferred_from_coro(fn())
 
     # This method is only needed until _async compatibility methods are removed.
     @staticmethod

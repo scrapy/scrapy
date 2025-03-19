@@ -175,7 +175,20 @@ def verify_installed_asyncio_event_loop(loop_path: str) -> None:
     )
 
 
+def is_reactor_installed() -> bool:
+    return "twisted.internet.reactor" in sys.modules
+
+
 def is_asyncio_reactor_installed() -> bool:
+    """Check whether the installed reactor is :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+
+    Raise a :exc:`RuntimeError` if no reactor is installed.
+    """
+    if not is_reactor_installed():
+        raise RuntimeError(
+            "is_asyncio_reactor_installed() called without an installed reactor."
+        )
+
     from twisted.internet import reactor
 
     return isinstance(reactor, asyncioreactor.AsyncioSelectorReactor)

@@ -72,23 +72,31 @@ those imports happen.
 
 .. _asyncio-await-dfd:
 
-Awaiting on Deferreds
-=====================
+Integrating Deferred code and asyncio code
+==========================================
 
-When the asyncio reactor isn't installed, you can await on Deferreds in the
-coroutines directly. When it is installed, this is not possible anymore, due to
-specifics of the Scrapy coroutine integration (the coroutines are wrapped into
-:class:`asyncio.Future` objects, not into
-:class:`~twisted.internet.defer.Deferred` directly), and you need to wrap them into
-Futures. Scrapy provides two helpers for this:
+Coroutine functions can await on Deferreds by wrapping them into
+:class:`asyncio.Future` objects. Scrapy provides two helpers for this:
 
 .. autofunction:: scrapy.utils.defer.deferred_to_future
 .. autofunction:: scrapy.utils.defer.maybe_deferred_to_future
+
+.. tip:: If you don't need to support reactors other than the default
+         :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`, you
+         can use :func:`~scrapy.utils.defer.deferred_to_future`, otherwise you
+         should use :func:`~scrapy.utils.defer.maybe_deferred_to_future`.
+
 .. tip:: If you need to use these functions in code that aims to be compatible
          with lower versions of Scrapy that do not provide these functions,
          down to Scrapy 2.0 (earlier versions do not support
          :mod:`asyncio`), you can copy the implementation of these functions
          into your own code.
+
+Coroutines and futures can be wrapped into Deferreds (for example, when a
+Scrapy API requires passing a Deferred to it) using the following helpers:
+
+.. autofunction:: scrapy.utils.defer.deferred_from_coro
+.. autofunction:: scrapy.utils.defer.deferred_f_from_coro_f
 
 
 .. _enforce-asyncio-requirement:
@@ -115,6 +123,8 @@ example:
                     f"TWISTED_REACTOR setting. See the asyncio documentation "
                     f"of Scrapy for more information."
                 )
+
+.. autofunction:: scrapy.utils.reactor.is_asyncio_reactor_installed
 
 
 .. _asyncio-windows:

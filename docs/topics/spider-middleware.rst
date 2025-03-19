@@ -70,7 +70,7 @@ one or more of these methods:
 
 .. class:: SpiderMiddleware
 
-    .. method:: process_seeds(seeds: AsyncIterable[Any], /) -> AsyncIterable[Any]
+    .. method:: process_seeds(seeds: AsyncIterator[Any], /) -> AsyncIterator[Any]
         :async:
 
         Iterate over the output of :meth:`~scrapy.Spider.yield_seeds` or that
@@ -84,7 +84,8 @@ one or more of these methods:
                     yield seed
 
         You may yield the same type of objects as
-        :meth:`~scrapy.Spider.yield_seeds`.
+        :meth:`~scrapy.Spider.yield_seeds`. It may also raise
+        :exc:`~scrapy.exceptions.CloseSpider`.
 
         As with :meth:`~scrapy.Spider.yield_seeds`, how this method is iterated
         by default is controlled by :setting:`SEEDING_POLICY`. It is also

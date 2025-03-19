@@ -152,10 +152,10 @@ Solving specific problems
    :hidden:
 
    faq
+   topics/optimize
    topics/debug
    topics/contracts
    topics/practices
-   topics/broad-crawls
    topics/developer-tools
    topics/dynamic-content
    topics/leaks
@@ -170,6 +170,9 @@ Solving specific problems
 :doc:`faq`
     Get answers to most frequently asked questions.
 
+:doc:`topics/optimize`
+    Tune Scrapy for specific use cases and to save on specific resources.
+
 :doc:`topics/debug`
     Learn how to debug common problems of your Scrapy spider.
 
@@ -178,9 +181,6 @@ Solving specific problems
 
 :doc:`topics/practices`
     Get familiar with some Scrapy common practices.
-
-:doc:`topics/broad-crawls`
-    Tune Scrapy for crawling a lot domains in parallel.
 
 :doc:`topics/developer-tools`
     Learn how to scrape with your browser's developer tools.

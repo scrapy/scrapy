@@ -9,6 +9,7 @@ Coroutines
 Scrapy has :ref:`partial support <coroutine-support>` for the :ref:`coroutine
 syntax <async>` (i.e. ``async def``).
 
+
 .. _coroutine-support:
 
 Supported callables
@@ -59,6 +60,29 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     .. versionadded:: VERSION
 
 -   :ref:`Signal handlers that support deferreds <signal-deferred>`.
+
+
+.. _coroutine-deferred-apis:
+
+Using Deferred-based APIs
+=========================
+
+In addition to native coroutine APIs Scrapy has some APIs that return a
+:class:`~twisted.internet.defer.Deferred` object or take a user-supplied
+function that returns a :class:`~twisted.internet.defer.Deferred` object. These
+APIs are also asynchronous but don't yet support native ``async def`` syntax.
+For example:
+
+-   The :meth:`ExecutionEngine.download` method returns a
+    :class:`~twisted.internet.defer.Deferred` object.
+-   A custom download handler needs to define a ``download_request()`` method that
+    returns a :class:`~twisted.internet.defer.Deferred` object.
+
+In most cases you can use these APIs in code that otherwise uses coroutines, by
+wrapping a :class:`~twisted.internet.defer.Deferred` object into a
+:class:`~asyncio.Future` object or vice versa. See :ref:`asyncio-await-dfd` for
+more information about this.
+
 
 General usage
 =============

@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import logging
 from time import time
+from traceback import format_exc
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
-from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
 
 from scrapy import signals
@@ -22,12 +22,13 @@ from scrapy.http import Request, Response
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import CallLaterOnce
 
 from ._seeding import SeedingPolicy
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Callable, Generator
+    from collections.abc import AsyncIterator, Callable, Generator
 
     from scrapy.core.downloader import Downloader
     from scrapy.core.scheduler import BaseScheduler
@@ -59,7 +60,6 @@ class _Slot:
         self.close_if_idle: bool = close_if_idle
         self.nextcall: CallLaterOnce[Deferred[None]] = nextcall
         self.scheduler: BaseScheduler = scheduler
-        self.heartbeat: LoopingCall = LoopingCall(nextcall.schedule)
 
     def add_request(self, request: Request) -> None:
         self.inprogress.add(request)
@@ -77,13 +77,12 @@ class _Slot:
         if self.closing is not None and not self.inprogress:
             if self.nextcall:
                 self.nextcall.cancel()
-                if self.heartbeat.running:
-                    self.heartbeat.stop()
             self.closing.callback(None)
 
 
 class ExecutionEngine:
-    _SLOT_HEARTBEAT_INTERVAL: float = 5.0
+    _MIN_BACK_IN_SECONDS = 0.001
+    _MAX_BACK_IN_SECONDS = 5.0
 
     def __init__(
         self,
@@ -110,8 +109,9 @@ class ExecutionEngine:
         )
         self.start_time: float | None = None
         self._load_seeding_policy()
-        self._seeds: AsyncIterable[Any] | None = None
+        self._seeds: AsyncIterator[Any] | None = None
         self._waiting_for_seed: bool = False
+        self._back_in_seconds = self._MIN_BACK_IN_SECONDS
 
     def _load_seeding_policy(self) -> None:
         try:
@@ -189,16 +189,22 @@ class ExecutionEngine:
         if self._waiting_for_seed:
             return
         self._waiting_for_seed = True
+        # Schedule a new call for next requests while waiting for
+        # self._seeds.__anext__(), so that if it takes long enough and there
+        # are pending scheduler requests we can process those.
+        self._slot.nextcall.schedule(self._MIN_BACK_IN_SECONDS)
         try:
             seed = yield deferred_from_coro(self._seeds.__anext__())
         except StopAsyncIteration:
             self._seeds = None
-        except Exception:
+        except CloseSpider:
             self._seeds = None
+            raise
+        except Exception as exception:
+            self._seeds = None
+            exception_traceback = format_exc()
             logger.error(
-                "Error while reading seeds",
-                exc_info=True,
-                extra={"spider": self.spider},
+                f"Error while reading seeds: {exception}.\n{exception_traceback}"
             )
         else:
             if isinstance(seed, Request):
@@ -231,23 +237,45 @@ class ExecutionEngine:
         if self._seeding_policy is SeedingPolicy.front_load and self._seeds is None:
             self._slot.nextcall.schedule()
 
+    def _process_scheduler_requests(self):
+        while not self._needs_backout():
+            if self._start_scheduled_request() is None:
+                break
+
+    def _can_process_next_seed(self) -> bool:
+        return (
+            not self._waiting_for_seed
+            and self._seeds is not None
+            and not self._needs_backout()
+        )
+
+    def _scheduler_has_pending_requests(self) -> bool:
+        assert self._slot is not None  # typing
+        try:
+            return self._slot.scheduler.has_pending_requests()
+        except Exception as exception:
+            exception_traceback = format_exc()
+            logger.error(
+                f"{global_object_name(self._slot.scheduler.has_pending_requests)} raised an exception: {exception}.\n{exception_traceback}"
+            )
+            return False
+
     @inlineCallbacks
-    def _start_next_requests(self) -> Generator[Deferred[Any], Any, None]:
+    def _run_loop(self) -> Generator[Deferred[Any], Any, None]:
+        """Sends new requests from seeds or from the scheduler based on the
+        configured seeding policy and on whether or not there is room for them,
+        e.g. on whether there are fewer active requests than the configured
+        maximum concurrency or if the total size of responses being processed
+        is below the configured limit."""
         if self._slot is None or self._slot.closing is not None or self.paused:
             return
 
         try:
             if self._seeding_policy in {SeedingPolicy.idle, SeedingPolicy.lazy}:
-                while not self._needs_backout():
-                    if self._start_scheduled_request() is None:
-                        break
-                if (
-                    self._seeds is not None
-                    and not self._needs_backout()
-                    and (
-                        self._seeding_policy is not SeedingPolicy.idle
-                        or (not self._waiting_for_seed and not self.downloader.active)
-                    )
+                self._process_scheduler_requests()
+                if self._can_process_next_seed() and (
+                    self._seeding_policy is not SeedingPolicy.idle
+                    or not self.downloader.active
                 ):
                     yield self._process_next_seed()
             else:
@@ -255,19 +283,32 @@ class ExecutionEngine:
                     SeedingPolicy.front_load,
                     SeedingPolicy.greedy,
                 }
-                if self._seeds is not None:
-                    if not self._needs_backout():
-                        yield self._process_next_seed()
+                if self._can_process_next_seed():
+                    yield self._process_next_seed()
                 else:
-                    while not self._needs_backout():
-                        if self._start_scheduled_request() is None:
-                            break
+                    self._process_scheduler_requests()
         except _SeedingPolicyChange:
             self._slot.nextcall.schedule()
+            return
+        except CloseSpider as exception:
+            assert self.spider is not None  # typing
+            self.close_spider(self.spider, reason=exception.reason)
             return
 
         if self.spider_is_idle() and self._slot.close_if_idle:
             self._spider_idle()
+        elif self._needs_backout():
+            self._back_in_seconds = self._MIN_BACK_IN_SECONDS
+        elif self._scheduler_has_pending_requests():
+            # If the scheduler reports having pending requests but did not
+            # actually return one, use exponential backoff to schedule a new
+            # call to this method, to see if the scheduler finally returns a
+            # pending request or stops reporting that it has some.
+            self._slot.nextcall.schedule(self._back_in_seconds)
+            if self._back_in_seconds != self._MAX_BACK_IN_SECONDS:
+                self._back_in_seconds = min(
+                    self._back_in_seconds**2, self._MAX_BACK_IN_SECONDS
+                )
 
     def _needs_backout(self) -> bool:
         assert self._slot is not None  # typing
@@ -283,7 +324,14 @@ class ExecutionEngine:
         assert self._slot is not None  # typing
         assert self.spider is not None  # typing
 
-        request = self._slot.scheduler.next_request()
+        try:
+            request = self._slot.scheduler.next_request()
+        except Exception as exception:
+            exception_traceback = format_exc()
+            logger.exception(
+                f"{global_object_name(self._slot.scheduler.next_request)} raised an exception: {exception}\n{exception_traceback}"
+            )
+            return None
         if request is None:
             return None
 
@@ -354,7 +402,7 @@ class ExecutionEngine:
             return False
         if self._seeds is not None:  # not all start requests are handled
             return False
-        return not self._slot.scheduler.has_pending_requests()
+        return not self._scheduler_has_pending_requests()
 
     def crawl(self, request: Request) -> None:
         """Inject the request into the spider <-> downloader pipeline"""
@@ -364,6 +412,7 @@ class ExecutionEngine:
         self._slot.nextcall.schedule()  # type: ignore[union-attr]
 
     def _schedule_request(self, request: Request, spider: Spider) -> None:
+        assert self._slot is not None  # typing
         request_scheduled_result = self.signals.send_catch_log(
             signals.request_scheduled,
             request=request,
@@ -373,7 +422,15 @@ class ExecutionEngine:
         for handler, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
-        if not self._slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
+        try:
+            request_was_enqueued = self._slot.scheduler.enqueue_request(request)
+        except Exception as exception:
+            exception_traceback = format_exc()
+            logger.error(
+                f"{global_object_name(self._slot.scheduler.enqueue_request)} raised an exception: {exception}\n{exception_traceback}"
+            )
+            request_was_enqueued = False
+        if not request_was_enqueued:
             self.signals.send_catch_log(
                 signals.request_dropped, request=request, spider=spider
             )
@@ -441,7 +498,7 @@ class ExecutionEngine:
         if self._slot is not None:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={"spider": spider})
-        nextcall = CallLaterOnce(self._start_next_requests)
+        nextcall = CallLaterOnce(self._run_loop)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
         self._seeds = yield self.scraper.spidermw.process_seeds(spider)
         self._slot = _Slot(close_if_idle, nextcall, scheduler)
@@ -453,7 +510,6 @@ class ExecutionEngine:
         self.crawler.stats.open_spider(spider)
         yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
         self._slot.nextcall.schedule()
-        self._slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
 
     def _spider_idle(self) -> None:
         """

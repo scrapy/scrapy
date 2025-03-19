@@ -319,32 +319,6 @@ class ErrorSpider(FollowAllSpider):
             self.raise_exception()
 
 
-class BrokenYieldSeedsSpider(FollowAllSpider):
-    fail_before_yield = False
-    fail_yielding = False
-
-    def __init__(self, *a, **kw):
-        super().__init__(*a, **kw)
-        self.seedsseen = []
-
-    async def yield_seeds(self):
-        if self.fail_before_yield:
-            1 / 0
-
-        for s in range(100):
-            qargs = {"total": 10, "seed": s}
-            url = self.mockserver.url(f"/follow?{urlencode(qargs, doseq=True)}")
-            yield Request(url, meta={"seed": s})
-            if self.fail_yielding:
-                2 / 0
-
-        assert self.seedsseen, "All seeds consumed before any download happened"
-
-    def parse(self, response):
-        self.seedsseen.append(response.meta.get("seed"))
-        yield from super().parse(response)
-
-
 class YieldSeedsItemSpider(FollowAllSpider):
     async def yield_seeds(self):
         yield {"name": "test item"}
