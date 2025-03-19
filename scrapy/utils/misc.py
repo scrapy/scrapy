@@ -280,18 +280,24 @@ def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:
 
 
 def warn_on_generator_with_return_value(
-    spider: Spider, callable: Callable[..., Any]
+    spider: Spider, func: Callable[..., Any]
 ) -> None:
     """
     Logs a warning if a callable is a generator function and includes
     a 'return' statement with a value different than None
     """
-    if not spider.settings.getbool("WARN_ON_GENERATOR_RETURN_VALUE", True):
+    settings = getattr(spider, "settings", None)
+    getbool = getattr(settings, "getbool", None)
+    if (
+        settings
+        and callable(getbool)
+        and not getbool("WARN_ON_GENERATOR_RETURN_VALUE", True)
+    ):
         return
     try:
-        if is_generator_with_return_value(callable):
+        if is_generator_with_return_value(func):
             warnings.warn(
-                f'The "{spider.__class__.__name__}.{callable.__name__}" method is '
+                f'The "{spider.__class__.__name__}.{func.__name__}" method is '
                 'a generator and includes a "return" statement with a value '
                 "different than None. This could lead to unexpected behaviour. Please see "
                 "https://docs.python.org/3/reference/simple_stmts.html#the-return-statement "
@@ -299,7 +305,7 @@ def warn_on_generator_with_return_value(
                 stacklevel=2,
             )
     except IndentationError:
-        callable_name = spider.__class__.__name__ + "." + callable.__name__
+        callable_name = spider.__class__.__name__ + "." + func.__name__
         warnings.warn(
             f'Unable to determine whether or not "{callable_name}" is a generator with a return value. '
             "This will not prevent your code from working, but it prevents Scrapy from detecting "

@@ -262,3 +262,22 @@ https://example.org
 
         partial_cb = partial(cb, arg1=42)
         assert not is_generator_with_return_value(partial_cb)
+
+    def test_warn_on_generator_return_value_setting_disabled(self):
+        class DummySettings:
+            def getbool(self, key, default=None):
+                assert key == "WARN_ON_GENERATOR_RETURN_VALUE"
+                return False
+
+        class DummySpider:
+            settings = DummySettings()
+
+        def generator_with_return():
+            yield 1
+            return 42
+
+        assert is_generator_with_return_value(generator_with_return)
+
+        with warnings.catch_warnings(record=True) as w:
+            warn_on_generator_with_return_value(DummySpider(), generator_with_return)
+            assert len(w) == 0
