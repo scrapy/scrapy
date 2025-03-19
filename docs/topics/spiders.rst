@@ -261,8 +261,9 @@ Return multiple Requests and items from a single callback:
             for href in response.xpath("//a/@href").getall():
                 yield scrapy.Request(response.urljoin(href), self.parse)
 
-Instead of :attr:`~.start_urls` you can use :meth:`~.start` directly;
-to give data more structure you can use :class:`~scrapy.Item` objects:
+Instead of :attr:`~.start_urls` you can use :meth:`~scrapy.Spider.start`
+directly; to give data more structure you can use :class:`~scrapy.Item`
+objects:
 
 .. skip: next
 .. code-block:: python
