@@ -119,6 +119,9 @@ def requires_boto3(request):
 def pytest_configure(config):
     if config.getoption("--reactor") != "default":
         install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    else:
+        # install the reactor explicitly
+        from twisted.internet import reactor  # noqa: F401
 
 
 # Generate localhost certificate files, needed by some tests
