@@ -153,7 +153,7 @@ class TestCrawler(TestBaseCrawler):
                 super().__init__(**kwargs)
                 self.crawler = crawler
 
-            async def yield_seeds(self):
+            async def start(self):
                 MySpider.result = crawler.get_downloader_middleware(MySpider.cls)
                 return
                 yield
@@ -233,7 +233,7 @@ class TestCrawler(TestBaseCrawler):
                 super().__init__(**kwargs)
                 self.crawler = crawler
 
-            async def yield_seeds(self):
+            async def start(self):
                 MySpider.result = crawler.get_extension(MySpider.cls)
                 return
                 yield
@@ -313,7 +313,7 @@ class TestCrawler(TestBaseCrawler):
                 super().__init__(**kwargs)
                 self.crawler = crawler
 
-            async def yield_seeds(self):
+            async def start(self):
                 MySpider.result = crawler.get_item_pipeline(MySpider.cls)
                 return
                 yield
@@ -393,7 +393,7 @@ class TestCrawler(TestBaseCrawler):
                 super().__init__(**kwargs)
                 self.crawler = crawler
 
-            async def yield_seeds(self):
+            async def start(self):
                 MySpider.result = crawler.get_spider_middleware(MySpider.cls)
                 return
                 yield
@@ -580,7 +580,7 @@ class ExceptionSpider(scrapy.Spider):
 class NoRequestsSpider(scrapy.Spider):
     name = "no_request"
 
-    async def yield_seeds(self):
+    async def start(self):
         return
         yield
 

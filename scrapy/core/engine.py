@@ -380,7 +380,7 @@ class ExecutionEngine:
         logger.info("Spider opened", extra={"spider": spider})
         nextcall = CallLaterOnce(self._start_next_requests)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
-        self._seeds = yield self.scraper.spidermw.process_seeds(spider)
+        self._seeds = yield self.scraper.spidermw.process_start(spider)
         self._slot = _Slot(close_if_idle, nextcall, scheduler)
         self.spider = spider
         if hasattr(scheduler, "open") and (d := scheduler.open(spider)):

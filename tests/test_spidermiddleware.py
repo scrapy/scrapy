@@ -112,7 +112,7 @@ class TestProcessSpiderExceptionReRaise(TestSpiderMiddleware):
 class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
     """Helpers for testing sync, async and mixed middlewares.
 
-    Should work for process_spider_output and, when it's supported, process_test_yield_seeds.
+    Should work for process_spider_output and, when it's supported, process_test_start.
     """
 
     ITEM_TYPE: type | tuple
@@ -321,12 +321,12 @@ class TestProcessSpiderOutputInvalidResult(TestBaseAsyncSpiderMiddleware):
 
 
 class ProcessYieldSeedsSimpleMiddleware:
-    def process_test_yield_seeds(self, test_yield_seeds, spider):
-        yield from test_yield_seeds
+    def process_test_start(self, test_start, spider):
+        yield from test_start
 
 
 class TestProcessSeedsSimple(TestBaseAsyncSpiderMiddleware):
-    """process_seeds tests for simple yield_seeds"""
+    """process_start tests for simple start"""
 
     ITEM_TYPE = (Request, dict)
     MW_SIMPLE = ProcessYieldSeedsSimpleMiddleware
@@ -336,7 +336,7 @@ class TestProcessSeedsSimple(TestBaseAsyncSpiderMiddleware):
         class TestSpider(Spider):
             name = "test"
 
-            async def yield_seeds(self):
+            async def start(self):
                 for i in range(2):
                     yield Request(f"https://example.com/{i}", dont_filter=True)
                 yield {"name": "test item"}
@@ -347,7 +347,7 @@ class TestProcessSeedsSimple(TestBaseAsyncSpiderMiddleware):
         )
         self.spider = self.crawler._create_spider()
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
-        results = yield self.mwman.process_seeds(self.spider)
+        results = yield self.mwman.process_start(self.spider)
         return results
 
     @inlineCallbacks

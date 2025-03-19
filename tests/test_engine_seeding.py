@@ -10,7 +10,7 @@ from scrapy.core.scheduler import BaseScheduler
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
-from .test_spider_yield_seeds import twisted_sleep
+from .test_spider_start import twisted_sleep
 
 
 class MainTestCase(TestCase):
@@ -93,7 +93,7 @@ class MainTestCase(TestCase):
         class TestSpider(Spider):
             name = "test"
 
-            async def yield_seeds(self):
+            async def start(self):
                 await maybe_deferred_to_future(twisted_sleep(sleep_seconds))
                 yield Request("data:,a")
                 await maybe_deferred_to_future(twisted_sleep(sleep_seconds))

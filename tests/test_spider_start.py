@@ -55,19 +55,19 @@ class MainTestCase(TestCase):
         await self._test_spider(TestSpider, [ITEM_A])
 
     @deferred_f_from_coro_f
-    async def test_yield_seeds(self):
+    async def test_start(self):
         class TestSpider(Spider):
             name = "test"
 
-            async def yield_seeds(self):
+            async def start(self):
                 yield ITEM_A
 
         await self._test_spider(TestSpider, [ITEM_A])
 
     @deferred_f_from_coro_f
-    async def test_yield_seeds_subclass(self):
+    async def test_start_subclass(self):
         class BaseSpider(Spider):
-            async def yield_seeds(self):
+            async def start(self):
                 yield ITEM_A
 
         class TestSpider(BaseSpider):
@@ -104,7 +104,7 @@ class MainTestCase(TestCase):
         class TestSpider(Spider):
             name = "test"
 
-            async def yield_seeds(self):
+            async def start(self):
                 yield ITEM_A
 
             def start_requests(self):
@@ -115,7 +115,7 @@ class MainTestCase(TestCase):
     @deferred_f_from_coro_f
     async def test_universal_subclass(self):
         class BaseSpider(Spider):
-            async def yield_seeds(self):
+            async def start(self):
                 yield ITEM_A
 
             def start_requests(self):
@@ -126,28 +126,28 @@ class MainTestCase(TestCase):
 
         await self._test_spider(TestSpider, [ITEM_A])
 
-    async def _test_yield_seeds(self, yield_seeds_, expected_items=None):
+    async def _test_start(self, start_, expected_items=None):
         class TestSpider(Spider):
             name = "test"
-            yield_seeds = yield_seeds_
+            start = start_
 
         await self._test_spider(TestSpider, expected_items)
 
     @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
     async def test_asyncio_delayed(self):
-        async def yield_seeds(spider):
+        async def start(spider):
             await sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS)
             yield ITEM_A
 
-        await self._test_yield_seeds(yield_seeds, [ITEM_A])
+        await self._test_start(start, [ITEM_A])
 
     @deferred_f_from_coro_f
     async def test_twisted_delayed(self):
-        async def yield_seeds(spider):
+        async def start(spider):
             await maybe_deferred_to_future(
                 twisted_sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS)
             )
             yield ITEM_A
 
-        await self._test_yield_seeds(yield_seeds, [ITEM_A])
+        await self._test_start(start, [ITEM_A])

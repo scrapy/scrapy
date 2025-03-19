@@ -92,7 +92,7 @@ class MySpider(Spider):
 
 
 class DupeFilterSpider(MySpider):
-    async def yield_seeds(self):
+    async def start(self):
         for url in self.start_urls:
             yield Request(url)  # no dont_filter=True
 

@@ -59,7 +59,7 @@ class _BenchSpider(scrapy.Spider):
     baseurl = "http://localhost:8998"
     link_extractor = LinkExtractor()
 
-    async def yield_seeds(self) -> AsyncIterable[Any]:
+    async def start(self) -> AsyncIterable[Any]:
         qargs = {"total": self.total, "show": self.show}
         url = f"{self.baseurl}?{urlencode(qargs, doseq=True)}"
         yield scrapy.Request(url, dont_filter=True)

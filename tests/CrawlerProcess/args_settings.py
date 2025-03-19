@@ -13,7 +13,7 @@ class NoRequestsSpider(scrapy.Spider):
         spider.settings.set("FOO", kwargs.get("foo"))
         return spider
 
-    async def yield_seeds(self):
+    async def start(self):
         self.logger.info(f"The value of FOO is {self.settings.getint('FOO')}")
         return
         yield

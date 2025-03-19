@@ -511,7 +511,7 @@ class TestContractsManager(unittest.TestCase):
                 super().__init__(*args, **kwargs)
                 self.visited = 0
 
-            async def yield_seeds(self_):  # pylint: disable=no-self-argument
+            async def start(self_):  # pylint: disable=no-self-argument
                 for seed in self.conman.from_spider(self_, self.results):
                     yield seed
 

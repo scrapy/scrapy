@@ -70,21 +70,21 @@ one or more of these methods:
 
 .. class:: SpiderMiddleware
 
-    .. method:: process_seeds(seeds: AsyncIterable[Any], /) -> AsyncIterable[Any]
+    .. method:: process_start(seeds: AsyncIterable[Any], /) -> AsyncIterable[Any]
         :async:
 
-        Iterate over the output of :meth:`~scrapy.Spider.yield_seeds` or that
-        of the :meth:`process_seeds` method of an earlier spider middleware,
+        Iterate over the output of :meth:`~scrapy.Spider.start` or that
+        of the :meth:`process_start` method of an earlier spider middleware,
         overriding it. For example:
 
         .. code-block:: python
 
-            async def process_seeds(self, seeds):
+            async def process_start(self, seeds):
                 async for seed in seeds:
                     yield seed
 
         You may yield :class:`~scrapy.Request` or :ref:`item <topics-items>`
-        objects, same as :meth:`~scrapy.Spider.yield_seeds`, from *seeds* or
+        objects, same as :meth:`~scrapy.Spider.start`, from *seeds* or
         not.
 
         To write spider middlewares that work on Scrapy versions lower than

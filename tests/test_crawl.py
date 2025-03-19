@@ -163,7 +163,7 @@ class TestCrawl(TestCase):
         self._assert_retried(log)
 
     @defer.inlineCallbacks
-    def test_yield_seeds_bug_before_yield(self):
+    def test_start_bug_before_yield(self):
         with LogCapture("scrapy", level=logging.ERROR) as log:
             crawler = get_crawler(BrokenYieldSeedsSpider)
             yield crawler.crawl(fail_before_yield=1, mockserver=self.mockserver)
@@ -174,7 +174,7 @@ class TestCrawl(TestCase):
         assert record.exc_info[0] is ZeroDivisionError
 
     @defer.inlineCallbacks
-    def test_yield_seeds_bug_yielding(self):
+    def test_start_bug_yielding(self):
         with LogCapture("scrapy", level=logging.ERROR) as log:
             crawler = get_crawler(BrokenYieldSeedsSpider)
             yield crawler.crawl(fail_yielding=1, mockserver=self.mockserver)
@@ -185,7 +185,7 @@ class TestCrawl(TestCase):
         assert record.exc_info[0] is ZeroDivisionError
 
     @defer.inlineCallbacks
-    def test_yield_seeds_items(self):
+    def test_start_items(self):
         with LogCapture("scrapy", level=logging.ERROR) as log:
             crawler = get_crawler(YieldSeedsItemSpider)
             yield crawler.crawl(mockserver=self.mockserver)
@@ -193,7 +193,7 @@ class TestCrawl(TestCase):
         assert len(log.records) == 0
 
     @defer.inlineCallbacks
-    def test_yield_seeds_unsupported_output(self):
+    def test_start_unsupported_output(self):
         """Anything that is not a request is assumed to be an item, avoiding a
         potentially expensive call to itemadapter.is_item, and letting instead
         things fail when ItemAdapter is actually used on the corresponding
@@ -205,7 +205,7 @@ class TestCrawl(TestCase):
         assert len(log.records) == 0
 
     @defer.inlineCallbacks
-    def test_yield_seeds_laziness(self):
+    def test_start_laziness(self):
         settings = {"CONCURRENT_REQUESTS": 1}
         crawler = get_crawler(BrokenYieldSeedsSpider, settings)
         yield crawler.crawl(mockserver=self.mockserver)
@@ -214,7 +214,7 @@ class TestCrawl(TestCase):
         ), crawler.spider.seedsseen
 
     @defer.inlineCallbacks
-    def test_yield_seeds_dupes(self):
+    def test_start_dupes(self):
         settings = {"CONCURRENT_REQUESTS": 1}
         crawler = get_crawler(DuplicateYieldSeedsSpider, settings)
         yield crawler.crawl(
@@ -304,10 +304,10 @@ with multiples lines
         # basic asserts in case of weird communication errors
         assert "responses" in crawler.spider.meta
         assert "failures" not in crawler.spider.meta
-        # test_yield_seeds doesn't set Referer header
+        # test_start doesn't set Referer header
         echo0 = json.loads(to_unicode(crawler.spider.meta["responses"][2].body))
         assert "Referer" not in echo0["headers"]
-        # following request sets Referer to test_yield_seeds url
+        # following request sets Referer to test_start url
         echo1 = json.loads(to_unicode(crawler.spider.meta["responses"][1].body))
         assert echo1["headers"].get("Referer") == [req0.url]
         # next request avoids Referer header
@@ -366,15 +366,15 @@ with multiples lines
         Test whether errors happening anywhere in Crawler.crawl() are properly
         reported (and not somehow swallowed) after a graceful engine shutdown.
         The errors should not come from within Scrapy's core but from within
-        spiders/middlewares/etc., e.g. raised in Spider.test_yield_seeds(),
-        SpiderMiddleware.process_test_yield_seeds(), etc.
+        spiders/middlewares/etc., e.g. raised in Spider.test_start(),
+        SpiderMiddleware.process_test_start(), etc.
         """
 
         class TestError(Exception):
             pass
 
         class FaultySpider(SimpleSpider):
-            async def yield_seeds(self):
+            async def start(self):
                 raise TestError
 
         crawler = get_crawler(FaultySpider)

@@ -258,11 +258,11 @@ class Command(BaseRunSpiderCommand):
             if not self.spidercls:
                 logger.error("Unable to find spider for: %(url)s", {"url": url})
 
-        async def yield_seeds(spider: Spider) -> AsyncIterable[Any]:
+        async def start(spider: Spider) -> AsyncIterable[Any]:
             yield self.prepare_request(spider, Request(url), opts)
 
         if self.spidercls:
-            self.spidercls.yield_seeds = yield_seeds  # type: ignore[assignment,method-assign]
+            self.spidercls.start = start  # type: ignore[assignment,method-assign]
 
     def start_parsing(self, url: str, opts: argparse.Namespace) -> None:
         assert self.crawler_process

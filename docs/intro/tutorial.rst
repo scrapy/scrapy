@@ -94,7 +94,7 @@ This is the code for our first Spider. Save it in a file named
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
 
-        async def yield_seeds(self):
+        async def start(self):
             urls = [
                 "https://quotes.toscrape.com/page/1/",
                 "https://quotes.toscrape.com/page/2/",
@@ -116,7 +116,7 @@ and defines some attributes and methods:
   unique within a project, that is, you can't set the same name for different
   Spiders.
 
-* :meth:`~scrapy.Spider.yield_seeds`: must be an asynchronous generator that
+* :meth:`~scrapy.Spider.start`: must be an asynchronous generator that
   yields requests (and, optionally, items) for the spider to start crawling.
   Subsequent requests will be generated successively from these initial
   requests.
@@ -165,20 +165,20 @@ What just happened under the hood?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Scrapy sends the first :class:`scrapy.Request <scrapy.Request>` objects yielded
-by the :meth:`~scrapy.Spider.yield_seeds` spider method. Upon receiving a
+by the :meth:`~scrapy.Spider.start` spider method. Upon receiving a
 response for each one, Scrapy calls the callback method associated with the
 request (in this case, the ``parse`` method) with a
 :class:`~scrapy.http.Response` object.
 
 
-A shortcut to the ``yield_seeds`` method
+A shortcut to the ``start`` method
 ----------------------------------------
 
-Instead of implementing a :meth:`~scrapy.Spider.yield_seeds` method that yields
+Instead of implementing a :meth:`~scrapy.Spider.start` method that yields
 :class:`~scrapy.Request` objects from URLs, you can define a
 :attr:`~scrapy.Spider.start_urls` class attribute with a list of URLs. This
 list will then be used by the default implementation of
-:meth:`~scrapy.Spider.yield_seeds` to create the initial requests for your
+:meth:`~scrapy.Spider.start` to create the initial requests for your
 spider.
 
 .. code-block:: python
@@ -795,7 +795,7 @@ with a specific tag, building the URL based on the argument:
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
 
-        async def yield_seeds(self):
+        async def start(self):
             url = "https://quotes.toscrape.com/"
             tag = getattr(self, "tag", None)
             if tag is not None:

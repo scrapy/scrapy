@@ -43,8 +43,8 @@ class ${ProjectName}SpiderMiddleware:
         # Should return either None or an iterable of Request or item objects.
         pass
 
-    async def process_seeds(self, seeds):
-        # Called with the seeds from the spider yield_seeds() method or with
+    async def process_start(self, seeds):
+        # Called with the seeds from the spider start() method or with
         # the output of the maching method of an earlier spider middleware.
         async for seed in seeds:
             yield seed

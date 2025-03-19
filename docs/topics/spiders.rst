@@ -17,7 +17,7 @@ For spiders, the scraping cycle goes through something like this:
    those requests.
 
    The first requests to perform are obtained by iterating the
-   :meth:`~scrapy.Spider.yield_seeds` method, which by default yields a
+   :meth:`~scrapy.Spider.start` method, which by default yields a
    :class:`~scrapy.Request` object for each URL in the
    :attr:`~scrapy.Spider.start_urls` spider attribute, with the
    :attr:`~scrapy.Spider.parse` method set as :attr:`~scrapy.Request.callback`
@@ -137,7 +137,7 @@ scrapy.Spider
 
            The final settings and the initialized
            :class:`~scrapy.crawler.Crawler` attributes are available in the
-           :meth:`yield_seeds` method, handlers of the
+           :meth:`start` method, handlers of the
            :signal:`engine_started` signal and later.
 
        :param crawler: crawler to which the spider will be bound
@@ -189,7 +189,7 @@ scrapy.Spider
                    super().update_settings(settings)
                    settings.setdefault("FEEDS", {}).update(cls.custom_feed)
 
-   .. automethod:: yield_seeds
+   .. automethod:: start
 
    .. method:: parse(response)
 
@@ -261,7 +261,7 @@ Return multiple Requests and items from a single callback:
             for href in response.xpath("//a/@href").getall():
                 yield scrapy.Request(response.urljoin(href), self.parse)
 
-Instead of :attr:`~.start_urls` you can use :meth:`~.yield_seeds` directly;
+Instead of :attr:`~.start_urls` you can use :meth:`~.start` directly;
 to give data more structure you can use :class:`~scrapy.Item` objects:
 
 .. skip: next
@@ -275,7 +275,7 @@ to give data more structure you can use :class:`~scrapy.Item` objects:
         name = "example.com"
         allowed_domains = ["example.com"]
 
-        async def yield_seeds(self):
+        async def start(self):
             yield scrapy.Request("http://www.example.com/1.html", self.parse)
             yield scrapy.Request("http://www.example.com/2.html", self.parse)
             yield scrapy.Request("http://www.example.com/3.html", self.parse)
@@ -329,7 +329,7 @@ The above example can also be written as follows:
     class MySpider(scrapy.Spider):
         name = "myspider"
 
-        async def yield_seeds(self):
+        async def start(self):
             yield scrapy.Request(f"http://www.example.com/categories/{self.category}")
 
 If you are :ref:`running Scrapy from a script <run-from-script>`, you can
@@ -893,8 +893,8 @@ Combine SitemapSpider with other sources of urls:
 
         other_urls = ["http://www.example.com/about"]
 
-        async def yield_seeds(self):
-            async for seed in super().yield_seeds():
+        async def start(self):
+            async for seed in super().start():
                 yield seed
             for url in self.other_urls:
                 yield Request(url, self.parse_other)

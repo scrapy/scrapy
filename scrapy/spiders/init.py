@@ -29,7 +29,7 @@ class InitSpider(Spider):
             stacklevel=2,
         )
 
-    async def yield_seeds(self) -> AsyncIterable[Any]:
+    async def start(self) -> AsyncIterable[Any]:
         for seed in self.start_requests():
             yield seed
 

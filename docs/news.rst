@@ -10,20 +10,20 @@ Scrapy VERSION (unreleased)
 
 Highlights:
 
--   Replaced ``start_requests`` (sync) with :meth:`~scrapy.Spider.yield_seeds`
+-   Replaced ``start_requests`` (sync) with :meth:`~scrapy.Spider.start`
     (async)
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -   In ``scrapy.core.spidermw.SpiderMiddlewareManager``,
-    ``process_start_requests()`` has been replaced by ``process_seeds()``.
+    ``process_start_requests()`` has been replaced by ``process_start()``.
 
 -   In ``scrapy.core.engine.ExecutionEngine``:
 
     -   The second parameter of ``open_spider()``, ``start_requests``, has been
         removed. The starting requests are determined by the ``spider``
-        parameter instead (see :meth:`~scrapy.Spider.yield_seeds`).
+        parameter instead (see :meth:`~scrapy.Spider.start`).
 
     -   The ``slot`` attribute has been renamed to ``_slot`` and should not be
         used.
@@ -37,7 +37,7 @@ Deprecations
 ~~~~~~~~~~~~
 
 -   The ``start_requests()`` method of :class:`~scrapy.Spider` is deprecated,
-    use :meth:`~scrapy.Spider.yield_seeds` instead, or both to maintain support
+    use :meth:`~scrapy.Spider.start` instead, or both to maintain support
     for lower Scrapy versions.
 
     (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6715`,
@@ -45,7 +45,7 @@ Deprecations
 
 -   The ``process_start_requests()`` method of :ref:`spider middlewares
     <topics-spider-middleware>` is deprecated, use
-    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds` instead, or
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` instead, or
     both to maintain support for lower Scrapy versions.
 
     (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6715`,
@@ -55,8 +55,8 @@ New features
 ~~~~~~~~~~~~
 
 -   You can now yield the start requests and items of a spider from the
-    :meth:`~scrapy.Spider.yield_seeds` spider method and from the
-    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds` spider
+    :meth:`~scrapy.Spider.start` spider method and from the
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` spider
     middleware method, both asynchronous generators.
 
     This makes it possible to use asynchronous code to generate those start
@@ -68,7 +68,7 @@ New features
 Bug fixes
 ~~~~~~~~~
 
--   Yielding a start item (i.e. from :meth:`~scrapy.Spider.yield_seeds` or an
+-   Yielding a start item (i.e. from :meth:`~scrapy.Spider.start` or an
     equivalent) no longer delays the next iteration of starting requests and
     items by up to 5 seconds.
 

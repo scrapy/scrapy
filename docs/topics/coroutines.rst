@@ -18,7 +18,7 @@ Supported callables
 The following callables may be defined as coroutines using ``async def``, and
 hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
--   The :meth:`~scrapy.spiders.Spider.yield_seeds` spider method.
+-   The :meth:`~scrapy.spiders.Spider.start` spider method.
 
     .. versionadded: VERSION
 
@@ -54,7 +54,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     .. versionadded:: 2.7
 
--   The :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds` method
+-   The :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` method
     of :ref:`spider middlewares <custom-spider-middleware>`.
 
     .. versionadded:: VERSION
@@ -157,7 +157,7 @@ This means you can use many useful Python libraries providing such code:
 Common use cases for asynchronous code include:
 
 * requesting data from websites, databases and other services (in
-  :meth:`~scrapy.spiders.Spider.yield_seeds`, callbacks, pipelines and
+  :meth:`~scrapy.spiders.Spider.start`, callbacks, pipelines and
   middlewares);
 * storing data in databases (in pipelines and middlewares);
 * delaying the spider initialization until some external event (in the

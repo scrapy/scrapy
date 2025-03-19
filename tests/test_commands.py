@@ -670,7 +670,7 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    async def yield_seeds(self):
+    async def start(self):
         self.logger.debug("It Works!")
         return
         yield
@@ -681,7 +681,7 @@ import scrapy
 
 class BadSpider(scrapy.Spider):
     name = "bad"
-    async def yield_seeds(self):
+    async def start(self):
         raise Exception("oops!")
         """
 
@@ -772,9 +772,9 @@ class MySpider(scrapy.Spider):
         log = self.get_log("", name="myspider.txt")
         assert "Unable to load" in log
 
-    def test_yield_seeds_errors(self):
+    def test_start_errors(self):
         log = self.get_log(self.badspider, name="badspider.py")
-        assert "yield_seeds" in log
+        assert "start" in log
         assert "badspider.py" in log
 
     def test_asyncio_enabled_true(self):
@@ -847,7 +847,7 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    async def yield_seeds(self):
+    async def start(self):
         self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
         return
         yield
@@ -864,7 +864,7 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    async def yield_seeds(self):
+    async def start(self):
         self.logger.debug(
             'FEEDS: {}'.format(
                 json.dumps(self.settings.getdict('FEEDS'), sort_keys=True)
@@ -891,7 +891,7 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    async def yield_seeds(self):
+    async def start(self):
         return
         yield
 """
@@ -908,7 +908,7 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    async def yield_seeds(self):
+    async def start(self):
         self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
         return
         yield
@@ -988,7 +988,7 @@ class MySpider(scrapy.Spider):
         spider.settings.set("FOO", kwargs.get("foo"))
         return spider
 
-    async def yield_seeds(self):
+    async def start(self):
         self.logger.info(f"The value of FOO is {self.settings.getint('FOO')}")
         return
         yield
@@ -1007,9 +1007,9 @@ class TestWindowsRunSpiderCommand(TestRunSpiderCommand):
             raise unittest.SkipTest("Windows required for .pyw files")
         return super().setUp()
 
-    def test_yield_seeds_errors(self):
+    def test_start_errors(self):
         log = self.get_log(self.badspider, name="badspider.pyw")
-        assert "yield_seeds" in log
+        assert "start" in log
         assert "badspider.pyw" in log
 
     def test_runspider_unable_to_load(self):
@@ -1059,7 +1059,7 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    async def yield_seeds(self):
+    async def start(self):
         self.logger.debug('It works!')
         return
         yield
@@ -1074,7 +1074,7 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    async def yield_seeds(self):
+    async def start(self):
         self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
         return
         yield
@@ -1091,7 +1091,7 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    async def yield_seeds(self):
+    async def start(self):
         self.logger.debug(
             'FEEDS: {}'.format(
                 json.dumps(self.settings.getdict('FEEDS'), sort_keys=True)
@@ -1118,7 +1118,7 @@ import scrapy
 class MySpider(scrapy.Spider):
     name = 'myspider'
 
-    async def yield_seeds(self):
+    async def start(self):
         return
         yield
 """

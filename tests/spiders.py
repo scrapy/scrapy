@@ -68,7 +68,7 @@ class DelaySpider(MetaSpider):
         self.b = b
         self.t1 = self.t2 = self.t2_err = 0
 
-    async def yield_seeds(self):
+    async def start(self):
         self.t1 = time.time()
         url = self.mockserver.url(f"/delay?n={self.n}&b={self.b}")
         yield Request(url, callback=self.parse, errback=self.errback)
@@ -105,7 +105,7 @@ class LogSpider(MetaSpider):
 class SlowSpider(DelaySpider):
     name = "slow"
 
-    async def yield_seeds(self):
+    async def start(self):
         # 1st response is fast
         url = self.mockserver.url("/delay?n=0&b=0")
         yield Request(url, callback=self.parse, errback=self.errback)
@@ -255,7 +255,7 @@ class AsyncDefAsyncioGenComplexSpider(SimpleSpider):
             callback=cb,
         )
 
-    async def yield_seeds(self):
+    async def start(self):
         for i in range(1, self.initial_reqs + 1):
             yield self._get_req(i)
 
@@ -327,7 +327,7 @@ class BrokenYieldSeedsSpider(FollowAllSpider):
         super().__init__(*a, **kw)
         self.seedsseen = []
 
-    async def yield_seeds(self):
+    async def start(self):
         if self.fail_before_yield:
             1 / 0
 
@@ -346,12 +346,12 @@ class BrokenYieldSeedsSpider(FollowAllSpider):
 
 
 class YieldSeedsItemSpider(FollowAllSpider):
-    async def yield_seeds(self):
+    async def start(self):
         yield {"name": "test item"}
 
 
 class YieldSeedsGoodAndBadOutput(FollowAllSpider):
-    async def yield_seeds(self):
+    async def start(self):
         yield {"a": "a"}
         yield Request("data:,a")
         yield "data:,b"
@@ -363,7 +363,7 @@ class SingleRequestSpider(MetaSpider):
     callback_func = None
     errback_func = None
 
-    async def yield_seeds(self):
+    async def start(self):
         if isinstance(self.seed, Request):
             yield self.seed.replace(callback=self.parse, errback=self.on_error)
         else:
@@ -390,7 +390,7 @@ class DuplicateYieldSeedsSpider(MockServerSpider):
     distinct_urls = 2
     dupe_factor = 3
 
-    async def yield_seeds(self):
+    async def start(self):
         for i in range(self.distinct_urls):
             for j in range(self.dupe_factor):
                 url = self.mockserver.url(f"/echo?headers=1&body=test{i}")
@@ -415,7 +415,7 @@ class CrawlSpiderWithParseMethod(MockServerSpider, CrawlSpider):
     }
     rules = (Rule(LinkExtractor(), callback="parse", follow=True),)
 
-    async def yield_seeds(self):
+    async def start(self):
         test_body = b"""
         <html>
             <head><title>Page title<title></head>
@@ -469,7 +469,7 @@ class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):
     name = "crawl_spider_with_errback"
     rules = (Rule(LinkExtractor(), callback="parse", errback="errback", follow=True),)
 
-    async def yield_seeds(self):
+    async def start(self):
         test_body = b"""
         <html>
             <head><title>Page title<title></head>
@@ -514,7 +514,7 @@ class BytesReceivedCallbackSpider(MetaSpider):
         crawler.signals.connect(spider.bytes_received, signals.bytes_received)
         return spider
 
-    async def yield_seeds(self):
+    async def start(self):
         body = b"a" * self.full_response_length
         url = self.mockserver.url("/alpayload")
         yield Request(url, method="POST", body=body, errback=self.errback)
@@ -543,7 +543,7 @@ class HeadersReceivedCallbackSpider(MetaSpider):
         crawler.signals.connect(spider.headers_received, signals.headers_received)
         return spider
 
-    async def yield_seeds(self):
+    async def start(self):
         yield Request(self.mockserver.url("/status"), errback=self.errback)
 
     def parse(self, response):

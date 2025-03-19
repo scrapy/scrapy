@@ -8,7 +8,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
-from .test_spider_yield_seeds import ASYNC_GEN_ERROR_MINIMUM_SECONDS, twisted_sleep
+from .test_spider_start import ASYNC_GEN_ERROR_MINIMUM_SECONDS, twisted_sleep
 
 ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
@@ -17,27 +17,27 @@ ITEM_D = {"id": "d"}
 
 
 class AsyncioSleepSpiderMiddleware:
-    async def process_seeds(self, seeds):
+    async def process_start(self, seeds):
         await sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS)
         async for seed in seeds:
             yield seed
 
 
 class NoOpSpiderMiddleware:
-    async def process_seeds(self, seeds):
+    async def process_start(self, seeds):
         async for seed in seeds:
             yield seed
 
 
 class TwistedSleepSpiderMiddleware:
-    async def process_seeds(self, seeds):
+    async def process_start(self, seeds):
         await maybe_deferred_to_future(twisted_sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS))
         async for seed in seeds:
             yield seed
 
 
 class UniversalSpiderMiddleware:
-    async def process_seeds(self, seeds):
+    async def process_start(self, seeds):
         async for seed in seeds:
             yield seed
 
@@ -51,14 +51,14 @@ class UniversalSpiderMiddleware:
 class ModernWrapSpider(Spider):
     name = "test"
 
-    async def yield_seeds(self):
+    async def start(self):
         yield ITEM_B
 
 
 class UniversalWrapSpider(Spider):
     name = "test"
 
-    async def yield_seeds(self):
+    async def start(self):
         yield ITEM_B
 
     def start_requests(self):
@@ -73,7 +73,7 @@ class DeprecatedWrapSpider(Spider):
 
 
 class ModernWrapSpiderMiddleware:
-    async def process_seeds(self, seeds):
+    async def process_start(self, seeds):
         yield ITEM_A
         async for seed in seeds:
             yield seed
@@ -81,7 +81,7 @@ class ModernWrapSpiderMiddleware:
 
 
 class UniversalWrapSpiderMiddleware:
-    async def process_seeds(self, seeds):
+    async def process_start(self, seeds):
         yield ITEM_A
         async for seed in seeds:
             yield seed
@@ -189,7 +189,7 @@ class MainTestCase(TestCase):
         class TestSpider(Spider):
             name = "test"
 
-            async def yield_seeds(self):
+            async def start(self):
                 yield ITEM_A
 
         await self._test(spider_middlewares, TestSpider, [ITEM_A])

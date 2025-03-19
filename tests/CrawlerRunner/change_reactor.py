@@ -10,7 +10,7 @@ class NoRequestsSpider(Spider):
         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
     }
 
-    async def yield_seeds(self):
+    async def start(self):
         return
         yield
 

@@ -34,7 +34,7 @@ class QPSSpider(Spider):
         elif self.download_delay is not None:
             self.download_delay = float(self.download_delay)
 
-    async def yield_seeds(self):
+    async def start(self):
         for seed in self.start_requests():
             yield seed
 

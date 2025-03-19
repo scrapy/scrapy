@@ -1950,7 +1950,7 @@ In order to use the reactor installed by Scrapy:
             self.timeout = int(kwargs.pop("timeout", "60"))
             super(QuotesSpider, self).__init__(*args, **kwargs)
 
-        async def yield_seeds(self):
+        async def start(self):
             reactor.callLater(self.timeout, self.stop)
 
             urls = ["https://quotes.toscrape.com/page/1"]
@@ -1979,7 +1979,7 @@ which raises :exc:`Exception`, becomes:
             self.timeout = int(kwargs.pop("timeout", "60"))
             super(QuotesSpider, self).__init__(*args, **kwargs)
 
-        async def yield_seeds(self):
+        async def start(self):
             from twisted.internet import reactor
 
             reactor.callLater(self.timeout, self.stop)

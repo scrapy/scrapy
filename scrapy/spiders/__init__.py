@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 class Spider(object_ref):
     """Base class that any spider must subclass.
 
-    It provides a default :meth:`yield_seeds` implementation that sends
+    It provides a default :meth:`start` implementation that sends
     requests based on the :attr:`start_urls` class attribute and calls the
     :meth:`parse` method for each response.
     """
@@ -39,7 +39,7 @@ class Spider(object_ref):
     name: str
     custom_settings: dict[_SettingsKeyT, Any] | None = None
 
-    #: Seed URLs. See :meth:`yield_seeds`.
+    #: Seed URLs. See :meth:`start`.
     start_urls: list[str]
 
     def __init__(self, name: str | None = None, **kwargs: Any):
@@ -78,7 +78,7 @@ class Spider(object_ref):
         self.settings: BaseSettings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
 
-    async def yield_seeds(self) -> AsyncIterable[Any]:
+    async def start(self) -> AsyncIterable[Any]:
         """Yield the initial :class:`~scrapy.Request` objects to send.
 
         .. versionadded:: VERSION
@@ -93,7 +93,7 @@ class Spider(object_ref):
             class MySpider(Spider):
                 name = "myspider"
 
-                async def yield_seeds(self):
+                async def start(self):
                     yield Request("https://toscrape.com/")
 
         The default implementation reads URLs from :attr:`start_urls` and
@@ -102,7 +102,7 @@ class Spider(object_ref):
 
         .. code-block:: python
 
-            async def yield_seeds(self):
+            async def start(self):
                 for url in self.start_urls:
                     yield Request(url, dont_filter=True)
 
@@ -110,7 +110,7 @@ class Spider(object_ref):
 
         .. code-block:: python
 
-            async def yield_seeds(self):
+            async def start(self):
                 yield {"foo": "bar"}
 
         To write spiders that work on Scrapy versions lower than VERSION,
