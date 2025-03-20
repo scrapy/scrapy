@@ -2048,18 +2048,20 @@ if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
 there is no overriding User-Agent header specified for the request.
 
 .. setting:: WARN_ON_GENERATOR_RETURN_VALUE
+
 WARN_ON_GENERATOR_RETURN_VALUE
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------
 
 Default: ``True``
 
-Whether to show a warning when a generator-based callback uses a ``return <value>`` statement.
-In Scrapy, such return values are ignored, which might indicate a misunderstanding or potential bug
-in the callback logic.
+Type: ``bool``
 
-Set this to ``False`` to suppress these warnings.
+When enabled, Scrapy will warn if generator-based callback methods (like ``parse``) contain return statements with non-``None`` values. This helps detect potential mistakes in spider development.
 
-This setting helps developers catch unintended return values from generator-based callbacks early.
+Disable this setting to:
+- Prevent syntax errors when dynamically modifying generator function source code during runtime
+- Skip AST parsing of callback functions
+- Improve performance in auto-reloading development environments
 
 Settings documented elsewhere:
 ------------------------------
