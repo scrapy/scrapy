@@ -2047,6 +2047,21 @@ also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware
 if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
 there is no overriding User-Agent header specified for the request.
 
+.. setting:: WARN_ON_GENERATOR_RETURN_VALUE
+
+WARN_ON_GENERATOR_RETURN_VALUE
+------------------------------
+
+Default: ``True``
+
+When enabled, Scrapy will warn if generator-based callback methods (like
+``parse``) contain return statements with non-``None`` values. This helps detect
+potential mistakes in spider development.
+
+Disable this setting to prevent syntax errors that may occur when dynamically
+modifying generator function source code during runtime, skip AST parsing of
+callback functions, or improve performance in auto-reloading development
+environments.
 
 Settings documented elsewhere:
 ------------------------------
