@@ -39,7 +39,7 @@ class Spider(object_ref):
     name: str
     custom_settings: dict[_SettingsKeyT, Any] | None = None
 
-    #: Seed URLs. See :meth:`start`.
+    #: Start URLs. See :meth:`start`.
     start_urls: list[str]
 
     def __init__(self, name: str | None = None, **kwargs: Any):
@@ -113,6 +113,20 @@ class Spider(object_ref):
             async def start(self):
                 yield {"foo": "bar"}
 
+        Use :setting:`SEEDING_POLICY` to set how :meth:`start` is
+        iterated by default. It is also
+        possible to yield a :class:`~scrapy.SeedingPolicy` enum or a matching
+        string to change the active seeding policy, for example:
+
+        .. code-block:: python
+
+            async def start(self):
+                yield "front_load"
+                yield Request("https://a.example")
+                yield Request("https://b.example")
+                yield self.crawler.settings["SEEDING_POLICY"]
+                yield Request("https://c.example")
+
         To write spiders that work on Scrapy versions lower than VERSION,
         define also a synchronous ``start_requests()`` method that returns an
         iterable. For example:
@@ -122,8 +136,8 @@ class Spider(object_ref):
             def start_requests(self):
                 yield Request("https://toscrape.com/")
         """
-        for seed in self.start_requests():
-            yield seed
+        for item_or_request in self.start_requests():
+            yield item_or_request
 
     def start_requests(self) -> Iterable[Any]:
         if not self.start_urls and hasattr(self, "start_url"):

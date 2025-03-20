@@ -512,8 +512,8 @@ class TestContractsManager(unittest.TestCase):
                 self.visited = 0
 
             async def start(self_):  # pylint: disable=no-self-argument
-                for seed in self.conman.from_spider(self_, self.results):
-                    yield seed
+                for item_or_request in self.conman.from_spider(self_, self.results):
+                    yield item_or_request
 
             def parse_first(self, response):
                 self.visited += 1

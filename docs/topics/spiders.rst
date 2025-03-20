@@ -895,8 +895,8 @@ Combine SitemapSpider with other sources of urls:
         other_urls = ["http://www.example.com/about"]
 
         async def start(self):
-            async for seed in super().start():
-                yield seed
+            async for item_or_request in super().start():
+                yield item_or_request
             for url in self.other_urls:
                 yield Request(url, self.parse_other)
 

@@ -83,9 +83,24 @@ one or more of these methods:
                 async for item_or_request in start:
                     yield item_or_request
 
-        You may yield :class:`~scrapy.Request` or :ref:`item <topics-items>`
-        objects, same as :meth:`~scrapy.Spider.start`, from *start* or
-        not.
+        You may yield the same type of objects as :meth:`~scrapy.Spider.start`.
+
+        As with :meth:`~scrapy.Spider.start`, how this method is iterated by
+        default is controlled by :setting:`SEEDING_POLICY`. It is also possible
+        to yield a :class:`~scrapy.SeedingPolicy` enum or a matching string to
+        change the active seeding policy, for example:
+
+        .. code-block:: python
+
+            async def process_start(self, start):
+                yield "front_load"
+                async for item_or_request in start:
+                    yield item_or_request
+                yield "idle"
+
+        .. tip:: You can also restore the configured seeding policy by
+            :ref:`reading its value <component-settings>` from the
+            :setting:`SEEDING_POLICY` setting and yielding it.
 
         To write spider middlewares that work on Scrapy versions lower than
         VERSION, define also a synchronous ``process_start_requests()`` method

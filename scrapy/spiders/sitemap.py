@@ -54,8 +54,8 @@ class SitemapSpider(Spider):
         self._follow: list[re.Pattern[str]] = [regex(x) for x in self.sitemap_follow]
 
     async def start(self) -> AsyncIterable[Any]:
-        for seed in self.start_requests():
-            yield seed
+        for item_or_request in self.start_requests():
+            yield item_or_request
 
     def start_requests(self) -> Iterable[Request]:
         for url in self.sitemap_urls:

@@ -35,8 +35,8 @@ class QPSSpider(Spider):
             self.download_delay = float(self.download_delay)
 
     async def start(self):
-        for seed in self.start_requests():
-            yield seed
+        for item_or_request in self.start_requests():
+            yield item_or_request
 
     def start_requests(self):
         url = self.benchurl

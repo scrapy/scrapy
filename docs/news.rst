@@ -11,13 +11,16 @@ Scrapy VERSION (unreleased)
 Highlights:
 
 -   Replaced ``start_requests`` (sync) with :meth:`~scrapy.Spider.start`
-    (async)
+    (async) and changed how it is iterated by default.
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--   In ``scrapy.core.spidermw.SpiderMiddlewareManager``,
-    ``process_start_requests()`` has been replaced by ``process_start()``.
+-   By default, the iteration of start requests and items no longer stops once
+    there are requests in the scheduler.
+
+    You can restore the previous behavior by setting :setting:`SEEDING_POLICY`
+    to :py:enum:mem:`~scrapy.SeedingPolicy.lazy`.
 
 -   In ``scrapy.core.engine.ExecutionEngine``:
 
@@ -33,23 +36,24 @@ Backward-incompatible changes
 
 -   The ``slot`` :ref:`telnet variable <telnet-vars>` has been removed.
 
+-   In ``scrapy.core.spidermw.SpiderMiddlewareManager``,
+    ``process_start_requests()`` has been replaced by ``process_start()``.
+
 Deprecations
 ~~~~~~~~~~~~
 
 -   The ``start_requests()`` method of :class:`~scrapy.Spider` is deprecated,
-    use :meth:`~scrapy.Spider.start` instead, or both to maintain support
-    for lower Scrapy versions.
+    use :meth:`~scrapy.Spider.start` instead, or both to maintain support for
+    lower Scrapy versions.
 
-    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6715`,
-    :issue:`6729`)
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
 
 -   The ``process_start_requests()`` method of :ref:`spider middlewares
     <topics-spider-middleware>` is deprecated, use
-    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` instead, or
-    both to maintain support for lower Scrapy versions.
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` instead,
+    or both to maintain support for lower Scrapy versions.
 
-    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6715`,
-    :issue:`6729`)
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
 
 New features
 ~~~~~~~~~~~~
@@ -63,16 +67,32 @@ New features
     requests and items, e.g. reading them from a queue service or database
     using an asynchronous client, without workarounds.
 
-    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`)
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
+
+-   The new :setting:`SEEDING_POLICY` setting allows customizing how start
+    requests and items are iterated.
+
+    You can also override the active seeding policy from
+    :meth:`Spider.start <scrapy.Spider.start>` and from
+    :meth:`SpiderMiddleware.process_start
+    <scrapy.spidermiddlewares.SpiderMiddleware.process_start>`.
+
+    .. note:: Some third-party spider middlewares may need to be updated for
+        Scrapy VERSION support before you can use them in combination with the
+        ability to override the active seeding policy.
+
+    (:issue:`740`, :issue:`1051`, :issue:`1443`, :issue:`3237`, :issue:`4467`,
+    :issue:`5282`, :issue:`6729`)
 
 Bug fixes
 ~~~~~~~~~
 
--   Yielding a start item (i.e. from :meth:`~scrapy.Spider.start` or an
-    equivalent) no longer delays the next iteration of starting requests and
-    items by up to 5 seconds.
+-   Yielding an item from :meth:`Spider.start <scrapy.Spider.start>` or from
+    :meth:`SpiderMiddleware.process_start
+    <scrapy.spidermiddlewares.SpiderMiddleware.process_start>` no longer delays
+    the next iteration of starting requests and items by up to 5 seconds.
 
-    (:issue:`6715`, :issue:`6729`)
+    (:issue:`6729`)
 
 
 .. _release-2.12.0:
@@ -375,8 +395,12 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
--   ``scrapy.Spider.start_requests`` can now yield items.
+-   ``scrapy.Spider.start_requests()`` can now yield items.
     (:issue:`5289`, :issue:`6417`)
+
+    .. note:: Some third-party spider middlewares may need to be updated for
+        Scrapy 2.12 support before you can use them in combination with the
+        ability to yield items from ``start_requests()``.
 
 -   Added a new :class:`~scrapy.http.Response` subclass,
     :class:`~scrapy.http.JsonResponse`, for responses with a `JSON MIME type
