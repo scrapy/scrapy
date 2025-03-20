@@ -76,16 +76,6 @@ class MainTestCase(TestCase):
         await self._test_spider(TestSpider, [ITEM_A])
 
     @deferred_f_from_coro_f
-    async def test_start_sync(self):
-        class TestSpider(Spider):
-            name = "test"
-
-            def start(self):
-                yield ITEM_A
-
-        await self._test_spider(TestSpider, [ITEM_A])
-
-    @deferred_f_from_coro_f
     async def test_deprecated(self):
         class TestSpider(Spider):
             name = "test"

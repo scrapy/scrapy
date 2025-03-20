@@ -8,12 +8,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import AsyncIterable, Callable, Iterable
-from functools import wraps
-from inspect import (
-    isasyncgenfunction,
-    iscoroutine,
-    isgeneratorfunction,
-)
+from inspect import isasyncgenfunction, iscoroutine, iscoroutinefunction
 from itertools import islice
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 from warnings import warn
@@ -52,21 +47,6 @@ ScrapeFunc = Callable[
 
 def _isiterable(o: Any) -> bool:
     return isinstance(o, (Iterable, AsyncIterable))
-
-
-def _sync_generator_to_async(f: Callable) -> Callable:
-    @wraps(f)
-    async def wrapper(*args, **kwargs):
-        for item in f(*args, **kwargs):
-            yield item
-
-    return wrapper
-
-
-def _maybe_sync_generator_to_async(f: Callable) -> Callable:
-    if isgeneratorfunction(f):
-        return _sync_generator_to_async(f)
-    return f
 
 
 class SpiderMiddlewareManager(MiddlewareManager):
@@ -400,7 +380,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             )
             start = as_async_generator(sync_start)
         else:
-            start = yield _maybe_sync_generator_to_async(spider.start)()
+            start = yield self._iter_seeds(spider)
             start = yield self._process_chain("process_start", start)
         return start
 
@@ -473,6 +453,14 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 f"release notes of Scrapy VERSION for details: "
                 f"https://docs.scrapy.org/en/VERSION/news.html"
             )
+
+    @staticmethod
+    def _iter_seeds(spider: Spider):
+        fn = spider.start
+        if isasyncgenfunction(fn):
+            return fn().__aiter__()
+        assert iscoroutinefunction(fn)
+        return deferred_from_coro(fn())
 
     # This method is only needed until _async compatibility methods are removed.
     @staticmethod
