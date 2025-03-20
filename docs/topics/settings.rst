@@ -2054,14 +2054,14 @@ WARN_ON_GENERATOR_RETURN_VALUE
 
 Default: ``True``
 
-Type: ``bool``
+When enabled, Scrapy will warn if generator-based callback methods (like
+``parse``) contain return statements with non-``None`` values. This helps detect
+potential mistakes in spider development.
 
-When enabled, Scrapy will warn if generator-based callback methods (like ``parse``) contain return statements with non-``None`` values. This helps detect potential mistakes in spider development.
-
-Disable this setting to:
-- Prevent syntax errors when dynamically modifying generator function source code during runtime
-- Skip AST parsing of callback functions
-- Improve performance in auto-reloading development environments
+Disable this setting to prevent syntax errors that may occur when dynamically
+modifying generator function source code during runtime, skip AST parsing of
+callback functions, or improve performance in auto-reloading development
+environments.
 
 Settings documented elsewhere:
 ------------------------------
