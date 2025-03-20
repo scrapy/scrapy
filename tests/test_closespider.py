@@ -88,7 +88,7 @@ class TestCloseSpider(TestCase):
         assert reason == "closespider_errorcount"
         key = f"spider_exceptions/{crawler.spider.exception_cls.__name__}"
         errorcount = crawler.stats.get_value(key)
-        assert crawler.stats.get_value("spider_exceptions/exception_count") >= close_on
+        assert crawler.stats.get_value("spider_exceptions/count") >= close_on
         assert errorcount >= close_on
 
     @defer.inlineCallbacks
