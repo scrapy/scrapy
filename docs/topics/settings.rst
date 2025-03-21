@@ -1733,6 +1733,29 @@ Soft limit (in bytes) for response data being processed.
 While the sum of the sizes of all responses being processed is above this value,
 Scrapy does not process new requests.
 
+.. setting:: SEEDING_POLICY
+
+SEEDING_POLICY
+--------------
+
+.. versionadded:: VERSION
+
+Default: :py:enum:mem:`SeedingPolicy.greedy <scrapy.SeedingPolicy.greedy>`
+
+Determines the way :meth:`Spider.start <scrapy.Spider.start>` is
+iterated.
+
+Its value may be defined as a member of the :class:`~scrapy.SeedingPolicy` enum
+(e.g. :py:enum:mem:`SeedingPolicy.lazy <scrapy.SeedingPolicy.lazy>`) or as a
+matching string (e.g. ``"lazy"``).
+
+You can also override the active seeding policy from :meth:`Spider.start
+<scrapy.Spider.start>` and from :meth:`SpiderMiddleware.process_start
+<scrapy.spidermiddlewares.SpiderMiddleware.process_start>`.
+
+.. autoenum:: scrapy.SeedingPolicy
+    :members:
+
 .. setting:: SPIDER_CONTRACTS
 
 SPIDER_CONTRACTS
@@ -1950,7 +1973,7 @@ In order to use the reactor installed by Scrapy:
             self.timeout = int(kwargs.pop("timeout", "60"))
             super(QuotesSpider, self).__init__(*args, **kwargs)
 
-        def start_requests(self):
+        async def start(self):
             reactor.callLater(self.timeout, self.stop)
 
             urls = ["https://quotes.toscrape.com/page/1"]
@@ -1979,7 +2002,7 @@ which raises :exc:`Exception`, becomes:
             self.timeout = int(kwargs.pop("timeout", "60"))
             super(QuotesSpider, self).__init__(*args, **kwargs)
 
-        def start_requests(self):
+        async def start(self):
             from twisted.internet import reactor
 
             reactor.callLater(self.timeout, self.stop)

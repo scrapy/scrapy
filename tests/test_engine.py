@@ -29,7 +29,7 @@ from twisted.trial import unittest
 from twisted.web import server, static, util
 
 from scrapy import signals
-from scrapy.core.engine import ExecutionEngine, Slot
+from scrapy.core.engine import ExecutionEngine, _Slot
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import CloseSpider, IgnoreRequest
 from scrapy.http import Request
@@ -92,8 +92,9 @@ class MySpider(Spider):
 
 
 class DupeFilterSpider(MySpider):
-    def start_requests(self):
-        return (Request(url) for url in self.start_urls)  # no dont_filter=True
+    async def start(self):
+        for url in self.start_urls:
+            yield Request(url)  # no dont_filter=True
 
 
 class DictItemsSpider(MySpider):
@@ -492,7 +493,13 @@ def test_request_scheduled_signal(caplog):
     engine = ExecutionEngine(crawler, lambda _: None)
     engine.downloader._slot_gc_loop.stop()
     scheduler = TestScheduler()
-    engine.slot = Slot((), None, Mock(), scheduler)
+
+    async def start():
+        return
+        yield
+
+    engine._start = start()
+    engine._slot = _Slot(False, Mock(), scheduler)
     crawler.signals.connect(signal_handler, request_scheduled)
     keep_request = Request("https://keep.example")
     engine._schedule_request(keep_request, spider)

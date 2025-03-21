@@ -16,8 +16,9 @@ from scrapy.crawler import CrawlerProcess  # noqa: E402
 class NoRequestsSpider(scrapy.Spider):
     name = "no_request"
 
-    def start_requests(self):
-        return []
+    async def start(self):
+        return
+        yield
 
 
 process = CrawlerProcess(

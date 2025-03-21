@@ -15,7 +15,7 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import AsyncIterable, Iterable
 
     from twisted.internet.defer import Deferred
 
@@ -29,12 +29,18 @@ if TYPE_CHECKING:
 
 
 class Spider(object_ref):
-    """Base class for scrapy spiders. All spiders must inherit from this
-    class.
+    """Base class that any spider must subclass.
+
+    It provides a default :meth:`start` implementation that sends
+    requests based on the :attr:`start_urls` class attribute and calls the
+    :meth:`parse` method for each response.
     """
 
     name: str
     custom_settings: dict[_SettingsKeyT, Any] | None = None
+
+    #: Start URLs. See :meth:`start`.
+    start_urls: list[str]
 
     def __init__(self, name: str | None = None, **kwargs: Any):
         if name is not None:
@@ -72,7 +78,68 @@ class Spider(object_ref):
         self.settings: BaseSettings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
 
-    def start_requests(self) -> Iterable[Request]:
+    async def start(self) -> AsyncIterable[Any]:
+        """Yield the initial :class:`~scrapy.Request` objects to send.
+
+        .. versionadded:: VERSION
+
+        For example:
+
+        .. code-block:: python
+
+            from scrapy import Request, Spider
+
+
+            class MySpider(Spider):
+                name = "myspider"
+
+                async def start(self):
+                    yield Request("https://toscrape.com/")
+
+        The default implementation reads URLs from :attr:`start_urls` and
+        yields a request for each with :attr:`~scrapy.Request.dont_filter`
+        enabled. It is functionally equivalent to:
+
+        .. code-block:: python
+
+            async def start(self):
+                for url in self.start_urls:
+                    yield Request(url, dont_filter=True)
+
+        You can also yield :ref:`items <topics-items>`. For example:
+
+        .. code-block:: python
+
+            async def start(self):
+                yield {"foo": "bar"}
+
+        Use :setting:`SEEDING_POLICY` to set how :meth:`start` is
+        iterated by default. It is also
+        possible to yield a :class:`~scrapy.SeedingPolicy` enum or a matching
+        string to change the active seeding policy, for example:
+
+        .. code-block:: python
+
+            async def start(self):
+                yield "front_load"
+                yield Request("https://a.example")
+                yield Request("https://b.example")
+                yield self.crawler.settings["SEEDING_POLICY"]
+                yield Request("https://c.example")
+
+        To write spiders that work on Scrapy versions lower than VERSION,
+        define also a synchronous ``start_requests()`` method that returns an
+        iterable. For example:
+
+        .. code-block:: python
+
+            def start_requests(self):
+                yield Request("https://toscrape.com/")
+        """
+        for item_or_request in self.start_requests():
+            yield item_or_request
+
+    def start_requests(self) -> Iterable[Any]:
         if not self.start_urls and hasattr(self, "start_url"):
             raise AttributeError(
                 "Crawling could not start: 'start_urls' not found "

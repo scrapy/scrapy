@@ -8,15 +8,16 @@ from __future__ import annotations
 
 import logging
 from collections.abc import AsyncIterable, Callable, Iterable
-from inspect import isasyncgenfunction, iscoroutine
+from inspect import isasyncgenfunction, iscoroutine, iscoroutinefunction
 from itertools import islice
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
+from warnings import warn
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import Request, Spider
-from scrapy.exceptions import _InvalidOutput
+from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
@@ -55,12 +56,56 @@ class SpiderMiddlewareManager(MiddlewareManager):
     def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
         return build_component_list(settings.getwithbase("SPIDER_MIDDLEWARES"))
 
+    def __init__(self, *middlewares: Any) -> None:
+        self._check_deprecated_process_start_requests_use(middlewares)
+        super().__init__(*middlewares)
+
+    def _check_deprecated_process_start_requests_use(
+        self, middlewares: tuple[Any]
+    ) -> None:
+        deprecated_middlewares = [
+            middleware
+            for middleware in middlewares
+            if hasattr(middleware, "process_start_requests")
+            and not hasattr(middleware, "process_start")
+        ]
+        self._use_start_requests = bool(deprecated_middlewares)
+        if self._use_start_requests:
+            deprecated_middleware_list = ", ".join(
+                global_object_name(middleware.__class__)
+                for middleware in deprecated_middlewares
+            )
+            warn(
+                f"The following enabled spider middlewares, directly or "
+                f"through their parent classes, define the deprecated "
+                f"process_start_requests() method: "
+                f"{deprecated_middleware_list}. process_start_requests() has "
+                f"been deprecated in favor of a new method, process_start(), "
+                f"to support asynchronous code execution. "
+                f"process_start_requests() will stop being called in a future "
+                f"version of Scrapy. If you use Scrapy VERSION or higher "
+                f"only, replace process_start_requests() with "
+                f"process_start(); note that process_start() is a coroutine "
+                f"(async def). If you need to maintain compatibility with "
+                f"lower Scrapy versions, when defining "
+                f"process_start_requests() in a spider middleware class, "
+                f"define process_start() as well. See the release notes of "
+                f"Scrapy VERSION for details: "
+                f"https://docs.scrapy.org/en/VERSION/news.html",
+                ScrapyDeprecationWarning,
+            )
+
     def _add_middleware(self, mw: Any) -> None:
         super()._add_middleware(mw)
         if hasattr(mw, "process_spider_input"):
             self.methods["process_spider_input"].append(mw.process_spider_input)
-        if hasattr(mw, "process_start_requests"):
-            self.methods["process_start_requests"].appendleft(mw.process_start_requests)
+        if self._use_start_requests:
+            if hasattr(mw, "process_start_requests"):
+                self.methods["process_start_requests"].appendleft(
+                    mw.process_start_requests
+                )
+        elif hasattr(mw, "process_start"):
+            self.methods["process_start"].appendleft(mw.process_start)
         process_spider_output = self._get_async_method_pair(mw, "process_spider_output")
         self.methods["process_spider_output"].appendleft(process_spider_output)
         process_spider_exception = getattr(mw, "process_spider_exception", None)
@@ -323,10 +368,99 @@ class SpiderMiddlewareManager(MiddlewareManager):
         dfd2.addErrback(process_spider_exception)
         return dfd2
 
-    def process_start_requests(
-        self, start_requests: Iterable[Request], spider: Spider
-    ) -> Deferred[Iterable[Request]]:
-        return self._process_chain("process_start_requests", start_requests, spider)
+    @inlineCallbacks
+    def process_start(
+        self, spider: Spider
+    ) -> Generator[Deferred[Any], Any, AsyncIterable[Any]]:
+        self._check_deprecated_start_requests_use(spider)
+        if self._use_start_requests:
+            sync_start = iter(spider.start_requests())
+            sync_start = yield self._process_chain(
+                "process_start_requests", sync_start, spider
+            )
+            start = as_async_generator(sync_start)
+        else:
+            start = yield self._iter_seeds(spider)
+            start = yield self._process_chain("process_start", start)
+        return start
+
+    def _check_deprecated_start_requests_use(self, spider: Spider):
+        start_requests_cls = None
+        start_cls = None
+        spidercls = spider.__class__
+        mro = spidercls.__mro__
+
+        for cls in mro:
+            cls_dict = cls.__dict__
+            if start_requests_cls is None and "start_requests" in cls_dict:
+                start_requests_cls = cls
+            if start_cls is None and "start" in cls_dict:
+                start_cls = cls
+            if start_requests_cls is not None and start_cls is not None:
+                break
+
+        # Spider defines both, start_requests and start.
+        assert start_requests_cls is not None
+        assert start_cls is not None
+
+        if (
+            start_requests_cls is not Spider
+            and start_cls is not start_requests_cls
+            and mro.index(start_requests_cls) < mro.index(start_cls)
+        ):
+            src = global_object_name(start_requests_cls)
+            if start_requests_cls is not spidercls:
+                src += f" (inherited by {global_object_name(spidercls)})"
+            warn(
+                f"{src} defines the deprecated start_requests() method. "
+                f"start_requests() has been deprecated in favor of a new "
+                f"method, start(), to support asynchronous code "
+                f"execution. start_requests() will stop being called in a "
+                f"future version of Scrapy. If you use Scrapy VERSION or "
+                f"higher only, replace start_requests() with start(); "
+                f"note that start() is a coroutine (async def). If you "
+                f"need to maintain compatibility with lower Scrapy versions, "
+                f"when overriding start_requests() in a spider class, "
+                f"override start() as well; you can use super() to "
+                f"reuse the inherited start() implementation without "
+                f"copy-pasting. See the release notes of Scrapy VERSION for "
+                f"details: https://docs.scrapy.org/en/VERSION/news.html",
+                ScrapyDeprecationWarning,
+            )
+
+        if (
+            self._use_start_requests
+            and start_cls is not Spider
+            and start_requests_cls is not start_cls
+            and mro.index(start_cls) < mro.index(start_requests_cls)
+        ):
+            src = global_object_name(start_cls)
+            if start_cls is not spidercls:
+                src += f" (inherited by {global_object_name(spidercls)})"
+            raise ValueError(
+                f"{src} does not define the deprecated start_requests() "
+                f"method. However, one or more of your enabled spider "
+                f"middlewares (reported in an earlier deprecation warning) "
+                f"define the process_start_requests() method, and not the "
+                f"process_start() method, making them only compatible with "
+                f"(deprecated) spiders that define the start_requests() "
+                f"method. To solve this issue, disable the offending spider "
+                f"middlewares, upgrade them as described in that earlier "
+                f"deprecation warning, or make your spider compatible with "
+                f"deprecated spider middlewares (and earlier Scrapy versions) "
+                f"by defining a sync start_requests() method that works "
+                f"similarly to its existing start() method. See the "
+                f"release notes of Scrapy VERSION for details: "
+                f"https://docs.scrapy.org/en/VERSION/news.html"
+            )
+
+    @staticmethod
+    def _iter_seeds(spider: Spider):
+        fn = spider.start
+        if isasyncgenfunction(fn):
+            return fn().__aiter__()
+        assert iscoroutinefunction(fn)
+        return deferred_from_coro(fn())
 
     # This method is only needed until _async compatibility methods are removed.
     @staticmethod

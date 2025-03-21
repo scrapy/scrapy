@@ -17,6 +17,8 @@ import sys
 from importlib import import_module
 from pathlib import Path
 
+from scrapy import SeedingPolicy
+
 ADDONS = {}
 
 AJAXCRAWL_ENABLED = False
@@ -307,6 +309,8 @@ SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.LifoMemoryQueue"
 SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ScrapyPriorityQueue"
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
+
+SEEDING_POLICY = SeedingPolicy.greedy
 
 SPIDER_LOADER_CLASS = "scrapy.spiderloader.SpiderLoader"
 SPIDER_LOADER_WARN_ONLY = False

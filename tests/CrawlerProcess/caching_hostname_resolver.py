@@ -11,7 +11,7 @@ class CachingHostnameResolverSpider(scrapy.Spider):
 
     name = "caching_hostname_resolver_spider"
 
-    def start_requests(self):
+    async def start(self):
         yield scrapy.Request(self.url)
 
     def parse(self, response):
