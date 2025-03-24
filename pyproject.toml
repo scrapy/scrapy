@@ -51,7 +51,6 @@ requires-python = ">=3.9"
 authors = [{ name = "Scrapy developers", email = "pablo@pablohoffman.com" }]
 maintainers = [{ name = "Pablo Hoffman", email = "pablo@pablohoffman.com" }]
 license = "BSD-3-Clause"
-license_files = ["LICENSE"]
 
 [project.urls]
 Homepage = "https://scrapy.org/"
