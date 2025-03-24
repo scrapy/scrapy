@@ -19,9 +19,6 @@ Backward-incompatible changes
 -   By default, the iteration of start requests and items no longer stops once
     there are requests in the scheduler.
 
-    You can restore the previous behavior by setting :setting:`SEEDING_POLICY`
-    to :py:enum:mem:`~scrapy.SeedingPolicy.lazy`.
-
 -   In ``scrapy.core.engine.ExecutionEngine``:
 
     -   The second parameter of ``open_spider()``, ``start_requests()``, has
@@ -68,21 +65,6 @@ New features
     using an asynchronous client, without workarounds.
 
     (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
-
--   The new :setting:`SEEDING_POLICY` setting allows customizing how start
-    requests and items are iterated.
-
-    You can also override the active seeding policy from
-    :meth:`Spider.start <scrapy.Spider.start>` and from
-    :meth:`SpiderMiddleware.process_start
-    <scrapy.spidermiddlewares.SpiderMiddleware.process_start>`.
-
-    .. note:: Some third-party spider middlewares may need to be updated for
-        Scrapy VERSION support before you can use them in combination with the
-        ability to override the active seeding policy.
-
-    (:issue:`740`, :issue:`1051`, :issue:`1443`, :issue:`3237`, :issue:`4467`,
-    :issue:`5282`, :issue:`6729`)
 
 Bug fixes
 ~~~~~~~~~

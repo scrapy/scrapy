@@ -194,25 +194,15 @@ class TestCrawl(TestCase):
 
     @defer.inlineCallbacks
     def test_start_unsupported_output(self):
-        """Anything that is not a request, a seeding policy or a string (which
-        is assumed to be a seeding policy) is assumed to be an item, avoiding a
-        potentially expensive call to itemadapter.is_item, and letting instead
-        things fail when ItemAdapter is actually used on the corresponding
-        non-item object."""
+        """Anything that is not a request is assumed to be an item, avoiding a
+        potentially expensive call to itemadapter.is_item(), and letting
+        instead things fail when ItemAdapter is actually used on the
+        corresponding non-item object."""
         with LogCapture("scrapy", level=logging.ERROR) as log:
             crawler = get_crawler(StartGoodAndBadOutput)
             yield crawler.crawl(mockserver=self.mockserver)
 
-        assert len(log.records) == 1
-
-    @defer.inlineCallbacks
-    def test_start_laziness(self):
-        settings = {"CONCURRENT_REQUESTS": 1, "SEEDING_POLICY": "lazy"}
-        crawler = get_crawler(BrokenStartSpider, settings)
-        yield crawler.crawl(mockserver=self.mockserver)
-        assert crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(
-            99
-        ), crawler.spider.seedsseen
+        assert len(log.records) == 0
 
     @defer.inlineCallbacks
     def test_start_dupes(self):

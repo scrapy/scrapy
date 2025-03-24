@@ -1733,29 +1733,6 @@ Soft limit (in bytes) for response data being processed.
 While the sum of the sizes of all responses being processed is above this value,
 Scrapy does not process new requests.
 
-.. setting:: SEEDING_POLICY
-
-SEEDING_POLICY
---------------
-
-.. versionadded:: VERSION
-
-Default: :py:enum:mem:`SeedingPolicy.greedy <scrapy.SeedingPolicy.greedy>`
-
-Determines the way :meth:`Spider.start <scrapy.Spider.start>` is
-iterated.
-
-Its value may be defined as a member of the :class:`~scrapy.SeedingPolicy` enum
-(e.g. :py:enum:mem:`SeedingPolicy.lazy <scrapy.SeedingPolicy.lazy>`) or as a
-matching string (e.g. ``"lazy"``).
-
-You can also override the active seeding policy from :meth:`Spider.start
-<scrapy.Spider.start>` and from :meth:`SpiderMiddleware.process_start
-<scrapy.spidermiddlewares.SpiderMiddleware.process_start>`.
-
-.. autoenum:: scrapy.SeedingPolicy
-    :members:
-
 .. setting:: SPIDER_CONTRACTS
 
 SPIDER_CONTRACTS

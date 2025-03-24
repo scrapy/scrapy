@@ -364,6 +364,57 @@ used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
 
+.. _spider-start:
+
+Spider start
+============
+
+The way :meth:`~scrapy.Spider.start` works may be counterintuitive.
+
+By default, if you do not use :ref:`await <await>` in
+:meth:`~scrapy.Spider.start`, or if you instead use the
+:attr:`~scrapy.Spider.start_urls` attribute, this is what happens:
+
+-   The first 8-16 start requests (based on :setting:`CONCURRENT_REQUESTS` and
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`) are sent in the order in which
+    they are yielded.
+
+    .. note:: Responses may come in a different order.
+
+-   The remaining start requests are sent in reverse order, and only when there
+    are not enough pending requests yielded from callbacks to reach the
+    configured concurrency.
+
+    This is because the :ref:`scheduler <topics-scheduler>`, where pending
+    requests are stored, uses a LIFO (last in, first out) queue by default,
+    configured in the :setting:`SCHEDULER_MEMORY_QUEUE` and
+    :setting:`SCHEDULER_DISK_QUEUE`.
+
+    So, provided all pending requests have the same
+    :attr:`~scrapy.Request.priority`, scheduled requests are sent in reserve
+    order. The first few requests are sent in order only because they are sent
+    as soon as they are scheduled.
+
+If you need start requests to be sent before requests yielded from spider
+callbacks, you can set a higher priority for them. For example:
+
+.. code-block:: python
+
+        async def start(self):
+            async for request in super().start():
+                yield request.replace(priority=1)
+
+If you also need them to be sent in order, you can assign them decreasing
+priority values. For example:
+
+.. code-block:: python
+
+        async def start(self):
+            priority = len(self.start_urls)
+            async for request in super().start():
+                yield request.replace(priority=priority)
+                priority -= 1
+
 .. _builtin-spiders:
 
 Generic Spiders

@@ -130,6 +130,16 @@ class Request(object_ref):
         self._set_body(body)
         if not isinstance(priority, int):
             raise TypeError(f"Request priority not an integer: {priority!r}")
+
+        #: Default: ``0``
+        #:
+        #: Value that the :ref:`scheduler <topics-scheduler>` may use for
+        #: request prioritization.
+        #:
+        #: Built-in schedulers prioritize requests with a higher priority
+        #: value.
+        #:
+        #: Negative values are allowed.
         self.priority: int = priority
 
         if not (callable(callback) or callback is None):
@@ -191,7 +201,7 @@ class Request(object_ref):
         #:
         #: When defining the start URLs of a spider through
         #: :attr:`~scrapy.Spider.start_urls`, this attribute is enabled by
-        #: default. See :meth:`~scrapy.Spider.start`.
+        #: default. See :meth:`~scrapy.Spider.yield_seeds`.
         self.dont_filter: bool = dont_filter
 
         self._meta: dict[str, Any] | None = dict(meta) if meta else None
