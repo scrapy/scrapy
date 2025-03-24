@@ -112,7 +112,7 @@ class TestProcessSpiderExceptionReRaise(TestSpiderMiddleware):
 class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
     """Helpers for testing sync, async and mixed middlewares.
 
-    Should work for process_spider_output and, when it's supported, process_test_start.
+    Should work for process_spider_output and, when it's supported, process_start.
     """
 
     ITEM_TYPE: type | tuple
@@ -321,8 +321,9 @@ class TestProcessSpiderOutputInvalidResult(TestBaseAsyncSpiderMiddleware):
 
 
 class ProcessStartSimpleMiddleware:
-    def process_test_start(self, test_start, spider):
-        yield from test_start
+    async def process_start(self, start):
+        async for item_or_request in start:
+            yield item_or_request
 
 
 class TestProcessStartSimple(TestBaseAsyncSpiderMiddleware):

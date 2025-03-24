@@ -28,10 +28,10 @@ class InjectArgumentsSpiderMiddleware:
     Make sure spider middlewares are able to update the keyword arguments
     """
 
-    def process_test_start(self, test_start, spider):
-        for request in test_start:
+    async def process_start(self, start):
+        async for request in start:
             if request.callback.__name__ == "parse_spider_mw":
-                request.cb_kwargs["from_process_test_start"] = True
+                request.cb_kwargs["from_process_start"] = True
             yield request
 
     def process_spider_input(self, response, spider):
@@ -138,11 +138,9 @@ class KeywordArgumentsSpider(MockServerSpider):
         self.checks.append(bool(from_process_response))
         self.crawler.stats.inc_value("boolean_checks", 2)
 
-    def parse_spider_mw(
-        self, response, from_process_spider_input, from_process_test_start
-    ):
+    def parse_spider_mw(self, response, from_process_spider_input, from_process_start):
         self.checks.append(bool(from_process_spider_input))
-        self.checks.append(bool(from_process_test_start))
+        self.checks.append(bool(from_process_start))
         self.crawler.stats.inc_value("boolean_checks", 2)
         return Request(self.mockserver.url("/spider_mw_2"), self.parse_spider_mw_2)
 

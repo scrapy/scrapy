@@ -305,10 +305,10 @@ with multiples lines
         # basic asserts in case of weird communication errors
         assert "responses" in crawler.spider.meta
         assert "failures" not in crawler.spider.meta
-        # test_start doesn't set Referer header
+        # start() doesn't set Referer header
         echo0 = json.loads(to_unicode(crawler.spider.meta["responses"][2].body))
         assert "Referer" not in echo0["headers"]
-        # following request sets Referer to test_start url
+        # following request sets Referer to the source request url
         echo1 = json.loads(to_unicode(crawler.spider.meta["responses"][1].body))
         assert echo1["headers"].get("Referer") == [req0.url]
         # next request avoids Referer header
