@@ -10,7 +10,7 @@ Scrapy VERSION (unreleased)
 
 Highlights:
 
--   Replaced ``start_requests`` (sync) with :meth:`~scrapy.Spider.start`
+-   Replaced ``start_requests()`` (sync) with :meth:`~scrapy.Spider.start`
     (async) and changed how it is iterated by default.
 
 Backward-incompatible changes
@@ -24,8 +24,8 @@ Backward-incompatible changes
 
 -   In ``scrapy.core.engine.ExecutionEngine``:
 
-    -   The second parameter of ``open_spider()``, ``start_requests``, has been
-        removed. The starting requests are determined by the ``spider``
+    -   The second parameter of ``open_spider()``, ``start_requests()``, has
+        been removed. The starting requests are determined by the ``spider``
         parameter instead (see :meth:`~scrapy.Spider.start`).
 
     -   The ``slot`` attribute has been renamed to ``_slot`` and should not be
@@ -104,7 +104,7 @@ Highlights:
 
 -   Dropped support for Python 3.8, added support for Python 3.13
 
--   ``scrapy.Spider.start_requests`` can now yield items
+-   ``scrapy.Spider.start_requests()`` can now yield items
 
 -   Added :class:`~scrapy.http.JsonResponse`
 
@@ -891,7 +891,7 @@ Backward-incompatible changes
     in :meth:`scrapy.Spider.from_crawler`. If you want to access the final
     setting values and the initialized :class:`~scrapy.crawler.Crawler`
     attributes in the spider code as early as possible you can do this in
-    ``scrapy.Spider.start_requests`` or in a handler of the
+    ``scrapy.Spider.start_requests()`` or in a handler of the
     :signal:`engine_started` signal. (:issue:`6038`)
 
 -   The :meth:`TextResponse.json <scrapy.http.TextResponse.json>` method now
@@ -3467,7 +3467,7 @@ New features
 
 *   :class:`~scrapy.spiders.Spider` objects now raise an :exc:`AttributeError`
     exception if they do not have a :class:`~scrapy.spiders.Spider.start_urls`
-    attribute nor reimplement ``scrapy.spiders.Spider.start_requests``,
+    attribute nor reimplement ``scrapy.spiders.Spider.start_requests()``,
     but have a ``start_url`` attribute (:issue:`4133`, :issue:`4170`)
 
 *   :class:`~scrapy.exporters.BaseItemExporter` subclasses may now use
@@ -6388,7 +6388,7 @@ Scrapy 0.18.4 (released 2013-10-10)
 
 - IPython refuses to update the namespace. fix #396 (:commit:`3d32c4f`)
 - Fix AlreadyCalledError replacing a request in shell command. closes #407 (:commit:`b1d8919`)
-- Fix ``start_requests`` laziness and early hangs (:commit:`89faf52`)
+- Fix ``start_requests()`` laziness and early hangs (:commit:`89faf52`)
 
 Scrapy 0.18.3 (released 2013-10-03)
 -----------------------------------
@@ -6581,7 +6581,7 @@ Scrapy changes:
 - added options ``-o`` and ``-t`` to the :command:`runspider` command
 - documented :doc:`topics/autothrottle` and added to extensions installed by default. You still need to enable it with :setting:`AUTOTHROTTLE_ENABLED`
 - major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backward compatibility is kept on the Stats Collector API and signals.
-- added a ``process_start_requests`` method to spider middlewares
+- added a ``process_start_requests()`` method to spider middlewares
 - dropped Signals singleton. Signals should now be accessed through the Crawler.signals attribute. See the signals documentation for more info.
 - dropped Stats Collector singleton. Stats can now be accessed through the Crawler.stats attribute. See the stats collection documentation for more info.
 - documented :ref:`topics-api`
@@ -6644,7 +6644,7 @@ Scrapy 0.14.2
 - fixed bug in MemoryUsage extension: get_engine_status() takes exactly 1 argument (0 given) (:commit:`11133e9`)
 - fixed struct.error on http compression middleware. closes #87 (:commit:`1423140`)
 - ajax crawling wasn't expanding for unicode urls (:commit:`0de3fb4`)
-- Catch ``start_requests`` iterator errors. refs #83 (:commit:`454a21d`)
+- Catch ``start_requests()`` iterator errors. refs #83 (:commit:`454a21d`)
 - Speed-up libxml2 XPathSelector (:commit:`2fbd662`)
 - updated versioning doc according to recent changes (:commit:`0a070f5`)
 - scrapyd: fixed documentation link (:commit:`2b4e4c3`)
