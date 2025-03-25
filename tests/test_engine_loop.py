@@ -93,10 +93,6 @@ class MockServerTestCase(TestCase):
 
     # Verify the default behavior of the engine loop as described in the docs,
     # in the “Spider start” section of the page about spdiers.
-    #
-    # TODO: Check how combinations of the following parameters affect the
-    # behavior: response time (high/low), max concurrency (hihg/low), number of
-    # start requests (few/many), and number of domains (single/multiple).
 
     fast_seconds = 0.001
     slow_seconds = 0.2  # increase if flaky
@@ -142,10 +138,6 @@ class MockServerTestCase(TestCase):
         expected_nums = sorted(start_nums + cb_nums)
         assert actual_nums == expected_nums, f"{actual_nums=} != {expected_nums=}"
 
-    # TODO: Figure out why the behavior changes when CONCURRENT_REQUESTS is
-    # higher than CONCURRENT_REQUESTS_PER_DOMAIN. The number of requests sent
-    # before callback requests seems to depend on CONCURRENT_REQUESTS and not
-    # in CONCURRENT_REQUESTS_PER_DOMAIN.
     @deferred_f_from_coro_f
     async def test_default(self):
         await maybe_deferred_to_future(
@@ -160,18 +152,24 @@ class MockServerTestCase(TestCase):
                     7,
                     8,
                     9,
-                    19,
-                    17,
-                    16,
-                    15,
-                    14,
-                    13,
-                    12,
-                    11,
                     10,
+                    11,
+                    12,
+                    13,
+                    14,
+                    15,
+                    16,
+                    26,
+                    24,
+                    23,
+                    22,
+                    21,
+                    20,
+                    19,
+                    18,
+                    17,
                 ],
-                cb_nums=[18],
-                settings={"CONCURRENT_REQUESTS": 9},
+                cb_nums=[25],
             )
         )
 
@@ -250,14 +248,95 @@ class MockServerTestCase(TestCase):
         )
 
     @deferred_f_from_coro_f
-    async def test_domains(self):
+    async def test_conc3_ds2(self):
         await maybe_deferred_to_future(
             self._test_request_order(
-                start_nums=[1, 2, 6, 4, 3],
-                cb_nums=[5],
+                start_nums=[1, 2, 3, 8, 6, 5, 4],
+                cb_nums=[7],
                 settings={
-                    "CONCURRENT_REQUESTS": 2,
-                    "CONCURRENT_REQUESTS_PER_DOMAIN": 1,
+                    "CONCURRENT_REQUESTS": 3,
+                },
+                download_slots=2,
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_tconc3_dconc2(self):
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=[1, 2, 3, 7, 5, 4],
+                cb_nums=[6],
+                settings={
+                    "CONCURRENT_REQUESTS": 3,
+                    "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
+                },
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_tconc5_dconc3(self):
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=[1, 2, 3, 4, 5, 10, 8, 7, 6],
+                cb_nums=[9],
+                settings={
+                    "CONCURRENT_REQUESTS": 5,
+                    "CONCURRENT_REQUESTS_PER_DOMAIN": 3,
+                },
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_tconc5_dconc2_ds3(self):
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=[1, 2, 3, 4, 5, 12, 10, 9, 8, 7, 6],
+                cb_nums=[11],
+                settings={
+                    "CONCURRENT_REQUESTS": 5,
+                    "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
+                },
+                download_slots=3,
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_tconc5_dconc3_ds2(self):
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=[1, 2, 3, 4, 5, 12, 10, 9, 8, 7, 6],
+                cb_nums=[11],
+                settings={
+                    "CONCURRENT_REQUESTS": 5,
+                    "CONCURRENT_REQUESTS_PER_DOMAIN": 3,
+                },
+                download_slots=2,
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_tconc7_dconc2_ds3(self):
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=[1, 2, 3, 4, 5, 6, 7, 15, 13, 12, 11, 10, 9, 8],
+                cb_nums=[14],
+                settings={
+                    "CONCURRENT_REQUESTS": 7,
+                    "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
+                },
+                download_slots=3,
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_tconc7_dconc3_ds2(self):
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=[1, 2, 3, 4, 5, 6, 7, 15, 13, 12, 11, 10, 9, 8],
+                cb_nums=[14],
+                settings={
+                    "CONCURRENT_REQUESTS": 7,
+                    "CONCURRENT_REQUESTS_PER_DOMAIN": 3,
                 },
                 download_slots=2,
             )
@@ -273,3 +352,9 @@ class MockServerTestCase(TestCase):
                 response_seconds=self.fast_seconds,
             )
         )
+        # TODO: Test how increasing concurrency behaves with fast responses.
+
+    # TODO: Test claims:
+    # - :ref:`Awaiting <await>` slow operations in :meth:`~scrapy.Spider.start` may lower it.
+    # - If responses are very fast, it can be more than :setting:`CONCURRENT_REQUESTS`.
+    # - Otherwise, it can reach 16 (:setting:`CONCURRENT_REQUESTS`)

@@ -371,21 +371,24 @@ Spider start
 
 The way :meth:`~scrapy.Spider.start` works by default may be counterintuitive:
 
-#.  The first 8-16 start requests are sent in the order in which they are
-    yielded.
+#.  First, the first 16 start requests are sent in order.
 
-    That number depends on :setting:`CONCURRENT_REQUESTS`.
-    :ref:`Awaiting <await>` slow operations in :meth:`~scrapy.Spider.start` may
-    lower it.
+    That number depends on :setting:`CONCURRENT_REQUESTS`. :ref:`Awaiting
+    <await>` slow operations in :meth:`~scrapy.Spider.start` may lower it.
 
-#.  The last start request is sent.
+#.  Then, the last 8 start requests are sent in reverse order.
 
-    It could be more start requests for very low response times. If so, they
-    are the last start requests in reverse order.
+    That number depends on both :setting:`CONCURRENT_REQUESTS` and
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. Specifically, assuming an even
+    domain distribution in start requests (i.e. ABCABC, not AABBCC), it is:
 
-#.  The remaining start requests are also sent in reverse order, but only when
-    there are not enough pending requests yielded from callbacks to reach the
-    configured concurrency.
+    .. code-block:: python
+
+        min(CONCURRENT_REQUESTS, CONCURRENT_REQUESTS_PER_DOMAIN * domain_count)
+
+#.  Finally, the remaining start requests are also sent in reverse order, but
+    only when there are not enough pending requests yielded from callbacks to
+    reach the configured concurrency.
 
 .. note:: Response order is a different story: it is determined not only by
     request order, but also by response time.
