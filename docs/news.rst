@@ -41,6 +41,10 @@ Backward-incompatible changes
 -   In ``scrapy.core.spidermw.SpiderMiddlewareManager``,
     ``process_start_requests()`` has been replaced by ``process_start()``.
 
+-   The now-deprecated ``start_requests()`` method, when it returns an iterable
+    instead of being defined as a generator, is now executed *after* the
+    :ref:`scheduler <topics-scheduler>` instance has been created.
+
 Deprecations
 ~~~~~~~~~~~~
 
