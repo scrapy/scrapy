@@ -369,31 +369,35 @@ See `Scrapyd documentation`_.
 Spider start
 ============
 
-The way :meth:`~scrapy.Spider.start` works may be counterintuitive.
+The way :meth:`~scrapy.Spider.start` works by default may be counterintuitive:
 
-By default, if you do not use :ref:`await <await>` in
-:meth:`~scrapy.Spider.start`, or if you instead use the
-:attr:`~scrapy.Spider.start_urls` attribute, this is what happens:
+#.  The first 8-16 start requests are sent in the order in which they are
+    yielded.
 
--   The first 8-16 start requests (based on :setting:`CONCURRENT_REQUESTS` and
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`) are sent in the order in which
-    they are yielded.
+    That number depends on :setting:`CONCURRENT_REQUESTS`.
+    :ref:`Awaiting <await>` slow operations in :meth:`~scrapy.Spider.start` may
+    lower it.
 
-    .. note:: Responses may come in a different order.
+#.  The last start request is sent.
 
--   The remaining start requests are sent in reverse order, and only when there
-    are not enough pending requests yielded from callbacks to reach the
+    It could be more start requests for very low response times. If so, they
+    are the last start requests in reverse order.
+
+#.  The remaining start requests are also sent in reverse order, but only when
+    there are not enough pending requests yielded from callbacks to reach the
     configured concurrency.
 
-    This is because the :ref:`scheduler <topics-scheduler>`, where pending
-    requests are stored, uses a LIFO (last in, first out) queue by default,
-    configured in the :setting:`SCHEDULER_MEMORY_QUEUE` and
-    :setting:`SCHEDULER_DISK_QUEUE`.
+.. note:: Response order is a different story: it is determined not only by
+    request order, but also by response time.
 
-    So, provided all pending requests have the same
-    :attr:`~scrapy.Request.priority`, scheduled requests are sent in reserve
-    order. The first few requests are sent in order only because they are sent
-    as soon as they are scheduled.
+The reverse order is because the :ref:`scheduler <topics-scheduler>`, which
+handles pending requests, stores requests with the same
+:attr:`~scrapy.Request.priority` in a LIFO (last in, first out) queue by
+default (see :setting:`SCHEDULER_MEMORY_QUEUE` and
+:setting:`SCHEDULER_DISK_QUEUE`). The order of the first few requests is
+unnaffected because they are sent as soon as they are scheduled, and the last
+start requests sent before callback requests are those that can be sent before
+the first callback requests are scheduled.
 
 If you need start requests to be sent before requests yielded from spider
 callbacks, you can set a higher priority for them. For example:

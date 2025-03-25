@@ -82,9 +82,6 @@ class MainTestCase(TestCase):
 
 
 class MockServerTestCase(TestCase):
-    # See the comment on the matching line above.
-    timeout = ExecutionEngine._SLOT_HEARTBEAT_INTERVAL
-
     @classmethod
     def setUpClass(cls):
         cls.mockserver = MockServer()
@@ -94,37 +91,185 @@ class MockServerTestCase(TestCase):
     def tearDownClass(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @deferred_f_from_coro_f
-    async def test_default_behavior(self):
-        """Verify the behavior that the docs claims is the default when it
-        comes to start request send order."""
-        seconds = 0.1
+    # Verify the default behavior of the engine loop as described in the docs,
+    # in the “Spider start” section of the page about spdiers.
+    #
+    # TODO: Check how combinations of the following parameters affect the
+    # behavior: response time (high/low), max concurrency (hihg/low), number of
+    # start requests (few/many), and number of domains (single/multiple).
 
-        def _url(id, delay=seconds):
-            return self.mockserver.url(f"/delay?n={seconds}&{id}")
+    fast_seconds = 0.001
+    slow_seconds = 0.2  # increase if flaky
+
+    @deferred_f_from_coro_f
+    async def _test_request_order(
+        self,
+        start_nums,
+        cb_nums,
+        settings=None,
+        response_seconds=None,
+        download_slots=1,
+    ):
+        settings = settings or {}
+        response_seconds = response_seconds or self.slow_seconds
+
+        def _request(num):
+            url = self.mockserver.url(f"/delay?n={response_seconds}&{num}")
+            meta = {"download_slot": str(num % download_slots)}
+            return Request(url, meta=meta)
 
         class TestSpider(Spider):
             name = "test"
-            start_urls = [_url("a", delay=0), _url("b"), _url("d"), _url("e")]
-            queue = deque([Request(_url("c"))])
+            cb_requests = deque([_request(num) for num in cb_nums])
+
+            async def start(self):
+                for num in start_nums:
+                    yield _request(num)
 
             def parse(self, response):
-                try:
-                    request = self.queue.popleft()
-                except IndexError:
-                    pass
-                else:
-                    yield request
+                while self.cb_requests:
+                    yield self.cb_requests.popleft()
 
-        actual_urls = []
+        actual_nums = []
 
-        def track_url(request, spider):
-            actual_urls.append(request.url)
+        def track_num(request, spider):
+            actual_nums.append(int(request.url.rsplit("&", maxsplit=1)[1]))
 
-        settings = {"CONCURRENT_REQUESTS": 2}
         crawler = get_crawler(TestSpider, settings_dict=settings)
-        crawler.signals.connect(track_url, signals.request_reached_downloader)
+        crawler.signals.connect(track_num, signals.request_reached_downloader)
         await maybe_deferred_to_future(crawler.crawl())
         assert crawler.stats.get_value("finish_reason") == "finished"
-        expected_urls = [_url(letter) for letter in "abcd"]
-        assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
+        expected_nums = sorted(start_nums + cb_nums)
+        assert actual_nums == expected_nums, f"{actual_nums=} != {expected_nums=}"
+
+    # TODO: Figure out why the behavior changes when CONCURRENT_REQUESTS is
+    # higher than CONCURRENT_REQUESTS_PER_DOMAIN. The number of requests sent
+    # before callback requests seems to depend on CONCURRENT_REQUESTS and not
+    # in CONCURRENT_REQUESTS_PER_DOMAIN.
+    @deferred_f_from_coro_f
+    async def test_default(self):
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=[
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8,
+                    9,
+                    19,
+                    17,
+                    16,
+                    15,
+                    14,
+                    13,
+                    12,
+                    11,
+                    10,
+                ],
+                cb_nums=[18],
+                settings={"CONCURRENT_REQUESTS": 9},
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_conc1(self):
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=[1, 4, 2],
+                cb_nums=[3],
+                settings={"CONCURRENT_REQUESTS": 1},
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_conc2(self):
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=[1, 2, 6, 4, 3],
+                cb_nums=[5],
+                settings={"CONCURRENT_REQUESTS": 2},
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_conc8(self):
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=[1, 2, 3, 4, 5, 6, 7, 8, 18, 16, 15, 14, 13, 12, 11, 10, 9],
+                cb_nums=[17],
+                settings={"CONCURRENT_REQUESTS": 8},
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_conc16(self):
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=[
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8,
+                    9,
+                    10,
+                    11,
+                    12,
+                    13,
+                    14,
+                    15,
+                    16,
+                    34,
+                    32,
+                    31,
+                    30,
+                    29,
+                    28,
+                    27,
+                    26,
+                    25,
+                    24,
+                    23,
+                    22,
+                    21,
+                    20,
+                    19,
+                    18,
+                    17,
+                ],
+                cb_nums=[33],
+                settings={"CONCURRENT_REQUESTS_PER_DOMAIN": 16},
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_domains(self):
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=[1, 2, 6, 4, 3],
+                cb_nums=[5],
+                settings={
+                    "CONCURRENT_REQUESTS": 2,
+                    "CONCURRENT_REQUESTS_PER_DOMAIN": 1,
+                },
+                download_slots=2,
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_fast(self):
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=[1, 3, 2],
+                cb_nums=[4],
+                settings={"CONCURRENT_REQUESTS": 1},
+                response_seconds=self.fast_seconds,
+            )
+        )
