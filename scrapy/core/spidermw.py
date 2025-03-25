@@ -69,6 +69,25 @@ class SpiderMiddlewareManager(MiddlewareManager):
             if hasattr(middleware, "process_start_requests")
             and not hasattr(middleware, "process_start")
         ]
+        modern_middlewares = [
+            middleware
+            for middleware in middlewares
+            if not hasattr(middleware, "process_start_requests")
+            and hasattr(middleware, "process_start")
+        ]
+        if deprecated_middlewares and modern_middlewares:
+            raise ValueError(
+                "You are trying to combine spider middlewares that only "
+                "define the deprecated process_start_requests() method () "
+                "with spider middlewares that only define the "
+                "process_start() method (). This is not possible. You must "
+                "either disable or make universal 1 of those 2 sets of "
+                "spider middlewares. Making a spider middleware universal "
+                "means having it define both methods. See the release notes "
+                "of Scrapy VERSION for details: "
+                "https://docs.scrapy.org/en/VERSION/news.html"
+            )
+
         self._use_start_requests = bool(deprecated_middlewares)
         if self._use_start_requests:
             deprecated_middleware_list = ", ".join(

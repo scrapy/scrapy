@@ -93,17 +93,21 @@ class ExecutionEngine:
         self.spider: Spider | None = None
         self.running: bool = False
         self.paused: bool = False
-        self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
-            crawler.settings
-        )
-        downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
-        self.downloader: Downloader = downloader_cls(crawler)
-        self.scraper: Scraper = Scraper(crawler)
         self._spider_closed_callback: Callable[[Spider], Deferred[None] | None] = (
             spider_closed_callback
         )
         self.start_time: float | None = None
         self._start: AsyncIterable[Any] | None = None
+        downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
+        try:
+            self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
+                crawler.settings
+            )
+            self.downloader: Downloader = downloader_cls(crawler)
+            self.scraper: Scraper = Scraper(crawler)
+        except Exception:
+            self.close()
+            raise
 
     def _get_scheduler_class(self, settings: BaseSettings) -> type[BaseScheduler]:
         from scrapy.core.scheduler import BaseScheduler

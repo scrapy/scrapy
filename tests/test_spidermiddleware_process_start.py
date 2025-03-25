@@ -1,3 +1,4 @@
+import warnings
 from asyncio import sleep
 
 import pytest
@@ -120,13 +121,21 @@ class MainTestCase(TestCase):
         expected_items = expected_items or [ITEM_A, ITEM_B, ITEM_C]
         await self._test([spider_middleware], spider_cls, expected_items)
 
+    async def _test_douple_wrap(self, smw1, smw2, spider_cls, expected_items=None):
+        expected_items = expected_items or [ITEM_A, ITEM_A, ITEM_B, ITEM_C, ITEM_C]
+        await self._test([smw1, smw2], spider_cls, expected_items)
+
     @deferred_f_from_coro_f
     async def test_modern_mw_modern_spider(self):
-        await self._test_wrap(ModernWrapSpiderMiddleware, ModernWrapSpider)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            await self._test_wrap(ModernWrapSpiderMiddleware, ModernWrapSpider)
 
     @deferred_f_from_coro_f
     async def test_modern_mw_universal_spider(self):
-        await self._test_wrap(ModernWrapSpiderMiddleware, UniversalWrapSpider)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            await self._test_wrap(ModernWrapSpiderMiddleware, UniversalWrapSpider)
 
     @deferred_f_from_coro_f
     async def test_modern_mw_deprecated_spider(self):
@@ -137,11 +146,15 @@ class MainTestCase(TestCase):
 
     @deferred_f_from_coro_f
     async def test_universal_mw_modern_spider(self):
-        await self._test_wrap(UniversalWrapSpiderMiddleware, ModernWrapSpider)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            await self._test_wrap(UniversalWrapSpiderMiddleware, ModernWrapSpider)
 
     @deferred_f_from_coro_f
     async def test_universal_mw_universal_spider(self):
-        await self._test_wrap(UniversalWrapSpiderMiddleware, UniversalWrapSpider)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            await self._test_wrap(UniversalWrapSpiderMiddleware, UniversalWrapSpider)
 
     @deferred_f_from_coro_f
     async def test_universal_mw_deprecated_spider(self):
@@ -184,6 +197,108 @@ class MainTestCase(TestCase):
             ),
         ):
             await self._test_wrap(DeprecatedWrapSpiderMiddleware, DeprecatedWrapSpider)
+
+    @deferred_f_from_coro_f
+    async def test_modern_mw_universal_mw_modern_spider(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            await self._test_douple_wrap(
+                ModernWrapSpiderMiddleware,
+                UniversalWrapSpiderMiddleware,
+                ModernWrapSpider,
+            )
+
+    @deferred_f_from_coro_f
+    async def test_modern_mw_deprecated_mw_modern_spider(self):
+        with pytest.raises(ValueError, match=r"trying to combine spider middlewares"):
+            await self._test_douple_wrap(
+                ModernWrapSpiderMiddleware,
+                DeprecatedWrapSpiderMiddleware,
+                ModernWrapSpider,
+            )
+
+    @deferred_f_from_coro_f
+    async def test_universal_mw_deprecated_mw_modern_spider(self):
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
+            ),
+            pytest.raises(
+                ValueError, match=r"only compatible with \(deprecated\) spiders"
+            ),
+        ):
+            await self._test_douple_wrap(
+                UniversalWrapSpiderMiddleware,
+                DeprecatedWrapSpiderMiddleware,
+                ModernWrapSpider,
+            )
+
+    @deferred_f_from_coro_f
+    async def test_modern_mw_universal_mw_universal_spider(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            await self._test_douple_wrap(
+                ModernWrapSpiderMiddleware,
+                UniversalWrapSpiderMiddleware,
+                UniversalWrapSpider,
+            )
+
+    @deferred_f_from_coro_f
+    async def test_modern_mw_deprecated_mw_universal_spider(self):
+        with pytest.raises(ValueError, match=r"trying to combine spider middlewares"):
+            await self._test_douple_wrap(
+                ModernWrapSpiderMiddleware,
+                DeprecatedWrapSpiderMiddleware,
+                UniversalWrapSpider,
+            )
+
+    @deferred_f_from_coro_f
+    async def test_universal_mw_deprecated_mw_universal_spider(self):
+        with pytest.warns(
+            ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
+        ):
+            await self._test_douple_wrap(
+                UniversalWrapSpiderMiddleware,
+                DeprecatedWrapSpiderMiddleware,
+                UniversalWrapSpider,
+                [ITEM_A, ITEM_A, ITEM_D, ITEM_C, ITEM_C],
+            )
+
+    @deferred_f_from_coro_f
+    async def test_modern_mw_universal_mw_deprecated_spider(self):
+        with pytest.warns(
+            ScrapyDeprecationWarning, match=r"deprecated start_requests\(\)"
+        ):
+            await self._test_douple_wrap(
+                ModernWrapSpiderMiddleware,
+                UniversalWrapSpiderMiddleware,
+                DeprecatedWrapSpider,
+            )
+
+    @deferred_f_from_coro_f
+    async def test_modern_mw_deprecated_mw_deprecated_spider(self):
+        with pytest.raises(ValueError, match=r"trying to combine spider middlewares"):
+            await self._test_douple_wrap(
+                ModernWrapSpiderMiddleware,
+                DeprecatedWrapSpiderMiddleware,
+                DeprecatedWrapSpider,
+            )
+
+    @deferred_f_from_coro_f
+    async def test_universal_mw_deprecated_mw_deprecated_spider(self):
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning, match=r"deprecated start_requests\(\)"
+            ),
+        ):
+            await self._test_douple_wrap(
+                UniversalWrapSpiderMiddleware,
+                DeprecatedWrapSpiderMiddleware,
+                DeprecatedWrapSpider,
+            )
 
     async def _test_sleep(self, spider_middlewares):
         class TestSpider(Spider):

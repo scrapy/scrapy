@@ -119,7 +119,7 @@ class RequestSendOrderTestCase(TestCase):
         cls.mockserver.__exit__(None, None, None)
 
     fast_seconds = 0.001
-    slow_seconds = 0.2  # increase if flaky
+    slow_seconds = 0.4  # increase if flaky
 
     def _request(self, num, response_seconds, download_slots):
         url = self.mockserver.url(f"/delay?n={response_seconds}&{num}")
