@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from time import time
+from traceback import format_exc
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
@@ -175,12 +176,11 @@ class ExecutionEngine:
             item_or_request = yield deferred_from_coro(self._start.__anext__())
         except StopAsyncIteration:
             self._start = None
-        except Exception:
+        except Exception as exception:
             self._start = None
+            exception_traceback = format_exc()
             logger.error(
-                "Error while reading start items and requests",
-                exc_info=True,
-                extra={"spider": self.spider},
+                f"Error while reading start items and requests: {exception}.\n{exception_traceback}"
             )
         else:
             if isinstance(item_or_request, Request):

@@ -390,7 +390,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
     @inlineCallbacks
     def process_start(
         self, spider: Spider
-    ) -> Generator[Deferred[Any], Any, AsyncIterable[Any]]:
+    ) -> Generator[Deferred[Any], Any, AsyncIterable[Any] | None]:
         self._check_deprecated_start_requests_use(spider)
         if self._use_start_requests:
             sync_start = iter(spider.start_requests())

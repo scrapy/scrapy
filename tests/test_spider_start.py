@@ -1,6 +1,7 @@
 from asyncio import sleep
 
 import pytest
+from testfixtures import LogCapture
 from twisted.internet.defer import Deferred
 from twisted.trial.unittest import TestCase
 
@@ -151,3 +152,24 @@ class MainTestCase(TestCase):
             yield ITEM_A
 
         await self._test_start(start, [ITEM_A])
+
+    # Exceptions
+
+    @deferred_f_from_coro_f
+    async def test_deprecated_non_generator_exception(self):
+        class TestSpider(Spider):
+            name = "test"
+
+            def start_requests(self):
+                raise RuntimeError
+
+        with (
+            LogCapture() as log,
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"defines the deprecated start_requests\(\) method",
+            ),
+        ):
+            await self._test_spider(TestSpider, [])
+
+        assert "in start_requests\n    raise RuntimeError" in str(log), log
