@@ -91,9 +91,8 @@ class Command(ScrapyCommand):
             spidercls = spidercls_for_request(spider_loader, request, spidercls)
 
         async def start(self):
-            yield self._request
+            yield request
 
-        spidercls._request = request  # type: ignore[assignment,attr-defined]
         spidercls.start = start  # type: ignore[method-assign,attr-defined]
 
         self.crawler_process.crawl(spidercls)
