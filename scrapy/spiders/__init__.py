@@ -122,7 +122,7 @@ class Spider(object_ref):
             def start_requests(self):
                 yield Request("https://toscrape.com/")
 
-        .. seealso:: :ref:`spider-start`
+        .. seealso:: :ref:`start-requests`
         """
         for item_or_request in self.start_requests():
             yield item_or_request

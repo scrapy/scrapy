@@ -364,63 +364,38 @@ used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
 
-.. _spider-start:
+.. _start-requests:
 
-Spider start
-============
+Start requests
+==============
 
-The way :meth:`~scrapy.Spider.start` works by default may be counterintuitive:
+Scrapy does not try to send :meth:`~scrapy.Spider.start` requests in order.
+Instead, it prioritizes reaching :setting:`CONCURRENT_REQUESTS` and
+:ref:`scheduling <topics-scheduler>` start requests.
 
-#.  First, the first 16 start requests are sent in order.
+To change that, override the :meth:`~scrapy.Spider.start` method to set
+:attr:`Request.priority <scrapy.http.Request.priority>`. For example:
 
-    That number depends on :setting:`CONCURRENT_REQUESTS`. :ref:`Awaiting
-    <await>` slow operations in :meth:`~scrapy.Spider.start` may lower it.
-
-#.  Then, the last 8 start requests are sent in reverse order.
-
-    That number depends on both :setting:`CONCURRENT_REQUESTS` and
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. Specifically, assuming an even
-    domain distribution in start requests (i.e. ABCABC, not AABBCC), it is:
+-   To send start requests before other requests:
 
     .. code-block:: python
 
-        min(CONCURRENT_REQUESTS, CONCURRENT_REQUESTS_PER_DOMAIN * domain_count)
+            async def start(self):
+                async for request in super().start():
+                    yield request.replace(priority=1)
 
-#.  Finally, the remaining start requests are also sent in reverse order, but
-    only when there are not enough pending requests yielded from callbacks to
-    reach the configured concurrency.
+-   To send start requests in order:
 
-.. note:: Response order is a different story: it is determined not only by
-    request order, but also by response time.
+    .. code-block:: python
 
-The reverse order is because the :ref:`scheduler <topics-scheduler>`, which
-handles pending requests, stores requests with the same
-:attr:`~scrapy.Request.priority` in a LIFO (last in, first out) queue by
-default (see :setting:`SCHEDULER_MEMORY_QUEUE` and
-:setting:`SCHEDULER_DISK_QUEUE`). The order of the first few requests is
-unnaffected because they are sent as soon as they are scheduled, and the last
-start requests sent before callback requests are those that can be sent before
-the first callback requests are scheduled.
+            async def start(self):
+                priority = len(self.start_urls)
+                async for request in super().start():
+                    yield request.replace(priority=priority)
+                    priority -= 1
 
-If you need start requests to be sent before requests yielded from spider
-callbacks, you can set a higher priority for them. For example:
-
-.. code-block:: python
-
-        async def start(self):
-            async for request in super().start():
-                yield request.replace(priority=1)
-
-If you also need them to be sent in order, you can assign them decreasing
-priority values. For example:
-
-.. code-block:: python
-
-        async def start(self):
-            priority = len(self.start_urls)
-            async for request in super().start():
-                yield request.replace(priority=priority)
-                priority -= 1
+You can also :ref:`customize the scheduler <topics-scheduler>` if you need
+more control over request prioritization.
 
 .. _builtin-spiders:
 

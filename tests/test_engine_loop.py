@@ -81,7 +81,34 @@ class MainTestCase(TestCase):
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
 
-class MockServerTestCase(TestCase):
+class RequestSendOrderTestCase(TestCase):
+    """Test the intrincacies of request send order when all start requests and
+    callback requests have the same priority.
+
+    It is a very unintuitive behavior, documented as “undefined” so that we may
+    change it in the future without breaking the contract.
+
+    1.  First, the first CONCURRENT_REQUESTS start requests are sent in order.
+
+        Awaiting slow operations in Spider.start() can lower that.
+
+    2.  Then, assuming an even domain distribution in start requests (i.e.
+        ABCABC, not AABBCC), the last N start requests are sent in reverse
+        order, where N is:
+
+            min(CONCURRENT_REQUESTS, CONCURRENT_REQUESTS_PER_DOMAIN * domain_count)
+
+    3.  Finally, the remaining start requests are also sent in reverse order,
+        but only when there are not enough pending requests yielded from
+        callbacks to reach the configured concurrency.
+
+    The reverse order is because the scheduler uses a LIFO queue by default
+    (SCHEDULER_MEMORY_QUEUE, SCHEDULER_DISK_QUEUE). The order of the first few
+    requests is unnaffected because they are sent as soon as they are
+    scheduled, and the last start requests sent before callback requests are
+    those that can be sent before the first callback requests are scheduled.
+    """
+
     @classmethod
     def setUpClass(cls):
         cls.mockserver = MockServer()
@@ -91,11 +118,13 @@ class MockServerTestCase(TestCase):
     def tearDownClass(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    # Verify the default behavior of the engine loop as described in the docs,
-    # in the “Spider start” section of the page about spdiers.
-
     fast_seconds = 0.001
     slow_seconds = 0.2  # increase if flaky
+
+    def _request(self, num, response_seconds, download_slots):
+        url = self.mockserver.url(f"/delay?n={response_seconds}&{num}")
+        meta = {"download_slot": str(num % download_slots)}
+        return Request(url, meta=meta)
 
     @deferred_f_from_coro_f
     async def _test_request_order(
@@ -105,22 +134,26 @@ class MockServerTestCase(TestCase):
         settings=None,
         response_seconds=None,
         download_slots=1,
+        start_fn=None,
     ):
         settings = settings or {}
         response_seconds = response_seconds or self.slow_seconds
 
-        def _request(num):
-            url = self.mockserver.url(f"/delay?n={response_seconds}&{num}")
-            meta = {"download_slot": str(num % download_slots)}
-            return Request(url, meta=meta)
+        if start_fn is None:
+
+            async def start_fn(spider):
+                for num in start_nums:
+                    yield self._request(num, response_seconds, download_slots)
 
         class TestSpider(Spider):
             name = "test"
-            cb_requests = deque([_request(num) for num in cb_nums])
-
-            async def start(self):
-                for num in start_nums:
-                    yield _request(num)
+            cb_requests = deque(
+                [
+                    self._request(num, response_seconds, download_slots)
+                    for num in cb_nums
+                ]
+            )
+            start = start_fn
 
             def parse(self, response):
                 while self.cb_requests:
@@ -344,6 +377,8 @@ class MockServerTestCase(TestCase):
 
     @deferred_f_from_coro_f
     async def test_fast(self):
+        """Very fast responses may increase the number of start requests sent
+        in reverse order before the first callback request."""
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=[1, 3, 2],
@@ -352,9 +387,28 @@ class MockServerTestCase(TestCase):
                 response_seconds=self.fast_seconds,
             )
         )
-        # TODO: Test how increasing concurrency behaves with fast responses.
 
-    # TODO: Test claims:
-    # - :ref:`Awaiting <await>` slow operations in :meth:`~scrapy.Spider.start` may lower it.
-    # - If responses are very fast, it can be more than :setting:`CONCURRENT_REQUESTS`.
-    # - Otherwise, it can reach 16 (:setting:`CONCURRENT_REQUESTS`)
+    @deferred_f_from_coro_f
+    async def test_await(self):
+        """Awaiting slow operations in Spider.start() may lower the number of
+        first start requests sent in order."""
+        start_nums = [1, 3]
+        response_seconds = self.slow_seconds
+        download_slots = 1
+
+        async def start(spider):
+            assert len(start_nums) > 1
+            for num in start_nums[:-1]:
+                yield self._request(num, response_seconds, download_slots)
+                await sleep(response_seconds * 2)
+            yield self._request(start_nums[-1], response_seconds, download_slots)
+
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=start_nums,
+                cb_nums=[2],
+                settings={"CONCURRENT_REQUESTS": 2},
+                response_seconds=response_seconds,
+                start_fn=start,
+            )
+        )

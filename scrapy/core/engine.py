@@ -45,13 +45,13 @@ class _Slot:
     def __init__(
         self,
         close_if_idle: bool,
-        nextcall: CallLaterOnce[Deferred[None]],
+        nextcall: CallLaterOnce[None],
         scheduler: BaseScheduler,
     ) -> None:
         self.closing: Deferred[None] | None = None
         self.inprogress: set[Request] = set()
         self.close_if_idle: bool = close_if_idle
-        self.nextcall: CallLaterOnce[Deferred[None]] = nextcall
+        self.nextcall: CallLaterOnce[None] = nextcall
         self.scheduler: BaseScheduler = scheduler
         self.heartbeat: LoopingCall = LoopingCall(nextcall.schedule)
 
@@ -191,6 +191,7 @@ class ExecutionEngine:
 
         Items are scraped. Requests are scheduled.
         """
+        assert self._slot is not None  # typing
         while self._start is not None:
             yield self._process_next_spider_start_yield()
             if not self._needs_backout():

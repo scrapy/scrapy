@@ -11,13 +11,18 @@ Scrapy VERSION (unreleased)
 Highlights:
 
 -   Replaced ``start_requests()`` (sync) with :meth:`~scrapy.Spider.start`
-    (async) and changed how it is iterated by default.
+    (async) and changed how it is iterated.
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--   By default, the iteration of start requests and items no longer stops once
-    there are requests in the scheduler.
+-   The iteration of start requests and items no longer stops once there are
+    requests in the scheduler, and instead runs continuously until all start
+    requests have been scheduled.
+
+    As a result, the order in which start requests are sent may change. See
+    :ref:`start-requests` for details and information on how to force start
+    request order.
 
 -   In ``scrapy.core.engine.ExecutionEngine``:
 
@@ -63,6 +68,14 @@ New features
     This makes it possible to use asynchronous code to generate those start
     requests and items, e.g. reading them from a queue service or database
     using an asynchronous client, without workarounds.
+
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
+
+-   Start requests are now :ref:`scheduled <topics-scheduler>` as soon as
+    possible.
+
+    As a result, their :attr:`~scrapy.Request.priority` is now taken into
+    account as soon as :setting:`CONCURRENT_REQUESTS` is reached.
 
     (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
 
