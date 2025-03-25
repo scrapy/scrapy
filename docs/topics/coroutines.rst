@@ -6,8 +6,8 @@ Coroutines
 
 .. versionadded:: 2.0
 
-Scrapy has :ref:`partial support <coroutine-support>` for the :ref:`coroutine
-syntax <async>` (i.e. ``async def``).
+Scrapy :ref:`supports <coroutine-support>` the :ref:`coroutine syntax <async>`
+(i.e. ``async def``).
 
 
 .. _coroutine-support:
