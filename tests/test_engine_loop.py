@@ -648,6 +648,7 @@ class RequestSendOrderTestCase(TestCase):
         """Awaiting slow operations in Spider.start() may lower the number of
         first start requests sent in order."""
         start_nums = [1, 3]
+        cb_nums = [2]
         response_seconds = self.slow_seconds
         download_slots = 1
 
@@ -661,8 +662,81 @@ class RequestSendOrderTestCase(TestCase):
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=start_nums,
-                cb_nums=[2],
+                cb_nums=cb_nums,
                 settings={"CONCURRENT_REQUESTS": 2},
+                response_seconds=response_seconds,
+                start_fn=start,
+            )
+        )
+
+    # Examples from the “Start requests” section of the documentation about
+    # spiders.
+
+    @pytest.mark.only_asyncio
+    @deferred_f_from_coro_f
+    async def test_ar_start_requests_first(self):
+        start_nums = [1, 3, 2]
+        cb_nums = [4]
+        response_seconds = self.slow_seconds
+        download_slots = 1
+
+        async def start(spider):
+            for num in start_nums:
+                request = self._request(num, response_seconds, download_slots)
+                yield request.replace(priority=1)
+
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=start_nums,
+                cb_nums=cb_nums,
+                settings={"CONCURRENT_REQUESTS": 1},
+                response_seconds=response_seconds,
+                start_fn=start,
+            )
+        )
+
+    @pytest.mark.only_not_asyncio
+    @deferred_f_from_coro_f
+    async def test_dr_start_requests_first(self):
+        start_nums = [3, 2, 1]
+        cb_nums = [4]
+        response_seconds = self.slow_seconds
+        download_slots = 1
+
+        async def start(spider):
+            for num in start_nums:
+                request = self._request(num, response_seconds, download_slots)
+                yield request.replace(priority=1)
+
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=start_nums,
+                cb_nums=cb_nums,
+                settings={"CONCURRENT_REQUESTS": 1},
+                response_seconds=response_seconds,
+                start_fn=start,
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_start_requests_first_sorted(self):
+        start_nums = [1, 2, 3]
+        cb_nums = [4]
+        response_seconds = self.slow_seconds
+        download_slots = 1
+
+        async def start(spider):
+            priority = len(start_nums)
+            for num in start_nums:
+                request = self._request(num, response_seconds, download_slots)
+                yield request.replace(priority=priority)
+                priority -= 1
+
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=start_nums,
+                cb_nums=cb_nums,
+                settings={"CONCURRENT_REQUESTS": 1},
                 response_seconds=response_seconds,
                 start_fn=start,
             )
