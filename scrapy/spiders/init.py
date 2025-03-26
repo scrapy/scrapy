@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import AsyncIterable, Iterable
+from collections.abc import AsyncIterator, Iterable
 from typing import TYPE_CHECKING, Any, cast
 
 from scrapy import Request
@@ -29,7 +29,7 @@ class InitSpider(Spider):
             stacklevel=2,
         )
 
-    async def start(self) -> AsyncIterable[Any]:
+    async def start(self) -> AsyncIterator[Any]:
         for item_or_request in self.start_requests():
             yield item_or_request
 

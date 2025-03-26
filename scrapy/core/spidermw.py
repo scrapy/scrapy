@@ -7,7 +7,7 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterable, Callable, Iterable
+from collections.abc import AsyncIterable, AsyncIterator, Callable, Iterable
 from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
@@ -388,14 +388,14 @@ class SpiderMiddlewareManager(MiddlewareManager):
         return dfd2
 
     @deferred_f_from_coro_f
-    async def process_start(self, spider: Spider) -> AsyncIterable[Any] | None:
+    async def process_start(self, spider: Spider) -> AsyncIterator[Any] | None:
         self._check_deprecated_start_requests_use(spider)
         if self._use_start_requests:
             sync_start = iter(spider.start_requests())
             sync_start = await maybe_deferred_to_future(
                 self._process_chain("process_start_requests", sync_start, spider)
             )
-            start = as_async_generator(sync_start)
+            start: AsyncIterator[Any] = as_async_generator(sync_start)
         else:
             start = spider.start()
             start = await maybe_deferred_to_future(

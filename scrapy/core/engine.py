@@ -29,7 +29,7 @@ from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Callable
+    from collections.abc import AsyncIterator, Callable
 
     from scrapy.core.downloader import Downloader
     from scrapy.core.scheduler import BaseScheduler
@@ -101,7 +101,7 @@ class ExecutionEngine:
             spider_closed_callback
         )
         self.start_time: float | None = None
-        self._start: AsyncIterable[Any] | None = None
+        self._start: AsyncIterator[Any] | None = None
         self._started_request_processing = False
         downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         try:

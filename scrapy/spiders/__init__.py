@@ -15,7 +15,7 @@ from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Iterable
+    from collections.abc import AsyncIterator, Iterable
 
     from twisted.internet.defer import Deferred
 
@@ -78,7 +78,7 @@ class Spider(object_ref):
         self.settings: BaseSettings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
 
-    async def start(self) -> AsyncIterable[Any]:
+    async def start(self) -> AsyncIterator[Any]:
         """Yield the initial :class:`~scrapy.Request` objects to send.
 
         .. versionadded:: VERSION

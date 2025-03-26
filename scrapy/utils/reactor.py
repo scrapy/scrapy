@@ -55,7 +55,7 @@ class CallLaterOnce(Generic[_T]):
         self._a: tuple[Any, ...] = a
         self._kw: dict[str, Any] = kw
         self._call: DelayedCall | None = None
-        self._deferreds = []
+        self._deferreds: list[Deferred] = []
 
     def schedule(self, delay: float = 0) -> None:
         from twisted.internet import reactor
