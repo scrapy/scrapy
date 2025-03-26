@@ -131,8 +131,10 @@ def set_asyncio_event_loop(event_loop_path: str | None) -> AbstractEventLoop:
     """Sets and returns the event loop with specified import path."""
     if event_loop_path is not None:
         event_loop_class: type[AbstractEventLoop] = load_object(event_loop_path)
-        event_loop = event_loop_class()
-        asyncio.set_event_loop(event_loop)
+        event_loop = _get_asyncio_event_loop()
+        if not isinstance(event_loop, event_loop_class):
+            event_loop = event_loop_class()
+            asyncio.set_event_loop(event_loop)
     else:
         try:
             with catch_warnings():
