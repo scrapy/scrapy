@@ -85,7 +85,7 @@ class Command(ScrapyCommand):
         crawler._apply_settings()
         # The Shell class needs a persistent engine in the crawler
         crawler.engine = crawler._create_engine()
-        crawler.engine.start()
+        crawler.engine.start(_start_request_processing=False)
 
         self._start_crawler_thread()
 

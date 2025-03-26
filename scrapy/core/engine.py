@@ -12,7 +12,7 @@ from time import time
 from traceback import format_exc
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
-from twisted.internet.defer import Deferred, inlineCallbacks, succeed
+from twisted.internet.defer import Deferred, succeed
 from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
 
@@ -20,13 +20,16 @@ from scrapy import signals
 from scrapy.core.scraper import Scraper, _HandleOutputDeferred
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.utils.defer import deferred_from_coro
+from scrapy.utils.defer import (
+    deferred_f_from_coro_f,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Callable, Generator
+    from collections.abc import AsyncIterable, Callable
 
     from scrapy.core.downloader import Downloader
     from scrapy.core.scheduler import BaseScheduler
@@ -99,6 +102,7 @@ class ExecutionEngine:
         )
         self.start_time: float | None = None
         self._start: AsyncIterable[Any] | None = None
+        self._started_request_processing = False
         downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         try:
             self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
@@ -121,22 +125,28 @@ class ExecutionEngine:
             )
         return scheduler_cls
 
-    @inlineCallbacks
-    def start(self) -> Generator[Deferred[Any], Any, None]:
+    @deferred_f_from_coro_f
+    async def start(self, _start_request_processing=True) -> None:
         if self.running:
             raise RuntimeError("Engine already running")
         self.start_time = time()
-        yield self.signals.send_catch_log_deferred(signal=signals.engine_started)
+        await maybe_deferred_to_future(
+            self.signals.send_catch_log_deferred(signal=signals.engine_started)
+        )
         self.running = True
+        if _start_request_processing:
+            self.start_request_processing()
         self._closewait: Deferred[None] = Deferred()
-        yield self._closewait
+        await maybe_deferred_to_future(self._closewait)
 
     def stop(self) -> Deferred[None]:
         """Gracefully stop the execution engine"""
 
-        @inlineCallbacks
-        def _finish_stopping_engine(_: Any) -> Generator[Deferred[Any], Any, None]:
-            yield self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
+        @deferred_f_from_coro_f
+        async def _finish_stopping_engine(_: Any) -> None:
+            await maybe_deferred_to_future(
+                self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
+            )
             self._closewait.callback(None)
 
         if not self.running:
@@ -170,10 +180,9 @@ class ExecutionEngine:
     def unpause(self) -> None:
         self.paused = False
 
-    @inlineCallbacks
-    def _process_next_spider_start_yield(self):
+    async def _process_next_spider_start_yield(self):
         try:
-            item_or_request = yield deferred_from_coro(self._start.__anext__())
+            item_or_request = await self._start.__anext__()
         except StopAsyncIteration:
             self._start = None
         except Exception as exception:
@@ -190,30 +199,37 @@ class ExecutionEngine:
                 self.scraper.start_itemproc(item_or_request, response=None)
                 self._slot.nextcall.schedule()
 
-    @inlineCallbacks
-    def _process_spider_start(self) -> Generator[Deferred[Any], Any, None]:
+    @deferred_f_from_coro_f
+    async def start_request_processing(self) -> None:
         """Process start items and requests in an asynchronous loop.
 
         Items are scraped. Requests are scheduled.
         """
+        if self._started_request_processing:
+            raise RuntimeError("Request processing already started")
+        self._started_request_processing = True
+
         assert self._slot is not None  # typing
+        self._slot.nextcall.schedule()
+        self._slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
         while self._start is not None:
-            yield self._process_next_spider_start_yield()
-            if not self._needs_backout():
+            await self._process_next_spider_start_yield()
+            if not self.needs_backout():
                 self._slot.nextcall.schedule()
+                await self._slot.nextcall.wait()
 
     def _start_next_requests(self) -> None:
         if self._slot is None or self._slot.closing is not None or self.paused:
             return
 
-        while not self._needs_backout():
+        while not self.needs_backout():
             if self._start_scheduled_request() is None:
                 break
 
         if self.spider_is_idle() and self._slot.close_if_idle:
             self._spider_idle()
 
-    def _needs_backout(self) -> bool:
+    def needs_backout(self) -> bool:
         assert self._slot is not None  # typing
         assert self.scraper.slot is not None  # typing
         return (
@@ -377,29 +393,30 @@ class ExecutionEngine:
         dwld.addBoth(_on_complete)
         return dwld
 
-    @inlineCallbacks
-    def open_spider(
+    @deferred_f_from_coro_f
+    async def open_spider(
         self,
         spider: Spider,
         close_if_idle: bool = True,
-    ) -> Generator[Deferred[Any], Any, None]:
+    ) -> None:
         if self._slot is not None:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={"spider": spider})
+        self.spider = spider
         nextcall = CallLaterOnce(self._start_next_requests)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
-        self._start = yield self.scraper.spidermw.process_start(spider)
         self._slot = _Slot(close_if_idle, nextcall, scheduler)
-        self.spider = spider
+        self._start = await maybe_deferred_to_future(
+            self.scraper.spidermw.process_start(spider)
+        )
         if hasattr(scheduler, "open") and (d := scheduler.open(spider)):
-            yield d
-        yield self.scraper.open_spider(spider)
+            await maybe_deferred_to_future(d)
+        await maybe_deferred_to_future(self.scraper.open_spider(spider))
         assert self.crawler.stats
         self.crawler.stats.open_spider(spider)
-        yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
-        self._process_spider_start()
-        self._slot.nextcall.schedule()
-        self._slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
+        await maybe_deferred_to_future(
+            self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
+        )
 
     def _spider_idle(self) -> None:
         """

@@ -373,16 +373,22 @@ Scrapy does not try to send :meth:`~scrapy.Spider.start` requests in order.
 Instead, it prioritizes reaching :setting:`CONCURRENT_REQUESTS` and
 :ref:`scheduling <topics-scheduler>` start requests.
 
-To change that, override the :meth:`~scrapy.Spider.start` method to set
-:attr:`Request.priority <scrapy.http.Request.priority>`. For example:
+Forcing a start request order
+-----------------------------
+
+To force a specific **request order**, override the
+:meth:`~scrapy.Spider.start` method to set :attr:`Request.priority
+<scrapy.http.Request.priority>`. For example:
 
 -   To send start requests before other requests:
 
     .. code-block:: python
 
             async def start(self):
-                async for request in super().start():
-                    yield request.replace(priority=1)
+                async for item_or_request in super().start():
+                    if isinstance(item_or_request, Request):
+                        item_or_request = item_or_request.replace(priority=1)
+                    yield item_or_request
 
 -   To send start requests in order:
 
@@ -390,12 +396,32 @@ To change that, override the :meth:`~scrapy.Spider.start` method to set
 
             async def start(self):
                 priority = len(self.start_urls)
-                async for request in super().start():
-                    yield request.replace(priority=priority)
+                async for item_or_request in super().start():
+                    if isinstance(item_or_request, Request):
+                        item_or_request = item_or_request.replace(priority=priority)
+                    yield item_or_request
                     priority -= 1
 
 You can also :ref:`customize the scheduler <topics-scheduler>` if you need
 more control over request prioritization.
+
+Delaying start request iteration
+--------------------------------
+
+You can override the :meth:`~scrapy.Spider.start` method as follows to pause
+its iteration whenever there are scheduled requests:
+
+.. code-block:: python
+
+    async def start(self):
+        async for item_or_request in super().start():
+            if self.crawler.engine.needs_backoff():
+                await self.crawler.signals.wait_for(signals.scheduler_empty)
+            yield item_or_request
+
+This can help minimize the number of requests in the scheduler at any given
+time, to minimize resource usage (memory or disk, depending on
+:setting:`JOBDIR`).
 
 .. _builtin-spiders:
 

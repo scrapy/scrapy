@@ -22,7 +22,8 @@ Backward-incompatible changes
 
     As a result, the order in which start requests are sent may change. See
     :ref:`start-requests` for details and information on how to force start
-    request order.
+    request order or pause start request iteration while there are scheduled
+    requests.
 
 -   In ``scrapy.core.engine.ExecutionEngine``:
 

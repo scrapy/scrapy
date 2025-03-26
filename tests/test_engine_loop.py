@@ -1,6 +1,5 @@
 from collections import deque
 
-import pytest
 from twisted.internet.defer import Deferred
 from twisted.trial.unittest import TestCase
 
@@ -13,12 +12,12 @@ from .mockserver import MockServer
 from .test_scheduler import MemoryScheduler
 
 
-def sleep(seconds: float = 0.001):
+async def sleep(seconds: float = 0.001) -> None:
     from twisted.internet import reactor
 
     deferred: Deferred[None] = Deferred()
     reactor.callLater(seconds, deferred.callback, None)
-    return maybe_deferred_to_future(deferred)
+    await maybe_deferred_to_future(deferred)
 
 
 class MainTestCase(TestCase):
@@ -87,9 +86,7 @@ class RequestSendOrderTestCase(TestCase):
     callback requests have the same priority.
 
     It is a very unintuitive behavior, documented as “undefined” so that we may
-    change it in the future without breaking the contract.
-
-    For the asyncio reactor:
+    change it in the future without breaking the contract:
 
     1.  First, the first CONCURRENT_REQUESTS start requests are sent in order.
 
@@ -105,15 +102,15 @@ class RequestSendOrderTestCase(TestCase):
         but only when there are not enough pending requests yielded from
         callbacks to reach the configured concurrency.
 
-    For the default Twisted reactor, step 1 sends the last CONCURRENT_REQUESTS
-    start requests in reverse order instead.
-
     The reverse order is because the scheduler uses a LIFO queue by default
     (SCHEDULER_MEMORY_QUEUE, SCHEDULER_DISK_QUEUE). The order of the first few
     requests is unnaffected because they are sent as soon as they are
-    scheduled, and the last start requests sent before callback requests are
-    those that can be sent before the first callback requests are scheduled.
+    scheduled. The last start requests sent before callback requests are those
+    that can be sent before the first callback requests are scheduled.
     """
+
+    # Error out if any tests relies on the heartbeat.
+    timeout = ExecutionEngine._SLOT_HEARTBEAT_INTERVAL
 
     @classmethod
     def setUpClass(cls):
@@ -177,11 +174,8 @@ class RequestSendOrderTestCase(TestCase):
         expected_nums = sorted(start_nums + cb_nums)
         assert actual_nums == expected_nums, f"{actual_nums=} != {expected_nums=}"
 
-    # Asyncio reactor behavior
-
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_ar_default(self):
+    async def test_default(self):
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=[
@@ -215,9 +209,8 @@ class RequestSendOrderTestCase(TestCase):
             )
         )
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_ar_conc1(self):
+    async def test_conc1(self):
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=[1, 4, 2],
@@ -226,9 +219,8 @@ class RequestSendOrderTestCase(TestCase):
             )
         )
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_ar_conc2(self):
+    async def test_conc2(self):
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=[1, 2, 6, 4, 3],
@@ -237,9 +229,8 @@ class RequestSendOrderTestCase(TestCase):
             )
         )
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_ar_conc8(self):
+    async def test_conc8(self):
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=[1, 2, 3, 4, 5, 6, 7, 8, 18, 16, 15, 14, 13, 12, 11, 10, 9],
@@ -248,9 +239,8 @@ class RequestSendOrderTestCase(TestCase):
             )
         )
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_ar_conc16(self):
+    async def test_conc16(self):
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=[
@@ -293,9 +283,8 @@ class RequestSendOrderTestCase(TestCase):
             )
         )
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_ar_conc3_ds2(self):
+    async def test_conc3_ds2(self):
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=[1, 2, 3, 8, 6, 5, 4],
@@ -307,9 +296,8 @@ class RequestSendOrderTestCase(TestCase):
             )
         )
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_ar_tconc3_dconc2(self):
+    async def test_tconc3_dconc2(self):
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=[1, 2, 3, 7, 5, 4],
@@ -321,9 +309,8 @@ class RequestSendOrderTestCase(TestCase):
             )
         )
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_ar_tconc5_dconc3(self):
+    async def test_tconc5_dconc3(self):
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=[1, 2, 3, 4, 5, 10, 8, 7, 6],
@@ -335,9 +322,8 @@ class RequestSendOrderTestCase(TestCase):
             )
         )
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_ar_tconc5_dconc2_ds3(self):
+    async def test_tconc5_dconc2_ds3(self):
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=[1, 2, 3, 4, 5, 12, 10, 9, 8, 7, 6],
@@ -350,9 +336,8 @@ class RequestSendOrderTestCase(TestCase):
             )
         )
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_ar_tconc5_dconc3_ds2(self):
+    async def test_tconc5_dconc3_ds2(self):
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=[1, 2, 3, 4, 5, 12, 10, 9, 8, 7, 6],
@@ -365,9 +350,8 @@ class RequestSendOrderTestCase(TestCase):
             )
         )
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_ar_tconc7_dconc2_ds3(self):
+    async def test_tconc7_dconc2_ds3(self):
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=[1, 2, 3, 4, 5, 6, 7, 15, 13, 12, 11, 10, 9, 8],
@@ -380,9 +364,8 @@ class RequestSendOrderTestCase(TestCase):
             )
         )
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_ar_tconc7_dconc3_ds2(self):
+    async def test_tconc7_dconc3_ds2(self):
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=[1, 2, 3, 4, 5, 6, 7, 15, 13, 12, 11, 10, 9, 8],
@@ -395,9 +378,8 @@ class RequestSendOrderTestCase(TestCase):
             )
         )
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_ar_fast(self):
+    async def test_fast(self):
         """Very fast responses may increase the number of start requests sent
         in reverse order before the first callback request."""
         await maybe_deferred_to_future(
@@ -408,240 +390,6 @@ class RequestSendOrderTestCase(TestCase):
                 response_seconds=self.fast_seconds,
             )
         )
-
-    # Default reactor behavior
-
-    @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
-    async def test_dr_default(self):
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=[
-                    26,
-                    24,
-                    23,
-                    22,
-                    21,
-                    20,
-                    19,
-                    18,
-                    17,
-                    16,
-                    15,
-                    14,
-                    13,
-                    12,
-                    11,
-                    10,
-                    9,
-                    8,
-                    7,
-                    6,
-                    5,
-                    4,
-                    3,
-                    2,
-                    1,
-                ],
-                cb_nums=[25],
-            )
-        )
-
-    @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
-    async def test_dr_conc1(self):
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=[4, 2, 1],
-                cb_nums=[3],
-                settings={"CONCURRENT_REQUESTS": 1},
-            )
-        )
-
-    @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
-    async def test_dr_conc2(self):
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=[6, 4, 3, 2, 1],
-                cb_nums=[5],
-                settings={"CONCURRENT_REQUESTS": 2},
-            )
-        )
-
-    @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
-    async def test_dr_conc8(self):
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=[18, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
-                cb_nums=[17],
-                settings={"CONCURRENT_REQUESTS": 8},
-            )
-        )
-
-    @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
-    async def test_dr_conc16(self):
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=[
-                    34,
-                    32,
-                    31,
-                    30,
-                    29,
-                    28,
-                    27,
-                    26,
-                    25,
-                    24,
-                    23,
-                    22,
-                    21,
-                    20,
-                    19,
-                    18,
-                    17,
-                    16,
-                    15,
-                    14,
-                    13,
-                    12,
-                    11,
-                    10,
-                    9,
-                    8,
-                    7,
-                    6,
-                    5,
-                    4,
-                    3,
-                    2,
-                    1,
-                ],
-                cb_nums=[33],
-                settings={"CONCURRENT_REQUESTS_PER_DOMAIN": 16},
-            )
-        )
-
-    @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
-    async def test_dr_conc3_ds2(self):
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=[8, 6, 5, 4, 3, 2, 1],
-                cb_nums=[7],
-                settings={
-                    "CONCURRENT_REQUESTS": 3,
-                },
-                download_slots=2,
-            )
-        )
-
-    @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
-    async def test_dr_tconc3_dconc2(self):
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=[7, 5, 4, 3, 2, 1],
-                cb_nums=[6],
-                settings={
-                    "CONCURRENT_REQUESTS": 3,
-                    "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
-                },
-            )
-        )
-
-    @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
-    async def test_dr_tconc5_dconc3(self):
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=[10, 8, 7, 6, 5, 4, 3, 2, 1],
-                cb_nums=[9],
-                settings={
-                    "CONCURRENT_REQUESTS": 5,
-                    "CONCURRENT_REQUESTS_PER_DOMAIN": 3,
-                },
-            )
-        )
-
-    @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
-    async def test_dr_tconc5_dconc2_ds3(self):
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=[12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
-                cb_nums=[11],
-                settings={
-                    "CONCURRENT_REQUESTS": 5,
-                    "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
-                },
-                download_slots=3,
-            )
-        )
-
-    @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
-    async def test_dr_tconc5_dconc3_ds2(self):
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=[12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
-                cb_nums=[11],
-                settings={
-                    "CONCURRENT_REQUESTS": 5,
-                    "CONCURRENT_REQUESTS_PER_DOMAIN": 3,
-                },
-                download_slots=2,
-            )
-        )
-
-    @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
-    async def test_dr_tconc7_dconc2_ds3(self):
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=[15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
-                cb_nums=[14],
-                settings={
-                    "CONCURRENT_REQUESTS": 7,
-                    "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
-                },
-                download_slots=3,
-            )
-        )
-
-    @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
-    async def test_dr_tconc7_dconc3_ds2(self):
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=[15, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
-                cb_nums=[14],
-                settings={
-                    "CONCURRENT_REQUESTS": 7,
-                    "CONCURRENT_REQUESTS_PER_DOMAIN": 3,
-                },
-                download_slots=2,
-            )
-        )
-
-    @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
-    async def test_dr_fast(self):
-        """Very fast responses may increase the number of start requests sent
-        in reverse order before the first callback request."""
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=[3, 2, 1],
-                cb_nums=[4],
-                settings={"CONCURRENT_REQUESTS": 1},
-                response_seconds=self.fast_seconds,
-            )
-        )
-
-    # Behavior shared by both reactors
 
     @deferred_f_from_coro_f
     async def test_await(self):
@@ -672,33 +420,9 @@ class RequestSendOrderTestCase(TestCase):
     # Examples from the “Start requests” section of the documentation about
     # spiders.
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_ar_start_requests_first(self):
+    async def test_start_requests_first(self):
         start_nums = [1, 3, 2]
-        cb_nums = [4]
-        response_seconds = self.slow_seconds
-        download_slots = 1
-
-        async def start(spider):
-            for num in start_nums:
-                request = self._request(num, response_seconds, download_slots)
-                yield request.replace(priority=1)
-
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=start_nums,
-                cb_nums=cb_nums,
-                settings={"CONCURRENT_REQUESTS": 1},
-                response_seconds=response_seconds,
-                start_fn=start,
-            )
-        )
-
-    @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
-    async def test_dr_start_requests_first(self):
-        start_nums = [3, 2, 1]
         cb_nums = [4]
         response_seconds = self.slow_seconds
         download_slots = 1
@@ -737,6 +461,36 @@ class RequestSendOrderTestCase(TestCase):
                 start_nums=start_nums,
                 cb_nums=cb_nums,
                 settings={"CONCURRENT_REQUESTS": 1},
+                response_seconds=response_seconds,
+                start_fn=start,
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_lazy(self):
+        start_nums = [1, 2, 4]
+        cb_nums = [3]
+        response_seconds = self.slow_seconds
+        download_slots = 1
+
+        async def start(spider):
+            for num in start_nums:
+                if spider.crawler.engine.needs_backout():
+                    await spider.crawler.signals.wait_for(signals.scheduler_empty)
+                request = self._request(num, response_seconds, download_slots)
+                yield request
+
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=start_nums,
+                cb_nums=cb_nums,
+                settings={
+                    "CONCURRENT_REQUESTS": 1,
+                    # Without the lazy approach, using the FIFO queue would
+                    # yield a different result, with start requests not being
+                    # sorted.
+                    "SCHEDULER_MEMORY_QUEUE": "scrapy.squeues.FifoMemoryQueue",
+                },
                 response_seconds=response_seconds,
                 start_fn=start,
             )

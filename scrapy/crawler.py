@@ -136,6 +136,9 @@ class Crawler:
             "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
         )
 
+    # Cannot use @deferred_f_from_coro_f because that relies on the reactor
+    # being installed already, which is done within _apply_settings(), inside
+    # this method.
     @inlineCallbacks
     def crawl(self, *args: Any, **kwargs: Any) -> Generator[Deferred[Any], Any, None]:
         if self.crawling:
@@ -152,7 +155,7 @@ class Crawler:
             self._update_root_log_handler()
             self.engine = self._create_engine()
             yield self.engine.open_spider(self.spider)
-            yield maybeDeferred(self.engine.start)
+            yield self.engine.start()
         except Exception:
             self.crawling = False
             if self.engine is not None:
