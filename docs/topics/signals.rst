@@ -131,6 +131,17 @@ engine_stopped
 
     This signal supports returning deferreds from its handlers.
 
+scheduler_empty
+~~~~~~~~~~~~~~~
+
+.. signal:: scheduler_empty
+.. function:: scheduler_empty()
+
+    Sent whenever the engine asks for a pending request from the
+    :ref:`scheduler <topics-scheduler>` (i.e. calls its
+    :meth:`~scrapy.core.scheduler.BaseScheduler.next_request` method) and the
+    scheduler returns none.
+
 Item signals
 ------------
 

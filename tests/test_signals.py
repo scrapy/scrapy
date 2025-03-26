@@ -1,8 +1,9 @@
 import pytest
 from twisted.internet import defer
-from twisted.trial import unittest
+from twisted.trial.unittest import TestCase
 
 from scrapy import Request, Spider, signals
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.mockserver import MockServer
 
@@ -20,7 +21,21 @@ class ItemSpider(Spider):
         return {"index": response.meta["index"]}
 
 
-class TestAsyncSignal(unittest.TestCase):
+class MainTestCase(TestCase):
+    @deferred_f_from_coro_f
+    async def test_scheduler_empty(self):
+        crawler = get_crawler()
+        calls = []
+
+        def track_call():
+            calls.append(object())
+
+        crawler.signals.connect(track_call, signals.scheduler_empty)
+        await maybe_deferred_to_future(crawler.crawl())
+        assert len(calls) >= 1
+
+
+class MockServerTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mockserver = MockServer()

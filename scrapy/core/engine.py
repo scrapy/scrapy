@@ -229,6 +229,7 @@ class ExecutionEngine:
 
         request = self._slot.scheduler.next_request()
         if request is None:
+            self.signals.send_catch_log(signals.scheduler_empty)
             return None
 
         d: Deferred[Response | Request] = self._download(request)
