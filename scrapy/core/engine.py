@@ -180,7 +180,12 @@ class ExecutionEngine:
     def unpause(self) -> None:
         self.paused = False
 
-    async def _process_next_spider_start_yield(self):
+    async def _process_start_next(self):
+        """Processes the next item or request from Spider.start().
+
+        If a request, it is scheduled. If an item, it is sent to item
+        pipelines.
+        """
         try:
             item_or_request = await self._start.__anext__()
         except StopAsyncIteration:
@@ -201,24 +206,28 @@ class ExecutionEngine:
 
     @deferred_f_from_coro_f
     async def start_request_processing(self) -> None:
-        """Process start items and requests in an asynchronous loop.
-
-        Items are scraped. Requests are scheduled.
-        """
+        """Starts consuming Spider.start() output and sending scheduled
+        requests."""
         if self._started_request_processing:
             raise RuntimeError("Request processing already started")
         self._started_request_processing = True
 
+        # Starts the processing of scheduled requests, as well as a periodic
+        # call to that processing method for scenarios where the scheduler
+        # reports having pending requests but returns none.
         assert self._slot is not None  # typing
         self._slot.nextcall.schedule()
         self._slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
+
         while self._start is not None:
-            await self._process_next_spider_start_yield()
+            await self._process_start_next()
             if not self.needs_backout():
+                # Give room for the outcome of self._process_start_next() to be
+                # processed before continuing with the next iteration.
                 self._slot.nextcall.schedule()
                 await self._slot.nextcall.wait()
 
-    def _start_next_requests(self) -> None:
+    def _start_scheduled_requests(self) -> None:
         if self._slot is None or self._slot.closing is not None or self.paused:
             return
 
@@ -403,7 +412,7 @@ class ExecutionEngine:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={"spider": spider})
         self.spider = spider
-        nextcall = CallLaterOnce(self._start_next_requests)
+        nextcall = CallLaterOnce(self._start_scheduled_requests)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
         self._slot = _Slot(close_if_idle, nextcall, scheduler)
         self._start = await maybe_deferred_to_future(

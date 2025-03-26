@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import AsyncIterable, Callable, Iterable
-from inspect import isasyncgenfunction, iscoroutine, iscoroutinefunction
+from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 from warnings import warn
@@ -387,20 +387,20 @@ class SpiderMiddlewareManager(MiddlewareManager):
         dfd2.addErrback(process_spider_exception)
         return dfd2
 
-    @inlineCallbacks
-    def process_start(
-        self, spider: Spider
-    ) -> Generator[Deferred[Any], Any, AsyncIterable[Any] | None]:
+    @deferred_f_from_coro_f
+    async def process_start(self, spider: Spider) -> AsyncIterable[Any] | None:
         self._check_deprecated_start_requests_use(spider)
         if self._use_start_requests:
             sync_start = iter(spider.start_requests())
-            sync_start = yield self._process_chain(
-                "process_start_requests", sync_start, spider
+            sync_start = await maybe_deferred_to_future(
+                self._process_chain("process_start_requests", sync_start, spider)
             )
             start = as_async_generator(sync_start)
         else:
-            start = yield self._iter_seeds(spider)
-            start = yield self._process_chain("process_start", start)
+            start = spider.start()
+            start = await maybe_deferred_to_future(
+                self._process_chain("process_start", start)
+            )
         return start
 
     def _check_deprecated_start_requests_use(self, spider: Spider):
@@ -472,14 +472,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 f"release notes of Scrapy VERSION for details: "
                 f"https://docs.scrapy.org/en/VERSION/news.html"
             )
-
-    @staticmethod
-    def _iter_seeds(spider: Spider):
-        fn = spider.start
-        if isasyncgenfunction(fn):
-            return fn().__aiter__()
-        assert iscoroutinefunction(fn)
-        return deferred_from_coro(fn())
 
     # This method is only needed until _async compatibility methods are removed.
     @staticmethod

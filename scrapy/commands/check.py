@@ -81,14 +81,12 @@ class Command(ScrapyCommand):
         spider_loader = self.crawler_process.spider_loader
 
         async def start(self):
-            for request in conman.from_spider(self, self._result):
+            for request in conman.from_spider(self, result):
                 yield request
 
         with set_environ(SCRAPY_CHECK="true"):
             for spidername in args or spider_loader.list():
                 spidercls = spider_loader.load(spidername)
-
-                spidercls._result = result  # type: ignore[assignment,attr-defined,method-assign,return-value]
                 spidercls.start = start  # type: ignore[assignment,method-assign,return-value]
 
                 tested_methods = conman.tested_methods_from_spidercls(spidercls)
