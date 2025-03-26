@@ -351,3 +351,5 @@ SPIDER_CONTRACTS_BASE = {
     "scrapy.contracts.default.ReturnsContract": 2,
     "scrapy.contracts.default.ScrapesContract": 3,
 }
+
+WARN_ON_GENERATOR_RETURN_VALUE = True
