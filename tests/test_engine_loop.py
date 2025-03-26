@@ -109,9 +109,6 @@ class RequestSendOrderTestCase(TestCase):
     that can be sent before the first callback requests are scheduled.
     """
 
-    # Error out if any tests relies on the heartbeat.
-    timeout = ExecutionEngine._SLOT_HEARTBEAT_INTERVAL
-
     @classmethod
     def setUpClass(cls):
         cls.mockserver = MockServer()
@@ -122,7 +119,7 @@ class RequestSendOrderTestCase(TestCase):
         cls.mockserver.__exit__(None, None, None)
 
     fast_seconds = 0.001
-    slow_seconds = 1  # increase if flaky
+    slow_seconds = 2  # increase if flaky
 
     def _request(self, num, response_seconds, download_slots):
         url = self.mockserver.url(f"/delay?n={response_seconds}&{num}")

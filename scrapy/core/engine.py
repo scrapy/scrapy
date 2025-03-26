@@ -198,6 +198,8 @@ class ExecutionEngine:
                 exc_info=True,
             )
         else:
+            if not self.spider:
+                return  # spider already closed
             if isinstance(item_or_request, Request):
                 self.crawl(item_or_request)
             else:
@@ -219,7 +221,7 @@ class ExecutionEngine:
         self._slot.nextcall.schedule()
         self._slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
 
-        while self._start is not None:
+        while self._start and self.spider:
             await self._process_start_next()
             if not self.needs_backout():
                 # Give room for the outcome of self._process_start_next() to be
