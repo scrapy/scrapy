@@ -456,13 +456,8 @@ class TestCrawlSpider(TestSpider):
         crawler = get_crawler(TestSpider)
         with LogCapture("scrapy.core.engine", propagate=False, level=ERROR) as log:
             yield crawler.crawl()
-        log.check(
-            (
-                "scrapy.core.engine",
-                "ERROR",
-                "Error while reading start items and requests",
-            ),
-        )
+        assert "Error while reading start items and requests" in str(log)
+        assert "did you miss an 's'?" in str(log)
 
 
 class TestSitemapSpider(TestSpider):

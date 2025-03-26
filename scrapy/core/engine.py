@@ -180,7 +180,8 @@ class ExecutionEngine:
             self._start = None
             exception_traceback = format_exc()
             logger.error(
-                f"Error while reading start items and requests: {exception}.\n{exception_traceback}"
+                f"Error while reading start items and requests: {exception}.\n{exception_traceback}",
+                exc_info=True,
             )
         else:
             if isinstance(item_or_request, Request):
