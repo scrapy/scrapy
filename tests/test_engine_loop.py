@@ -1,5 +1,7 @@
 from collections import deque
+from logging import ERROR
 
+from testfixtures import LogCapture
 from twisted.internet.defer import Deferred
 from twisted.trial.unittest import TestCase
 
@@ -77,6 +79,37 @@ class MainTestCase(TestCase):
         await maybe_deferred_to_future(crawler.crawl())
         assert crawler.stats.get_value("finish_reason") == "finished"
         expected_urls = ["data:,a", "data:,b", "data:,c", "data:,d"]
+        assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
+
+    @deferred_f_from_coro_f
+    async def test_close_during_start_iteration(self):
+        class TestSpider(Spider):
+            name = "test"
+
+            async def start(self):
+                assert self.crawler.engine is not None
+                await maybe_deferred_to_future(self.crawler.engine.close())
+                yield Request("data:,a")
+
+            def parse(self, response):
+                pass
+
+        actual_urls = []
+
+        def track_url(request, spider):
+            actual_urls.append(request.url)
+
+        settings = {"SCHEDULER": MemoryScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+        crawler.signals.connect(track_url, signals.request_reached_downloader)
+
+        with LogCapture(level=ERROR) as log:
+            await maybe_deferred_to_future(crawler.crawl())
+
+        assert not log.records, f"{log.records=}"
+        finish_reason = crawler.stats.get_value("finish_reason")
+        assert finish_reason == "shutdown", f"{finish_reason=}"
+        expected_urls = []
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
 
