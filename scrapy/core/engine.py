@@ -133,9 +133,9 @@ class ExecutionEngine:
             self.signals.send_catch_log_deferred(signal=signals.engine_started)
         )
         self.running = True
+        self._closewait: Deferred[None] = Deferred()
         if _start_request_processing:
             self._start_request_processing()
-        self._closewait: Deferred[None] = Deferred()
         await maybe_deferred_to_future(self._closewait)
 
     def stop(self) -> Deferred[None]:
