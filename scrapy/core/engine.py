@@ -102,7 +102,6 @@ class ExecutionEngine:
         )
         self.start_time: float | None = None
         self._start: AsyncIterator[Any] | None = None
-        self._started_request_processing = False
         downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         try:
             self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
@@ -135,7 +134,7 @@ class ExecutionEngine:
         )
         self.running = True
         if _start_request_processing:
-            self.start_request_processing()
+            self._start_request_processing()
         self._closewait: Deferred[None] = Deferred()
         await maybe_deferred_to_future(self._closewait)
 
@@ -207,13 +206,9 @@ class ExecutionEngine:
                 self._slot.nextcall.schedule()
 
     @deferred_f_from_coro_f
-    async def start_request_processing(self) -> None:
+    async def _start_request_processing(self) -> None:
         """Starts consuming Spider.start() output and sending scheduled
         requests."""
-        if self._started_request_processing:
-            raise RuntimeError("Request processing already started")
-        self._started_request_processing = True
-
         # Starts the processing of scheduled requests, as well as a periodic
         # call to that processing method for scenarios where the scheduler
         # reports having pending requests but returns none.

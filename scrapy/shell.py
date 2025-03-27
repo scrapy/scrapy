@@ -128,7 +128,7 @@ class Shell:
         await maybe_deferred_to_future(
             self.crawler.engine.open_spider(spider, close_if_idle=False)
         )
-        self.crawler.engine.start_request_processing()
+        self.crawler.engine._start_request_processing()
         self.spider = spider
 
     def fetch(
