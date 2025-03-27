@@ -56,6 +56,10 @@ class ModernWrapSpider(Spider):
         yield ITEM_B
 
 
+class ModernWrapSpiderSubclass(ModernWrapSpider):
+    name = "test"
+
+
 class UniversalWrapSpider(Spider):
     name = "test"
 
@@ -174,6 +178,21 @@ class MainTestCase(TestCase):
             ),
         ):
             await self._test_wrap(DeprecatedWrapSpiderMiddleware, ModernWrapSpider)
+
+    @deferred_f_from_coro_f
+    async def test_deprecated_mw_modern_spider_subclass(self):
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
+            ),
+            pytest.raises(
+                ValueError,
+                match=r"^\S+?\.ModernWrapSpider \(inherited by \S+?.ModernWrapSpiderSubclass\) .*? only compatible with \(deprecated\) spiders",
+            ),
+        ):
+            await self._test_wrap(
+                DeprecatedWrapSpiderMiddleware, ModernWrapSpiderSubclass
+            )
 
     @deferred_f_from_coro_f
     async def test_deprecated_mw_universal_spider(self):
