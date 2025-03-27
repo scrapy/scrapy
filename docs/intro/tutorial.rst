@@ -172,7 +172,7 @@ request (in this case, the ``parse`` method) with a
 
 
 A shortcut to the ``start`` method
-----------------------------------------
+----------------------------------
 
 Instead of implementing a :meth:`~scrapy.Spider.start` method that yields
 :class:`~scrapy.Request` objects from URLs, you can define a

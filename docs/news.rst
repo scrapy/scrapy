@@ -22,14 +22,19 @@ Backward-incompatible changes
 
     As a result, the order in which start requests are sent may change. See
     :ref:`start-requests` for details and information on how to force start
-    request order or pause start request iteration while there are scheduled
-    requests.
+    request order or :ref:`pause start request iteration while there are
+    scheduled requests <start-requests-lazy>`.
+
+-   An unhandled exception from the
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.open_spider` method of a
+    :ref:`spider middleware <topics-spider-middleware>` no longer stops the
+    crawl.
 
 -   In ``scrapy.core.engine.ExecutionEngine``:
 
-    -   The second parameter of ``open_spider()``, ``start_requests()``, has
-        been removed. The starting requests are determined by the ``spider``
-        parameter instead (see :meth:`~scrapy.Spider.start`).
+    -   The second parameter of ``open_spider()``, ``start_requests``, has been
+        removed. The start requests are determined by the ``spider`` parameter
+        instead (see :meth:`~scrapy.Spider.start`).
 
     -   The ``slot`` attribute has been renamed to ``_slot`` and should not be
         used.
@@ -68,7 +73,8 @@ New features
 -   You can now yield the start requests and items of a spider from the
     :meth:`~scrapy.Spider.start` spider method and from the
     :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` spider
-    middleware method, both asynchronous generators.
+    middleware method, both :term:`asynchronous generators <python:asynchronous
+    generator>`.
 
     This makes it possible to use asynchronous code to generate those start
     requests and items, e.g. reading them from a queue service or database
@@ -83,6 +89,15 @@ New features
     account as soon as :setting:`CONCURRENT_REQUESTS` is reached.
 
     (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
+
+-   :class:`Crawler.signals <scrapy.signalmanager.SignalManager>` has a new
+    :meth:`~scrapy.signalmanager.SignalManager.wait_for` method.
+
+-   Added a new :signal:`scheduler_empty` signal.
+
+-   Exposed a new method of :class:`Crawler.engine
+    <scrapy.core.engine.ExecutionEngine>`:
+    :meth:`~scrapy.core.engine.ExecutionEngine.needs_backout`.
 
 Bug fixes
 ~~~~~~~~~
@@ -398,9 +413,9 @@ New features
 -   ``scrapy.Spider.start_requests()`` can now yield items.
     (:issue:`5289`, :issue:`6417`)
 
-    .. note:: Some third-party spider middlewares may need to be updated for
-        Scrapy 2.12 support before you can use them in combination with the
-        ability to yield items from ``start_requests()``.
+    .. note:: Some spider middlewares may need to be updated for Scrapy 2.12
+        support before you can use them in combination with the ability to
+        yield items from ``start_requests()``.
 
 -   Added a new :class:`~scrapy.http.Response` subclass,
     :class:`~scrapy.http.JsonResponse`, for responses with a `JSON MIME type

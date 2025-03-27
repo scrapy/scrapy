@@ -142,6 +142,8 @@ scheduler_empty
     :meth:`~scrapy.core.scheduler.BaseScheduler.next_request` method) and the
     scheduler returns none.
 
+    See :ref:`start-requests-lazy` for an example.
+
 Item signals
 ------------
 

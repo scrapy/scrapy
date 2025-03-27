@@ -6,17 +6,11 @@ from twisted.internet.defer import Deferred
 from twisted.trial.unittest import TestCase
 
 from scrapy import Spider, signals
-from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
-# These are the minimum seconds necessary to wait to reproduce the issue that
-# has been solved by catching the RuntimeError exception in the
-# ExecutionEngine._next_request() method. A lower value makes these tests pass
-# even if we remove that exception handling, but they start failing with this
-# much delay.
-ASYNC_GEN_ERROR_MINIMUM_SECONDS = ExecutionEngine._SLOT_HEARTBEAT_INTERVAL + 0.01
+SLEEP_SECONDS = 0.1
 
 ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
@@ -138,7 +132,7 @@ class MainTestCase(TestCase):
     @deferred_f_from_coro_f
     async def test_asyncio_delayed(self):
         async def start(spider):
-            await sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS)
+            await sleep(SLEEP_SECONDS)
             yield ITEM_A
 
         await self._test_start(start, [ITEM_A])
@@ -146,9 +140,7 @@ class MainTestCase(TestCase):
     @deferred_f_from_coro_f
     async def test_twisted_delayed(self):
         async def start(spider):
-            await maybe_deferred_to_future(
-                twisted_sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS)
-            )
+            await maybe_deferred_to_future(twisted_sleep(SLEEP_SECONDS))
             yield ITEM_A
 
         await self._test_start(start, [ITEM_A])

@@ -23,7 +23,7 @@ warnings.warn(
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Iterable
+    from collections.abc import AsyncIterator, Iterable
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -52,8 +52,8 @@ class OffsiteMiddleware:
         return (r for r in result if self._filter(r, spider))
 
     async def process_spider_output_async(
-        self, response: Response, result: AsyncIterable[Any], spider: Spider
-    ) -> AsyncIterable[Any]:
+        self, response: Response, result: AsyncIterator[Any], spider: Spider
+    ) -> AsyncIterator[Any]:
         async for r in result:
             if self._filter(r, spider):
                 yield r

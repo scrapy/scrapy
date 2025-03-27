@@ -70,7 +70,7 @@ one or more of these methods:
 
 .. class:: SpiderMiddleware
 
-    .. method:: process_start(start: AsyncIterable[Any], /) -> AsyncIterable[Any]
+    .. method:: process_start(start: AsyncIterator[Any], /) -> AsyncIterator[Any]
         :async:
 
         Iterate over the output of :meth:`~scrapy.Spider.start` or that

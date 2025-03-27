@@ -9,7 +9,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
-from .test_spider_start import ASYNC_GEN_ERROR_MINIMUM_SECONDS, twisted_sleep
+from .test_spider_start import SLEEP_SECONDS, twisted_sleep
 
 ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
@@ -19,7 +19,7 @@ ITEM_D = {"id": "d"}
 
 class AsyncioSleepSpiderMiddleware:
     async def process_start(self, start):
-        await sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS)
+        await sleep(SLEEP_SECONDS)
         async for item_or_request in start:
             yield item_or_request
 
@@ -32,7 +32,7 @@ class NoOpSpiderMiddleware:
 
 class TwistedSleepSpiderMiddleware:
     async def process_start(self, start):
-        await maybe_deferred_to_future(twisted_sleep(ASYNC_GEN_ERROR_MINIMUM_SECONDS))
+        await maybe_deferred_to_future(twisted_sleep(SLEEP_SECONDS))
         async for item_or_request in start:
             yield item_or_request
 

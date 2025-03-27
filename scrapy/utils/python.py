@@ -10,7 +10,7 @@ import re
 import sys
 import warnings
 import weakref
-from collections.abc import AsyncIterable, Iterable, Mapping
+from collections.abc import AsyncIterator, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
 from typing import TYPE_CHECKING, Any, TypeVar, overload
@@ -19,8 +19,9 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Iterator
+    from collections.abc import Callable, Iterator
     from re import Pattern
+    from typing import Self
 
     # typing.Concatenate and typing.ParamSpec require Python 3.10
     from typing_extensions import Concatenate, ParamSpec
@@ -369,25 +370,25 @@ class MutableChain(Iterable[_T]):
 
 
 async def _async_chain(
-    *iterables: Iterable[_T] | AsyncIterable[_T],
+    *iterables: Iterable[_T] | AsyncIterator[_T],
 ) -> AsyncIterator[_T]:
     for it in iterables:
         async for o in as_async_generator(it):
             yield o
 
 
-class MutableAsyncChain(AsyncIterable[_T]):
+class MutableAsyncChain(AsyncIterator[_T]):
     """
     Similar to MutableChain but for async iterables
     """
 
-    def __init__(self, *args: Iterable[_T] | AsyncIterable[_T]):
+    def __init__(self, *args: Iterable[_T] | AsyncIterator[_T]):
         self.data: AsyncIterator[_T] = _async_chain(*args)
 
-    def extend(self, *iterables: Iterable[_T] | AsyncIterable[_T]) -> None:
+    def extend(self, *iterables: Iterable[_T] | AsyncIterator[_T]) -> None:
         self.data = _async_chain(self.data, _async_chain(*iterables))
 
-    def __aiter__(self) -> AsyncIterator[_T]:
+    def __aiter__(self) -> Self:
         return self
 
     async def __anext__(self) -> _T:

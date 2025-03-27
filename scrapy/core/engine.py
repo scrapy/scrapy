@@ -241,6 +241,11 @@ class ExecutionEngine:
             self._spider_idle()
 
     def needs_backout(self) -> bool:
+        """Returns ``True`` if no more requests can be sent at the moment, or
+        ``False`` otherwise.
+
+        See :ref:`start-requests-lazy` for an example.
+        """
         assert self._slot is not None  # typing
         assert self.scraper.slot is not None  # typing
         return (

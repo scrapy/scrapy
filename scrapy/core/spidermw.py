@@ -7,7 +7,7 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterable, AsyncIterator, Callable, Iterable
+from collections.abc import AsyncIterator, Callable, Iterable
 from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
@@ -41,12 +41,12 @@ logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 ScrapeFunc = Callable[
-    [Union[Response, Failure], Request, Spider], Union[Iterable[_T], AsyncIterable[_T]]
+    [Union[Response, Failure], Request, Spider], Union[Iterable[_T], AsyncIterator[_T]]
 ]
 
 
 def _isiterable(o: Any) -> bool:
-    return isinstance(o, (Iterable, AsyncIterable))
+    return isinstance(o, (Iterable, AsyncIterator))
 
 
 class SpiderMiddlewareManager(MiddlewareManager):
@@ -136,7 +136,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         response: Response,
         request: Request,
         spider: Spider,
-    ) -> Iterable[_T] | AsyncIterable[_T]:
+    ) -> Iterable[_T] | AsyncIterator[_T]:
         for method in self.methods["process_spider_input"]:
             method = cast(Callable, method)
             try:
@@ -157,10 +157,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self,
         response: Response,
         spider: Spider,
-        iterable: Iterable[_T] | AsyncIterable[_T],
+        iterable: Iterable[_T] | AsyncIterator[_T],
         exception_processor_index: int,
         recover_to: MutableChain[_T] | MutableAsyncChain[_T],
-    ) -> Iterable[_T] | AsyncIterable[_T]:
+    ) -> Iterable[_T] | AsyncIterator[_T]:
         def process_sync(iterable: Iterable[_T]) -> Iterable[_T]:
             try:
                 yield from iterable
@@ -176,7 +176,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 assert isinstance(recover_to, MutableChain)
                 recover_to.extend(exception_result)
 
-        async def process_async(iterable: AsyncIterable[_T]) -> AsyncIterable[_T]:
+        async def process_async(iterable: AsyncIterator[_T]) -> AsyncIterator[_T]:
             try:
                 async for r in iterable:
                     yield r
@@ -192,7 +192,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 assert isinstance(recover_to, MutableAsyncChain)
                 recover_to.extend(exception_result)
 
-        if isinstance(iterable, AsyncIterable):
+        if isinstance(iterable, AsyncIterator):
             return process_async(iterable)
         return process_sync(iterable)
 
@@ -251,13 +251,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self,
         response: Response,
         spider: Spider,
-        result: Iterable[_T] | AsyncIterable[_T],
+        result: Iterable[_T] | AsyncIterator[_T],
         start_index: int = 0,
     ) -> Generator[Deferred[Any], Any, MutableChain[_T] | MutableAsyncChain[_T]]:
         # items in this iterable do not need to go through the process_spider_output
         # chain, they went through it already from the process_spider_exception method
         recovered: MutableChain[_T] | MutableAsyncChain[_T]
-        last_result_is_async = isinstance(result, AsyncIterable)
+        last_result_is_async = isinstance(result, AsyncIterator)
         recovered = MutableAsyncChain() if last_result_is_async else MutableChain()
 
         # There are three cases for the middleware: def foo, async def foo, def foo + async def foo_async.
@@ -284,7 +284,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     need_downgrade = True
             try:
                 if need_upgrade:
-                    # Iterable -> AsyncIterable
+                    # Iterable -> AsyncIterator
                     result = as_async_generator(result)
                 elif need_downgrade:
                     logger.warning(
@@ -294,10 +294,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
                         f" https://docs.scrapy.org/en/latest/topics/coroutines.html#for-middleware-users"
                         f" for more information."
                     )
-                    assert isinstance(result, AsyncIterable)
-                    # AsyncIterable -> Iterable
+                    assert isinstance(result, AsyncIterator)
+                    # AsyncIterator -> Iterable
                     result = yield deferred_from_coro(collect_asyncgen(result))
-                    if isinstance(recovered, AsyncIterable):
+                    if isinstance(recovered, AsyncIterator):
                         recovered_collected = yield deferred_from_coro(
                             collect_asyncgen(recovered)
                         )
@@ -330,7 +330,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                         f"{type(result)}"
                     )
                 raise _InvalidOutput(msg)
-            last_result_is_async = isinstance(result, AsyncIterable)
+            last_result_is_async = isinstance(result, AsyncIterator)
 
         if last_result_is_async:
             return MutableAsyncChain(result, recovered)
@@ -340,23 +340,23 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self,
         response: Response,
         spider: Spider,
-        result: Iterable[_T] | AsyncIterable[_T],
+        result: Iterable[_T] | AsyncIterator[_T],
     ) -> MutableChain[_T] | MutableAsyncChain[_T]:
         recovered: MutableChain[_T] | MutableAsyncChain[_T]
-        if isinstance(result, AsyncIterable):
+        if isinstance(result, AsyncIterator):
             recovered = MutableAsyncChain()
         else:
             recovered = MutableChain()
         result = self._evaluate_iterable(response, spider, result, 0, recovered)
         result = await maybe_deferred_to_future(
             cast(
-                "Deferred[Iterable[_T] | AsyncIterable[_T]]",
+                "Deferred[Iterable[_T] | AsyncIterator[_T]]",
                 self._process_spider_output(response, spider, result),
             )
         )
-        if isinstance(result, AsyncIterable):
+        if isinstance(result, AsyncIterator):
             return MutableAsyncChain(result, recovered)
-        if isinstance(recovered, AsyncIterable):
+        if isinstance(recovered, AsyncIterator):
             recovered_collected = await collect_asyncgen(recovered)
             recovered = MutableChain(recovered_collected)
         return MutableChain(result, recovered)
@@ -369,7 +369,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         spider: Spider,
     ) -> Deferred[MutableChain[_T] | MutableAsyncChain[_T]]:
         async def process_callback_output(
-            result: Iterable[_T] | AsyncIterable[_T],
+            result: Iterable[_T] | AsyncIterator[_T],
         ) -> MutableChain[_T] | MutableAsyncChain[_T]:
             return await self._process_callback_output(response, spider, result)
 
@@ -378,7 +378,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         ) -> Failure | MutableChain[_T] | MutableAsyncChain[_T]:
             return self._process_spider_exception(response, spider, _failure)
 
-        dfd: Deferred[Iterable[_T] | AsyncIterable[_T]] = mustbe_deferred(
+        dfd: Deferred[Iterable[_T] | AsyncIterator[_T]] = mustbe_deferred(
             self._process_spider_input, scrape_func, response, request, spider
         )
         dfd2: Deferred[MutableChain[_T] | MutableAsyncChain[_T]] = dfd.addCallback(

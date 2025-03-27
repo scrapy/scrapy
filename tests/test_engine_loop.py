@@ -41,7 +41,7 @@ class MainTestCase(TestCase):
                 self.crawler.engine._slot.scheduler.pause()
                 self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
 
-                # During this time, the reactor reports having requests but
+                # During this time, the scheduler reports having requests but
                 # returns None.
                 await sleep(seconds)
 
@@ -81,33 +81,6 @@ class MainTestCase(TestCase):
 
 
 class RequestSendOrderTestCase(TestCase):
-    """Test the intrincacies of request send order when all start requests and
-    callback requests have the same priority.
-
-    It is a very unintuitive behavior, documented as “undefined” so that we may
-    change it in the future without breaking the contract:
-
-    1.  First, the first CONCURRENT_REQUESTS start requests are sent in order.
-
-        Awaiting slow operations in Spider.start() can lower that.
-
-    2.  Then, assuming an even domain distribution in start requests (i.e.
-        ABCABC, not AABBCC), the last N start requests are sent in reverse
-        order, where N is:
-
-            min(CONCURRENT_REQUESTS, CONCURRENT_REQUESTS_PER_DOMAIN * domain_count)
-
-    3.  Finally, the remaining start requests are also sent in reverse order,
-        but only when there are not enough pending requests yielded from
-        callbacks to reach the configured concurrency.
-
-    The reverse order is because the scheduler uses a LIFO queue by default
-    (SCHEDULER_MEMORY_QUEUE, SCHEDULER_DISK_QUEUE). The order of the first few
-    requests is unnaffected because they are sent as soon as they are
-    scheduled. The last start requests sent before callback requests are those
-    that can be sent before the first callback requests are scheduled.
-    """
-
     seconds = 0.1  # increase if flaky
 
     @classmethod
@@ -238,9 +211,8 @@ class RequestSendOrderTestCase(TestCase):
                 cb_nums=cb_nums,
                 settings={
                     "CONCURRENT_REQUESTS": 1,
-                    # Without the lazy approach, using the FIFO queue would
-                    # yield a different result, with start requests not being
-                    # sorted.
+                    # Without the lazy approach, a FIFO queue would yield the
+                    # start requests in a different order.
                     "SCHEDULER_MEMORY_QUEUE": "scrapy.squeues.FifoMemoryQueue",
                 },
                 response_seconds=response_seconds,

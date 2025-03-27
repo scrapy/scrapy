@@ -22,7 +22,7 @@ from scrapy.utils.spider import spidercls_for_request
 
 if TYPE_CHECKING:
     import argparse
-    from collections.abc import AsyncGenerator, AsyncIterable, Coroutine, Iterable
+    from collections.abc import AsyncGenerator, AsyncIterator, Coroutine, Iterable
 
     from twisted.python.failure import Failure
 
@@ -258,7 +258,7 @@ class Command(BaseRunSpiderCommand):
             if not self.spidercls:
                 logger.error("Unable to find spider for: %(url)s", {"url": url})
 
-        async def start(spider: Spider) -> AsyncIterable[Any]:
+        async def start(spider: Spider) -> AsyncIterator[Any]:
             yield self.prepare_request(spider, Request(url), opts)
 
         if self.spidercls:

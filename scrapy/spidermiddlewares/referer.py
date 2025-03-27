@@ -19,7 +19,7 @@ from scrapy.utils.python import to_unicode
 from scrapy.utils.url import strip_url
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Iterable
+    from collections.abc import AsyncIterator, Iterable
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -376,8 +376,8 @@ class RefererMiddleware:
         return (self._set_referer(r, response) for r in result)
 
     async def process_spider_output_async(
-        self, response: Response, result: AsyncIterable[Any], spider: Spider
-    ) -> AsyncIterable[Any]:
+        self, response: Response, result: AsyncIterator[Any], spider: Spider
+    ) -> AsyncIterator[Any]:
         async for r in result:
             yield self._set_referer(r, response)
 
