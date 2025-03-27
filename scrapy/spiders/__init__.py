@@ -7,9 +7,11 @@ See documentation in docs/topics/spiders.rst
 from __future__ import annotations
 
 import logging
+import warnings
 from typing import TYPE_CHECKING, Any, cast
 
 from scrapy import signals
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
@@ -124,10 +126,24 @@ class Spider(object_ref):
 
         .. seealso:: :ref:`start-requests`
         """
-        for item_or_request in self.start_requests():
-            yield item_or_request
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", category=ScrapyDeprecationWarning, module=r"^scrapy\.spiders$"
+            )
+            for item_or_request in self.start_requests():
+                yield item_or_request
 
     def start_requests(self) -> Iterable[Any]:
+        warnings.warn(
+            (
+                "The Spider.start_requests() method is deprecated, use "
+                "Spider.start() instead. If you are calling "
+                "super().start_requests() from a Spider.start() override, "
+                "iterate super().start() instead."
+            ),
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         if not self.start_urls and hasattr(self, "start_url"):
             raise AttributeError(
                 "Crawling could not start: 'start_urls' not found "

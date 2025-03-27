@@ -1,3 +1,4 @@
+import warnings
 from asyncio import sleep
 
 import pytest
@@ -47,7 +48,9 @@ class MainTestCase(TestCase):
             async def parse(self, response):
                 yield ITEM_A
 
-        await self._test_spider(TestSpider, [ITEM_A])
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            await self._test_spider(TestSpider, [ITEM_A])
 
     @deferred_f_from_coro_f
     async def test_start(self):
@@ -57,7 +60,9 @@ class MainTestCase(TestCase):
             async def start(self):
                 yield ITEM_A
 
-        await self._test_spider(TestSpider, [ITEM_A])
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            await self._test_spider(TestSpider, [ITEM_A])
 
     @deferred_f_from_coro_f
     async def test_start_subclass(self):
@@ -68,7 +73,9 @@ class MainTestCase(TestCase):
         class TestSpider(BaseSpider):
             name = "test"
 
-        await self._test_spider(TestSpider, [ITEM_A])
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            await self._test_spider(TestSpider, [ITEM_A])
 
     @deferred_f_from_coro_f
     async def test_deprecated(self):
@@ -105,7 +112,9 @@ class MainTestCase(TestCase):
             def start_requests(self):
                 yield ITEM_B
 
-        await self._test_spider(TestSpider, [ITEM_A])
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            await self._test_spider(TestSpider, [ITEM_A])
 
     @deferred_f_from_coro_f
     async def test_universal_subclass(self):
@@ -119,7 +128,24 @@ class MainTestCase(TestCase):
         class TestSpider(BaseSpider):
             name = "test"
 
-        await self._test_spider(TestSpider, [ITEM_A])
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            await self._test_spider(TestSpider, [ITEM_A])
+
+    @deferred_f_from_coro_f
+    async def test_start_deprecated_super(self):
+        class TestSpider(Spider):
+            name = "test"
+
+            async def start(self):
+                for item_or_request in super().start_requests():
+                    yield item_or_request
+
+        with pytest.warns(
+            ScrapyDeprecationWarning, match=r"use Spider\.start\(\) instead"
+        ) as messages:
+            await self._test_spider(TestSpider, [])
+        assert messages[0].filename.endswith("test_spider_start.py")
 
     async def _test_start(self, start_, expected_items=None):
         class TestSpider(Spider):

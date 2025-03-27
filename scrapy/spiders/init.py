@@ -30,8 +30,12 @@ class InitSpider(Spider):
         )
 
     async def start(self) -> AsyncIterator[Any]:
-        for item_or_request in self.start_requests():
-            yield item_or_request
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", category=ScrapyDeprecationWarning, module=r"^scrapy\.spiders$"
+            )
+            for item_or_request in self.start_requests():
+                yield item_or_request
 
     def start_requests(self) -> Iterable[Request]:
         self._postinit_reqs: Iterable[Request] = super().start_requests()

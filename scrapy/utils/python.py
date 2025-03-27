@@ -21,10 +21,9 @@ from scrapy.utils.asyncgen import as_async_generator
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from re import Pattern
-    from typing import Self
 
-    # typing.Concatenate and typing.ParamSpec require Python 3.10
-    from typing_extensions import Concatenate, ParamSpec
+    # typing.Concatenate, typing.ParamSpec and typing.Self require Python 3.10
+    from typing_extensions import Concatenate, ParamSpec, Self
 
     _P = ParamSpec("_P")
 
