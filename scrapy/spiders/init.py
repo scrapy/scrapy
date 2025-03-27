@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Iterable
+from collections.abc import AsyncIterator, Iterable
 from typing import TYPE_CHECKING, Any, cast
 
 from scrapy import Request
@@ -28,6 +28,14 @@ class InitSpider(Spider):
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
+
+    async def start(self) -> AsyncIterator[Any]:
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", category=ScrapyDeprecationWarning, module=r"^scrapy\.spiders$"
+            )
+            for item_or_request in self.start_requests():
+                yield item_or_request
 
     def start_requests(self) -> Iterable[Request]:
         self._postinit_reqs: Iterable[Request] = super().start_requests()

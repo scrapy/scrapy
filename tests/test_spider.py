@@ -1,8 +1,7 @@
 import gzip
-import inspect
 import warnings
 from io import BytesIO
-from logging import WARNING
+from logging import ERROR, WARNING
 from pathlib import Path
 from typing import Any
 from unittest import mock
@@ -27,6 +26,7 @@ from scrapy.spiders import (
     XMLFeedSpider,
 )
 from scrapy.spiders.init import InitSpider
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import get_testdata, tests_datadir
 
@@ -44,12 +44,6 @@ class TestSpider(unittest.TestCase):
         spider = self.spider_class("example.com")
         assert spider.name == "example.com"
         assert spider.start_urls == []  # pylint: disable=use-implicit-booleaness-not-comparison
-
-    def test_start_requests(self):
-        spider = self.spider_class("example.com")
-        start_requests = spider.start_requests()
-        assert inspect.isgenerator(start_requests)
-        assert not list(start_requests)
 
     def test_spider_args(self):
         """``__init__`` method arguments are assigned to spider attributes"""
@@ -151,6 +145,22 @@ class TestSpider(unittest.TestCase):
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestInitSpider(TestSpider):
     spider_class = InitSpider
+
+    @deferred_f_from_coro_f
+    async def test_start_urls(self):
+        responses = []
+
+        class TestSpider(self.spider_class):
+            name = "test"
+            start_urls = ["data:,"]
+
+            async def parse(self, response):
+                responses.append(response)
+
+        crawler = get_crawler(TestSpider)
+        await maybe_deferred_to_future(crawler.crawl())
+        assert len(responses) == 1
+        assert responses[0].url == "data:,"
 
 
 class TestXMLFeedSpider(TestSpider):
@@ -454,12 +464,17 @@ class TestCrawlSpider(TestSpider):
         assert hasattr(spider, "_follow_links")
         assert not spider._follow_links
 
+    @inlineCallbacks
     def test_start_url(self):
-        spider = self.spider_class("example.com")
-        spider.start_url = "https://www.example.com"
+        class TestSpider(self.spider_class):
+            name = "test"
+            start_url = "https://www.example.com"
 
-        with pytest.raises(AttributeError, match=r"^Crawling could not start.*$"):
-            list(spider.start_requests())
+        crawler = get_crawler(TestSpider)
+        with LogCapture("scrapy.core.engine", propagate=False, level=ERROR) as log:
+            yield crawler.crawl()
+        assert "Error while reading start items and requests" in str(log)
+        assert "did you miss an 's'?" in str(log)
 
 
 class TestSitemapSpider(TestSpider):
@@ -775,6 +790,24 @@ Sitemap: /sitemap-relative-url.xml
                 ),
             ),
         )
+
+    @deferred_f_from_coro_f
+    async def test_sitemap_urls(self):
+        class TestSpider(self.spider_class):
+            name = "test"
+            sitemap_urls = ["https://toscrape.com/sitemap.xml"]
+
+        crawler = get_crawler(TestSpider)
+        spider = TestSpider.from_crawler(crawler)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            requests = [request async for request in spider.start()]
+
+        assert len(requests) == 1
+        request = requests[0]
+        assert request.url == "https://toscrape.com/sitemap.xml"
+        assert request.dont_filter is False
+        assert request.callback == spider._parse_sitemap
 
 
 class TestDeprecation:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import shutil
 import tempfile
 from abc import ABC, abstractmethod
+from collections import deque
 from typing import Any, NamedTuple
 
 import pytest
@@ -10,7 +11,7 @@ from twisted.internet import defer
 from twisted.trial.unittest import TestCase
 
 from scrapy.core.downloader import Downloader
-from scrapy.core.scheduler import Scheduler
+from scrapy.core.scheduler import BaseScheduler, Scheduler
 from scrapy.crawler import Crawler
 from scrapy.http import Request
 from scrapy.spiders import Spider
@@ -18,6 +19,38 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
+
+
+class MemoryScheduler(BaseScheduler):
+    paused = False
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.queue = deque(
+            Request(value) if isinstance(value, str) else value
+            for value in getattr(self, "queue", [])
+        )
+
+    def enqueue_request(self, request: Request) -> bool:
+        self.queue.append(request)
+        return True
+
+    def has_pending_requests(self) -> bool:
+        return self.paused or bool(self.queue)
+
+    def next_request(self) -> Request | None:
+        if self.paused:
+            return None
+        try:
+            return self.queue.pop()
+        except IndexError:
+            return None
+
+    def pause(self) -> None:
+        self.paused = True
+
+    def unpause(self) -> None:
+        self.paused = False
 
 
 class MockEngine(NamedTuple):

@@ -8,7 +8,7 @@ See documentation in docs/topics/spiders.rst
 from __future__ import annotations
 
 import copy
-from collections.abc import AsyncIterable, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 
 from twisted.python.failure import Failure
@@ -156,10 +156,10 @@ class CrawlSpider(Spider):
         callback: CallbackT | None,
         cb_kwargs: dict[str, Any],
         follow: bool = True,
-    ) -> AsyncIterable[Any]:
+    ) -> AsyncIterator[Any]:
         if callback:
             cb_res = callback(response, **cb_kwargs) or ()
-            if isinstance(cb_res, AsyncIterable):
+            if isinstance(cb_res, AsyncIterator):
                 cb_res = await collect_asyncgen(cb_res)
             elif isinstance(cb_res, Awaitable):
                 cb_res = await cb_res

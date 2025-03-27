@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 from warnings import catch_warnings, filterwarnings
 
 from twisted.internet import asyncioreactor, error
+from twisted.internet.defer import Deferred
 
 from scrapy.utils.misc import load_object
 
@@ -54,6 +55,7 @@ class CallLaterOnce(Generic[_T]):
         self._a: tuple[Any, ...] = a
         self._kw: dict[str, Any] = kw
         self._call: DelayedCall | None = None
+        self._deferreds: list[Deferred] = []
 
     def schedule(self, delay: float = 0) -> None:
         from twisted.internet import reactor
@@ -66,8 +68,23 @@ class CallLaterOnce(Generic[_T]):
             self._call.cancel()
 
     def __call__(self) -> _T:
+        from twisted.internet import reactor
+
         self._call = None
-        return self._func(*self._a, **self._kw)
+        result = self._func(*self._a, **self._kw)
+
+        for d in self._deferreds:
+            reactor.callLater(0, d.callback, None)
+        self._deferreds = []
+
+        return result
+
+    async def wait(self):
+        from scrapy.utils.defer import maybe_deferred_to_future
+
+        d = Deferred()
+        self._deferreds.append(d)
+        await maybe_deferred_to_future(d)
 
 
 def set_asyncio_event_loop_policy() -> None:
@@ -114,8 +131,10 @@ def set_asyncio_event_loop(event_loop_path: str | None) -> AbstractEventLoop:
     """Sets and returns the event loop with specified import path."""
     if event_loop_path is not None:
         event_loop_class: type[AbstractEventLoop] = load_object(event_loop_path)
-        event_loop = event_loop_class()
-        asyncio.set_event_loop(event_loop)
+        event_loop = _get_asyncio_event_loop()
+        if not isinstance(event_loop, event_loop_class):
+            event_loop = event_loop_class()
+            asyncio.set_event_loop(event_loop)
     else:
         try:
             with catch_warnings():

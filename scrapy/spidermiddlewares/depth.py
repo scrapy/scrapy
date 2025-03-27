@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 from scrapy.http import Request, Response
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Iterable
+    from collections.abc import AsyncIterator, Iterable
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -54,8 +54,8 @@ class DepthMiddleware:
         return (r for r in result if self._filter(r, response, spider))
 
     async def process_spider_output_async(
-        self, response: Response, result: AsyncIterable[Any], spider: Spider
-    ) -> AsyncIterable[Any]:
+        self, response: Response, result: AsyncIterator[Any], spider: Spider
+    ) -> AsyncIterator[Any]:
         self._init_depth(response, spider)
         async for r in result:
             if self._filter(r, response, spider):

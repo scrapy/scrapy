@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from pydispatch import dispatcher
+from twisted.internet.defer import Deferred
 
 from scrapy.utils import signal as _signal
-
-if TYPE_CHECKING:
-    from twisted.internet.defer import Deferred
+from scrapy.utils.defer import maybe_deferred_to_future
 
 
 class SignalManager:
@@ -75,3 +74,17 @@ class SignalManager:
         """
         kwargs.setdefault("sender", self.sender)
         _signal.disconnect_all(signal, **kwargs)
+
+    async def wait_for(self, signal):
+        """Await the next *signal*.
+
+        See :ref:`start-requests-lazy` for an example.
+        """
+        d = Deferred()
+
+        def handle():
+            self.disconnect(handle, signal)
+            d.callback(None)
+
+        self.connect(handle, signal)
+        await maybe_deferred_to_future(d)

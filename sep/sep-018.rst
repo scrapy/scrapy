@@ -619,7 +619,7 @@ Resolved:
      ``manager.scraper.process_request()`` instead of
      ``manager.engine.crawl()``
 - should we support adding additional start requests from a spider middleware?
-   - Yes - there is a spider middleware method (``start_requests``) for that
+   - Yes - there is a spider middleware method (``start_requests()``) for that
 - should ``process_response()`` receive a ``request`` argument with the
   ``request`` that originated it?. ``response.request`` is the latest request,
   not the original one (think of redirections), but it does carry the ``meta``
