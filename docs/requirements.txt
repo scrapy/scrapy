@@ -1,4 +1,3 @@
-enum-tools[sphinx]==0.12.0
 sphinx==8.1.3
 sphinx-hoverxref==1.4.2
 sphinx-notfound-page==1.0.4
