@@ -26,7 +26,7 @@ from scrapy.spiders import (
     XMLFeedSpider,
 )
 from scrapy.spiders.init import InitSpider
-from scrapy.utils.defer import deferred_f_from_coro_f
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import get_testdata, tests_datadir
 
@@ -145,6 +145,22 @@ class TestSpider(unittest.TestCase):
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestInitSpider(TestSpider):
     spider_class = InitSpider
+
+    @deferred_f_from_coro_f
+    async def test_start_urls(self):
+        responses = []
+
+        class TestSpider(self.spider_class):
+            name = "test"
+            start_urls = ["data:,"]
+
+            async def parse(self, response):
+                responses.append(response)
+
+        crawler = get_crawler(TestSpider)
+        await maybe_deferred_to_future(crawler.crawl())
+        assert len(responses) == 1
+        assert responses[0].url == "data:,"
 
 
 class TestXMLFeedSpider(TestSpider):
