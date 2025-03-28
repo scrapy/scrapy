@@ -70,39 +70,21 @@ one or more of these methods:
 
 .. class:: SpiderMiddleware
 
-    .. method:: process_seeds(seeds: AsyncIterator[Any], /) -> AsyncIterator[Any]
+    .. method:: process_start(start: AsyncIterator[Any], /) -> AsyncIterator[Any]
         :async:
 
-        Iterate over the output of :meth:`~scrapy.Spider.yield_seeds` or that
-        of the :meth:`process_seeds` method of an earlier spider middleware,
+        Iterate over the output of :meth:`~scrapy.Spider.start` or that
+        of the :meth:`process_start` method of an earlier spider middleware,
         overriding it. For example:
 
         .. code-block:: python
 
-            async def process_seeds(self, seeds):
-                async for seed in seeds:
-                    yield seed
+            async def process_start(self, start):
+                async for item_or_request in start:
+                    yield item_or_request
 
-        You may yield the same type of objects as
-        :meth:`~scrapy.Spider.yield_seeds`. It may also raise
-        :exc:`~scrapy.exceptions.CloseSpider`.
-
-        As with :meth:`~scrapy.Spider.yield_seeds`, how this method is iterated
-        by default is controlled by :setting:`SEEDING_POLICY`. It is also
-        possible to yield a :class:`~scrapy.SeedingPolicy` enum or a matching
-        string to change the active seeding policy, for example:
-
-        .. code-block:: python
-
-            async def process_seeds(self, seeds):
-                yield "front_load"
-                async for seed in seeds:
-                    yield seed
-                yield "idle"
-
-        .. tip:: You can also restore the configured seeding policy by
-            :ref:`reading its value <component-settings>` from the
-            :setting:`SEEDING_POLICY` setting and yielding it.
+        You may yield the same type of objects as :meth:`~scrapy.Spider.start`.
+        You may also raise :exc:`~scrapy.exceptions.CloseSpider`.
 
         To write spider middlewares that work on Scrapy versions lower than
         VERSION, define also a synchronous ``process_start_requests()`` method
@@ -110,8 +92,8 @@ one or more of these methods:
 
         .. code-block:: python
 
-            def process_start_requests(self, seeds, spider):
-                yield from seeds
+            def process_start_requests(self, start, spider):
+                yield from start
 
     .. method:: process_spider_input(response, spider)
 

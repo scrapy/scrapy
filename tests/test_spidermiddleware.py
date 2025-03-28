@@ -7,7 +7,6 @@ from unittest import mock
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.internet.defer import inlineCallbacks
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
@@ -16,7 +15,11 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
-from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
+from scrapy.utils.defer import (
+    deferred_f_from_coro_f,
+    deferred_from_coro,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.test import get_crawler
 
 
@@ -112,7 +115,7 @@ class TestProcessSpiderExceptionReRaise(TestSpiderMiddleware):
 class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
     """Helpers for testing sync, async and mixed middlewares.
 
-    Should work for process_spider_output and, when it's supported, process_test_yield_seeds.
+    Should work for process_spider_output and, when it's supported, process_start.
     """
 
     ITEM_TYPE: type | tuple
@@ -201,7 +204,7 @@ class ProcessSpiderExceptionSimpleIterableMiddleware:
         yield {"foo": 3}
 
 
-class ProcessSpiderExceptionAsyncIterableMiddleware:
+class ProcessSpiderExceptionAsyncIteratorMiddleware:
     async def process_spider_exception(self, response, exception, spider):
         yield {"foo": 1}
         d = defer.Deferred()
@@ -320,23 +323,23 @@ class TestProcessSpiderOutputInvalidResult(TestBaseAsyncSpiderMiddleware):
             )
 
 
-class ProcessYieldSeedsSimpleMiddleware:
-    def process_test_yield_seeds(self, test_yield_seeds, spider):
-        yield from test_yield_seeds
+class ProcessStartSimpleMiddleware:
+    async def process_start(self, start):
+        async for item_or_request in start:
+            yield item_or_request
 
 
-class TestProcessSeedsSimple(TestBaseAsyncSpiderMiddleware):
-    """process_seeds tests for simple yield_seeds"""
+class TestProcessStartSimple(TestBaseAsyncSpiderMiddleware):
+    """process_start tests for simple start"""
 
     ITEM_TYPE = (Request, dict)
-    MW_SIMPLE = ProcessYieldSeedsSimpleMiddleware
+    MW_SIMPLE = ProcessStartSimpleMiddleware
 
-    @inlineCallbacks
-    def _get_processed_seeds(self, *mw_classes):
+    async def _get_processed_start(self, *mw_classes):
         class TestSpider(Spider):
             name = "test"
 
-            async def yield_seeds(self):
+            async def start(self):
                 for i in range(2):
                     yield Request(f"https://example.com/{i}", dont_filter=True)
                 yield {"name": "test item"}
@@ -347,17 +350,16 @@ class TestProcessSeedsSimple(TestBaseAsyncSpiderMiddleware):
         )
         self.spider = self.crawler._create_spider()
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
-        results = yield self.mwman.process_seeds(self.spider)
-        return results
+        return await maybe_deferred_to_future(self.mwman.process_start(self.spider))
 
-    @inlineCallbacks
-    def test_simple(self):
+    @deferred_f_from_coro_f
+    async def test_simple(self):
         """Simple mw"""
-        seeds = yield self._get_processed_seeds(self.MW_SIMPLE)
-        assert isasyncgen(seeds)
-        seed_list = yield deferred_from_coro(collect_asyncgen(seeds))
-        assert len(seed_list) == self.RESULT_COUNT
-        assert isinstance(seed_list[0], self.ITEM_TYPE)
+        start = await self._get_processed_start(self.MW_SIMPLE)
+        assert isasyncgen(start)
+        start_list = await collect_asyncgen(start)
+        assert len(start_list) == self.RESULT_COUNT
+        assert isinstance(start_list[0], self.ITEM_TYPE)
 
 
 class UniversalMiddlewareNoSync:
@@ -515,7 +517,7 @@ class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
     MW_ASYNCGEN = ProcessSpiderOutputAsyncGenMiddleware
     MW_UNIVERSAL = ProcessSpiderOutputUniversalMiddleware
     MW_EXC_SIMPLE = ProcessSpiderExceptionSimpleIterableMiddleware
-    MW_EXC_ASYNCGEN = ProcessSpiderExceptionAsyncIterableMiddleware
+    MW_EXC_ASYNCGEN = ProcessSpiderExceptionAsyncIteratorMiddleware
 
     def _scrape_func(self, *args, **kwargs):
         1 / 0

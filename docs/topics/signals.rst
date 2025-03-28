@@ -131,6 +131,19 @@ engine_stopped
 
     This signal supports returning deferreds from its handlers.
 
+scheduler_empty
+~~~~~~~~~~~~~~~
+
+.. signal:: scheduler_empty
+.. function:: scheduler_empty()
+
+    Sent whenever the engine asks for a pending request from the
+    :ref:`scheduler <topics-scheduler>` (i.e. calls its
+    :meth:`~scrapy.core.scheduler.BaseScheduler.next_request` method) and the
+    scheduler returns none.
+
+    See :ref:`start-requests-lazy` for an example.
+
 Item signals
 ------------
 
@@ -160,7 +173,7 @@ item_scraped
     :type spider: :class:`~scrapy.Spider` object
 
     :param response: the response from where the item was scraped, or ``None``
-        if it was yielded from :meth:`~scrapy.Spider.yield_seeds`.
+        if it was yielded from :meth:`~scrapy.Spider.start`.
     :type response: :class:`~scrapy.http.Response` | ``None``
 
 item_dropped
@@ -181,7 +194,7 @@ item_dropped
     :type spider: :class:`~scrapy.Spider` object
 
     :param response: the response from where the item was dropped, or ``None``
-        if it was yielded from :meth:`~scrapy.Spider.yield_seeds`.
+        if it was yielded from :meth:`~scrapy.Spider.start`.
     :type response: :class:`~scrapy.http.Response` | ``None``
 
     :param exception: the exception (which must be a
@@ -205,7 +218,7 @@ item_error
 
     :param response: the response being processed when the exception was
         raised, or ``None`` if it was yielded from
-        :meth:`~scrapy.Spider.yield_seeds`.
+        :meth:`~scrapy.Spider.start`.
     :type response: :class:`~scrapy.http.Response` | ``None``
 
     :param spider: the spider which raised the exception

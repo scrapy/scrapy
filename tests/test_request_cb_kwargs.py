@@ -28,10 +28,10 @@ class InjectArgumentsSpiderMiddleware:
     Make sure spider middlewares are able to update the keyword arguments
     """
 
-    def process_test_yield_seeds(self, test_yield_seeds, spider):
-        for request in test_yield_seeds:
+    async def process_start(self, start):
+        async for request in start:
             if request.callback.__name__ == "parse_spider_mw":
-                request.cb_kwargs["from_process_test_yield_seeds"] = True
+                request.cb_kwargs["from_process_start"] = True
             yield request
 
     def process_spider_input(self, response, spider):
@@ -62,7 +62,7 @@ class KeywordArgumentsSpider(MockServerSpider):
 
     checks: list[bool] = []
 
-    async def yield_seeds(self):
+    async def start(self):
         data = {"key": "value", "number": 123, "callback": "some_callback"}
         yield Request(self.mockserver.url("/first"), self.parse_first, cb_kwargs=data)
         yield Request(
@@ -138,11 +138,9 @@ class KeywordArgumentsSpider(MockServerSpider):
         self.checks.append(bool(from_process_response))
         self.crawler.stats.inc_value("boolean_checks", 2)
 
-    def parse_spider_mw(
-        self, response, from_process_spider_input, from_process_test_yield_seeds
-    ):
+    def parse_spider_mw(self, response, from_process_spider_input, from_process_start):
         self.checks.append(bool(from_process_spider_input))
-        self.checks.append(bool(from_process_test_yield_seeds))
+        self.checks.append(bool(from_process_start))
         self.crawler.stats.inc_value("boolean_checks", 2)
         return Request(self.mockserver.url("/spider_mw_2"), self.parse_spider_mw_2)
 

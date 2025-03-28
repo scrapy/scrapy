@@ -12,6 +12,11 @@ from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
+from scrapy.utils.defer import (
+    deferred_f_from_coro_f,
+    deferred_to_future,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 
@@ -29,7 +34,7 @@ class TestManagerBase(TestCase):
     def tearDown(self):
         return self.crawler.engine.close_spider(self.spider)
 
-    def _download(self, request, response=None):
+    async def _download(self, request, response=None):
         """Executes downloader mw manager's download method and returns
         the result (Request or Response) or raise exception in case of
         failure.
@@ -44,7 +49,7 @@ class TestManagerBase(TestCase):
         # catch deferred result and return the value
         results = []
         dfd.addBoth(results.append)
-        self._wait(dfd)
+        await maybe_deferred_to_future(dfd)
         ret = results[0]
         if isinstance(ret, Failure):
             ret.raiseException()
@@ -54,13 +59,15 @@ class TestManagerBase(TestCase):
 class TestDefaults(TestManagerBase):
     """Tests default behavior with default settings"""
 
-    def test_request_response(self):
+    @deferred_f_from_coro_f
+    async def test_request_response(self):
         req = Request("http://example.com/index.html")
         resp = Response(req.url, status=200)
-        ret = self._download(req, resp)
+        ret = await self._download(req, resp)
         assert isinstance(ret, Response), "Non-response returned"
 
-    def test_3xx_and_invalid_gzipped_body_must_redirect(self):
+    @deferred_f_from_coro_f
+    async def test_3xx_and_invalid_gzipped_body_must_redirect(self):
         """Regression test for a failure when redirecting a compressed
         request.
 
@@ -85,13 +92,14 @@ class TestDefaults(TestManagerBase):
                 "Location": "http://example.com/login",
             },
         )
-        ret = self._download(request=req, response=resp)
+        ret = await self._download(request=req, response=resp)
         assert isinstance(ret, Request), f"Not redirected: {ret!r}"
         assert to_bytes(ret.url) == resp.headers["Location"], (
             "Not redirected to location header"
         )
 
-    def test_200_and_invalid_gzipped_body_must_fail(self):
+    @deferred_f_from_coro_f
+    async def test_200_and_invalid_gzipped_body_must_fail(self):
         req = Request("http://example.com")
         body = b"<p>You are being redirected</p>"
         resp = Response(
@@ -106,13 +114,14 @@ class TestDefaults(TestManagerBase):
             },
         )
         with pytest.raises(BadGzipFile):
-            self._download(request=req, response=resp)
+            await self._download(request=req, response=resp)
 
 
 class TestResponseFromProcessRequest(TestManagerBase):
     """Tests middleware returning a response from process_request."""
 
-    def test_download_func_not_called(self):
+    @deferred_f_from_coro_f
+    async def test_download_func_not_called(self):
         resp = Response("http://example.com/index.html")
 
         class ResponseMiddleware:
@@ -126,7 +135,7 @@ class TestResponseFromProcessRequest(TestManagerBase):
         dfd = self.mwman.download(download_func, req, self.spider)
         results = []
         dfd.addBoth(results.append)
-        self._wait(dfd)
+        await maybe_deferred_to_future(dfd)
 
         assert results[0] is resp
         assert not download_func.called
@@ -195,7 +204,8 @@ class TestProcessExceptionInvalidOutput(TestManagerBase):
 class TestMiddlewareUsingDeferreds(TestManagerBase):
     """Middlewares using Deferreds should work"""
 
-    def test_deferred(self):
+    @deferred_f_from_coro_f
+    async def test_deferred(self):
         resp = Response("http://example.com/index.html")
 
         class DeferredMiddleware:
@@ -214,7 +224,7 @@ class TestMiddlewareUsingDeferreds(TestManagerBase):
         dfd = self.mwman.download(download_func, req, self.spider)
         results = []
         dfd.addBoth(results.append)
-        self._wait(dfd)
+        await maybe_deferred_to_future(dfd)
 
         assert results[0] is resp
         assert not download_func.called
@@ -224,7 +234,8 @@ class TestMiddlewareUsingDeferreds(TestManagerBase):
 class TestMiddlewareUsingCoro(TestManagerBase):
     """Middlewares using asyncio coroutines should work"""
 
-    def test_asyncdef(self):
+    @deferred_f_from_coro_f
+    async def test_asyncdef(self):
         resp = Response("http://example.com/index.html")
 
         class CoroMiddleware:
@@ -238,13 +249,14 @@ class TestMiddlewareUsingCoro(TestManagerBase):
         dfd = self.mwman.download(download_func, req, self.spider)
         results = []
         dfd.addBoth(results.append)
-        self._wait(dfd)
+        await maybe_deferred_to_future(dfd)
 
         assert results[0] is resp
         assert not download_func.called
 
     @pytest.mark.only_asyncio
-    def test_asyncdef_asyncio(self):
+    @deferred_f_from_coro_f
+    async def test_asyncdef_asyncio(self):
         resp = Response("http://example.com/index.html")
 
         class CoroMiddleware:
@@ -258,7 +270,7 @@ class TestMiddlewareUsingCoro(TestManagerBase):
         dfd = self.mwman.download(download_func, req, self.spider)
         results = []
         dfd.addBoth(results.append)
-        self._wait(dfd)
+        await deferred_to_future(dfd)
 
         assert results[0] is resp
         assert not download_func.called

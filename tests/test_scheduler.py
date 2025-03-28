@@ -22,7 +22,7 @@ from tests.mockserver import MockServer
 
 
 class MemoryScheduler(BaseScheduler):
-    pause = False
+    paused = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -36,15 +36,21 @@ class MemoryScheduler(BaseScheduler):
         return True
 
     def has_pending_requests(self) -> bool:
-        return self.pause or bool(self.queue)
+        return self.paused or bool(self.queue)
 
     def next_request(self) -> Request | None:
-        if self.pause:
+        if self.paused:
             return None
         try:
             return self.queue.pop()
         except IndexError:
             return None
+
+    def pause(self) -> None:
+        self.paused = True
+
+    def unpause(self) -> None:
+        self.paused = False
 
 
 class PriorityScheduler(BaseScheduler):

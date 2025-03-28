@@ -7,7 +7,7 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterable, AsyncIterator, Callable, Iterable
+from collections.abc import AsyncIterator, Callable, Iterable
 from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
@@ -41,12 +41,12 @@ logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 ScrapeFunc = Callable[
-    [Union[Response, Failure], Request, Spider], Union[Iterable[_T], AsyncIterable[_T]]
+    [Union[Response, Failure], Request, Spider], Union[Iterable[_T], AsyncIterator[_T]]
 ]
 
 
 def _isiterable(o: Any) -> bool:
-    return isinstance(o, (Iterable, AsyncIterable))
+    return isinstance(o, (Iterable, AsyncIterator))
 
 
 class SpiderMiddlewareManager(MiddlewareManager):
@@ -67,8 +67,27 @@ class SpiderMiddlewareManager(MiddlewareManager):
             middleware
             for middleware in middlewares
             if hasattr(middleware, "process_start_requests")
-            and not hasattr(middleware, "process_seeds")
+            and not hasattr(middleware, "process_start")
         ]
+        modern_middlewares = [
+            middleware
+            for middleware in middlewares
+            if not hasattr(middleware, "process_start_requests")
+            and hasattr(middleware, "process_start")
+        ]
+        if deprecated_middlewares and modern_middlewares:
+            raise ValueError(
+                "You are trying to combine spider middlewares that only "
+                "define the deprecated process_start_requests() method () "
+                "with spider middlewares that only define the "
+                "process_start() method (). This is not possible. You must "
+                "either disable or make universal 1 of those 2 sets of "
+                "spider middlewares. Making a spider middleware universal "
+                "means having it define both methods. See the release notes "
+                "of Scrapy VERSION for details: "
+                "https://docs.scrapy.org/en/VERSION/news.html"
+            )
+
         self._use_start_requests = bool(deprecated_middlewares)
         if self._use_start_requests:
             deprecated_middleware_list = ", ".join(
@@ -80,16 +99,16 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 f"through their parent classes, define the deprecated "
                 f"process_start_requests() method: "
                 f"{deprecated_middleware_list}. process_start_requests() has "
-                f"been deprecated in favor of a new method, process_seeds(), "
+                f"been deprecated in favor of a new method, process_start(), "
                 f"to support asynchronous code execution. "
                 f"process_start_requests() will stop being called in a future "
                 f"version of Scrapy. If you use Scrapy VERSION or higher "
                 f"only, replace process_start_requests() with "
-                f"process_seeds(); note that process_seeds() is a coroutine "
+                f"process_start(); note that process_start() is a coroutine "
                 f"(async def). If you need to maintain compatibility with "
                 f"lower Scrapy versions, when defining "
                 f"process_start_requests() in a spider middleware class, "
-                f"define process_seeds() as well. See the release notes of "
+                f"define process_start() as well. See the release notes of "
                 f"Scrapy VERSION for details: "
                 f"https://docs.scrapy.org/en/VERSION/news.html",
                 ScrapyDeprecationWarning,
@@ -104,8 +123,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 self.methods["process_start_requests"].appendleft(
                     mw.process_start_requests
                 )
-        elif hasattr(mw, "process_seeds"):
-            self.methods["process_seeds"].appendleft(mw.process_seeds)
+        elif hasattr(mw, "process_start"):
+            self.methods["process_start"].appendleft(mw.process_start)
         process_spider_output = self._get_async_method_pair(mw, "process_spider_output")
         self.methods["process_spider_output"].appendleft(process_spider_output)
         process_spider_exception = getattr(mw, "process_spider_exception", None)
@@ -117,7 +136,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         response: Response,
         request: Request,
         spider: Spider,
-    ) -> Iterable[_T] | AsyncIterable[_T]:
+    ) -> Iterable[_T] | AsyncIterator[_T]:
         for method in self.methods["process_spider_input"]:
             method = cast(Callable, method)
             try:
@@ -138,10 +157,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self,
         response: Response,
         spider: Spider,
-        iterable: Iterable[_T] | AsyncIterable[_T],
+        iterable: Iterable[_T] | AsyncIterator[_T],
         exception_processor_index: int,
         recover_to: MutableChain[_T] | MutableAsyncChain[_T],
-    ) -> Iterable[_T] | AsyncIterable[_T]:
+    ) -> Iterable[_T] | AsyncIterator[_T]:
         def process_sync(iterable: Iterable[_T]) -> Iterable[_T]:
             try:
                 yield from iterable
@@ -157,7 +176,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 assert isinstance(recover_to, MutableChain)
                 recover_to.extend(exception_result)
 
-        async def process_async(iterable: AsyncIterable[_T]) -> AsyncIterable[_T]:
+        async def process_async(iterable: AsyncIterator[_T]) -> AsyncIterator[_T]:
             try:
                 async for r in iterable:
                     yield r
@@ -173,7 +192,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 assert isinstance(recover_to, MutableAsyncChain)
                 recover_to.extend(exception_result)
 
-        if isinstance(iterable, AsyncIterable):
+        if isinstance(iterable, AsyncIterator):
             return process_async(iterable)
         return process_sync(iterable)
 
@@ -232,13 +251,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self,
         response: Response,
         spider: Spider,
-        result: Iterable[_T] | AsyncIterable[_T],
+        result: Iterable[_T] | AsyncIterator[_T],
         start_index: int = 0,
     ) -> Generator[Deferred[Any], Any, MutableChain[_T] | MutableAsyncChain[_T]]:
         # items in this iterable do not need to go through the process_spider_output
         # chain, they went through it already from the process_spider_exception method
         recovered: MutableChain[_T] | MutableAsyncChain[_T]
-        last_result_is_async = isinstance(result, AsyncIterable)
+        last_result_is_async = isinstance(result, AsyncIterator)
         recovered = MutableAsyncChain() if last_result_is_async else MutableChain()
 
         # There are three cases for the middleware: def foo, async def foo, def foo + async def foo_async.
@@ -265,7 +284,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     need_downgrade = True
             try:
                 if need_upgrade:
-                    # Iterable -> AsyncIterable
+                    # Iterable -> AsyncIterator
                     result = as_async_generator(result)
                 elif need_downgrade:
                     logger.warning(
@@ -275,10 +294,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
                         f" https://docs.scrapy.org/en/latest/topics/coroutines.html#for-middleware-users"
                         f" for more information."
                     )
-                    assert isinstance(result, AsyncIterable)
-                    # AsyncIterable -> Iterable
+                    assert isinstance(result, AsyncIterator)
+                    # AsyncIterator -> Iterable
                     result = yield deferred_from_coro(collect_asyncgen(result))
-                    if isinstance(recovered, AsyncIterable):
+                    if isinstance(recovered, AsyncIterator):
                         recovered_collected = yield deferred_from_coro(
                             collect_asyncgen(recovered)
                         )
@@ -311,7 +330,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                         f"{type(result)}"
                     )
                 raise _InvalidOutput(msg)
-            last_result_is_async = isinstance(result, AsyncIterable)
+            last_result_is_async = isinstance(result, AsyncIterator)
 
         if last_result_is_async:
             return MutableAsyncChain(result, recovered)
@@ -321,23 +340,23 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self,
         response: Response,
         spider: Spider,
-        result: Iterable[_T] | AsyncIterable[_T],
+        result: Iterable[_T] | AsyncIterator[_T],
     ) -> MutableChain[_T] | MutableAsyncChain[_T]:
         recovered: MutableChain[_T] | MutableAsyncChain[_T]
-        if isinstance(result, AsyncIterable):
+        if isinstance(result, AsyncIterator):
             recovered = MutableAsyncChain()
         else:
             recovered = MutableChain()
         result = self._evaluate_iterable(response, spider, result, 0, recovered)
         result = await maybe_deferred_to_future(
             cast(
-                "Deferred[Iterable[_T] | AsyncIterable[_T]]",
+                "Deferred[Iterable[_T] | AsyncIterator[_T]]",
                 self._process_spider_output(response, spider, result),
             )
         )
-        if isinstance(result, AsyncIterable):
+        if isinstance(result, AsyncIterator):
             return MutableAsyncChain(result, recovered)
-        if isinstance(recovered, AsyncIterable):
+        if isinstance(recovered, AsyncIterator):
             recovered_collected = await collect_asyncgen(recovered)
             recovered = MutableChain(recovered_collected)
         return MutableChain(result, recovered)
@@ -350,7 +369,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         spider: Spider,
     ) -> Deferred[MutableChain[_T] | MutableAsyncChain[_T]]:
         async def process_callback_output(
-            result: Iterable[_T] | AsyncIterable[_T],
+            result: Iterable[_T] | AsyncIterator[_T],
         ) -> MutableChain[_T] | MutableAsyncChain[_T]:
             return await self._process_callback_output(response, spider, result)
 
@@ -359,7 +378,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         ) -> Failure | MutableChain[_T] | MutableAsyncChain[_T]:
             return self._process_spider_exception(response, spider, _failure)
 
-        dfd: Deferred[Iterable[_T] | AsyncIterable[_T]] = mustbe_deferred(
+        dfd: Deferred[Iterable[_T] | AsyncIterator[_T]] = mustbe_deferred(
             self._process_spider_input, scrape_func, response, request, spider
         )
         dfd2: Deferred[MutableChain[_T] | MutableAsyncChain[_T]] = dfd.addCallback(
@@ -368,41 +387,41 @@ class SpiderMiddlewareManager(MiddlewareManager):
         dfd2.addErrback(process_spider_exception)
         return dfd2
 
-    @inlineCallbacks
-    def process_seeds(
-        self, spider: Spider
-    ) -> Generator[Deferred[Any], Any, AsyncIterator[Any] | None]:
+    @deferred_f_from_coro_f
+    async def process_start(self, spider: Spider) -> AsyncIterator[Any] | None:
         try:
             self._check_deprecated_start_requests_use(spider)
         except ValueError as exception:
             logger.error(exception)
             return None
-        seeds: AsyncIterator[Any]
+        start: AsyncIterator[Any]
         if self._use_start_requests:
-            sync_seeds = iter(spider.start_requests())
-            sync_seeds = yield self._process_chain(
-                "process_start_requests", sync_seeds, spider
+            sync_start = iter(spider.start_requests())
+            sync_start = await maybe_deferred_to_future(
+                self._process_chain("process_start_requests", sync_start, spider)
             )
-            seeds = as_async_generator(sync_seeds)
+            start = as_async_generator(sync_start)
         else:
             error_found = False
-            for fn in (spider.yield_seeds, *self.methods["process_seeds"]):
+            for fn in (spider.start, *self.methods["process_start"]):
                 if isasyncgenfunction(fn):
                     continue
                 logger.error(
-                    f"{global_object_name(fn)} must be an async generator "
-                    f"function, i.e. an async def function with yield "
+                    f"{global_object_name(fn)} must be an asynchronous "
+                    f"generator, i.e. an async def function with yield "
                     f"statements."
                 )
                 error_found = True
             if error_found:
                 return None
-            seeds = yield self._process_chain("process_seeds", spider.yield_seeds())
-        return seeds
+            start = await maybe_deferred_to_future(
+                self._process_chain("process_start", spider.start())
+            )
+        return start
 
     def _check_deprecated_start_requests_use(self, spider: Spider):
         start_requests_cls = None
-        yield_seeds_cls = None
+        start_cls = None
         spidercls = spider.__class__
         mro = spidercls.__mro__
 
@@ -410,19 +429,19 @@ class SpiderMiddlewareManager(MiddlewareManager):
             cls_dict = cls.__dict__
             if start_requests_cls is None and "start_requests" in cls_dict:
                 start_requests_cls = cls
-            if yield_seeds_cls is None and "yield_seeds" in cls_dict:
-                yield_seeds_cls = cls
-            if start_requests_cls is not None and yield_seeds_cls is not None:
+            if start_cls is None and "start" in cls_dict:
+                start_cls = cls
+            if start_requests_cls is not None and start_cls is not None:
                 break
 
-        # Spider defines both, start_requests and yield_seeds.
+        # Spider defines both, start_requests and start.
         assert start_requests_cls is not None
-        assert yield_seeds_cls is not None
+        assert start_cls is not None
 
         if (
             start_requests_cls is not Spider
-            and yield_seeds_cls is not start_requests_cls
-            and mro.index(start_requests_cls) < mro.index(yield_seeds_cls)
+            and start_cls is not start_requests_cls
+            and mro.index(start_requests_cls) < mro.index(start_cls)
         ):
             src = global_object_name(start_requests_cls)
             if start_requests_cls is not spidercls:
@@ -430,15 +449,15 @@ class SpiderMiddlewareManager(MiddlewareManager):
             warn(
                 f"{src} defines the deprecated start_requests() method. "
                 f"start_requests() has been deprecated in favor of a new "
-                f"method, yield_seeds(), to support asynchronous code "
+                f"method, start(), to support asynchronous code "
                 f"execution. start_requests() will stop being called in a "
                 f"future version of Scrapy. If you use Scrapy VERSION or "
-                f"higher only, replace start_requests() with yield_seeds(); "
-                f"note that yield_seeds() is a coroutine (async def). If you "
+                f"higher only, replace start_requests() with start(); "
+                f"note that start() is a coroutine (async def). If you "
                 f"need to maintain compatibility with lower Scrapy versions, "
                 f"when overriding start_requests() in a spider class, "
-                f"override yield_seeds() as well; you can use super() to "
-                f"reuse the inherited yield_seeds() implementation without "
+                f"override start() as well; you can use super() to "
+                f"reuse the inherited start() implementation without "
                 f"copy-pasting. See the release notes of Scrapy VERSION for "
                 f"details: https://docs.scrapy.org/en/VERSION/news.html",
                 ScrapyDeprecationWarning,
@@ -446,26 +465,26 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
         if (
             self._use_start_requests
-            and yield_seeds_cls is not Spider
-            and start_requests_cls is not yield_seeds_cls
-            and mro.index(yield_seeds_cls) < mro.index(start_requests_cls)
+            and start_cls is not Spider
+            and start_requests_cls is not start_cls
+            and mro.index(start_cls) < mro.index(start_requests_cls)
         ):
-            src = global_object_name(yield_seeds_cls)
-            if yield_seeds_cls is not spidercls:
+            src = global_object_name(start_cls)
+            if start_cls is not spidercls:
                 src += f" (inherited by {global_object_name(spidercls)})"
             raise ValueError(
                 f"{src} does not define the deprecated start_requests() "
                 f"method. However, one or more of your enabled spider "
                 f"middlewares (reported in an earlier deprecation warning) "
                 f"define the process_start_requests() method, and not the "
-                f"process_seeds() method, making them only compatible with "
+                f"process_start() method, making them only compatible with "
                 f"(deprecated) spiders that define the start_requests() "
                 f"method. To solve this issue, disable the offending spider "
                 f"middlewares, upgrade them as described in that earlier "
                 f"deprecation warning, or make your spider compatible with "
                 f"deprecated spider middlewares (and earlier Scrapy versions) "
                 f"by defining a sync start_requests() method that works "
-                f"similarly to its existing yield_seeds() method. See the "
+                f"similarly to its existing start() method. See the "
                 f"release notes of Scrapy VERSION for details: "
                 f"https://docs.scrapy.org/en/VERSION/news.html"
             )

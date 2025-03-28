@@ -12,23 +12,24 @@ from time import time
 from traceback import format_exc
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
-from twisted.internet.defer import Deferred, inlineCallbacks, succeed
+from twisted.internet.defer import Deferred, succeed
 from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.core.scraper import Scraper, _HandleOutputDeferred
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.utils.defer import deferred_from_coro
+from scrapy.utils.defer import (
+    deferred_f_from_coro_f,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import CallLaterOnce
 
-from ._seeding import SeedingPolicy
-
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Generator
+    from collections.abc import AsyncIterator, Callable
 
     from scrapy.core.downloader import Downloader
     from scrapy.core.scheduler import BaseScheduler
@@ -44,21 +45,17 @@ logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 
-class _SeedingPolicyChange(Exception):
-    pass
-
-
 class _Slot:
     def __init__(
         self,
         close_if_idle: bool,
-        nextcall: CallLaterOnce[Deferred[None]],
+        nextcall: CallLaterOnce[None],
         scheduler: BaseScheduler,
     ) -> None:
         self.closing: Deferred[None] | None = None
         self.inprogress: set[Request] = set()
         self.close_if_idle: bool = close_if_idle
-        self.nextcall: CallLaterOnce[Deferred[None]] = nextcall
+        self.nextcall: CallLaterOnce[None] = nextcall
         self.scheduler: BaseScheduler = scheduler
 
     def add_request(self, request: Request) -> None:
@@ -98,31 +95,22 @@ class ExecutionEngine:
         self.spider: Spider | None = None
         self.running: bool = False
         self.paused: bool = False
-        self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
-            crawler.settings
-        )
-        downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
-        self.downloader: Downloader = downloader_cls(crawler)
-        self.scraper: Scraper = Scraper(crawler)
         self._spider_closed_callback: Callable[[Spider], Deferred[None] | None] = (
             spider_closed_callback
         )
         self.start_time: float | None = None
-        self._load_seeding_policy()
-        self._seeds: AsyncIterator[Any] | None = None
-        self._waiting_for_seed: bool = False
+        self._start: AsyncIterator[Any] | None = None
+        downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         self._back_in_seconds = self._MIN_BACK_IN_SECONDS
-
-    def _load_seeding_policy(self) -> None:
         try:
-            self._seeding_policy = SeedingPolicy(self.settings["SEEDING_POLICY"])
-        except ValueError:
-            supported_values = ", ".join(policy.value for policy in SeedingPolicy)
-            raise ValueError(
-                f"The value of the SEEDING_POLICY setting "
-                f"({self.settings['SEEDING_POLICY']!r}) is not supported. "
-                f"Supported values: {supported_values}."
+            self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
+                crawler.settings
             )
+            self.downloader: Downloader = downloader_cls(crawler)
+            self.scraper: Scraper = Scraper(crawler)
+        except Exception:
+            self.close()
+            raise
 
     def _get_scheduler_class(self, settings: BaseSettings) -> type[BaseScheduler]:
         from scrapy.core.scheduler import BaseScheduler
@@ -135,22 +123,28 @@ class ExecutionEngine:
             )
         return scheduler_cls
 
-    @inlineCallbacks
-    def start(self) -> Generator[Deferred[Any], Any, None]:
+    @deferred_f_from_coro_f
+    async def start(self, _start_request_processing=True) -> None:
         if self.running:
             raise RuntimeError("Engine already running")
         self.start_time = time()
-        yield self.signals.send_catch_log_deferred(signal=signals.engine_started)
+        await maybe_deferred_to_future(
+            self.signals.send_catch_log_deferred(signal=signals.engine_started)
+        )
         self.running = True
         self._closewait: Deferred[None] = Deferred()
-        yield self._closewait
+        if _start_request_processing:
+            self._start_request_processing()
+        await maybe_deferred_to_future(self._closewait)
 
     def stop(self) -> Deferred[None]:
         """Gracefully stop the execution engine"""
 
-        @inlineCallbacks
-        def _finish_stopping_engine(_: Any) -> Generator[Deferred[Any], Any, None]:
-            yield self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
+        @deferred_f_from_coro_f
+        async def _finish_stopping_engine(_: Any) -> None:
+            await maybe_deferred_to_future(
+                self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
+            )
             self._closewait.callback(None)
 
         if not self.running:
@@ -184,70 +178,39 @@ class ExecutionEngine:
     def unpause(self) -> None:
         self.paused = False
 
-    @inlineCallbacks
-    def _process_next_seed(self):
-        if self._waiting_for_seed:
-            return
-        self._waiting_for_seed = True
-        # Schedule a new call for next requests while waiting for
-        # self._seeds.__anext__(), so that if it takes long enough and there
-        # are pending scheduler requests we can process those.
-        self._slot.nextcall.schedule(self._MIN_BACK_IN_SECONDS)
+    async def _process_start_next(self) -> None:
+        """Processes the next item or request from Spider.start().
+
+        If a request, it is scheduled. If an item, it is sent to item
+        pipelines.
+        """
+        assert self._start is not None
         try:
-            seed = yield deferred_from_coro(self._seeds.__anext__())
+            item_or_request = await self._start.__anext__()
         except StopAsyncIteration:
-            self._seeds = None
-        except CloseSpider:
-            self._seeds = None
-            raise
+            self._start = None
+        except CloseSpider as exception:
+            if self.spider:
+                await maybe_deferred_to_future(
+                    self.close_spider(self.spider, reason=exception.reason)
+                )
+            return
         except Exception as exception:
-            self._seeds = None
+            self._start = None
             exception_traceback = format_exc()
             logger.error(
-                f"Error while reading seeds: {exception}.\n{exception_traceback}"
+                f"Error while reading start items and requests: {exception}.\n{exception_traceback}",
+                exc_info=True,
             )
         else:
-            if isinstance(seed, Request):
-                self.crawl(seed)
-                if (
-                    self._seeding_policy is not SeedingPolicy.front_load
-                    and not self._needs_backout()
-                ):
-                    self._start_scheduled_request()
-            elif isinstance(seed, (str, SeedingPolicy)):
-                try:
-                    self._seeding_policy = SeedingPolicy(seed)
-                except ValueError:
-                    valid_policy_strings = ", ".join(
-                        policy.value for policy in SeedingPolicy
-                    )
-                    logger.error(
-                        f"Seed {seed!r} has been ignored. Seeds of {str} type "
-                        f"must be valid seeding policies "
-                        f"({valid_policy_strings})."
-                    )
-                    self._slot.nextcall.schedule()
-                else:
-                    raise _SeedingPolicyChange
+            if not self.spider:
+                return  # spider already closed
+            if isinstance(item_or_request, Request):
+                self.crawl(item_or_request)
             else:
-                self.scraper.start_itemproc(seed, response=None)
+                self.scraper.start_itemproc(item_or_request, response=None)
+                assert self._slot is not None  # typing
                 self._slot.nextcall.schedule()
-        finally:
-            self._waiting_for_seed = False
-        if self._seeding_policy is SeedingPolicy.front_load and self._seeds is None:
-            self._slot.nextcall.schedule()
-
-    def _process_scheduler_requests(self):
-        while not self._needs_backout():
-            if self._start_scheduled_request() is None:
-                break
-
-    def _can_process_next_seed(self) -> bool:
-        return (
-            not self._waiting_for_seed
-            and self._seeds is not None
-            and not self._needs_backout()
-        )
 
     def _scheduler_has_pending_requests(self) -> bool:
         assert self._slot is not None  # typing
@@ -256,48 +219,47 @@ class ExecutionEngine:
         except Exception as exception:
             exception_traceback = format_exc()
             logger.error(
-                f"{global_object_name(self._slot.scheduler.has_pending_requests)} raised an exception: {exception}.\n{exception_traceback}"
+                f"{global_object_name(self._slot.scheduler.has_pending_requests)} raised an exception: {exception}.\n{exception_traceback}",
+                exc_info=True,
             )
             return False
 
-    @inlineCallbacks
-    def _run_loop(self) -> Generator[Deferred[Any], Any, None]:
-        """Sends new requests from seeds or from the scheduler based on the
-        configured seeding policy and on whether or not there is room for them,
-        e.g. on whether there are fewer active requests than the configured
-        maximum concurrency or if the total size of responses being processed
-        is below the configured limit."""
+    async def _wait_until_next_loop_iteration(self) -> None:
+        from twisted.internet import reactor
+
+        deferred: Deferred[None] = Deferred()
+        reactor.callLater(0, deferred.callback, None)
+        await maybe_deferred_to_future(deferred)
+
+    @deferred_f_from_coro_f
+    async def _start_request_processing(self) -> None:
+        """Starts consuming Spider.start() output and sending scheduled
+        requests."""
+        # Starts the processing of scheduled requests, as well as a periodic
+        # call to that processing method for scenarios where the scheduler
+        # reports having pending requests but returns none.
+        assert self._slot is not None  # typing
+        self._slot.nextcall.schedule()
+
+        while self._start and self.spider:
+            await self._process_start_next()
+            if not self.needs_backout():
+                # Give room for the outcome of self._start_scheduled_requests()
+                # to be processed before continuing with the next iteration.
+                self._slot.nextcall.schedule()
+                await self._wait_until_next_loop_iteration()
+
+    def _start_scheduled_requests(self) -> None:
         if self._slot is None or self._slot.closing is not None or self.paused:
             return
 
-        try:
-            if self._seeding_policy in {SeedingPolicy.idle, SeedingPolicy.lazy}:
-                self._process_scheduler_requests()
-                if self._can_process_next_seed() and (
-                    self._seeding_policy is not SeedingPolicy.idle
-                    or not self.downloader.active
-                ):
-                    yield self._process_next_seed()
-            else:
-                assert self._seeding_policy in {
-                    SeedingPolicy.front_load,
-                    SeedingPolicy.greedy,
-                }
-                if self._can_process_next_seed():
-                    yield self._process_next_seed()
-                else:
-                    self._process_scheduler_requests()
-        except _SeedingPolicyChange:
-            self._slot.nextcall.schedule()
-            return
-        except CloseSpider as exception:
-            assert self.spider is not None  # typing
-            self.close_spider(self.spider, reason=exception.reason)
-            return
+        while not self.needs_backout():
+            if self._start_scheduled_request() is None:
+                break
 
         if self.spider_is_idle() and self._slot.close_if_idle:
             self._spider_idle()
-        elif self._needs_backout():
+        elif self.needs_backout():
             self._back_in_seconds = self._MIN_BACK_IN_SECONDS
         elif self._scheduler_has_pending_requests():
             # If the scheduler reports having pending requests but did not
@@ -310,7 +272,12 @@ class ExecutionEngine:
                     self._back_in_seconds**2, self._MAX_BACK_IN_SECONDS
                 )
 
-    def _needs_backout(self) -> bool:
+    def needs_backout(self) -> bool:
+        """Returns ``True`` if no more requests can be sent at the moment, or
+        ``False`` otherwise.
+
+        See :ref:`start-requests-lazy` for an example.
+        """
         assert self._slot is not None  # typing
         assert self.scraper.slot is not None  # typing
         return (
@@ -333,6 +300,7 @@ class ExecutionEngine:
             )
             return None
         if request is None:
+            self.signals.send_catch_log(signals.scheduler_empty)
             return None
 
         d: Deferred[Response | Request] = self._download(request)
@@ -400,7 +368,7 @@ class ExecutionEngine:
             return False
         if self.downloader.active:  # downloader has pending requests
             return False
-        if self._seeds is not None:  # not all start requests are handled
+        if self._start is not None:  # not all start requests are handled
             return False
         return not self._scheduler_has_pending_requests()
 
@@ -489,27 +457,30 @@ class ExecutionEngine:
         dwld.addBoth(_on_complete)
         return dwld
 
-    @inlineCallbacks
-    def open_spider(
+    @deferred_f_from_coro_f
+    async def open_spider(
         self,
         spider: Spider,
         close_if_idle: bool = True,
-    ) -> Generator[Deferred[Any], Any, None]:
+    ) -> None:
         if self._slot is not None:
             raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
         logger.info("Spider opened", extra={"spider": spider})
-        nextcall = CallLaterOnce(self._run_loop)
-        scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
-        self._seeds = yield self.scraper.spidermw.process_seeds(spider)
-        self._slot = _Slot(close_if_idle, nextcall, scheduler)
         self.spider = spider
+        nextcall = CallLaterOnce(self._start_scheduled_requests)
+        scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
+        self._slot = _Slot(close_if_idle, nextcall, scheduler)
+        self._start = await maybe_deferred_to_future(
+            self.scraper.spidermw.process_start(spider)
+        )
         if hasattr(scheduler, "open") and (d := scheduler.open(spider)):
-            yield d
-        yield self.scraper.open_spider(spider)
+            await maybe_deferred_to_future(d)
+        await maybe_deferred_to_future(self.scraper.open_spider(spider))
         assert self.crawler.stats
         self.crawler.stats.open_spider(spider)
-        yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
-        self._slot.nextcall.schedule()
+        await maybe_deferred_to_future(
+            self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
+        )
 
     def _spider_idle(self) -> None:
         """

@@ -7,9 +7,11 @@ See documentation in docs/topics/spiders.rst
 from __future__ import annotations
 
 import logging
+import warnings
 from typing import TYPE_CHECKING, Any, cast
 
 from scrapy import signals
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.utils.trackref import object_ref
 from scrapy.utils.url import url_is_from_spider
@@ -31,7 +33,7 @@ if TYPE_CHECKING:
 class Spider(object_ref):
     """Base class that any spider must subclass.
 
-    It provides a default :meth:`yield_seeds` implementation that sends
+    It provides a default :meth:`start` implementation that sends
     requests based on the :attr:`start_urls` class attribute and calls the
     :meth:`parse` method for each response.
     """
@@ -39,7 +41,7 @@ class Spider(object_ref):
     name: str
     custom_settings: dict[_SettingsKeyT, Any] | None = None
 
-    #: Seed URLs. See :meth:`yield_seeds`.
+    #: Start URLs. See :meth:`start`.
     start_urls: list[str]
 
     def __init__(self, name: str | None = None, **kwargs: Any):
@@ -78,7 +80,7 @@ class Spider(object_ref):
         self.settings: BaseSettings = crawler.settings
         crawler.signals.connect(self.close, signals.spider_closed)
 
-    async def yield_seeds(self) -> AsyncIterator[Any]:
+    async def start(self) -> AsyncIterator[Any]:
         """Yield the initial :class:`~scrapy.Request` objects to send.
 
         .. versionadded:: VERSION
@@ -93,7 +95,7 @@ class Spider(object_ref):
             class MySpider(Spider):
                 name = "myspider"
 
-                async def yield_seeds(self):
+                async def start(self):
                     yield Request("https://toscrape.com/")
 
         The default implementation reads URLs from :attr:`start_urls` and
@@ -102,7 +104,7 @@ class Spider(object_ref):
 
         .. code-block:: python
 
-            async def yield_seeds(self):
+            async def start(self):
                 for url in self.start_urls:
                     yield Request(url, dont_filter=True)
 
@@ -110,34 +112,21 @@ class Spider(object_ref):
 
         .. code-block:: python
 
-            async def yield_seeds(self):
+            async def start(self):
                 yield {"foo": "bar"}
 
-        Use :setting:`SEEDING_POLICY` to set how :meth:`yield_seeds` is
-        iterated by default. It is also
-        possible to yield a :class:`~scrapy.SeedingPolicy` enum or a matching
-        string to change the active seeding policy, for example:
-
-        .. code-block:: python
-
-            async def yield_seeds(self):
-                yield "front_load"
-                yield Request("https://a.example")
-                yield Request("https://b.example")
-                yield self.crawler.settings["SEEDING_POLICY"]
-                yield Request("https://c.example")
-
         It is also possible to raise :exc:`~scrapy.exceptions.CloseSpider`, for
-        example to customize the close reason when there are no seeds to yield:
+        example to customize the close reason when there are no start requests
+        to yield:
 
         .. code-block:: python
 
-            async def yield_seeds(self):
-                seeds = await queue_service_client.get_seed_batch()
-                if not seeds:
-                    raise CloseSpider("no_seeds")
-                for seed in seeds:
-                    yield seed
+            async def start(self):
+                requests = await queue_service_client.get_request_batch()
+                if not requests:
+                    raise CloseSpider("no_start_requests")
+                for request in requests:
+                    yield request
 
         To write spiders that work on Scrapy versions lower than VERSION,
         define also a synchronous ``start_requests()`` method that returns an
@@ -147,11 +136,27 @@ class Spider(object_ref):
 
             def start_requests(self):
                 yield Request("https://toscrape.com/")
+
+        .. seealso:: :ref:`start-requests`
         """
-        for seed in self.start_requests():
-            yield seed
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", category=ScrapyDeprecationWarning, module=r"^scrapy\.spiders$"
+            )
+            for item_or_request in self.start_requests():
+                yield item_or_request
 
     def start_requests(self) -> Iterable[Any]:
+        warnings.warn(
+            (
+                "The Spider.start_requests() method is deprecated, use "
+                "Spider.start() instead. If you are calling "
+                "super().start_requests() from a Spider.start() override, "
+                "iterate super().start() instead."
+            ),
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         if not self.start_urls and hasattr(self, "start_url"):
             raise AttributeError(
                 "Crawling could not start: 'start_urls' not found "

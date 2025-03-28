@@ -1751,29 +1751,6 @@ Soft limit (in bytes) for response data being processed.
 While the sum of the sizes of all responses being processed is above this value,
 Scrapy does not process new requests.
 
-.. setting:: SEEDING_POLICY
-
-SEEDING_POLICY
---------------
-
-.. versionadded:: VERSION
-
-Default: :py:enum:mem:`SeedingPolicy.greedy <scrapy.SeedingPolicy.greedy>`
-
-Determines the way :meth:`Spider.yield_seeds <scrapy.Spider.yield_seeds>` is
-iterated.
-
-Its value may be defined as a member of the :class:`~scrapy.SeedingPolicy` enum
-(e.g. :py:enum:mem:`SeedingPolicy.lazy <scrapy.SeedingPolicy.lazy>`) or as a
-matching string (e.g. ``"lazy"``).
-
-You can also override the active seeding policy from :meth:`Spider.yield_seeds
-<scrapy.Spider.yield_seeds>` and from :meth:`SpiderMiddleware.process_seeds
-<scrapy.spidermiddlewares.SpiderMiddleware.process_seeds>`.
-
-.. autoenum:: scrapy.SeedingPolicy
-    :members:
-
 .. setting:: SPIDER_CONTRACTS
 
 SPIDER_CONTRACTS
@@ -1991,7 +1968,7 @@ In order to use the reactor installed by Scrapy:
             self.timeout = int(kwargs.pop("timeout", "60"))
             super(QuotesSpider, self).__init__(*args, **kwargs)
 
-        async def yield_seeds(self):
+        async def start(self):
             reactor.callLater(self.timeout, self.stop)
 
             urls = ["https://quotes.toscrape.com/page/1"]
@@ -2020,7 +1997,7 @@ which raises :exc:`Exception`, becomes:
             self.timeout = int(kwargs.pop("timeout", "60"))
             super(QuotesSpider, self).__init__(*args, **kwargs)
 
-        async def yield_seeds(self):
+        async def start(self):
             from twisted.internet import reactor
 
             reactor.callLater(self.timeout, self.stop)
@@ -2088,6 +2065,21 @@ also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware
 if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
 there is no overriding User-Agent header specified for the request.
 
+.. setting:: WARN_ON_GENERATOR_RETURN_VALUE
+
+WARN_ON_GENERATOR_RETURN_VALUE
+------------------------------
+
+Default: ``True``
+
+When enabled, Scrapy will warn if generator-based callback methods (like
+``parse``) contain return statements with non-``None`` values. This helps detect
+potential mistakes in spider development.
+
+Disable this setting to prevent syntax errors that may occur when dynamically
+modifying generator function source code during runtime, skip AST parsing of
+callback functions, or improve performance in auto-reloading development
+environments.
 
 Settings documented elsewhere:
 ------------------------------

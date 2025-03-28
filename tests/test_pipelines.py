@@ -69,7 +69,7 @@ class AsyncDefNotAsyncioPipeline:
 class ItemSpider(Spider):
     name = "itemspider"
 
-    async def yield_seeds(self):
+    async def start(self):
         yield Request(self.mockserver.url("/status?n=200"))
 
     def parse(self, response):

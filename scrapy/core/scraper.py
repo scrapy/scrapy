@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from collections import deque
-from collections.abc import AsyncIterable, Iterator
+from collections.abc import AsyncIterator, Iterator
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -170,7 +170,7 @@ class Scraper:
             raise TypeError(
                 f"Incorrect type: expected Response or Failure, got {type(result)}: {result!r}"
             )
-        dfd: Deferred[Iterable[Any] | AsyncIterable[Any]] = self._scrape2(
+        dfd: Deferred[Iterable[Any] | AsyncIterator[Any]] = self._scrape2(
             result, request, spider
         )  # returns spider's processed output
         dfd.addErrback(self.handle_spider_error, request, result, spider)
@@ -181,7 +181,7 @@ class Scraper:
 
     def _scrape2(
         self, result: Response | Failure, request: Request, spider: Spider
-    ) -> Deferred[Iterable[Any] | AsyncIterable[Any]]:
+    ) -> Deferred[Iterable[Any] | AsyncIterator[Any]]:
         """
         Handle the different cases of request's result been a Response or a Failure
         """
@@ -197,7 +197,7 @@ class Scraper:
 
     def call_spider(
         self, result: Response | Failure, request: Request, spider: Spider
-    ) -> Deferred[Iterable[Any] | AsyncIterable[Any]]:
+    ) -> Deferred[Iterable[Any] | AsyncIterator[Any]]:
         dfd: Deferred[Any]
         if isinstance(result, Response):
             if getattr(result, "request", None) is None:
@@ -216,7 +216,7 @@ class Scraper:
             if request.errback:
                 warn_on_generator_with_return_value(spider, request.errback)
                 dfd.addErrback(request.errback)
-        dfd2: Deferred[Iterable[Any] | AsyncIterable[Any]] = dfd.addCallback(
+        dfd2: Deferred[Iterable[Any] | AsyncIterator[Any]] = dfd.addCallback(
             iterate_spider_output
         )
         return dfd2
@@ -246,22 +246,23 @@ class Scraper:
             spider=spider,
         )
         assert self.crawler.stats
+        self.crawler.stats.inc_value("spider_exceptions/count", spider=spider)
         self.crawler.stats.inc_value(
             f"spider_exceptions/{_failure.value.__class__.__name__}", spider=spider
         )
 
     def handle_spider_output(
         self,
-        result: Iterable[_T] | AsyncIterable[_T],
+        result: Iterable[_T] | AsyncIterator[_T],
         request: Request,
         response: Response,
         spider: Spider,
     ) -> _HandleOutputDeferred:
         if not result:
             return defer_succeed(None)
-        it: Iterable[_T] | AsyncIterable[_T]
+        it: Iterable[_T] | AsyncIterator[_T]
         dfd: Deferred[_ParallelResult]
-        if isinstance(result, AsyncIterable):
+        if isinstance(result, AsyncIterator):
             it = aiter_errback(
                 result, self.handle_spider_error, request, response, spider
             )

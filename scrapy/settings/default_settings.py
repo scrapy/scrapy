@@ -17,8 +17,6 @@ import sys
 from importlib import import_module
 from pathlib import Path
 
-from scrapy import SeedingPolicy
-
 ADDONS = {}
 
 AJAXCRAWL_ENABLED = False
@@ -310,8 +308,6 @@ SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ScrapyPriorityQueue"
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
 
-SEEDING_POLICY = SeedingPolicy.greedy
-
 SPIDER_LOADER_CLASS = "scrapy.spiderloader.SpiderLoader"
 SPIDER_LOADER_WARN_ONLY = False
 
@@ -355,3 +351,5 @@ SPIDER_CONTRACTS_BASE = {
     "scrapy.contracts.default.ReturnsContract": 2,
     "scrapy.contracts.default.ScrapesContract": 3,
 }
+
+WARN_ON_GENERATOR_RETURN_VALUE = True

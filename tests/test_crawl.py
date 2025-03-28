@@ -34,6 +34,7 @@ from tests.spiders import (
     AsyncDefDeferredMaybeWrappedSpider,
     AsyncDefDeferredWrappedSpider,
     AsyncDefSpider,
+    BrokenStartSpider,
     BytesReceivedCallbackSpider,
     BytesReceivedErrbackSpider,
     CrawlSpiderWithAsyncCallback,
@@ -42,14 +43,14 @@ from tests.spiders import (
     CrawlSpiderWithParseMethod,
     CrawlSpiderWithProcessRequestCallbackKeywordArguments,
     DelaySpider,
-    DuplicateYieldSeedsSpider,
+    DuplicateStartSpider,
     FollowAllSpider,
     HeadersReceivedCallbackSpider,
     HeadersReceivedErrbackSpider,
     SimpleSpider,
     SingleRequestSpider,
-    YieldSeedsGoodAndBadOutput,
-    YieldSeedsItemSpider,
+    StartGoodAndBadOutput,
+    StartItemSpider,
 )
 
 
@@ -162,36 +163,57 @@ class TestCrawl(TestCase):
         self._assert_retried(log)
 
     @defer.inlineCallbacks
-    def test_yield_seeds_items(self):
+    def test_start_bug_before_yield(self):
         with LogCapture("scrapy", level=logging.ERROR) as log:
-            crawler = get_crawler(YieldSeedsItemSpider)
+            crawler = get_crawler(BrokenStartSpider)
+            yield crawler.crawl(fail_before_yield=1, mockserver=self.mockserver)
+
+        assert len(log.records) == 1
+        record = log.records[0]
+        assert record.exc_info is not None
+        assert record.exc_info[0] is ZeroDivisionError
+
+    @defer.inlineCallbacks
+    def test_start_bug_yielding(self):
+        with LogCapture("scrapy", level=logging.ERROR) as log:
+            crawler = get_crawler(BrokenStartSpider)
+            yield crawler.crawl(fail_yielding=1, mockserver=self.mockserver)
+
+        assert len(log.records) == 1
+        record = log.records[0]
+        assert record.exc_info is not None
+        assert record.exc_info[0] is ZeroDivisionError
+
+    @defer.inlineCallbacks
+    def test_start_items(self):
+        with LogCapture("scrapy", level=logging.ERROR) as log:
+            crawler = get_crawler(StartItemSpider)
             yield crawler.crawl(mockserver=self.mockserver)
 
         assert len(log.records) == 0
 
     @defer.inlineCallbacks
-    def test_yield_seeds_unsupported_output(self):
-        """Anything that is not a request, a seeding policy or a string (which
-        is assumed to be a seeding policy) is assumed to be an item, avoiding a
-        potentially expensive call to itemadapter.is_item, and letting instead
-        things fail when ItemAdapter is actually used on the corresponding
-        non-item object."""
+    def test_start_unsupported_output(self):
+        """Anything that is not a request is assumed to be an item, avoiding a
+        potentially expensive call to itemadapter.is_item(), and letting
+        instead things fail when ItemAdapter is actually used on the
+        corresponding non-item object."""
         with LogCapture("scrapy", level=logging.ERROR) as log:
-            crawler = get_crawler(YieldSeedsGoodAndBadOutput)
+            crawler = get_crawler(StartGoodAndBadOutput)
             yield crawler.crawl(mockserver=self.mockserver)
 
-        assert len(log.records) == 1
+        assert len(log.records) == 0
 
     @defer.inlineCallbacks
-    def test_yield_seeds_dupes(self):
+    def test_start_dupes(self):
         settings = {"CONCURRENT_REQUESTS": 1}
-        crawler = get_crawler(DuplicateYieldSeedsSpider, settings)
+        crawler = get_crawler(DuplicateStartSpider, settings)
         yield crawler.crawl(
             dont_filter=True, distinct_urls=2, dupe_factor=3, mockserver=self.mockserver
         )
         assert crawler.spider.visited == 6
 
-        crawler = get_crawler(DuplicateYieldSeedsSpider, settings)
+        crawler = get_crawler(DuplicateStartSpider, settings)
         yield crawler.crawl(
             dont_filter=False,
             distinct_urls=3,
@@ -273,10 +295,10 @@ with multiples lines
         # basic asserts in case of weird communication errors
         assert "responses" in crawler.spider.meta
         assert "failures" not in crawler.spider.meta
-        # test_yield_seeds doesn't set Referer header
+        # start() doesn't set Referer header
         echo0 = json.loads(to_unicode(crawler.spider.meta["responses"][2].body))
         assert "Referer" not in echo0["headers"]
-        # following request sets Referer to test_yield_seeds url
+        # following request sets Referer to the source request url
         echo1 = json.loads(to_unicode(crawler.spider.meta["responses"][1].body))
         assert echo1["headers"].get("Referer") == [req0.url]
         # next request avoids Referer header

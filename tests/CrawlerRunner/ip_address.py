@@ -32,7 +32,7 @@ def createResolver(servers=None, resolvconf=None, hosts=None):
 class LocalhostSpider(Spider):
     name = "localhost_spider"
 
-    async def yield_seeds(self):
+    async def start(self):
         yield Request(self.url)
 
     def parse(self, response):

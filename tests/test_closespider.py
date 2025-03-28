@@ -91,6 +91,7 @@ class TestCloseSpider(TestCase):
         assert reason == "closespider_errorcount"
         key = f"spider_exceptions/{crawler.spider.exception_cls.__name__}"
         errorcount = crawler.stats.get_value(key)
+        assert crawler.stats.get_value("spider_exceptions/count") >= close_on
         assert errorcount >= close_on
 
     @defer.inlineCallbacks
@@ -114,11 +115,11 @@ class TestCloseSpider(TestCase):
         assert total_seconds >= timeout
 
     @deferred_f_from_coro_f
-    async def test_yield_seeds(self):
+    async def test_spider_start(self):
         class TestSpider(Spider):
             name = "test"
 
-            async def yield_seeds(self):
+            async def start(self):
                 raise CloseSpider("foo")
                 yield  # pylint: disable=unreachable
 
