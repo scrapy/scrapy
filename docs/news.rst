@@ -13,6 +13,13 @@ Highlights:
 -   Replaced ``start_requests()`` (sync) with :meth:`~scrapy.Spider.start`
     (async) and changed how it is iterated.
 
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   Minimum versions increased for these dependencies:
+
+    -   lxml_: 4.6.0 → 4.9.3
+
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -98,6 +105,24 @@ New features
 -   Exposed a new method of :class:`Crawler.engine
     <scrapy.core.engine.ExecutionEngine>`:
     :meth:`~scrapy.core.engine.ExecutionEngine.needs_backout`.
+
+-   You can now raise :exc:`~scrapy.exceptions.CloseSpider` from
+    :meth:`~scrapy.Spider.yield_seeds` and from
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds`.
+
+    (:issue:`3463`, :issue:`4058`, :issue:`6148`, :issue:`6715`, :issue:`6728`)
+
+-   Unlike its precedesors, if :meth:`~scrapy.Spider.yield_seeds` or
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds` are not
+    asynchronous generators, the crawl starts nonetheless, without seeds.
+
+    This aligns with the behavior of spider callbacks, and allows the crawl to
+    process requests from the scheduler, e.g. when :ref:`resuming a paused job
+    <topics-jobs>`.
+
+    The logged errors have also been improved.
+
+    (:issue:`5426`)
 
 Bug fixes
 ~~~~~~~~~
@@ -725,7 +750,7 @@ Bug fixes
 
 -   During :ref:`feed export <topics-feed-exports>`, do not close the
     underlying file from :ref:`built-in post-processing plugins
-    <builtin-plugins>`.
+    <post-processing-plugins>`.
     (:issue:`5932`, :issue:`6178`, :issue:`6239`)
 
 -   :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
@@ -2044,8 +2069,9 @@ New features
     :issue:`5161`, :issue:`5203`)
 
 -   You can now apply :ref:`post-processing <post-processing>` to feeds, and
-    :ref:`built-in post-processing plugins <builtin-plugins>` are provided for
-    output file compression. (:issue:`2174`, :issue:`5168`, :issue:`5190`)
+    :ref:`built-in post-processing plugins <post-processing-plugins>` are
+    provided for output file compression.
+    (:issue:`2174`, :issue:`5168`, :issue:`5190`)
 
 -   The :setting:`FEEDS` setting now supports :class:`pathlib.Path` objects as
     keys. (:issue:`5383`, :issue:`5384`)

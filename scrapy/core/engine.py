@@ -13,7 +13,6 @@ from traceback import format_exc
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.internet.defer import Deferred, succeed
-from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
 
 from scrapy import signals
@@ -26,6 +25,7 @@ from scrapy.utils.defer import (
 )
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
@@ -57,7 +57,6 @@ class _Slot:
         self.close_if_idle: bool = close_if_idle
         self.nextcall: CallLaterOnce[None] = nextcall
         self.scheduler: BaseScheduler = scheduler
-        self.heartbeat: LoopingCall = LoopingCall(nextcall.schedule)
 
     def add_request(self, request: Request) -> None:
         self.inprogress.add(request)
@@ -75,13 +74,12 @@ class _Slot:
         if self.closing is not None and not self.inprogress:
             if self.nextcall:
                 self.nextcall.cancel()
-                if self.heartbeat.running:
-                    self.heartbeat.stop()
             self.closing.callback(None)
 
 
 class ExecutionEngine:
-    _SLOT_HEARTBEAT_INTERVAL: float = 5.0
+    _MIN_BACK_IN_SECONDS = 0.001
+    _MAX_BACK_IN_SECONDS = 5.0
 
     def __init__(
         self,
@@ -103,6 +101,7 @@ class ExecutionEngine:
         self.start_time: float | None = None
         self._start: AsyncIterator[Any] | None = None
         downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
+        self._back_in_seconds = self._MIN_BACK_IN_SECONDS
         try:
             self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
                 crawler.settings
@@ -179,16 +178,23 @@ class ExecutionEngine:
     def unpause(self) -> None:
         self.paused = False
 
-    async def _process_start_next(self):
+    async def _process_start_next(self) -> None:
         """Processes the next item or request from Spider.start().
 
         If a request, it is scheduled. If an item, it is sent to item
         pipelines.
         """
+        assert self._start is not None
         try:
             item_or_request = await self._start.__anext__()
         except StopAsyncIteration:
             self._start = None
+        except CloseSpider as exception:
+            if self.spider:
+                await maybe_deferred_to_future(
+                    self.close_spider(self.spider, reason=exception.reason)
+                )
+            return
         except Exception as exception:
             self._start = None
             exception_traceback = format_exc()
@@ -203,7 +209,27 @@ class ExecutionEngine:
                 self.crawl(item_or_request)
             else:
                 self.scraper.start_itemproc(item_or_request, response=None)
+                assert self._slot is not None  # typing
                 self._slot.nextcall.schedule()
+
+    def _scheduler_has_pending_requests(self) -> bool:
+        assert self._slot is not None  # typing
+        try:
+            return self._slot.scheduler.has_pending_requests()
+        except Exception as exception:
+            exception_traceback = format_exc()
+            logger.error(
+                f"{global_object_name(self._slot.scheduler.has_pending_requests)} raised an exception: {exception}.\n{exception_traceback}",
+                exc_info=True,
+            )
+            return False
+
+    async def _wait_until_next_loop_iteration(self) -> None:
+        from twisted.internet import reactor
+
+        deferred: Deferred[None] = Deferred()
+        reactor.callLater(0, deferred.callback, None)
+        await maybe_deferred_to_future(deferred)
 
     @deferred_f_from_coro_f
     async def _start_request_processing(self) -> None:
@@ -214,15 +240,14 @@ class ExecutionEngine:
         # reports having pending requests but returns none.
         assert self._slot is not None  # typing
         self._slot.nextcall.schedule()
-        self._slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
 
         while self._start and self.spider:
             await self._process_start_next()
             if not self.needs_backout():
-                # Give room for the outcome of self._process_start_next() to be
-                # processed before continuing with the next iteration.
+                # Give room for the outcome of self._start_scheduled_requests()
+                # to be processed before continuing with the next iteration.
                 self._slot.nextcall.schedule()
-                await self._slot.nextcall.wait()
+                await self._wait_until_next_loop_iteration()
 
     def _start_scheduled_requests(self) -> None:
         if self._slot is None or self._slot.closing is not None or self.paused:
@@ -234,6 +259,18 @@ class ExecutionEngine:
 
         if self.spider_is_idle() and self._slot.close_if_idle:
             self._spider_idle()
+        elif self.needs_backout():
+            self._back_in_seconds = self._MIN_BACK_IN_SECONDS
+        elif self._scheduler_has_pending_requests():
+            # If the scheduler reports having pending requests but did not
+            # actually return one, use exponential backoff to schedule a new
+            # call to this method, to see if the scheduler finally returns a
+            # pending request or stops reporting that it has some.
+            self._slot.nextcall.schedule(self._back_in_seconds)
+            if self._back_in_seconds != self._MAX_BACK_IN_SECONDS:
+                self._back_in_seconds = min(
+                    self._back_in_seconds**2, self._MAX_BACK_IN_SECONDS
+                )
 
     def needs_backout(self) -> bool:
         """Returns ``True`` if no more requests can be sent at the moment, or
@@ -254,7 +291,14 @@ class ExecutionEngine:
         assert self._slot is not None  # typing
         assert self.spider is not None  # typing
 
-        request = self._slot.scheduler.next_request()
+        try:
+            request = self._slot.scheduler.next_request()
+        except Exception as exception:
+            exception_traceback = format_exc()
+            logger.exception(
+                f"{global_object_name(self._slot.scheduler.next_request)} raised an exception: {exception}\n{exception_traceback}"
+            )
+            return None
         if request is None:
             self.signals.send_catch_log(signals.scheduler_empty)
             return None
@@ -326,7 +370,7 @@ class ExecutionEngine:
             return False
         if self._start is not None:  # not all start requests are handled
             return False
-        return not self._slot.scheduler.has_pending_requests()
+        return not self._scheduler_has_pending_requests()
 
     def crawl(self, request: Request) -> None:
         """Inject the request into the spider <-> downloader pipeline"""
@@ -336,6 +380,7 @@ class ExecutionEngine:
         self._slot.nextcall.schedule()  # type: ignore[union-attr]
 
     def _schedule_request(self, request: Request, spider: Spider) -> None:
+        assert self._slot is not None  # typing
         request_scheduled_result = self.signals.send_catch_log(
             signals.request_scheduled,
             request=request,
@@ -345,7 +390,15 @@ class ExecutionEngine:
         for handler, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
-        if not self._slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
+        try:
+            request_was_enqueued = self._slot.scheduler.enqueue_request(request)
+        except Exception as exception:
+            exception_traceback = format_exc()
+            logger.error(
+                f"{global_object_name(self._slot.scheduler.enqueue_request)} raised an exception: {exception}\n{exception_traceback}"
+            )
+            request_was_enqueued = False
+        if not request_was_enqueued:
             self.signals.send_catch_log(
                 signals.request_dropped, request=request, spider=spider
             )

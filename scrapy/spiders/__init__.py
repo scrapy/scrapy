@@ -115,6 +115,19 @@ class Spider(object_ref):
             async def start(self):
                 yield {"foo": "bar"}
 
+        It is also possible to raise :exc:`~scrapy.exceptions.CloseSpider`, for
+        example to customize the close reason when there are no start requests
+        to yield:
+
+        .. code-block:: python
+
+            async def start(self):
+                requests = await queue_service_client.get_request_batch()
+                if not requests:
+                    raise CloseSpider("no_start_requests")
+                for request in requests:
+                    yield request
+
         To write spiders that work on Scrapy versions lower than VERSION,
         define also a synchronous ``start_requests()`` method that returns an
         iterable. For example:

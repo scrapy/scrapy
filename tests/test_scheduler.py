@@ -3,7 +3,7 @@ from __future__ import annotations
 import shutil
 import tempfile
 from abc import ABC, abstractmethod
-from collections import deque
+from collections import defaultdict, deque
 from typing import Any, NamedTuple
 
 import pytest
@@ -51,6 +51,28 @@ class MemoryScheduler(BaseScheduler):
 
     def unpause(self) -> None:
         self.paused = False
+
+
+class PriorityScheduler(BaseScheduler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.queue = defaultdict(deque)
+
+    def enqueue_request(self, request: Request) -> bool:
+        self.queue[request.priority].append(request)
+        return True
+
+    def has_pending_requests(self) -> bool:
+        return bool(self.queue)
+
+    def next_request(self) -> Request | None:
+        if not self.queue:
+            return None
+        priority = max(self.queue)
+        request = self.queue[priority].popleft()
+        if not self.queue[priority]:
+            del self.queue[priority]
+        return request
 
 
 class MockEngine(NamedTuple):
