@@ -12,7 +12,6 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
-from . import TWISTED_KEEPS_TRACEBACKS
 from .test_spider_start import SLEEP_SECONDS, twisted_sleep
 
 ITEM_A = {"id": "a"}
@@ -386,10 +385,7 @@ class MainTestCase(TestCase):
         with LogCapture() as log:
             await self._test_process_start(process_start, [])
 
-        if TWISTED_KEEPS_TRACEBACKS:
-            assert "in process_start\n    raise RuntimeError" in str(log), log
-        else:
-            assert "in _process_next_seed\n    seed =" in str(log), log
+        assert "in process_start\n    raise RuntimeError" in str(log), log
 
     @deferred_f_from_coro_f
     async def test_exception_after_yield(self):
@@ -400,7 +396,4 @@ class MainTestCase(TestCase):
         with LogCapture() as log:
             await self._test_process_start(process_start, [ITEM_A])
 
-        if TWISTED_KEEPS_TRACEBACKS:
-            assert "in process_start\n    raise RuntimeError" in str(log), log
-        else:
-            assert "in _process_next_seed\n    seed =" in str(log), log
+        assert "in process_start\n    raise RuntimeError" in str(log), log

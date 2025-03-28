@@ -337,7 +337,7 @@ class RequestSendOrderTestCase(TestCase):
     async def test_lazy(self):
         start_nums = [1, 2, 4]
         cb_nums = [3]
-        response_seconds = self.seconds
+        response_seconds = self.seconds * 2**1  # increase if flaky
         download_slots = 1
 
         async def start(spider):
@@ -397,21 +397,18 @@ class RequestSendOrderTestCase(TestCase):
         expected_urls = [_url(letter) for letter in "abcd"]
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
-    # Sleep handling
+    # Delay handling
 
     @deferred_f_from_coro_f
-    async def test_sleep(self):
-        """Neither asynchronous sleeps on Spider.start() nor the equivalent on
-        the scheduler (returning no requests while also returning True from
-        the has_pending_requests() method) should cause the spider to miss the
-        processing of any later requests."""
+    async def test_delays(self):
+        """Delays in Spider.start() or in the scheduler (i.e. returning no
+        requests while also returning True from the has_pending_requests()
+        method) should cause the spider to miss the processing of any later
+        requests."""
         seconds = ExecutionEngine._MIN_BACK_IN_SECONDS
 
         def _request(num):
             return self._request(num, seconds)
-
-        async def _sleep():
-            await sleep(seconds)
 
         async def start(spider):
             from twisted.internet import reactor
@@ -419,19 +416,19 @@ class RequestSendOrderTestCase(TestCase):
             yield _request(1)
 
             # Let request 1 be processed.
-            await _sleep()
+            await spider.crawler.signals.wait_for(signals.scheduler_empty)
 
             spider.crawler.engine._slot.scheduler.pause()
             spider.crawler.engine._slot.scheduler.enqueue_request(_request(2))
 
             # During this time, the scheduler reports having requests but
             # returns None.
-            await _sleep()
+            await spider.crawler.signals.wait_for(signals.scheduler_empty)
 
             spider.crawler.engine._slot.scheduler.unpause()
 
             # The scheduler request is processed.
-            await _sleep()
+            await spider.crawler.signals.wait_for(signals.scheduler_empty)
 
             yield _request(3)
 
@@ -442,7 +439,7 @@ class RequestSendOrderTestCase(TestCase):
             # delayed call below, proving that the start iteration can
             # finish before a scheduler “sleep” without causing the
             # scheduler to finish.
-            reactor.callLater(seconds, spider.crawler.engine._slot.scheduler.unpause)
+            reactor.callLater(0, spider.crawler.engine._slot.scheduler.unpause)
 
         await maybe_deferred_to_future(
             self._test_request_order(
