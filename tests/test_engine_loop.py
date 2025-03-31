@@ -334,7 +334,6 @@ class RequestSendOrderTestCase(TestCase):
         await maybe_deferred_to_future(
             self._test_request_order(
                 start_nums=start_nums,
-                settings={"SCHEDULER": MemoryScheduler},
                 response_seconds=response_seconds,
                 start_fn=start,
             )
