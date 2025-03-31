@@ -22,7 +22,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from re import Pattern
 
-    # typing.Concatenate, typing.ParamSpec and typing.Self require Python 3.10
+    # typing.Concatenate and typing.ParamSpec require Python 3.10
+    # typing.Self requires Python 3.11
     from typing_extensions import Concatenate, ParamSpec, Self
 
     _P = ParamSpec("_P")
