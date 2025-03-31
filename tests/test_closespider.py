@@ -135,6 +135,27 @@ class TestCloseSpider(TestCase):
         assert close_reasons[0] == "foo"
 
     @deferred_f_from_coro_f
+    async def test_spider_start_already_closed(self):
+        class TestSpider(Spider):
+            name = "test"
+
+            async def start(self):
+                self.crawler.engine.stop()
+                raise CloseSpider("foo")
+                yield  # pylint: disable=unreachable
+
+        close_reasons = []
+
+        def track_close_reason(spider, reason):
+            close_reasons.append(reason)
+
+        crawler = get_crawler(TestSpider)
+        crawler.signals.connect(track_close_reason, signal=signals.spider_closed)
+        await maybe_deferred_to_future(crawler.crawl())
+        assert len(close_reasons) == 1
+        assert close_reasons[0] == "shutdown"
+
+    @deferred_f_from_coro_f
     async def test_callback(self):
         class TestSpider(Spider):
             name = "test"
@@ -153,3 +174,26 @@ class TestCloseSpider(TestCase):
         await maybe_deferred_to_future(crawler.crawl())
         assert len(close_reasons) == 1
         assert close_reasons[0] == "foo"
+
+    timeout = 1
+
+    @deferred_f_from_coro_f
+    async def test_callback_already_closed(self):
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+
+            async def parse(self, response):
+                self.crawler.engine.stop()
+                raise CloseSpider("foo")
+
+        close_reasons = []
+
+        def track_close_reason(spider, reason):
+            close_reasons.append(reason)
+
+        crawler = get_crawler(TestSpider)
+        crawler.signals.connect(track_close_reason, signal=signals.spider_closed)
+        await maybe_deferred_to_future(crawler.crawl())
+        assert len(close_reasons) == 1
+        assert close_reasons[0] == "shutdown"
