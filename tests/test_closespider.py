@@ -175,8 +175,6 @@ class TestCloseSpider(TestCase):
         assert len(close_reasons) == 1
         assert close_reasons[0] == "foo"
 
-    timeout = 1
-
     @deferred_f_from_coro_f
     async def test_callback_already_closed(self):
         class TestSpider(Spider):
