@@ -170,8 +170,8 @@ class MainTestCase(TestCase):
         class TestSpider(Spider):
             name = "test"
 
-            async def start(spider):
-                await spider.crawler.signals.wait_for(signals.scheduler_empty)
+            async def start(self):
+                await self.crawler.signals.wait_for(signals.scheduler_empty)
                 yield Request("data:,c")
 
             def parse(self, response):
