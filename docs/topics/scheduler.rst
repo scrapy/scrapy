@@ -27,7 +27,7 @@ A scheduler must:
     may rely, for example, on frontier, queue, database or storage services.
 
     Pending requests may come from the
-    :ref:`Spider.start <scrapy.spiders.Spider.start>` method, from spider
+    :meth:`Spider.start <scrapy.Spider.start>` method, from spider
     callbacks (:attr:`Request.callback <scrapy.Request.callback>`),
     from :ref:`spider middlewares <topics-spider-middleware>` or from
     :ref:`downloader middlewares <topics-downloader-middleware>`.
