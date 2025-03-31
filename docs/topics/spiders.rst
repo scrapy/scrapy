@@ -369,13 +369,16 @@ See `Scrapyd documentation`_.
 Start requests
 ==============
 
-**Start requests** are the requests yielded by the :meth:`~scrapy.Spider.start`
-method of a spider.
+**Start requests** are the :ref:`requests <request>` that serve as a starting
+point for a spider.
 
-By default, Scrapy does not try to send :meth:`~scrapy.Spider.start` requests
-in order. Instead, it prioritizes reaching :setting:`CONCURRENT_REQUESTS` and
-:ref:`scheduling <topics-scheduler>` start requests. However, you can change
-that.
+They are yielded by the :meth:`~scrapy.Spider.start` method, and may be
+modified by :ref:`spider middlewares <topics-spider-middleware>`.
+
+They are not necessarily the *first* requests sent, and may not be sent in
+order; reaching :setting:`CONCURRENT_REQUESTS` and :ref:`scheduling
+<topics-scheduler>` start requests is prioritized by default. But you can
+change that.
 
 ..
     The request send order when all start requests and callback requests have
@@ -454,8 +457,8 @@ is reached, start requests are removed from the scheduler immediately after
 they are scheduled.
 
 If you do not yield the highest-priority start requests first, and you want
-request priorities to be respected since the first request, pause the scheduler
-while yielding your start requests:
+request priorities to be respected since the very first request, pause the
+:ref:`scheduler <topics-scheduler>` while yielding your start requests:
 
 .. code-block:: python
 

@@ -21,11 +21,12 @@ For broad crawls, consider these adjustments:
 
 -   .. _broad-crawls-concurrency:
 
-    Increase global concurrency:
+    Increase the global concurrency:
 
-    -   Set :setting:`CONCURRENT_REQUESTS` as close to “number of target
-        domains” times :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (e.g. 80 for
-        10 domains) as your CPU and memory allow.
+    -   Set :setting:`CONCURRENT_REQUESTS` as close to
+        :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` × [number of target domains]
+        (e.g. 8 × 10 domains = 80 concurrent requests) as your CPU and memory
+        allow.
 
     -   Increase :setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE` when increasing
         :setting:`CONCURRENT_REQUESTS` stops making a difference.
@@ -87,8 +88,9 @@ Lowering memory usage
         :attr:`~scrapy.Request.callback` cannot yield additional
         requests.
 
-    -   If you have many :ref:`start requests <start-requests>`, use :ref:`lazy
-        <start-requests-lazy>` or :ref:`idle <start-requests-idle>` scheduling.
+    -   If you have multiple :ref:`start requests <start-requests>`, consider
+        :ref:`lazy <start-requests-lazy>` or :ref:`idle <start-requests-idle>`
+        scheduling.
 
     -   Set :setting:`JOBDIR` to offload all scheduled requests to disk.
 

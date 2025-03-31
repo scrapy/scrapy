@@ -20,6 +20,7 @@ functionality not required in the base classes. These are described
 below in :ref:`topics-request-response-ref-request-subclasses` and
 :ref:`topics-request-response-ref-response-subclasses`.
 
+.. _request:
 
 Request objects
 ===============
