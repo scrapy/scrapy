@@ -52,9 +52,9 @@ class CloseSpider(Exception):
 
     -   The :ref:`callbacks
         <topics-request-response-ref-request-callback-arguments>` and the
-        :meth:`~scrapy.Spider.yield_seeds` method of spiders.
+        :meth:`~scrapy.Spider.start` method of spiders.
 
-    -   The :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds`
+    -   The :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start`
         method of :ref:`spider middlewares <topics-spider-middleware>`.
 
     -   :ref:`Handlers <topics-signals>` of the :signal:`spider_idle` signal.

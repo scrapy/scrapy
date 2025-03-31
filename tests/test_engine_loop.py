@@ -389,7 +389,7 @@ class RequestSendOrderTestCase(TestCase):
         def track_url(request, spider):
             actual_urls.append(request.url)
 
-        settings = {"SCHEDULER": TestScheduler, "SEEDING_POLICY": "idle"}
+        settings = {"SCHEDULER": TestScheduler}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
         await maybe_deferred_to_future(crawler.crawl())

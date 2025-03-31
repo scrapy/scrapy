@@ -85,11 +85,8 @@ Lowering memory usage
         :attr:`~scrapy.Request.callback` cannot yield additional
         requests.
 
-    -   If you have many seed requests (see
-        :meth:`~scrapy.Spider.yield_seeds`), set
-        :setting:`SEEDING_POLICY` to
-        :class:`~scrapy.SeedingPolicy.lazy` or
-        :class:`~scrapy.SeedingPolicy.idle`.
+    -   If you have many :ref:`start requests <start-requests>`, use :ref:`lazy
+        scheduling <start-requests-lazy>`.
 
     -   Set :setting:`JOBDIR` to offload all scheduled requests to disk.
 

@@ -26,10 +26,11 @@ A scheduler must:
     The built-in scheduler stores requests in memory or disk. Other schedulers
     may rely, for example, on frontier, queue, database or storage services.
 
-    Pending requests may come from seeding (see :setting:`SEEDING_POLICY`),
-    spider callbacks (:attr:`Request.callback <scrapy.Request.callback>`),
-    :ref:`spider middlewares <topics-spider-middleware>` or :ref:`downloader
-    middlewares <topics-downloader-middleware>`.
+    Pending requests may come from the
+    :ref:`Spider.start <scrapy.spiders.Spider.start>` method, from spider
+    callbacks (:attr:`Request.callback <scrapy.Request.callback>`),
+    from :ref:`spider middlewares <topics-spider-middleware>` or from
+    :ref:`downloader middlewares <topics-downloader-middleware>`.
 
 -   Drop unwanted requests.
 

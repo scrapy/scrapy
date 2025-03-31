@@ -369,9 +369,14 @@ See `Scrapyd documentation`_.
 Start requests
 ==============
 
-Scrapy does not try to send :meth:`~scrapy.Spider.start` requests in order.
-Instead, it prioritizes reaching :setting:`CONCURRENT_REQUESTS` and
-:ref:`scheduling <topics-scheduler>` start requests.
+**Start requests** are the requests yielded by the :meth:`~scrapy.Spider.start`
+method of a spider.
+
+By default, Scrapy does not try to send :meth:`~scrapy.Spider.start` requests
+in order. Instead, it prioritizes reaching :setting:`CONCURRENT_REQUESTS` and
+:ref:`scheduling <topics-scheduler>` start requests. But you can :ref:`force a
+specific order <start-requests-order>` or :ref:`delay scheduling
+<start-requests-lazy>` as needed.
 
 ..
     The request send order when all start requests and callback requests have
@@ -402,12 +407,12 @@ Instead, it prioritizes reaching :setting:`CONCURRENT_REQUESTS` and
 
 .. _start-requests-order:
 
-Forcing a start request order
------------------------------
+Start request order
+-------------------
 
-To force a specific **request order**, override the
-:meth:`~scrapy.Spider.start` method to set :attr:`Request.priority
-<scrapy.http.Request.priority>`. For example:
+To force a specific request order, override the :meth:`~scrapy.Spider.start`
+method to set :attr:`Request.priority <scrapy.http.Request.priority>`. For
+example:
 
 -   To send start requests before other requests:
 
@@ -436,11 +441,12 @@ more control over request prioritization.
 
 .. _start-requests-lazy:
 
-Delaying start request iteration
---------------------------------
+Lazy start request scheduling
+-----------------------------
 
-You can override the :meth:`~scrapy.Spider.start` method as follows to pause
-its iteration whenever there are scheduled requests:
+To use lazy start request scheduling, where the iteration of start requests is
+paused until the scheduler is empty, override the :meth:`~scrapy.Spider.start`
+method as follows:
 
 .. code-block:: python
 

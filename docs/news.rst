@@ -107,14 +107,15 @@ New features
     :meth:`~scrapy.core.engine.ExecutionEngine.needs_backout`.
 
 -   You can now raise :exc:`~scrapy.exceptions.CloseSpider` from
-    :meth:`~scrapy.Spider.yield_seeds` and from
-    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds`.
+    :meth:`~scrapy.Spider.start` and from
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start`.
 
     (:issue:`3463`, :issue:`4058`, :issue:`6148`, :issue:`6715`, :issue:`6728`)
 
--   Unlike its precedesors, if :meth:`~scrapy.Spider.yield_seeds` or
-    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds` are not
-    asynchronous generators, the crawl starts nonetheless, without seeds.
+-   Unlike its precedesors, if :meth:`~scrapy.Spider.start` or
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` are not
+    asynchronous generators, the crawl starts nonetheless, without start
+    requests.
 
     This aligns with the behavior of spider callbacks, and allows the crawl to
     process requests from the scheduler, e.g. when :ref:`resuming a paused job

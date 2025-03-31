@@ -87,7 +87,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
             requests from a slow resource, like a network service, instead of a
             custom scheduler, consider writing a :ref:`spider middleware
             <topics-spider-middleware>` that implements
-            :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_seeds`.
+            :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start`.
 
         .. warning:: The crawl will continue running as long as this method
             returns ``True``.
@@ -98,8 +98,8 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
         """Called after the spider opens.
 
         Useful for initialization code that needs to run later than the
-        ``__init__`` method, e.g. once seed iteration (see
-        :meth:`~scrapy.Spider.yield_seeds`) has started.
+        ``__init__`` method, e.g. once the iteration of the
+        :meth:`~scrapy.Spider.start` method has started.
 
         May return a :class:`~twisted.internet.defer.Deferred`.
         """

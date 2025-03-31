@@ -345,7 +345,7 @@ class MainTestCase(TestCase):
 
     @deferred_f_from_coro_f
     async def test_async_function(self):
-        async def process_start(mw, seeds):
+        async def process_start(mw, start):
             return
 
         with LogCapture() as log:
@@ -378,7 +378,7 @@ class MainTestCase(TestCase):
 
     @deferred_f_from_coro_f
     async def test_exception_before_yield(self):
-        async def process_start(mw, seeds):
+        async def process_start(mw, start):
             raise RuntimeError
             yield  # pylint: disable=unreachable
 
