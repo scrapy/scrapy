@@ -14,7 +14,7 @@ from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
 from .mockserver import MockServer
-from .test_scheduler import MemoryScheduler, PriorityScheduler
+from .test_scheduler import MemoryScheduler
 
 
 async def sleep(seconds: float = ExecutionEngine._MIN_BACK_IN_SECONDS) -> None:
@@ -36,7 +36,7 @@ class MainTestCase(TestCase):
 
             async def start(self):
                 yield Request("data:,a")
-                self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
+                self.crawler.engine.scheduler.enqueue_request(Request("data:,b"))
                 raise RuntimeError
 
             def parse(self, response):
@@ -305,16 +305,21 @@ class RequestSendOrderTestCase(TestCase):
             )
         )
 
-    @pytest.mark.skip(reason="not implemented yet")
     @deferred_f_from_coro_f
     async def test_front_load(self):
         class TestSpider(Spider):
             name = "test"
 
             async def start(self):
+                assert self.crawler.engine is not None  # typing
+                assert isinstance(
+                    self.crawler.engine.scheduler, MemoryScheduler
+                )  # typing
                 self.crawler.engine.scheduler.pause()
-                yield Request("data:,b", priority=0)
-                yield Request("data:,a", priority=1)
+                # By pausing the scheduler, a is scheduled before b is sent,
+                # and since the scheduler uses a LIFO queue, a is sent first.
+                yield Request("data:,b")
+                yield Request("data:,a")
                 self.crawler.engine.scheduler.unpause()
 
             def parse(self, response):
@@ -325,7 +330,7 @@ class RequestSendOrderTestCase(TestCase):
         def track_url(request, spider):
             actual_urls.append(request.url)
 
-        settings = {"SCHEDULER": PriorityScheduler}
+        settings = {"SCHEDULER": MemoryScheduler}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
         await maybe_deferred_to_future(crawler.crawl())
@@ -418,28 +423,28 @@ class RequestSendOrderTestCase(TestCase):
             # Let request 1 be processed.
             await spider.crawler.signals.wait_for(signals.scheduler_empty)
 
-            spider.crawler.engine._slot.scheduler.pause()
-            spider.crawler.engine._slot.scheduler.enqueue_request(_request(2))
+            spider.crawler.engine.scheduler.pause()
+            spider.crawler.engine.scheduler.enqueue_request(_request(2))
 
             # During this time, the scheduler reports having requests but
             # returns None.
             await spider.crawler.signals.wait_for(signals.scheduler_empty)
 
-            spider.crawler.engine._slot.scheduler.unpause()
+            spider.crawler.engine.scheduler.unpause()
 
             # The scheduler request is processed.
             await spider.crawler.signals.wait_for(signals.scheduler_empty)
 
             yield _request(3)
 
-            spider.crawler.engine._slot.scheduler.pause()
-            spider.crawler.engine._slot.scheduler.enqueue_request(_request(4))
+            spider.crawler.engine.scheduler.pause()
+            spider.crawler.engine.scheduler.enqueue_request(_request(4))
 
             # The last start request is processed during the time until the
             # delayed call below, proving that the start iteration can
             # finish before a scheduler “sleep” without causing the
             # scheduler to finish.
-            reactor.callLater(0, spider.crawler.engine._slot.scheduler.unpause)
+            reactor.callLater(0, spider.crawler.engine.scheduler.unpause)
 
         await maybe_deferred_to_future(
             self._test_request_order(

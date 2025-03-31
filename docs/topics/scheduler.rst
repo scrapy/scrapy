@@ -54,6 +54,8 @@ Built-in scheduler
 ------------------
 
 .. autoclass:: Scheduler()
+    :members: __len__, pause, unpause
+    :member-order: bysource
 
 
 .. _priority-queues:

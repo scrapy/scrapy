@@ -16,6 +16,7 @@ from twisted.internet.defer import Deferred, succeed
 from twisted.python.failure import Failure
 
 from scrapy import signals
+from scrapy.core.scheduler import BaseScheduler
 from scrapy.core.scraper import Scraper, _HandleOutputDeferred
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
@@ -32,7 +33,6 @@ if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
 
     from scrapy.core.downloader import Downloader
-    from scrapy.core.scheduler import BaseScheduler
     from scrapy.crawler import Crawler
     from scrapy.logformatter import LogFormatter
     from scrapy.settings import BaseSettings, Settings
@@ -50,13 +50,11 @@ class _Slot:
         self,
         close_if_idle: bool,
         nextcall: CallLaterOnce[None],
-        scheduler: BaseScheduler,
     ) -> None:
         self.closing: Deferred[None] | None = None
         self.inprogress: set[Request] = set()
         self.close_if_idle: bool = close_if_idle
         self.nextcall: CallLaterOnce[None] = nextcall
-        self.scheduler: BaseScheduler = scheduler
 
     def add_request(self, request: Request) -> None:
         self.inprogress.add(request)
@@ -78,6 +76,12 @@ class _Slot:
 
 
 class ExecutionEngine:
+    """The engine handles some core :ref:`components <topics-components>`.
+
+    You can access the running engine at :attr:`Crawler.engine
+    <scrapy.crawler.Crawler.engine>`.
+    """
+
     _MIN_BACK_IN_SECONDS = 0.001
     _MAX_BACK_IN_SECONDS = 5.0
 
@@ -86,6 +90,9 @@ class ExecutionEngine:
         crawler: Crawler,
         spider_closed_callback: Callable[[Spider], Deferred[None] | None],
     ) -> None:
+        #: :ref:`Scheduler <topics-scheduler>` in use.
+        self.scheduler: BaseScheduler | None = None
+
         self.crawler: Crawler = crawler
         self.settings: Settings = crawler.settings
         self.signals: SignalManager = crawler.signals
@@ -113,8 +120,6 @@ class ExecutionEngine:
             raise
 
     def _get_scheduler_class(self, settings: BaseSettings) -> type[BaseScheduler]:
-        from scrapy.core.scheduler import BaseScheduler
-
         scheduler_cls: type[BaseScheduler] = load_object(settings["SCHEDULER"])
         if not issubclass(scheduler_cls, BaseScheduler):
             raise TypeError(
@@ -214,12 +219,13 @@ class ExecutionEngine:
 
     def _scheduler_has_pending_requests(self) -> bool:
         assert self._slot is not None  # typing
+        assert self.scheduler is not None  # typing
         try:
-            return self._slot.scheduler.has_pending_requests()
+            return self.scheduler.has_pending_requests()
         except Exception as exception:
             exception_traceback = format_exc()
             logger.error(
-                f"{global_object_name(self._slot.scheduler.has_pending_requests)} raised an exception: {exception}.\n{exception_traceback}",
+                f"{global_object_name(self.scheduler.has_pending_requests)} raised an exception: {exception}.\n{exception_traceback}",
                 exc_info=True,
             )
             return False
@@ -290,13 +296,14 @@ class ExecutionEngine:
     def _start_scheduled_request(self) -> Deferred[None] | None:
         assert self._slot is not None  # typing
         assert self.spider is not None  # typing
+        assert self.scheduler is not None  # typing
 
         try:
-            request = self._slot.scheduler.next_request()
+            request = self.scheduler.next_request()
         except Exception as exception:
             exception_traceback = format_exc()
             logger.exception(
-                f"{global_object_name(self._slot.scheduler.next_request)} raised an exception: {exception}\n{exception_traceback}"
+                f"{global_object_name(self.scheduler.next_request)} raised an exception: {exception}\n{exception_traceback}"
             )
             return None
         if request is None:
@@ -380,7 +387,7 @@ class ExecutionEngine:
         self._slot.nextcall.schedule()  # type: ignore[union-attr]
 
     def _schedule_request(self, request: Request, spider: Spider) -> None:
-        assert self._slot is not None  # typing
+        assert self.scheduler is not None  # typing
         request_scheduled_result = self.signals.send_catch_log(
             signals.request_scheduled,
             request=request,
@@ -391,11 +398,11 @@ class ExecutionEngine:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
         try:
-            request_was_enqueued = self._slot.scheduler.enqueue_request(request)
+            request_was_enqueued = self.scheduler.enqueue_request(request)
         except Exception as exception:
             exception_traceback = format_exc()
             logger.error(
-                f"{global_object_name(self._slot.scheduler.enqueue_request)} raised an exception: {exception}\n{exception_traceback}"
+                f"{global_object_name(self.scheduler.enqueue_request)} raised an exception: {exception}\n{exception_traceback}"
             )
             request_was_enqueued = False
         if not request_was_enqueued:
@@ -468,12 +475,12 @@ class ExecutionEngine:
         logger.info("Spider opened", extra={"spider": spider})
         self.spider = spider
         nextcall = CallLaterOnce(self._start_scheduled_requests)
-        scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
-        self._slot = _Slot(close_if_idle, nextcall, scheduler)
+        self.scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
+        self._slot = _Slot(close_if_idle, nextcall)
         self._start = await maybe_deferred_to_future(
             self.scraper.spidermw.process_start(spider)
         )
-        if hasattr(scheduler, "open") and (d := scheduler.open(spider)):
+        if hasattr(self.scheduler, "open") and (d := self.scheduler.open(spider)):
             await maybe_deferred_to_future(d)
         await maybe_deferred_to_future(self.scraper.open_spider(spider))
         assert self.crawler.stats
@@ -535,8 +542,8 @@ class ExecutionEngine:
         dfd.addBoth(lambda _: self.scraper.close_spider(spider))
         dfd.addErrback(log_failure("Scraper close failure"))
 
-        if hasattr(self._slot.scheduler, "close"):
-            dfd.addBoth(lambda _: cast(_Slot, self._slot).scheduler.close(reason))
+        if hasattr(self.scheduler, "close"):
+            dfd.addBoth(lambda _: cast(BaseScheduler, self.scheduler).close(reason))
             dfd.addErrback(log_failure("Scheduler close failure"))
 
         dfd.addBoth(

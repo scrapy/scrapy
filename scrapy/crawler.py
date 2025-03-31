@@ -65,6 +65,9 @@ class Crawler:
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
 
+        #: Running engine.
+        self.engine: ExecutionEngine | None = None
+
         self.spidercls: type[Spider] = spidercls
         self.settings: Settings = settings.copy()
         self.spidercls.update_settings(self.settings)
@@ -82,7 +85,6 @@ class Crawler:
         self.logformatter: LogFormatter | None = None
         self.request_fingerprinter: RequestFingerprinterProtocol | None = None
         self.spider: Spider | None = None
-        self.engine: ExecutionEngine | None = None
 
     def _update_root_log_handler(self) -> None:
         if get_scrapy_root_handler() is not None:

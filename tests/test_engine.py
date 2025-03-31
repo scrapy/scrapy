@@ -493,7 +493,8 @@ def test_request_scheduled_signal(caplog):
         yield
 
     engine._start = start()
-    engine._slot = _Slot(False, Mock(), scheduler)
+    engine.scheduler = scheduler
+    engine._slot = _Slot(False, Mock())
     crawler.signals.connect(signal_handler, request_scheduled)
     keep_request = Request("https://keep.example")
     engine._schedule_request(keep_request, spider)

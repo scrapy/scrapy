@@ -164,6 +164,7 @@ class Scheduler(BaseScheduler):
         self.logunser: bool = logunser
         self.stats: StatsCollector | None = stats
         self.crawler: Crawler | None = crawler
+        self._paused = False
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -210,6 +211,8 @@ class Scheduler(BaseScheduler):
         return True
 
     def next_request(self) -> Request | None:
+        if self._paused:
+            return None
         request: Request | None = self.mqs.pop()
         assert self.stats is not None
         if request is not None:
@@ -223,7 +226,21 @@ class Scheduler(BaseScheduler):
         return request
 
     def __len__(self) -> int:
+        """Return the number of pending requests."""
         return len(self.dqs) + len(self.mqs) if self.dqs is not None else len(self.mqs)
+
+    def pause(self) -> None:
+        """Stop sending pending requests.
+
+        It does not affect enqueing.
+
+        See :ref:`start-requests-front-load` for an example.
+        """
+        self._paused = True
+
+    def unpause(self) -> None:
+        """Resume sending pending requests."""
+        self._paused = False
 
     def _dqpush(self, request: Request) -> bool:
         if self.dqs is None:

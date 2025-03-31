@@ -37,7 +37,7 @@ Backward-incompatible changes
     :ref:`spider middleware <topics-spider-middleware>` no longer stops the
     crawl.
 
--   In ``scrapy.core.engine.ExecutionEngine``:
+-   In :class:`~scrapy.core.engine.ExecutionEngine`:
 
     -   The second parameter of ``open_spider()``, ``start_requests``, has been
         removed. The start requests are determined by the ``spider`` parameter
@@ -45,6 +45,10 @@ Backward-incompatible changes
 
     -   The ``slot`` attribute has been renamed to ``_slot`` and should not be
         used.
+
+        To access the running scheduler, previously at ``_slot.scheduler``, use
+        the :attr:`~scrapy.core.engine.ExecutionEngine.scheduler` attribute of
+        the running engine instead.
 
 -   In ``scrapy.core.engine``, the ``Slot`` class has been renamed to ``_Slot``
     and should not be used.

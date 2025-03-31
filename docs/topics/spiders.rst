@@ -374,9 +374,8 @@ method of a spider.
 
 By default, Scrapy does not try to send :meth:`~scrapy.Spider.start` requests
 in order. Instead, it prioritizes reaching :setting:`CONCURRENT_REQUESTS` and
-:ref:`scheduling <topics-scheduler>` start requests. But you can :ref:`force a
-specific order <start-requests-order>` or :ref:`delay scheduling
-<start-requests-lazy>` as needed.
+:ref:`scheduling <topics-scheduler>` start requests. However, you can change
+that.
 
 ..
     The request send order when all start requests and callback requests have
@@ -411,8 +410,9 @@ Start request order
 -------------------
 
 To force a specific request order, override the :meth:`~scrapy.Spider.start`
-method to set :attr:`Request.priority <scrapy.http.Request.priority>`. For
-example:
+method to set :attr:`Request.priority <scrapy.http.Request.priority>`.
+
+For example:
 
 -   To send start requests before other requests:
 
@@ -424,7 +424,7 @@ example:
                         item_or_request = item_or_request.replace(priority=1)
                     yield item_or_request
 
--   To send start requests in order:
+-   To send start requests in yield order:
 
     .. code-block:: python
 
@@ -438,6 +438,36 @@ example:
 
 You can also :ref:`customize the scheduler <topics-scheduler>` if you need
 more control over request prioritization.
+
+.. note:: By default, :ref:`the first few requests are sent in yield order
+    <start-requests-front-load>` regardless, for performance reasons.
+
+.. _start-requests-front-load:
+
+Start request front loading
+---------------------------
+
+By default, the first few requests yielded by :meth:`~scrapy.Spider.start` are
+sent in yield order, even if you :ref:`try to sort them differently
+<start-requests-order>`. This is because, until :setting:`CONCURRENT_REQUESTS`
+is reached, start requests are removed from the scheduler immediately after
+they are scheduled.
+
+If you do not yield the highest-priority start requests first, and you want
+request priorities to be respected since the first request, pause the scheduler
+while yielding your start requests:
+
+.. code-block:: python
+
+    async def start(self):
+        self.crawler.engine.scheduler.pause()
+        async for item_or_request in super().start():
+            yield item_or_request
+        self.crawler.engine.scheduler.unpause()
+
+.. note:: If you use a :ref:`custom scheduler <custom-scheduler>`, make sure it
+    supports pausing and unpausing, like
+    :class:`~scrapy.core.scheduler.Scheduler` does.
 
 .. _start-requests-lazy:
 
