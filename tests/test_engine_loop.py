@@ -170,8 +170,8 @@ class MainTestCase(TestCase):
         class TestSpider(Spider):
             name = "test"
 
-            async def start(self):
-                await sleep(ExecutionEngine._MIN_BACK_IN_SECONDS * 2)
+            async def start(spider):
+                await spider.crawler.signals.wait_for(signals.scheduler_empty)
                 yield Request("data:,c")
 
             def parse(self, response):
@@ -182,7 +182,7 @@ class MainTestCase(TestCase):
         def track_url(request, spider):
             actual_urls.append(request.url)
 
-        settings = {"SCHEDULER": TestScheduler, "SEEDING_POLICY": "lazy"}
+        settings = {"SCHEDULER": TestScheduler}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
         with LogCapture() as log:
