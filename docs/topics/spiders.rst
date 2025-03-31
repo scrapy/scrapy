@@ -466,17 +466,21 @@ while yielding your start requests:
         self.crawler.engine.scheduler.unpause()
 
 .. note:: If you use a :ref:`custom scheduler <custom-scheduler>`, make sure it
-    supports pausing and unpausing, like
-    :class:`~scrapy.core.scheduler.Scheduler` does.
+    supports pausing like :class:`~scrapy.core.scheduler.Scheduler`.
+
+Delaying start request scheduling
+---------------------------------
+
+When :ref:`optimizing memory usage <optimize-memory>`, it can sometimes be
+useful to delay start request scheduling :ref:`until the scheduler is empty
+<start-requests-lazy>` or :ref:`until the engine is idle
+<start-requests-idle>`.
 
 .. _start-requests-lazy:
 
-Lazy start request scheduling
------------------------------
-
-To use lazy start request scheduling, where the iteration of start requests is
-paused until the scheduler is empty, override the :meth:`~scrapy.Spider.start`
-method as follows:
+To use **lazy** start request scheduling, where the iteration of start requests
+is paused until the :ref:`scheduler <topics-scheduler>` is empty, override the
+:meth:`~scrapy.Spider.start` method as follows:
 
 .. code-block:: python
 
@@ -486,9 +490,24 @@ method as follows:
                 await self.crawler.signals.wait_for(signals.scheduler_empty)
             yield item_or_request
 
-This can help minimize the number of requests in the scheduler at any given
-time, to minimize resource usage (memory or disk, depending on
-:setting:`JOBDIR`).
+.. _start-requests-idle:
+
+To use **idle** start request scheduling, where the iteration of start requests
+is paused until the :ref:`engine <engine>` needs a start request to continue,
+override the :meth:`~scrapy.Spider.start` method as follows:
+
+.. code-block:: python
+
+    async def start(self):
+        async for item_or_request in super().start():
+            await self.crawler.signals.wait_for(signals.spider_start_blocking)
+            yield item_or_request
+
+.. warning:: While lazy scheduling only affects request order, **idle
+    scheduling can slow down your crawl**. It is functionally equivalent to
+    running a spider multiple times in a row, one per start request.
+
+.. seealso:: :class:`~scrapy.crawler.Crawler`, :ref:`topics-signals`.
 
 .. _builtin-spiders:
 

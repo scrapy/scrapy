@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from collections import deque
 from logging import ERROR
+from typing import TYPE_CHECKING
 
-import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import Deferred
 from twisted.trial.unittest import TestCase
@@ -15,6 +15,9 @@ from scrapy.utils.test import get_crawler
 
 from .mockserver import MockServer
 from .test_scheduler import MemoryScheduler
+
+if TYPE_CHECKING:
+    from scrapy.http import Response
 
 
 async def sleep(seconds: float = ExecutionEngine._MIN_BACK_IN_SECONDS) -> None:
@@ -205,10 +208,13 @@ class RequestSendOrderTestCase(TestCase):
     def tearDownClass(cls):
         cls.mockserver.__exit__(None, None, None)  # increase if flaky
 
-    def _request(self, num, response_seconds, download_slots=1):
+    def request(self, num, response_seconds, download_slots=1):
         url = self.mockserver.url(f"/delay?n={response_seconds}&{num}")
         meta = {"download_slot": str(num % download_slots)}
         return Request(url, meta=meta)
+
+    def get_num(self, request_or_response: Request | Response):
+        return int(request_or_response.url.rsplit("&", maxsplit=1)[1])
 
     @deferred_f_from_coro_f
     async def _test_request_order(
@@ -219,35 +225,37 @@ class RequestSendOrderTestCase(TestCase):
         response_seconds=None,
         download_slots=1,
         start_fn=None,
+        parse_fn=None,
     ):
         cb_nums = cb_nums or []
         settings = settings or {}
         response_seconds = response_seconds or self.seconds
 
+        cb_requests = deque(
+            [self.request(num, response_seconds, download_slots) for num in cb_nums]
+        )
+
         if start_fn is None:
 
             async def start_fn(spider):
                 for num in start_nums:
-                    yield self._request(num, response_seconds, download_slots)
+                    yield self.request(num, response_seconds, download_slots)
+
+        if parse_fn is None:
+
+            def parse_fn(spider, response):
+                while cb_requests:
+                    yield cb_requests.popleft()
 
         class TestSpider(Spider):
             name = "test"
-            cb_requests = deque(
-                [
-                    self._request(num, response_seconds, download_slots)
-                    for num in cb_nums
-                ]
-            )
             start = start_fn
-
-            def parse(self, response):
-                while self.cb_requests:
-                    yield self.cb_requests.popleft()
+            parse = parse_fn
 
         actual_nums = []
 
         def track_num(request, spider):
-            actual_nums.append(int(request.url.rsplit("&", maxsplit=1)[1]))
+            actual_nums.append(self.get_num(request))
 
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_num, signals.request_reached_downloader)
@@ -268,7 +276,7 @@ class RequestSendOrderTestCase(TestCase):
 
         async def start(spider):
             for num in start_nums:
-                request = self._request(num, response_seconds, download_slots)
+                request = self.request(num, response_seconds, download_slots)
                 yield request.replace(priority=1)
 
         await maybe_deferred_to_future(
@@ -291,7 +299,7 @@ class RequestSendOrderTestCase(TestCase):
         async def start(spider):
             priority = len(start_nums)
             for num in start_nums:
-                request = self._request(num, response_seconds, download_slots)
+                request = self.request(num, response_seconds, download_slots)
                 yield request.replace(priority=priority)
                 priority -= 1
 
@@ -307,36 +315,30 @@ class RequestSendOrderTestCase(TestCase):
 
     @deferred_f_from_coro_f
     async def test_front_load(self):
-        class TestSpider(Spider):
-            name = "test"
+        start_nums = [2, 1]
+        response_seconds = 0
+        download_slots = 1
 
-            async def start(self):
-                assert self.crawler.engine is not None  # typing
-                assert isinstance(
-                    self.crawler.engine.scheduler, MemoryScheduler
-                )  # typing
-                self.crawler.engine.scheduler.pause()
-                # By pausing the scheduler, a is scheduled before b is sent,
-                # and since the scheduler uses a LIFO queue, a is sent first.
-                yield Request("data:,b")
-                yield Request("data:,a")
-                self.crawler.engine.scheduler.unpause()
+        async def start(spider):
+            # typing:
+            assert spider.crawler.engine is not None
+            assert isinstance(spider.crawler.engine.scheduler, MemoryScheduler)
 
-            def parse(self, response):
-                pass
+            spider.crawler.engine.scheduler.pause()
+            # By pausing the scheduler, a is scheduled before b is sent,
+            # and since the scheduler uses a LIFO queue, a is sent first.
+            yield self.request(2, response_seconds, download_slots)
+            yield self.request(1, response_seconds, download_slots)
+            spider.crawler.engine.scheduler.unpause()
 
-        actual_urls = []
-
-        def track_url(request, spider):
-            actual_urls.append(request.url)
-
-        settings = {"SCHEDULER": MemoryScheduler}
-        crawler = get_crawler(TestSpider, settings_dict=settings)
-        crawler.signals.connect(track_url, signals.request_reached_downloader)
-        await maybe_deferred_to_future(crawler.crawl())
-        assert crawler.stats.get_value("finish_reason") == "finished"
-        expected_urls = ["data:,a", "data:,b"]
-        assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=start_nums,
+                settings={"SCHEDULER": MemoryScheduler},
+                response_seconds=response_seconds,
+                start_fn=start,
+            )
+        )
 
     @deferred_f_from_coro_f
     async def test_lazy(self):
@@ -349,7 +351,7 @@ class RequestSendOrderTestCase(TestCase):
             for num in start_nums:
                 if spider.crawler.engine.needs_backout():
                     await spider.crawler.signals.wait_for(signals.scheduler_empty)
-                request = self._request(num, response_seconds, download_slots)
+                request = self.request(num, response_seconds, download_slots)
                 yield request
 
         await maybe_deferred_to_future(
@@ -367,40 +369,48 @@ class RequestSendOrderTestCase(TestCase):
             )
         )
 
-    @pytest.mark.skip(reason="not implemented yet")
     @deferred_f_from_coro_f
     async def test_idle(self):
-        def _url(id):
-            return self.mockserver.url(f"/delay?n={self.delay}&{id}")
+        # The requests already in the scheduler (a) take priority over start
+        # requests.
+        # Callback requests (b, c) take priority over start requests as well. a
+        # yields b, b yields c.
+        # Once there are no more ongoing requests, the first start request (d)
+        # is sent. Then the requests from its callback (e) take priority. This
+        # is recursive, the requests from the callback of the callback (f) take
+        # priority as well.
+        # Only once there are no more ongoing requests again is the second
+        # start request (g) sent.
+
+        nums = [1, 2, 3, 4, 5, 6, 7]
+        response_seconds = 0
+        download_slots = 1
+
+        def _request(num):
+            return self.request(num, response_seconds, download_slots)
 
         class TestScheduler(MemoryScheduler):
-            queue = [_url("a")]
+            queue = [_request(1)]
 
-        class TestSpider(Spider):
-            name = "test"
-            start_urls = [_url("b"), _url("d")]
-            queue = deque([_url("c")])
+        async def start(spider):
+            for request in [_request(4), _request(7)]:
+                await spider.crawler.signals.wait_for(signals.spider_start_blocking)
+                yield request
 
-            def parse(self, response):
-                try:
-                    url = self.queue.popleft()
-                except IndexError:
-                    pass
-                else:
-                    yield Request(url)
+        def parse(spider, response):
+            num = self.get_num(response)
+            if num in {1, 2, 4, 5}:
+                yield _request(num + 1)
 
-        actual_urls = []
-
-        def track_url(request, spider):
-            actual_urls.append(request.url)
-
-        settings = {"SCHEDULER": TestScheduler}
-        crawler = get_crawler(TestSpider, settings_dict=settings)
-        crawler.signals.connect(track_url, signals.request_reached_downloader)
-        await maybe_deferred_to_future(crawler.crawl())
-        assert crawler.stats.get_value("finish_reason") == "finished"
-        expected_urls = [_url(letter) for letter in "abcd"]
-        assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=nums,
+                settings={"SCHEDULER": TestScheduler},
+                response_seconds=response_seconds,
+                start_fn=start,
+                parse_fn=parse,
+            )
+        )
 
     # Delay handling
 
@@ -413,7 +423,7 @@ class RequestSendOrderTestCase(TestCase):
         seconds = ExecutionEngine._MIN_BACK_IN_SECONDS
 
         def _request(num):
-            return self._request(num, seconds)
+            return self.request(num, seconds)
 
         async def start(spider):
             from twisted.internet import reactor

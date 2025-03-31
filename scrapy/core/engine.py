@@ -218,7 +218,6 @@ class ExecutionEngine:
                 self._slot.nextcall.schedule()
 
     def _scheduler_has_pending_requests(self) -> bool:
-        assert self._slot is not None  # typing
         assert self.scheduler is not None  # typing
         try:
             return self.scheduler.has_pending_requests()
@@ -282,7 +281,8 @@ class ExecutionEngine:
         """Returns ``True`` if no more requests can be sent at the moment, or
         ``False`` otherwise.
 
-        See :ref:`start-requests-lazy` for an example.
+        Can be used, for example, for :ref:`lazy start request scheduling
+        <start-requests-lazy>`.
         """
         assert self._slot is not None  # typing
         assert self.scraper.slot is not None  # typing
@@ -375,9 +375,12 @@ class ExecutionEngine:
             return False
         if self.downloader.active:  # downloader has pending requests
             return False
-        if self._start is not None:  # not all start requests are handled
+        if self._scheduler_has_pending_requests():
             return False
-        return not self._scheduler_has_pending_requests()
+        if self._start is not None:  # not all start requests are handled
+            self.signals.send_catch_log(signals.spider_start_blocking)
+            return False
+        return True
 
     def crawl(self, request: Request) -> None:
         """Inject the request into the spider <-> downloader pipeline"""

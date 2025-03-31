@@ -73,6 +73,8 @@ For broad crawls, consider these adjustments:
 Lowering resource usage
 =======================
 
+.. _optimize-memory:
+
 Lowering memory usage
 ---------------------
 
@@ -86,7 +88,7 @@ Lowering memory usage
         requests.
 
     -   If you have many :ref:`start requests <start-requests>`, use :ref:`lazy
-        scheduling <start-requests-lazy>`.
+        <start-requests-lazy>` or :ref:`idle <start-requests-idle>` scheduling.
 
     -   Set :setting:`JOBDIR` to offload all scheduled requests to disk.
 

@@ -28,9 +28,10 @@ Backward-incompatible changes
     requests have been scheduled.
 
     As a result, the order in which start requests are sent may change. See
-    :ref:`start-requests` for details and information on how to force start
-    request order or :ref:`pause start request iteration while there are
-    scheduled requests <start-requests-lazy>`.
+    :ref:`start-requests` for details.
+
+    To restore the previous behavior, :ref:`use lazy start request scheduling
+    <start-requests-lazy>`.
 
 -   An unhandled exception from the
     :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.open_spider` method of a
@@ -46,7 +47,7 @@ Backward-incompatible changes
     -   The ``slot`` attribute has been renamed to ``_slot`` and should not be
         used.
 
-        To access the running scheduler, previously at ``_slot.scheduler``, use
+        To access the running scheduler, previously at ``slot.scheduler``, use
         the :attr:`~scrapy.core.engine.ExecutionEngine.scheduler` attribute of
         the running engine instead.
 
@@ -101,14 +102,11 @@ New features
 
     (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
 
--   :class:`Crawler.signals <scrapy.signalmanager.SignalManager>` has a new
-    :meth:`~scrapy.signalmanager.SignalManager.wait_for` method.
+-   Added official support for :ref:`idle <start-requests-idle>` and
+    :ref:`front load <start-requests-front-load>` start request scheduling.
 
--   Added a new :signal:`scheduler_empty` signal.
-
--   Exposed a new method of :class:`Crawler.engine
-    <scrapy.core.engine.ExecutionEngine>`:
-    :meth:`~scrapy.core.engine.ExecutionEngine.needs_backout`.
+    (:issue:`740`, :issue:`1051`, :issue:`1443`, :issue:`3237`, :issue:`5282`,
+    :issue:`6715`)
 
 -   You can now raise :exc:`~scrapy.exceptions.CloseSpider` from
     :meth:`~scrapy.Spider.start` and from
@@ -128,6 +126,20 @@ New features
     The logged errors have also been improved.
 
     (:issue:`5426`)
+
+-   :class:`Crawler.signals <scrapy.signalmanager.SignalManager>` has a new
+    :meth:`~scrapy.signalmanager.SignalManager.wait_for` method.
+
+-   Added new signals: :signal:`spider_start_blocking`,
+    :signal:`scheduler_empty`.
+
+-   In :class:`~scrapy.core.engine.ExecutionEngine`:
+
+    -   Added a :attr:`~scrapy.core.engine.ExecutionEngine.scheduler`
+        attribute.
+
+    -   Added a :meth:`~scrapy.core.engine.ExecutionEngine.needs_backout`
+        method.
 
 Bug fixes
 ~~~~~~~~~

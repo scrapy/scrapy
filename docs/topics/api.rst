@@ -274,6 +274,8 @@ class (which they all inherit from).
         Close the given spider. After this is called, no more specific stats
         can be accessed or collected.
 
+.. _engine:
+
 Engine API
 ==========
 
