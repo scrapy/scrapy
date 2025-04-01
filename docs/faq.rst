@@ -105,27 +105,22 @@ By default, Scrapy uses a `LIFO`_ queue for storing pending requests, which
 basically means that it crawls in `DFO order`_. This order is more convenient
 in most cases.
 
-If you do want to crawl in true `BFO order`_, you can do it by
-setting the following settings:
+To crawl in `BFO order`_:
 
-.. code-block:: python
+-   Set :setting:`DEPTH_PRIORITY` to ``1``.
 
-    DEPTH_PRIORITY = 1
-    SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
-    SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
+-   Set :setting:`SCHEDULER_MEMORY_QUEUE` to
+    :class:`~scrapy.squeues.FifoMemoryQueue`.
 
-While pending requests are below the configured values of
-:setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
-:setting:`CONCURRENT_REQUESTS_PER_IP`, those requests are sent
-concurrently. As a result, the first few requests of a crawl rarely follow the
-desired order. Lowering those settings to ``1`` enforces the desired order, but
-it significantly slows down the crawl as a whole.
+-   Set :setting:`SCHEDULER_DISK_QUEUE` to
+    :class:`~scrapy.squeues.PickleFifoDiskQueue`.
 
+-   :ref:`Send start requests before other requests <start-requests-order>`.
 
 My Scrapy crawler has memory leaks. What can I do?
 --------------------------------------------------
 
-See :ref:`topics-leaks`.
+See :ref:`optimize-memory` and :ref:`topics-leaks`.
 
 Also, Python has a builtin memory leak issue which is described in
 :ref:`topics-leaks-without-leaks`.
@@ -133,7 +128,7 @@ Also, Python has a builtin memory leak issue which is described in
 How can I make Scrapy consume less memory?
 ------------------------------------------
 
-See previous question.
+See the previous question.
 
 How can I prevent memory errors due to many allowed domains?
 ------------------------------------------------------------

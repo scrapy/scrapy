@@ -177,3 +177,21 @@ hoverxref_role_types = {
 hoverxref_roles = ["command", "reqmeta", "setting", "signal"]
 
 default_dark_mode = False
+
+# -- setup -------------------------------------------------------------------
+
+
+def setup(app):
+    # https://stackoverflow.com/a/58982001
+    for cls_name in (
+        "FifoMemoryQueue",
+        "LifoMemoryQueue",
+        "PickleFifoDiskQueue",
+        "PickleLifoDiskQueue",
+        "MarshalFifoDiskQueue",
+        "MarshalLifoDiskQueue",
+    ):
+        import scrapy.squeues
+
+        cls = getattr(scrapy.squeues, cls_name)
+        cls.__name__ = cls_name
