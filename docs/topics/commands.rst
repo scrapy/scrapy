@@ -280,14 +280,14 @@ Supported options:
 
 Usage examples::
 
-    $ scrapy crawl myspider
-    [ ... myspider starts crawling ... ]
+    $ scrapy crawl my_spider
+    [ ... my_spider starts crawling ... ]
 
-    $ scrapy crawl -o myfile:csv myspider
-    [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
+    $ scrapy crawl -o myfile:csv my_spider
+    [ ... my_spider starts crawling and appends the result to the file myfile in csv format ... ]
 
-    $ scrapy crawl -O myfile:json myspider
-    [ ... myspider starts crawling and saves the result in myfile in json format overwriting the original content... ]
+    $ scrapy crawl -O myfile:json my_spider
+    [ ... my_spider starts crawling and saves the result in myfile in json format overwriting the original content... ]
 
 .. command:: check
 
@@ -563,7 +563,7 @@ project.
 
 Example usage::
 
-    $ scrapy runspider myspider.py
+    $ scrapy runspider my_spider.py
     [ ... spider starts crawling ... ]
 
 .. command:: version

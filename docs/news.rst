@@ -5104,7 +5104,7 @@ New features
 ~~~~~~~~~~~~
 
 - Support ``'True'`` and ``'False'`` string values for boolean settings (:issue:`2519`);
-  you can now do something like ``scrapy crawl myspider -s REDIRECT_ENABLED=False``.
+  you can now do something like ``scrapy crawl my_spider -s REDIRECT_ENABLED=False``.
 - Support kwargs with ``response.xpath()`` to use :ref:`XPath variables <topics-selectors-xpath-variables>`
   and ad-hoc namespaces declarations ;
   this requires at least Parsel v1.1 (:issue:`2457`).

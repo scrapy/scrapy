@@ -58,7 +58,7 @@ You can explicitly override one or more settings using the ``-s`` (or
 
 Example::
 
-    scrapy crawl myspider -s LOG_LEVEL=INFO -s LOG_FILE=scrapy.log
+    scrapy crawl my_spider -s LOG_LEVEL=INFO -s LOG_FILE=scrapy.log
 
 .. _spider-settings:
 
@@ -82,7 +82,7 @@ attribute:
 
 
     class MySpider(scrapy.Spider):
-        name = "myspider"
+        name = "my_spider"
 
         custom_settings = {
             "SOME_SETTING": "some value",
@@ -97,7 +97,7 @@ and settings set there should use the ``"spider"`` priority explicitly:
 
 
     class MySpider(scrapy.Spider):
-        name = "myspider"
+        name = "my_spider"
 
         @classmethod
         def update_settings(cls, settings):
@@ -116,7 +116,7 @@ arguments <spiderargs>` or other logic:
 
 
     class MySpider(scrapy.Spider):
-        name = "myspider"
+        name = "my_spider"
 
         @classmethod
         def from_crawler(cls, crawler, *args, **kwargs):
@@ -209,7 +209,7 @@ In a spider, settings are available through ``self.settings``:
 .. code-block:: python
 
     class MySpider(scrapy.Spider):
-        name = "myspider"
+        name = "my_spider"
         start_urls = ["http://example.com"]
 
         def parse(self, response):

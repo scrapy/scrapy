@@ -176,7 +176,7 @@ scrapy.Spider
 
 
            class MySpider(scrapy.Spider):
-               name = "myspider"
+               name = "my_spider"
                custom_feed = {
                    "/home/user/documents/items.json": {
                        "format": "json",
@@ -301,7 +301,7 @@ functionality of the spider.
 Spider arguments are passed through the :command:`crawl` command using the
 ``-a`` option. For example::
 
-    scrapy crawl myspider -a category=electronics
+    scrapy crawl my_spider -a category=electronics
 
 Spiders can access arguments in their `__init__` methods:
 
@@ -311,7 +311,7 @@ Spiders can access arguments in their `__init__` methods:
 
 
     class MySpider(scrapy.Spider):
-        name = "myspider"
+        name = "my_spider"
 
         def __init__(self, category=None, *args, **kwargs):
             super(MySpider, self).__init__(*args, **kwargs)
@@ -328,7 +328,7 @@ The above example can also be written as follows:
 
 
     class MySpider(scrapy.Spider):
-        name = "myspider"
+        name = "my_spider"
 
         async def start(self):
             yield scrapy.Request(f"http://www.example.com/categories/{self.category}")
@@ -359,7 +359,7 @@ used by :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`
 or the user agent
 used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
 
-    scrapy crawl myspider -a http_user=myuser -a http_pass=mypassword -a user_agent=mybot
+    scrapy crawl my_spider -a http_user=myuser -a http_pass=mypassword -a user_agent=mybot
 
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
@@ -529,7 +529,7 @@ versions, you must define both methods. For example:
 
 
     class MySpider(Spider):
-        name = "myspider"
+        name = "my_spider"
 
         def start_requests(self):
             yield Request("https://toscrape.com", headers={"Foo": "Bar"})

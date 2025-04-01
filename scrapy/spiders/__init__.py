@@ -93,7 +93,7 @@ class Spider(object_ref):
 
 
             class MySpider(Spider):
-                name = "myspider"
+                name = "my_spider"
 
                 async def start(self):
                     yield Request("https://toscrape.com/")

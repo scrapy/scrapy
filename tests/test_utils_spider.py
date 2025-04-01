@@ -5,11 +5,11 @@ from scrapy.utils.spider import iter_spider_classes, iterate_spider_output
 
 
 class MySpider1(Spider):
-    name = "myspider1"
+    name = "my_spider1"
 
 
 class MySpider2(Spider):
-    name = "myspider2"
+    name = "my_spider2"
 
 
 class TestUtilsSpiders:

@@ -88,6 +88,39 @@ Lowering memory usage
         :attr:`~scrapy.Request.callback` cannot yield additional
         requests.
 
+        For example, the following spider uses a higher priority (1) for book
+        requests than for pagination requests:
+
+        .. code-block:: python
+
+            from scrapy import Spider
+
+
+            class BooksToScrapeComSpider(Spider):
+                name = "books_toscrape_com"
+                start_urls = [
+                    "http://books.toscrape.com/catalogue/category/books/mystery_3/index.html"
+                ]
+
+                def parse(self, response):
+                    next_page_links = response.css(".next a")
+                    yield from response.follow_all(next_page_links)
+                    book_links = response.css("article a")
+                    yield from response.follow_all(book_links, callback=self.parse_book, priority=1)
+
+                def parse_book(self, response):
+                    yield {
+                        "name": response.css("h1::text").get(),
+                        "price": response.css(".price_color::text").re_first("£(.*)"),
+                        "url": response.url,
+                    }
+
+        .. note:: If the number of request-yielding, low-priority requests
+            scheduled at any given time is lower than concurrency settings
+            (:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
+            :setting:`CONCURRENT_REQUESTS`), as in the example above, this can
+            slow down your crawl by turning those requests into a bottleneck.
+
     -   If you have multiple :ref:`start requests <start-requests>`, consider
         :ref:`lazy <start-requests-lazy>` or :ref:`idle <start-requests-idle>`
         scheduling.

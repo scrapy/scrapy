@@ -234,7 +234,7 @@ higher) in your spider:
 
 
     class MySpider(CrawlSpider):
-        name = "myspider"
+        name = "my_spider"
 
         download_delay = 2
 
@@ -257,15 +257,15 @@ Simplest way to dump all my scraped items into a JSON/CSV/XML file?
 
 To dump into a JSON file::
 
-    scrapy crawl myspider -O items.json
+    scrapy crawl my_spider -O items.json
 
 To dump into a CSV file::
 
-    scrapy crawl myspider -O items.csv
+    scrapy crawl my_spider -O items.csv
 
 To dump into an XML file::
 
-    scrapy crawl myspider -O items.xml
+    scrapy crawl my_spider -O items.xml
 
 For more information see :ref:`topics-feed-exports`
 
