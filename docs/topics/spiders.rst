@@ -512,6 +512,42 @@ override the :meth:`~scrapy.Spider.start` method as follows:
 
 .. seealso:: :class:`~scrapy.crawler.Crawler`, :ref:`topics-signals`.
 
+Universal start request definition
+----------------------------------
+
+The :meth:`~scrapy.Spider.start` method was introduced in Scrapy VERSION. It
+replaced ``start_requests()``, which could be defined either as a synchronous
+:term:`generator` or as a synchronous method returning an
+:class:`~collections.abc.Iterable`.
+
+If you write spiders that must work with both Scrapy VERSION+ and lower
+versions, you must define both methods. For example:
+
+.. code-block:: python
+
+    from scrapy import Spider
+
+
+    class MySpider(Spider):
+        name = "myspider"
+
+        def start_requests(self):
+            yield Request("https://toscrape.com", headers={"Foo": "Bar"})
+
+        async def start(self):
+            for request in self.start_requests():
+                yield request
+
+Spiders that define both methods will not trigger a deprecation warning about
+``start_requests()``. When subclassing such a spider, if you override one of
+these methods, also override the other method, or you will get a warning.
+
+.. warning:: Do not call the ``start_requests()`` method of
+    :class:`~scrapy.Spider` or of other spider classes not defined by yourself
+    (e.g. using  ``super().start_requests()``) from your
+    :meth:`~scrapy.Spider.start` implementation. However, you can call your own
+    ``start_requests()`` method, as shown above.
+
 .. _builtin-spiders:
 
 Generic Spiders

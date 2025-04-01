@@ -150,9 +150,17 @@ class Spider(object_ref):
         warnings.warn(
             (
                 "The Spider.start_requests() method is deprecated, use "
-                "Spider.start() instead. If you are calling "
-                "super().start_requests() from a Spider.start() override, "
-                "iterate super().start() instead."
+                "Spider.start() instead.\n"
+                "\n"
+                "If you are calling super().start_requests() from a "
+                "Spider.start() override, iterate super().start() instead.\n"
+                "\n"
+                "If you are calling super().start_requests() from a "
+                "Spider.start_requests() override, either redefine your "
+                "override to avoid a call to super().start_requests(), or use "
+                "warnings.catch_warnings() with warnings.filterwarnings() to "
+                "silence this warning (see the Spider.start() implementation "
+                "for an example)."
             ),
             ScrapyDeprecationWarning,
             stacklevel=2,
