@@ -272,7 +272,8 @@ class ExecutionEngine:
             # call to this method, to see if the scheduler finally returns a
             # pending request or stops reporting that it has some.
             self._slot.nextcall.schedule(self._back_in_seconds)
-            if self._back_in_seconds != self._MAX_BACK_IN_SECONDS:
+            # During tests, the following always evaluates to True.
+            if self._back_in_seconds != self._MAX_BACK_IN_SECONDS:  # pragma: no cover
                 self._back_in_seconds = min(
                     self._back_in_seconds**2, self._MAX_BACK_IN_SECONDS
                 )
