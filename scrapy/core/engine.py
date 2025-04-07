@@ -259,7 +259,7 @@ class ExecutionEngine:
             return
 
         while not self.needs_backout():
-            if self._start_scheduled_request() is None:
+            if not self._start_scheduled_request():
                 break
 
         if self.spider_is_idle() and self._slot.close_if_idle:
@@ -294,7 +294,7 @@ class ExecutionEngine:
             or self.scraper.slot.needs_backout()
         )
 
-    def _start_scheduled_request(self) -> Deferred[None] | None:
+    def _start_scheduled_request(self) -> bool:
         assert self._slot is not None  # typing
         assert self.spider is not None  # typing
         assert self.scheduler is not None  # typing
@@ -309,7 +309,7 @@ class ExecutionEngine:
             return None
         if request is None:
             self.signals.send_catch_log(signals.scheduler_empty)
-            return None
+            return False
 
         d: Deferred[Response | Request] = self._download(request)
         d.addBoth(self._handle_downloader_output, request)
@@ -342,7 +342,7 @@ class ExecutionEngine:
                 extra={"spider": self.spider},
             )
         )
-        return d2
+        return True
 
     def _handle_downloader_output(
         self, result: Request | Response | Failure, request: Request
