@@ -306,7 +306,7 @@ class ExecutionEngine:
             logger.exception(
                 f"{global_object_name(self.scheduler.next_request)} raised an exception: {exception}\n{exception_traceback}"
             )
-            return None
+            return False
         if request is None:
             self.signals.send_catch_log(signals.scheduler_empty)
             return False
