@@ -3,7 +3,6 @@ from asyncio import sleep
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import Deferred
 from twisted.trial.unittest import TestCase
 
 from scrapy import Spider, signals
@@ -11,18 +10,12 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
+from .utils import twisted_sleep
+
 SLEEP_SECONDS = 0.1
 
 ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
-
-
-def twisted_sleep(seconds):
-    from twisted.internet import reactor
-
-    d = Deferred()
-    reactor.callLater(seconds, d.callback, None)
-    return d
 
 
 class MainTestCase(TestCase):
