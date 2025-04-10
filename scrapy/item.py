@@ -49,6 +49,11 @@ class ItemMeta(ABCMeta):
 
         new_attrs["fields"] = fields
         new_attrs["_class"] = _class
+        new_attrs['_ordered_attrs'] = [
+            key for key in attrs 
+            if not key.startswith("_")
+        ]
+        
         if classcell is not None:
             new_attrs["__classcell__"] = classcell
         return super().__new__(mcs, class_name, bases, new_attrs)
