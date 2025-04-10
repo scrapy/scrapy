@@ -161,7 +161,7 @@ class JsonItemExporter(BaseItemExporter):
         for key in item._ordered_attrs:
             if key in itemdict:
                 ordered_itemdict[key] = itemdict[key]
-        
+
         data = to_bytes(self.encoder.encode(ordered_itemdict), self.encoding)
         self._add_comma_after_first()
         self.file.write(data)
