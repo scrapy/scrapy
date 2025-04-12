@@ -54,6 +54,20 @@ class BaseItemExporter:
         if not dont_fail and options:
             raise TypeError(f"Unexpected options: {', '.join(options.keys())}")
 
+    @staticmethod
+    def _get_ordered_attrs(item: Any) -> list[str]:
+        """Gets the ordered attributes list, if there are any.
+        This is checking just for dict and Item types, i don't know of any
+         other type that should be here.
+        """
+        if isinstance(item, dict):
+            return item.get("_ordered_attrs", [])
+
+        if isinstance(item, Item):
+            return item._ordered_attrs
+
+        return []
+
     def export_item(self, item: Any) -> None:
         raise NotImplementedError
 
@@ -157,10 +171,15 @@ class JsonItemExporter(BaseItemExporter):
 
     def export_item(self, item: Any) -> None:
         itemdict = dict(self._get_serialized_fields(item))
+
         ordered_itemdict = {}
-        for key in item._ordered_attrs:
+        ordered_attrs = self._get_ordered_attrs(item)
+        for key in ordered_attrs:
             if key in itemdict:
                 ordered_itemdict[key] = itemdict[key]
+
+        if not ordered_attrs:
+            ordered_itemdict = itemdict
 
         data = to_bytes(self.encoder.encode(ordered_itemdict), self.encoding)
         self._add_comma_after_first()
