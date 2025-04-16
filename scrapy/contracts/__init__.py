@@ -51,7 +51,25 @@ class Contract:
                     results.addSuccess(self.testcase_pre)
                 cb_result = cb(response, **cb_kwargs)
                 if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
-                    raise TypeError("Contracts don't support async callbacks")
+                    from twisted.internet import defer
+                    
+                    @defer.inlineCallbacks
+                    def process_async_result():
+                        if isinstance(cb_result, CoroutineType):
+                            result = yield defer.ensureDeferred(cb_result)
+                        else:
+                            items = []
+                            async_gen = cb_result
+                            try:
+                                while True:
+                                    item = yield defer.ensureDeferred(async_gen.__anext__())
+                                    items.append(item)
+                            except StopAsyncIteration:
+                                result = items
+                        
+                        return list(iterate_spider_output(result))
+                    
+                    return process_async_result()
                 return list(cast(Iterable[Any], iterate_spider_output(cb_result)))
 
             request.callback = wrapper
@@ -67,7 +85,39 @@ class Contract:
             def wrapper(response: Response, **cb_kwargs: Any) -> list[Any]:
                 cb_result = cb(response, **cb_kwargs)
                 if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
-                    raise TypeError("Contracts don't support async callbacks")
+                    from twisted.internet import defer
+                    
+                    @defer.inlineCallbacks
+                    def process_async_result():
+                        if isinstance(cb_result, CoroutineType):
+                            result = yield defer.ensureDeferred(cb_result)
+                        else:
+                            items = []
+                            async_gen = cb_result
+                            try:
+                                while True:
+                                    item = yield defer.ensureDeferred(async_gen.__anext__())
+                                    items.append(item)
+                            except StopAsyncIteration:
+                                result = items
+                        
+                        output = list(iterate_spider_output(result))
+                        
+                        try:
+                            results.startTest(self.testcase_post)
+                            self.post_process(output)
+                            results.stopTest(self.testcase_post)
+                        except AssertionError:
+                            results.addFailure(self.testcase_post, sys.exc_info())
+                        except Exception:
+                            results.addError(self.testcase_post, sys.exc_info())
+                        else:
+                            results.addSuccess(self.testcase_post)
+                        
+                        return output
+                    
+                    return process_async_result()
+                
                 output = list(cast(Iterable[Any], iterate_spider_output(cb_result)))
                 try:
                     results.startTest(self.testcase_post)
@@ -181,7 +231,33 @@ class ContractsManager:
         def cb_wrapper(response: Response, **cb_kwargs: Any) -> None:
             try:
                 output = cb(response, **cb_kwargs)
-                output = list(cast(Iterable[Any], iterate_spider_output(output)))
+                if isinstance(output, (AsyncGenerator, CoroutineType)):
+                    from twisted.internet import defer
+                    
+                    @defer.inlineCallbacks
+                    def process_async_result():
+                        try:
+                            if isinstance(output, CoroutineType):
+                                result = yield defer.ensureDeferred(output)
+                            else:
+                                items = []
+                                async_gen = output
+                                try:
+                                    while True:
+                                        item = yield defer.ensureDeferred(async_gen.__anext__())
+                                        items.append(item)
+                                except StopAsyncIteration:
+                                    result = items
+                            
+                            # Process the result as we would with synchronous callbacks
+                            list(iterate_spider_output(result))
+                        except Exception:
+                            case = _create_testcase(method, "callback")
+                            results.addError(case, sys.exc_info())
+                    
+                    return process_async_result()
+                else:
+                    output = list(cast(Iterable[Any], iterate_spider_output(output)))
             except Exception:
                 case = _create_testcase(method, "callback")
                 results.addError(case, sys.exc_info())
@@ -196,12 +272,19 @@ class ContractsManager:
 
 
 def _create_testcase(method: Callable, desc: str) -> TestCase:
-    spider = method.__self__.name  # type: ignore[attr-defined]
+    # Check if the method is bound to an instance (has __self__)
+    if hasattr(method, "__self__"):
+        spider = method.__self__.name  # type: ignore[attr-defined]
+        method_name = method.__name__
+    else:
+        # For unbound functions (like in tests), use a placeholder
+        spider = "test_spider"
+        method_name = getattr(method, "__name__", "test_method")
 
     class ContractTestCase(TestCase):
         def __str__(_self) -> str:  # pylint: disable=no-self-argument
-            return f"[{spider}] {method.__name__} ({desc})"
+            return f"[{spider}] {method_name} ({desc})"
 
-    name = f"{spider}_{method.__name__}"
+    name = f"{spider}_{method_name}"
     setattr(ContractTestCase, name, lambda x: x)
     return ContractTestCase(name)
