@@ -84,6 +84,8 @@ class Crawler:
         self.spider: Spider | None = None
         self.engine: ExecutionEngine | None = None
 
+        self._component_cache: dict = {}
+
     def _update_root_log_handler(self) -> None:
         if get_scrapy_root_handler() is not None:
             # scrapy root handler already installed: update it with new settings
@@ -220,12 +222,19 @@ class Crawler:
         created, e.g. at signals :signal:`engine_started` or
         :signal:`spider_opened`.
         """
+        if cls in self._component_cache:
+            return self._component_cache[cls]
+
         if not self.extensions:
             raise RuntimeError(
                 "Crawler.get_extension() can only be called after the "
                 "extension manager has been created."
             )
-        return self._get_component(cls, self.extensions.middlewares)
+
+        result = self._get_component(cls, self.extensions.middlewares)
+        self._component_cache[cls] = result
+
+        return result
 
     def get_item_pipeline(self, cls: type[_T]) -> _T | None:
         """Return the run-time instance of a :ref:`item pipeline
