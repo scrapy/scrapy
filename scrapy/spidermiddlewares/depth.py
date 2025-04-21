@@ -27,6 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 class DepthMiddleware(BaseSpiderMiddleware):
+    crawler: Crawler
+
     def __init__(
         self,
         maxdepth: int,
@@ -46,7 +48,9 @@ class DepthMiddleware(BaseSpiderMiddleware):
         verbose = settings.getbool("DEPTH_STATS_VERBOSE")
         prio = settings.getint("DEPTH_PRIORITY")
         assert crawler.stats
-        return cls(maxdepth, crawler.stats, verbose, prio)
+        o = cls(maxdepth, crawler.stats, verbose, prio)
+        o.crawler = crawler
+        return o
 
     def process_spider_output(
         self, response: Response, result: Iterable[Any], spider: Spider
@@ -69,7 +73,7 @@ class DepthMiddleware(BaseSpiderMiddleware):
                 self.stats.inc_value("request_depth_count/0", spider=spider)
 
     def get_processed_request(
-        self, request: Request, response: Response, spider: Spider
+        self, request: Request, response: Response
     ) -> Request | None:
         depth = response.meta["depth"] + 1
         request.meta["depth"] = depth
@@ -79,10 +83,12 @@ class DepthMiddleware(BaseSpiderMiddleware):
             logger.debug(
                 "Ignoring link (depth > %(maxdepth)d): %(requrl)s ",
                 {"maxdepth": self.maxdepth, "requrl": request.url},
-                extra={"spider": spider},
+                extra={"spider": self.crawler.spider},
             )
             return None
         if self.verbose_stats:
-            self.stats.inc_value(f"request_depth_count/{depth}", spider=spider)
-        self.stats.max_value("request_depth_max", depth, spider=spider)
+            self.stats.inc_value(
+                f"request_depth_count/{depth}", spider=self.crawler.spider
+            )
+        self.stats.max_value("request_depth_max", depth, spider=self.crawler.spider)
         return request

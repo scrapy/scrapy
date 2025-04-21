@@ -7,6 +7,10 @@ from scrapy import Request, Spider
 if TYPE_CHECKING:
     from collections.abc import AsyncIterable, Iterable
 
+    # typing.Self requires Python 3.11
+    from typing_extensions import Self
+
+    from scrapy.crawler import Crawler
     from scrapy.http import Response
 
 
@@ -18,14 +22,21 @@ class BaseSpiderMiddleware:
     to use it.
     """
 
+    def __init__(self, crawler: Crawler):
+        self.crawler: Crawler = crawler
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        return cls(crawler)
+
     def process_spider_output(
         self, response: Response, result: Iterable[Any], spider: Spider
     ) -> Iterable[Any]:
         for o in result:
             if isinstance(o, Request):
-                o = self.get_processed_request(o, response, spider)
+                o = self.get_processed_request(o, response)
             else:
-                o = self.get_processed_item(o, response, spider)
+                o = self.get_processed_item(o, response)
             if o is not None:
                 yield o
 
@@ -34,18 +45,18 @@ class BaseSpiderMiddleware:
     ) -> AsyncIterable[Any]:
         async for o in result:
             if isinstance(o, Request):
-                o = self.get_processed_request(o, response, spider)
+                o = self.get_processed_request(o, response)
             else:
-                o = self.get_processed_item(o, response, spider)
+                o = self.get_processed_item(o, response)
             if o is not None:
                 yield o
 
     def get_processed_request(
-        self, request: Request, response: Response, spider: Spider
+        self, request: Request, response: Response
     ) -> Request | None:
         """TODO: describe the protocol"""
         return request
 
-    def get_processed_item(self, item: Any, response: Response, spider: Spider) -> Any:
+    def get_processed_item(self, item: Any, response: Response) -> Any:
         """TODO: describe the protocol"""
         return item

@@ -35,6 +35,8 @@ logger = logging.getLogger(__name__)
 
 
 class OffsiteMiddleware(BaseSpiderMiddleware):
+    crawler: Crawler
+
     def __init__(self, stats: StatsCollector):
         self.stats: StatsCollector = stats
 
@@ -42,16 +44,18 @@ class OffsiteMiddleware(BaseSpiderMiddleware):
     def from_crawler(cls, crawler: Crawler) -> Self:
         assert crawler.stats
         o = cls(crawler.stats)
+        o.crawler = crawler
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
 
     def get_processed_request(
-        self, request: Request, response: Response, spider: Spider
+        self, request: Request, response: Response
     ) -> Request | None:
+        assert self.crawler.spider
         if (
             request.dont_filter
             or request.meta.get("allow_offsite")
-            or self.should_follow(request, spider)
+            or self.should_follow(request, self.crawler.spider)
         ):
             return request
         domain = urlparse_cached(request).hostname
@@ -60,10 +64,10 @@ class OffsiteMiddleware(BaseSpiderMiddleware):
             logger.debug(
                 "Filtered offsite request to %(domain)r: %(request)s",
                 {"domain": domain, "request": request},
-                extra={"spider": spider},
+                extra={"spider": self.crawler.spider},
             )
-            self.stats.inc_value("offsite/domains", spider=spider)
-        self.stats.inc_value("offsite/filtered", spider=spider)
+            self.stats.inc_value("offsite/domains", spider=self.crawler.spider)
+        self.stats.inc_value("offsite/filtered", spider=self.crawler.spider)
         return None
 
     def should_follow(self, request: Request, spider: Spider) -> bool:
