@@ -1,5 +1,10 @@
 name: macOS
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - master
+    - '[0-9]+.[0-9]+'
+  pull_request:
 
 concurrency:
   group: ${{github.workflow}}-${{ github.ref }}
@@ -28,3 +33,7 @@ jobs:
 
     - name: Upload coverage report
       uses: codecov/codecov-action@v5
+
+    - name: Upload test results
+      if: ${{ !cancelled() }}
+      uses: codecov/test-results-action@v1

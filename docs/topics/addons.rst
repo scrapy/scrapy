@@ -32,7 +32,8 @@ This is an example where two add-ons are enabled in a project's
 Writing your own add-ons
 ========================
 
-Add-ons are Python classes that include one or both of the following methods:
+Add-ons are :ref:`components <topics-components>` that include one or both of
+the following methods:
 
 .. method:: update_settings(settings)
 
@@ -53,20 +54,6 @@ Add-ons are Python classes that include one or both of the following methods:
 
     :param settings: The settings object storing Scrapy/component configuration
     :type settings: :class:`~scrapy.settings.BaseSettings`
-
-They can also have the following method:
-
-.. classmethod:: from_crawler(cls, crawler)
-   :noindex:
-
-   If present, this class method is called to create an add-on instance
-   from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
-   of the add-on. The crawler object provides access to all Scrapy core
-   components like settings and signals; it is a way for the add-on to access
-   them and hook its functionality into Scrapy.
-
-   :param crawler: The crawler that uses this add-on
-   :type crawler: :class:`~scrapy.crawler.Crawler`
 
 The settings set by the add-on should use the ``addon`` priority (see
 :ref:`populating-settings` and :func:`scrapy.settings.BaseSettings.set`)::

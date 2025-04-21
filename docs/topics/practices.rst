@@ -309,7 +309,7 @@ Here are some tips to keep in mind when dealing with these kinds of sites:
   services like `ProxyMesh`_. An open source alternative is `scrapoxy`_, a
   super proxy that you can attach your own proxies to.
 * use a ban avoidance service, such as `Zyte API`_, which provides a `Scrapy
-  plugin <https://github.com/scrapy-plugins/scrapy-zyte-api>`__ and additional 
+  plugin <https://github.com/scrapy-plugins/scrapy-zyte-api>`__ and additional
   features, like `AI web scraping <https://www.zyte.com/ai-web-scraping/>`__
 
 If you are still unable to prevent your bot getting banned, consider contacting

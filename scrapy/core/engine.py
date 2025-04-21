@@ -11,7 +11,6 @@ import logging
 from time import time
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
-from itemadapter import is_item
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
 from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
@@ -194,14 +193,8 @@ class ExecutionEngine:
             else:
                 if isinstance(request_or_item, Request):
                     self.crawl(request_or_item)
-                elif is_item(request_or_item):
-                    self.scraper.start_itemproc(request_or_item, response=None)
                 else:
-                    logger.error(
-                        f"Got {request_or_item!r} among start requests. Only "
-                        f"requests and items are supported. It will be "
-                        f"ignored."
-                    )
+                    self.scraper.start_itemproc(request_or_item, response=None)
 
         if self.spider_is_idle() and self.slot.close_if_idle:
             self._spider_idle()

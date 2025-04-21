@@ -362,7 +362,8 @@ def deferred_from_coro(o: _T) -> _T: ...
 
 
 def deferred_from_coro(o: _T) -> Deferred | _T:
-    """Converts a coroutine into a Deferred, or returns the object as is if it isn't a coroutine"""
+    """Converts a coroutine or other awaitable object into a Deferred,
+    or returns the object as is if it isn't a coroutine."""
     if isinstance(o, Deferred):
         return o
     if asyncio.isfuture(o) or inspect.isawaitable(o):
@@ -442,11 +443,11 @@ def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
     What you can await in Scrapy callables defined as coroutines depends on the
     value of :setting:`TWISTED_REACTOR`:
 
-    -   When not using the asyncio reactor, you can only await on
-        :class:`~twisted.internet.defer.Deferred` objects.
-
     -   When :ref:`using the asyncio reactor <install-asyncio>`, you can only
         await on :class:`asyncio.Future` objects.
+
+    -   When not using the asyncio reactor, you can only await on
+        :class:`~twisted.internet.defer.Deferred` objects.
 
     If you want to write code that uses ``Deferred`` objects but works with any
     reactor, use this function on all ``Deferred`` objects::

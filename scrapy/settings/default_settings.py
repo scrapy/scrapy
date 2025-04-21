@@ -341,7 +341,7 @@ TELNETCONSOLE_HOST = "127.0.0.1"
 TELNETCONSOLE_USERNAME = "scrapy"
 TELNETCONSOLE_PASSWORD = None
 
-TWISTED_REACTOR = None
+TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
 SPIDER_CONTRACTS = {}
 SPIDER_CONTRACTS_BASE = {
@@ -351,3 +351,5 @@ SPIDER_CONTRACTS_BASE = {
     "scrapy.contracts.default.ReturnsContract": 2,
     "scrapy.contracts.default.ScrapesContract": 3,
 }
+
+WARN_ON_GENERATOR_RETURN_VALUE = True

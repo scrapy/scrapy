@@ -180,7 +180,7 @@ FTP supports two different connection modes: `active or passive
 mode by default. To use the active connection mode instead, set the
 :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 
-The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
 storage backend is: ``True``.
 
 .. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
@@ -222,7 +222,7 @@ feeds using these settings:
 -   :setting:`AWS_ENDPOINT_URL`
 -   :setting:`AWS_REGION_NAME`
 
-The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
 storage backend is: ``True``.
 
 .. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
@@ -255,7 +255,7 @@ You can set a *Project ID* and *Access Control List (ACL)* through the following
 -   :setting:`FEED_STORAGE_GCS_ACL`
 -   :setting:`GCS_PROJECT_ID`
 
-The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
 storage backend is: ``True``.
 
 .. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
@@ -587,8 +587,8 @@ FEED_STORE_EMPTY
 Default: ``True``
 
 Whether to export empty feeds (i.e. feeds with no items).
-If ``False``, and there are no items to export, no new files are created and 
-existing files are not modified, even if the :ref:`overwrite feed option 
+If ``False``, and there are no items to export, no new files are created and
+existing files are not modified, even if the :ref:`overwrite feed option
 <feed-options>` is enabled.
 
 .. setting:: FEED_STORAGES

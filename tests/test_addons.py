@@ -9,7 +9,7 @@ from scrapy import Spider
 from scrapy.crawler import Crawler, CrawlerRunner
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import BaseSettings, Settings
-from scrapy.utils.test import get_crawler
+from scrapy.utils.test import get_crawler, get_reactor_settings
 
 
 class SimpleAddon:
@@ -105,6 +105,7 @@ class TestAddonManager(unittest.TestCase):
         }
         settings_dict = {
             "ADDONS": {get_addon_cls(config): 1},
+            **get_reactor_settings(),
         }
         crawler = get_crawler(settings_dict=settings_dict)
         assert crawler.settings.getint("KEY") == 15
@@ -119,6 +120,7 @@ class TestAddonManager(unittest.TestCase):
         settings_dict = {
             "KEY": 20,  # priority=project
             "ADDONS": {get_addon_cls(config): 1},
+            **get_reactor_settings(),
         }
         settings = Settings(settings_dict)
         settings.set("KEY", 0, priority="default")
@@ -196,6 +198,7 @@ class TestAddonManager(unittest.TestCase):
                 return spider
 
         settings = Settings()
+        settings.setdict(get_reactor_settings())
         settings.set("KEY", "default", priority="default")
         runner = CrawlerRunner(settings)
         crawler = runner.create_crawler(MySpider)

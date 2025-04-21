@@ -266,17 +266,11 @@ class TestFilesPipeline(unittest.TestCase):
 
 
 class FilesPipelineTestCaseFieldsMixin:
-    def setup_method(self):
-        self.tempdir = mkdtemp()
-
-    def teardown_method(self):
-        rmtree(self.tempdir)
-
-    def test_item_fields_default(self):
+    def test_item_fields_default(self, tmp_path):
         url = "http://www.example.com/files/1.txt"
         item = self.item_class(name="item1", file_urls=[url])
         pipeline = FilesPipeline.from_crawler(
-            get_crawler(None, {"FILES_STORE": self.tempdir})
+            get_crawler(None, {"FILES_STORE": tmp_path})
         )
         requests = list(pipeline.get_media_requests(item, None))
         assert requests[0].url == url
@@ -286,14 +280,14 @@ class FilesPipelineTestCaseFieldsMixin:
         assert files == [results[0][1]]
         assert isinstance(item, self.item_class)
 
-    def test_item_fields_override_settings(self):
+    def test_item_fields_override_settings(self, tmp_path):
         url = "http://www.example.com/files/1.txt"
         item = self.item_class(name="item1", custom_file_urls=[url])
         pipeline = FilesPipeline.from_crawler(
             get_crawler(
                 None,
                 {
-                    "FILES_STORE": self.tempdir,
+                    "FILES_STORE": tmp_path,
                     "FILES_URLS_FIELD": "custom_file_urls",
                     "FILES_RESULT_FIELD": "custom_files",
                 },
@@ -368,13 +362,7 @@ class TestFilesPipelineCustomSettings:
         ("FILES_RESULT_FIELD", "FILES_RESULT_FIELD", "files_result_field"),
     }
 
-    def setup_method(self):
-        self.tempdir = mkdtemp()
-
-    def teardown_method(self):
-        rmtree(self.tempdir)
-
-    def _generate_fake_settings(self, prefix=None):
+    def _generate_fake_settings(self, tmp_path, prefix=None):
         def random_string():
             return "".join([chr(random.randint(97, 123)) for _ in range(10)])
 
@@ -382,7 +370,7 @@ class TestFilesPipelineCustomSettings:
             "FILES_EXPIRES": random.randint(100, 1000),
             "FILES_URLS_FIELD": random_string(),
             "FILES_RESULT_FIELD": random_string(),
-            "FILES_STORE": self.tempdir,
+            "FILES_STORE": tmp_path,
         }
         if not prefix:
             return settings
@@ -400,16 +388,16 @@ class TestFilesPipelineCustomSettings:
 
         return UserDefinedFilePipeline
 
-    def test_different_settings_for_different_instances(self):
+    def test_different_settings_for_different_instances(self, tmp_path):
         """
         If there are different instances with different settings they should keep
         different settings.
         """
-        custom_settings = self._generate_fake_settings()
+        custom_settings = self._generate_fake_settings(tmp_path)
         another_pipeline = FilesPipeline.from_crawler(
             get_crawler(None, custom_settings)
         )
-        one_pipeline = FilesPipeline(self.tempdir, crawler=get_crawler(None))
+        one_pipeline = FilesPipeline(tmp_path, crawler=get_crawler(None))
         for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
             default_value = self.default_cls_settings[pipe_attr]
             assert getattr(one_pipeline, pipe_attr) == default_value
@@ -417,24 +405,24 @@ class TestFilesPipelineCustomSettings:
             assert default_value != custom_value
             assert getattr(another_pipeline, pipe_ins_attr) == custom_value
 
-    def test_subclass_attributes_preserved_if_no_settings(self):
+    def test_subclass_attributes_preserved_if_no_settings(self, tmp_path):
         """
         If subclasses override class attributes and there are no special settings those values should be kept.
         """
         pipe_cls = self._generate_fake_pipeline()
-        pipe = pipe_cls.from_crawler(get_crawler(None, {"FILES_STORE": self.tempdir}))
+        pipe = pipe_cls.from_crawler(get_crawler(None, {"FILES_STORE": tmp_path}))
         for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
             custom_value = getattr(pipe, pipe_ins_attr)
             assert custom_value != self.default_cls_settings[pipe_attr]
             assert getattr(pipe, pipe_ins_attr) == getattr(pipe, pipe_attr)
 
-    def test_subclass_attrs_preserved_custom_settings(self):
+    def test_subclass_attrs_preserved_custom_settings(self, tmp_path):
         """
         If file settings are defined but they are not defined for subclass
         settings should be preserved.
         """
         pipeline_cls = self._generate_fake_pipeline()
-        settings = self._generate_fake_settings()
+        settings = self._generate_fake_settings(tmp_path)
         pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
         for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
             value = getattr(pipeline, pipe_ins_attr)
@@ -442,7 +430,7 @@ class TestFilesPipelineCustomSettings:
             assert value != self.default_cls_settings[pipe_attr]
             assert value == setting_value
 
-    def test_no_custom_settings_for_subclasses(self):
+    def test_no_custom_settings_for_subclasses(self, tmp_path):
         """
         If there are no settings for subclass and no subclass attributes, pipeline should use
         attributes of base class.
@@ -452,14 +440,14 @@ class TestFilesPipelineCustomSettings:
             pass
 
         user_pipeline = UserDefinedFilesPipeline.from_crawler(
-            get_crawler(None, {"FILES_STORE": self.tempdir})
+            get_crawler(None, {"FILES_STORE": tmp_path})
         )
         for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = self.default_cls_settings.get(pipe_attr.upper())
             assert getattr(user_pipeline, pipe_ins_attr) == custom_value
 
-    def test_custom_settings_for_subclasses(self):
+    def test_custom_settings_for_subclasses(self, tmp_path):
         """
         If there are custom settings for subclass and NO class attributes, pipeline should use custom
         settings.
@@ -469,7 +457,7 @@ class TestFilesPipelineCustomSettings:
             pass
 
         prefix = UserDefinedFilesPipeline.__name__.upper()
-        settings = self._generate_fake_settings(prefix=prefix)
+        settings = self._generate_fake_settings(tmp_path, prefix=prefix)
         user_pipeline = UserDefinedFilesPipeline.from_crawler(
             get_crawler(None, settings)
         )
@@ -479,14 +467,14 @@ class TestFilesPipelineCustomSettings:
             assert custom_value != self.default_cls_settings[pipe_attr]
             assert getattr(user_pipeline, pipe_inst_attr) == custom_value
 
-    def test_custom_settings_and_class_attrs_for_subclasses(self):
+    def test_custom_settings_and_class_attrs_for_subclasses(self, tmp_path):
         """
         If there are custom settings for subclass AND class attributes
         setting keys are preferred and override attributes.
         """
         pipeline_cls = self._generate_fake_pipeline()
         prefix = pipeline_cls.__name__.upper()
-        settings = self._generate_fake_settings(prefix=prefix)
+        settings = self._generate_fake_settings(tmp_path, prefix=prefix)
         user_pipeline = pipeline_cls.from_crawler(get_crawler(None, settings))
         for (
             pipe_cls_attr,
@@ -497,13 +485,13 @@ class TestFilesPipelineCustomSettings:
             assert custom_value != self.default_cls_settings[pipe_cls_attr]
             assert getattr(user_pipeline, pipe_inst_attr) == custom_value
 
-    def test_cls_attrs_with_DEFAULT_prefix(self):
+    def test_cls_attrs_with_DEFAULT_prefix(self, tmp_path):
         class UserDefinedFilesPipeline(FilesPipeline):
             DEFAULT_FILES_RESULT_FIELD = "this"
             DEFAULT_FILES_URLS_FIELD = "that"
 
         pipeline = UserDefinedFilesPipeline.from_crawler(
-            get_crawler(None, {"FILES_STORE": self.tempdir})
+            get_crawler(None, {"FILES_STORE": tmp_path})
         )
         assert (
             pipeline.files_result_field
@@ -514,12 +502,12 @@ class TestFilesPipelineCustomSettings:
             == UserDefinedFilesPipeline.DEFAULT_FILES_URLS_FIELD
         )
 
-    def test_user_defined_subclass_default_key_names(self):
+    def test_user_defined_subclass_default_key_names(self, tmp_path):
         """Test situation when user defines subclass of FilesPipeline,
         but uses attribute names for default pipeline (without prefixing
         them with pipeline class name).
         """
-        settings = self._generate_fake_settings()
+        settings = self._generate_fake_settings(tmp_path)
 
         class UserPipe(FilesPipeline):
             pass
