@@ -204,6 +204,19 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
        :param crawler: crawler that uses this middleware
        :type crawler: :class:`~scrapy.crawler.Crawler` object
 
+Base class for custom spider middlewares
+----------------------------------------
+
+Scrapy provides a base class for custom spider middlewares. It's not required
+to use it but it can help with simplifying middleware implementations and
+reducing the amount of boilerplate code in :ref:`universal middlewares
+<universal-spider-middleware>`.
+
+.. module:: scrapy.spidermiddlewares.base
+
+.. autoclass:: BaseSpiderMiddleware
+   :members:
+
 .. _topics-spider-middleware-ref:
 
 Built-in spider middleware reference
