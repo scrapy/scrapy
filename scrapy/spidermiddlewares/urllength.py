@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class UrlLengthMiddleware(BaseSpiderMiddleware):
     crawler: Crawler
 
-    def __init__(self, maxlength: int):
+    def __init__(self, maxlength: int):  # pylint: disable=super-init-not-called
         self.maxlength: int = maxlength
 
     @classmethod

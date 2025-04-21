@@ -327,7 +327,7 @@ def _load_policy_class(
 
 
 class RefererMiddleware(BaseSpiderMiddleware):
-    def __init__(self, settings: BaseSettings | None = None):
+    def __init__(self, settings: BaseSettings | None = None):  # pylint: disable=super-init-not-called
         self.default_policy: type[ReferrerPolicy] = DefaultReferrerPolicy
         if settings is not None:
             settings_policy = _load_policy_class(settings.get("REFERRER_POLICY"))

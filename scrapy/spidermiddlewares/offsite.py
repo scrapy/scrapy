@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 class OffsiteMiddleware(BaseSpiderMiddleware):
     crawler: Crawler
 
-    def __init__(self, stats: StatsCollector):
+    def __init__(self, stats: StatsCollector):  # pylint: disable=super-init-not-called
         self.stats: StatsCollector = stats
 
     @classmethod

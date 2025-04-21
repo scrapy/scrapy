@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class DepthMiddleware(BaseSpiderMiddleware):
     crawler: Crawler
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         maxdepth: int,
         stats: StatsCollector,
