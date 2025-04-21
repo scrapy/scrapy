@@ -46,7 +46,6 @@ if TYPE_CHECKING:
     from scrapy.statscollectors import StatsCollector
     from scrapy.utils.request import RequestFingerprinterProtocol
 
-
 logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
@@ -211,6 +210,16 @@ class Crawler:
             )
         return self._get_component(cls, self.engine.downloader.middleware.middlewares)
 
+    def LRU(self) -> None:
+        older = 0
+        key_older = None
+        for component in self._component_cache.items():
+            if component[1][1] > older:
+                older = component[1][1]
+                key_older = component[0]
+
+        self._component_cache.pop(key_older)
+
     def get_extension(self, cls: type[_T]) -> _T | None:
         """Return the run-time instance of an :ref:`extension
         <topics-extensions>` of the specified class or a subclass,
@@ -222,18 +231,23 @@ class Crawler:
         created, e.g. at signals :signal:`engine_started` or
         :signal:`spider_opened`.
         """
-        if cls in self._component_cache:
-            return self._component_cache[cls]
-
         if not self.extensions:
             raise RuntimeError(
                 "Crawler.get_extension() can only be called after the "
                 "extension manager has been created."
             )
 
-        result = self._get_component(cls, self.extensions.middlewares)
-        self._component_cache[cls] = result
+        for component in self._component_cache:
+            self._component_cache[component][1] += 1
+        if cls in self._component_cache:
+            self._component_cache[cls][1] = 0
+            return self._component_cache[cls][0]
 
+        result = self._get_component(cls, self.extensions.middlewares)
+        if len(self._component_cache) >= 5:
+            self.LRU()
+
+        self._component_cache[cls] = [result, 0]
         return result
 
     def get_item_pipeline(self, cls: type[_T]) -> _T | None:
