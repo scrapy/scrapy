@@ -20,10 +20,7 @@ Backward-incompatible changes
     requests in the scheduler, and instead runs continuously until all start
     requests have been scheduled.
 
-    As a result, the order in which start requests are sent may change. See
-    :ref:`start-requests` for details and information on how to force start
-    request order or :ref:`pause start request iteration while there are
-    scheduled requests <start-requests-lazy>`.
+    To reproduce the previous behavior, see :ref:`start-requests-lazy`.
 
 -   An unhandled exception from the
     :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.open_spider` method of a
@@ -50,6 +47,12 @@ Backward-incompatible changes
 -   The now-deprecated ``start_requests()`` method, when it returns an iterable
     instead of being defined as a generator, is now executed *after* the
     :ref:`scheduler <topics-scheduler>` instance has been created.
+
+-   When using :setting:`JOBDIR`, :ref:`start requests <start-requests>` are
+    now serialized into their own, ``s``-suffixed priority folders.
+
+    Set :setting:`SCHEDULER_START_DISK_QUEUE` to ``None`` or ``""`` to change
+    that.
 
 Deprecations
 ~~~~~~~~~~~~
@@ -94,6 +97,11 @@ New features
     :meth:`~scrapy.signalmanager.SignalManager.wait_for` method.
 
 -   Added a new :signal:`scheduler_empty` signal.
+
+-   Added new settings: :setting:`SCHEDULER_START_DISK_QUEUE` and
+    :setting:`SCHEDULER_START_MEMORY_QUEUE`.
+
+-   Added :class:`~scrapy.spidermiddlewares.start.StartSpiderMiddleware`.
 
 -   Exposed a new method of :class:`Crawler.engine
     <scrapy.core.engine.ExecutionEngine>`:

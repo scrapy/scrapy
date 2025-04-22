@@ -1317,6 +1317,7 @@ Default: ``{}``
 A dict containing the pipelines enabled by default in Scrapy. You should never
 modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
 
+
 .. setting:: JOBDIR
 
 JOBDIR
@@ -1326,6 +1327,7 @@ Default: ``None``
 
 A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.
+
 
 .. setting:: LOG_ENABLED
 
@@ -1693,23 +1695,28 @@ SCHEDULER_DISK_QUEUE
 
 Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
 
-Type of disk queue that will be used by scheduler. Other available types are
-``scrapy.squeues.PickleFifoDiskQueue``, ``scrapy.squeues.MarshalFifoDiskQueue``,
+Type of disk queue that will be used by the scheduler. Other available types
+are ``scrapy.squeues.PickleFifoDiskQueue``,
+``scrapy.squeues.MarshalFifoDiskQueue``,
 ``scrapy.squeues.MarshalLifoDiskQueue``.
+
 
 .. setting:: SCHEDULER_MEMORY_QUEUE
 
 SCHEDULER_MEMORY_QUEUE
 ----------------------
+
 Default: ``'scrapy.squeues.LifoMemoryQueue'``
 
-Type of in-memory queue used by scheduler. Other available type is:
+Type of in-memory queue used by the scheduler. Other available type is:
 ``scrapy.squeues.FifoMemoryQueue``.
+
 
 .. setting:: SCHEDULER_PRIORITY_QUEUE
 
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
+
 Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
 
 Type of priority queue used by the scheduler. Another available type is
@@ -1718,6 +1725,39 @@ Type of priority queue used by the scheduler. Another available type is
 ``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
 domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
 does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
+
+
+.. setting:: SCHEDULER_START_DISK_QUEUE
+
+SCHEDULER_START_DISK_QUEUE
+--------------------------
+
+Default: ``'scrapy.squeues.PickleFifoDiskQueue'``
+
+Type of disk queue (see :setting:`JOBDIR`) that the :ref:`scheduler
+<topics-scheduler>` uses for :ref:`start requests <start-requests>`.
+
+Use ``None`` or ``""`` to have start requests share the same queues as other
+requests.
+
+For available choices, see :setting:`SCHEDULER_DISK_QUEUE`.
+
+
+.. setting:: SCHEDULER_START_MEMORY_QUEUE
+
+SCHEDULER_START_MEMORY_QUEUE
+----------------------------
+
+Default: ``'scrapy.squeues.FifoMemoryQueue'``
+
+Type of in-memory queue that the :ref:`scheduler <topics-scheduler>` uses for
+:ref:`start requests <start-requests>`.
+
+Use ``None`` or ``""`` to have start requests share the same queues as other
+requests.
+
+For available choices, see :setting:`SCHEDULER_MEMORY_QUEUE`.
+
 
 .. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
 

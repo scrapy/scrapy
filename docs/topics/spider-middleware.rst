@@ -404,6 +404,14 @@ String value                             Class name (as a string)
 .. _"unsafe-url": https://www.w3.org/TR/referrer-policy/#referrer-policy-unsafe-url
 
 
+StartSpiderMiddleware
+---------------------
+
+.. module:: scrapy.spidermiddlewares.start
+
+.. autoclass:: StartSpiderMiddleware
+
+
 UrlLengthMiddleware
 -------------------
 

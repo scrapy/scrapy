@@ -305,6 +305,8 @@ SCHEDULER = "scrapy.core.scheduler.Scheduler"
 SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleLifoDiskQueue"
 SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.LifoMemoryQueue"
 SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ScrapyPriorityQueue"
+SCHEDULER_START_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
+SCHEDULER_START_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
 
@@ -319,6 +321,7 @@ SPIDER_MIDDLEWARES_BASE = {
     "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
     "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
     "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
+    "scrapy.spidermiddlewares.start.StartSpiderMiddleware": 1000,
     # Spider side
 }
 

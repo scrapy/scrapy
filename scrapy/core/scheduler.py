@@ -5,13 +5,16 @@ import logging
 from abc import abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
+from warnings import warn
 
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
 from twisted.internet.defer import Deferred  # noqa: TC002
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.spiders import Spider  # noqa: TC001
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     # requires queuelib >= 1.6.2
@@ -195,6 +198,22 @@ class Scheduler(BaseScheduler):
         self.logunser: bool = logunser
         self.stats: StatsCollector | None = stats
         self.crawler: Crawler | None = crawler
+        self._sdqclass: type[BaseQueue] | None = self._get_start_queue_cls(
+            crawler, "DISK"
+        )
+        self._smqclass: type[BaseQueue] | None = self._get_start_queue_cls(
+            crawler, "MEMORY"
+        )
+
+    def _get_start_queue_cls(
+        self, crawler: Crawler | None, queue: str
+    ) -> type[BaseQueue] | None:
+        if crawler is None:
+            return None
+        cls = crawler.settings[f"SCHEDULER_START_{queue}_QUEUE"]
+        if not cls:
+            return None
+        return load_object(cls)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -324,12 +343,27 @@ class Scheduler(BaseScheduler):
         """Create a new priority queue instance, with in-memory storage"""
         assert self.crawler
         assert self.pqclass
-        return build_from_crawler(
-            self.pqclass,
-            self.crawler,
-            downstream_queue_cls=self.mqclass,
-            key="",
-        )
+        try:
+            return build_from_crawler(
+                self.pqclass,
+                self.crawler,
+                downstream_queue_cls=self.mqclass,
+                key="",
+                start_queue_cls=self._smqclass,
+            )
+        except TypeError:
+            warn(
+                f"The __init__ method of {global_object_name(self.pqclass)} "
+                f"does not support a `start_queue_cls` keyword-only "
+                f"parameter.",
+                ScrapyDeprecationWarning,
+            )
+            return build_from_crawler(
+                self.pqclass,
+                self.crawler,
+                downstream_queue_cls=self.mqclass,
+                key="",
+            )
 
     def _dq(self) -> ScrapyPriorityQueue:
         """Create a new priority queue instance, with disk storage"""
@@ -337,13 +371,29 @@ class Scheduler(BaseScheduler):
         assert self.dqdir
         assert self.pqclass
         state = self._read_dqs_state(self.dqdir)
-        q = build_from_crawler(
-            self.pqclass,
-            self.crawler,
-            downstream_queue_cls=self.dqclass,
-            key=self.dqdir,
-            startprios=state,
-        )
+        try:
+            q = build_from_crawler(
+                self.pqclass,
+                self.crawler,
+                downstream_queue_cls=self.dqclass,
+                key=self.dqdir,
+                startprios=state,
+                start_queue_cls=self._sdqclass,
+            )
+        except TypeError:
+            warn(
+                f"The __init__ method of {global_object_name(self.pqclass)} "
+                f"does not support a `start_queue_cls` keyword-only "
+                f"parameter.",
+                ScrapyDeprecationWarning,
+            )
+            q = build_from_crawler(
+                self.pqclass,
+                self.crawler,
+                downstream_queue_cls=self.dqclass,
+                key=self.dqdir,
+                startprios=state,
+            )
         if q:
             logger.info(
                 "Resuming crawl (%(queuesize)d requests scheduled)",
