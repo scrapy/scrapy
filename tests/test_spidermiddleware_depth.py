@@ -24,7 +24,7 @@ class TestDepthMiddleware:
         out = list(self.mw.process_spider_output(resp, result, self.spider))
         assert out == result
 
-        rdc = self.stats.get_value("request_depth_count/1", spider=self.spider)
+        rdc = self.stats.get_value("request_depth_count/1")
         assert rdc == 1
 
         req.meta["depth"] = 1
@@ -32,7 +32,7 @@ class TestDepthMiddleware:
         out2 = list(self.mw.process_spider_output(resp, result, self.spider))
         assert not out2
 
-        rdm = self.stats.get_value("request_depth_max", spider=self.spider)
+        rdm = self.stats.get_value("request_depth_max")
         assert rdm == 1
 
     def teardown_method(self):

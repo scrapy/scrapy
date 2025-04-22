@@ -31,9 +31,7 @@ class TestUrlLengthMiddleware:
         with LogCapture() as log:
             self.process_spider_output()
 
-        ric = self.stats.get_value(
-            "urllength/request_ignored_count", spider=self.spider
-        )
+        ric = self.stats.get_value("urllength/request_ignored_count")
         assert ric == 1
 
         assert f"Ignoring link (url length > {self.maxlength})" in str(log)

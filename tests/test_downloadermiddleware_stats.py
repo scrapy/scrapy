@@ -20,8 +20,8 @@ class TestDownloaderStats:
         self.res = Response("scrapytest.org", status=400)
 
     def assertStatsEqual(self, key, value):
-        assert self.crawler.stats.get_value(key, spider=self.spider) == value, str(
-            self.crawler.stats.get_stats(self.spider)
+        assert self.crawler.stats.get_value(key) == value, str(
+            self.crawler.stats.get_stats()
         )
 
     def test_process_request(self):

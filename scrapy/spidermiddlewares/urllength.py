@@ -71,8 +71,6 @@ class UrlLengthMiddleware:
                 extra={"spider": spider},
             )
             assert spider.crawler.stats
-            spider.crawler.stats.inc_value(
-                "urllength/request_ignored_count", spider=spider
-            )
+            spider.crawler.stats.inc_value("urllength/request_ignored_count")
             return False
         return True

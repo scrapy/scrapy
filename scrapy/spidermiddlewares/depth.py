@@ -66,7 +66,7 @@ class DepthMiddleware:
         if "depth" not in response.meta:
             response.meta["depth"] = 0
             if self.verbose_stats:
-                self.stats.inc_value("request_depth_count/0", spider=spider)
+                self.stats.inc_value("request_depth_count/0")
 
     def _filter(self, request: Any, response: Response, spider: Spider) -> bool:
         if not isinstance(request, Request):
@@ -83,6 +83,6 @@ class DepthMiddleware:
             )
             return False
         if self.verbose_stats:
-            self.stats.inc_value(f"request_depth_count/{depth}", spider=spider)
-        self.stats.max_value("request_depth_max", depth, spider=spider)
+            self.stats.inc_value(f"request_depth_count/{depth}")
+        self.stats.max_value("request_depth_max", depth)
         return True

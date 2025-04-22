@@ -1,3 +1,4 @@
+import warnings
 from datetime import datetime
 from unittest import mock
 
@@ -89,4 +90,9 @@ class TestStatsCollector:
         stats.open_spider("a")
         stats.set_value("test", "value", spider=self.spider)
         assert stats.get_stats() == {}
-        assert stats.get_stats("a") == {}
+        with warnings.catch_warnings(record=True) as err:
+            assert stats.get_stats("a") == {}
+            assert (
+                str(err[0].message)
+                == "Passing a 'spider' argument to StatsCollector.get_stats is deprecated and will be removed in a future Scrapy version."
+            )
