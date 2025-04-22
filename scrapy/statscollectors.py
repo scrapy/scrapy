@@ -111,7 +111,7 @@ class MemoryStatsCollector(StatsCollector):
         self.spider_stats: dict[str, StatsT] = {}
 
     def _persist_stats(self, stats: StatsT, spider: Spider) -> None:
-        self.spider_stats[self._crawler.spider.name] = stats
+        self.spider_stats[spider.name] = stats
 
 
 class DummyStatsCollector(StatsCollector):
