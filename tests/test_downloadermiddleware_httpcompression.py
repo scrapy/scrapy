@@ -56,7 +56,7 @@ class TestHttpCompression:
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider("scrapytest.org")
         self.mw = HttpCompressionMiddleware.from_crawler(self.crawler)
-        self.crawler.stats.open_spider(self.spider)
+        self.crawler.stats.open_spider()
 
     def _getresponse(self, coding):
         if coding not in FORMAT:

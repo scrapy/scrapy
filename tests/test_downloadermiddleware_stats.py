@@ -14,7 +14,7 @@ class TestDownloaderStats:
         self.spider = self.crawler._create_spider("scrapytest.org")
         self.mw = DownloaderStats(self.crawler.stats)
 
-        self.crawler.stats.open_spider(self.spider)
+        self.crawler.stats.open_spider()
 
         self.req = Request("http://scrapytest.org")
         self.res = Response("scrapytest.org", status=400)
@@ -41,4 +41,4 @@ class TestDownloaderStats:
         )
 
     def teardown_method(self):
-        self.crawler.stats.close_spider(self.spider, "")
+        self.crawler.stats.close_spider("")

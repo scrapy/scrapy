@@ -114,7 +114,8 @@ class StatsCollector:
                 "Dumping Scrapy stats:\n" + pprint.pformat(self._stats),
                 extra={"spider": self._crawler.spider},
             )
-        self._persist_stats(self._stats, self._crawler.spider)
+        if self._crawler.spider:
+            self._persist_stats(self._stats, self._crawler.spider)
 
     def _persist_stats(self, stats: StatsT, spider: Spider) -> None:
         pass
