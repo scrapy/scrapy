@@ -11,7 +11,7 @@ class TestDepthMiddleware:
         self.spider = crawler._create_spider("scrapytest.org")
 
         self.stats = StatsCollector(crawler)
-        self.stats.open_spider(self.spider)
+        self.stats.open_spider()
 
         self.mw = DepthMiddleware(1, self.stats, True)
 
@@ -36,4 +36,4 @@ class TestDepthMiddleware:
         assert rdm == 1
 
     def teardown_method(self):
-        self.stats.close_spider(self.spider, "")
+        self.stats.close_spider("")
