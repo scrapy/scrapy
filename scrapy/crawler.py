@@ -237,11 +237,13 @@ class Crawler:
                 "extension manager has been created."
             )
 
-        for component in self._component_cache:
-            self._component_cache[component][1] += 1
-        if cls in self._component_cache:
+        for key, items in self._component_cache.values():
+            items[1] += 1
+
+        in_cache = self._component_cache.get(cls)
+        if in_cache:
             self._component_cache[cls][1] = 0
-            return self._component_cache[cls][0]
+            return in_cache
 
         result = self._get_component(cls, self.extensions.middlewares)
         if len(self._component_cache) >= 5:
