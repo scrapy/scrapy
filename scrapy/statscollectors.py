@@ -41,10 +41,10 @@ class StatsCollector:
             "max_value",
             "min_value",
             "clear_stats",
-        ):
+        ) and callable(original_attr):
 
-            def _wrapped(*args, **kwargs):
-                sig = inspect.signature(original_attr).bind(*args, *kwargs)
+            def _deprecated_wrapper(*args, **kwargs):
+                sig = inspect.signature(original_attr).bind(*args, **kwargs)
                 sig.apply_defaults()
 
                 if sig.arguments.get("spider"):
@@ -56,7 +56,7 @@ class StatsCollector:
 
                 return original_attr(*args, **kwargs)
 
-            return _wrapped
+            return _deprecated_wrapper
 
         return original_attr
 
