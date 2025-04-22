@@ -26,6 +26,7 @@ class StatsCollector:
     def __init__(self, crawler: Crawler):
         self._dump: bool = crawler.settings.getbool("STATS_DUMP")
         self._stats: StatsT = {}
+        self._crawler = crawler
 
     def get_value(
         self, key: str, default: Any = None, spider: Spider | None = None
@@ -104,16 +105,16 @@ class StatsCollector:
             )
         self._stats.clear()
 
-    def open_spider(self, spider: Spider) -> None:
+    def open_spider(self) -> None:
         pass
 
-    def close_spider(self, spider: Spider, reason: str) -> None:
+    def close_spider(self, reason: str | None = None) -> None:
         if self._dump:
             logger.info(
                 "Dumping Scrapy stats:\n" + pprint.pformat(self._stats),
-                extra={"spider": spider},
+                extra={"spider": self._crawler.spider},
             )
-        self._persist_stats(self._stats, spider)
+        self._persist_stats(self._stats, self._crawler.spider)
 
     def _persist_stats(self, stats: StatsT, spider: Spider) -> None:
         pass

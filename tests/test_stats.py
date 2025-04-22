@@ -87,7 +87,8 @@ class TestStatsCollector:
         stats.inc_value("v1")
         stats.max_value("v2", 100)
         stats.min_value("v3", 100)
-        stats.open_spider("a")
+        assert stats.get_stats() == {}
+        stats.open_spider()
         stats.set_value("test", "value", spider=self.spider)
         assert stats.get_stats() == {}
         with warnings.catch_warnings(record=True) as err:
