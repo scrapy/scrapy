@@ -88,11 +88,18 @@ class TestStatsCollector:
         stats.max_value("v2", 100)
         stats.min_value("v3", 100)
         stats.open_spider()
-        stats.set_value("test", "value", spider=self.spider)
+
+        with warnings.catch_warnings(record=True) as w:
+            stats.set_value("test", "value", spider=self.spider)
+            assert (
+                str(w[0].message)
+                == "Passing a 'spider' argument to StatsCollector.set_value is deprecated and will be removed in a future Scrapy version."
+            )
+
         assert stats.get_stats() == {}
-        with warnings.catch_warnings(record=True) as err:
+        with warnings.catch_warnings(record=True) as w:
             assert stats.get_stats("a") == {}
             assert (
-                str(err[0].message)
+                str(w[0].message)
                 == "Passing a 'spider' argument to StatsCollector.get_stats is deprecated and will be removed in a future Scrapy version."
             )
