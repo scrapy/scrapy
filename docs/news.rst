@@ -3,6 +3,23 @@
 Release notes
 =============
 
+.. _release-VERSION:
+
+Scrapy VERSION (unreleased)
+---------------------------
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   The ``from_settings()`` method of
+    :class:`~scrapy.spidermiddlewares.urllength.UrlLengthMiddleware` is removed
+    without a deprecation period (this was needed because after the
+    introduction of the
+    :class:`~scrapy.spidermiddlewares.base.BaseSpiderMiddleware` base class and
+    switching built-in spider middlewares to it those middlewares need the
+    :class:`~scrapy.crawler.Crawler` instance at run time). Please use
+    ``from_crawler()`` instead.
+
 .. _release-2.12.0:
 
 Scrapy 2.12.0 (2024-11-18)
