@@ -70,6 +70,12 @@ Deprecations
 
     (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
 
+-   The ``__init__`` method of priority queue classes (see
+    :setting:`SCHEDULER_PRIORITY_QUEUE`) should now support a keyword-only
+    ``start_queue_cls`` parameter.
+
+    (:issue:`6752`)
+
 New features
 ~~~~~~~~~~~~
 
