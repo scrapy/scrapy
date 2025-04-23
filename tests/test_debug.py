@@ -1,9 +1,14 @@
 import signal
+import sys
+from unittest import skipIf
 from unittest.mock import MagicMock, patch
 
 from scrapy.extensions.debug import Debugger, StackTraceDump
 
 
+@skipIf(
+    sys.platform == "win32", "Signals SIGUSR2 and SIGQUIT are not available on Windows"
+)
 def test_stack_trace_dump_initialization():
     crawler_mock = MagicMock()
     with patch("signal.signal") as mock_signal:
@@ -13,6 +18,9 @@ def test_stack_trace_dump_initialization():
         mock_signal.assert_any_call(signal.SIGQUIT, stack_trace_dump.dump_stacktrace)
 
 
+@skipIf(
+    sys.platform == "win32", "Signals SIGUSR2 and SIGQUIT are not available on Windows"
+)
 def test_stack_trace_dump_initialization_with_attribute_error():
     crawler_mock = MagicMock()
     with patch("signal.signal", side_effect=AttributeError) as mock_signal:
@@ -81,12 +89,18 @@ def test_stack_trace_dump_from_crawler_instance_creation():
     assert stack_trace_dump.crawler == crawler_mock
 
 
+@skipIf(
+    sys.platform == "win32", "Signals SIGUSR2 and SIGQUIT are not available on Windows"
+)
 def test_debugger_initialization():
     with patch("signal.signal") as mock_signal:
         debugger = Debugger()
         mock_signal.assert_called_once_with(signal.SIGUSR2, debugger._enter_debugger)
 
 
+@skipIf(
+    sys.platform == "win32", "Signals SIGUSR2 and SIGQUIT are not available on Windows"
+)
 def test_debugger_enter_debugger():
     with patch("pdb.Pdb.set_trace") as mock_set_trace:
         debugger = Debugger()
