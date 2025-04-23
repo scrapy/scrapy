@@ -23,6 +23,8 @@ def test_trivial(crawler):
         pass
 
     mw = TrivialSpiderMiddleware.from_crawler(crawler)
+    assert hasattr(mw, "crawler")
+    assert mw.crawler is crawler
     test_req = Request("data:,")
     spider_output = [test_req, {"foo": "bar"}]
     processed = list(
