@@ -49,10 +49,10 @@ Backward-incompatible changes
     :ref:`scheduler <topics-scheduler>` instance has been created.
 
 -   When using :setting:`JOBDIR`, :ref:`start requests <start-requests>` are
-    now serialized into their own, ``s``-suffixed priority folders.
-
-    Set :setting:`SCHEDULER_START_DISK_QUEUE` to ``None`` or ``""`` to change
-    that.
+    now serialized into their own, ``s``-suffixed priority folders. You can set
+    :setting:`SCHEDULER_START_DISK_QUEUE` to ``None`` or ``""`` to change that,
+    but the side effects may be undesirable. See
+    :setting:`SCHEDULER_START_DISK_QUEUE` for details.
 
 Deprecations
 ~~~~~~~~~~~~

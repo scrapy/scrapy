@@ -1737,10 +1737,21 @@ Default: ``'scrapy.squeues.PickleFifoDiskQueue'``
 Type of disk queue (see :setting:`JOBDIR`) that the :ref:`scheduler
 <topics-scheduler>` uses for :ref:`start requests <start-requests>`.
 
-Use ``None`` or ``""`` to have start requests share the same queues as other
-requests.
-
 For available choices, see :setting:`SCHEDULER_DISK_QUEUE`.
+
+.. queue-common-starts
+
+Use ``None`` or ``""`` to disable these separate queues entirely, and instead
+have start requests share the same queues as other requests.
+
+.. note::
+
+    Disabling separate start request queues makes :ref:`start request order
+    <start-requests-order>` unintuitive: start requests will be sent in order
+    only until :setting:`CONCURRENT_REQUESTS` is reached, then remaining start
+    requests will be sent in reverse order.
+
+.. queue-common-ends
 
 
 .. setting:: SCHEDULER_START_MEMORY_QUEUE
@@ -1753,10 +1764,11 @@ Default: ``'scrapy.squeues.FifoMemoryQueue'``
 Type of in-memory queue that the :ref:`scheduler <topics-scheduler>` uses for
 :ref:`start requests <start-requests>`.
 
-Use ``None`` or ``""`` to have start requests share the same queues as other
-requests.
-
 For available choices, see :setting:`SCHEDULER_MEMORY_QUEUE`.
+
+.. include:: settings.rst
+    :start-after: queue-common-starts
+    :end-before: queue-common-ends
 
 
 .. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
