@@ -1,19 +1,18 @@
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.depth import DepthMiddleware
 from scrapy.spiders import Spider
-from scrapy.statscollectors import StatsCollector
 from scrapy.utils.test import get_crawler
 
 
 class TestDepthMiddleware:
     def setup_method(self):
-        crawler = get_crawler(Spider)
+        crawler = get_crawler(Spider, {"DEPTH_LIMIT": 1, "DEPTH_STATS_VERBOSE": True})
         self.spider = crawler._create_spider("scrapytest.org")
 
-        self.stats = StatsCollector(crawler)
+        self.stats = crawler.stats
         self.stats.open_spider()
 
-        self.mw = DepthMiddleware(1, self.stats, True)
+        self.mw = DepthMiddleware.from_crawler(crawler)
 
     def test_process_spider_output(self):
         req = Request("http://scrapytest.org")
