@@ -90,4 +90,3 @@ class DepthMiddleware(BaseSpiderMiddleware):
             self.stats.inc_value(f"request_depth_count/{depth}")
         self.stats.max_value("request_depth_max", depth)
         return request
-
