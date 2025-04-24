@@ -5,20 +5,208 @@ Release notes
 
 .. _release-VERSION:
 
-Scrapy VERSION (unreleased)
----------------------------
+Scrapy 2.13.0 (unreleased)
+--------------------------
+
+Highlights:
+
+-   Added the :reqmeta:`allow_offsite` request meta key
+
+-   HTTP/1.0 support is deprecated
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   Dropped support for PyPy 3.9.
+    (:issue:`6613`)
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -   The ``from_settings()`` method of
-    :class:`~scrapy.spidermiddlewares.urllength.UrlLengthMiddleware` is removed
-    without a deprecation period (this was needed because after the
-    introduction of the
+    :class:`~scrapy.spidermiddlewares.urllength.UrlLengthMiddleware`,
+    deprecated in 2.12.0, is removed earlier than the usual deprecation period
+    (this was needed because after the introduction of the
     :class:`~scrapy.spidermiddlewares.base.BaseSpiderMiddleware` base class and
     switching built-in spider middlewares to it those middlewares need the
     :class:`~scrapy.crawler.Crawler` instance at run time). Please use
     ``from_crawler()`` instead.
+
+Deprecations
+~~~~~~~~~~~~
+
+-   Functions that were imported from :mod:`w3lib.url` and re-exported in
+    :mod:`scrapy.utils.url` are now deprecated, you should import them from
+    ``w3lib.url`` directly. They are:
+
+    - ``scrapy.utils.url.add_or_replace_parameter()``
+
+    - ``scrapy.utils.url.add_or_replace_parameters()``
+
+    - ``scrapy.utils.url.any_to_uri()``
+
+    - ``scrapy.utils.url.canonicalize_url()``
+
+    - ``scrapy.utils.url.file_uri_to_path()``
+
+    - ``scrapy.utils.url.is_url()``
+
+    - ``scrapy.utils.url.parse_data_uri()``
+
+    - ``scrapy.utils.url.parse_url()``
+
+    - ``scrapy.utils.url.path_to_file_uri()``
+
+    - ``scrapy.utils.url.safe_download_url()``
+
+    - ``scrapy.utils.url.safe_url_string()``
+
+    - ``scrapy.utils.url.url_query_cleaner()``
+
+    - ``scrapy.utils.url.url_query_parameter()``
+
+    - ``scrapy.utils.url._unquotepath()``
+
+    - ``scrapy.utils.url._safe_chars`` attribute
+
+    (:issue:`4577`, :issue:`6583`, :issue:`6586`)
+
+-   HTTP/1.0 support code is deprecated. It was disabled by default and
+    couldn't be used together with HTTP/1.1. If you still need it, you should
+    write your own download handler or copy the code from Scrapy. The
+    deprecations include:
+
+    - ``scrapy.core.downloader.handlers.http10.HTTP10DownloadHandler``
+
+    - ``scrapy.core.downloader.webclient.ScrapyHTTPClientFactory``
+
+    - ``scrapy.core.downloader.webclient.ScrapyHTTPPageGetter``
+
+    - Overriding
+      ``scrapy.core.downloader.contextfactory.ScrapyClientContextFactory.getContext()``
+
+    (:issue:`6634`)
+
+-   ``scrapy.utils.versions.scrapy_components_versions()`` is deprecated, use
+    :func:`scrapy.utils.versions.get_versions()` instead.
+    (:issue:`6582`)
+
+-   ``BaseDupeFilter.log()`` is deprecated. It does nothing and shouldn't be
+    called.
+    (:issue:`4151`)
+
+New features
+~~~~~~~~~~~~
+
+-   Added the :reqmeta:`allow_offsite` request meta key that can be used
+    instead of the more general :attr:`~scrapy.Request.dont_filter` request
+    attribute to skip processing of the request by
+    :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` (but not
+    by other code that checks :attr:`~scrapy.Request.dont_filter`).
+    (:issue:`3690`, :issue:`6151`, :issue:`6366`)
+
+-   :ref:`Scrapy add-ons <topics-addons>` can now define a class method called
+    ``update_pre_crawler_settings()`` to update :ref:`pre-crawler settings
+    <pre-crawler-settings>`.
+    (:issue:`6544`, :issue:`6568`)
+
+-   Added the :setting:`DEFAULT_DROPITEM_LOG_LEVEL` setting and the
+    :attr:`scrapy.exceptions.DropItem.log_level` attribute that allow
+    customizing the log level of the message that is logged when an item is
+    dropped.
+    (:issue:`6603`, :issue:`6608`)
+
+-   Added the :setting:`LOG_VERSIONS` setting that allows customizing the
+    list of software which versions are logged when the spider starts.
+    (:issue:`6582`)
+
+Improvements
+~~~~~~~~~~~~
+
+-   Improved the error message when running a ``scrapy`` command that requires
+    a project (such as ``scrapy crawl``) outside of a project directory.
+    (:issue:`2349`, :issue:`3426`)
+
+-   An empty :setting:`ADDONS` setting added to the ``settings.py`` template
+    for new projects.
+    (:issue:`6587`)
+
+Bug fixes
+~~~~~~~~~
+
+-   Fixed calculation of ``items_per_minute`` and ``responses_per_minute``
+    stats.
+    (:issue:`6599`)
+
+-   Fixed an error initializing
+    :class:`scrapy.extensions.feedexport.GCSFeedStorage`.
+    (:issue:`6617`, :issue:`6628`)
+
+-   Fixed an error running ``scrapy bench``.
+    (:issue:`6632`, :issue:`6633`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Improved the contribution docs.
+    (:issue:`6561`, :issue:`6575`)
+
+-   Other documentation improvements and fixes.
+    (:issue:`4151`,
+    :issue:`6526`,
+    :issue:`6620`,
+    :issue:`6621`,
+    :issue:`6622`,
+    :issue:`6623`,
+    :issue:`6624`)
+
+Packaging
+~~~~~~~~~
+
+-   Switched from ``setup.py`` to ``pyproject.toml``.
+    (:issue:`6514`, :issue:`6547`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Replaced most linters with ``ruff``.
+    (:issue:`6565`, :issue:`6576`, :issue:`6577`, :issue:`6581`, :issue:`6584`,
+    :issue:`6595`, :issue:`6601`, :issue:`6631`)
+
+-   Improved accuracy and performance of collecting test coverage.
+    (:issue:`6567`)
+
+-   Fixed an error that prevented running tests from directories other than the
+    top level source directory.
+    (:issue:`6567`)
+
+-   Reduced the amount of ``mockserver`` calls in tests to improve the overall
+    test run time.
+    (:issue:`6637`, :issue:`6648`)
+
+-   Fixed tests that were running the same test code more than once.
+    (:issue:`6646`)
+
+-   Type hints improvements and fixes.
+    (:issue:`6578`, :issue:`6579`, :issue:`6593`, :issue:`6605`)
+
+-   CI and test improvements and fixes.
+    (:issue:`5360`,
+    :issue:`6271`,
+    :issue:`6547`,
+    :issue:`6560`,
+    :issue:`6602`,
+    :issue:`6607`,
+    :issue:`6609`,
+    :issue:`6613`,
+    :issue:`6619`,
+    :issue:`6626`)
+
+-   Code cleanups.
+    (:issue:`6600`,
+    :issue:`6606`,
+    :issue:`6635`)
+
 
 .. _release-2.12.0:
 
