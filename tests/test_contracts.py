@@ -545,6 +545,60 @@ class TestContractsManager(unittest.TestCase):
         requests = self.conman.from_spider(spider, self.results)
         assert requests
 
+    def test_async_callbacks(self):
+        """Test that contracts work with async callbacks"""
+        spider = DemoSpider()
+
+        # Define an async callback method for testing
+        async def async_callback(response):
+            """Method which returns an item asynchronously
+            @url http://scrapy.org
+            @returns items 1 1
+            """
+            return DemoItem(url=response.url)
+
+        # Add the async method to the spider
+        spider.async_callback = async_callback
+
+        # Test the async callback
+        contracts = self.conman.extract_contracts(spider.async_callback)
+        request = self.conman.from_method(spider.async_callback, self.results)
+
+        # Request should be created successfully
+        self.assertIsNotNone(request)
+
+        # Process the request
+        request.callback(ResponseMock())
+
+        # Check that no errors were raised
+        self.assertEqual(len(self.results.failures), 0)
+        self.assertEqual(len(self.results.errors), 0)
+
+        # Test with an async generator
+        async def async_gen_callback(response):
+            """Method which returns items using an async generator
+            @url http://scrapy.org
+            @returns items 1 1
+            """
+            yield DemoItem(url=response.url)
+
+        # Add the async generator method to the spider
+        spider.async_gen_callback = async_gen_callback
+
+        # Test the async generator callback
+        contracts = self.conman.extract_contracts(spider.async_gen_callback)
+        request = self.conman.from_method(spider.async_gen_callback, self.results)
+
+        # Request should be created successfully
+        self.assertIsNotNone(request)
+
+        # Process the request
+        request.callback(ResponseMock())
+
+        # Check that no errors were raised
+        self.assertEqual(len(self.results.failures), 0)
+        self.assertEqual(len(self.results.errors), 0)
+
 
 class CustomFailContractPreProcess(Contract):
     name = "test_contract"
