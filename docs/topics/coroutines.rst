@@ -344,3 +344,9 @@ For example:
           feature will be removed, and all spider middlewares will be expected
           to define their ``process_spider_output`` method as an asynchronous
           generator.
+
+Since 2.13.0, Scrapy provides a base class,
+:class:`~scrapy.spidermiddlewares.base.BaseSpiderMiddleware`, which implements
+the ``process_spider_output()`` and ``process_spider_output_async()`` methods,
+so instead of duplicating the processing code you can override the
+``get_processed_request()`` and/or the ``get_processed_item()`` method.
