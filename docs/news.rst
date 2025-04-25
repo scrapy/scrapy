@@ -149,6 +149,11 @@ Deprecations
     If you need to use them in your tests or code, you can copy the code from Scrapy.
     (:issue:`6696`)
 
+-   ``scrapy.utils.test.TestSpider`` is deprecated. If you need an empty spider
+    class you can use :class:`scrapy.utils.spider.DefaultSpider` or create your
+    own subclass of :class:`scrapy.Spider`.
+    (:issue:`6678`)
+
 -   ``scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware`` is
     deprecated. It was disabled by default and isn't useful for most of the
     existing websites.
