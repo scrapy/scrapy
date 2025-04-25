@@ -76,7 +76,7 @@ class Crawler:
         self._init_reactor: bool = init_reactor
         self.crawling: bool = False
         self._started: bool = False
-
+        self._extension_cache: dict[type, Any] = {}
         self.extensions: ExtensionManager | None = None
         self.stats: StatsCollector | None = None
         self.logformatter: LogFormatter | None = None
@@ -225,7 +225,15 @@ class Crawler:
                 "Crawler.get_extension() can only be called after the "
                 "extension manager has been created."
             )
-        return self._get_component(cls, self.extensions.middlewares)
+        
+        # Check if the class is in the cache
+        if cls in self._extension_cache:
+            return self._extension_cache[cls]
+        
+        # If not in cache, get the component and store it in the cache
+        extension = self._get_component(cls, self.extensions.middlewares)
+        self._extension_cache[cls] = extension
+        return extension
 
     def get_item_pipeline(self, cls: type[_T]) -> _T | None:
         """Return the run-time instance of a :ref:`item pipeline
@@ -300,6 +308,7 @@ class CrawlerRunner:
         self._crawlers: set[Crawler] = set()
         self._active: set[Deferred[None]] = set()
         self.bootstrap_failed = False
+        self._extension_cache: dict[type, Any] = {}
 
     def crawl(
         self,
