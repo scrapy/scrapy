@@ -3,16 +3,22 @@
 Release notes
 =============
 
-.. _release-VERSION:
+.. _release-2.13.0:
 
 Scrapy 2.13.0 (unreleased)
 --------------------------
 
 Highlights:
 
+-   The asyncio reactor is now enabled by default
+
 -   Added the :reqmeta:`allow_offsite` request meta key
 
--   HTTP/1.0 support is deprecated
+-   :ref:`Spider middlewares that don't support asynchronous spider output
+    <sync-async-spider-middleware>` are deprecated
+
+-   Added a base class for :ref:`universal spider middlewares
+    <universal-spider-middleware>`
 
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
@@ -23,21 +29,62 @@ Modified requirements
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+-   The default value of the :setting:`TWISTED_REACTOR` setting was changed
+    from ``None`` to
+    ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``. This value
+    was used in newly generated projects since Scrapy 2.7.0 but now existing
+    projects that don't explicitly set this setting will also use the asyncio
+    reactor. You can :ref:`change this setting in your project
+    <disable-asyncio>` to use a different reactor.
+    (:issue:`6659`, :issue:`6713`)
+
 -   The ``from_settings()`` method of
     :class:`~scrapy.spidermiddlewares.urllength.UrlLengthMiddleware`,
-    deprecated in 2.12.0, is removed earlier than the usual deprecation period
-    (this was needed because after the introduction of the
+    deprecated in Scrapy 2.12.0, is removed earlier than the usual deprecation
+    period (this was needed because after the introduction of the
     :class:`~scrapy.spidermiddlewares.base.BaseSpiderMiddleware` base class and
     switching built-in spider middlewares to it those middlewares need the
     :class:`~scrapy.crawler.Crawler` instance at run time). Please use
     ``from_crawler()`` instead.
+    (:issue:`6693`)
+
+-   ``scrapy.utils.url.escape_ajax()`` is no longer called when a
+    :class:`~scrapy.Request` instance is created. It was only useful for
+    websites supporting the ``_escaped_fragment_`` feature which most modern
+    websites don't support. If you still need this you can modify the URLs
+    before passing them to :class:`~scrapy.Request`.
+    (:issue:`6523`, :issue:`6651`)
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   Removed old deprecated name aliases for some signals:
+
+    - ``stats_spider_opened`` (use ``spider_opened`` instead)
+
+    - ``stats_spider_closing`` and ``stats_spider_closed`` (use
+      ``spider_closed`` instead)
+
+    - ``item_passed`` (use ``item_scraped`` instead)
+
+    - ``request_received`` (use ``request_scheduled`` instead)
+
+    (:issue:`6654`, :issue:`6655`)
 
 Deprecations
 ~~~~~~~~~~~~
 
+-   :ref:`Spider middlewares that don't support asynchronous spider output
+    <sync-async-spider-middleware>` are deprecated. The async iterable
+    downgrading feature, needed for using such middlewares with asynchronous
+    callbacks and with other spider middlewares that produce asynchronous
+    iterables, is also deprecated. Please update all such middlewares to
+    support asynchronous spider output.
+    (:issue:`6664`)
+
 -   Functions that were imported from :mod:`w3lib.url` and re-exported in
     :mod:`scrapy.utils.url` are now deprecated, you should import them from
-    ``w3lib.url`` directly. They are:
+    :mod:`w3lib.url` directly. They are:
 
     - ``scrapy.utils.url.add_or_replace_parameter()``
 
@@ -65,10 +112,6 @@ Deprecations
 
     - ``scrapy.utils.url.url_query_parameter()``
 
-    - ``scrapy.utils.url._unquotepath()``
-
-    - ``scrapy.utils.url._safe_chars`` attribute
-
     (:issue:`4577`, :issue:`6583`, :issue:`6586`)
 
 -   HTTP/1.0 support code is deprecated. It was disabled by default and
@@ -86,6 +129,37 @@ Deprecations
       ``scrapy.core.downloader.contextfactory.ScrapyClientContextFactory.getContext()``
 
     (:issue:`6634`)
+
+-   The following modules and functions used only in tests are deprecated:
+
+    - the ``scrapy/utils/testproc`` module
+
+    - the ``scrapy/utils/testsite`` module
+
+    - ``scrapy.utils.test.assert_gcs_environ()``
+
+    - ``scrapy.utils.test.get_ftp_content_and_delete()``
+
+    - ``scrapy.utils.test.get_gcs_content_and_delete()``
+
+    - ``scrapy.utils.test.mock_google_cloud_storage()``
+
+    - ``scrapy.utils.test.skip_if_no_boto()``
+
+    If you need to use them in your tests or code, you can copy the code from Scrapy.
+    (:issue:`6696`)
+
+-   ``scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware`` is
+    deprecated. It was disabled by default and isn't useful for most of the
+    existing websites.
+    (:issue:`6523`, :issue:`6651`, :issue:`6656`)
+
+-   ``scrapy.utils.url.escape_ajax()`` is deprecated.
+    (:issue:`6523`, :issue:`6651`)
+
+-   ``scrapy.spiders.init.InitSpider`` is deprecated. If you find it useful,
+    you can copy its code from Scrapy.
+    (:issue:`6708`, :issue:`6714`)
 
 -   ``scrapy.utils.versions.scrapy_components_versions()`` is deprecated, use
     :func:`scrapy.utils.versions.get_versions()` instead.
@@ -105,10 +179,30 @@ New features
     by other code that checks :attr:`~scrapy.Request.dont_filter`).
     (:issue:`3690`, :issue:`6151`, :issue:`6366`)
 
+-   Added an optional base class for spider middlewares,
+    :class:`~scrapy.spidermiddlewares.base.BaseSpiderMiddleware`, which can be
+    helpful for writing :ref:`universal spider middlewares
+    <universal-spider-middleware>` without boilerplate and code duplication.
+    The built-in spider middlewares now inherit from this class.
+    (:issue:`6693`)
+
 -   :ref:`Scrapy add-ons <topics-addons>` can now define a class method called
     ``update_pre_crawler_settings()`` to update :ref:`pre-crawler settings
     <pre-crawler-settings>`.
     (:issue:`6544`, :issue:`6568`)
+
+-   Added :ref:`helpers <priority-dict-helpers>` for modifying :ref:`component
+    priority dictionary <component-priority-dictionaries>` settings.
+    (:issue:`6614`)
+
+-   Responses that use an unknown/unsupported encoding now produce a warning.
+    If Scrapy knows that installing an additional package (such as brotli_)
+    will allow decoding the response, that will be mentioned in the warning.
+    (:issue:`4697`, :issue:`6618`)
+
+-   Added the ``spider_exceptions/count`` stat which tracks the total count of
+    exceptions (tracked also by per-type ``spider_exceptions/*`` stats).
+    (:issue:`6739`, :issue:`6740`)
 
 -   Added the :setting:`DEFAULT_DROPITEM_LOG_LEVEL` setting and the
     :attr:`scrapy.exceptions.DropItem.log_level` attribute that allow
@@ -116,18 +210,32 @@ New features
     dropped.
     (:issue:`6603`, :issue:`6608`)
 
+-   Added support for the ``-b, --cookie`` curl argument to
+    :meth:`scrapy.Request.from_curl`.
+    (:issue:`6684`)
+
 -   Added the :setting:`LOG_VERSIONS` setting that allows customizing the
-    list of software which versions are logged when the spider starts.
+    list of software whose versions are logged when the spider starts.
     (:issue:`6582`)
+
+-   Added the :setting:`WARN_ON_GENERATOR_RETURN_VALUE` setting that allows
+    disabling run time analysis of callback code used to warn about incorrect
+    ``return`` statements in generator-based callbacks. You may need to disable
+    this setting if this analysis breaks on your callback code.
+    (:issue:`6731`, :issue:`6738`)
 
 Improvements
 ~~~~~~~~~~~~
+
+-   Removed or postponed some calls of :func:`itemadapter.is_item` to increase
+    performance.
+    (:issue:`6719`)
 
 -   Improved the error message when running a ``scrapy`` command that requires
     a project (such as ``scrapy crawl``) outside of a project directory.
     (:issue:`2349`, :issue:`3426`)
 
--   An empty :setting:`ADDONS` setting added to the ``settings.py`` template
+-   Added an empty :setting:`ADDONS` setting to the ``settings.py`` template
     for new projects.
     (:issue:`6587`)
 
@@ -145,11 +253,45 @@ Bug fixes
 -   Fixed an error running ``scrapy bench``.
     (:issue:`6632`, :issue:`6633`)
 
+-   Fixed duplicated log messages about the reactor and the event loop.
+    (:issue:`6636`, :issue:`6657`)
+
+-   Fixed resolving type annotations of ``SitemapSpider._parse_sitemap()`` at
+    run time, required by tools such as scrapy-poet_.
+    (:issue:`6665`, :issue:`6671`)
+
+    .. _scrapy-poet: https://github.com/scrapinghub/scrapy-poet
+
+-   Calling :func:`scrapy.utils.reactor.is_asyncio_reactor_installed` without
+    an installed reactor now raises an exception instead of installing a
+    reactor.
+    (:issue:`6732`, :issue:`6735`)
+
+-   Restored support for the ``x-gzip`` content encoding.
+    (:issue:`6618`)
+
 Documentation
 ~~~~~~~~~~~~~
 
--   Improved the contribution docs.
+-   Improved the :ref:`docs <sync-async-spider-middleware>` about asynchronous
+    iterable support in spider middlewares.
+    (:issue:`6688`)
+
+-   Improved the :ref:`docs <coroutine-deferred-apis>` about using
+    :class:`~twisted.internet.defer.Deferred`-based APIs in coroutine-based
+    code.
+    (:issue:`6734`)
+
+-   Improved the :ref:`contribution docs <topics-contributing>`.
     (:issue:`6561`, :issue:`6575`)
+
+-   Removed the ``Splash`` recommendation from the :ref:`headless browser
+    <topics-headless-browsing>` suggestion. We no longer recommend using
+    ``Splash`` and recommend using other headless browser solutions instead.
+    (:issue:`6642`, :issue:`6701`)
+
+-   Added the dark mode to the HTML documentation.
+    (:issue:`6653`)
 
 -   Other documentation improvements and fixes.
     (:issue:`4151`,
@@ -158,7 +300,9 @@ Documentation
     :issue:`6621`,
     :issue:`6622`,
     :issue:`6623`,
-    :issue:`6624`)
+    :issue:`6624`,
+    :issue:`6721`,
+    :issue:`6723`)
 
 Packaging
 ~~~~~~~~~
@@ -169,12 +313,20 @@ Packaging
 Quality assurance
 ~~~~~~~~~~~~~~~~~
 
--   Replaced most linters with ``ruff``.
-    (:issue:`6565`, :issue:`6576`, :issue:`6577`, :issue:`6581`, :issue:`6584`,
-    :issue:`6595`, :issue:`6601`, :issue:`6631`)
+-   Replaced most linters with ruff_.
+    (:issue:`6565`,
+    :issue:`6576`,
+    :issue:`6577`,
+    :issue:`6581`,
+    :issue:`6584`,
+    :issue:`6595`,
+    :issue:`6601`,
+    :issue:`6631`)
+
+    .. _ruff: https://docs.astral.sh/ruff/
 
 -   Improved accuracy and performance of collecting test coverage.
-    (:issue:`6567`)
+    (:issue:`6255`, :issue:`6610`)
 
 -   Fixed an error that prevented running tests from directories other than the
     top level source directory.
@@ -185,10 +337,28 @@ Quality assurance
     (:issue:`6637`, :issue:`6648`)
 
 -   Fixed tests that were running the same test code more than once.
-    (:issue:`6646`)
+    (:issue:`6646`, :issue:`6647`, :issue:`6650`)
+
+-   Refactored tests to use more ``pytest`` features instead of ``unittest``
+    ones where possible.
+    (:issue:`6678`,
+    :issue:`6680`,
+    :issue:`6695`,
+    :issue:`6699`,
+    :issue:`6700`,
+    :issue:`6702`,
+    :issue:`6709`,
+    :issue:`6710`,
+    :issue:`6711`,
+    :issue:`6712`,
+    :issue:`6725`)
 
 -   Type hints improvements and fixes.
-    (:issue:`6578`, :issue:`6579`, :issue:`6593`, :issue:`6605`)
+    (:issue:`6578`,
+    :issue:`6579`,
+    :issue:`6593`,
+    :issue:`6605`,
+    :issue:`6694`)
 
 -   CI and test improvements and fixes.
     (:issue:`5360`,
@@ -200,7 +370,16 @@ Quality assurance
     :issue:`6609`,
     :issue:`6613`,
     :issue:`6619`,
-    :issue:`6626`)
+    :issue:`6626`,
+    :issue:`6679`,
+    :issue:`6703`,
+    :issue:`6704`,
+    :issue:`6716`,
+    :issue:`6720`,
+    :issue:`6722`,
+    :issue:`6724`,
+    :issue:`6741`,
+    :issue:`6743`)
 
 -   Code cleanups.
     (:issue:`6600`,
@@ -805,8 +984,6 @@ Bug fixes
 
 -   Restored support for brotlipy_, which had been dropped in Scrapy 2.11.1 in
     favor of brotli_. (:issue:`6261`)
-
-    .. _brotli: https://github.com/google/brotli
 
     .. note:: brotlipy is deprecated, both in Scrapy and upstream. Use brotli
         instead if you can.
@@ -2390,8 +2567,6 @@ Scrapy 2.5.1 (2021-10-05)
     Scrapy breaks compatibility with scrapy-splash 0.7.2 and earlier. You will
     need to upgrade scrapy-splash to a greater version for it to continue to
     work.
-
-.. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
 
 
 .. _release-2.5.0:
