@@ -93,9 +93,9 @@ def open_in_browser(
     """
     from scrapy.http import HtmlResponse, TextResponse
 
-    # XXX: this implementation is a bit dirty and could be improved
     body = response.body
     if isinstance(response, HtmlResponse):
+        ext = ".html"
         if b"<base" not in body:
             _remove_html_comments(body)
             base_tag = f'<base href="{response.url}">'
