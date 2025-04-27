@@ -82,48 +82,40 @@ class BaseItemExporter:
     def _get_serialized_fields(
         self, item: Any, default_value: Any = None, include_empty: bool | None = None
     ) -> Iterable[tuple[str, Any]]:
-        """Return the fields to export as an iterable of tuples
-        (name, serialized_value)
-        """
+        """Return the fields to export as an iterable of tuples (name, serialized_value)."""
         item = ItemAdapter(item)
 
         if include_empty is None:
             include_empty = self.export_empty_fields
 
+        ordered_attrs = self._get_ordered_attrs(item)
+
+        field_iter: Iterable[str] | Iterable[tuple[str, str]]
         if self.fields_to_export is None:
-            field_iter = item.field_names() if include_empty else item.keys()
-        elif isinstance(self.fields_to_export, Mapping):
-            if include_empty:
-                field_iter = self.fields_to_export.items()
+            if ordered_attrs:
+                field_iter = [f for f in ordered_attrs if f in item]
             else:
                 field_iter = (
-                    (x, y) for x, y in self.fields_to_export.items() if x in item
+                    list(str(f) for f in item.field_names())
+                    if include_empty
+                    else list(str(f) for f in item.keys())
                 )
+        elif isinstance(self.fields_to_export, Mapping):
+            if include_empty:
+                field_iter = list(self.fields_to_export.items())
+            else:
+                field_iter = [(x, y) for x, y in self.fields_to_export.items() if x in item]
         elif include_empty:
-            field_iter = self.fields_to_export
+            field_iter = list(str(f) for f in self.fields_to_export)
         else:
-            field_iter = (x for x in self.fields_to_export if x in item)
+            field_iter = [str(x) for x in self.fields_to_export if x in item]
 
         for field_name in field_iter:
             if isinstance(field_name, str):
                 item_field, output_field = field_name, field_name
             else:
                 item_field, output_field = field_name
-            if item_field in item:
-                field_meta = item.get_field_meta(item_field)
-                value = self.serialize_field(field_meta, output_field, item[item_field])
-            else:
-                value = default_value
-        
-        ordered_attrs = self._get_ordered_attrs(item)
-        if ordered_attrs:
-            field_iter = (f for f in ordered_attrs if f in item)
 
-        for field_name in field_iter:
-            if isinstance(field_name, str):
-                item_field, output_field = field_name, field_name
-            else:
-                item_field, output_field = field_name
             if item_field in item:
                 field_meta = item.get_field_meta(item_field)
                 value = self.serialize_field(field_meta, output_field, item[item_field])
@@ -131,6 +123,10 @@ class BaseItemExporter:
                 value = default_value
 
             yield output_field, value
+
+
+
+
 
 
 class JsonLinesItemExporter(BaseItemExporter):
@@ -311,17 +307,25 @@ class CsvItemExporter(BaseItemExporter):
 
     def _write_headers_and_set_fields_to_export(self, item: Any) -> None:
         if self.include_headers_line:
-            if not self.fields_to_export:
-                # use declared field names, or keys if the item is a dict
-                self.fields_to_export = ItemAdapter(item).field_names()
+            adapter = ItemAdapter(item)
+            ordered_attrs = item.get("_ordered_attrs", []) if isinstance(item, dict) else []
+
+            if ordered_attrs:
+                self.fields_to_export = ordered_attrs
+            elif not self.fields_to_export:
+                self.fields_to_export = adapter.field_names()
+
             fields: Iterable[str]
             if isinstance(self.fields_to_export, Mapping):
                 fields = self.fields_to_export.values()
             else:
                 assert self.fields_to_export
                 fields = self.fields_to_export
+
             row = list(self._build_row(fields))
             self.csv_writer.writerow(row)
+
+
 
 
 class PickleItemExporter(BaseItemExporter):
@@ -333,6 +337,7 @@ class PickleItemExporter(BaseItemExporter):
     def export_item(self, item: Any) -> None:
         d = dict(self._get_serialized_fields(item))
         pickle.dump(d, self.file, self.protocol)
+
 
 
 class MarshalItemExporter(BaseItemExporter):
@@ -349,8 +354,8 @@ class MarshalItemExporter(BaseItemExporter):
         self.file: BytesIO = file
 
     def export_item(self, item: Any) -> None:
-        marshal.dump(dict(self._get_serialized_fields(item)), self.file)
-
+        d = dict(self._get_serialized_fields(item))
+        marshal.dump(d, self.file)
 
 class PprintItemExporter(BaseItemExporter):
     def __init__(self, file: BytesIO, **kwargs: Any):
@@ -362,16 +367,8 @@ class PprintItemExporter(BaseItemExporter):
         self.file.write(to_bytes(pprint.pformat(itemdict) + "\n"))
 
 
+
 class PythonItemExporter(BaseItemExporter):
-    """This is a base class for item exporters that extends
-    :class:`BaseItemExporter` with support for nested items.
-
-    It serializes items to built-in Python types, so that any serialization
-    library (e.g. :mod:`json` or msgpack_) can be used on top of it.
-
-    .. _msgpack: https://pypi.org/project/msgpack/
-    """
-
     def _configure(self, options: dict[str, Any], dont_fail: bool = False) -> None:
         super()._configure(options, dont_fail)
         if not self.encoding:
@@ -400,6 +397,6 @@ class PythonItemExporter(BaseItemExporter):
         for key, value in ItemAdapter(item).items():
             yield key, self._serialize_value(value)
 
-    def export_item(self, item: Any) -> dict[str | bytes, Any]:  # type: ignore[override]
-        result: dict[str | bytes, Any] = dict(self._get_serialized_fields(item))
-        return result
+    def export_item(self, item: Any) -> dict[str | bytes, Any]:
+        return dict(self._get_serialized_fields(item))
+

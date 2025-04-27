@@ -641,7 +641,7 @@ class TestJsonItemExporter(TestJsonLinesItemExporter):
         item["time"] = str(item["time"])
         assert exported == [item]
 
-    
+
 
 
 class TestJsonItemExporterToBytes(TestBaseItemExporter):
@@ -696,3 +696,70 @@ class TestCustomExporterItem:
 
 class TestCustomExporterDataclass(TestCustomExporterItem):
     item_class = MyDataClass
+
+
+EXPORTERS = {
+    "json": JsonItemExporter,
+    "jsonlines": JsonLinesItemExporter,
+    "marshal": MarshalItemExporter,
+    "pickle": PickleItemExporter,
+    "xml": XmlItemExporter,
+    "csv": CsvItemExporter,
+    "python": PythonItemExporter,
+}
+
+
+@pytest.mark.parametrize("exporter_name, exporter_cls", EXPORTERS.items())
+def test_item_attributes_order(exporter_name, exporter_cls):
+    buffer = BytesIO()
+
+    if exporter_name in ["python"]:
+        exporter = exporter_cls()
+    elif exporter_name in ["json", "jsonlines"]:
+        exporter = exporter_cls(buffer, ensure_ascii=True, indent=None)
+    else:
+        exporter = exporter_cls(buffer)
+
+    exporter.start_exporting()
+
+    item = UnorderedAttributesItem(
+        z=1, y=2, a=3, x=4, c=5, b=6
+    )
+
+    if exporter_name in ["pprint"]:
+        item = dict(item)
+        item["_ordered_attrs"] = ["z", "y", "a", "x", "c", "b"]
+
+    exporter.export_item(item)
+    exporter.finish_exporting()
+
+    if exporter_name in ["marshal", "pickle"]:
+        buffer.seek(0)
+        content = buffer.read()
+        assert isinstance(content, bytes) and len(content) > 0
+    elif exporter_name == "python":
+        exported = exporter.export_item(item)
+        assert exported == {
+            "z": 1,
+            "y": 2,
+            "a": 3,
+            "x": 4,
+            "c": 5,
+            "b": 6,
+        }
+    else:
+        exported = to_unicode(buffer.getvalue()).strip()
+
+        if exporter_name == "csv":
+            exported = exported.replace("\r", "").replace("\n", "").replace(" ", "")
+            for field in ["z", "y", "a", "x", "c", "b"]:
+                assert field in exported
+        elif exporter_name == "xml":
+            for field in ["z", "y", "a", "x", "c", "b"]:
+                assert f"<{field}>" in exported
+        elif exporter_name == "pprint":
+            for field in ["z", "y", "a", "x", "c", "b"]:
+                assert f"'{field}':" in exported
+        else:
+            for field in ["z", "y", "a", "x", "c", "b"]:
+                assert f'"{field}":' in exported
