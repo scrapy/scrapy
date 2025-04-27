@@ -642,8 +642,6 @@ class TestJsonItemExporter(TestJsonLinesItemExporter):
         assert exported == [item]
 
 
-
-
 class TestJsonItemExporterToBytes(TestBaseItemExporter):
     def _get_exporter(self, **kwargs):
         kwargs["encoding"] = "latin"
@@ -709,7 +707,10 @@ EXPORTERS = {
 }
 
 
-@pytest.mark.parametrize("exporter_name, exporter_cls", EXPORTERS.items())
+@pytest.mark.parametrize(
+    ("exporter_name", "exporter_cls"),
+    list(EXPORTERS.items()),
+)
 def test_item_attributes_order(exporter_name, exporter_cls):
     buffer = BytesIO()
 
@@ -722,9 +723,7 @@ def test_item_attributes_order(exporter_name, exporter_cls):
 
     exporter.start_exporting()
 
-    item = UnorderedAttributesItem(
-        z=1, y=2, a=3, x=4, c=5, b=6
-    )
+    item = UnorderedAttributesItem(z=1, y=2, a=3, x=4, c=5, b=6)
 
     if exporter_name in ["pprint"]:
         item = dict(item)
@@ -736,7 +735,9 @@ def test_item_attributes_order(exporter_name, exporter_cls):
     if exporter_name in ["marshal", "pickle"]:
         buffer.seek(0)
         content = buffer.read()
-        assert isinstance(content, bytes) and len(content) > 0
+        assert isinstance(content, bytes)
+        assert len(content) > 0
+
     elif exporter_name == "python":
         exported = exporter.export_item(item)
         assert exported == {

@@ -96,17 +96,20 @@ class BaseItemExporter:
                 field_iter = [f for f in ordered_attrs if f in item]
             else:
                 field_iter = (
-                    list(str(f) for f in item.field_names())
+                    [str(f) for f in item.field_names()]
                     if include_empty
-                    else list(str(f) for f in item.keys())
+                    else [str(f) for f in item]
                 )
+
         elif isinstance(self.fields_to_export, Mapping):
             if include_empty:
                 field_iter = list(self.fields_to_export.items())
             else:
-                field_iter = [(x, y) for x, y in self.fields_to_export.items() if x in item]
+                field_iter = [
+                    (x, y) for x, y in self.fields_to_export.items() if x in item
+                ]
         elif include_empty:
-            field_iter = list(str(f) for f in self.fields_to_export)
+            field_iter = [str(f) for f in self.fields_to_export]
         else:
             field_iter = [str(x) for x in self.fields_to_export if x in item]
 
@@ -123,10 +126,6 @@ class BaseItemExporter:
                 value = default_value
 
             yield output_field, value
-
-
-
-
 
 
 class JsonLinesItemExporter(BaseItemExporter):
@@ -308,7 +307,9 @@ class CsvItemExporter(BaseItemExporter):
     def _write_headers_and_set_fields_to_export(self, item: Any) -> None:
         if self.include_headers_line:
             adapter = ItemAdapter(item)
-            ordered_attrs = item.get("_ordered_attrs", []) if isinstance(item, dict) else []
+            ordered_attrs = (
+                item.get("_ordered_attrs", []) if isinstance(item, dict) else []
+            )
 
             if ordered_attrs:
                 self.fields_to_export = ordered_attrs
@@ -326,8 +327,6 @@ class CsvItemExporter(BaseItemExporter):
             self.csv_writer.writerow(row)
 
 
-
-
 class PickleItemExporter(BaseItemExporter):
     def __init__(self, file: BytesIO, protocol: int = 4, **kwargs: Any):
         super().__init__(**kwargs)
@@ -337,7 +336,6 @@ class PickleItemExporter(BaseItemExporter):
     def export_item(self, item: Any) -> None:
         d = dict(self._get_serialized_fields(item))
         pickle.dump(d, self.file, self.protocol)
-
 
 
 class MarshalItemExporter(BaseItemExporter):
@@ -357,6 +355,7 @@ class MarshalItemExporter(BaseItemExporter):
         d = dict(self._get_serialized_fields(item))
         marshal.dump(d, self.file)
 
+
 class PprintItemExporter(BaseItemExporter):
     def __init__(self, file: BytesIO, **kwargs: Any):
         super().__init__(**kwargs)
@@ -365,7 +364,6 @@ class PprintItemExporter(BaseItemExporter):
     def export_item(self, item: Any) -> None:
         itemdict = dict(self._get_serialized_fields(item))
         self.file.write(to_bytes(pprint.pformat(itemdict) + "\n"))
-
 
 
 class PythonItemExporter(BaseItemExporter):
@@ -397,6 +395,5 @@ class PythonItemExporter(BaseItemExporter):
         for key, value in ItemAdapter(item).items():
             yield key, self._serialize_value(value)
 
-    def export_item(self, item: Any) -> dict[str | bytes, Any]:
+    def export_item(self, item: Any) -> dict[str | bytes, Any]:  # type: ignore[override]
         return dict(self._get_serialized_fields(item))
-
