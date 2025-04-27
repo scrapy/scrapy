@@ -54,6 +54,20 @@ class BaseItemExporter:
         if not dont_fail and options:
             raise TypeError(f"Unexpected options: {', '.join(options.keys())}")
 
+    def _apply_ordered_attrs(self, itemdict: dict, ordered_attrs: list[str]) -> dict:
+        if ordered_attrs:
+            ordered_itemdict = {
+                key: itemdict[key] for key in ordered_attrs if key in itemdict
+            }
+            ordered_itemdict = {
+                key: itemdict[key] for key in ordered_attrs if key in itemdict
+            }
+            for key, value in itemdict.items():
+                if key not in ordered_itemdict:
+                    ordered_itemdict[key] = value
+            return ordered_itemdict
+        return itemdict
+
     def export_item(self, item: Any) -> None:
         raise NotImplementedError
 
@@ -79,7 +93,6 @@ class BaseItemExporter:
 
         if include_empty is None:
             include_empty = self.export_empty_fields
-
         if self.fields_to_export is None:
             field_iter = item.field_names() if include_empty else item.keys()
         elif isinstance(self.fields_to_export, Mapping):
@@ -99,6 +112,7 @@ class BaseItemExporter:
                 item_field, output_field = field_name, field_name
             else:
                 item_field, output_field = field_name
+
             if item_field in item:
                 field_meta = item.get_field_meta(item_field)
                 value = self.serialize_field(field_meta, output_field, item[item_field])
@@ -117,6 +131,9 @@ class JsonLinesItemExporter(BaseItemExporter):
 
     def export_item(self, item: Any) -> None:
         itemdict = dict(self._get_serialized_fields(item))
+        if hasattr(item, "_ordered_attrs"):
+            ordered_attrs = getattr(item, "_ordered_attrs", None)
+            itemdict = self._apply_ordered_attrs(itemdict, list(ordered_attrs or []))
         data = self.encoder.encode(itemdict) + "\n"
         self.file.write(to_bytes(data, self.encoding))
 
@@ -157,6 +174,9 @@ class JsonItemExporter(BaseItemExporter):
 
     def export_item(self, item: Any) -> None:
         itemdict = dict(self._get_serialized_fields(item))
+        if hasattr(item, "_ordered_attrs"):
+            ordered_attrs = getattr(item, "_ordered_attrs", None)
+            itemdict = self._apply_ordered_attrs(itemdict, list(ordered_attrs or []))
         data = to_bytes(self.encoder.encode(itemdict), self.encoding)
         self._add_comma_after_first()
         self.file.write(data)
@@ -185,10 +205,14 @@ class XmlItemExporter(BaseItemExporter):
         self._beautify_newline(new_item=True)
 
     def export_item(self, item: Any) -> None:
+        itemdict = dict(self._get_serialized_fields(item, default_value=""))
+        if hasattr(item, "_ordered_attrs"):
+            ordered_attrs = getattr(item, "_ordered_attrs", None)
+            itemdict = self._apply_ordered_attrs(itemdict, list(ordered_attrs or []))
         self._beautify_indent(depth=1)
         self.xg.startElement(self.item_element, AttributesImpl({}))
         self._beautify_newline()
-        for name, value in self._get_serialized_fields(item, default_value=""):
+        for name, value in itemdict.items():
             self._export_xml_field(name, value, depth=2)
         self._beautify_indent(depth=1)
         self.xg.endElement(self.item_element)
@@ -280,8 +304,11 @@ class CsvItemExporter(BaseItemExporter):
     def _write_headers_and_set_fields_to_export(self, item: Any) -> None:
         if self.include_headers_line:
             if not self.fields_to_export:
-                # use declared field names, or keys if the item is a dict
-                self.fields_to_export = ItemAdapter(item).field_names()
+                if hasattr(item, "_ordered_attrs"):
+                    self.fields_to_export = list(item._ordered_attrs)
+                else:
+                    # use declared field names, or keys if the item is a dict
+                    self.fields_to_export = ItemAdapter(item).field_names()
             fields: Iterable[str]
             if isinstance(self.fields_to_export, Mapping):
                 fields = self.fields_to_export.values()
@@ -299,8 +326,11 @@ class PickleItemExporter(BaseItemExporter):
         self.protocol: int = protocol
 
     def export_item(self, item: Any) -> None:
-        d = dict(self._get_serialized_fields(item))
-        pickle.dump(d, self.file, self.protocol)
+        itemdict = dict(self._get_serialized_fields(item))
+        if hasattr(item, "_ordered_attrs"):
+            ordered_attrs = getattr(item, "_ordered_attrs", None)
+            itemdict = self._apply_ordered_attrs(itemdict, list(ordered_attrs or []))
+        pickle.dump(itemdict, self.file, self.protocol)
 
 
 class MarshalItemExporter(BaseItemExporter):
@@ -317,7 +347,11 @@ class MarshalItemExporter(BaseItemExporter):
         self.file: BytesIO = file
 
     def export_item(self, item: Any) -> None:
-        marshal.dump(dict(self._get_serialized_fields(item)), self.file)
+        itemdict = dict(self._get_serialized_fields(item))
+        if hasattr(item, "_ordered_attrs"):
+            ordered_attrs = getattr(item, "_ordered_attrs", None)
+            itemdict = self._apply_ordered_attrs(itemdict, list(ordered_attrs or []))
+        marshal.dump(itemdict, self.file)
 
 
 class PprintItemExporter(BaseItemExporter):
