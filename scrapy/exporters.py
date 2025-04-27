@@ -114,6 +114,21 @@ class BaseItemExporter:
                 value = self.serialize_field(field_meta, output_field, item[item_field])
             else:
                 value = default_value
+        
+        ordered_attrs = self._get_ordered_attrs(item)
+        if ordered_attrs:
+            field_iter = (f for f in ordered_attrs if f in item)
+
+        for field_name in field_iter:
+            if isinstance(field_name, str):
+                item_field, output_field = field_name, field_name
+            else:
+                item_field, output_field = field_name
+            if item_field in item:
+                field_meta = item.get_field_meta(item_field)
+                value = self.serialize_field(field_meta, output_field, item[item_field])
+            else:
+                value = default_value
 
             yield output_field, value
 
