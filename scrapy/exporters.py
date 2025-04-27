@@ -367,6 +367,12 @@ class PprintItemExporter(BaseItemExporter):
 
 
 class PythonItemExporter(BaseItemExporter):
+    """This is a base class for item exporters that extends
+    :class:`BaseItemExporter` with support for nested items.
+    It serializes items to built-in Python types, so that any serialization
+    library (e.g. :mod:`json` or msgpack_) can be used on top of it.
+    .. _msgpack: https://pypi.org/project/msgpack/
+    """
     def _configure(self, options: dict[str, Any], dont_fail: bool = False) -> None:
         super()._configure(options, dont_fail)
         if not self.encoding:
