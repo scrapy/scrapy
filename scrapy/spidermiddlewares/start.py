@@ -11,18 +11,17 @@ if TYPE_CHECKING:
 
 
 class StartSpiderMiddleware:
-    """Set ``"is_start_request"`` to ``True`` in the
-    :attr:`~scrapy.Request.meta` of :ref:`start requests <start-requests>`.
-
-    This allows you to tell start requests apart from other requests, e.g.
-    in :ref:`downloader middlewares <topics-downloader-middleware>`.
+    """Set :reqmeta:`is_start_request`.
 
     .. reqmeta:: is_start_request
 
     is_start_request
     ----------------
 
-    Set to ``True`` for :ref:`start requests <start-requests>`.
+    :attr:`~scrapy.Request.meta` key that is set to ``True`` in :ref:`start
+    requests <start-requests>`, allowing you to tell start requests apart from
+    other requests, e.g. in :ref:`downloader middlewares
+    <topics-downloader-middleware>`.
     """
 
     @staticmethod

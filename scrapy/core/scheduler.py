@@ -129,14 +129,15 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
 
 
 class Scheduler(BaseScheduler):
-    """
-    Default Scrapy scheduler. This implementation also handles duplication
-    filtering via the :setting:`dupefilter <DUPEFILTER_CLASS>`.
+    """Default Scrapy scheduler.
 
-    This scheduler stores requests into several priority queues (defined by the
+    Requests are stored into several priority queues (defined by the
     :setting:`SCHEDULER_PRIORITY_QUEUE` setting). In turn, said priority queues
-    are backed by either memory or disk based queues (respectively defined by the
-    :setting:`SCHEDULER_MEMORY_QUEUE` and :setting:`SCHEDULER_DISK_QUEUE` settings).
+    are backed by either memory or disk based queues (respectively defined by
+    the :setting:`SCHEDULER_START_MEMORY_QUEUE` and
+    :setting:`SCHEDULER_START_DISK_QUEUE` settings for :ref:`start requests
+    <start-requests>` and by the :setting:`SCHEDULER_MEMORY_QUEUE` and
+    :setting:`SCHEDULER_DISK_QUEUE` settings for other requests).
 
     Request prioritization is almost entirely delegated to the priority queue. The only
     prioritization performed by this scheduler is using the disk-based queue if present
@@ -144,40 +145,22 @@ class Scheduler(BaseScheduler):
     queue if a serialization error occurs. If the disk queue is not present, the memory one
     is used directly.
 
-    :param dupefilter: An object responsible for checking and filtering duplicate requests.
-                       The value for the :setting:`DUPEFILTER_CLASS` setting is used by default.
-    :type dupefilter: :class:`scrapy.dupefilters.BaseDupeFilter` instance or similar:
-                      any class that implements the `BaseDupeFilter` interface
-
-    :param jobdir: The path of a directory to be used for persisting the crawl's state.
-                   The value for the :setting:`JOBDIR` setting is used by default.
-                   See :ref:`topics-jobs`.
-    :type jobdir: :class:`str` or ``None``
-
-    :param dqclass: A class to be used as persistent request queue.
-                    The value for the :setting:`SCHEDULER_DISK_QUEUE` setting is used by default.
-    :type dqclass: class
-
-    :param mqclass: A class to be used as non-persistent request queue.
-                    The value for the :setting:`SCHEDULER_MEMORY_QUEUE` setting is used by default.
-    :type mqclass: class
-
-    :param logunser: A boolean that indicates whether or not unserializable requests should be logged.
-                     The value for the :setting:`SCHEDULER_DEBUG` setting is used by default.
-    :type logunser: bool
-
-    :param stats: A stats collector object to record stats about the request scheduling process.
-                  The value for the :setting:`STATS_CLASS` setting is used by default.
-    :type stats: :class:`scrapy.statscollectors.StatsCollector` instance or similar:
-                 any class that implements the `StatsCollector` interface
-
-    :param pqclass: A class to be used as priority queue for requests.
-                    The value for the :setting:`SCHEDULER_PRIORITY_QUEUE` setting is used by default.
-    :type pqclass: class
-
-    :param crawler: The crawler object corresponding to the current crawl.
-    :type crawler: :class:`scrapy.crawler.Crawler`
+    It also handles duplication filtering via :setting:`DUPEFILTER_CLASS`.
     """
+
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        dupefilter_cls = load_object(crawler.settings["DUPEFILTER_CLASS"])
+        return cls(
+            dupefilter=build_from_crawler(dupefilter_cls, crawler),
+            jobdir=job_dir(crawler.settings),
+            dqclass=load_object(crawler.settings["SCHEDULER_DISK_QUEUE"]),
+            mqclass=load_object(crawler.settings["SCHEDULER_MEMORY_QUEUE"]),
+            logunser=crawler.settings.getbool("SCHEDULER_DEBUG"),
+            stats=crawler.stats,
+            pqclass=load_object(crawler.settings["SCHEDULER_PRIORITY_QUEUE"]),
+            crawler=crawler,
+        )
 
     def __init__(
         self,
@@ -190,6 +173,42 @@ class Scheduler(BaseScheduler):
         pqclass: type[ScrapyPriorityQueue] | None = None,
         crawler: Crawler | None = None,
     ):
+        """Initialize the scheduler.
+
+        :param dupefilter: An object responsible for checking and filtering duplicate requests.
+                        The value for the :setting:`DUPEFILTER_CLASS` setting is used by default.
+        :type dupefilter: :class:`scrapy.dupefilters.BaseDupeFilter` instance or similar:
+                        any class that implements the `BaseDupeFilter` interface
+
+        :param jobdir: The path of a directory to be used for persisting the crawl's state.
+                    The value for the :setting:`JOBDIR` setting is used by default.
+                    See :ref:`topics-jobs`.
+        :type jobdir: :class:`str` or ``None``
+
+        :param dqclass: A class to be used as persistent request queue.
+                        The value for the :setting:`SCHEDULER_DISK_QUEUE` setting is used by default.
+        :type dqclass: class
+
+        :param mqclass: A class to be used as non-persistent request queue.
+                        The value for the :setting:`SCHEDULER_MEMORY_QUEUE` setting is used by default.
+        :type mqclass: class
+
+        :param logunser: A boolean that indicates whether or not unserializable requests should be logged.
+                        The value for the :setting:`SCHEDULER_DEBUG` setting is used by default.
+        :type logunser: bool
+
+        :param stats: A stats collector object to record stats about the request scheduling process.
+                    The value for the :setting:`STATS_CLASS` setting is used by default.
+        :type stats: :class:`scrapy.statscollectors.StatsCollector` instance or similar:
+                    any class that implements the `StatsCollector` interface
+
+        :param pqclass: A class to be used as priority queue for requests.
+                        The value for the :setting:`SCHEDULER_PRIORITY_QUEUE` setting is used by default.
+        :type pqclass: class
+
+        :param crawler: The crawler object corresponding to the current crawl.
+        :type crawler: :class:`scrapy.crawler.Crawler`
+        """
         self.df: BaseDupeFilter = dupefilter
         self.dqdir: str | None = self._dqdir(jobdir)
         self.pqclass: type[ScrapyPriorityQueue] | None = pqclass
@@ -214,23 +233,6 @@ class Scheduler(BaseScheduler):
         if not cls:
             return None
         return load_object(cls)
-
-    @classmethod
-    def from_crawler(cls, crawler: Crawler) -> Self:
-        """
-        Factory method, initializes the scheduler with arguments taken from the crawl settings
-        """
-        dupefilter_cls = load_object(crawler.settings["DUPEFILTER_CLASS"])
-        return cls(
-            dupefilter=build_from_crawler(dupefilter_cls, crawler),
-            jobdir=job_dir(crawler.settings),
-            dqclass=load_object(crawler.settings["SCHEDULER_DISK_QUEUE"]),
-            mqclass=load_object(crawler.settings["SCHEDULER_MEMORY_QUEUE"]),
-            logunser=crawler.settings.getbool("SCHEDULER_DEBUG"),
-            stats=crawler.stats,
-            pqclass=load_object(crawler.settings["SCHEDULER_PRIORITY_QUEUE"]),
-            crawler=crawler,
-        )
 
     def has_pending_requests(self) -> bool:
         return len(self) > 0
