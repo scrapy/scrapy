@@ -1747,7 +1747,7 @@ have start requests share the same queues as other requests.
 .. note::
 
     Disabling separate start request queues makes :ref:`start request order
-    <start-requests-order>` unintuitive: start requests will be sent in order
+    <start-request-order>` unintuitive: start requests will be sent in order
     only until :setting:`CONCURRENT_REQUESTS` is reached, then remaining start
     requests will be sent in reverse order.
 
