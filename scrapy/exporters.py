@@ -376,7 +376,6 @@ class PythonItemExporter(BaseItemExporter):
     .. _msgpack: https://pypi.org/project/msgpack/
     """
 
-
     def _configure(self, options: dict[str, Any], dont_fail: bool = False) -> None:
         super()._configure(options, dont_fail)
         if not self.encoding:

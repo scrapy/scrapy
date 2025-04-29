@@ -152,12 +152,12 @@ $(document).ready(function() {
     // on-interaction, which is known to be less performant on small pages (as per tooltipster docs),
     // but on massive docs pages fixes an otherwise severe page load stall when tooltipster
     // manipulates the html for every single tooltip at once.
-    
+
     $('.hxr-hoverxref.external').each(function () { $(this).removeAttr('title') });
     addTooltip(
         $('.hxr-hoverxref.hxr-tooltip')
     )
-    
+
 
 
     var modalHtml = `
@@ -179,7 +179,7 @@ $(document).ready(function() {
 `
     $('body').append(modalHtml);
 
-    
+
     function onShow(modal, element) {
         // This is a HACK to get some "smart" left position of the
         // modal depending its size.
@@ -195,7 +195,7 @@ $(document).ready(function() {
         console.debug('Container left position: ' + left);
         container.css('left', left);
     }
-    
+
 
     function showModal(element) {
         var href = element.prop('href');
@@ -226,9 +226,9 @@ $(document).ready(function() {
                 $('#micromodal-title').html(a);
                 $('#micromodal-content').html(content);
                 MicroModal.show('micromodal', {
-                    
+
                     onShow: onShow,
-                    
+
                     openClass: 'is-open',
                     disableScroll: false,
                     disableFocus: true,
