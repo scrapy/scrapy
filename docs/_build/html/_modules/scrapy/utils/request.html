@@ -1,0 +1,428 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>scrapy.utils.request &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=84389e84"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/js/hoverxref.js"></script>
+      <script src="../../../_static/js/tooltipster.bundle.min.js"></script>
+      <script src="../../../_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="../../../_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="../../../_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/extensions.html">Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">scrapy.utils.request</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for scrapy.utils.request</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module provides some useful functions for working with</span>
+<span class="sd">scrapy.Request objects</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Protocol</span>
+<span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="kn">import</span> <span class="n">urlunparse</span>
+<span class="kn">from</span> <span class="nn">weakref</span> <span class="kn">import</span> <span class="n">WeakKeyDictionary</span>
+
+<span class="kn">from</span> <span class="nn">w3lib.http</span> <span class="kn">import</span> <span class="n">basic_auth_header</span>
+<span class="kn">from</span> <span class="nn">w3lib.url</span> <span class="kn">import</span> <span class="n">canonicalize_url</span>
+
+<span class="kn">from</span> <span class="nn">scrapy</span> <span class="kn">import</span> <span class="n">Request</span><span class="p">,</span> <span class="n">Spider</span>
+<span class="kn">from</span> <span class="nn">scrapy.exceptions</span> <span class="kn">import</span> <span class="n">ScrapyDeprecationWarning</span>
+<span class="kn">from</span> <span class="nn">scrapy.utils.httpobj</span> <span class="kn">import</span> <span class="n">urlparse_cached</span>
+<span class="kn">from</span> <span class="nn">scrapy.utils.misc</span> <span class="kn">import</span> <span class="n">load_object</span>
+<span class="kn">from</span> <span class="nn">scrapy.utils.python</span> <span class="kn">import</span> <span class="n">to_bytes</span><span class="p">,</span> <span class="n">to_unicode</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span>
+
+    <span class="c1"># typing.Self requires Python 3.11</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Self</span>
+
+    <span class="kn">from</span> <span class="nn">scrapy.crawler</span> <span class="kn">import</span> <span class="n">Crawler</span>
+
+
+<span class="n">_fingerprint_cache</span><span class="p">:</span> <span class="n">WeakKeyDictionary</span><span class="p">[</span>
+    <span class="n">Request</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">bool</span><span class="p">],</span> <span class="nb">bytes</span><span class="p">]</span>
+<span class="p">]</span> <span class="o">=</span> <span class="n">WeakKeyDictionary</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="fingerprint">
+<a class="viewcode-back" href="../../../topics/request-response.html#scrapy.utils.request.fingerprint">[docs]</a>
+<span class="k">def</span> <span class="nf">fingerprint</span><span class="p">(</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">include_headers</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">bytes</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">keep_fragments</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the request fingerprint.</span>
+
+<span class="sd">    The request fingerprint is a hash that uniquely identifies the resource the</span>
+<span class="sd">    request points to. For example, take the following two urls:</span>
+<span class="sd">    ``http://www.example.com/query?id=111&amp;cat=222``,</span>
+<span class="sd">    ``http://www.example.com/query?cat=222&amp;id=111``.</span>
+
+<span class="sd">    Even though those are two different URLs both point to the same resource</span>
+<span class="sd">    and are equivalent (i.e. they should return the same response).</span>
+
+<span class="sd">    Another example are cookies used to store session ids. Suppose the</span>
+<span class="sd">    following page is only accessible to authenticated users:</span>
+<span class="sd">    ``http://www.example.com/members/offers.html``.</span>
+
+<span class="sd">    Lots of sites use a cookie to store the session id, which adds a random</span>
+<span class="sd">    component to the HTTP Request and thus should be ignored when calculating</span>
+<span class="sd">    the fingerprint.</span>
+
+<span class="sd">    For this reason, request headers are ignored by default when calculating</span>
+<span class="sd">    the fingerprint. If you want to include specific headers use the</span>
+<span class="sd">    include_headers argument, which is a list of Request headers to include.</span>
+
+<span class="sd">    Also, servers usually ignore fragments in urls when handling requests,</span>
+<span class="sd">    so they are also ignored by default when calculating the fingerprint.</span>
+<span class="sd">    If you want to include them, set the keep_fragments argument to True</span>
+<span class="sd">    (for instance when handling requests with a headless browser).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">processed_include_headers</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">include_headers</span><span class="p">:</span>
+        <span class="n">processed_include_headers</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">to_bytes</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">include_headers</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="n">cache</span> <span class="o">=</span> <span class="n">_fingerprint_cache</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="n">cache_key</span> <span class="o">=</span> <span class="p">(</span><span class="n">processed_include_headers</span><span class="p">,</span> <span class="n">keep_fragments</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cache_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
+        <span class="c1"># To decode bytes reliably (JSON does not support bytes), regardless of</span>
+        <span class="c1"># character encoding, we use bytes.hex()</span>
+        <span class="n">headers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">processed_include_headers</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">header</span> <span class="ow">in</span> <span class="n">processed_include_headers</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">header</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="p">:</span>
+                    <span class="n">headers</span><span class="p">[</span><span class="n">header</span><span class="o">.</span><span class="n">hex</span><span class="p">()]</span> <span class="o">=</span> <span class="p">[</span>
+                        <span class="n">header_value</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span>
+                        <span class="k">for</span> <span class="n">header_value</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+                    <span class="p">]</span>
+        <span class="n">fingerprint_data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="p">),</span>
+            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">canonicalize_url</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">keep_fragments</span><span class="o">=</span><span class="n">keep_fragments</span><span class="p">),</span>
+            <span class="s2">&quot;body&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">body</span> <span class="ow">or</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span>
+            <span class="s2">&quot;headers&quot;</span><span class="p">:</span> <span class="n">headers</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">fingerprint_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">fingerprint_data</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha1</span><span class="p">(</span>  <span class="c1"># noqa: S324</span>
+            <span class="n">fingerprint_json</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">digest</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">cache</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span></div>
+
+
+
+<span class="k">class</span> <span class="nc">RequestFingerprinterProtocol</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">fingerprint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span> <span class="o">...</span>
+
+
+<div class="viewcode-block" id="RequestFingerprinter">
+<a class="viewcode-back" href="../../../topics/request-response.html#scrapy.utils.request.RequestFingerprinter">[docs]</a>
+<span class="k">class</span> <span class="nc">RequestFingerprinter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Default fingerprinter.</span>
+
+<span class="sd">    It takes into account a canonical version</span>
+<span class="sd">    (:func:`w3lib.url.canonicalize_url`) of :attr:`request.url</span>
+<span class="sd">    &lt;scrapy.Request.url&gt;` and the values of :attr:`request.method</span>
+<span class="sd">    &lt;scrapy.Request.method&gt;` and :attr:`request.body</span>
+<span class="sd">    &lt;scrapy.Request.body&gt;`. It then generates an `SHA1</span>
+<span class="sd">    &lt;https://en.wikipedia.org/wiki/SHA-1&gt;`_ hash.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_crawler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">crawler</span><span class="p">:</span> <span class="n">Crawler</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">crawler</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">crawler</span><span class="p">:</span> <span class="n">Crawler</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">crawler</span><span class="p">:</span>
+            <span class="n">implementation</span> <span class="o">=</span> <span class="n">crawler</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">&quot;REQUEST_FINGERPRINTER_IMPLEMENTATION&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">implementation</span> <span class="o">=</span> <span class="s2">&quot;SENTINEL&quot;</span>
+
+        <span class="k">if</span> <span class="n">implementation</span> <span class="o">!=</span> <span class="s2">&quot;SENTINEL&quot;</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;&#39;REQUEST_FINGERPRINTER_IMPLEMENTATION&#39; is a deprecated setting.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="s2">&quot;It will be removed in a future version of Scrapy.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="n">ScrapyDeprecationWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fingerprint</span> <span class="o">=</span> <span class="n">fingerprint</span>
+
+    <span class="k">def</span> <span class="nf">fingerprint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fingerprint</span><span class="p">(</span><span class="n">request</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">request_authenticate</span><span class="p">(</span>
+    <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span>
+    <span class="n">username</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Authenticate the given request (in place) using the HTTP basic access</span>
+<span class="sd">    authentication mechanism (RFC 2617) and the given username and password</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+        <span class="s2">&quot;The request_authenticate function is deprecated and will be removed in a future version of Scrapy.&quot;</span><span class="p">,</span>
+        <span class="n">category</span><span class="o">=</span><span class="n">ScrapyDeprecationWarning</span><span class="p">,</span>
+        <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;Authorization&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">basic_auth_header</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">request_httprepr</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the raw HTTP representation (as bytes) of the given request.</span>
+<span class="sd">    This is provided only for reference since it&#39;s not the actual stream of</span>
+<span class="sd">    bytes that will be send when performing the request (that&#39;s controlled</span>
+<span class="sd">    by Twisted).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parsed</span> <span class="o">=</span> <span class="n">urlparse_cached</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">urlunparse</span><span class="p">((</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">parsed</span><span class="o">.</span><span class="n">path</span> <span class="ow">or</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="n">parsed</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">parsed</span><span class="o">.</span><span class="n">query</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="p">)</span> <span class="o">+</span> <span class="sa">b</span><span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="o">+</span> <span class="sa">b</span><span class="s2">&quot; HTTP/1.1</span><span class="se">\r\n</span><span class="s2">&quot;</span>
+    <span class="n">s</span> <span class="o">+=</span> <span class="sa">b</span><span class="s2">&quot;Host: &quot;</span> <span class="o">+</span> <span class="n">to_bytes</span><span class="p">(</span><span class="n">parsed</span><span class="o">.</span><span class="n">hostname</span> <span class="ow">or</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">&quot;</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">+=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span> <span class="o">+</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">&quot;</span>
+    <span class="n">s</span> <span class="o">+=</span> <span class="sa">b</span><span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">&quot;</span>
+    <span class="n">s</span> <span class="o">+=</span> <span class="n">request</span><span class="o">.</span><span class="n">body</span>
+    <span class="k">return</span> <span class="n">s</span>
+
+
+<span class="k">def</span> <span class="nf">referer_str</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return Referer HTTP header suitable for logging.&quot;&quot;&quot;</span>
+    <span class="n">referrer</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Referer&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">referrer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">referrer</span>
+    <span class="k">return</span> <span class="n">to_unicode</span><span class="p">(</span><span class="n">referrer</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;replace&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="request_from_dict">
+<a class="viewcode-back" href="../../../topics/request-response.html#scrapy.utils.request.request_from_dict">[docs]</a>
+<span class="k">def</span> <span class="nf">request_from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">spider</span><span class="p">:</span> <span class="n">Spider</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Request</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a :class:`~scrapy.Request` object from a dict.</span>
+
+<span class="sd">    If a spider is given, it will try to resolve the callbacks looking at the</span>
+<span class="sd">    spider for methods with the same name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">request_cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">Request</span><span class="p">]</span> <span class="o">=</span> <span class="n">load_object</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s2">&quot;_class&quot;</span><span class="p">])</span> <span class="k">if</span> <span class="s2">&quot;_class&quot;</span> <span class="ow">in</span> <span class="n">d</span> <span class="k">else</span> <span class="n">Request</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">value</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">request_cls</span><span class="o">.</span><span class="n">attributes</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;callback&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">spider</span><span class="p">:</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;callback&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_method</span><span class="p">(</span><span class="n">spider</span><span class="p">,</span> <span class="n">d</span><span class="p">[</span><span class="s2">&quot;callback&quot;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;errback&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">spider</span><span class="p">:</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;errback&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_get_method</span><span class="p">(</span><span class="n">spider</span><span class="p">,</span> <span class="n">d</span><span class="p">[</span><span class="s2">&quot;errback&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">request_cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">_get_method</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper function for request_from_dict&quot;&quot;&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Method </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> not found in: </span><span class="si">{</span><span class="n">obj</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">request_to_curl</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts a :class:`~scrapy.Request` object to a curl command.</span>
+
+<span class="sd">    :param :class:`~scrapy.Request`: Request object to be converted</span>
+<span class="sd">    :return: string containing the curl command</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">method</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;--data-raw &#39;</span><span class="si">{</span><span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;&quot;</span> <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">body</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="n">headers</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;-H &#39;</span><span class="si">{</span><span class="n">k</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span><span class="si">}</span><span class="s2">&#39;&quot;</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="n">url</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span>
+    <span class="n">cookies</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">cookies</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">cookies</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">cookie</span> <span class="o">=</span> <span class="s2">&quot;; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="n">cookies</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;--cookie &#39;</span><span class="si">{</span><span class="n">cookie</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">cookies</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">cookie</span> <span class="o">=</span> <span class="s2">&quot;; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">cookies</span>
+            <span class="p">)</span>
+            <span class="n">cookies</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;--cookie &#39;</span><span class="si">{</span><span class="n">cookie</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+
+    <span class="n">curl_cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;curl -X </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">headers</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">cookies</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">curl_cmd</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

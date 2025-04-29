@@ -1,0 +1,747 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signals &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=84389e84"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/js/hoverxref.js"></script>
+      <script src="../_static/js/tooltipster.bundle.min.js"></script>
+      <script src="../_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="../_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="../_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Scheduler" href="scheduler.html" />
+    <link rel="prev" title="Extensions" href="extensions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extensions.html">Extensions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Signals</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#deferred-signal-handlers">Deferred signal handlers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-scrapy.signals">Built-in signals reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#engine-signals">Engine signals</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#engine-started">engine_started</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#engine-stopped">engine_stopped</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#item-signals">Item signals</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#item-scraped">item_scraped</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#item-dropped">item_dropped</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#item-error">item_error</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#spider-signals">Spider signals</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#spider-closed">spider_closed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#spider-opened">spider_opened</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#spider-idle">spider_idle</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#spider-error">spider_error</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#feed-slot-closed">feed_slot_closed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#feed-exporter-closed">feed_exporter_closed</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#request-signals">Request signals</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#request-scheduled">request_scheduled</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#request-dropped">request_dropped</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#request-reached-downloader">request_reached_downloader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#request-left-downloader">request_left_downloader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bytes-received">bytes_received</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#headers-received">headers_received</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#response-signals">Response signals</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#response-received">response_received</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#response-downloaded">response_downloaded</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Signals</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/topics/signals.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="signals">
+<span id="topics-signals"></span><h1>Signals<a class="headerlink" href="#signals" title="Link to this heading"></a></h1>
+<p>Scrapy uses signals extensively to notify when certain events occur. You can
+catch some of those signals in your Scrapy project (using an <a class="hxr-hoverxref hxr-tooltip reference internal" href="extensions.html#topics-extensions"><span class="std std-ref">extension</span></a>, for example) to perform additional tasks or extend Scrapy
+to add functionality not provided out of the box.</p>
+<p>Even though signals provide several arguments, the handlers that catch them
+don’t need to accept all of them - the signal dispatching mechanism will only
+deliver the arguments that the handler receives.</p>
+<p>You can connect to signals (or send your own) through the
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="api.html#topics-api-signals"><span class="std std-ref">Signals API</span></a>.</p>
+<p>Here is a simple example showing how you can catch signals and perform some action:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scrapy</span> <span class="kn">import</span> <span class="n">signals</span>
+<span class="kn">from</span> <span class="nn">scrapy</span> <span class="kn">import</span> <span class="n">Spider</span>
+
+
+<span class="k">class</span> <span class="nc">DmozSpider</span><span class="p">(</span><span class="n">Spider</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;dmoz&quot;</span>
+    <span class="n">allowed_domains</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;dmoz.org&quot;</span><span class="p">]</span>
+    <span class="n">start_urls</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;http://www.dmoz.org/Computers/Programming/Languages/Python/Books/&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;http://www.dmoz.org/Computers/Programming/Languages/Python/Resources/&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_crawler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">crawler</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">spider</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">DmozSpider</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">from_crawler</span><span class="p">(</span><span class="n">crawler</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">crawler</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">spider</span><span class="o">.</span><span class="n">spider_closed</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="n">signals</span><span class="o">.</span><span class="n">spider_closed</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">spider</span>
+
+    <span class="k">def</span> <span class="nf">spider_closed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spider</span><span class="p">):</span>
+        <span class="n">spider</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Spider closed: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">spider</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
+        <span class="k">pass</span>
+</pre></div>
+</div>
+<section id="deferred-signal-handlers">
+<span id="signal-deferred"></span><h2>Deferred signal handlers<a class="headerlink" href="#deferred-signal-handlers" title="Link to this heading"></a></h2>
+<p>Some signals support returning <a class="reference external" href="https://docs.twisted.org/en/stable/api/twisted.internet.defer.Deferred.html" title="(in Twisted)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Deferred</span></code></a>
+or <a class="reference external" href="https://docs.python.org/3/glossary.html#term-awaitable" title="(in Python v3.13)"><span class="xref std std-term">awaitable objects</span></a> from their handlers, allowing
+you to run asynchronous code that does not block Scrapy. If a signal
+handler returns one of these objects, Scrapy waits for that asynchronous
+operation to finish.</p>
+<p>Let’s take an example using <a class="hxr-hoverxref hxr-tooltip reference internal" href="coroutines.html#topics-coroutines"><span class="std std-ref">coroutines</span></a>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">scrapy</span>
+
+
+<span class="k">class</span> <span class="nc">SignalSpider</span><span class="p">(</span><span class="n">scrapy</span><span class="o">.</span><span class="n">Spider</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;signals&quot;</span>
+    <span class="n">start_urls</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;https://quotes.toscrape.com/page/1/&quot;</span><span class="p">]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_crawler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">crawler</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">spider</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">SignalSpider</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="n">from_crawler</span><span class="p">(</span><span class="n">crawler</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">crawler</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">spider</span><span class="o">.</span><span class="n">item_scraped</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="n">signals</span><span class="o">.</span><span class="n">item_scraped</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">spider</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">item_scraped</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="c1"># Send the scraped item to the server</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">treq</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="s2">&quot;http://example.com/post&quot;</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">item</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;ascii&quot;</span><span class="p">),</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="sa">b</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="sa">b</span><span class="s2">&quot;application/json&quot;</span><span class="p">]},</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">response</span>
+
+    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">quote</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">css</span><span class="p">(</span><span class="s2">&quot;div.quote&quot;</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="p">{</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">quote</span><span class="o">.</span><span class="n">css</span><span class="p">(</span><span class="s2">&quot;span.text::text&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(),</span>
+                <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="n">quote</span><span class="o">.</span><span class="n">css</span><span class="p">(</span><span class="s2">&quot;small.author::text&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(),</span>
+                <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="n">quote</span><span class="o">.</span><span class="n">css</span><span class="p">(</span><span class="s2">&quot;div.tags a.tag::text&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">getall</span><span class="p">(),</span>
+            <span class="p">}</span>
+</pre></div>
+</div>
+<p>See the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-signals-ref"><span class="std std-ref">Built-in signals reference</span></a> below to know which signals support
+<a class="reference external" href="https://docs.twisted.org/en/stable/api/twisted.internet.defer.Deferred.html" title="(in Twisted)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Deferred</span></code></a> and <a class="reference external" href="https://docs.python.org/3/glossary.html#term-awaitable" title="(in Python v3.13)"><span class="xref std std-term">awaitable objects</span></a>.</p>
+</section>
+<section id="module-scrapy.signals">
+<span id="built-in-signals-reference"></span><span id="topics-signals-ref"></span><h2>Built-in signals reference<a class="headerlink" href="#module-scrapy.signals" title="Link to this heading"></a></h2>
+<p>Here’s the list of Scrapy built-in signals and their meaning.</p>
+<section id="engine-signals">
+<h3>Engine signals<a class="headerlink" href="#engine-signals" title="Link to this heading"></a></h3>
+<section id="engine-started">
+<h4>engine_started<a class="headerlink" href="#engine-started" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-engine_started">
+<dt class="sig sig-object py" id="scrapy.signals.engine_started">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">engine_started</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.engine_started" title="Link to this definition"></a></dt>
+<dd><p>Sent when the Scrapy engine has started crawling.</p>
+<p>This signal supports returning deferreds from its handlers.</p>
+</dd></dl>
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This signal may be fired <em>after</em> the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-signal-spider_opened"><code class="xref std std-signal docutils literal notranslate"><span class="pre">spider_opened</span></code></a> signal,
+depending on how the spider was started. So <strong>don’t</strong> rely on this signal
+getting fired before <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-signal-spider_opened"><code class="xref std std-signal docutils literal notranslate"><span class="pre">spider_opened</span></code></a>.</p>
+</div>
+</section>
+<section id="engine-stopped">
+<h4>engine_stopped<a class="headerlink" href="#engine-stopped" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-engine_stopped">
+<dt class="sig sig-object py" id="scrapy.signals.engine_stopped">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">engine_stopped</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.engine_stopped" title="Link to this definition"></a></dt>
+<dd><p>Sent when the Scrapy engine is stopped (for example, when a crawling
+process has finished).</p>
+<p>This signal supports returning deferreds from its handlers.</p>
+</dd></dl>
+
+</section>
+</section>
+<section id="item-signals">
+<h3>Item signals<a class="headerlink" href="#item-signals" title="Link to this heading"></a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>As at max <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_ITEMS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_ITEMS</span></code></a> items are processed in
+parallel, many deferreds are fired together using
+<a class="reference external" href="https://docs.twisted.org/en/stable/api/twisted.internet.defer.DeferredList.html" title="(in Twisted)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DeferredList</span></code></a>. Hence the next
+batch waits for the <a class="reference external" href="https://docs.twisted.org/en/stable/api/twisted.internet.defer.DeferredList.html" title="(in Twisted)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DeferredList</span></code></a>
+to fire and then runs the respective item signal handler for
+the next batch of scraped items.</p>
+</div>
+<section id="item-scraped">
+<h4>item_scraped<a class="headerlink" href="#item-scraped" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-item_scraped">
+<dt class="sig sig-object py" id="scrapy.signals.item_scraped">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">item_scraped</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spider</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.item_scraped" title="Link to this definition"></a></dt>
+<dd><p>Sent when an item has been scraped, after it has passed all the
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="item-pipeline.html#topics-item-pipeline"><span class="std std-ref">Item Pipeline</span></a> stages (without being dropped).</p>
+<p>This signal supports returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item</strong> (<a class="hxr-hoverxref hxr-tooltip reference internal" href="items.html#item-types"><span class="std std-ref">item object</span></a>) – the scraped item</p></li>
+<li><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider which scraped the item</p></li>
+<li><p><strong>response</strong> (<a class="reference internal" href="request-response.html#scrapy.http.Response" title="scrapy.http.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a> | <code class="docutils literal notranslate"><span class="pre">None</span></code>) – the response from where the item was scraped, or <code class="docutils literal notranslate"><span class="pre">None</span></code>
+if it was yielded from <a class="reference internal" href="spiders.html#scrapy.Spider.start_requests" title="scrapy.Spider.start_requests"><code class="xref py py-meth docutils literal notranslate"><span class="pre">start_requests()</span></code></a>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="item-dropped">
+<h4>item_dropped<a class="headerlink" href="#item-dropped" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-item_dropped">
+<dt class="sig sig-object py" id="scrapy.signals.item_dropped">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">item_dropped</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exception</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spider</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.item_dropped" title="Link to this definition"></a></dt>
+<dd><p>Sent after an item has been dropped from the <a class="hxr-hoverxref hxr-tooltip reference internal" href="item-pipeline.html#topics-item-pipeline"><span class="std std-ref">Item Pipeline</span></a>
+when some stage raised a <a class="reference internal" href="exceptions.html#scrapy.exceptions.DropItem" title="scrapy.exceptions.DropItem"><code class="xref py py-exc docutils literal notranslate"><span class="pre">DropItem</span></code></a> exception.</p>
+<p>This signal supports returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item</strong> (<a class="hxr-hoverxref hxr-tooltip reference internal" href="items.html#item-types"><span class="std std-ref">item object</span></a>) – the item dropped from the <a class="hxr-hoverxref hxr-tooltip reference internal" href="item-pipeline.html#topics-item-pipeline"><span class="std std-ref">Item Pipeline</span></a></p></li>
+<li><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider which scraped the item</p></li>
+<li><p><strong>response</strong> (<a class="reference internal" href="request-response.html#scrapy.http.Response" title="scrapy.http.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a> | <code class="docutils literal notranslate"><span class="pre">None</span></code>) – the response from where the item was dropped, or <code class="docutils literal notranslate"><span class="pre">None</span></code>
+if it was yielded from <a class="reference internal" href="spiders.html#scrapy.Spider.start_requests" title="scrapy.Spider.start_requests"><code class="xref py py-meth docutils literal notranslate"><span class="pre">start_requests()</span></code></a>.</p></li>
+<li><p><strong>exception</strong> (<a class="reference internal" href="exceptions.html#scrapy.exceptions.DropItem" title="scrapy.exceptions.DropItem"><code class="xref py py-exc docutils literal notranslate"><span class="pre">DropItem</span></code></a> exception) – the exception (which must be a
+<a class="reference internal" href="exceptions.html#scrapy.exceptions.DropItem" title="scrapy.exceptions.DropItem"><code class="xref py py-exc docutils literal notranslate"><span class="pre">DropItem</span></code></a> subclass) which caused the item
+to be dropped</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="item-error">
+<h4>item_error<a class="headerlink" href="#item-error" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-item_error">
+<dt class="sig sig-object py" id="scrapy.signals.item_error">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">item_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spider</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">failure</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.item_error" title="Link to this definition"></a></dt>
+<dd><p>Sent when a <a class="hxr-hoverxref hxr-tooltip reference internal" href="item-pipeline.html#topics-item-pipeline"><span class="std std-ref">Item Pipeline</span></a> generates an error (i.e. raises
+an exception), except <a class="reference internal" href="exceptions.html#scrapy.exceptions.DropItem" title="scrapy.exceptions.DropItem"><code class="xref py py-exc docutils literal notranslate"><span class="pre">DropItem</span></code></a> exception.</p>
+<p>This signal supports returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item</strong> (<a class="hxr-hoverxref hxr-tooltip reference internal" href="items.html#item-types"><span class="std std-ref">item object</span></a>) – the item that caused the error in the <a class="hxr-hoverxref hxr-tooltip reference internal" href="item-pipeline.html#topics-item-pipeline"><span class="std std-ref">Item Pipeline</span></a></p></li>
+<li><p><strong>response</strong> (<a class="reference internal" href="request-response.html#scrapy.http.Response" title="scrapy.http.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a> | <code class="docutils literal notranslate"><span class="pre">None</span></code>) – the response being processed when the exception was
+raised, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if it was yielded from
+<a class="reference internal" href="spiders.html#scrapy.Spider.start_requests" title="scrapy.Spider.start_requests"><code class="xref py py-meth docutils literal notranslate"><span class="pre">start_requests()</span></code></a>.</p></li>
+<li><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider which raised the exception</p></li>
+<li><p><strong>failure</strong> (<a class="reference external" href="https://docs.twisted.org/en/stable/api/twisted.python.failure.Failure.html" title="(in Twisted)"><em>twisted.python.failure.Failure</em></a>) – the exception raised</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+<section id="spider-signals">
+<h3>Spider signals<a class="headerlink" href="#spider-signals" title="Link to this heading"></a></h3>
+<section id="spider-closed">
+<h4>spider_closed<a class="headerlink" href="#spider-closed" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-spider_closed">
+<dt class="sig sig-object py" id="scrapy.signals.spider_closed">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">spider_closed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spider</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.spider_closed" title="Link to this definition"></a></dt>
+<dd><p>Sent after a spider has been closed. This can be used to release per-spider
+resources reserved on <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-signal-spider_opened"><code class="xref std std-signal docutils literal notranslate"><span class="pre">spider_opened</span></code></a>.</p>
+<p>This signal supports returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider which has been closed</p></li>
+<li><p><strong>reason</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – a string which describes the reason why the spider was closed. If
+it was closed because the spider has completed scraping, the reason
+is <code class="docutils literal notranslate"><span class="pre">'finished'</span></code>. Otherwise, if the spider was manually closed by
+calling the <code class="docutils literal notranslate"><span class="pre">close_spider</span></code> engine method, then the reason is the one
+passed in the <code class="docutils literal notranslate"><span class="pre">reason</span></code> argument of that method (which defaults to
+<code class="docutils literal notranslate"><span class="pre">'cancelled'</span></code>). If the engine was shutdown (for example, by hitting
+Ctrl-C to stop it) the reason will be <code class="docutils literal notranslate"><span class="pre">'shutdown'</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="spider-opened">
+<h4>spider_opened<a class="headerlink" href="#spider-opened" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-spider_opened">
+<dt class="sig sig-object py" id="scrapy.signals.spider_opened">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">spider_opened</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spider</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.spider_opened" title="Link to this definition"></a></dt>
+<dd><p>Sent after a spider has been opened for crawling. This is typically used to
+reserve per-spider resources, but can be used for any task that needs to be
+performed when a spider is opened.</p>
+<p>This signal supports returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider which has been opened</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="spider-idle">
+<h4>spider_idle<a class="headerlink" href="#spider-idle" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-spider_idle">
+<dt class="sig sig-object py" id="scrapy.signals.spider_idle">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">spider_idle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spider</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.spider_idle" title="Link to this definition"></a></dt>
+<dd><p>Sent when a spider has gone idle, which means the spider has no further:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>requests waiting to be downloaded</p></li>
+<li><p>requests scheduled</p></li>
+<li><p>items being processed in the item pipeline</p></li>
+</ul>
+</div></blockquote>
+<p>If the idle state persists after all handlers of this signal have finished,
+the engine starts closing the spider. After the spider has finished
+closing, the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-signal-spider_closed"><code class="xref std std-signal docutils literal notranslate"><span class="pre">spider_closed</span></code></a> signal is sent.</p>
+<p>You may raise a <a class="reference internal" href="exceptions.html#scrapy.exceptions.DontCloseSpider" title="scrapy.exceptions.DontCloseSpider"><code class="xref py py-exc docutils literal notranslate"><span class="pre">DontCloseSpider</span></code></a> exception to
+prevent the spider from being closed.</p>
+<p>Alternatively, you may raise a <a class="reference internal" href="exceptions.html#scrapy.exceptions.CloseSpider" title="scrapy.exceptions.CloseSpider"><code class="xref py py-exc docutils literal notranslate"><span class="pre">CloseSpider</span></code></a>
+exception to provide a custom spider closing reason. An
+idle handler is the perfect place to put some code that assesses
+the final spider results and update the final closing reason
+accordingly (e.g. setting it to ‘too_few_results’ instead of
+‘finished’).</p>
+<p>This signal does not support returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider which has gone idle</p>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Scheduling some requests in your <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-signal-spider_idle"><code class="xref std std-signal docutils literal notranslate"><span class="pre">spider_idle</span></code></a> handler does
+<strong>not</strong> guarantee that it can prevent the spider from being closed,
+although it sometimes can. That’s because the spider may still remain idle
+if all the scheduled requests are rejected by the scheduler (e.g. filtered
+due to duplication).</p>
+</div>
+</section>
+<section id="spider-error">
+<h4>spider_error<a class="headerlink" href="#spider-error" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-spider_error">
+<dt class="sig sig-object py" id="scrapy.signals.spider_error">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">spider_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">failure</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spider</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.spider_error" title="Link to this definition"></a></dt>
+<dd><p>Sent when a spider callback generates an error (i.e. raises an exception).</p>
+<p>This signal does not support returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>failure</strong> (<a class="reference external" href="https://docs.twisted.org/en/stable/api/twisted.python.failure.Failure.html" title="(in Twisted)"><em>twisted.python.failure.Failure</em></a>) – the exception raised</p></li>
+<li><p><strong>response</strong> (<a class="reference internal" href="request-response.html#scrapy.http.Response" title="scrapy.http.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a> object) – the response being processed when the exception was raised</p></li>
+<li><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider which raised the exception</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="feed-slot-closed">
+<h4>feed_slot_closed<a class="headerlink" href="#feed-slot-closed" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-feed_slot_closed">
+<dt class="sig sig-object py" id="scrapy.signals.feed_slot_closed">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">feed_slot_closed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slot</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.feed_slot_closed" title="Link to this definition"></a></dt>
+<dd><p>Sent when a <a class="hxr-hoverxref hxr-tooltip reference internal" href="feed-exports.html#topics-feed-exports"><span class="std std-ref">feed exports</span></a> slot is closed.</p>
+<p>This signal supports returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>slot</strong> (<em>scrapy.extensions.feedexport.FeedSlot</em>) – the slot closed</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="feed-exporter-closed">
+<h4>feed_exporter_closed<a class="headerlink" href="#feed-exporter-closed" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-feed_exporter_closed">
+<dt class="sig sig-object py" id="scrapy.signals.feed_exporter_closed">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">feed_exporter_closed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.feed_exporter_closed" title="Link to this definition"></a></dt>
+<dd><p>Sent when the <a class="hxr-hoverxref hxr-tooltip reference internal" href="feed-exports.html#topics-feed-exports"><span class="std std-ref">feed exports</span></a> extension is closed,
+during the handling of the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-signal-spider_closed"><code class="xref std std-signal docutils literal notranslate"><span class="pre">spider_closed</span></code></a> signal by the extension,
+after all feed exporting has been handled.</p>
+<p>This signal supports returning deferreds from its handlers.</p>
+</dd></dl>
+
+</section>
+</section>
+<section id="request-signals">
+<h3>Request signals<a class="headerlink" href="#request-signals" title="Link to this heading"></a></h3>
+<section id="request-scheduled">
+<h4>request_scheduled<a class="headerlink" href="#request-scheduled" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-request_scheduled">
+<dt class="sig sig-object py" id="scrapy.signals.request_scheduled">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">request_scheduled</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spider</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.request_scheduled" title="Link to this definition"></a></dt>
+<dd><p>Sent when the engine is asked to schedule a <a class="reference internal" href="request-response.html#scrapy.Request" title="scrapy.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a>, to be
+downloaded later, before the request reaches the <a class="hxr-hoverxref hxr-tooltip reference internal" href="scheduler.html#topics-scheduler"><span class="std std-ref">scheduler</span></a>.</p>
+<p>Raise <a class="reference internal" href="exceptions.html#scrapy.exceptions.IgnoreRequest" title="scrapy.exceptions.IgnoreRequest"><code class="xref py py-exc docutils literal notranslate"><span class="pre">IgnoreRequest</span></code></a> to drop a request before it
+reaches the scheduler.</p>
+<p>This signal does not support returning deferreds from its handlers.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.11.2: </span>Allow dropping requests with <a class="reference internal" href="exceptions.html#scrapy.exceptions.IgnoreRequest" title="scrapy.exceptions.IgnoreRequest"><code class="xref py py-exc docutils literal notranslate"><span class="pre">IgnoreRequest</span></code></a>.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>request</strong> (<a class="reference internal" href="request-response.html#scrapy.Request" title="scrapy.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a> object) – the request that reached the scheduler</p></li>
+<li><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider that yielded the request</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="request-dropped">
+<h4>request_dropped<a class="headerlink" href="#request-dropped" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-request_dropped">
+<dt class="sig sig-object py" id="scrapy.signals.request_dropped">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">request_dropped</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spider</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.request_dropped" title="Link to this definition"></a></dt>
+<dd><p>Sent when a <a class="reference internal" href="request-response.html#scrapy.Request" title="scrapy.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a>, scheduled by the engine to be
+downloaded later, is rejected by the scheduler.</p>
+<p>This signal does not support returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>request</strong> (<a class="reference internal" href="request-response.html#scrapy.Request" title="scrapy.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a> object) – the request that reached the scheduler</p></li>
+<li><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider that yielded the request</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="request-reached-downloader">
+<h4>request_reached_downloader<a class="headerlink" href="#request-reached-downloader" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-request_reached_downloader">
+<dt class="sig sig-object py" id="scrapy.signals.request_reached_downloader">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">request_reached_downloader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spider</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.request_reached_downloader" title="Link to this definition"></a></dt>
+<dd><p>Sent when a <a class="reference internal" href="request-response.html#scrapy.Request" title="scrapy.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a> reached downloader.</p>
+<p>This signal does not support returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>request</strong> (<a class="reference internal" href="request-response.html#scrapy.Request" title="scrapy.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a> object) – the request that reached downloader</p></li>
+<li><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider that yielded the request</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="request-left-downloader">
+<h4>request_left_downloader<a class="headerlink" href="#request-left-downloader" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-request_left_downloader">
+<dt class="sig sig-object py" id="scrapy.signals.request_left_downloader">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">request_left_downloader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spider</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.request_left_downloader" title="Link to this definition"></a></dt>
+<dd><div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.0.</span></p>
+</div>
+<p>Sent when a <a class="reference internal" href="request-response.html#scrapy.Request" title="scrapy.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a> leaves the downloader, even in case of
+failure.</p>
+<p>This signal does not support returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>request</strong> (<a class="reference internal" href="request-response.html#scrapy.Request" title="scrapy.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a> object) – the request that reached the downloader</p></li>
+<li><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider that yielded the request</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="bytes-received">
+<h4>bytes_received<a class="headerlink" href="#bytes-received" title="Link to this heading"></a></h4>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.</span></p>
+</div>
+<dl class="py function" id="std-signal-bytes_received">
+<dt class="sig sig-object py" id="scrapy.signals.bytes_received">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">bytes_received</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spider</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.bytes_received" title="Link to this definition"></a></dt>
+<dd><p>Sent by the HTTP 1.1 and S3 download handlers when a group of bytes is
+received for a specific request. This signal might be fired multiple
+times for the same request, with partial data each time. For instance,
+a possible scenario for a 25 kb response would be two signals fired
+with 10 kb of data, and a final one with 5 kb of data.</p>
+<p>Handlers for this signal can stop the download of a response while it
+is in progress by raising the <a class="reference internal" href="exceptions.html#scrapy.exceptions.StopDownload" title="scrapy.exceptions.StopDownload"><code class="xref py py-exc docutils literal notranslate"><span class="pre">StopDownload</span></code></a>
+exception. Please refer to the <a class="hxr-hoverxref hxr-tooltip reference internal" href="request-response.html#topics-stop-response-download"><span class="std std-ref">Stopping the download of a Response</span></a> topic
+for additional information and examples.</p>
+<p>This signal does not support returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a> object) – the data received by the download handler</p></li>
+<li><p><strong>request</strong> (<a class="reference internal" href="request-response.html#scrapy.Request" title="scrapy.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a> object) – the request that generated the download</p></li>
+<li><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider associated with the response</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="headers-received">
+<h4>headers_received<a class="headerlink" href="#headers-received" title="Link to this heading"></a></h4>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.5.</span></p>
+</div>
+<dl class="py function" id="std-signal-headers_received">
+<dt class="sig sig-object py" id="scrapy.signals.headers_received">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">headers_received</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">headers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spider</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.headers_received" title="Link to this definition"></a></dt>
+<dd><p>Sent by the HTTP 1.1 and S3 download handlers when the response headers are
+available for a given request, before downloading any additional content.</p>
+<p>Handlers for this signal can stop the download of a response while it
+is in progress by raising the <a class="reference internal" href="exceptions.html#scrapy.exceptions.StopDownload" title="scrapy.exceptions.StopDownload"><code class="xref py py-exc docutils literal notranslate"><span class="pre">StopDownload</span></code></a>
+exception. Please refer to the <a class="hxr-hoverxref hxr-tooltip reference internal" href="request-response.html#topics-stop-response-download"><span class="std std-ref">Stopping the download of a Response</span></a> topic
+for additional information and examples.</p>
+<p>This signal does not support returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>headers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">scrapy.http.headers.Headers</span></code> object) – the headers received by the download handler</p></li>
+<li><p><strong>body_length</strong> (<cite>int</cite>) – expected size of the response body, in bytes</p></li>
+<li><p><strong>request</strong> (<a class="reference internal" href="request-response.html#scrapy.Request" title="scrapy.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a> object) – the request that generated the download</p></li>
+<li><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider associated with the response</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+<section id="response-signals">
+<h3>Response signals<a class="headerlink" href="#response-signals" title="Link to this heading"></a></h3>
+<section id="response-received">
+<h4>response_received<a class="headerlink" href="#response-received" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-response_received">
+<dt class="sig sig-object py" id="scrapy.signals.response_received">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">response_received</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spider</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.response_received" title="Link to this definition"></a></dt>
+<dd><p>Sent when the engine receives a new <a class="reference internal" href="request-response.html#scrapy.http.Response" title="scrapy.http.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a> from the
+downloader.</p>
+<p>This signal does not support returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>response</strong> (<a class="reference internal" href="request-response.html#scrapy.http.Response" title="scrapy.http.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a> object) – the response received</p></li>
+<li><p><strong>request</strong> (<a class="reference internal" href="request-response.html#scrapy.Request" title="scrapy.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a> object) – the request that generated the response</p></li>
+<li><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider for which the response is intended</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">request</span></code> argument might not contain the original request that
+reached the downloader, if a <a class="hxr-hoverxref hxr-tooltip reference internal" href="downloader-middleware.html#topics-downloader-middleware"><span class="std std-ref">Downloader Middleware</span></a> modifies
+the <a class="reference internal" href="request-response.html#scrapy.http.Response" title="scrapy.http.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a> object and sets a specific <code class="docutils literal notranslate"><span class="pre">request</span></code>
+attribute.</p>
+</div>
+</section>
+<section id="response-downloaded">
+<h4>response_downloaded<a class="headerlink" href="#response-downloaded" title="Link to this heading"></a></h4>
+<dl class="py function" id="std-signal-response_downloaded">
+<dt class="sig sig-object py" id="scrapy.signals.response_downloaded">
+<span class="sig-prename descclassname"><span class="pre">scrapy.signals.</span></span><span class="sig-name descname"><span class="pre">response_downloaded</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spider</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.signals.response_downloaded" title="Link to this definition"></a></dt>
+<dd><p>Sent by the downloader right after a <code class="docutils literal notranslate"><span class="pre">HTTPResponse</span></code> is downloaded.</p>
+<p>This signal does not support returning deferreds from its handlers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>response</strong> (<a class="reference internal" href="request-response.html#scrapy.http.Response" title="scrapy.http.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a> object) – the response downloaded</p></li>
+<li><p><strong>request</strong> (<a class="reference internal" href="request-response.html#scrapy.Request" title="scrapy.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a> object) – the request that generated the response</p></li>
+<li><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> object) – the spider for which the response is intended</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="extensions.html" class="btn btn-neutral float-left" title="Extensions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="scheduler.html" class="btn btn-neutral float-right" title="Scheduler" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

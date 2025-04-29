@@ -1,0 +1,645 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Extensions &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=84389e84"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/js/hoverxref.js"></script>
+      <script src="../_static/js/tooltipster.bundle.min.js"></script>
+      <script src="../_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="../_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="../_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Signals" href="signals.html" />
+    <link rel="prev" title="Spider Middleware" href="spider-middleware.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Extensions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#loading-and-activating-extensions">Loading and activating extensions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#writing-your-own-extension">Writing your own extension</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sample-extension">Sample extension</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#built-in-extensions-reference">Built-in extensions reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#general-purpose-extensions">General purpose extensions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#module-scrapy.extensions.logstats">Log Stats extension</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-scrapy.extensions.corestats">Core Stats extension</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-scrapy.extensions.telnet">Telnet console extension</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-scrapy.extensions.memusage">Memory usage extension</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-scrapy.extensions.memdebug">Memory debugger extension</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-scrapy.extensions.spiderstate">Spider state extension</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-scrapy.extensions.closespider">Close spider extension</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-scrapy.extensions.statsmailer">StatsMailer extension</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#periodic-log-extension">Periodic log extension</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#debugging-extensions">Debugging extensions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#stack-trace-dump-extension">Stack trace dump extension</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#debugger-extension">Debugger extension</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Extensions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/topics/extensions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="extensions">
+<span id="topics-extensions"></span><h1>Extensions<a class="headerlink" href="#extensions" title="Link to this heading"></a></h1>
+<p>Extensions are <a class="hxr-hoverxref hxr-tooltip reference internal" href="components.html#topics-components"><span class="std std-ref">components</span></a> that allow inserting your
+own custom functionality into Scrapy.</p>
+<p>Unlike other components, extensions do not have a specific role in Scrapy. They
+are “wildcard” components that can be used for anything that does not fit the
+role of any other type of component.</p>
+<section id="loading-and-activating-extensions">
+<h2>Loading and activating extensions<a class="headerlink" href="#loading-and-activating-extensions" title="Link to this heading"></a></h2>
+<p>Extensions are loaded at startup by creating a single instance of the extension
+class per spider being run.</p>
+<p>To enable an extension, add it to the <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-EXTENSIONS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">EXTENSIONS</span></code></a> setting. For
+example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">EXTENSIONS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;scrapy.extensions.corestats.CoreStats&quot;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+    <span class="s2">&quot;scrapy.extensions.telnet.TelnetConsole&quot;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-EXTENSIONS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">EXTENSIONS</span></code></a> is merged with <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-EXTENSIONS_BASE"><code class="xref std std-setting docutils literal notranslate"><span class="pre">EXTENSIONS_BASE</span></code></a> (not meant to
+be overridden), and the priorities in the resulting value determine the
+<em>loading</em> order.</p>
+<p>As extensions typically do not depend on each other, their loading order is
+irrelevant in most cases. This is why the <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-EXTENSIONS_BASE"><code class="xref std std-setting docutils literal notranslate"><span class="pre">EXTENSIONS_BASE</span></code></a> setting
+defines all extensions with the same order (<code class="docutils literal notranslate"><span class="pre">0</span></code>). However, you may need to
+carefully use priorities if you add an extension that depends on other
+extensions being already loaded.</p>
+</section>
+<section id="writing-your-own-extension">
+<h2>Writing your own extension<a class="headerlink" href="#writing-your-own-extension" title="Link to this heading"></a></h2>
+<p>Each extension is a <a class="hxr-hoverxref hxr-tooltip reference internal" href="components.html#topics-components"><span class="std std-ref">component</span></a>.</p>
+<p>Typically, extensions connect to <a class="hxr-hoverxref hxr-tooltip reference internal" href="signals.html#topics-signals"><span class="std std-ref">signals</span></a> and perform
+tasks triggered by them.</p>
+<section id="sample-extension">
+<h3>Sample extension<a class="headerlink" href="#sample-extension" title="Link to this heading"></a></h3>
+<p>Here we will implement a simple extension to illustrate the concepts described
+in the previous section. This extension will log a message every time:</p>
+<ul class="simple">
+<li><p>a spider is opened</p></li>
+<li><p>a spider is closed</p></li>
+<li><p>a specific number of items are scraped</p></li>
+</ul>
+<p>The extension will be enabled through the <code class="docutils literal notranslate"><span class="pre">MYEXT_ENABLED</span></code> setting and the
+number of items will be specified through the <code class="docutils literal notranslate"><span class="pre">MYEXT_ITEMCOUNT</span></code> setting.</p>
+<p>Here is the code of such extension:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">scrapy</span> <span class="kn">import</span> <span class="n">signals</span>
+<span class="kn">from</span> <span class="nn">scrapy.exceptions</span> <span class="kn">import</span> <span class="n">NotConfigured</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">SpiderOpenCloseLogging</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item_count</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">item_count</span> <span class="o">=</span> <span class="n">item_count</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">items_scraped</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_crawler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">crawler</span><span class="p">):</span>
+        <span class="c1"># first check if the extension should be enabled and raise</span>
+        <span class="c1"># NotConfigured otherwise</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">crawler</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">getbool</span><span class="p">(</span><span class="s2">&quot;MYEXT_ENABLED&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">NotConfigured</span>
+
+        <span class="c1"># get the number of items from settings</span>
+        <span class="n">item_count</span> <span class="o">=</span> <span class="n">crawler</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">getint</span><span class="p">(</span><span class="s2">&quot;MYEXT_ITEMCOUNT&quot;</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+
+        <span class="c1"># instantiate the extension object</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">item_count</span><span class="p">)</span>
+
+        <span class="c1"># connect the extension object to signals</span>
+        <span class="n">crawler</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">ext</span><span class="o">.</span><span class="n">spider_opened</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="n">signals</span><span class="o">.</span><span class="n">spider_opened</span><span class="p">)</span>
+        <span class="n">crawler</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">ext</span><span class="o">.</span><span class="n">spider_closed</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="n">signals</span><span class="o">.</span><span class="n">spider_closed</span><span class="p">)</span>
+        <span class="n">crawler</span><span class="o">.</span><span class="n">signals</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">ext</span><span class="o">.</span><span class="n">item_scraped</span><span class="p">,</span> <span class="n">signal</span><span class="o">=</span><span class="n">signals</span><span class="o">.</span><span class="n">item_scraped</span><span class="p">)</span>
+
+        <span class="c1"># return the extension object</span>
+        <span class="k">return</span> <span class="n">ext</span>
+
+    <span class="k">def</span> <span class="nf">spider_opened</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spider</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;opened spider </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">spider</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">spider_closed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spider</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;closed spider </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">spider</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">item_scraped</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">spider</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">items_scraped</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">items_scraped</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;scraped </span><span class="si">%d</span><span class="s2"> items&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">items_scraped</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="built-in-extensions-reference">
+<span id="topics-extensions-ref"></span><h2>Built-in extensions reference<a class="headerlink" href="#built-in-extensions-reference" title="Link to this heading"></a></h2>
+<section id="general-purpose-extensions">
+<h3>General purpose extensions<a class="headerlink" href="#general-purpose-extensions" title="Link to this heading"></a></h3>
+<section id="module-scrapy.extensions.logstats">
+<span id="log-stats-extension"></span><h4>Log Stats extension<a class="headerlink" href="#module-scrapy.extensions.logstats" title="Link to this heading"></a></h4>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.logstats.LogStats">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.logstats.</span></span><span class="sig-name descname"><span class="pre">LogStats</span></span><a class="reference internal" href="../_modules/scrapy/extensions/logstats.html#LogStats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.extensions.logstats.LogStats" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>Log basic stats like crawled pages and scraped items.</p>
+</section>
+<section id="module-scrapy.extensions.corestats">
+<span id="core-stats-extension"></span><h4>Core Stats extension<a class="headerlink" href="#module-scrapy.extensions.corestats" title="Link to this heading"></a></h4>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.corestats.CoreStats">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.corestats.</span></span><span class="sig-name descname"><span class="pre">CoreStats</span></span><a class="reference internal" href="../_modules/scrapy/extensions/corestats.html#CoreStats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.extensions.corestats.CoreStats" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>Enable the collection of core statistics, provided the stats collection is
+enabled (see <a class="hxr-hoverxref hxr-tooltip reference internal" href="stats.html#topics-stats"><span class="std std-ref">Stats Collection</span></a>).</p>
+</section>
+<section id="module-scrapy.extensions.telnet">
+<span id="telnet-console-extension"></span><span id="topics-extensions-ref-telnetconsole"></span><h4>Telnet console extension<a class="headerlink" href="#module-scrapy.extensions.telnet" title="Link to this heading"></a></h4>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.telnet.TelnetConsole">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.telnet.</span></span><span class="sig-name descname"><span class="pre">TelnetConsole</span></span><a class="reference internal" href="../_modules/scrapy/extensions/telnet.html#TelnetConsole"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.extensions.telnet.TelnetConsole" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>Provides a telnet console for getting into a Python interpreter inside the
+currently running Scrapy process, which can be very useful for debugging.</p>
+<p>The telnet console must be enabled by the <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-TELNETCONSOLE_ENABLED"><code class="xref std std-setting docutils literal notranslate"><span class="pre">TELNETCONSOLE_ENABLED</span></code></a>
+setting, and the server will listen in the port specified in
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="telnetconsole.html#std-setting-TELNETCONSOLE_PORT"><code class="xref std std-setting docutils literal notranslate"><span class="pre">TELNETCONSOLE_PORT</span></code></a>.</p>
+</section>
+<section id="module-scrapy.extensions.memusage">
+<span id="memory-usage-extension"></span><span id="topics-extensions-ref-memusage"></span><h4>Memory usage extension<a class="headerlink" href="#module-scrapy.extensions.memusage" title="Link to this heading"></a></h4>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.memusage.MemoryUsage">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.memusage.</span></span><span class="sig-name descname"><span class="pre">MemoryUsage</span></span><a class="reference internal" href="../_modules/scrapy/extensions/memusage.html#MemoryUsage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.extensions.memusage.MemoryUsage" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This extension does not work in Windows.</p>
+</div>
+<p>Monitors the memory used by the Scrapy process that runs the spider and:</p>
+<ol class="arabic simple">
+<li><p>sends a notification e-mail when it exceeds a certain value</p></li>
+<li><p>closes the spider when it exceeds a certain value</p></li>
+</ol>
+<p>The notification e-mails can be triggered when a certain warning value is
+reached (<a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-MEMUSAGE_WARNING_MB"><code class="xref std std-setting docutils literal notranslate"><span class="pre">MEMUSAGE_WARNING_MB</span></code></a>) and when the maximum value is reached
+(<a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-MEMUSAGE_LIMIT_MB"><code class="xref std std-setting docutils literal notranslate"><span class="pre">MEMUSAGE_LIMIT_MB</span></code></a>) which will also cause the spider to be closed
+and the Scrapy process to be terminated.</p>
+<p>This extension is enabled by the <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-MEMUSAGE_ENABLED"><code class="xref std std-setting docutils literal notranslate"><span class="pre">MEMUSAGE_ENABLED</span></code></a> setting and
+can be configured with the following settings:</p>
+<ul class="simple">
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-MEMUSAGE_LIMIT_MB"><code class="xref std std-setting docutils literal notranslate"><span class="pre">MEMUSAGE_LIMIT_MB</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-MEMUSAGE_WARNING_MB"><code class="xref std std-setting docutils literal notranslate"><span class="pre">MEMUSAGE_WARNING_MB</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-MEMUSAGE_NOTIFY_MAIL"><code class="xref std std-setting docutils literal notranslate"><span class="pre">MEMUSAGE_NOTIFY_MAIL</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-MEMUSAGE_CHECK_INTERVAL_SECONDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">MEMUSAGE_CHECK_INTERVAL_SECONDS</span></code></a></p></li>
+</ul>
+</section>
+<section id="module-scrapy.extensions.memdebug">
+<span id="memory-debugger-extension"></span><h4>Memory debugger extension<a class="headerlink" href="#module-scrapy.extensions.memdebug" title="Link to this heading"></a></h4>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.memdebug.MemoryDebugger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.memdebug.</span></span><span class="sig-name descname"><span class="pre">MemoryDebugger</span></span><a class="reference internal" href="../_modules/scrapy/extensions/memdebug.html#MemoryDebugger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.extensions.memdebug.MemoryDebugger" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>An extension for debugging memory usage. It collects information about:</p>
+<ul class="simple">
+<li><p>objects uncollected by the Python garbage collector</p></li>
+<li><p>objects left alive that shouldn’t. For more info, see <a class="hxr-hoverxref hxr-tooltip reference internal" href="leaks.html#topics-leaks-trackrefs"><span class="std std-ref">Debugging memory leaks with trackref</span></a></p></li>
+</ul>
+<p>To enable this extension, turn on the <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-MEMDEBUG_ENABLED"><code class="xref std std-setting docutils literal notranslate"><span class="pre">MEMDEBUG_ENABLED</span></code></a> setting. The
+info will be stored in the stats.</p>
+</section>
+<section id="module-scrapy.extensions.spiderstate">
+<span id="spider-state-extension"></span><span id="topics-extensions-ref-spiderstate"></span><h4>Spider state extension<a class="headerlink" href="#module-scrapy.extensions.spiderstate" title="Link to this heading"></a></h4>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.spiderstate.SpiderState">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.spiderstate.</span></span><span class="sig-name descname"><span class="pre">SpiderState</span></span><a class="reference internal" href="../_modules/scrapy/extensions/spiderstate.html#SpiderState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.extensions.spiderstate.SpiderState" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>Manages spider state data by loading it before a crawl and saving it after.</p>
+<p>Give a value to the <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-JOBDIR"><code class="xref std std-setting docutils literal notranslate"><span class="pre">JOBDIR</span></code></a> setting to enable this extension.
+When enabled, this extension manages the <a class="reference internal" href="spiders.html#scrapy.Spider.state" title="scrapy.Spider.state"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state</span></code></a>
+attribute of your <a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><code class="xref py py-class docutils literal notranslate"><span class="pre">Spider</span></code></a> instance:</p>
+<ul class="simple">
+<li><p>When your spider closes (<a class="hxr-hoverxref hxr-tooltip reference internal" href="signals.html#std-signal-spider_closed"><code class="xref std std-signal docutils literal notranslate"><span class="pre">spider_closed</span></code></a>), the contents of its
+<a class="reference internal" href="spiders.html#scrapy.Spider.state" title="scrapy.Spider.state"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state</span></code></a> attribute are serialized into a file named
+<code class="docutils literal notranslate"><span class="pre">spider.state</span></code> in the <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-JOBDIR"><code class="xref std std-setting docutils literal notranslate"><span class="pre">JOBDIR</span></code></a> folder.</p></li>
+<li><p>When your spider opens (<a class="hxr-hoverxref hxr-tooltip reference internal" href="signals.html#std-signal-spider_opened"><code class="xref std std-signal docutils literal notranslate"><span class="pre">spider_opened</span></code></a>), if a previously-generated
+<code class="docutils literal notranslate"><span class="pre">spider.state</span></code> file exists in the <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-JOBDIR"><code class="xref std std-setting docutils literal notranslate"><span class="pre">JOBDIR</span></code></a> folder, it is loaded
+into the <a class="reference internal" href="spiders.html#scrapy.Spider.state" title="scrapy.Spider.state"><code class="xref py py-attr docutils literal notranslate"><span class="pre">state</span></code></a> attribute.</p></li>
+</ul>
+<p>For an example, see <a class="hxr-hoverxref hxr-tooltip reference internal" href="jobs.html#topics-keeping-persistent-state-between-batches"><span class="std std-ref">Keeping persistent state between batches</span></a>.</p>
+</section>
+<section id="module-scrapy.extensions.closespider">
+<span id="close-spider-extension"></span><h4>Close spider extension<a class="headerlink" href="#module-scrapy.extensions.closespider" title="Link to this heading"></a></h4>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.closespider.CloseSpider">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.closespider.</span></span><span class="sig-name descname"><span class="pre">CloseSpider</span></span><a class="reference internal" href="../_modules/scrapy/extensions/closespider.html#CloseSpider"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.extensions.closespider.CloseSpider" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>Closes a spider automatically when some conditions are met, using a specific
+closing reason for each condition.</p>
+<p>The conditions for closing a spider can be configured through the following
+settings:</p>
+<ul class="simple">
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-CLOSESPIDER_TIMEOUT"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CLOSESPIDER_TIMEOUT</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-CLOSESPIDER_TIMEOUT_NO_ITEM"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CLOSESPIDER_TIMEOUT_NO_ITEM</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-CLOSESPIDER_ITEMCOUNT"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CLOSESPIDER_ITEMCOUNT</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-CLOSESPIDER_PAGECOUNT"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CLOSESPIDER_PAGECOUNT</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-CLOSESPIDER_ERRORCOUNT"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CLOSESPIDER_ERRORCOUNT</span></code></a></p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When a certain closing condition is met, requests which are
+currently in the downloader queue (up to <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS</span></code></a>
+requests) are still processed.</p>
+</div>
+<section id="closespider-timeout">
+<span id="std-setting-CLOSESPIDER_TIMEOUT"></span><h5>CLOSESPIDER_TIMEOUT<a class="headerlink" href="#closespider-timeout" title="Link to this heading"></a></h5>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+<p>An integer which specifies a number of seconds. If the spider remains open for
+more than that number of second, it will be automatically closed with the
+reason <code class="docutils literal notranslate"><span class="pre">closespider_timeout</span></code>. If zero (or non set), spiders won’t be closed by
+timeout.</p>
+</section>
+<section id="closespider-timeout-no-item">
+<span id="std-setting-CLOSESPIDER_TIMEOUT_NO_ITEM"></span><h5>CLOSESPIDER_TIMEOUT_NO_ITEM<a class="headerlink" href="#closespider-timeout-no-item" title="Link to this heading"></a></h5>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+<p>An integer which specifies a number of seconds. If the spider has not produced
+any items in the last number of seconds, it will be closed with the reason
+<code class="docutils literal notranslate"><span class="pre">closespider_timeout_no_item</span></code>. If zero (or non set), spiders won’t be closed
+regardless if it hasn’t produced any items.</p>
+</section>
+<section id="closespider-itemcount">
+<span id="std-setting-CLOSESPIDER_ITEMCOUNT"></span><h5>CLOSESPIDER_ITEMCOUNT<a class="headerlink" href="#closespider-itemcount" title="Link to this heading"></a></h5>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+<p>An integer which specifies a number of items. If the spider scrapes more than
+that amount and those items are passed by the item pipeline, the
+spider will be closed with the reason <code class="docutils literal notranslate"><span class="pre">closespider_itemcount</span></code>.
+If zero (or non set), spiders won’t be closed by number of passed items.</p>
+</section>
+<section id="closespider-pagecount">
+<span id="std-setting-CLOSESPIDER_PAGECOUNT"></span><h5>CLOSESPIDER_PAGECOUNT<a class="headerlink" href="#closespider-pagecount" title="Link to this heading"></a></h5>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+<p>An integer which specifies the maximum number of responses to crawl. If the spider
+crawls more than that, the spider will be closed with the reason
+<code class="docutils literal notranslate"><span class="pre">closespider_pagecount</span></code>. If zero (or non set), spiders won’t be closed by
+number of crawled responses.</p>
+</section>
+<section id="closespider-pagecount-no-item">
+<span id="std-setting-CLOSESPIDER_PAGECOUNT_NO_ITEM"></span><h5>CLOSESPIDER_PAGECOUNT_NO_ITEM<a class="headerlink" href="#closespider-pagecount-no-item" title="Link to this heading"></a></h5>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+<p>An integer which specifies the maximum number of consecutive responses to crawl
+without items scraped. If the spider crawls more consecutive responses than that
+and no items are scraped in the meantime, the spider will be closed with the
+reason <code class="docutils literal notranslate"><span class="pre">closespider_pagecount_no_item</span></code>. If zero (or not set), spiders won’t be
+closed by number of crawled responses with no items.</p>
+</section>
+<section id="closespider-errorcount">
+<span id="std-setting-CLOSESPIDER_ERRORCOUNT"></span><h5>CLOSESPIDER_ERRORCOUNT<a class="headerlink" href="#closespider-errorcount" title="Link to this heading"></a></h5>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+<p>An integer which specifies the maximum number of errors to receive before
+closing the spider. If the spider generates more than that number of errors,
+it will be closed with the reason <code class="docutils literal notranslate"><span class="pre">closespider_errorcount</span></code>. If zero (or non
+set), spiders won’t be closed by number of errors.</p>
+</section>
+</section>
+<section id="module-scrapy.extensions.statsmailer">
+<span id="statsmailer-extension"></span><h4>StatsMailer extension<a class="headerlink" href="#module-scrapy.extensions.statsmailer" title="Link to this heading"></a></h4>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.statsmailer.StatsMailer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.statsmailer.</span></span><span class="sig-name descname"><span class="pre">StatsMailer</span></span><a class="reference internal" href="../_modules/scrapy/extensions/statsmailer.html#StatsMailer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.extensions.statsmailer.StatsMailer" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>This simple extension can be used to send a notification e-mail every time a
+domain has finished scraping, including the Scrapy stats collected. The email
+will be sent to all recipients specified in the <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-STATSMAILER_RCPTS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">STATSMAILER_RCPTS</span></code></a>
+setting.</p>
+<p>Emails can be sent using the <a class="reference internal" href="email.html#scrapy.mail.MailSender" title="scrapy.mail.MailSender"><code class="xref py py-class docutils literal notranslate"><span class="pre">MailSender</span></code></a> class. To see a
+full list of parameters, including examples on how to instantiate
+<a class="reference internal" href="email.html#scrapy.mail.MailSender" title="scrapy.mail.MailSender"><code class="xref py py-class docutils literal notranslate"><span class="pre">MailSender</span></code></a> and use mail settings, see
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="email.html#topics-email"><span class="std std-ref">Sending e-mail</span></a>.</p>
+</section>
+<section id="periodic-log-extension">
+<span id="module-scrapy.extensions.periodic_log"></span><span id="module-scrapy.extensions.debug"></span><h4>Periodic log extension<a class="headerlink" href="#periodic-log-extension" title="Link to this heading"></a></h4>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.periodic_log.PeriodicLog">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.periodic_log.</span></span><span class="sig-name descname"><span class="pre">PeriodicLog</span></span><a class="reference internal" href="../_modules/scrapy/extensions/periodic_log.html#PeriodicLog"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.extensions.periodic_log.PeriodicLog" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>This extension periodically logs rich stat data as a JSON object:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">2023</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">04</span> <span class="mi">02</span><span class="p">:</span><span class="mi">30</span><span class="p">:</span><span class="mi">57</span> <span class="p">[</span><span class="n">scrapy</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">logstats</span><span class="p">]</span> <span class="n">INFO</span><span class="p">:</span> <span class="n">Crawled</span> <span class="mi">976</span> <span class="n">pages</span> <span class="p">(</span><span class="n">at</span> <span class="mi">162</span> <span class="n">pages</span><span class="o">/</span><span class="nb">min</span><span class="p">),</span> <span class="n">scraped</span> <span class="mi">925</span> <span class="n">items</span> <span class="p">(</span><span class="n">at</span> <span class="mi">161</span> <span class="n">items</span><span class="o">/</span><span class="nb">min</span><span class="p">)</span>
+<span class="mi">2023</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mi">04</span> <span class="mi">02</span><span class="p">:</span><span class="mi">30</span><span class="p">:</span><span class="mi">57</span> <span class="p">[</span><span class="n">scrapy</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">periodic_log</span><span class="p">]</span> <span class="n">INFO</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;delta&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;downloader/request_bytes&quot;</span><span class="p">:</span> <span class="mi">55582</span><span class="p">,</span>
+        <span class="s2">&quot;downloader/request_count&quot;</span><span class="p">:</span> <span class="mi">162</span><span class="p">,</span>
+        <span class="s2">&quot;downloader/request_method_count/GET&quot;</span><span class="p">:</span> <span class="mi">162</span><span class="p">,</span>
+        <span class="s2">&quot;downloader/response_bytes&quot;</span><span class="p">:</span> <span class="mi">618133</span><span class="p">,</span>
+        <span class="s2">&quot;downloader/response_count&quot;</span><span class="p">:</span> <span class="mi">162</span><span class="p">,</span>
+        <span class="s2">&quot;downloader/response_status_count/200&quot;</span><span class="p">:</span> <span class="mi">162</span><span class="p">,</span>
+        <span class="s2">&quot;item_scraped_count&quot;</span><span class="p">:</span> <span class="mi">161</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;stats&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;downloader/request_bytes&quot;</span><span class="p">:</span> <span class="mi">338243</span><span class="p">,</span>
+        <span class="s2">&quot;downloader/request_count&quot;</span><span class="p">:</span> <span class="mi">992</span><span class="p">,</span>
+        <span class="s2">&quot;downloader/request_method_count/GET&quot;</span><span class="p">:</span> <span class="mi">992</span><span class="p">,</span>
+        <span class="s2">&quot;downloader/response_bytes&quot;</span><span class="p">:</span> <span class="mi">3836736</span><span class="p">,</span>
+        <span class="s2">&quot;downloader/response_count&quot;</span><span class="p">:</span> <span class="mi">976</span><span class="p">,</span>
+        <span class="s2">&quot;downloader/response_status_count/200&quot;</span><span class="p">:</span> <span class="mi">976</span><span class="p">,</span>
+        <span class="s2">&quot;item_scraped_count&quot;</span><span class="p">:</span> <span class="mi">925</span><span class="p">,</span>
+        <span class="s2">&quot;log_count/INFO&quot;</span><span class="p">:</span> <span class="mi">21</span><span class="p">,</span>
+        <span class="s2">&quot;log_count/WARNING&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;scheduler/dequeued&quot;</span><span class="p">:</span> <span class="mi">992</span><span class="p">,</span>
+        <span class="s2">&quot;scheduler/dequeued/memory&quot;</span><span class="p">:</span> <span class="mi">992</span><span class="p">,</span>
+        <span class="s2">&quot;scheduler/enqueued&quot;</span><span class="p">:</span> <span class="mi">1050</span><span class="p">,</span>
+        <span class="s2">&quot;scheduler/enqueued/memory&quot;</span><span class="p">:</span> <span class="mi">1050</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;elapsed&quot;</span><span class="p">:</span> <span class="mf">360.008903</span><span class="p">,</span>
+        <span class="s2">&quot;log_interval&quot;</span><span class="p">:</span> <span class="mf">60.0</span><span class="p">,</span>
+        <span class="s2">&quot;log_interval_real&quot;</span><span class="p">:</span> <span class="mf">60.006694</span><span class="p">,</span>
+        <span class="s2">&quot;start_time&quot;</span><span class="p">:</span> <span class="s2">&quot;2023-08-03 23:24:57&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;utcnow&quot;</span><span class="p">:</span> <span class="s2">&quot;2023-08-03 23:30:57&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This extension logs the following configurable sections:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;delta&quot;</span></code> shows how some numeric stats have changed since the last stats
+log message.</p>
+<p>The <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-PERIODIC_LOG_DELTA"><code class="xref std std-setting docutils literal notranslate"><span class="pre">PERIODIC_LOG_DELTA</span></code></a> setting determines the target stats. They
+must have <code class="docutils literal notranslate"><span class="pre">int</span></code> or <code class="docutils literal notranslate"><span class="pre">float</span></code> values.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;stats&quot;</span></code> shows the current value of some stats.</p>
+<p>The <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-PERIODIC_LOG_STATS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">PERIODIC_LOG_STATS</span></code></a> setting determines the target stats.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;time&quot;</span></code> shows detailed timing data.</p>
+<p>The <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-PERIODIC_LOG_TIMING_ENABLED"><code class="xref std std-setting docutils literal notranslate"><span class="pre">PERIODIC_LOG_TIMING_ENABLED</span></code></a> setting determines whether or
+not to show this section.</p>
+</li>
+</ul>
+<p>This extension logs data at the start, then on a fixed time interval
+configurable through the <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-LOGSTATS_INTERVAL"><code class="xref std std-setting docutils literal notranslate"><span class="pre">LOGSTATS_INTERVAL</span></code></a> setting, and finally
+right before the crawl ends.</p>
+<p>Example extension configuration:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">custom_settings</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;LOG_LEVEL&quot;</span><span class="p">:</span> <span class="s2">&quot;INFO&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;PERIODIC_LOG_STATS&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;include&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;downloader/&quot;</span><span class="p">,</span> <span class="s2">&quot;scheduler/&quot;</span><span class="p">,</span> <span class="s2">&quot;log_count/&quot;</span><span class="p">,</span> <span class="s2">&quot;item_scraped_count/&quot;</span><span class="p">],</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;PERIODIC_LOG_DELTA&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;include&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;downloader/&quot;</span><span class="p">]},</span>
+    <span class="s2">&quot;PERIODIC_LOG_TIMING_ENABLED&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s2">&quot;EXTENSIONS&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;scrapy.extensions.periodic_log.PeriodicLog&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<section id="periodic-log-delta">
+<span id="std-setting-PERIODIC_LOG_DELTA"></span><h5>PERIODIC_LOG_DELTA<a class="headerlink" href="#periodic-log-delta" title="Link to this heading"></a></h5>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;PERIODIC_LOG_DELTA&quot;:</span> <span class="pre">True</span></code> - show deltas for all <code class="docutils literal notranslate"><span class="pre">int</span></code> and <code class="docutils literal notranslate"><span class="pre">float</span></code> stat values.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;PERIODIC_LOG_DELTA&quot;:</span> <span class="pre">{&quot;include&quot;:</span> <span class="pre">[&quot;downloader/&quot;,</span> <span class="pre">&quot;scheduler/&quot;]}</span></code> - show deltas for stats with names containing any configured substring.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;PERIODIC_LOG_DELTA&quot;:</span> <span class="pre">{&quot;exclude&quot;:</span> <span class="pre">[&quot;downloader/&quot;]}</span></code> - show deltas for all stats with names not containing any configured substring.</p></li>
+</ul>
+</section>
+<section id="periodic-log-stats">
+<span id="std-setting-PERIODIC_LOG_STATS"></span><h5>PERIODIC_LOG_STATS<a class="headerlink" href="#periodic-log-stats" title="Link to this heading"></a></h5>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;PERIODIC_LOG_STATS&quot;:</span> <span class="pre">True</span></code> - show the current value of all stats.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;PERIODIC_LOG_STATS&quot;:</span> <span class="pre">{&quot;include&quot;:</span> <span class="pre">[&quot;downloader/&quot;,</span> <span class="pre">&quot;scheduler/&quot;]}</span></code> - show current values for stats with names containing any configured substring.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;PERIODIC_LOG_STATS&quot;:</span> <span class="pre">{&quot;exclude&quot;:</span> <span class="pre">[&quot;downloader/&quot;]}</span></code> - show current values for all stats with names not containing any configured substring.</p></li>
+</ul>
+</section>
+<section id="periodic-log-timing-enabled">
+<span id="std-setting-PERIODIC_LOG_TIMING_ENABLED"></span><h5>PERIODIC_LOG_TIMING_ENABLED<a class="headerlink" href="#periodic-log-timing-enabled" title="Link to this heading"></a></h5>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">True</span></code> enables logging of timing data (i.e. the <code class="docutils literal notranslate"><span class="pre">&quot;time&quot;</span></code> section).</p>
+</section>
+</section>
+</section>
+<section id="debugging-extensions">
+<h3>Debugging extensions<a class="headerlink" href="#debugging-extensions" title="Link to this heading"></a></h3>
+<section id="stack-trace-dump-extension">
+<h4>Stack trace dump extension<a class="headerlink" href="#stack-trace-dump-extension" title="Link to this heading"></a></h4>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.periodic_log.StackTraceDump">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.periodic_log.</span></span><span class="sig-name descname"><span class="pre">StackTraceDump</span></span><a class="headerlink" href="#scrapy.extensions.periodic_log.StackTraceDump" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>Dumps information about the running process when a <a class="reference external" href="https://en.wikipedia.org/wiki/SIGQUIT">SIGQUIT</a> or <a class="reference external" href="https://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2">SIGUSR2</a>
+signal is received. The information dumped is the following:</p>
+<ol class="arabic simple">
+<li><p>engine status (using <code class="docutils literal notranslate"><span class="pre">scrapy.utils.engine.get_engine_status()</span></code>)</p></li>
+<li><p>live references (see <a class="hxr-hoverxref hxr-tooltip reference internal" href="leaks.html#topics-leaks-trackrefs"><span class="std std-ref">Debugging memory leaks with trackref</span></a>)</p></li>
+<li><p>stack trace of all threads</p></li>
+</ol>
+<p>After the stack trace and engine status is dumped, the Scrapy process continues
+running normally.</p>
+<p>This extension only works on POSIX-compliant platforms (i.e. not Windows),
+because the <a class="reference external" href="https://en.wikipedia.org/wiki/SIGQUIT">SIGQUIT</a> and <a class="reference external" href="https://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2">SIGUSR2</a> signals are not available on Windows.</p>
+<p>There are at least two ways to send Scrapy the <a class="reference external" href="https://en.wikipedia.org/wiki/SIGQUIT">SIGQUIT</a> signal:</p>
+<ol class="arabic">
+<li><p>By pressing Ctrl-while a Scrapy process is running (Linux only?)</p></li>
+<li><p>By running this command (assuming <code class="docutils literal notranslate"><span class="pre">&lt;pid&gt;</span></code> is the process id of the Scrapy
+process):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">kill</span> <span class="o">-</span><span class="n">QUIT</span> <span class="o">&lt;</span><span class="n">pid</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="debugger-extension">
+<h4>Debugger extension<a class="headerlink" href="#debugger-extension" title="Link to this heading"></a></h4>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.periodic_log.Debugger">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.periodic_log.</span></span><span class="sig-name descname"><span class="pre">Debugger</span></span><a class="headerlink" href="#scrapy.extensions.periodic_log.Debugger" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>Invokes a <a class="reference external" href="https://docs.python.org/3/library/pdb.html" title="(in Python v3.13)"><span class="xref std std-doc">Python debugger</span></a> inside a running Scrapy process when a <a class="reference external" href="https://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2">SIGUSR2</a>
+signal is received. After the debugger is exited, the Scrapy process continues
+running normally.</p>
+<p>This extension only works on POSIX-compliant platforms (i.e. not Windows).</p>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="spider-middleware.html" class="btn btn-neutral float-left" title="Spider Middleware" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="signals.html" class="btn btn-neutral float-right" title="Signals" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

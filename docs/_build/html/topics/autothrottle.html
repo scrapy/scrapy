@@ -1,0 +1,357 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoThrottle extension &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=84389e84"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/js/hoverxref.js"></script>
+      <script src="../_static/js/tooltipster.bundle.min.js"></script>
+      <script src="../_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="../_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="../_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Benchmarking" href="benchmarking.html" />
+    <link rel="prev" title="Deploying Spiders" href="deploy.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">AutoThrottle extension</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#design-goals">Design goals</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-it-works">How it works</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#throttling-algorithm">Throttling algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#prevent-specific-requests-from-triggering-slot-delay-adjustments">Prevent specific requests from triggering slot delay adjustments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#settings">Settings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#autothrottle-enabled">AUTOTHROTTLE_ENABLED</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#autothrottle-start-delay">AUTOTHROTTLE_START_DELAY</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#autothrottle-max-delay">AUTOTHROTTLE_MAX_DELAY</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#autothrottle-target-concurrency">AUTOTHROTTLE_TARGET_CONCURRENCY</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#autothrottle-debug">AUTOTHROTTLE_DEBUG</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extensions.html">Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">AutoThrottle extension</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/topics/autothrottle.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="autothrottle-extension">
+<span id="topics-autothrottle"></span><h1>AutoThrottle extension<a class="headerlink" href="#autothrottle-extension" title="Link to this heading"></a></h1>
+<p>This is an extension for automatically throttling crawling speed based on load
+of both the Scrapy server and the website you are crawling.</p>
+<section id="design-goals">
+<h2>Design goals<a class="headerlink" href="#design-goals" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>be nicer to sites instead of using default download delay of zero</p></li>
+<li><p>automatically adjust Scrapy to the optimum crawling speed, so the user
+doesn’t have to tune the download delays to find the optimum one.
+The user only needs to specify the maximum concurrent requests
+it allows, and the extension does the rest.</p></li>
+</ol>
+</section>
+<section id="how-it-works">
+<span id="autothrottle-algorithm"></span><h2>How it works<a class="headerlink" href="#how-it-works" title="Link to this heading"></a></h2>
+<p>Scrapy allows defining the concurrency and delay of different download slots,
+e.g. through the <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-DOWNLOAD_SLOTS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">DOWNLOAD_SLOTS</span></code></a> setting. By default requests are
+assigned to slots based on their URL domain, although it is possible to
+customize the download slot of any request.</p>
+<p>The AutoThrottle extension adjusts the delay of each download slot dynamically,
+to make your spider send <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-AUTOTHROTTLE_TARGET_CONCURRENCY"><code class="xref std std-setting docutils literal notranslate"><span class="pre">AUTOTHROTTLE_TARGET_CONCURRENCY</span></code></a> concurrent
+requests on average to each remote website.</p>
+<p>It uses download latency to compute the delays. The main idea is the
+following: if a server needs <code class="docutils literal notranslate"><span class="pre">latency</span></code> seconds to respond, a client
+should send a request each <code class="docutils literal notranslate"><span class="pre">latency/N</span></code> seconds to have <code class="docutils literal notranslate"><span class="pre">N</span></code> requests
+processed in parallel.</p>
+<p>Instead of adjusting the delays one can just set a small fixed
+download delay and impose hard limits on concurrency using
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS_PER_DOMAIN"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS_PER_DOMAIN</span></code></a> or
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS_PER_IP"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS_PER_IP</span></code></a> options. It will provide a similar
+effect, but there are some important differences:</p>
+<ul class="simple">
+<li><p>because the download delay is small there will be occasional bursts
+of requests;</p></li>
+<li><p>often non-200 (error) responses can be returned faster than regular
+responses, so with a small download delay and a hard concurrency limit
+crawler will be sending requests to server faster when server starts to
+return errors. But this is an opposite of what crawler should do - in case
+of errors it makes more sense to slow down: these errors may be caused by
+the high request rate.</p></li>
+</ul>
+<p>AutoThrottle doesn’t have these issues.</p>
+</section>
+<section id="throttling-algorithm">
+<h2>Throttling algorithm<a class="headerlink" href="#throttling-algorithm" title="Link to this heading"></a></h2>
+<p>AutoThrottle algorithm adjusts download delays based on the following rules:</p>
+<ol class="arabic simple">
+<li><p>spiders always start with a download delay of
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-AUTOTHROTTLE_START_DELAY"><code class="xref std std-setting docutils literal notranslate"><span class="pre">AUTOTHROTTLE_START_DELAY</span></code></a>;</p></li>
+<li><p>when a response is received, the target download delay is calculated as
+<code class="docutils literal notranslate"><span class="pre">latency</span> <span class="pre">/</span> <span class="pre">N</span></code> where <code class="docutils literal notranslate"><span class="pre">latency</span></code> is a latency of the response,
+and <code class="docutils literal notranslate"><span class="pre">N</span></code> is <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-AUTOTHROTTLE_TARGET_CONCURRENCY"><code class="xref std std-setting docutils literal notranslate"><span class="pre">AUTOTHROTTLE_TARGET_CONCURRENCY</span></code></a>.</p></li>
+<li><p>download delay for next requests is set to the average of previous
+download delay and the target download delay;</p></li>
+<li><p>latencies of non-200 responses are not allowed to decrease the delay;</p></li>
+<li><p>download delay can’t become less than <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-DOWNLOAD_DELAY"><code class="xref std std-setting docutils literal notranslate"><span class="pre">DOWNLOAD_DELAY</span></code></a> or greater
+than <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-AUTOTHROTTLE_MAX_DELAY"><code class="xref std std-setting docutils literal notranslate"><span class="pre">AUTOTHROTTLE_MAX_DELAY</span></code></a></p></li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The AutoThrottle extension honours the standard Scrapy settings for
+concurrency and delay. This means that it will respect
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS_PER_DOMAIN"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS_PER_DOMAIN</span></code></a> and
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS_PER_IP"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS_PER_IP</span></code></a> options and
+never set a download delay lower than <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-DOWNLOAD_DELAY"><code class="xref std std-setting docutils literal notranslate"><span class="pre">DOWNLOAD_DELAY</span></code></a>.</p>
+</div>
+<p id="download-latency">In Scrapy, the download latency is measured as the time elapsed between
+establishing the TCP connection and receiving the HTTP headers.</p>
+<p>Note that these latencies are very hard to measure accurately in a cooperative
+multitasking environment because Scrapy may be busy processing a spider
+callback, for example, and unable to attend downloads. However, these latencies
+should still give a reasonable estimate of how busy Scrapy (and ultimately, the
+server) is, and this extension builds on that premise.</p>
+</section>
+<section id="prevent-specific-requests-from-triggering-slot-delay-adjustments">
+<span id="std-reqmeta-autothrottle_dont_adjust_delay"></span><h2>Prevent specific requests from triggering slot delay adjustments<a class="headerlink" href="#prevent-specific-requests-from-triggering-slot-delay-adjustments" title="Link to this heading"></a></h2>
+<p>AutoThrottle adjusts the delay of download slots based on the latencies of
+responses that belong to that download slot. The only exceptions are non-200
+responses, which are only taken into account to increase that delay, but
+ignored if they would decrease that delay.</p>
+<p>You can also set the <code class="docutils literal notranslate"><span class="pre">autothrottle_dont_adjust_delay</span></code> request metadata key to
+<code class="docutils literal notranslate"><span class="pre">True</span></code> in any request to prevent its response latency from impacting the
+delay of its download slot:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scrapy</span> <span class="kn">import</span> <span class="n">Request</span>
+
+<span class="n">Request</span><span class="p">(</span><span class="s2">&quot;https://example.com&quot;</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;autothrottle_dont_adjust_delay&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>Note, however, that AutoThrottle still determines the starting delay of every
+download slot by setting the <code class="docutils literal notranslate"><span class="pre">download_delay</span></code> attribute on the running
+spider. If you want AutoThrottle not to impact a download slot at all, in
+addition to setting this meta key in all requests that use that download slot,
+you might want to set a custom value for the <code class="docutils literal notranslate"><span class="pre">delay</span></code> attribute of that
+download slot, e.g. using <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-DOWNLOAD_SLOTS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">DOWNLOAD_SLOTS</span></code></a>.</p>
+</section>
+<section id="settings">
+<h2>Settings<a class="headerlink" href="#settings" title="Link to this heading"></a></h2>
+<p>The settings used to control the AutoThrottle extension are:</p>
+<ul class="simple">
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-AUTOTHROTTLE_ENABLED"><code class="xref std std-setting docutils literal notranslate"><span class="pre">AUTOTHROTTLE_ENABLED</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-AUTOTHROTTLE_START_DELAY"><code class="xref std std-setting docutils literal notranslate"><span class="pre">AUTOTHROTTLE_START_DELAY</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-AUTOTHROTTLE_MAX_DELAY"><code class="xref std std-setting docutils literal notranslate"><span class="pre">AUTOTHROTTLE_MAX_DELAY</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-AUTOTHROTTLE_TARGET_CONCURRENCY"><code class="xref std std-setting docutils literal notranslate"><span class="pre">AUTOTHROTTLE_TARGET_CONCURRENCY</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-AUTOTHROTTLE_DEBUG"><code class="xref std std-setting docutils literal notranslate"><span class="pre">AUTOTHROTTLE_DEBUG</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS_PER_DOMAIN"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS_PER_DOMAIN</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS_PER_IP"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS_PER_IP</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-DOWNLOAD_DELAY"><code class="xref std std-setting docutils literal notranslate"><span class="pre">DOWNLOAD_DELAY</span></code></a></p></li>
+</ul>
+<p>For more information see <a class="hxr-hoverxref hxr-tooltip reference internal" href="#autothrottle-algorithm"><span class="std std-ref">How it works</span></a>.</p>
+<section id="autothrottle-enabled">
+<span id="std-setting-AUTOTHROTTLE_ENABLED"></span><h3>AUTOTHROTTLE_ENABLED<a class="headerlink" href="#autothrottle-enabled" title="Link to this heading"></a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+<p>Enables the AutoThrottle extension.</p>
+</section>
+<section id="autothrottle-start-delay">
+<span id="std-setting-AUTOTHROTTLE_START_DELAY"></span><h3>AUTOTHROTTLE_START_DELAY<a class="headerlink" href="#autothrottle-start-delay" title="Link to this heading"></a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">5.0</span></code></p>
+<p>The initial download delay (in seconds).</p>
+</section>
+<section id="autothrottle-max-delay">
+<span id="std-setting-AUTOTHROTTLE_MAX_DELAY"></span><h3>AUTOTHROTTLE_MAX_DELAY<a class="headerlink" href="#autothrottle-max-delay" title="Link to this heading"></a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">60.0</span></code></p>
+<p>The maximum download delay (in seconds) to be set in case of high latencies.</p>
+</section>
+<section id="autothrottle-target-concurrency">
+<span id="std-setting-AUTOTHROTTLE_TARGET_CONCURRENCY"></span><h3>AUTOTHROTTLE_TARGET_CONCURRENCY<a class="headerlink" href="#autothrottle-target-concurrency" title="Link to this heading"></a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">1.0</span></code></p>
+<p>Average number of requests Scrapy should be sending in parallel to remote
+websites. It must be higher than <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p>
+<p>By default, AutoThrottle adjusts the delay to send a single
+concurrent request to each of the remote websites. Set this option to
+a higher value (e.g. <code class="docutils literal notranslate"><span class="pre">2.0</span></code>) to increase the throughput and the load on remote
+servers. A lower <code class="docutils literal notranslate"><span class="pre">AUTOTHROTTLE_TARGET_CONCURRENCY</span></code> value
+(e.g. <code class="docutils literal notranslate"><span class="pre">0.5</span></code>) makes the crawler more conservative and polite.</p>
+<p>Note that <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS_PER_DOMAIN"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS_PER_DOMAIN</span></code></a>
+and <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS_PER_IP"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS_PER_IP</span></code></a> options are still respected
+when AutoThrottle extension is enabled. This means that if
+<code class="docutils literal notranslate"><span class="pre">AUTOTHROTTLE_TARGET_CONCURRENCY</span></code> is set to a value higher than
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS_PER_DOMAIN"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS_PER_DOMAIN</span></code></a> or
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS_PER_IP"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS_PER_IP</span></code></a>, the crawler won’t reach this number
+of concurrent requests.</p>
+<p>At every given time point Scrapy can be sending more or less concurrent
+requests than <code class="docutils literal notranslate"><span class="pre">AUTOTHROTTLE_TARGET_CONCURRENCY</span></code>; it is a suggested
+value the crawler tries to approach, not a hard limit.</p>
+</section>
+<section id="autothrottle-debug">
+<span id="std-setting-AUTOTHROTTLE_DEBUG"></span><h3>AUTOTHROTTLE_DEBUG<a class="headerlink" href="#autothrottle-debug" title="Link to this heading"></a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+<p>Enable AutoThrottle debug mode which will display stats on every response
+received, so you can see how the throttling parameters are being adjusted in
+real time.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="deploy.html" class="btn btn-neutral float-left" title="Deploying Spiders" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="benchmarking.html" class="btn btn-neutral float-right" title="Benchmarking" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

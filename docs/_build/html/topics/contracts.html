@@ -1,0 +1,380 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spiders Contracts &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=84389e84"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/js/hoverxref.js"></script>
+      <script src="../_static/js/tooltipster.bundle.min.js"></script>
+      <script src="../_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="../_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="../_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Common Practices" href="practices.html" />
+    <link rel="prev" title="Debugging Spiders" href="debug.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Spiders Contracts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#scrapy.contracts.default.UrlContract"><code class="docutils literal notranslate"><span class="pre">UrlContract</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#scrapy.contracts.default.CallbackKeywordArgumentsContract"><code class="docutils literal notranslate"><span class="pre">CallbackKeywordArgumentsContract</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#scrapy.contracts.default.MetadataContract"><code class="docutils literal notranslate"><span class="pre">MetadataContract</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#scrapy.contracts.default.ReturnsContract"><code class="docutils literal notranslate"><span class="pre">ReturnsContract</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#scrapy.contracts.default.ScrapesContract"><code class="docutils literal notranslate"><span class="pre">ScrapesContract</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#custom-contracts">Custom Contracts</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#scrapy.contracts.Contract"><code class="docutils literal notranslate"><span class="pre">Contract</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.contracts.Contract.adjust_request_args"><code class="docutils literal notranslate"><span class="pre">Contract.adjust_request_args()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.contracts.Contract.pre_process"><code class="docutils literal notranslate"><span class="pre">Contract.pre_process()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.contracts.Contract.post_process"><code class="docutils literal notranslate"><span class="pre">Contract.post_process()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#scrapy.exceptions.ContractFail"><code class="docutils literal notranslate"><span class="pre">ContractFail</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#detecting-check-runs">Detecting check runs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extensions.html">Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Spiders Contracts</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/topics/contracts.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="spiders-contracts">
+<span id="topics-contracts"></span><h1>Spiders Contracts<a class="headerlink" href="#spiders-contracts" title="Link to this heading"></a></h1>
+<p>Testing spiders can get particularly annoying and while nothing prevents you
+from writing unit tests the task gets cumbersome quickly. Scrapy offers an
+integrated way of testing your spiders by the means of contracts.</p>
+<p>This allows you to test each callback of your spider by hardcoding a sample url
+and check various constraints for how the callback processes the response. Each
+contract is prefixed with an <code class="docutils literal notranslate"><span class="pre">&#64;</span></code> and included in the docstring. See the
+following example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This function parses a sample response. Some contracts are mingled</span>
+<span class="sd">    with this docstring.</span>
+
+<span class="sd">    @url http://www.example.com/s?field-keywords=selfish+gene</span>
+<span class="sd">    @returns items 1 16</span>
+<span class="sd">    @returns requests 0 0</span>
+<span class="sd">    @scrapes Title Author Year Price</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p>You can use the following contracts:</p>
+<dl class="py class" id="module-scrapy.contracts.default">
+<dt class="sig sig-object py" id="scrapy.contracts.default.UrlContract">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.contracts.default.</span></span><span class="sig-name descname"><span class="pre">UrlContract</span></span><a class="reference internal" href="../_modules/scrapy/contracts/default.html#UrlContract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.contracts.default.UrlContract" title="Link to this definition"></a></dt>
+<dd><p>This contract (<code class="docutils literal notranslate"><span class="pre">&#64;url</span></code>) sets the sample URL used when checking other
+contract conditions for this spider. This contract is mandatory. All
+callbacks lacking this contract are ignored when running the checks:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@url</span> <span class="n">url</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.contracts.default.CallbackKeywordArgumentsContract">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.contracts.default.</span></span><span class="sig-name descname"><span class="pre">CallbackKeywordArgumentsContract</span></span><a class="reference internal" href="../_modules/scrapy/contracts/default.html#CallbackKeywordArgumentsContract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.contracts.default.CallbackKeywordArgumentsContract" title="Link to this definition"></a></dt>
+<dd><p>This contract (<code class="docutils literal notranslate"><span class="pre">&#64;cb_kwargs</span></code>) sets the <a class="reference internal" href="request-response.html#scrapy.Request.cb_kwargs" title="scrapy.Request.cb_kwargs"><code class="xref py py-attr docutils literal notranslate"><span class="pre">cb_kwargs</span></code></a>
+attribute for the sample request. It must be a valid JSON dictionary.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@cb_kwargs</span> <span class="p">{</span><span class="s2">&quot;arg1&quot;</span><span class="p">:</span> <span class="s2">&quot;value1&quot;</span><span class="p">,</span> <span class="s2">&quot;arg2&quot;</span><span class="p">:</span> <span class="s2">&quot;value2&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.contracts.default.MetadataContract">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.contracts.default.</span></span><span class="sig-name descname"><span class="pre">MetadataContract</span></span><a class="reference internal" href="../_modules/scrapy/contracts/default.html#MetadataContract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.contracts.default.MetadataContract" title="Link to this definition"></a></dt>
+<dd><p>This contract (<code class="docutils literal notranslate"><span class="pre">&#64;meta</span></code>) sets the <a class="reference internal" href="request-response.html#scrapy.Request.meta" title="scrapy.Request.meta"><code class="xref py py-attr docutils literal notranslate"><span class="pre">meta</span></code></a>
+attribute for the sample request. It must be a valid JSON dictionary.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@meta</span> <span class="p">{</span><span class="s2">&quot;arg1&quot;</span><span class="p">:</span> <span class="s2">&quot;value1&quot;</span><span class="p">,</span> <span class="s2">&quot;arg2&quot;</span><span class="p">:</span> <span class="s2">&quot;value2&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.contracts.default.ReturnsContract">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.contracts.default.</span></span><span class="sig-name descname"><span class="pre">ReturnsContract</span></span><a class="reference internal" href="../_modules/scrapy/contracts/default.html#ReturnsContract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.contracts.default.ReturnsContract" title="Link to this definition"></a></dt>
+<dd><p>This contract (<code class="docutils literal notranslate"><span class="pre">&#64;returns</span></code>) sets lower and upper bounds for the items and
+requests returned by the spider. The upper bound is optional:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@returns</span> <span class="n">item</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">|</span><span class="n">request</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="p">[</span><span class="nb">min</span> <span class="p">[</span><span class="nb">max</span><span class="p">]]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.contracts.default.ScrapesContract">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.contracts.default.</span></span><span class="sig-name descname"><span class="pre">ScrapesContract</span></span><a class="reference internal" href="../_modules/scrapy/contracts/default.html#ScrapesContract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.contracts.default.ScrapesContract" title="Link to this definition"></a></dt>
+<dd><p>This contract (<code class="docutils literal notranslate"><span class="pre">&#64;scrapes</span></code>) checks that all the items returned by the
+callback have the specified fields:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@scrapes</span> <span class="n">field_1</span> <span class="n">field_2</span> <span class="o">...</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p>Use the <a class="hxr-hoverxref hxr-tooltip reference internal" href="commands.html#std-command-check"><code class="xref std std-command docutils literal notranslate"><span class="pre">check</span></code></a> command to run the contract checks.</p>
+<section id="custom-contracts">
+<h2>Custom Contracts<a class="headerlink" href="#custom-contracts" title="Link to this heading"></a></h2>
+<p>If you find you need more power than the built-in Scrapy contracts you can
+create and load your own contracts in the project by using the
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-SPIDER_CONTRACTS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">SPIDER_CONTRACTS</span></code></a> setting:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">SPIDER_CONTRACTS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;myproject.contracts.ResponseCheck&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="s2">&quot;myproject.contracts.ItemValidate&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Each contract must inherit from <a class="reference internal" href="#scrapy.contracts.Contract" title="scrapy.contracts.Contract"><code class="xref py py-class docutils literal notranslate"><span class="pre">Contract</span></code></a> and can
+override three methods:</p>
+<dl class="py class" id="module-scrapy.contracts">
+<dt class="sig sig-object py" id="scrapy.contracts.Contract">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.contracts.</span></span><span class="sig-name descname"><span class="pre">Contract</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/scrapy/contracts.html#Contract"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.contracts.Contract" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><em>collections.abc.Callable</em></a>) – callback function to which the contract is associated</p></li>
+<li><p><strong>args</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – list of arguments passed into the docstring (whitespace
+separated)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="scrapy.contracts.Contract.adjust_request_args">
+<span class="sig-name descname"><span class="pre">adjust_request_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/scrapy/contracts.html#Contract.adjust_request_args"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.contracts.Contract.adjust_request_args" title="Link to this definition"></a></dt>
+<dd><p>This receives a <code class="docutils literal notranslate"><span class="pre">dict</span></code> as an argument containing default arguments
+for request object. <a class="reference internal" href="request-response.html#scrapy.Request" title="scrapy.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a> is used by default,
+but this can be changed with the <code class="docutils literal notranslate"><span class="pre">request_cls</span></code> attribute.
+If multiple contracts in chain have this attribute defined, the last one is used.</p>
+<p>Must return the same or a modified version of it.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scrapy.contracts.Contract.pre_process">
+<span class="sig-name descname"><span class="pre">pre_process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.contracts.Contract.pre_process" title="Link to this definition"></a></dt>
+<dd><p>This allows hooking in various checks on the response received from the
+sample request, before it’s being passed to the callback.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="scrapy.contracts.Contract.post_process">
+<span class="sig-name descname"><span class="pre">post_process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.contracts.Contract.post_process" title="Link to this definition"></a></dt>
+<dd><p>This allows processing the output of the callback. Iterators are
+converted to lists before being passed to this hook.</p>
+</dd></dl>
+
+</dd></dl>
+
+<p>Raise <a class="reference internal" href="#scrapy.exceptions.ContractFail" title="scrapy.exceptions.ContractFail"><code class="xref py py-class docutils literal notranslate"><span class="pre">ContractFail</span></code></a> from
+<a class="reference internal" href="#scrapy.contracts.Contract.pre_process" title="scrapy.contracts.Contract.pre_process"><code class="xref py py-class docutils literal notranslate"><span class="pre">pre_process</span></code></a> or
+<a class="reference internal" href="#scrapy.contracts.Contract.post_process" title="scrapy.contracts.Contract.post_process"><code class="xref py py-class docutils literal notranslate"><span class="pre">post_process</span></code></a> if expectations are not met:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.exceptions.ContractFail">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.exceptions.</span></span><span class="sig-name descname"><span class="pre">ContractFail</span></span><a class="reference internal" href="../_modules/scrapy/exceptions.html#ContractFail"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.exceptions.ContractFail" title="Link to this definition"></a></dt>
+<dd><p>Error raised in case of a failing contract</p>
+</dd></dl>
+
+<p>Here is a demo contract which checks the presence of a custom header in the
+response received:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scrapy.contracts</span> <span class="kn">import</span> <span class="n">Contract</span>
+<span class="kn">from</span> <span class="nn">scrapy.exceptions</span> <span class="kn">import</span> <span class="n">ContractFail</span>
+
+
+<span class="k">class</span> <span class="nc">HasHeaderContract</span><span class="p">(</span><span class="n">Contract</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Demo contract which checks the presence of a custom header</span>
+<span class="sd">    @has_header X-CustomHeader</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;has_header&quot;</span>
+
+    <span class="k">def</span> <span class="nf">pre_process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">header</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">header</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ContractFail</span><span class="p">(</span><span class="s2">&quot;X-CustomHeader not present&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="detecting-check-runs">
+<span id="detecting-contract-check-runs"></span><h2>Detecting check runs<a class="headerlink" href="#detecting-check-runs" title="Link to this heading"></a></h2>
+<p>When <code class="docutils literal notranslate"><span class="pre">scrapy</span> <span class="pre">check</span></code> is running, the <code class="docutils literal notranslate"><span class="pre">SCRAPY_CHECK</span></code> environment variable is
+set to the <code class="docutils literal notranslate"><span class="pre">true</span></code> string. You can use <a class="reference external" href="https://docs.python.org/3/library/os.html#os.environ" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">os.environ</span></code></a> to perform any change to
+your spiders or your settings when <code class="docutils literal notranslate"><span class="pre">scrapy</span> <span class="pre">check</span></code> is used:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">scrapy</span>
+
+
+<span class="k">class</span> <span class="nc">ExampleSpider</span><span class="p">(</span><span class="n">scrapy</span><span class="o">.</span><span class="n">Spider</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;example&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;SCRAPY_CHECK&quot;</span><span class="p">):</span>
+            <span class="k">pass</span>  <span class="c1"># Do some scraper adjustments when a check is running</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="debug.html" class="btn btn-neutral float-left" title="Debugging Spiders" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="practices.html" class="btn btn-neutral float-right" title="Common Practices" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

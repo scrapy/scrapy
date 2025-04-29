@@ -1,0 +1,512 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contributing to Scrapy &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=84389e84"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/js/hoverxref.js"></script>
+      <script src="_static/js/tooltipster.bundle.min.js"></script>
+      <script src="_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Versioning and API stability" href="versioning.html" />
+    <link rel="prev" title="Release notes" href="news.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="topics/commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="topics/logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="topics/architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/extensions.html">Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="news.html">Release notes</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing to Scrapy</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#reporting-bugs">Reporting bugs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#finding-work">Finding work</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#writing-patches">Writing patches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#submitting-patches">Submitting patches</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#coding-style">Coding style</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pre-commit">Pre-commit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation-policies">Documentation policies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tests">Tests</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#running-tests">Running tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#writing-tests">Writing tests</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Contributing to Scrapy</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/contributing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="contributing-to-scrapy">
+<span id="topics-contributing"></span><h1>Contributing to Scrapy<a class="headerlink" href="#contributing-to-scrapy" title="Link to this heading"></a></h1>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Double check that you are reading the most recent version of this document at
+<a class="reference external" href="https://docs.scrapy.org/en/master/contributing.html">https://docs.scrapy.org/en/master/contributing.html</a></p>
+</div>
+<p>There are many ways to contribute to Scrapy. Here are some of them:</p>
+<ul class="simple">
+<li><p>Report bugs and request features in the <a class="reference external" href="https://github.com/scrapy/scrapy/issues">issue tracker</a>, trying to follow
+the guidelines detailed in <a class="reference internal" href="#reporting-bugs">Reporting bugs</a> below.</p></li>
+<li><p>Submit patches for new functionalities and/or bug fixes. Please read
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="#writing-patches"><span class="std std-ref">Writing patches</span></a> and <a class="reference internal" href="#id2">Submitting patches</a> below for details on how to
+write and submit a patch.</p></li>
+<li><p>Blog about Scrapy. Tell the world how you’re using Scrapy. This will help
+newcomers with more examples and will help the Scrapy project to increase its
+visibility.</p></li>
+<li><p>Join the <a class="reference external" href="https://reddit.com/r/scrapy">Scrapy subreddit</a> and share your ideas on how to
+improve Scrapy. We’re always open to suggestions.</p></li>
+<li><p>Answer Scrapy questions at
+<a class="reference external" href="https://stackoverflow.com/questions/tagged/scrapy">Stack Overflow</a>.</p></li>
+</ul>
+<section id="reporting-bugs">
+<h2>Reporting bugs<a class="headerlink" href="#reporting-bugs" title="Link to this heading"></a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Please report security issues <strong>only</strong> to
+<a class="reference external" href="mailto:scrapy-security&#37;&#52;&#48;googlegroups&#46;com">scrapy-security<span>&#64;</span>googlegroups<span>&#46;</span>com</a>. This is a private list only open to
+trusted Scrapy developers, and its archives are not public.</p>
+</div>
+<p>Well-written bug reports are very helpful, so keep in mind the following
+guidelines when you’re going to report a new bug.</p>
+<ul class="simple">
+<li><p>check the <a class="hxr-hoverxref hxr-tooltip reference internal" href="faq.html#faq"><span class="std std-ref">FAQ</span></a> first to see if your issue is addressed in a
+well-known question</p></li>
+<li><p>if you have a general question about Scrapy usage, please ask it at
+<a class="reference external" href="https://stackoverflow.com/questions/tagged/scrapy">Stack Overflow</a>
+(use “scrapy” tag).</p></li>
+<li><p>check the <a class="reference external" href="https://github.com/scrapy/scrapy/issues">open issues</a> to see if the issue has already been reported. If it
+has, don’t dismiss the report, but check the ticket history and comments. If
+you have additional useful information, please leave a comment, or consider
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="#writing-patches"><span class="std std-ref">sending a pull request</span></a> with a fix.</p></li>
+<li><p>search the <a class="reference external" href="https://groups.google.com/forum/#!forum/scrapy-users">scrapy-users</a> list and <a class="reference external" href="https://reddit.com/r/scrapy">Scrapy subreddit</a> to see if it has
+been discussed there, or if you’re not sure if what you’re seeing is a bug.
+You can also ask in the <code class="docutils literal notranslate"><span class="pre">#scrapy</span></code> IRC channel.</p></li>
+<li><p>write <strong>complete, reproducible, specific bug reports</strong>. The smaller the test
+case, the better. Remember that other developers won’t have your project to
+reproduce the bug, so please include all relevant files required to reproduce
+it. See for example StackOverflow’s guide on creating a
+<a class="reference external" href="https://stackoverflow.com/help/mcve">Minimal, Complete, and Verifiable example</a> exhibiting the issue.</p></li>
+<li><p>the most awesome way to provide a complete reproducible example is to
+send a pull request which adds a failing test case to the
+Scrapy testing suite (see <a class="hxr-hoverxref hxr-tooltip reference internal" href="#submitting-patches"><span class="std std-ref">Submitting patches</span></a>).
+This is helpful even if you don’t have an intention to
+fix the issue yourselves.</p></li>
+<li><p>include the output of <code class="docutils literal notranslate"><span class="pre">scrapy</span> <span class="pre">version</span> <span class="pre">-v</span></code> so developers working on your bug
+know exactly which version and platform it occurred on, which is often very
+helpful for reproducing it, or knowing if it was already fixed.</p></li>
+</ul>
+</section>
+<section id="finding-work">
+<span id="find-work"></span><h2>Finding work<a class="headerlink" href="#finding-work" title="Link to this heading"></a></h2>
+<p>If you have decided to make a contribution to Scrapy, but you do not know what
+to contribute, you have a few options to find pending work:</p>
+<ul>
+<li><p>Check out the <a class="reference external" href="https://github.com/scrapy/scrapy/contribute">contribution GitHub page</a>, which lists open issues tagged
+as <strong>good first issue</strong>.</p>
+<p>There are also <a class="reference external" href="https://github.com/scrapy/scrapy/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22">help wanted issues</a> but mind that some may require
+familiarity with the Scrapy code base. You can also target any other issue
+provided it is not tagged as <strong>discuss</strong>.</p>
+</li>
+<li><p>If you enjoy writing documentation, there are <a class="reference external" href="https://github.com/scrapy/scrapy/issues?q=is%3Aissue+is%3Aopen+label%3Adocs+">documentation issues</a> as
+well, but mind that some may require familiarity with the Scrapy code base
+as well.</p>
+</li>
+<li><p>If you enjoy <a class="hxr-hoverxref hxr-tooltip reference internal" href="#write-tests"><span class="std std-ref">writing automated tests</span></a>, you can work on
+increasing our <a class="reference external" href="https://app.codecov.io/gh/scrapy/scrapy">test coverage</a>.</p></li>
+<li><p>If you enjoy code cleanup, we welcome fixes for issues detected by our
+static analysis tools. See <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> for silenced issues that may
+need addressing.</p>
+<p>Mind that some issues we do not aim to address at all, and usually include
+a comment on them explaining the reason; not to confuse with comments that
+state what the issue is about, for non-descriptive issue codes.</p>
+</li>
+</ul>
+<p>If you have found an issue, make sure you read the entire issue thread before
+you ask questions. That includes related issues and pull requests that show up
+in the issue thread when the issue is mentioned elsewhere.</p>
+<p>We do not assign issues, and you do not need to announce that you are going to
+start working on an issue either. If you want to work on an issue, just go
+ahead and <a class="hxr-hoverxref hxr-tooltip reference internal" href="#writing-patches"><span class="std std-ref">write a patch for it</span></a>.</p>
+<p>Do not discard an issue simply because there is an open pull request for it.
+Check if open pull requests are active first. And even if some are active, if
+you think you can build a better implementation, feel free to create a pull
+request with your approach.</p>
+<p>If you decide to work on something without an open issue, please:</p>
+<ul class="simple">
+<li><p>Do not create an issue to work on code coverage or code cleanup, create a
+pull request directly.</p></li>
+<li><p>Do not create both an issue and a pull request right away. Either open an
+issue first to get feedback on whether or not the issue is worth
+addressing, and create a pull request later only if the feedback from the
+team is positive, or create only a pull request, if you think a discussion
+will be easier over your code.</p></li>
+<li><p>Do not add docstrings for the sake of adding docstrings, or only to address
+silenced Ruff issues. We expect docstrings to exist only when they add
+something significant to readers, such as explaining something that is not
+easier to understand from reading the corresponding code, summarizing a
+long, hard-to-read implementation, providing context about calling code, or
+indicating purposely uncaught exceptions from called code.</p></li>
+<li><p>Do not add tests that use as much mocking as possible just to touch a given
+line of code and hence improve line coverage. While we do aim to maximize
+test coverage, tests should be written for real scenarios, with minimum
+mocking. We usually prefer end-to-end tests.</p></li>
+</ul>
+</section>
+<section id="writing-patches">
+<span id="id1"></span><h2>Writing patches<a class="headerlink" href="#writing-patches" title="Link to this heading"></a></h2>
+<p>The better a patch is written, the higher the chances that it’ll get accepted and the sooner it will be merged.</p>
+<p>Well-written patches should:</p>
+<ul>
+<li><p>contain the minimum amount of code required for the specific change. Small
+patches are easier to review and merge. So, if you’re doing more than one
+change (or bug fix), please consider submitting one patch per change. Do not
+collapse multiple changes into a single patch. For big changes consider using
+a patch queue.</p></li>
+<li><p>pass all unit-tests. See <a class="reference internal" href="#id6">Running tests</a> below.</p></li>
+<li><p>include one (or more) test cases that check the bug fixed or the new
+functionality added. See <a class="reference internal" href="#writing-tests">Writing tests</a> below.</p></li>
+<li><p>if you’re adding or changing a public (documented) API, please include
+the documentation changes in the same patch.  See <a class="reference internal" href="#id5">Documentation policies</a>
+below.</p></li>
+<li><p>if you’re adding a private API, please add a regular expression to the
+<code class="docutils literal notranslate"><span class="pre">coverage_ignore_pyobjects</span></code> variable of <code class="docutils literal notranslate"><span class="pre">docs/conf.py</span></code> to exclude the new
+private API from documentation coverage checks.</p>
+<p>To see if your private API is skipped properly, generate a documentation
+coverage report as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">-</span><span class="n">e</span> <span class="n">docs</span><span class="o">-</span><span class="n">coverage</span>
+</pre></div>
+</div>
+</li>
+<li><p>if you are removing deprecated code, first make sure that at least 1 year
+(12 months) has passed since the release that introduced the deprecation.
+See <a class="hxr-hoverxref hxr-tooltip reference internal" href="versioning.html#deprecation-policy"><span class="std std-ref">Deprecation policy</span></a>.</p></li>
+</ul>
+</section>
+<section id="submitting-patches">
+<span id="id2"></span><h2>Submitting patches<a class="headerlink" href="#submitting-patches" title="Link to this heading"></a></h2>
+<p>The best way to submit a patch is to issue a <a class="reference external" href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request">pull request</a> on GitHub,
+optionally creating a new issue first.</p>
+<p>Remember to explain what was fixed or the new functionality (what it is, why
+it’s needed, etc). The more info you include, the easier will be for core
+developers to understand and accept your patch.</p>
+<p>If your pull request aims to resolve an open issue, <a class="reference external" href="https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword">link it accordingly</a>,
+e.g.:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Resolves #123
+</pre></div>
+</div>
+<p>You can also discuss the new functionality (or bug fix) before creating the
+patch, but it’s always good to have a patch ready to illustrate your arguments
+and show that you have put some additional thought into the subject. A good
+starting point is to send a pull request on GitHub. It can be simple enough to
+illustrate your idea, and leave documentation/tests for later, after the idea
+has been validated and proven useful. Alternatively, you can start a
+conversation in the <a class="reference external" href="https://reddit.com/r/scrapy">Scrapy subreddit</a> to discuss your idea first.</p>
+<p>Sometimes there is an existing pull request for the problem you’d like to
+solve, which is stalled for some reason. Often the pull request is in a
+right direction, but changes are requested by Scrapy maintainers, and the
+original pull request author hasn’t had time to address them.
+In this case consider picking up this pull request: open
+a new pull request with all commits from the original pull request, as well as
+additional changes to address the raised issues. Doing so helps a lot; it is
+not considered rude as long as the original author is acknowledged by keeping
+his/her commits.</p>
+<p>You can pull an existing pull request to a local branch
+by running <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">fetch</span> <span class="pre">upstream</span> <span class="pre">pull/$PR_NUMBER/head:$BRANCH_NAME_TO_CREATE</span></code>
+(replace ‘upstream’ with a remote name for scrapy repository,
+<code class="docutils literal notranslate"><span class="pre">$PR_NUMBER</span></code> with an ID of the pull request, and <code class="docutils literal notranslate"><span class="pre">$BRANCH_NAME_TO_CREATE</span></code>
+with a name of the branch you want to create locally).
+See also: <a class="reference external" href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/checking-out-pull-requests-locally#modifying-an-inactive-pull-request-locally">https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/checking-out-pull-requests-locally#modifying-an-inactive-pull-request-locally</a>.</p>
+<p>When writing GitHub pull requests, try to keep titles short but descriptive.
+E.g. For bug #411: “Scrapy hangs if an exception raises in start_requests”
+prefer “Fix hanging when exception occurs in start_requests (#411)”
+instead of “Fix for #411”. Complete titles make it easy to skim through
+the issue tracker.</p>
+<p>Finally, try to keep aesthetic changes (<span class="target" id="index-0"></span><a class="pep reference external" href="https://peps.python.org/pep-0008/"><strong>PEP 8</strong></a> compliance, unused imports
+removal, etc) in separate commits from functional changes. This will make pull
+requests easier to review and more likely to get merged.</p>
+</section>
+<section id="coding-style">
+<span id="id3"></span><h2>Coding style<a class="headerlink" href="#coding-style" title="Link to this heading"></a></h2>
+<p>Please follow these coding conventions when writing code for inclusion in
+Scrapy:</p>
+<ul class="simple">
+<li><p>We use <a class="reference external" href="https://black.readthedocs.io/en/stable/">black</a> for code formatting.
+There is a hook in the pre-commit config
+that will automatically format your code before every commit. You can also
+run black manually with <code class="docutils literal notranslate"><span class="pre">tox</span> <span class="pre">-e</span> <span class="pre">pre-commit</span></code>.</p></li>
+<li><p>Don’t put your name in the code you contribute; git provides enough
+metadata to identify author of the code.
+See <a class="reference external" href="https://docs.github.com/en/get-started/getting-started-with-git/setting-your-username-in-git">https://docs.github.com/en/get-started/getting-started-with-git/setting-your-username-in-git</a>
+for setup instructions.</p></li>
+</ul>
+</section>
+<section id="pre-commit">
+<span id="scrapy-pre-commit"></span><h2>Pre-commit<a class="headerlink" href="#pre-commit" title="Link to this heading"></a></h2>
+<p>We use <a class="reference external" href="https://pre-commit.com/">pre-commit</a> to automatically address simple code issues before every
+commit.</p>
+<p>After your create a local clone of your fork of the Scrapy repository:</p>
+<ol class="arabic">
+<li><p><a class="reference external" href="https://pre-commit.com/#installation">Install pre-commit</a>.</p></li>
+<li><p>On the root of your local clone of the Scrapy repository, run the following
+command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pre-commit<span class="w"> </span>install
+</pre></div>
+</div>
+</li>
+</ol>
+<p>Now pre-commit will check your changes every time you create a Git commit. Upon
+finding issues, pre-commit aborts your commit, and either fixes those issues
+automatically, or only reports them to you. If it fixes those issues
+automatically, creating your commit again should succeed. Otherwise, you may
+need to address the corresponding issues manually first.</p>
+</section>
+<section id="documentation-policies">
+<span id="id5"></span><h2>Documentation policies<a class="headerlink" href="#documentation-policies" title="Link to this heading"></a></h2>
+<p>For reference documentation of API members (classes, methods, etc.) use
+docstrings and make sure that the Sphinx documentation uses the
+<a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#module-sphinx.ext.autodoc" title="(in Sphinx v8.3.0)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">autodoc</span></code></a> extension to pull the docstrings. API reference
+documentation should follow docstring conventions (<a class="reference external" href="https://peps.python.org/pep-0257/">PEP 257</a>) and be
+IDE-friendly: short, to the point, and it may provide short examples.</p>
+<p>Other types of documentation, such as tutorials or topics, should be covered in
+files within the <code class="docutils literal notranslate"><span class="pre">docs/</span></code> directory. This includes documentation that is
+specific to an API member, but goes beyond API reference documentation.</p>
+<p>In any case, if something is covered in a docstring, use the
+<a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#module-sphinx.ext.autodoc" title="(in Sphinx v8.3.0)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">autodoc</span></code></a> extension to pull the docstring into the
+documentation instead of duplicating the docstring in files within the
+<code class="docutils literal notranslate"><span class="pre">docs/</span></code> directory.</p>
+<p>Documentation updates that cover new or modified features must use Sphinx’s
+<a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/restructuredtext/directives.html#directive-versionadded" title="(in Sphinx v8.3.0)"><code class="xref rst rst-dir docutils literal notranslate"><span class="pre">versionadded</span></code></a> and <a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/restructuredtext/directives.html#directive-versionchanged" title="(in Sphinx v8.3.0)"><code class="xref rst rst-dir docutils literal notranslate"><span class="pre">versionchanged</span></code></a> directives. Use
+<code class="docutils literal notranslate"><span class="pre">VERSION</span></code> as version, we will replace it with the actual version right before
+the corresponding release. When we release a new major or minor version of
+Scrapy, we remove these directives if they are older than 3 years.</p>
+<p>Documentation about deprecated features must be removed as those features are
+deprecated, so that new readers do not run into it. New deprecations and
+deprecation removals are documented in the <a class="hxr-hoverxref hxr-tooltip reference internal" href="news.html#news"><span class="std std-ref">release notes</span></a>.</p>
+</section>
+<section id="tests">
+<span id="write-tests"></span><h2>Tests<a class="headerlink" href="#tests" title="Link to this heading"></a></h2>
+<p>Tests are implemented using the <a class="reference external" href="https://docs.twisted.org/en/stable/development/test-standard.html" title="(in Twisted v24.10)"><span class="xref std std-doc">Twisted unit-testing framework</span></a>. Running tests requires
+<a class="reference external" href="https://tox.wiki/en/latest/index.html" title="(in Project name not set v4.25)"><span class="xref std std-doc">tox</span></a>.</p>
+<section id="running-tests">
+<span id="id6"></span><h3>Running tests<a class="headerlink" href="#running-tests" title="Link to this heading"></a></h3>
+<p>To run all tests:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span>
+</pre></div>
+</div>
+<p>To run a specific test (say <code class="docutils literal notranslate"><span class="pre">tests/test_loader.py</span></code>) use:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">tox</span> <span class="pre">--</span> <span class="pre">tests/test_loader.py</span></code></p>
+</div></blockquote>
+<p>To run the tests on a specific <a class="reference external" href="https://tox.wiki/en/latest/index.html" title="(in Project name not set v4.25)"><span class="xref std std-doc">tox</span></a> environment, use
+<code class="docutils literal notranslate"><span class="pre">-e</span> <span class="pre">&lt;name&gt;</span></code> with an environment name from <code class="docutils literal notranslate"><span class="pre">tox.ini</span></code>. For example, to run
+the tests with Python 3.10 use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">-</span><span class="n">e</span> <span class="n">py310</span>
+</pre></div>
+</div>
+<p>You can also specify a comma-separated list of environments, and use <a class="reference external" href="https://tox.wiki/en/latest/user_guide.html#parallel-mode" title="(in Project name not set v4.25)"><span class="xref std std-ref">tox’s
+parallel mode</span></a> to run the tests on multiple environments in
+parallel:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">-</span><span class="n">e</span> <span class="n">py39</span><span class="p">,</span><span class="n">py310</span> <span class="o">-</span><span class="n">p</span> <span class="n">auto</span>
+</pre></div>
+</div>
+<p>To pass command-line options to <a class="reference external" href="https://docs.pytest.org/en/latest/index.html" title="(in pytest v8.4.0.dev461)"><span class="xref std std-doc">pytest</span></a>, add them after
+<code class="docutils literal notranslate"><span class="pre">--</span></code> in your call to <a class="reference external" href="https://tox.wiki/en/latest/index.html" title="(in Project name not set v4.25)"><span class="xref std std-doc">tox</span></a>. Using <code class="docutils literal notranslate"><span class="pre">--</span></code> overrides the
+default positional arguments defined in <code class="docutils literal notranslate"><span class="pre">tox.ini</span></code>, so you must include those
+default positional arguments (<code class="docutils literal notranslate"><span class="pre">scrapy</span> <span class="pre">tests</span></code>) after <code class="docutils literal notranslate"><span class="pre">--</span></code> as well:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">--</span> <span class="n">scrapy</span> <span class="n">tests</span> <span class="o">-</span><span class="n">x</span>  <span class="c1"># stop after first failure</span>
+</pre></div>
+</div>
+<p>You can also use the <a class="reference external" href="https://github.com/pytest-dev/pytest-xdist">pytest-xdist</a> plugin. For example, to run all tests on
+the Python 3.10 <a class="reference external" href="https://tox.wiki/en/latest/index.html" title="(in Project name not set v4.25)"><span class="xref std std-doc">tox</span></a> environment using all your CPU cores:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tox</span> <span class="o">-</span><span class="n">e</span> <span class="n">py310</span> <span class="o">--</span> <span class="n">scrapy</span> <span class="n">tests</span> <span class="o">-</span><span class="n">n</span> <span class="n">auto</span>
+</pre></div>
+</div>
+<p>To see coverage report install <a class="reference external" href="https://coverage.readthedocs.io/en/latest/index.html" title="(in Coverage.py v7.8.0)"><span class="xref std std-doc">coverage</span></a>
+(<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">coverage</span></code>) and run:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">coverage</span> <span class="pre">report</span></code></p>
+</div></blockquote>
+<p>see output of <code class="docutils literal notranslate"><span class="pre">coverage</span> <span class="pre">--help</span></code> for more options like html or xml report.</p>
+</section>
+<section id="writing-tests">
+<h3>Writing tests<a class="headerlink" href="#writing-tests" title="Link to this heading"></a></h3>
+<p>All functionality (including new features and bug fixes) must include a test
+case to check that it works as expected, so please include tests for your
+patches if you want them to get accepted sooner.</p>
+<p>Scrapy uses unit-tests, which are located in the <a class="reference external" href="https://github.com/scrapy/scrapy/tree/master/tests">tests/</a> directory.
+Their module name typically resembles the full path of the module they’re
+testing. For example, the item loaders code is in:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">scrapy</span><span class="o">.</span><span class="n">loader</span>
+</pre></div>
+</div>
+<p>And their unit-tests are in:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tests</span><span class="o">/</span><span class="n">test_loader</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="news.html" class="btn btn-neutral float-left" title="Release notes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="versioning.html" class="btn btn-neutral float-right" title="Versioning and API stability" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

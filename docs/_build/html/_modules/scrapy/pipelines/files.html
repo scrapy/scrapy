@@ -1,0 +1,941 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>scrapy.pipelines.files &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=84389e84"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/js/hoverxref.js"></script>
+      <script src="../../../_static/js/tooltipster.bundle.min.js"></script>
+      <script src="../../../_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="../../../_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="../../../_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/extensions.html">Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">scrapy.pipelines.files</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for scrapy.pipelines.files</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Files Pipeline</span>
+
+<span class="sd">See documentation in topics/media-pipeline.rst</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">hashlib</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">mimetypes</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">suppress</span>
+<span class="kn">from</span> <span class="nn">ftplib</span> <span class="kn">import</span> <span class="n">FTP</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">IO</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">NoReturn</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">cast</span>
+<span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="kn">import</span> <span class="n">urlparse</span>
+
+<span class="kn">from</span> <span class="nn">itemadapter</span> <span class="kn">import</span> <span class="n">ItemAdapter</span>
+<span class="kn">from</span> <span class="nn">twisted.internet.defer</span> <span class="kn">import</span> <span class="n">Deferred</span><span class="p">,</span> <span class="n">maybeDeferred</span>
+<span class="kn">from</span> <span class="nn">twisted.internet.threads</span> <span class="kn">import</span> <span class="n">deferToThread</span>
+
+<span class="kn">from</span> <span class="nn">scrapy.exceptions</span> <span class="kn">import</span> <span class="n">IgnoreRequest</span><span class="p">,</span> <span class="n">NotConfigured</span><span class="p">,</span> <span class="n">ScrapyDeprecationWarning</span>
+<span class="kn">from</span> <span class="nn">scrapy.http</span> <span class="kn">import</span> <span class="n">Request</span><span class="p">,</span> <span class="n">Response</span>
+<span class="kn">from</span> <span class="nn">scrapy.http.request</span> <span class="kn">import</span> <span class="n">NO_CALLBACK</span>
+<span class="kn">from</span> <span class="nn">scrapy.pipelines.media</span> <span class="kn">import</span> <span class="n">FileInfo</span><span class="p">,</span> <span class="n">FileInfoOrError</span><span class="p">,</span> <span class="n">MediaPipeline</span>
+<span class="kn">from</span> <span class="nn">scrapy.settings</span> <span class="kn">import</span> <span class="n">BaseSettings</span><span class="p">,</span> <span class="n">Settings</span>
+<span class="kn">from</span> <span class="nn">scrapy.utils.boto</span> <span class="kn">import</span> <span class="n">is_botocore_available</span>
+<span class="kn">from</span> <span class="nn">scrapy.utils.datatypes</span> <span class="kn">import</span> <span class="n">CaseInsensitiveDict</span>
+<span class="kn">from</span> <span class="nn">scrapy.utils.deprecate</span> <span class="kn">import</span> <span class="n">method_is_overridden</span>
+<span class="kn">from</span> <span class="nn">scrapy.utils.ftp</span> <span class="kn">import</span> <span class="n">ftp_store_file</span>
+<span class="kn">from</span> <span class="nn">scrapy.utils.log</span> <span class="kn">import</span> <span class="n">failure_to_exc_info</span>
+<span class="kn">from</span> <span class="nn">scrapy.utils.python</span> <span class="kn">import</span> <span class="n">get_func_args</span><span class="p">,</span> <span class="n">global_object_name</span><span class="p">,</span> <span class="n">to_bytes</span>
+<span class="kn">from</span> <span class="nn">scrapy.utils.request</span> <span class="kn">import</span> <span class="n">referer_str</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Callable</span>
+    <span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">PathLike</span>
+
+    <span class="kn">from</span> <span class="nn">twisted.python.failure</span> <span class="kn">import</span> <span class="n">Failure</span>
+
+    <span class="c1"># typing.Self requires Python 3.11</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Self</span>
+
+    <span class="kn">from</span> <span class="nn">scrapy</span> <span class="kn">import</span> <span class="n">Spider</span>
+    <span class="kn">from</span> <span class="nn">scrapy.crawler</span> <span class="kn">import</span> <span class="n">Crawler</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_to_string</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">PathLike</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># convert a Path object to string</span>
+
+
+<span class="k">def</span> <span class="nf">_md5sum</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n">IO</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate the md5 checksum of a file-like object without reading its</span>
+<span class="sd">    whole content in memory.</span>
+
+<span class="sd">    &gt;&gt;&gt; from io import BytesIO</span>
+<span class="sd">    &gt;&gt;&gt; _md5sum(BytesIO(b&#39;file content to hash&#39;))</span>
+<span class="sd">    &#39;784406af91dd5a54fbb9c84c2236595a&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">()</span>  <span class="c1"># noqa: S324</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">8096</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">d</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">FileException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;General media error exception&quot;&quot;&quot;</span>
+
+
+<span class="k">class</span> <span class="nc">StatInfo</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">checksum</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">last_modified</span><span class="p">:</span> <span class="nb">float</span>
+
+
+<span class="k">class</span> <span class="nc">FilesStoreProtocol</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basedir</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span> <span class="o">...</span>
+
+    <span class="k">def</span> <span class="nf">persist_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">buf</span><span class="p">:</span> <span class="n">BytesIO</span><span class="p">,</span>
+        <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span><span class="p">,</span>
+        <span class="n">meta</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">headers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Deferred</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="k">def</span> <span class="nf">stat_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StatInfo</span> <span class="o">|</span> <span class="n">Deferred</span><span class="p">[</span><span class="n">StatInfo</span><span class="p">]:</span> <span class="o">...</span>
+
+
+<span class="k">class</span> <span class="nc">FSFilesStore</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basedir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">PathLike</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+        <span class="n">basedir</span> <span class="o">=</span> <span class="n">_to_string</span><span class="p">(</span><span class="n">basedir</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;://&quot;</span> <span class="ow">in</span> <span class="n">basedir</span><span class="p">:</span>
+            <span class="n">basedir</span> <span class="o">=</span> <span class="n">basedir</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;://&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">basedir</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mkdir</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">created_directories</span><span class="p">:</span> <span class="n">defaultdict</span><span class="p">[</span><span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">persist_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">PathLike</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">buf</span><span class="p">:</span> <span class="n">BytesIO</span><span class="p">,</span>
+        <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span><span class="p">,</span>
+        <span class="n">meta</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">headers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">absolute_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_filesystem_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mkdir</span><span class="p">(</span><span class="n">absolute_path</span><span class="o">.</span><span class="n">parent</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+        <span class="n">absolute_path</span><span class="o">.</span><span class="n">write_bytes</span><span class="p">(</span><span class="n">buf</span><span class="o">.</span><span class="n">getvalue</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">stat_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">PathLike</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StatInfo</span><span class="p">:</span>
+        <span class="n">absolute_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_filesystem_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">last_modified</span> <span class="o">=</span> <span class="n">absolute_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mtime</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{}</span>
+
+        <span class="k">with</span> <span class="n">absolute_path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">checksum</span> <span class="o">=</span> <span class="n">_md5sum</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;last_modified&quot;</span><span class="p">:</span> <span class="n">last_modified</span><span class="p">,</span> <span class="s2">&quot;checksum&quot;</span><span class="p">:</span> <span class="n">checksum</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">_get_filesystem_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">PathLike</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+        <span class="n">path_comps</span> <span class="o">=</span> <span class="n">_to_string</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">,</span> <span class="o">*</span><span class="n">path_comps</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_mkdir</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">dirname</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">domain</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">seen</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">created_directories</span><span class="p">[</span><span class="n">domain</span><span class="p">]</span> <span class="k">if</span> <span class="n">domain</span> <span class="k">else</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">dirname</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">dirname</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">dirname</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">dirname</span><span class="p">))</span>
+
+
+<span class="k">class</span> <span class="nc">S3FilesStore</span><span class="p">:</span>
+    <span class="n">AWS_ACCESS_KEY_ID</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">AWS_SECRET_ACCESS_KEY</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">AWS_SESSION_TOKEN</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">AWS_ENDPOINT_URL</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">AWS_REGION_NAME</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">AWS_USE_SSL</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">AWS_VERIFY</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">POLICY</span> <span class="o">=</span> <span class="s2">&quot;private&quot;</span>  <span class="c1"># Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_settings</span>
+    <span class="n">HEADERS</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;Cache-Control&quot;</span><span class="p">:</span> <span class="s2">&quot;max-age=172800&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_botocore_available</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">NotConfigured</span><span class="p">(</span><span class="s2">&quot;missing botocore library&quot;</span><span class="p">)</span>
+        <span class="kn">import</span> <span class="nn">botocore.session</span>
+
+        <span class="n">session</span> <span class="o">=</span> <span class="n">botocore</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">get_session</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">s3_client</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">create_client</span><span class="p">(</span>
+            <span class="s2">&quot;s3&quot;</span><span class="p">,</span>
+            <span class="n">aws_access_key_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">AWS_ACCESS_KEY_ID</span><span class="p">,</span>
+            <span class="n">aws_secret_access_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">AWS_SECRET_ACCESS_KEY</span><span class="p">,</span>
+            <span class="n">aws_session_token</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">AWS_SESSION_TOKEN</span><span class="p">,</span>
+            <span class="n">endpoint_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">AWS_ENDPOINT_URL</span><span class="p">,</span>
+            <span class="n">region_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">AWS_REGION_NAME</span><span class="p">,</span>
+            <span class="n">use_ssl</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">AWS_USE_SSL</span><span class="p">,</span>
+            <span class="n">verify</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">AWS_VERIFY</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">uri</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;s3://&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Incorrect URI scheme in </span><span class="si">{</span><span class="n">uri</span><span class="si">}</span><span class="s2">, expected &#39;s3&#39;&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bucket</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">=</span> <span class="n">uri</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">stat_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Deferred</span><span class="p">[</span><span class="n">StatInfo</span><span class="p">]:</span>
+        <span class="k">def</span> <span class="nf">_onsuccess</span><span class="p">(</span><span class="n">boto_key</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">StatInfo</span><span class="p">:</span>
+            <span class="n">checksum</span> <span class="o">=</span> <span class="n">boto_key</span><span class="p">[</span><span class="s2">&quot;ETag&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+            <span class="n">last_modified</span> <span class="o">=</span> <span class="n">boto_key</span><span class="p">[</span><span class="s2">&quot;LastModified&quot;</span><span class="p">]</span>
+            <span class="n">modified_stamp</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">mktime</span><span class="p">(</span><span class="n">last_modified</span><span class="o">.</span><span class="n">timetuple</span><span class="p">())</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;checksum&quot;</span><span class="p">:</span> <span class="n">checksum</span><span class="p">,</span> <span class="s2">&quot;last_modified&quot;</span><span class="p">:</span> <span class="n">modified_stamp</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_boto_key</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="n">_onsuccess</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_boto_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Deferred</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+        <span class="n">key_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="si">}{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span>
+            <span class="s2">&quot;Deferred[dict[str, Any]]&quot;</span><span class="p">,</span>
+            <span class="n">deferToThread</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">s3_client</span><span class="o">.</span><span class="n">head_object</span><span class="p">,</span>  <span class="c1"># type: ignore[attr-defined]</span>
+                <span class="n">Bucket</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bucket</span><span class="p">,</span>
+                <span class="n">Key</span><span class="o">=</span><span class="n">key_name</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">persist_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">buf</span><span class="p">:</span> <span class="n">BytesIO</span><span class="p">,</span>
+        <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span><span class="p">,</span>
+        <span class="n">meta</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">headers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Deferred</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Upload file to S3 storage&quot;&quot;&quot;</span>
+        <span class="n">key_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="si">}{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">buf</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">extra</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_headers_to_botocore_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">HEADERS</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">headers</span><span class="p">:</span>
+            <span class="n">extra</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_headers_to_botocore_kwargs</span><span class="p">(</span><span class="n">headers</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">deferToThread</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">s3_client</span><span class="o">.</span><span class="n">put_object</span><span class="p">,</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="n">Bucket</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">bucket</span><span class="p">,</span>
+            <span class="n">Key</span><span class="o">=</span><span class="n">key_name</span><span class="p">,</span>
+            <span class="n">Body</span><span class="o">=</span><span class="n">buf</span><span class="p">,</span>
+            <span class="n">Metadata</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">meta</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+            <span class="n">ACL</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">POLICY</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">extra</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_headers_to_botocore_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert headers to botocore keyword arguments.&quot;&quot;&quot;</span>
+        <span class="c1"># This is required while we need to support both boto and botocore.</span>
+        <span class="n">mapping</span> <span class="o">=</span> <span class="n">CaseInsensitiveDict</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;ContentType&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Cache-Control&quot;</span><span class="p">:</span> <span class="s2">&quot;CacheControl&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Content-Disposition&quot;</span><span class="p">:</span> <span class="s2">&quot;ContentDisposition&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Content-Encoding&quot;</span><span class="p">:</span> <span class="s2">&quot;ContentEncoding&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Content-Language&quot;</span><span class="p">:</span> <span class="s2">&quot;ContentLanguage&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Content-Length&quot;</span><span class="p">:</span> <span class="s2">&quot;ContentLength&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Content-MD5&quot;</span><span class="p">:</span> <span class="s2">&quot;ContentMD5&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Expires&quot;</span><span class="p">:</span> <span class="s2">&quot;Expires&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Grant-Full-Control&quot;</span><span class="p">:</span> <span class="s2">&quot;GrantFullControl&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Grant-Read&quot;</span><span class="p">:</span> <span class="s2">&quot;GrantRead&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Grant-Read-ACP&quot;</span><span class="p">:</span> <span class="s2">&quot;GrantReadACP&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Grant-Write-ACP&quot;</span><span class="p">:</span> <span class="s2">&quot;GrantWriteACP&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Object-Lock-Legal-Hold&quot;</span><span class="p">:</span> <span class="s2">&quot;ObjectLockLegalHoldStatus&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Object-Lock-Mode&quot;</span><span class="p">:</span> <span class="s2">&quot;ObjectLockMode&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Object-Lock-Retain-Until-Date&quot;</span><span class="p">:</span> <span class="s2">&quot;ObjectLockRetainUntilDate&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Request-Payer&quot;</span><span class="p">:</span> <span class="s2">&quot;RequestPayer&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Server-Side-Encryption&quot;</span><span class="p">:</span> <span class="s2">&quot;ServerSideEncryption&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id&quot;</span><span class="p">:</span> <span class="s2">&quot;SSEKMSKeyId&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Server-Side-Encryption-Context&quot;</span><span class="p">:</span> <span class="s2">&quot;SSEKMSEncryptionContext&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Server-Side-Encryption-Customer-Algorithm&quot;</span><span class="p">:</span> <span class="s2">&quot;SSECustomerAlgorithm&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Server-Side-Encryption-Customer-Key&quot;</span><span class="p">:</span> <span class="s2">&quot;SSECustomerKey&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Server-Side-Encryption-Customer-Key-Md5&quot;</span><span class="p">:</span> <span class="s2">&quot;SSECustomerKeyMD5&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Storage-Class&quot;</span><span class="p">:</span> <span class="s2">&quot;StorageClass&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Tagging&quot;</span><span class="p">:</span> <span class="s2">&quot;Tagging&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;X-Amz-Website-Redirect-Location&quot;</span><span class="p">:</span> <span class="s2">&quot;WebsiteRedirectLocation&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">extra</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">headers</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">kwarg</span> <span class="o">=</span> <span class="n">mapping</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Header &quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">&quot; is not supported by botocore&#39;</span><span class="p">)</span>
+            <span class="n">extra</span><span class="p">[</span><span class="n">kwarg</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">return</span> <span class="n">extra</span>
+
+
+<span class="k">class</span> <span class="nc">GCSFilesStore</span><span class="p">:</span>
+    <span class="n">GCS_PROJECT_ID</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="n">CACHE_CONTROL</span> <span class="o">=</span> <span class="s2">&quot;max-age=172800&quot;</span>
+
+    <span class="c1"># The bucket&#39;s default object ACL will be applied to the object.</span>
+    <span class="c1"># Overridden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_settings.</span>
+    <span class="n">POLICY</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">google.cloud</span> <span class="kn">import</span> <span class="n">storage</span>
+
+        <span class="n">client</span> <span class="o">=</span> <span class="n">storage</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">project</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">GCS_PROJECT_ID</span><span class="p">)</span>
+        <span class="n">bucket</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">=</span> <span class="n">uri</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bucket</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">bucket</span><span class="p">(</span><span class="n">bucket</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">prefix</span>
+        <span class="n">permissions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bucket</span><span class="o">.</span><span class="n">test_iam_permissions</span><span class="p">(</span>
+            <span class="p">[</span><span class="s2">&quot;storage.objects.get&quot;</span><span class="p">,</span> <span class="s2">&quot;storage.objects.create&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;storage.objects.get&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">permissions</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;No &#39;storage.objects.get&#39; permission for GSC bucket </span><span class="si">%(bucket)s</span><span class="s2">. &quot;</span>
+                <span class="s2">&quot;Checking if files are up to date will be impossible. Files will be downloaded every time.&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;bucket&quot;</span><span class="p">:</span> <span class="n">bucket</span><span class="p">},</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;storage.objects.create&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">permissions</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;No &#39;storage.objects.create&#39; permission for GSC bucket </span><span class="si">%(bucket)s</span><span class="s2">. Saving files will be impossible!&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;bucket&quot;</span><span class="p">:</span> <span class="n">bucket</span><span class="p">},</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">stat_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Deferred</span><span class="p">[</span><span class="n">StatInfo</span><span class="p">]:</span>
+        <span class="k">def</span> <span class="nf">_onsuccess</span><span class="p">(</span><span class="n">blob</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StatInfo</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">blob</span><span class="p">:</span>
+                <span class="n">checksum</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">blob</span><span class="o">.</span><span class="n">md5_hash</span><span class="p">)</span><span class="o">.</span><span class="n">hex</span><span class="p">()</span>
+                <span class="n">last_modified</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">mktime</span><span class="p">(</span><span class="n">blob</span><span class="o">.</span><span class="n">updated</span><span class="o">.</span><span class="n">timetuple</span><span class="p">())</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;checksum&quot;</span><span class="p">:</span> <span class="n">checksum</span><span class="p">,</span> <span class="s2">&quot;last_modified&quot;</span><span class="p">:</span> <span class="n">last_modified</span><span class="p">}</span>
+            <span class="k">return</span> <span class="p">{}</span>
+
+        <span class="n">blob_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_blob_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span>
+            <span class="n">Deferred</span><span class="p">[</span><span class="n">StatInfo</span><span class="p">],</span>
+            <span class="n">deferToThread</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bucket</span><span class="o">.</span><span class="n">get_blob</span><span class="p">,</span> <span class="n">blob_path</span><span class="p">)</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="n">_onsuccess</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_content_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">headers</span> <span class="ow">and</span> <span class="s2">&quot;Content-Type&quot;</span> <span class="ow">in</span> <span class="n">headers</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">headers</span><span class="p">[</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="s2">&quot;application/octet-stream&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_get_blob_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">path</span>
+
+    <span class="k">def</span> <span class="nf">persist_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">buf</span><span class="p">:</span> <span class="n">BytesIO</span><span class="p">,</span>
+        <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span><span class="p">,</span>
+        <span class="n">meta</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">headers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Deferred</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+        <span class="n">blob_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_blob_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">blob</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bucket</span><span class="o">.</span><span class="n">blob</span><span class="p">(</span><span class="n">blob_path</span><span class="p">)</span>
+        <span class="n">blob</span><span class="o">.</span><span class="n">cache_control</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CACHE_CONTROL</span>
+        <span class="n">blob</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">meta</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">return</span> <span class="n">deferToThread</span><span class="p">(</span>
+            <span class="n">blob</span><span class="o">.</span><span class="n">upload_from_string</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">buf</span><span class="o">.</span><span class="n">getvalue</span><span class="p">(),</span>
+            <span class="n">content_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_content_type</span><span class="p">(</span><span class="n">headers</span><span class="p">),</span>
+            <span class="n">predefined_acl</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">POLICY</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">FTPFilesStore</span><span class="p">:</span>
+    <span class="n">FTP_USERNAME</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">FTP_PASSWORD</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">USE_ACTIVE_MODE</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">uri</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;ftp://&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Incorrect URI scheme in </span><span class="si">{</span><span class="n">uri</span><span class="si">}</span><span class="s2">, expected &#39;ftp&#39;&quot;</span><span class="p">)</span>
+        <span class="n">u</span> <span class="o">=</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">u</span><span class="o">.</span><span class="n">port</span>
+        <span class="k">assert</span> <span class="n">u</span><span class="o">.</span><span class="n">hostname</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">port</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">hostname</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">port</span> <span class="ow">or</span> <span class="mi">21</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">FTP_USERNAME</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">FTP_PASSWORD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">username</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">username</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">FTP_USERNAME</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">password</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">FTP_PASSWORD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">persist_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">buf</span><span class="p">:</span> <span class="n">BytesIO</span><span class="p">,</span>
+        <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span><span class="p">,</span>
+        <span class="n">meta</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">headers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Deferred</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">deferToThread</span><span class="p">(</span>
+            <span class="n">ftp_store_file</span><span class="p">,</span>
+            <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+            <span class="n">file</span><span class="o">=</span><span class="n">buf</span><span class="p">,</span>
+            <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
+            <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span>
+            <span class="n">username</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">username</span><span class="p">,</span>
+            <span class="n">password</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">,</span>
+            <span class="n">use_active_mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">USE_ACTIVE_MODE</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">stat_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Deferred</span><span class="p">[</span><span class="n">StatInfo</span><span class="p">]:</span>
+        <span class="k">def</span> <span class="nf">_stat_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StatInfo</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ftp</span> <span class="o">=</span> <span class="n">FTP</span><span class="p">()</span>
+                <span class="n">ftp</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">)</span>
+                <span class="n">ftp</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">USE_ACTIVE_MODE</span><span class="p">:</span>
+                    <span class="n">ftp</span><span class="o">.</span><span class="n">set_pasv</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">file_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">last_modified</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ftp</span><span class="o">.</span><span class="n">voidcmd</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MDTM </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)[</span><span class="mi">4</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                <span class="n">m</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">()</span>  <span class="c1"># noqa: S324</span>
+                <span class="n">ftp</span><span class="o">.</span><span class="n">retrbinary</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;RETR </span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">update</span><span class="p">)</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;last_modified&quot;</span><span class="p">:</span> <span class="n">last_modified</span><span class="p">,</span> <span class="s2">&quot;checksum&quot;</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()}</span>
+            <span class="c1"># The file doesn&#39;t exist</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{}</span>
+
+        <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;Deferred[StatInfo]&quot;</span><span class="p">,</span> <span class="n">deferToThread</span><span class="p">(</span><span class="n">_stat_file</span><span class="p">,</span> <span class="n">path</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="FilesPipeline">
+<a class="viewcode-back" href="../../../topics/media-pipeline.html#scrapy.pipelines.files.FilesPipeline">[docs]</a>
+<span class="k">class</span> <span class="nc">FilesPipeline</span><span class="p">(</span><span class="n">MediaPipeline</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract pipeline that implement the file downloading</span>
+
+<span class="sd">    This pipeline tries to minimize network transfers and file processing,</span>
+<span class="sd">    doing stat of the files and determining if file is new, up-to-date or</span>
+<span class="sd">    expired.</span>
+
+<span class="sd">    ``new`` files are those that pipeline never processed and needs to be</span>
+<span class="sd">        downloaded from supplier site the first time.</span>
+
+<span class="sd">    ``uptodate`` files are the ones that the pipeline processed and are still</span>
+<span class="sd">        valid files.</span>
+
+<span class="sd">    ``expired`` files are those that pipeline already processed but the last</span>
+<span class="sd">        modification was made long time ago, so a reprocessing is recommended to</span>
+<span class="sd">        refresh it in case of change.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">MEDIA_NAME</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;file&quot;</span>
+    <span class="n">EXPIRES</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">90</span>
+    <span class="n">STORE_SCHEMES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">[</span><span class="n">FilesStoreProtocol</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;&quot;</span><span class="p">:</span> <span class="n">FSFilesStore</span><span class="p">,</span>
+        <span class="s2">&quot;file&quot;</span><span class="p">:</span> <span class="n">FSFilesStore</span><span class="p">,</span>
+        <span class="s2">&quot;s3&quot;</span><span class="p">:</span> <span class="n">S3FilesStore</span><span class="p">,</span>
+        <span class="s2">&quot;gs&quot;</span><span class="p">:</span> <span class="n">GCSFilesStore</span><span class="p">,</span>
+        <span class="s2">&quot;ftp&quot;</span><span class="p">:</span> <span class="n">FTPFilesStore</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">DEFAULT_FILES_URLS_FIELD</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;file_urls&quot;</span>
+    <span class="n">DEFAULT_FILES_RESULT_FIELD</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;files&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">store_uri</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">PathLike</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">download_func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Request</span><span class="p">,</span> <span class="n">Spider</span><span class="p">],</span> <span class="n">Response</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">settings</span><span class="p">:</span> <span class="n">Settings</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">crawler</span><span class="p">:</span> <span class="n">Crawler</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">store_uri</span> <span class="o">=</span> <span class="n">_to_string</span><span class="p">(</span><span class="n">store_uri</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">store_uri</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotConfigured</span>
+
+        <span class="k">if</span> <span class="n">crawler</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">settings</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;FilesPipeline.__init__() was called with a crawler instance and a settings instance&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; when creating </span><span class="si">{</span><span class="n">global_object_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span><span class="si">}</span><span class="s2">. The settings instance will be ignored&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot; and crawler.settings will be used. The settings argument will be removed in a future Scrapy version.&quot;</span><span class="p">,</span>
+                    <span class="n">category</span><span class="o">=</span><span class="n">ScrapyDeprecationWarning</span><span class="p">,</span>
+                    <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">settings</span> <span class="o">=</span> <span class="n">crawler</span><span class="o">.</span><span class="n">settings</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">or</span> <span class="n">settings</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
+        <span class="n">cls_name</span> <span class="o">=</span> <span class="s2">&quot;FilesPipeline&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">:</span> <span class="n">FilesStoreProtocol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_store</span><span class="p">(</span><span class="n">store_uri</span><span class="p">)</span>
+        <span class="n">resolve</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_key_for_pipe</span><span class="p">,</span> <span class="n">base_class_name</span><span class="o">=</span><span class="n">cls_name</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">settings</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expires</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">getint</span><span class="p">(</span><span class="n">resolve</span><span class="p">(</span><span class="s2">&quot;FILES_EXPIRES&quot;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">EXPIRES</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;FILES_URLS_FIELD&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">FILES_URLS_FIELD</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEFAULT_FILES_URLS_FIELD</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;FILES_RESULT_FIELD&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">FILES_RESULT_FIELD</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEFAULT_FILES_RESULT_FIELD</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files_urls_field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">resolve</span><span class="p">(</span><span class="s2">&quot;FILES_URLS_FIELD&quot;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">FILES_URLS_FIELD</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files_result_field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">resolve</span><span class="p">(</span><span class="s2">&quot;FILES_RESULT_FIELD&quot;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">FILES_RESULT_FIELD</span>
+        <span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">download_func</span><span class="o">=</span><span class="n">download_func</span><span class="p">,</span>
+            <span class="n">settings</span><span class="o">=</span><span class="n">settings</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">crawler</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">crawler</span><span class="o">=</span><span class="n">crawler</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_settings</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">settings</span><span class="p">:</span> <span class="n">Settings</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.from_settings() is deprecated, use from_crawler() instead.&quot;</span><span class="p">,</span>
+            <span class="n">category</span><span class="o">=</span><span class="n">ScrapyDeprecationWarning</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_settings</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_crawler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">crawler</span><span class="p">:</span> <span class="n">Crawler</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">method_is_overridden</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">FilesPipeline</span><span class="p">,</span> <span class="s2">&quot;from_settings&quot;</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">global_object_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span><span class="si">}</span><span class="s2"> overrides FilesPipeline.from_settings().&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot; This method is deprecated and won&#39;t be called in future Scrapy versions,&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot; please update your code so that it overrides from_crawler() instead.&quot;</span><span class="p">,</span>
+                <span class="n">category</span><span class="o">=</span><span class="n">ScrapyDeprecationWarning</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">o</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_settings</span><span class="p">(</span><span class="n">crawler</span><span class="o">.</span><span class="n">settings</span><span class="p">)</span>
+            <span class="n">o</span><span class="o">.</span><span class="n">_finish_init</span><span class="p">(</span><span class="n">crawler</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">o</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_settings</span><span class="p">(</span><span class="n">crawler</span><span class="o">.</span><span class="n">settings</span><span class="p">,</span> <span class="n">crawler</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_from_settings</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">settings</span><span class="p">:</span> <span class="n">Settings</span><span class="p">,</span> <span class="n">crawler</span><span class="p">:</span> <span class="n">Crawler</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_update_stores</span><span class="p">(</span><span class="n">settings</span><span class="p">)</span>
+        <span class="n">store_uri</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;FILES_STORE&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s2">&quot;crawler&quot;</span> <span class="ow">in</span> <span class="n">get_func_args</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="fm">__init__</span><span class="p">):</span>
+            <span class="n">o</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">store_uri</span><span class="p">,</span> <span class="n">crawler</span><span class="o">=</span><span class="n">crawler</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">o</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">store_uri</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">crawler</span><span class="p">:</span>
+                <span class="n">o</span><span class="o">.</span><span class="n">_finish_init</span><span class="p">(</span><span class="n">crawler</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">global_object_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span><span class="si">}</span><span class="s2">.__init__() doesn&#39;t take a crawler argument.&quot;</span>
+                <span class="s2">&quot; This is deprecated and the argument will be required in future Scrapy versions.&quot;</span><span class="p">,</span>
+                <span class="n">category</span><span class="o">=</span><span class="n">ScrapyDeprecationWarning</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">o</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_update_stores</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">settings</span><span class="p">:</span> <span class="n">BaseSettings</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">s3store</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">S3FilesStore</span><span class="p">]</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="nb">type</span><span class="p">[</span><span class="n">S3FilesStore</span><span class="p">],</span> <span class="bp">cls</span><span class="o">.</span><span class="n">STORE_SCHEMES</span><span class="p">[</span><span class="s2">&quot;s3&quot;</span><span class="p">])</span>
+        <span class="n">s3store</span><span class="o">.</span><span class="n">AWS_ACCESS_KEY_ID</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;AWS_ACCESS_KEY_ID&quot;</span><span class="p">]</span>
+        <span class="n">s3store</span><span class="o">.</span><span class="n">AWS_SECRET_ACCESS_KEY</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;AWS_SECRET_ACCESS_KEY&quot;</span><span class="p">]</span>
+        <span class="n">s3store</span><span class="o">.</span><span class="n">AWS_SESSION_TOKEN</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;AWS_SESSION_TOKEN&quot;</span><span class="p">]</span>
+        <span class="n">s3store</span><span class="o">.</span><span class="n">AWS_ENDPOINT_URL</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;AWS_ENDPOINT_URL&quot;</span><span class="p">]</span>
+        <span class="n">s3store</span><span class="o">.</span><span class="n">AWS_REGION_NAME</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;AWS_REGION_NAME&quot;</span><span class="p">]</span>
+        <span class="n">s3store</span><span class="o">.</span><span class="n">AWS_USE_SSL</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;AWS_USE_SSL&quot;</span><span class="p">]</span>
+        <span class="n">s3store</span><span class="o">.</span><span class="n">AWS_VERIFY</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;AWS_VERIFY&quot;</span><span class="p">]</span>
+        <span class="n">s3store</span><span class="o">.</span><span class="n">POLICY</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;FILES_STORE_S3_ACL&quot;</span><span class="p">]</span>
+
+        <span class="n">gcs_store</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">GCSFilesStore</span><span class="p">]</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span>
+            <span class="nb">type</span><span class="p">[</span><span class="n">GCSFilesStore</span><span class="p">],</span> <span class="bp">cls</span><span class="o">.</span><span class="n">STORE_SCHEMES</span><span class="p">[</span><span class="s2">&quot;gs&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">gcs_store</span><span class="o">.</span><span class="n">GCS_PROJECT_ID</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;GCS_PROJECT_ID&quot;</span><span class="p">]</span>
+        <span class="n">gcs_store</span><span class="o">.</span><span class="n">POLICY</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;FILES_STORE_GCS_ACL&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="kc">None</span>
+
+        <span class="n">ftp_store</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">FTPFilesStore</span><span class="p">]</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span>
+            <span class="nb">type</span><span class="p">[</span><span class="n">FTPFilesStore</span><span class="p">],</span> <span class="bp">cls</span><span class="o">.</span><span class="n">STORE_SCHEMES</span><span class="p">[</span><span class="s2">&quot;ftp&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">ftp_store</span><span class="o">.</span><span class="n">FTP_USERNAME</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;FTP_USER&quot;</span><span class="p">]</span>
+        <span class="n">ftp_store</span><span class="o">.</span><span class="n">FTP_PASSWORD</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="s2">&quot;FTP_PASSWORD&quot;</span><span class="p">]</span>
+        <span class="n">ftp_store</span><span class="o">.</span><span class="n">USE_ACTIVE_MODE</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">getbool</span><span class="p">(</span><span class="s2">&quot;FEED_STORAGE_FTP_ACTIVE&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_store</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FilesStoreProtocol</span><span class="p">:</span>
+        <span class="c1"># to support win32 paths like: C:\\some\dir</span>
+        <span class="n">scheme</span> <span class="o">=</span> <span class="s2">&quot;file&quot;</span> <span class="k">if</span> <span class="n">Path</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">()</span> <span class="k">else</span> <span class="n">urlparse</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span><span class="o">.</span><span class="n">scheme</span>
+        <span class="n">store_cls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">STORE_SCHEMES</span><span class="p">[</span><span class="n">scheme</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">store_cls</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">media_to_download</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Deferred</span><span class="p">[</span><span class="n">FileInfo</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+        <span class="k">def</span> <span class="nf">_onsuccess</span><span class="p">(</span><span class="n">result</span><span class="p">:</span> <span class="n">StatInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FileInfo</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># returning None force download</span>
+
+            <span class="n">last_modified</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;last_modified&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">last_modified</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># returning None force download</span>
+
+            <span class="n">age_seconds</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">last_modified</span>
+            <span class="n">age_days</span> <span class="o">=</span> <span class="n">age_seconds</span> <span class="o">/</span> <span class="mi">60</span> <span class="o">/</span> <span class="mi">60</span> <span class="o">/</span> <span class="mi">24</span>
+            <span class="k">if</span> <span class="n">age_days</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">expires</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># returning None force download</span>
+
+            <span class="n">referer</span> <span class="o">=</span> <span class="n">referer_str</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s2">&quot;File (uptodate): Downloaded </span><span class="si">%(medianame)s</span><span class="s2"> from </span><span class="si">%(request)s</span><span class="s2"> &quot;</span>
+                <span class="s2">&quot;referred in &lt;</span><span class="si">%(referer)s</span><span class="s2">&gt;&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;medianame&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">MEDIA_NAME</span><span class="p">,</span> <span class="s2">&quot;request&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span> <span class="s2">&quot;referer&quot;</span><span class="p">:</span> <span class="n">referer</span><span class="p">},</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;spider&quot;</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">spider</span><span class="p">},</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inc_stats</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">spider</span><span class="p">,</span> <span class="s2">&quot;uptodate&quot;</span><span class="p">)</span>
+
+            <span class="n">checksum</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;checksum&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">,</span>
+                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">path</span><span class="p">,</span>
+                <span class="s2">&quot;checksum&quot;</span><span class="p">:</span> <span class="n">checksum</span><span class="p">,</span>
+                <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;uptodate&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="n">item</span><span class="p">)</span>
+        <span class="c1"># maybeDeferred() overloads don&#39;t seem to support a Union[_T, Deferred[_T]] return type</span>
+        <span class="n">dfd</span><span class="p">:</span> <span class="n">Deferred</span><span class="p">[</span><span class="n">StatInfo</span><span class="p">]</span> <span class="o">=</span> <span class="n">maybeDeferred</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">stat_file</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>  <span class="c1"># type: ignore[call-overload]</span>
+        <span class="n">dfd2</span><span class="p">:</span> <span class="n">Deferred</span><span class="p">[</span><span class="n">FileInfo</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">dfd</span><span class="o">.</span><span class="n">addCallback</span><span class="p">(</span><span class="n">_onsuccess</span><span class="p">)</span>
+        <span class="n">dfd2</span><span class="o">.</span><span class="n">addErrback</span><span class="p">(</span><span class="k">lambda</span> <span class="n">_</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">dfd2</span><span class="o">.</span><span class="n">addErrback</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">f</span><span class="p">:</span> <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s2">&quot;.store.stat_file&quot;</span><span class="p">,</span>
+                <span class="n">exc_info</span><span class="o">=</span><span class="n">failure_to_exc_info</span><span class="p">(</span><span class="n">f</span><span class="p">),</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;spider&quot;</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">spider</span><span class="p">},</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">dfd2</span>
+
+    <span class="k">def</span> <span class="nf">media_failed</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">failure</span><span class="p">:</span> <span class="n">Failure</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NoReturn</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">failure</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">IgnoreRequest</span><span class="p">):</span>
+            <span class="n">referer</span> <span class="o">=</span> <span class="n">referer_str</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;File (unknown-error): Error downloading </span><span class="si">%(medianame)s</span><span class="s2"> from &quot;</span>
+                <span class="s2">&quot;</span><span class="si">%(request)s</span><span class="s2"> referred in &lt;</span><span class="si">%(referer)s</span><span class="s2">&gt;: </span><span class="si">%(exception)s</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;medianame&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">MEDIA_NAME</span><span class="p">,</span>
+                    <span class="s2">&quot;request&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span>
+                    <span class="s2">&quot;referer&quot;</span><span class="p">:</span> <span class="n">referer</span><span class="p">,</span>
+                    <span class="s2">&quot;exception&quot;</span><span class="p">:</span> <span class="n">failure</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;spider&quot;</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">spider</span><span class="p">},</span>
+            <span class="p">)</span>
+
+        <span class="k">raise</span> <span class="n">FileException</span>
+
+    <span class="k">def</span> <span class="nf">media_downloaded</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">response</span><span class="p">:</span> <span class="n">Response</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span>
+        <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">item</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FileInfo</span><span class="p">:</span>
+        <span class="n">referer</span> <span class="o">=</span> <span class="n">referer_str</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;File (code: </span><span class="si">%(status)s</span><span class="s2">): Error downloading file from &quot;</span>
+                <span class="s2">&quot;</span><span class="si">%(request)s</span><span class="s2"> referred in &lt;</span><span class="si">%(referer)s</span><span class="s2">&gt;&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="s2">&quot;request&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span> <span class="s2">&quot;referer&quot;</span><span class="p">:</span> <span class="n">referer</span><span class="p">},</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;spider&quot;</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">spider</span><span class="p">},</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">FileException</span><span class="p">(</span><span class="s2">&quot;download-error&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">response</span><span class="o">.</span><span class="n">body</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;File (empty-content): Empty file from </span><span class="si">%(request)s</span><span class="s2"> referred &quot;</span>
+                <span class="s2">&quot;in &lt;</span><span class="si">%(referer)s</span><span class="s2">&gt;: no-content&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;request&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span> <span class="s2">&quot;referer&quot;</span><span class="p">:</span> <span class="n">referer</span><span class="p">},</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;spider&quot;</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">spider</span><span class="p">},</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">FileException</span><span class="p">(</span><span class="s2">&quot;empty-content&quot;</span><span class="p">)</span>
+
+        <span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;cached&quot;</span> <span class="k">if</span> <span class="s2">&quot;cached&quot;</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">flags</span> <span class="k">else</span> <span class="s2">&quot;downloaded&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;File (</span><span class="si">%(status)s</span><span class="s2">): Downloaded file from </span><span class="si">%(request)s</span><span class="s2"> referred in &quot;</span>
+            <span class="s2">&quot;&lt;</span><span class="si">%(referer)s</span><span class="s2">&gt;&quot;</span><span class="p">,</span>
+            <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span> <span class="s2">&quot;request&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span> <span class="s2">&quot;referer&quot;</span><span class="p">:</span> <span class="n">referer</span><span class="p">},</span>
+            <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;spider&quot;</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">spider</span><span class="p">},</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inc_stats</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">spider</span><span class="p">,</span> <span class="n">status</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="o">=</span><span class="n">response</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="n">item</span><span class="p">)</span>
+            <span class="n">checksum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_downloaded</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">FileException</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;File (error): Error processing file from </span><span class="si">%(request)s</span><span class="s2"> &quot;</span>
+                <span class="s2">&quot;referred in &lt;</span><span class="si">%(referer)s</span><span class="s2">&gt;: </span><span class="si">%(errormsg)s</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;request&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span> <span class="s2">&quot;referer&quot;</span><span class="p">:</span> <span class="n">referer</span><span class="p">,</span> <span class="s2">&quot;errormsg&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)},</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;spider&quot;</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">spider</span><span class="p">},</span>
+                <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;File (unknown-error): Error processing file from </span><span class="si">%(request)s</span><span class="s2"> &quot;</span>
+                <span class="s2">&quot;referred in &lt;</span><span class="si">%(referer)s</span><span class="s2">&gt;&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;request&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span> <span class="s2">&quot;referer&quot;</span><span class="p">:</span> <span class="n">referer</span><span class="p">},</span>
+                <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;spider&quot;</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">spider</span><span class="p">},</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">FileException</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">,</span>
+            <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">path</span><span class="p">,</span>
+            <span class="s2">&quot;checksum&quot;</span><span class="p">:</span> <span class="n">checksum</span><span class="p">,</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">inc_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spider</span><span class="p">:</span> <span class="n">Spider</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">spider</span><span class="o">.</span><span class="n">crawler</span><span class="o">.</span><span class="n">stats</span>
+        <span class="n">spider</span><span class="o">.</span><span class="n">crawler</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">inc_value</span><span class="p">(</span><span class="s2">&quot;file_count&quot;</span><span class="p">,</span> <span class="n">spider</span><span class="o">=</span><span class="n">spider</span><span class="p">)</span>
+        <span class="n">spider</span><span class="o">.</span><span class="n">crawler</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">inc_value</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;file_status_count/</span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">spider</span><span class="o">=</span><span class="n">spider</span><span class="p">)</span>
+
+    <span class="c1"># Overridable Interface</span>
+<div class="viewcode-block" id="FilesPipeline.get_media_requests">
+<a class="viewcode-back" href="../../../topics/media-pipeline.html#scrapy.pipelines.files.FilesPipeline.get_media_requests">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_media_requests</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Request</span><span class="p">]:</span>
+        <span class="n">urls</span> <span class="o">=</span> <span class="n">ItemAdapter</span><span class="p">(</span><span class="n">item</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files_urls_field</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">Request</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">NO_CALLBACK</span><span class="p">)</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">urls</span><span class="p">]</span></div>
+
+
+    <span class="k">def</span> <span class="nf">file_downloaded</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">response</span><span class="p">:</span> <span class="n">Response</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span>
+        <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">item</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">file_path</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">response</span><span class="o">=</span><span class="n">response</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="n">item</span><span class="p">)</span>
+        <span class="n">buf</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">body</span><span class="p">)</span>
+        <span class="n">checksum</span> <span class="o">=</span> <span class="n">_md5sum</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+        <span class="n">buf</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">persist_file</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">checksum</span>
+
+<div class="viewcode-block" id="FilesPipeline.item_completed">
+<a class="viewcode-back" href="../../../topics/media-pipeline.html#scrapy.pipelines.files.FilesPipeline.item_completed">[docs]</a>
+    <span class="k">def</span> <span class="nf">item_completed</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">FileInfoOrError</span><span class="p">],</span> <span class="n">item</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>
+            <span class="n">ItemAdapter</span><span class="p">(</span><span class="n">item</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">files_result_field</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">ok</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">results</span> <span class="k">if</span> <span class="n">ok</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">item</span></div>
+
+
+<div class="viewcode-block" id="FilesPipeline.file_path">
+<a class="viewcode-back" href="../../../topics/media-pipeline.html#scrapy.pipelines.files.FilesPipeline.file_path">[docs]</a>
+    <span class="k">def</span> <span class="nf">file_path</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span>
+        <span class="n">response</span><span class="p">:</span> <span class="n">Response</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">info</span><span class="p">:</span> <span class="n">MediaPipeline</span><span class="o">.</span><span class="n">SpiderInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">item</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">media_guid</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha1</span><span class="p">(</span><span class="n">to_bytes</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">))</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>  <span class="c1"># noqa: S324</span>
+        <span class="n">media_ext</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span>
+        <span class="c1"># Handles empty and wild extensions by trying to guess the</span>
+        <span class="c1"># mime type then extension or default to empty string otherwise</span>
+        <span class="k">if</span> <span class="n">media_ext</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mimetypes</span><span class="o">.</span><span class="n">types_map</span><span class="p">:</span>
+            <span class="n">media_ext</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">media_type</span> <span class="o">=</span> <span class="n">mimetypes</span><span class="o">.</span><span class="n">guess_type</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">media_type</span><span class="p">:</span>
+                <span class="n">media_ext</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">mimetypes</span><span class="o">.</span><span class="n">guess_extension</span><span class="p">(</span><span class="n">media_type</span><span class="p">))</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;full/</span><span class="si">{</span><span class="n">media_guid</span><span class="si">}{</span><span class="n">media_ext</span><span class="si">}</span><span class="s2">&quot;</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

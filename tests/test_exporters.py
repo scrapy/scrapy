@@ -764,3 +764,20 @@ def test_item_attributes_order(exporter_name, exporter_cls):
         else:
             for field in ["z", "y", "a", "x", "c", "b"]:
                 assert f'"{field}":' in exported
+def test_exporter_respects_ordered_attrs():
+    exporter = JsonItemExporter(BytesIO())
+    exporter.start_exporting()
+
+    item = {
+        "z": 1,
+        "y": 2,
+        "x": 3,
+        "_ordered_attrs": ["y", "x", "z"]  # Force this order
+    }
+
+    exporter.export_item(item)
+    exporter.finish_exporting()
+
+    output = exporter.file.getvalue().decode()
+    print("Output:", output)  # 🔍 Add this line
+    assert output == '[{"y": 2, "x": 3, "z": 1}]'

@@ -1,0 +1,346 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scrapy 2.12 documentation &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=84389e84"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/js/hoverxref.js"></script>
+      <script src="_static/js/tooltipster.bundle.min.js"></script>
+      <script src="_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Scrapy at a glance" href="intro/overview.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="topics/commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="topics/logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="topics/architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/extensions.html">Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="topics/api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Scrapy 2.12 documentation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="scrapy-version-documentation">
+<span id="topics-index"></span><h1>Scrapy 2.12 documentation<a class="headerlink" href="#scrapy-version-documentation" title="Link to this heading"></a></h1>
+<p>Scrapy is a fast high-level <a class="reference external" href="https://en.wikipedia.org/wiki/Web_crawler">web crawling</a> and <a class="reference external" href="https://en.wikipedia.org/wiki/Web_scraping">web scraping</a> framework, used
+to crawl websites and extract structured data from their pages. It can be used
+for a wide range of purposes, from data mining to monitoring and automated
+testing.</p>
+<section id="getting-help">
+<span id="id1"></span><h2>Getting help<a class="headerlink" href="#getting-help" title="Link to this heading"></a></h2>
+<p>Having trouble? We’d like to help!</p>
+<ul class="simple">
+<li><p>Try the <a class="reference internal" href="faq.html"><span class="doc">FAQ</span></a> – it’s got answers to some common questions.</p></li>
+<li><p>Looking for specific information? Try the <a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a> or <a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a>.</p></li>
+<li><p>Ask or search questions in <a class="reference external" href="https://stackoverflow.com/tags/scrapy">StackOverflow using the scrapy tag</a>.</p></li>
+<li><p>Ask or search questions in the <a class="reference external" href="https://www.reddit.com/r/scrapy/">Scrapy subreddit</a>.</p></li>
+<li><p>Search for questions on the archives of the <a class="reference external" href="https://groups.google.com/forum/#!forum/scrapy-users">scrapy-users mailing list</a>.</p></li>
+<li><p>Ask a question in the <a class="reference external" href="irc://irc.freenode.net/scrapy">#scrapy IRC channel</a>,</p></li>
+<li><p>Report bugs with Scrapy in our <a class="reference external" href="https://github.com/scrapy/scrapy/issues">issue tracker</a>.</p></li>
+<li><p>Join the Discord community <a class="reference external" href="https://discord.com/invite/mv3yErfpvq">Scrapy Discord</a>.</p></li>
+</ul>
+</section>
+<section id="first-steps">
+<h2>First steps<a class="headerlink" href="#first-steps" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<dl class="simple">
+<dt><a class="reference internal" href="intro/overview.html"><span class="doc">Scrapy at a glance</span></a></dt><dd><p>Understand what Scrapy is and how it can help you.</p>
+</dd>
+<dt><a class="reference internal" href="intro/install.html"><span class="doc">Installation guide</span></a></dt><dd><p>Get Scrapy installed on your computer.</p>
+</dd>
+<dt><a class="reference internal" href="intro/tutorial.html"><span class="doc">Scrapy Tutorial</span></a></dt><dd><p>Write your first Scrapy project.</p>
+</dd>
+<dt><a class="reference internal" href="intro/examples.html"><span class="doc">Examples</span></a></dt><dd><p>Learn more by playing with a pre-made Scrapy project.</p>
+</dd>
+</dl>
+</section>
+<section id="basic-concepts">
+<span id="section-basics"></span><h2>Basic concepts<a class="headerlink" href="#basic-concepts" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<dl class="simple">
+<dt><a class="reference internal" href="topics/commands.html"><span class="doc">Command line tool</span></a></dt><dd><p>Learn about the command-line tool used to manage your Scrapy project.</p>
+</dd>
+<dt><a class="reference internal" href="topics/spiders.html"><span class="doc">Spiders</span></a></dt><dd><p>Write the rules to crawl your websites.</p>
+</dd>
+<dt><a class="reference internal" href="topics/selectors.html"><span class="doc">Selectors</span></a></dt><dd><p>Extract the data from web pages using XPath.</p>
+</dd>
+<dt><a class="reference internal" href="topics/shell.html"><span class="doc">Scrapy shell</span></a></dt><dd><p>Test your extraction code in an interactive environment.</p>
+</dd>
+<dt><a class="reference internal" href="topics/items.html"><span class="doc">Items</span></a></dt><dd><p>Define the data you want to scrape.</p>
+</dd>
+<dt><a class="reference internal" href="topics/loaders.html"><span class="doc">Item Loaders</span></a></dt><dd><p>Populate your items with the extracted data.</p>
+</dd>
+<dt><a class="reference internal" href="topics/item-pipeline.html"><span class="doc">Item Pipeline</span></a></dt><dd><p>Post-process and store your scraped data.</p>
+</dd>
+<dt><a class="reference internal" href="topics/feed-exports.html"><span class="doc">Feed exports</span></a></dt><dd><p>Output your scraped data using different formats and storages.</p>
+</dd>
+<dt><a class="reference internal" href="topics/request-response.html"><span class="doc">Requests and Responses</span></a></dt><dd><p>Understand the classes used to represent HTTP requests and responses.</p>
+</dd>
+<dt><a class="reference internal" href="topics/link-extractors.html"><span class="doc">Link Extractors</span></a></dt><dd><p>Convenient classes to extract links to follow from pages.</p>
+</dd>
+<dt><a class="reference internal" href="topics/settings.html"><span class="doc">Settings</span></a></dt><dd><p>Learn how to configure Scrapy and see all <a class="hxr-hoverxref hxr-tooltip reference internal" href="topics/settings.html#topics-settings-ref"><span class="std std-ref">available settings</span></a>.</p>
+</dd>
+<dt><a class="reference internal" href="topics/exceptions.html"><span class="doc">Exceptions</span></a></dt><dd><p>See all available exceptions and their meaning.</p>
+</dd>
+</dl>
+</section>
+<section id="built-in-services">
+<h2>Built-in services<a class="headerlink" href="#built-in-services" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<dl class="simple">
+<dt><a class="reference internal" href="topics/logging.html"><span class="doc">Logging</span></a></dt><dd><p>Learn how to use Python’s builtin logging on Scrapy.</p>
+</dd>
+<dt><a class="reference internal" href="topics/stats.html"><span class="doc">Stats Collection</span></a></dt><dd><p>Collect statistics about your scraping crawler.</p>
+</dd>
+<dt><a class="reference internal" href="topics/email.html"><span class="doc">Sending e-mail</span></a></dt><dd><p>Send email notifications when certain events occur.</p>
+</dd>
+<dt><a class="reference internal" href="topics/telnetconsole.html"><span class="doc">Telnet Console</span></a></dt><dd><p>Inspect a running crawler using a built-in Python console.</p>
+</dd>
+</dl>
+</section>
+<section id="solving-specific-problems">
+<h2>Solving specific problems<a class="headerlink" href="#solving-specific-problems" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<dl class="simple">
+<dt><a class="reference internal" href="faq.html"><span class="doc">Frequently Asked Questions</span></a></dt><dd><p>Get answers to most frequently asked questions.</p>
+</dd>
+<dt><a class="reference internal" href="topics/debug.html"><span class="doc">Debugging Spiders</span></a></dt><dd><p>Learn how to debug common problems of your Scrapy spider.</p>
+</dd>
+<dt><a class="reference internal" href="topics/contracts.html"><span class="doc">Spiders Contracts</span></a></dt><dd><p>Learn how to use contracts for testing your spiders.</p>
+</dd>
+<dt><a class="reference internal" href="topics/practices.html"><span class="doc">Common Practices</span></a></dt><dd><p>Get familiar with some Scrapy common practices.</p>
+</dd>
+<dt><a class="reference internal" href="topics/broad-crawls.html"><span class="doc">Broad Crawls</span></a></dt><dd><p>Tune Scrapy for crawling a lot domains in parallel.</p>
+</dd>
+<dt><a class="reference internal" href="topics/developer-tools.html"><span class="doc">Using your browser’s Developer Tools for scraping</span></a></dt><dd><p>Learn how to scrape with your browser’s developer tools.</p>
+</dd>
+<dt><a class="reference internal" href="topics/dynamic-content.html"><span class="doc">Selecting dynamically-loaded content</span></a></dt><dd><p>Read webpage data that is loaded dynamically.</p>
+</dd>
+<dt><a class="reference internal" href="topics/leaks.html"><span class="doc">Debugging memory leaks</span></a></dt><dd><p>Learn how to find and get rid of memory leaks in your crawler.</p>
+</dd>
+<dt><a class="reference internal" href="topics/media-pipeline.html"><span class="doc">Downloading and processing files and images</span></a></dt><dd><p>Download files and/or images associated with your scraped items.</p>
+</dd>
+<dt><a class="reference internal" href="topics/deploy.html"><span class="doc">Deploying Spiders</span></a></dt><dd><p>Deploying your Scrapy spiders and run them in a remote server.</p>
+</dd>
+<dt><a class="reference internal" href="topics/autothrottle.html"><span class="doc">AutoThrottle extension</span></a></dt><dd><p>Adjust crawl rate dynamically based on load.</p>
+</dd>
+<dt><a class="reference internal" href="topics/benchmarking.html"><span class="doc">Benchmarking</span></a></dt><dd><p>Check how Scrapy performs on your hardware.</p>
+</dd>
+<dt><a class="reference internal" href="topics/jobs.html"><span class="doc">Jobs: pausing and resuming crawls</span></a></dt><dd><p>Learn how to pause and resume crawls for large spiders.</p>
+</dd>
+<dt><a class="reference internal" href="topics/coroutines.html"><span class="doc">Coroutines</span></a></dt><dd><p>Use the <a class="reference external" href="https://docs.python.org/3/reference/compound_stmts.html#async" title="(in Python v3.13)"><span class="xref std std-ref">coroutine syntax</span></a>.</p>
+</dd>
+<dt><a class="reference internal" href="topics/asyncio.html"><span class="doc">asyncio</span></a></dt><dd><p>Use <a class="reference external" href="https://docs.python.org/3/library/asyncio.html#module-asyncio" title="(in Python v3.13)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">asyncio</span></code></a> and <a class="reference external" href="https://docs.python.org/3/library/asyncio.html#module-asyncio" title="(in Python v3.13)"><code class="xref py py-mod docutils literal notranslate"><span class="pre">asyncio</span></code></a>-powered libraries.</p>
+</dd>
+</dl>
+</section>
+<section id="extending-scrapy">
+<span id="id2"></span><h2>Extending Scrapy<a class="headerlink" href="#extending-scrapy" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<dl class="simple">
+<dt><a class="reference internal" href="topics/architecture.html"><span class="doc">Architecture overview</span></a></dt><dd><p>Understand the Scrapy architecture.</p>
+</dd>
+<dt><a class="reference internal" href="topics/addons.html"><span class="doc">Add-ons</span></a></dt><dd><p>Enable and configure third-party extensions.</p>
+</dd>
+<dt><a class="reference internal" href="topics/downloader-middleware.html"><span class="doc">Downloader Middleware</span></a></dt><dd><p>Customize how pages get requested and downloaded.</p>
+</dd>
+<dt><a class="reference internal" href="topics/spider-middleware.html"><span class="doc">Spider Middleware</span></a></dt><dd><p>Customize the input and output of your spiders.</p>
+</dd>
+<dt><a class="reference internal" href="topics/extensions.html"><span class="doc">Extensions</span></a></dt><dd><p>Extend Scrapy with your custom functionality</p>
+</dd>
+<dt><a class="reference internal" href="topics/signals.html"><span class="doc">Signals</span></a></dt><dd><p>See all available signals and how to work with them.</p>
+</dd>
+<dt><a class="reference internal" href="topics/scheduler.html"><span class="doc">Scheduler</span></a></dt><dd><p>Understand the scheduler component.</p>
+</dd>
+<dt><a class="reference internal" href="topics/exporters.html"><span class="doc">Item Exporters</span></a></dt><dd><p>Quickly export your scraped items to a file (XML, CSV, etc).</p>
+</dd>
+<dt><a class="reference internal" href="topics/components.html"><span class="doc">Components</span></a></dt><dd><p>Learn the common API and some good practices when building custom Scrapy
+components.</p>
+</dd>
+<dt><a class="reference internal" href="topics/api.html"><span class="doc">Core API</span></a></dt><dd><p>Use it on extensions and middlewares to extend Scrapy functionality.</p>
+</dd>
+</dl>
+</section>
+<section id="all-the-rest">
+<h2>All the rest<a class="headerlink" href="#all-the-rest" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+</div>
+<dl class="simple">
+<dt><a class="reference internal" href="news.html"><span class="doc">Release notes</span></a></dt><dd><p>See what has changed in recent Scrapy versions.</p>
+</dd>
+<dt><a class="reference internal" href="contributing.html"><span class="doc">Contributing to Scrapy</span></a></dt><dd><p>Learn how to contribute to the Scrapy project.</p>
+</dd>
+<dt><a class="reference internal" href="versioning.html"><span class="doc">Versioning and API stability</span></a></dt><dd><p>Understand Scrapy versioning and API stability.</p>
+</dd>
+</dl>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="intro/overview.html" class="btn btn-neutral float-right" title="Scrapy at a glance" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

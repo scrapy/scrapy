@@ -1,0 +1,347 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Components &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=84389e84"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/js/hoverxref.js"></script>
+      <script src="../_static/js/tooltipster.bundle.min.js"></script>
+      <script src="../_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="../_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="../_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Core API" href="api.html" />
+    <link rel="prev" title="Item Exporters" href="exporters.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extensions.html">Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporters.html">Item Exporters</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Components</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#initializing-from-the-crawler">Initializing from the crawler</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#from_crawler"><code class="docutils literal notranslate"><span class="pre">from_crawler()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#settings">Settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#enforcing-requirements">Enforcing requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#api-reference">API reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#scrapy.utils.misc.build_from_crawler"><code class="docutils literal notranslate"><span class="pre">build_from_crawler()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#scrapy.utils.python.global_object_name"><code class="docutils literal notranslate"><span class="pre">global_object_name()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Components</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/topics/components.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="components">
+<span id="topics-components"></span><h1>Components<a class="headerlink" href="#components" title="Link to this heading"></a></h1>
+<p>A Scrapy component is any class whose objects are built using
+<a class="reference internal" href="#scrapy.utils.misc.build_from_crawler" title="scrapy.utils.misc.build_from_crawler"><code class="xref py py-func docutils literal notranslate"><span class="pre">build_from_crawler()</span></code></a>.</p>
+<p>That includes the classes that you may assign to the following settings:</p>
+<ul class="simple">
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-ADDONS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">ADDONS</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-DNS_RESOLVER"><code class="xref std std-setting docutils literal notranslate"><span class="pre">DNS_RESOLVER</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-DOWNLOAD_HANDLERS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">DOWNLOAD_HANDLERS</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-DOWNLOADER_CLIENTCONTEXTFACTORY"><code class="xref std std-setting docutils literal notranslate"><span class="pre">DOWNLOADER_CLIENTCONTEXTFACTORY</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-DOWNLOADER_MIDDLEWARES"><code class="xref std std-setting docutils literal notranslate"><span class="pre">DOWNLOADER_MIDDLEWARES</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-DUPEFILTER_CLASS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">DUPEFILTER_CLASS</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-EXTENSIONS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">EXTENSIONS</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="feed-exports.html#std-setting-FEED_EXPORTERS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORTERS</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="feed-exports.html#std-setting-FEED_STORAGES"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_STORAGES</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-ITEM_PIPELINES"><code class="xref std std-setting docutils literal notranslate"><span class="pre">ITEM_PIPELINES</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-SCHEDULER"><code class="xref std std-setting docutils literal notranslate"><span class="pre">SCHEDULER</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-SCHEDULER_DISK_QUEUE"><code class="xref std std-setting docutils literal notranslate"><span class="pre">SCHEDULER_DISK_QUEUE</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-SCHEDULER_MEMORY_QUEUE"><code class="xref std std-setting docutils literal notranslate"><span class="pre">SCHEDULER_MEMORY_QUEUE</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-SCHEDULER_PRIORITY_QUEUE"><code class="xref std std-setting docutils literal notranslate"><span class="pre">SCHEDULER_PRIORITY_QUEUE</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-SPIDER_MIDDLEWARES"><code class="xref std std-setting docutils literal notranslate"><span class="pre">SPIDER_MIDDLEWARES</span></code></a></p></li>
+</ul>
+<p>Third-party Scrapy components may also let you define additional Scrapy
+components, usually configurable through <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#topics-settings"><span class="std std-ref">settings</span></a>, to
+modify their behavior.</p>
+<section id="initializing-from-the-crawler">
+<span id="from-crawler"></span><h2>Initializing from the crawler<a class="headerlink" href="#initializing-from-the-crawler" title="Link to this heading"></a></h2>
+<p>Any Scrapy component may optionally define the following class method:</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="from_crawler">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_crawler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crawler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="api.html#scrapy.crawler.Crawler" title="scrapy.crawler.Crawler"><span class="pre">scrapy.crawler.Crawler</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#from_crawler" title="Link to this definition"></a></dt>
+<dd><p>Return an instance of the component based on <em>crawler</em>.</p>
+<p><em>args</em> and <em>kwargs</em> are component-specific arguments that some components
+receive. However, most components do not get any arguments, and instead
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="#component-settings"><span class="std std-ref">use settings</span></a>.</p>
+<p>If a component class defines this method, this class method is called to
+create any instance of the component.</p>
+<p>The <em>crawler</em> object provides access to all Scrapy core components like
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#topics-settings"><span class="std std-ref">settings</span></a> and <a class="hxr-hoverxref hxr-tooltip reference internal" href="signals.html#topics-signals"><span class="std std-ref">signals</span></a>,
+allowing the component to access them and hook its functionality into
+Scrapy.</p>
+</dd></dl>
+
+</section>
+<section id="settings">
+<span id="component-settings"></span><h2>Settings<a class="headerlink" href="#settings" title="Link to this heading"></a></h2>
+<p>Components can be configured through <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#topics-settings"><span class="std std-ref">settings</span></a>.</p>
+<p>Components can read any setting from the
+<a class="reference internal" href="api.html#scrapy.crawler.Crawler.settings" title="scrapy.crawler.Crawler.settings"><code class="xref py py-attr docutils literal notranslate"><span class="pre">settings</span></code></a> attribute of the
+<a class="reference internal" href="api.html#scrapy.crawler.Crawler" title="scrapy.crawler.Crawler"><code class="xref py py-class docutils literal notranslate"><span class="pre">Crawler</span></code></a> object they can <a class="hxr-hoverxref hxr-tooltip reference internal" href="#from-crawler"><span class="std std-ref">get for initialization</span></a>. That includes both built-in and custom settings.</p>
+<p>For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyExtension</span><span class="p">:</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_crawler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">crawler</span><span class="p">):</span>
+        <span class="n">settings</span> <span class="o">=</span> <span class="n">crawler</span><span class="o">.</span><span class="n">settings</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">getbool</span><span class="p">(</span><span class="s2">&quot;LOG_ENABLED&quot;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_is_enabled</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">log_is_enabled</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;log is enabled!&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Components do not need to declare their custom settings programmatically.
+However, they should document them, so that users know they exist and how to
+use them.</p>
+<p>It is a good practice to prefix custom settings with the name of the component,
+to avoid collisions with custom settings of other existing (or future)
+components. For example, an extension called <code class="docutils literal notranslate"><span class="pre">WarcCaching</span></code> could prefix its
+custom settings with <code class="docutils literal notranslate"><span class="pre">WARC_CACHING_</span></code>.</p>
+<p>Another good practice, mainly for components meant for <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#component-priority-dictionaries"><span class="std std-ref">component priority
+dictionaries</span></a>, is to provide a boolean setting
+called <code class="docutils literal notranslate"><span class="pre">&lt;PREFIX&gt;_ENABLED</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">WARC_CACHING_ENABLED</span></code>) to allow toggling
+that component on and off without changing the component priority dictionary
+setting. You can usually check the value of such a setting during
+initialization, and if <code class="docutils literal notranslate"><span class="pre">False</span></code>, raise
+<a class="reference internal" href="exceptions.html#scrapy.exceptions.NotConfigured" title="scrapy.exceptions.NotConfigured"><code class="xref py py-exc docutils literal notranslate"><span class="pre">NotConfigured</span></code></a>.</p>
+<p>When choosing a name for a custom setting, it is also a good idea to have a
+look at the names of <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#topics-settings-ref"><span class="std std-ref">built-in settings</span></a>, to try to
+maintain consistency with them.</p>
+</section>
+<section id="enforcing-requirements">
+<span id="enforce-component-requirements"></span><h2>Enforcing requirements<a class="headerlink" href="#enforcing-requirements" title="Link to this heading"></a></h2>
+<p>Sometimes, your components may only be intended to work under certain
+conditions. For example, they may require a minimum version of Scrapy to work as
+intended, or they may require certain settings to have specific values.</p>
+<p>In addition to describing those conditions in the documentation of your
+component, it is a good practice to raise an exception from the <code class="docutils literal notranslate"><span class="pre">__init__</span></code>
+method of your component if those conditions are not met at run time.</p>
+<p>In the case of <a class="hxr-hoverxref hxr-tooltip reference internal" href="downloader-middleware.html#topics-downloader-middleware"><span class="std std-ref">downloader middlewares</span></a>,
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="extensions.html#topics-extensions"><span class="std std-ref">extensions</span></a>, <a class="hxr-hoverxref hxr-tooltip reference internal" href="item-pipeline.html#topics-item-pipeline"><span class="std std-ref">item pipelines</span></a>, and <a class="hxr-hoverxref hxr-tooltip reference internal" href="spider-middleware.html#topics-spider-middleware"><span class="std std-ref">spider middlewares</span></a>, you should raise
+<a class="reference internal" href="exceptions.html#scrapy.exceptions.NotConfigured" title="scrapy.exceptions.NotConfigured"><code class="xref py py-exc docutils literal notranslate"><span class="pre">NotConfigured</span></code></a>, passing a description of the issue as
+a parameter to the exception so that it is printed in the logs, for the user to
+see. For other components, feel free to raise whatever other exception feels
+right to you; for example, <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.13)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">RuntimeError</span></code></a> would make sense for a Scrapy
+version mismatch, while <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.13)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">ValueError</span></code></a> may be better if the issue is the
+value of a setting.</p>
+<p>If your requirement is a minimum Scrapy version, you may use
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">scrapy.__version__</span></code> to enforce your requirement. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">packaging.version</span> <span class="kn">import</span> <span class="n">parse</span> <span class="k">as</span> <span class="n">parse_version</span>
+
+<span class="kn">import</span> <span class="nn">scrapy</span>
+
+
+<span class="k">class</span> <span class="nc">MyComponent</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">parse_version</span><span class="p">(</span><span class="n">scrapy</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">parse_version</span><span class="p">(</span><span class="s2">&quot;2.7&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">MyComponent</span><span class="o">.</span><span class="vm">__qualname__</span><span class="si">}</span><span class="s2"> requires Scrapy 2.7 or &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;later, which allow defining the process_spider_output &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;method of spider middlewares as an asynchronous &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;generator.&quot;</span>
+            <span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="api-reference">
+<h2>API reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h2>
+<p>The following function can be used to create an instance of a component class:</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="scrapy.utils.misc.build_from_crawler">
+<span class="sig-prename descclassname"><span class="pre">scrapy.utils.misc.</span></span><span class="sig-name descname"><span class="pre">build_from_crawler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">objcls</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#type" title="(in Python v3.13)"><span class="pre">type</span></a><span class="p"><span class="pre">[</span></span><span class="pre">T</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crawler</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="api.html#scrapy.crawler.Crawler" title="scrapy.crawler.Crawler"><span class="pre">Crawler</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">T</span></span></span><a class="reference internal" href="../_modules/scrapy/utils/misc.html#build_from_crawler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.utils.misc.build_from_crawler" title="Link to this definition"></a></dt>
+<dd><p>Construct a class instance using its <code class="docutils literal notranslate"><span class="pre">from_crawler</span></code> or <code class="docutils literal notranslate"><span class="pre">from_settings</span></code> constructor.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.12.</span></p>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">*args</span></code> and <code class="docutils literal notranslate"><span class="pre">**kwargs</span></code> are forwarded to the constructor.</p>
+<p>Raises <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> if the resulting instance is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd></dl>
+
+<p>The following function can also be useful when implementing a component, to
+report the import path of the component class, e.g. when reporting problems:</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="scrapy.utils.python.global_object_name">
+<span class="sig-prename descclassname"><span class="pre">scrapy.utils.python.</span></span><span class="sig-name descname"><span class="pre">global_object_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/scrapy/utils/python.html#global_object_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.utils.python.global_object_name" title="Link to this definition"></a></dt>
+<dd><p>Return the full import path of the given object.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">scrapy</span> <span class="kn">import</span> <span class="n">Request</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">global_object_name</span><span class="p">(</span><span class="n">Request</span><span class="p">)</span>
+<span class="go">&#39;scrapy.http.request.Request&#39;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">global_object_name</span><span class="p">(</span><span class="n">Request</span><span class="o">.</span><span class="n">replace</span><span class="p">)</span>
+<span class="go">&#39;scrapy.http.request.Request.replace&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="exporters.html" class="btn btn-neutral float-left" title="Item Exporters" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="Core API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

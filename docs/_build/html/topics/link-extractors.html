@@ -1,0 +1,350 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Link Extractors &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=84389e84"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/js/hoverxref.js"></script>
+      <script src="../_static/js/tooltipster.bundle.min.js"></script>
+      <script src="../_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="../_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="../_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Settings" href="settings.html" />
+    <link rel="prev" title="Requests and Responses" href="request-response.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Link Extractors</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-scrapy.linkextractors">Link extractor reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-scrapy.linkextractors.lxmlhtml">LxmlLinkExtractor</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor"><code class="docutils literal notranslate"><span class="pre">LxmlLinkExtractor</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-scrapy.link">Link</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.link.Link"><code class="docutils literal notranslate"><span class="pre">Link</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extensions.html">Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Link Extractors</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/topics/link-extractors.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="link-extractors">
+<span id="topics-link-extractors"></span><h1>Link Extractors<a class="headerlink" href="#link-extractors" title="Link to this heading"></a></h1>
+<p>A link extractor is an object that extracts links from responses.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">__init__</span></code> method of
+<a class="reference internal" href="#scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor" title="scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor"><code class="xref py py-class docutils literal notranslate"><span class="pre">LxmlLinkExtractor</span></code></a> takes settings that
+determine which links may be extracted. <a class="reference internal" href="#scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor.extract_links" title="scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor.extract_links"><code class="xref py py-class docutils literal notranslate"><span class="pre">LxmlLinkExtractor.extract_links</span></code></a> returns a
+list of matching <a class="reference internal" href="#scrapy.link.Link" title="scrapy.link.Link"><code class="xref py py-class docutils literal notranslate"><span class="pre">Link</span></code></a> objects from a
+<a class="reference internal" href="request-response.html#scrapy.http.Response" title="scrapy.http.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a> object.</p>
+<p>Link extractors are used in <a class="reference internal" href="spiders.html#scrapy.spiders.CrawlSpider" title="scrapy.spiders.CrawlSpider"><code class="xref py py-class docutils literal notranslate"><span class="pre">CrawlSpider</span></code></a> spiders
+through a set of <a class="reference internal" href="spiders.html#scrapy.spiders.Rule" title="scrapy.spiders.Rule"><code class="xref py py-class docutils literal notranslate"><span class="pre">Rule</span></code></a> objects.</p>
+<p>You can also use link extractors in regular spiders. For example, you can instantiate
+<a class="reference internal" href="#scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor" title="scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor"><code class="xref py py-class docutils literal notranslate"><span class="pre">LinkExtractor</span></code></a> into a class
+variable in your spider, and use it from your spider callbacks:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">link</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">link_extractor</span><span class="o">.</span><span class="n">extract_links</span><span class="p">(</span><span class="n">response</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">Request</span><span class="p">(</span><span class="n">link</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parse</span><span class="p">)</span>
+</pre></div>
+</div>
+<section id="module-scrapy.linkextractors">
+<span id="link-extractor-reference"></span><span id="topics-link-extractors-ref"></span><h2>Link extractor reference<a class="headerlink" href="#module-scrapy.linkextractors" title="Link to this heading"></a></h2>
+<p>The link extractor class is
+<a class="reference internal" href="#scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor" title="scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor"><code class="xref py py-class docutils literal notranslate"><span class="pre">scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor</span></code></a>. For convenience it
+can also be imported as <code class="docutils literal notranslate"><span class="pre">scrapy.linkextractors.LinkExtractor</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scrapy.linkextractors</span> <span class="kn">import</span> <span class="n">LinkExtractor</span>
+</pre></div>
+</div>
+<section id="module-scrapy.linkextractors.lxmlhtml">
+<span id="lxmllinkextractor"></span><h3>LxmlLinkExtractor<a class="headerlink" href="#module-scrapy.linkextractors.lxmlhtml" title="Link to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.linkextractors.lxmlhtml.</span></span><span class="sig-name descname"><span class="pre">LxmlLinkExtractor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">allow</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deny</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_domains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deny_domains</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deny_extensions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restrict_xpaths</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restrict_css</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('a',</span> <span class="pre">'area')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attrs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">('href',)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">canonicalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unique</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">process_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/scrapy/linkextractors/lxmlhtml.html#LxmlLinkExtractor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor" title="Link to this definition"></a></dt>
+<dd><p>LxmlLinkExtractor is the recommended link extractor with handy filtering
+options. It is implemented using lxml’s robust HTMLParser.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>allow</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – a single regular expression (or list of regular expressions)
+that the (absolute) urls must match in order to be extracted. If not
+given (or empty), it will match all links.</p></li>
+<li><p><strong>deny</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – a single regular expression (or list of regular expressions)
+that the (absolute) urls must match in order to be excluded (i.e. not
+extracted). It has precedence over the <code class="docutils literal notranslate"><span class="pre">allow</span></code> parameter. If not
+given (or empty) it won’t exclude any links.</p></li>
+<li><p><strong>allow_domains</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – a single value or a list of string containing
+domains which will be considered for extracting the links</p></li>
+<li><p><strong>deny_domains</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – a single value or a list of strings containing
+domains which won’t be considered for extracting the links</p></li>
+<li><p><strong>deny_extensions</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – <p>a single value or list of strings containing
+extensions that should be ignored when extracting links.
+If not given, it will default to
+<code class="xref py py-data docutils literal notranslate"><span class="pre">scrapy.linkextractors.IGNORED_EXTENSIONS</span></code>.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 2.0: </span><code class="xref py py-data docutils literal notranslate"><span class="pre">IGNORED_EXTENSIONS</span></code> now includes
+<code class="docutils literal notranslate"><span class="pre">7z</span></code>, <code class="docutils literal notranslate"><span class="pre">7zip</span></code>, <code class="docutils literal notranslate"><span class="pre">apk</span></code>, <code class="docutils literal notranslate"><span class="pre">bz2</span></code>, <code class="docutils literal notranslate"><span class="pre">cdr</span></code>, <code class="docutils literal notranslate"><span class="pre">dmg</span></code>, <code class="docutils literal notranslate"><span class="pre">ico</span></code>,
+<code class="docutils literal notranslate"><span class="pre">iso</span></code>, <code class="docutils literal notranslate"><span class="pre">tar</span></code>, <code class="docutils literal notranslate"><span class="pre">tar.gz</span></code>, <code class="docutils literal notranslate"><span class="pre">webm</span></code>, and <code class="docutils literal notranslate"><span class="pre">xz</span></code>.</p>
+</div>
+</p></li>
+<li><p><strong>restrict_xpaths</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – is an XPath (or list of XPath’s) which defines
+regions inside the response where links should be extracted from.
+If given, only the text selected by those XPath will be scanned for
+links.</p></li>
+<li><p><strong>restrict_css</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – a CSS selector (or list of selectors) which defines
+regions inside the response where links should be extracted from.
+Has the same behaviour as <code class="docutils literal notranslate"><span class="pre">restrict_xpaths</span></code>.</p></li>
+<li><p><strong>restrict_text</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – a single regular expression (or list of regular expressions)
+that the link’s text must match in order to be extracted. If not
+given (or empty), it will match all links. If a list of regular expressions is
+given, the link will be extracted if it matches at least one.</p></li>
+<li><p><strong>tags</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – a tag or a list of tags to consider when extracting links.
+Defaults to <code class="docutils literal notranslate"><span class="pre">('a',</span> <span class="pre">'area')</span></code>.</p></li>
+<li><p><strong>attrs</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><em>list</em></a>) – an attribute or list of attributes which should be considered when looking
+for links to extract (only for those tags specified in the <code class="docutils literal notranslate"><span class="pre">tags</span></code>
+parameter). Defaults to <code class="docutils literal notranslate"><span class="pre">('href',)</span></code></p></li>
+<li><p><strong>canonicalize</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – canonicalize each extracted url (using
+w3lib.url.canonicalize_url). Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.
+Note that canonicalize_url is meant for duplicate checking;
+it can change the URL visible at server side, so the response can be
+different for requests with canonicalized and raw URLs. If you’re
+using LinkExtractor to follow links it is more robust to
+keep the default <code class="docutils literal notranslate"><span class="pre">canonicalize=False</span></code>.</p></li>
+<li><p><strong>unique</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – whether duplicate filtering should be applied to extracted
+links.</p></li>
+<li><p><strong>process_value</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><em>collections.abc.Callable</em></a>) – <p>a function which receives each value extracted from
+the tag and attributes scanned and can modify the value and return a
+new one, or return <code class="docutils literal notranslate"><span class="pre">None</span></code> to ignore the link altogether. If not
+given, <code class="docutils literal notranslate"><span class="pre">process_value</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">lambda</span> <span class="pre">x:</span> <span class="pre">x</span></code>.</p>
+<p>For example, to extract links from this code:</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;javascript:goToPage(&#39;../other/page.html&#39;); return false&quot;</span><span class="p">&gt;</span>Link text<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+</pre></div>
+</div>
+<p>You can use the following function in <code class="docutils literal notranslate"><span class="pre">process_value</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">process_value</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;javascript:goToPage\(&#39;(.*?)&#39;&quot;</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</p></li>
+<li><p><strong>strip</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – whether to strip whitespaces from extracted attributes.
+According to HTML5 standard, leading and trailing whitespaces
+must be stripped from <code class="docutils literal notranslate"><span class="pre">href</span></code> attributes of <code class="docutils literal notranslate"><span class="pre">&lt;a&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;area&gt;</span></code>
+and many other elements, <code class="docutils literal notranslate"><span class="pre">src</span></code> attribute of <code class="docutils literal notranslate"><span class="pre">&lt;img&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;iframe&gt;</span></code>
+elements, etc., so LinkExtractor strips space chars by default.
+Set <code class="docutils literal notranslate"><span class="pre">strip=False</span></code> to turn it off (e.g. if you’re extracting urls
+from elements or attributes which allow leading/trailing whitespaces).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor.extract_links">
+<span class="sig-name descname"><span class="pre">extract_links</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="request-response.html#scrapy.http.TextResponse" title="scrapy.http.TextResponse"><span class="pre">TextResponse</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#scrapy.link.Link" title="scrapy.link.Link"><span class="pre">Link</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/scrapy/linkextractors/lxmlhtml.html#LxmlLinkExtractor.extract_links"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor.extract_links" title="Link to this definition"></a></dt>
+<dd><p>Returns a list of <a class="reference internal" href="#scrapy.link.Link" title="scrapy.link.Link"><code class="xref py py-class docutils literal notranslate"><span class="pre">Link</span></code></a> objects from the
+specified <a class="reference internal" href="request-response.html#scrapy.http.Response" title="scrapy.http.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">response</span></code></a>.</p>
+<p>Only links that match the settings passed to the <code class="docutils literal notranslate"><span class="pre">__init__</span></code> method of
+the link extractor are returned.</p>
+<p>Duplicate links are omitted if the <code class="docutils literal notranslate"><span class="pre">unique</span></code> attribute is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+otherwise they are returned.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-scrapy.link">
+<span id="link"></span><h3>Link<a class="headerlink" href="#module-scrapy.link" title="Link to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.link.Link">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.link.</span></span><span class="sig-name descname"><span class="pre">Link</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fragment</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nofollow</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/scrapy/link.html#Link"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.link.Link" title="Link to this definition"></a></dt>
+<dd><p>Link objects represent an extracted link by the LinkExtractor.</p>
+<p>Using the anchor tag sample below to illustrate the parameters:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s2">&quot;https://example.com/nofollow.html#foo&quot;</span> <span class="n">rel</span><span class="o">=</span><span class="s2">&quot;nofollow&quot;</span><span class="o">&gt;</span><span class="n">Dont</span> <span class="n">follow</span> <span class="n">this</span> <span class="n">one</span><span class="o">&lt;/</span><span class="n">a</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>url</strong> – the absolute url being linked to in the anchor tag.
+From the sample, this is <code class="docutils literal notranslate"><span class="pre">https://example.com/nofollow.html</span></code>.</p></li>
+<li><p><strong>text</strong> – the text in the anchor tag. From the sample, this is <code class="docutils literal notranslate"><span class="pre">Dont</span> <span class="pre">follow</span> <span class="pre">this</span> <span class="pre">one</span></code>.</p></li>
+<li><p><strong>fragment</strong> – the part of the url after the hash symbol. From the sample, this is <code class="docutils literal notranslate"><span class="pre">foo</span></code>.</p></li>
+<li><p><strong>nofollow</strong> – an indication of the presence or absence of a nofollow value in the <code class="docutils literal notranslate"><span class="pre">rel</span></code> attribute
+of the anchor tag.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="request-response.html" class="btn btn-neutral float-left" title="Requests and Responses" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="settings.html" class="btn btn-neutral float-right" title="Settings" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

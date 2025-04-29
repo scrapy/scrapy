@@ -1,0 +1,924 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>scrapy.settings &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="../../_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="../../_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=84389e84"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/js/hoverxref.js"></script>
+      <script src="../../_static/js/tooltipster.bundle.min.js"></script>
+      <script src="../../_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="../../_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="../../_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/extensions.html">Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../topics/api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">scrapy.settings</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for scrapy.settings</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">MutableMapping</span>
+<span class="kn">from</span> <span class="nn">importlib</span> <span class="kn">import</span> <span class="n">import_module</span>
+<span class="kn">from</span> <span class="nn">pprint</span> <span class="kn">import</span> <span class="n">pformat</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">from</span> <span class="nn">scrapy.settings</span> <span class="kn">import</span> <span class="n">default_settings</span>
+<span class="kn">from</span> <span class="nn">scrapy.utils.misc</span> <span class="kn">import</span> <span class="n">load_object</span>
+
+<span class="c1"># The key types are restricted in BaseSettings._get_key() to ones supported by JSON,</span>
+<span class="c1"># see https://github.com/scrapy/scrapy/issues/5383.</span>
+<span class="n">_SettingsKeyT</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">ModuleType</span>
+
+    <span class="c1"># https://github.com/python/typing/issues/445#issuecomment-1131458824</span>
+    <span class="kn">from</span> <span class="nn">_typeshed</span> <span class="kn">import</span> <span class="n">SupportsItems</span>
+
+    <span class="c1"># typing.Self requires Python 3.11</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Self</span>
+
+    <span class="n">_SettingsInputT</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">SupportsItems</span><span class="p">[</span><span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+
+
+<span class="n">SETTINGS_PRIORITIES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;command&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="s2">&quot;addon&quot;</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span>
+    <span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s2">&quot;spider&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span>
+    <span class="s2">&quot;cmdline&quot;</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="get_settings_priority">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.get_settings_priority">[docs]</a>
+<span class="k">def</span> <span class="nf">get_settings_priority</span><span class="p">(</span><span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Small helper function that looks up a given string priority in the</span>
+<span class="sd">    :attr:`~scrapy.settings.SETTINGS_PRIORITIES` dictionary and returns its</span>
+<span class="sd">    numerical value, or directly returns a given numerical priority.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">priority</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">SETTINGS_PRIORITIES</span><span class="p">[</span><span class="n">priority</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">priority</span></div>
+
+
+
+<span class="k">class</span> <span class="nc">SettingsAttribute</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for storing data related to settings attributes.</span>
+
+<span class="sd">    This class is intended for internal usage, you should try Settings class</span>
+<span class="sd">    for settings configuration, not this one.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">priority</span><span class="p">:</span> <span class="nb">int</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">BaseSettings</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">priority</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">maxpriority</span><span class="p">(),</span> <span class="n">priority</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">priority</span> <span class="o">=</span> <span class="n">priority</span>
+
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets value if priority is higher or equal than current priority.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">priority</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">priority</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">BaseSettings</span><span class="p">):</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">BaseSettings</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">priority</span> <span class="o">=</span> <span class="n">priority</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;SettingsAttribute value=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="si">!r}</span><span class="s2"> priority=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">priority</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
+
+
+<div class="viewcode-block" id="BaseSettings">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings">[docs]</a>
+<span class="k">class</span> <span class="nc">BaseSettings</span><span class="p">(</span><span class="n">MutableMapping</span><span class="p">[</span><span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">Any</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Instances of this class behave like dictionaries, but store priorities</span>
+<span class="sd">    along with their ``(key, value)`` pairs, and can be frozen (i.e. marked</span>
+<span class="sd">    immutable).</span>
+
+<span class="sd">    Key-value entries can be passed on initialization with the ``values``</span>
+<span class="sd">    argument, and they would take the ``priority`` level (unless ``values`` is</span>
+<span class="sd">    already an instance of :class:`~scrapy.settings.BaseSettings`, in which</span>
+<span class="sd">    case the existing priority levels will be kept).  If the ``priority``</span>
+<span class="sd">    argument is a string, the priority name will be looked up in</span>
+<span class="sd">    :attr:`~scrapy.settings.SETTINGS_PRIORITIES`. Otherwise, a specific integer</span>
+<span class="sd">    should be provided.</span>
+
+<span class="sd">    Once the object is created, new settings can be loaded or updated with the</span>
+<span class="sd">    :meth:`~scrapy.settings.BaseSettings.set` method, and can be accessed with</span>
+<span class="sd">    the square bracket notation of dictionaries, or with the</span>
+<span class="sd">    :meth:`~scrapy.settings.BaseSettings.get` method of the instance and its</span>
+<span class="sd">    value conversion variants. When requesting a stored key, the value with the</span>
+<span class="sd">    highest priority will be retrieved.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">__default</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">_SettingsInputT</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;project&quot;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frozen</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">SettingsAttribute</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">values</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">priority</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">opt_name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">opt_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">opt_name</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+
+    <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span>
+
+<div class="viewcode-block" id="BaseSettings.add_to_list">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.add_to_list">[docs]</a>
+    <span class="k">def</span> <span class="nf">add_to_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Append *item* to the :class:`list` setting with the specified *name*</span>
+<span class="sd">        if *item* is not already in that list.</span>
+
+<span class="sd">        This change is applied regardless of the priority of the *name*</span>
+<span class="sd">        setting. The setting priority is not affected by this change either.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">item</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">value</span><span class="p">,</span> <span class="n">item</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">getpriority</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.remove_from_list">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.remove_from_list">[docs]</a>
+    <span class="k">def</span> <span class="nf">remove_from_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove *item* from the :class:`list` setting with the specified</span>
+<span class="sd">        *name*.</span>
+
+<span class="sd">        If *item* is missing, raise :exc:`ValueError`.</span>
+
+<span class="sd">        This change is applied regardless of the priority of the *name*</span>
+<span class="sd">        setting. The setting priority is not affected by this change either.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">value</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">item</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">item</span><span class="si">!r}</span><span class="s2"> not found in the </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> setting (</span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">).&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span> <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="n">item</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">getpriority</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.get">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.get">[docs]</a>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a setting value without affecting its original type.</span>
+
+<span class="sd">        :param name: the setting name</span>
+<span class="sd">        :type name: str</span>
+
+<span class="sd">        :param default: the value to return if no setting is found</span>
+<span class="sd">        :type default: object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.getbool">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.getbool">[docs]</a>
+    <span class="k">def</span> <span class="nf">getbool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a setting value as a boolean.</span>
+
+<span class="sd">        ``1``, ``&#39;1&#39;``, `True`` and ``&#39;True&#39;`` return ``True``,</span>
+<span class="sd">        while ``0``, ``&#39;0&#39;``, ``False``, ``&#39;False&#39;`` and ``None`` return ``False``.</span>
+
+<span class="sd">        For example, settings populated through environment variables set to</span>
+<span class="sd">        ``&#39;0&#39;`` will return ``False`` when using this method.</span>
+
+<span class="sd">        :param name: the setting name</span>
+<span class="sd">        :type name: str</span>
+
+<span class="sd">        :param default: the value to return if no setting is found</span>
+<span class="sd">        :type default: object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">got</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">got</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">got</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;True&quot;</span><span class="p">,</span> <span class="s2">&quot;true&quot;</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">got</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;False&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Supported values for boolean settings &quot;</span>
+                <span class="s2">&quot;are 0/1, True/False, &#39;0&#39;/&#39;1&#39;, &quot;</span>
+                <span class="s2">&quot;&#39;True&#39;/&#39;False&#39; and &#39;true&#39;/&#39;false&#39;&quot;</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.getint">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.getint">[docs]</a>
+    <span class="k">def</span> <span class="nf">getint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a setting value as an int.</span>
+
+<span class="sd">        :param name: the setting name</span>
+<span class="sd">        :type name: str</span>
+
+<span class="sd">        :param default: the value to return if no setting is found</span>
+<span class="sd">        :type default: object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.getfloat">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.getfloat">[docs]</a>
+    <span class="k">def</span> <span class="nf">getfloat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a setting value as a float.</span>
+
+<span class="sd">        :param name: the setting name</span>
+<span class="sd">        :type name: str</span>
+
+<span class="sd">        :param default: the value to return if no setting is found</span>
+<span class="sd">        :type default: object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.getlist">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.getlist">[docs]</a>
+    <span class="k">def</span> <span class="nf">getlist</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a setting value as a list. If the setting original type is a list,</span>
+<span class="sd">        a copy of it will be returned. If it&#39;s a string it will be split by</span>
+<span class="sd">        &quot;,&quot;. If it is an empty string, an empty list will be returned.</span>
+
+<span class="sd">        For example, settings populated through environment variables set to</span>
+<span class="sd">        ``&#39;one,two&#39;`` will return a list [&#39;one&#39;, &#39;two&#39;] when using this method.</span>
+
+<span class="sd">        :param name: the setting name</span>
+<span class="sd">        :type name: str</span>
+
+<span class="sd">        :param default: the value to return if no setting is found</span>
+<span class="sd">        :type default: object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default</span> <span class="ow">or</span> <span class="p">[])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.getdict">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.getdict">[docs]</a>
+    <span class="k">def</span> <span class="nf">getdict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a setting value as a dictionary. If the setting original type is a</span>
+<span class="sd">        dictionary, a copy of it will be returned. If it is a string it will be</span>
+<span class="sd">        evaluated as a JSON dictionary. In the case that it is a</span>
+<span class="sd">        :class:`~scrapy.settings.BaseSettings` instance itself, it will be</span>
+<span class="sd">        converted to a dictionary, containing all its current settings values</span>
+<span class="sd">        as they would be returned by :meth:`~scrapy.settings.BaseSettings.get`,</span>
+<span class="sd">        and losing all information about priority and mutability.</span>
+
+<span class="sd">        :param name: the setting name</span>
+<span class="sd">        :type name: str</span>
+
+<span class="sd">        :param default: the value to return if no setting is found</span>
+<span class="sd">        :type default: object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default</span> <span class="ow">or</span> <span class="p">{})</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.getdictorlist">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.getdictorlist">[docs]</a>
+    <span class="k">def</span> <span class="nf">getdictorlist</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span>
+        <span class="n">default</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a setting value as either a :class:`dict` or a :class:`list`.</span>
+
+<span class="sd">        If the setting is already a dict or a list, a copy of it will be</span>
+<span class="sd">        returned.</span>
+
+<span class="sd">        If it is a string it will be evaluated as JSON, or as a comma-separated</span>
+<span class="sd">        list of strings as a fallback.</span>
+
+<span class="sd">        For example, settings populated from the command line will return:</span>
+
+<span class="sd">        -   ``{&#39;key1&#39;: &#39;value1&#39;, &#39;key2&#39;: &#39;value2&#39;}`` if set to</span>
+<span class="sd">            ``&#39;{&quot;key1&quot;: &quot;value1&quot;, &quot;key2&quot;: &quot;value2&quot;}&#39;``</span>
+
+<span class="sd">        -   ``[&#39;one&#39;, &#39;two&#39;]`` if set to ``&#39;[&quot;one&quot;, &quot;two&quot;]&#39;`` or ``&#39;one,two&#39;``</span>
+
+<span class="sd">        :param name: the setting name</span>
+<span class="sd">        :type name: string</span>
+
+<span class="sd">        :param default: the value to return if no setting is found</span>
+<span class="sd">        :type default: any</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">value_loaded</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+                <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value_loaded</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span>
+                <span class="k">return</span> <span class="n">value_loaded</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.getwithbase">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.getwithbase">[docs]</a>
+    <span class="k">def</span> <span class="nf">getwithbase</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseSettings</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a composition of a dictionary-like setting and its `_BASE`</span>
+<span class="sd">        counterpart.</span>
+
+<span class="sd">        :param name: name of the dictionary-like setting</span>
+<span class="sd">        :type name: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Base setting key must be a string, got </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">compbs</span> <span class="o">=</span> <span class="n">BaseSettings</span><span class="p">()</span>
+        <span class="n">compbs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_BASE&quot;</span><span class="p">])</span>
+        <span class="n">compbs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">compbs</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.getpriority">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.getpriority">[docs]</a>
+    <span class="k">def</span> <span class="nf">getpriority</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the current numerical priority value of a setting, or ``None`` if</span>
+<span class="sd">        the given ``name`` does not exist.</span>
+
+<span class="sd">        :param name: the setting name</span>
+<span class="sd">        :type name: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">priority</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.maxpriority">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.maxpriority">[docs]</a>
+    <span class="k">def</span> <span class="nf">maxpriority</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the numerical value of the highest priority present throughout</span>
+<span class="sd">        all settings, or the numerical value for ``default`` from</span>
+<span class="sd">        :attr:`~scrapy.settings.SETTINGS_PRIORITIES` if there are no settings</span>
+<span class="sd">        stored.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">cast</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">getpriority</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">get_settings_priority</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.replace_in_component_priority_dict">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.replace_in_component_priority_dict">[docs]</a>
+    <span class="k">def</span> <span class="nf">replace_in_component_priority_dict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span>
+        <span class="n">old_cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span>
+        <span class="n">new_cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span>
+        <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Replace *old_cls* with *new_cls* in the *name* :ref:`component</span>
+<span class="sd">        priority dictionary &lt;component-priority-dictionaries&gt;`.</span>
+
+<span class="sd">        If *old_cls* is missing, or has :data:`None` as value, :exc:`KeyError`</span>
+<span class="sd">        is raised.</span>
+
+<span class="sd">        If *old_cls* was present as an import string, even more than once,</span>
+<span class="sd">        those keys are dropped and replaced by *new_cls*.</span>
+
+<span class="sd">        If *priority* is specified, that is the value assigned to *new_cls* in</span>
+<span class="sd">        the component priority dictionary. Otherwise, the value of *old_cls* is</span>
+<span class="sd">        used. If *old_cls* was present multiple times (possible with import</span>
+<span class="sd">        strings) with different values, the value assigned to *new_cls* is one</span>
+<span class="sd">        of them, with no guarantee about which one it is.</span>
+
+<span class="sd">        This change is applied regardless of the priority of the *name*</span>
+<span class="sd">        setting. The setting priority is not affected by this change either.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">component_priority_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getdict</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">old_priority</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">cls_or_path</span> <span class="ow">in</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">component_priority_dict</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">load_object</span><span class="p">(</span><span class="n">cls_or_path</span><span class="p">)</span> <span class="o">!=</span> <span class="n">old_cls</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">old_priority</span> <span class="o">:=</span> <span class="n">component_priority_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">cls_or_path</span><span class="p">))</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">break</span>
+        <span class="k">if</span> <span class="n">old_priority</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">old_cls</span><span class="si">}</span><span class="s2"> not found in the </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> setting (</span><span class="si">{</span><span class="n">component_priority_dict</span><span class="si">!r}</span><span class="s2">).&quot;</span>
+            <span class="p">)</span>
+        <span class="n">component_priority_dict</span><span class="p">[</span><span class="n">new_cls</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">old_priority</span> <span class="k">if</span> <span class="n">priority</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">priority</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">component_priority_dict</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">getpriority</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BaseSettings.set">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.set">[docs]</a>
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;project&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Store a key/value attribute with a given priority.</span>
+
+<span class="sd">        Settings should be populated *before* configuring the Crawler object</span>
+<span class="sd">        (through the :meth:`~scrapy.crawler.Crawler.configure` method),</span>
+<span class="sd">        otherwise they won&#39;t have any effect.</span>
+
+<span class="sd">        :param name: the setting name</span>
+<span class="sd">        :type name: str</span>
+
+<span class="sd">        :param value: the value to associate with the setting</span>
+<span class="sd">        :type value: object</span>
+
+<span class="sd">        :param priority: the priority of the setting. Should be a key of</span>
+<span class="sd">            :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer</span>
+<span class="sd">        :type priority: str or int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_assert_mutability</span><span class="p">()</span>
+        <span class="n">priority</span> <span class="o">=</span> <span class="n">get_settings_priority</span><span class="p">(</span><span class="n">priority</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">SettingsAttribute</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">SettingsAttribute</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">priority</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">priority</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.set_in_component_priority_dict">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.set_in_component_priority_dict">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_in_component_priority_dict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span> <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the *cls* component in the *name* :ref:`component priority</span>
+<span class="sd">        dictionary &lt;component-priority-dictionaries&gt;` setting with *priority*.</span>
+
+<span class="sd">        If *cls* already exists, its value is updated.</span>
+
+<span class="sd">        If *cls* was present as an import string, even more than once, those</span>
+<span class="sd">        keys are dropped and replaced by *cls*.</span>
+
+<span class="sd">        This change is applied regardless of the priority of the *name*</span>
+<span class="sd">        setting. The setting priority is not affected by this change either.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">component_priority_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getdict</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">cls_or_path</span> <span class="ow">in</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">component_priority_dict</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cls_or_path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">_cls</span> <span class="o">=</span> <span class="n">load_object</span><span class="p">(</span><span class="n">cls_or_path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">_cls</span> <span class="o">==</span> <span class="bp">cls</span><span class="p">:</span>
+                <span class="k">del</span> <span class="n">component_priority_dict</span><span class="p">[</span><span class="n">cls_or_path</span><span class="p">]</span>
+        <span class="n">component_priority_dict</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span> <span class="o">=</span> <span class="n">priority</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">component_priority_dict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">getpriority</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.setdefault">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.setdefault">[docs]</a>
+    <span class="k">def</span> <span class="nf">setdefault</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span>
+        <span class="n">default</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;project&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="p">,</span> <span class="n">priority</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">default</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">value</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.setdefault_in_component_priority_dict">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.setdefault_in_component_priority_dict">[docs]</a>
+    <span class="k">def</span> <span class="nf">setdefault_in_component_priority_dict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span> <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the *cls* component in the *name* :ref:`component priority</span>
+<span class="sd">        dictionary &lt;component-priority-dictionaries&gt;` setting with *priority*</span>
+<span class="sd">        if not already defined (even as an import string).</span>
+
+<span class="sd">        If *cls* is not already defined, it is set regardless of the priority</span>
+<span class="sd">        of the *name* setting. The setting priority is not affected by this</span>
+<span class="sd">        change either.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">component_priority_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getdict</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">cls_or_path</span> <span class="ow">in</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">component_priority_dict</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">load_object</span><span class="p">(</span><span class="n">cls_or_path</span><span class="p">)</span> <span class="o">==</span> <span class="bp">cls</span><span class="p">:</span>
+                <span class="k">return</span>
+        <span class="n">component_priority_dict</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span> <span class="o">=</span> <span class="n">priority</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">component_priority_dict</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">getpriority</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">setdict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">_SettingsInputT</span><span class="p">,</span> <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;project&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">priority</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BaseSettings.setmodule">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.setmodule">[docs]</a>
+    <span class="k">def</span> <span class="nf">setmodule</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="n">ModuleType</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;project&quot;</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Store settings from a module with a given priority.</span>
+
+<span class="sd">        This is a helper function that calls</span>
+<span class="sd">        :meth:`~scrapy.settings.BaseSettings.set` for every globally declared</span>
+<span class="sd">        uppercase variable of ``module`` with the provided ``priority``.</span>
+
+<span class="sd">        :param module: the module or the path of the module</span>
+<span class="sd">        :type module: types.ModuleType or str</span>
+
+<span class="sd">        :param priority: the priority of the settings. Should be a key of</span>
+<span class="sd">            :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer</span>
+<span class="sd">        :type priority: str or int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_assert_mutability</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">module</span> <span class="o">=</span> <span class="n">import_module</span><span class="p">(</span><span class="n">module</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">module</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">key</span><span class="o">.</span><span class="n">isupper</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">key</span><span class="p">),</span> <span class="n">priority</span><span class="p">)</span></div>
+
+
+    <span class="c1"># BaseSettings.update() doesn&#39;t support all inputs that MutableMapping.update() supports</span>
+<div class="viewcode-block" id="BaseSettings.update">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.update">[docs]</a>
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">_SettingsInputT</span><span class="p">,</span> <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;project&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># type: ignore[override]</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Store key/value pairs with a given priority.</span>
+
+<span class="sd">        This is a helper function that calls</span>
+<span class="sd">        :meth:`~scrapy.settings.BaseSettings.set` for every item of ``values``</span>
+<span class="sd">        with the provided ``priority``.</span>
+
+<span class="sd">        If ``values`` is a string, it is assumed to be JSON-encoded and parsed</span>
+<span class="sd">        into a dict with ``json.loads()`` first. If it is a</span>
+<span class="sd">        :class:`~scrapy.settings.BaseSettings` instance, the per-key priorities</span>
+<span class="sd">        will be used and the ``priority`` parameter ignored. This allows</span>
+<span class="sd">        inserting/updating settings with different priorities with a single</span>
+<span class="sd">        command.</span>
+
+<span class="sd">        :param values: the settings names and values</span>
+<span class="sd">        :type values: dict or string or :class:`~scrapy.settings.BaseSettings`</span>
+
+<span class="sd">        :param priority: the priority of the settings. Should be a key of</span>
+<span class="sd">            :attr:`~scrapy.settings.SETTINGS_PRIORITIES` or an integer</span>
+<span class="sd">        :type priority: str or int</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_assert_mutability</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="nb">dict</span><span class="p">[</span><span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">values</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">values</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">BaseSettings</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">cast</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">values</span><span class="o">.</span><span class="n">getpriority</span><span class="p">(</span><span class="n">name</span><span class="p">)))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">priority</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;project&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_assert_mutability</span><span class="p">()</span>
+        <span class="n">priority</span> <span class="o">=</span> <span class="n">get_settings_priority</span><span class="p">(</span><span class="n">priority</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">priority</span> <span class="o">&gt;=</span> <span class="n">cast</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">getpriority</span><span class="p">(</span><span class="n">name</span><span class="p">)):</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_assert_mutability</span><span class="p">()</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_assert_mutability</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frozen</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Trying to modify an immutable Settings object&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BaseSettings.copy">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.copy">[docs]</a>
+    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Make a deep copy of current settings.</span>
+
+<span class="sd">        This method returns a new instance of the :class:`Settings` class,</span>
+<span class="sd">        populated with the same values and their priorities.</span>
+
+<span class="sd">        Modifications to the new object won&#39;t be reflected on the original</span>
+<span class="sd">        settings.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.freeze">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.freeze">[docs]</a>
+    <span class="k">def</span> <span class="nf">freeze</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Disable further changes to the current settings.</span>
+
+<span class="sd">        After calling this method, the present state of the settings will become</span>
+<span class="sd">        immutable. Trying to change values through the :meth:`~set` method and</span>
+<span class="sd">        its variants won&#39;t be possible and will be alerted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frozen</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="BaseSettings.frozencopy">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.frozencopy">[docs]</a>
+    <span class="k">def</span> <span class="nf">frozencopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return an immutable copy of the current settings.</span>
+
+<span class="sd">        Alias for a :meth:`~freeze` call in the object returned by :meth:`copy`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">copy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">copy</span><span class="o">.</span><span class="n">freeze</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">copy</span></div>
+
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">_SettingsKeyT</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_key</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">_to_dict</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">BaseSettings</span><span class="p">)</span> <span class="k">else</span> <span class="n">v</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">_get_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key_value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_SettingsKeyT</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">key_value</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key_value</span><span class="p">,</span> <span class="p">(</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)))</span>
+            <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">key_value</span><span class="p">)</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="BaseSettings.copy_to_dict">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.copy_to_dict">[docs]</a>
+    <span class="k">def</span> <span class="nf">copy_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Make a copy of current settings and convert to a dict.</span>
+
+<span class="sd">        This method returns a new dict populated with the same values</span>
+<span class="sd">        and their priorities as the current settings.</span>
+
+<span class="sd">        Modifications to the returned dict won&#39;t be reflected on the original</span>
+<span class="sd">        settings.</span>
+
+<span class="sd">        This method can be useful for example for printing settings</span>
+<span class="sd">        in Scrapy shell.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">settings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">settings</span><span class="o">.</span><span class="n">_to_dict</span><span class="p">()</span></div>
+
+
+    <span class="c1"># https://ipython.readthedocs.io/en/stable/config/integrating.html#pretty-printing</span>
+    <span class="k">def</span> <span class="nf">_repr_pretty_</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cycle</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cycle</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">pformat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">copy_to_dict</span><span class="p">()))</span>
+
+<div class="viewcode-block" id="BaseSettings.pop">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.BaseSettings.pop">[docs]</a>
+    <span class="k">def</span> <span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">__default</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">default</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">__default</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="k">return</span> <span class="n">default</span>
+        <span class="bp">self</span><span class="o">.</span><span class="fm">__delitem__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Settings">
+<a class="viewcode-back" href="../../topics/api.html#scrapy.settings.Settings">[docs]</a>
+<span class="k">class</span> <span class="nc">Settings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This object stores Scrapy settings for the configuration of internal</span>
+<span class="sd">    components, and can be used for any further customization.</span>
+
+<span class="sd">    It is a direct subclass and supports all methods of</span>
+<span class="sd">    :class:`~scrapy.settings.BaseSettings`. Additionally, after instantiation</span>
+<span class="sd">    of this class, the new object will have the global default settings</span>
+<span class="sd">    described on :ref:`topics-settings-ref` already populated.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">_SettingsInputT</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">priority</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;project&quot;</span><span class="p">):</span>
+        <span class="c1"># Do not pass kwarg values here. We don&#39;t want to promote user-defined</span>
+        <span class="c1"># dicts, and we want to update, not replace, default dicts with the</span>
+        <span class="c1"># values given by the user</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setmodule</span><span class="p">(</span><span class="n">default_settings</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">)</span>
+        <span class="c1"># Promote default dictionaries to BaseSettings instances for per-key</span>
+        <span class="c1"># priorities</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">BaseSettings</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="s2">&quot;default&quot;</span><span class="p">),</span> <span class="s2">&quot;default&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">priority</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">iter_default_settings</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the default settings as an iterator of (name, value) tuples&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">default_settings</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">isupper</span><span class="p">():</span>
+            <span class="k">yield</span> <span class="n">name</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">default_settings</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">overridden_settings</span><span class="p">(</span>
+    <span class="n">settings</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">_SettingsKeyT</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return an iterable of the settings that have been overridden&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">defvalue</span> <span class="ow">in</span> <span class="n">iter_default_settings</span><span class="p">():</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">settings</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">defvalue</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">!=</span> <span class="n">defvalue</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

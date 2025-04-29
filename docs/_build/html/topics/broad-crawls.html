@@ -1,0 +1,363 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Broad Crawls &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=84389e84"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/js/hoverxref.js"></script>
+      <script src="../_static/js/tooltipster.bundle.min.js"></script>
+      <script src="../_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="../_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="../_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Using your browser’s Developer Tools for scraping" href="developer-tools.html" />
+    <link rel="prev" title="Common Practices" href="practices.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practices.html">Common Practices</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Broad Crawls</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#use-the-right-scheduler-priority-queue">Use the right <code class="xref std std-setting docutils literal notranslate"><span class="pre">SCHEDULER_PRIORITY_QUEUE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#increase-concurrency">Increase concurrency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#increase-twisted-io-thread-pool-maximum-size">Increase Twisted IO thread pool maximum size</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setup-your-own-dns">Setup your own DNS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#reduce-log-level">Reduce log level</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#disable-cookies">Disable cookies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#disable-retries">Disable retries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#reduce-download-timeout">Reduce download timeout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#disable-redirects">Disable redirects</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#crawl-in-bfo-order">Crawl in BFO order</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#be-mindful-of-memory-leaks">Be mindful of memory leaks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#install-a-specific-twisted-reactor">Install a specific Twisted reactor</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extensions.html">Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Broad Crawls</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/topics/broad-crawls.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="broad-crawls">
+<span id="topics-broad-crawls"></span><h1>Broad Crawls<a class="headerlink" href="#broad-crawls" title="Link to this heading"></a></h1>
+<p>Scrapy defaults are optimized for crawling specific sites. These sites are
+often handled by a single Scrapy spider, although this is not necessary or
+required (for example, there are generic spiders that handle any given site
+thrown at them).</p>
+<p>In addition to this “focused crawl”, there is another common type of crawling
+which covers a large (potentially unlimited) number of domains, and is only
+limited by time or other arbitrary constraint, rather than stopping when the
+domain was crawled to completion or when there are no more requests to perform.
+These are called “broad crawls” and is the typical crawlers employed by search
+engines.</p>
+<p>These are some common properties often found in broad crawls:</p>
+<ul class="simple">
+<li><p>they crawl many domains (often, unbounded) instead of a specific set of sites</p></li>
+<li><p>they don’t necessarily crawl domains to completion, because it would be
+impractical (or impossible) to do so, and instead limit the crawl by time or
+number of pages crawled</p></li>
+<li><p>they are simpler in logic (as opposed to very complex spiders with many
+extraction rules) because data is often post-processed in a separate stage</p></li>
+<li><p>they crawl many domains concurrently, which allows them to achieve faster
+crawl speeds by not being limited by any particular site constraint (each site
+is crawled slowly to respect politeness, but many sites are crawled in
+parallel)</p></li>
+</ul>
+<p>As said above, Scrapy default settings are optimized for focused crawls, not
+broad crawls. However, due to its asynchronous architecture, Scrapy is very
+well suited for performing fast broad crawls. This page summarizes some things
+you need to keep in mind when using Scrapy for doing broad crawls, along with
+concrete suggestions of Scrapy settings to tune in order to achieve an
+efficient broad crawl.</p>
+<section id="use-the-right-scheduler-priority-queue">
+<span id="broad-crawls-scheduler-priority-queue"></span><h2>Use the right <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-SCHEDULER_PRIORITY_QUEUE"><code class="xref std std-setting docutils literal notranslate"><span class="pre">SCHEDULER_PRIORITY_QUEUE</span></code></a><a class="headerlink" href="#use-the-right-scheduler-priority-queue" title="Link to this heading"></a></h2>
+<p>Scrapy’s default scheduler priority queue is <code class="docutils literal notranslate"><span class="pre">'scrapy.pqueues.ScrapyPriorityQueue'</span></code>.
+It works best during single-domain crawl. It does not work well with crawling
+many different domains in parallel</p>
+<p>To apply the recommended priority queue use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">SCHEDULER_PRIORITY_QUEUE</span> <span class="o">=</span> <span class="s2">&quot;scrapy.pqueues.DownloaderAwarePriorityQueue&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="increase-concurrency">
+<span id="broad-crawls-concurrency"></span><h2>Increase concurrency<a class="headerlink" href="#increase-concurrency" title="Link to this heading"></a></h2>
+<p>Concurrency is the number of requests that are processed in parallel. There is
+a global limit (<a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS</span></code></a>) and an additional limit that
+can be set either per domain (<a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS_PER_DOMAIN"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS_PER_DOMAIN</span></code></a>) or per
+IP (<a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS_PER_IP"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS_PER_IP</span></code></a>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The scheduler priority queue <a class="hxr-hoverxref hxr-tooltip reference internal" href="#broad-crawls-scheduler-priority-queue"><span class="std std-ref">recommended for broad crawls</span></a> does not support
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-CONCURRENT_REQUESTS_PER_IP"><code class="xref std std-setting docutils literal notranslate"><span class="pre">CONCURRENT_REQUESTS_PER_IP</span></code></a>.</p>
+</div>
+<p>The default global concurrency limit in Scrapy is not suitable for crawling
+many different domains in parallel, so you will want to increase it. How much
+to increase it will depend on how much CPU and memory your crawler will have
+available.</p>
+<p>A good starting point is <code class="docutils literal notranslate"><span class="pre">100</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">CONCURRENT_REQUESTS</span> <span class="o">=</span> <span class="mi">100</span>
+</pre></div>
+</div>
+<p>But the best way to find out is by doing some trials and identifying at what
+concurrency your Scrapy process gets CPU bounded. For optimum performance, you
+should pick a concurrency where CPU usage is at 80-90%.</p>
+<p>Increasing concurrency also increases memory usage. If memory usage is a
+concern, you might need to lower your global concurrency limit accordingly.</p>
+</section>
+<section id="increase-twisted-io-thread-pool-maximum-size">
+<h2>Increase Twisted IO thread pool maximum size<a class="headerlink" href="#increase-twisted-io-thread-pool-maximum-size" title="Link to this heading"></a></h2>
+<p>Currently Scrapy does DNS resolution in a blocking way with usage of thread
+pool. With higher concurrency levels the crawling could be slow or even fail
+hitting DNS resolver timeouts. Possible solution to increase the number of
+threads handling DNS queries. The DNS queue will be processed faster speeding
+up establishing of connection and crawling overall.</p>
+<p>To increase maximum thread pool size use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">REACTOR_THREADPOOL_MAXSIZE</span> <span class="o">=</span> <span class="mi">20</span>
+</pre></div>
+</div>
+</section>
+<section id="setup-your-own-dns">
+<h2>Setup your own DNS<a class="headerlink" href="#setup-your-own-dns" title="Link to this heading"></a></h2>
+<p>If you have multiple crawling processes and single central DNS, it can act
+like DoS attack on the DNS server resulting to slow down of entire network or
+even blocking your machines. To avoid this setup your own DNS server with
+local cache and upstream to some large DNS like OpenDNS or Verizon.</p>
+</section>
+<section id="reduce-log-level">
+<h2>Reduce log level<a class="headerlink" href="#reduce-log-level" title="Link to this heading"></a></h2>
+<p>When doing broad crawls you are often only interested in the crawl rates you
+get and any errors found. These stats are reported by Scrapy when using the
+<code class="docutils literal notranslate"><span class="pre">INFO</span></code> log level. In order to save CPU (and log storage requirements) you
+should not use <code class="docutils literal notranslate"><span class="pre">DEBUG</span></code> log level when performing large broad crawls in
+production. Using <code class="docutils literal notranslate"><span class="pre">DEBUG</span></code> level when developing your (broad) crawler may be
+fine though.</p>
+<p>To set the log level use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">LOG_LEVEL</span> <span class="o">=</span> <span class="s2">&quot;INFO&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="disable-cookies">
+<h2>Disable cookies<a class="headerlink" href="#disable-cookies" title="Link to this heading"></a></h2>
+<p>Disable cookies unless you <em>really</em> need. Cookies are often not needed when
+doing broad crawls (search engine crawlers ignore them), and they improve
+performance by saving some CPU cycles and reducing the memory footprint of your
+Scrapy crawler.</p>
+<p>To disable cookies use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">COOKIES_ENABLED</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
+</section>
+<section id="disable-retries">
+<h2>Disable retries<a class="headerlink" href="#disable-retries" title="Link to this heading"></a></h2>
+<p>Retrying failed HTTP requests can slow down the crawls substantially, specially
+when sites causes are very slow (or fail) to respond, thus causing a timeout
+error which gets retried many times, unnecessarily, preventing crawler capacity
+to be reused for other domains.</p>
+<p>To disable retries use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">RETRY_ENABLED</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
+</section>
+<section id="reduce-download-timeout">
+<h2>Reduce download timeout<a class="headerlink" href="#reduce-download-timeout" title="Link to this heading"></a></h2>
+<p>Unless you are crawling from a very slow connection (which shouldn’t be the
+case for broad crawls) reduce the download timeout so that stuck requests are
+discarded quickly and free up capacity to process the next ones.</p>
+<p>To reduce the download timeout use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">DOWNLOAD_TIMEOUT</span> <span class="o">=</span> <span class="mi">15</span>
+</pre></div>
+</div>
+</section>
+<section id="disable-redirects">
+<h2>Disable redirects<a class="headerlink" href="#disable-redirects" title="Link to this heading"></a></h2>
+<p>Consider disabling redirects, unless you are interested in following them. When
+doing broad crawls it’s common to save redirects and resolve them when
+revisiting the site at a later crawl. This also help to keep the number of
+request constant per crawl batch, otherwise redirect loops may cause the
+crawler to dedicate too many resources on any specific domain.</p>
+<p>To disable redirects use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">REDIRECT_ENABLED</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
+</section>
+<section id="crawl-in-bfo-order">
+<span id="broad-crawls-bfo"></span><h2>Crawl in BFO order<a class="headerlink" href="#crawl-in-bfo-order" title="Link to this heading"></a></h2>
+<p><a class="hxr-hoverxref hxr-tooltip reference internal" href="../faq.html#faq-bfo-dfo"><span class="std std-ref">Scrapy crawls in DFO order by default</span></a>.</p>
+<p>In broad crawls, however, page crawling tends to be faster than page
+processing. As a result, unprocessed early requests stay in memory until the
+final depth is reached, which can significantly increase memory usage.</p>
+<p><a class="hxr-hoverxref hxr-tooltip reference internal" href="../faq.html#faq-bfo-dfo"><span class="std std-ref">Crawl in BFO order</span></a> instead to save memory.</p>
+</section>
+<section id="be-mindful-of-memory-leaks">
+<h2>Be mindful of memory leaks<a class="headerlink" href="#be-mindful-of-memory-leaks" title="Link to this heading"></a></h2>
+<p>If your broad crawl shows a high memory usage, in addition to <a class="hxr-hoverxref hxr-tooltip reference internal" href="#broad-crawls-bfo"><span class="std std-ref">crawling in
+BFO order</span></a> and <a class="hxr-hoverxref hxr-tooltip reference internal" href="#broad-crawls-concurrency"><span class="std std-ref">lowering concurrency</span></a> you should <a class="hxr-hoverxref hxr-tooltip reference internal" href="leaks.html#topics-leaks"><span class="std std-ref">debug your memory leaks</span></a>.</p>
+</section>
+<section id="install-a-specific-twisted-reactor">
+<h2>Install a specific Twisted reactor<a class="headerlink" href="#install-a-specific-twisted-reactor" title="Link to this heading"></a></h2>
+<p>If the crawl is exceeding the system’s capabilities, you might want to try
+installing a specific Twisted reactor, via the <a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-TWISTED_REACTOR"><code class="xref std std-setting docutils literal notranslate"><span class="pre">TWISTED_REACTOR</span></code></a> setting.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="practices.html" class="btn btn-neutral float-left" title="Common Practices" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="developer-tools.html" class="btn btn-neutral float-right" title="Using your browser’s Developer Tools for scraping" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

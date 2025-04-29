@@ -1,0 +1,601 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>scrapy.core.scheduler &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=84389e84"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/js/hoverxref.js"></script>
+      <script src="../../../_static/js/tooltipster.bundle.min.js"></script>
+      <script src="../../../_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="../../../_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="../../../_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/extensions.html">Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../topics/api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">scrapy.core.scheduler</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for scrapy.core.scheduler</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="c1"># working around https://github.com/sphinx-doc/sphinx/issues/10400</span>
+<span class="kn">from</span> <span class="nn">twisted.internet.defer</span> <span class="kn">import</span> <span class="n">Deferred</span>  <span class="c1"># noqa: TC002</span>
+
+<span class="kn">from</span> <span class="nn">scrapy.spiders</span> <span class="kn">import</span> <span class="n">Spider</span>  <span class="c1"># noqa: TC001</span>
+<span class="kn">from</span> <span class="nn">scrapy.utils.job</span> <span class="kn">import</span> <span class="n">job_dir</span>
+<span class="kn">from</span> <span class="nn">scrapy.utils.misc</span> <span class="kn">import</span> <span class="n">build_from_crawler</span><span class="p">,</span> <span class="n">load_object</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="c1"># requires queuelib &gt;= 1.6.2</span>
+    <span class="kn">from</span> <span class="nn">queuelib.queue</span> <span class="kn">import</span> <span class="n">BaseQueue</span>
+
+    <span class="c1"># typing.Self requires Python 3.11</span>
+    <span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">Self</span>
+
+    <span class="kn">from</span> <span class="nn">scrapy.crawler</span> <span class="kn">import</span> <span class="n">Crawler</span>
+    <span class="kn">from</span> <span class="nn">scrapy.dupefilters</span> <span class="kn">import</span> <span class="n">BaseDupeFilter</span>
+    <span class="kn">from</span> <span class="nn">scrapy.http.request</span> <span class="kn">import</span> <span class="n">Request</span>
+    <span class="kn">from</span> <span class="nn">scrapy.pqueues</span> <span class="kn">import</span> <span class="n">ScrapyPriorityQueue</span>
+    <span class="kn">from</span> <span class="nn">scrapy.statscollectors</span> <span class="kn">import</span> <span class="n">StatsCollector</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">BaseSchedulerMeta</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Metaclass to check scheduler classes against the necessary interface</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__instancecheck__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">instance</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="fm">__subclasscheck__</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">instance</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__subclasscheck__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">subclass</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">hasattr</span><span class="p">(</span><span class="n">subclass</span><span class="p">,</span> <span class="s2">&quot;has_pending_requests&quot;</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">callable</span><span class="p">(</span><span class="n">subclass</span><span class="o">.</span><span class="n">has_pending_requests</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">subclass</span><span class="p">,</span> <span class="s2">&quot;enqueue_request&quot;</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">callable</span><span class="p">(</span><span class="n">subclass</span><span class="o">.</span><span class="n">enqueue_request</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">subclass</span><span class="p">,</span> <span class="s2">&quot;next_request&quot;</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">callable</span><span class="p">(</span><span class="n">subclass</span><span class="o">.</span><span class="n">next_request</span><span class="p">)</span>
+        <span class="p">)</span>
+
+
+<div class="viewcode-block" id="BaseScheduler">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.BaseScheduler">[docs]</a>
+<span class="k">class</span> <span class="nc">BaseScheduler</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">BaseSchedulerMeta</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The scheduler component is responsible for storing requests received from</span>
+<span class="sd">    the engine, and feeding them back upon request (also to the engine).</span>
+
+<span class="sd">    The original sources of said requests are:</span>
+
+<span class="sd">    * Spider: ``start_requests`` method, requests created for URLs in the ``start_urls`` attribute, request callbacks</span>
+<span class="sd">    * Spider middleware: ``process_spider_output`` and ``process_spider_exception`` methods</span>
+<span class="sd">    * Downloader middleware: ``process_request``, ``process_response`` and ``process_exception`` methods</span>
+
+<span class="sd">    The order in which the scheduler returns its stored requests (via the ``next_request`` method)</span>
+<span class="sd">    plays a great part in determining the order in which those requests are downloaded.</span>
+
+<span class="sd">    The methods defined in this class constitute the minimal interface that the Scrapy engine will interact with.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="BaseScheduler.from_crawler">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.BaseScheduler.from_crawler">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_crawler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">crawler</span><span class="p">:</span> <span class="n">Crawler</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Factory method which receives the current :class:`~scrapy.crawler.Crawler` object as argument.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="BaseScheduler.open">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.BaseScheduler.open">[docs]</a>
+    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spider</span><span class="p">:</span> <span class="n">Spider</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Deferred</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called when the spider is opened by the engine. It receives the spider</span>
+<span class="sd">        instance as argument and it&#39;s useful to execute initialization code.</span>
+
+<span class="sd">        :param spider: the spider object for the current crawl</span>
+<span class="sd">        :type spider: :class:`~scrapy.spiders.Spider`</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="BaseScheduler.close">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.BaseScheduler.close">[docs]</a>
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Deferred</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Called when the spider is closed by the engine. It receives the reason why the crawl</span>
+<span class="sd">        finished as argument and it&#39;s useful to execute cleaning code.</span>
+
+<span class="sd">        :param reason: a string which describes the reason why the spider was closed</span>
+<span class="sd">        :type reason: :class:`str`</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="BaseScheduler.has_pending_requests">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.BaseScheduler.has_pending_requests">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">has_pending_requests</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        ``True`` if the scheduler has enqueued requests, ``False`` otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="BaseScheduler.enqueue_request">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.BaseScheduler.enqueue_request">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">enqueue_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Process a request received by the engine.</span>
+
+<span class="sd">        Return ``True`` if the request is stored correctly, ``False`` otherwise.</span>
+
+<span class="sd">        If ``False``, the engine will fire a ``request_dropped`` signal, and</span>
+<span class="sd">        will not make further attempts to schedule the request at a later time.</span>
+<span class="sd">        For reference, the default Scrapy scheduler returns ``False`` when the</span>
+<span class="sd">        request is rejected by the dupefilter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="BaseScheduler.next_request">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.BaseScheduler.next_request">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">next_request</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Request</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the next :class:`~scrapy.Request` to be processed, or ``None``</span>
+<span class="sd">        to indicate that there are no requests to be considered ready at the moment.</span>
+
+<span class="sd">        Returning ``None`` implies that no request from the scheduler will be sent</span>
+<span class="sd">        to the downloader in the current reactor cycle. The engine will continue</span>
+<span class="sd">        calling ``next_request`` until ``has_pending_requests`` is ``False``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Scheduler">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.Scheduler">[docs]</a>
+<span class="k">class</span> <span class="nc">Scheduler</span><span class="p">(</span><span class="n">BaseScheduler</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Default Scrapy scheduler. This implementation also handles duplication</span>
+<span class="sd">    filtering via the :setting:`dupefilter &lt;DUPEFILTER_CLASS&gt;`.</span>
+
+<span class="sd">    This scheduler stores requests into several priority queues (defined by the</span>
+<span class="sd">    :setting:`SCHEDULER_PRIORITY_QUEUE` setting). In turn, said priority queues</span>
+<span class="sd">    are backed by either memory or disk based queues (respectively defined by the</span>
+<span class="sd">    :setting:`SCHEDULER_MEMORY_QUEUE` and :setting:`SCHEDULER_DISK_QUEUE` settings).</span>
+
+<span class="sd">    Request prioritization is almost entirely delegated to the priority queue. The only</span>
+<span class="sd">    prioritization performed by this scheduler is using the disk-based queue if present</span>
+<span class="sd">    (i.e. if the :setting:`JOBDIR` setting is defined) and falling back to the memory-based</span>
+<span class="sd">    queue if a serialization error occurs. If the disk queue is not present, the memory one</span>
+<span class="sd">    is used directly.</span>
+
+<span class="sd">    :param dupefilter: An object responsible for checking and filtering duplicate requests.</span>
+<span class="sd">                       The value for the :setting:`DUPEFILTER_CLASS` setting is used by default.</span>
+<span class="sd">    :type dupefilter: :class:`scrapy.dupefilters.BaseDupeFilter` instance or similar:</span>
+<span class="sd">                      any class that implements the `BaseDupeFilter` interface</span>
+
+<span class="sd">    :param jobdir: The path of a directory to be used for persisting the crawl&#39;s state.</span>
+<span class="sd">                   The value for the :setting:`JOBDIR` setting is used by default.</span>
+<span class="sd">                   See :ref:`topics-jobs`.</span>
+<span class="sd">    :type jobdir: :class:`str` or ``None``</span>
+
+<span class="sd">    :param dqclass: A class to be used as persistent request queue.</span>
+<span class="sd">                    The value for the :setting:`SCHEDULER_DISK_QUEUE` setting is used by default.</span>
+<span class="sd">    :type dqclass: class</span>
+
+<span class="sd">    :param mqclass: A class to be used as non-persistent request queue.</span>
+<span class="sd">                    The value for the :setting:`SCHEDULER_MEMORY_QUEUE` setting is used by default.</span>
+<span class="sd">    :type mqclass: class</span>
+
+<span class="sd">    :param logunser: A boolean that indicates whether or not unserializable requests should be logged.</span>
+<span class="sd">                     The value for the :setting:`SCHEDULER_DEBUG` setting is used by default.</span>
+<span class="sd">    :type logunser: bool</span>
+
+<span class="sd">    :param stats: A stats collector object to record stats about the request scheduling process.</span>
+<span class="sd">                  The value for the :setting:`STATS_CLASS` setting is used by default.</span>
+<span class="sd">    :type stats: :class:`scrapy.statscollectors.StatsCollector` instance or similar:</span>
+<span class="sd">                 any class that implements the `StatsCollector` interface</span>
+
+<span class="sd">    :param pqclass: A class to be used as priority queue for requests.</span>
+<span class="sd">                    The value for the :setting:`SCHEDULER_PRIORITY_QUEUE` setting is used by default.</span>
+<span class="sd">    :type pqclass: class</span>
+
+<span class="sd">    :param crawler: The crawler object corresponding to the current crawl.</span>
+<span class="sd">    :type crawler: :class:`scrapy.crawler.Crawler`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dupefilter</span><span class="p">:</span> <span class="n">BaseDupeFilter</span><span class="p">,</span>
+        <span class="n">jobdir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">dqclass</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseQueue</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mqclass</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseQueue</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">logunser</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">stats</span><span class="p">:</span> <span class="n">StatsCollector</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">pqclass</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">ScrapyPriorityQueue</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">crawler</span><span class="p">:</span> <span class="n">Crawler</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="p">:</span> <span class="n">BaseDupeFilter</span> <span class="o">=</span> <span class="n">dupefilter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dqdir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dqdir</span><span class="p">(</span><span class="n">jobdir</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pqclass</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">ScrapyPriorityQueue</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">pqclass</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dqclass</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseQueue</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">dqclass</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mqclass</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseQueue</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">mqclass</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logunser</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">logunser</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="p">:</span> <span class="n">StatsCollector</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">stats</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">crawler</span><span class="p">:</span> <span class="n">Crawler</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">crawler</span>
+
+<div class="viewcode-block" id="Scheduler.from_crawler">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.Scheduler.from_crawler">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_crawler</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">crawler</span><span class="p">:</span> <span class="n">Crawler</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Factory method, initializes the scheduler with arguments taken from the crawl settings</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dupefilter_cls</span> <span class="o">=</span> <span class="n">load_object</span><span class="p">(</span><span class="n">crawler</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;DUPEFILTER_CLASS&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">dupefilter</span><span class="o">=</span><span class="n">build_from_crawler</span><span class="p">(</span><span class="n">dupefilter_cls</span><span class="p">,</span> <span class="n">crawler</span><span class="p">),</span>
+            <span class="n">jobdir</span><span class="o">=</span><span class="n">job_dir</span><span class="p">(</span><span class="n">crawler</span><span class="o">.</span><span class="n">settings</span><span class="p">),</span>
+            <span class="n">dqclass</span><span class="o">=</span><span class="n">load_object</span><span class="p">(</span><span class="n">crawler</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;SCHEDULER_DISK_QUEUE&quot;</span><span class="p">]),</span>
+            <span class="n">mqclass</span><span class="o">=</span><span class="n">load_object</span><span class="p">(</span><span class="n">crawler</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;SCHEDULER_MEMORY_QUEUE&quot;</span><span class="p">]),</span>
+            <span class="n">logunser</span><span class="o">=</span><span class="n">crawler</span><span class="o">.</span><span class="n">settings</span><span class="o">.</span><span class="n">getbool</span><span class="p">(</span><span class="s2">&quot;SCHEDULER_DEBUG&quot;</span><span class="p">),</span>
+            <span class="n">stats</span><span class="o">=</span><span class="n">crawler</span><span class="o">.</span><span class="n">stats</span><span class="p">,</span>
+            <span class="n">pqclass</span><span class="o">=</span><span class="n">load_object</span><span class="p">(</span><span class="n">crawler</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;SCHEDULER_PRIORITY_QUEUE&quot;</span><span class="p">]),</span>
+            <span class="n">crawler</span><span class="o">=</span><span class="n">crawler</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Scheduler.has_pending_requests">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.Scheduler.has_pending_requests">[docs]</a>
+    <span class="k">def</span> <span class="nf">has_pending_requests</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="Scheduler.open">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.Scheduler.open">[docs]</a>
+    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spider</span><span class="p">:</span> <span class="n">Spider</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Deferred</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        (1) initialize the memory queue</span>
+<span class="sd">        (2) initialize the disk queue if the ``jobdir`` attribute is a valid directory</span>
+<span class="sd">        (3) return the result of the dupefilter&#39;s ``open`` method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spider</span><span class="p">:</span> <span class="n">Spider</span> <span class="o">=</span> <span class="n">spider</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mqs</span><span class="p">:</span> <span class="n">ScrapyPriorityQueue</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mq</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dqs</span><span class="p">:</span> <span class="n">ScrapyPriorityQueue</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dq</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dqdir</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">open</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Scheduler.close">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.Scheduler.close">[docs]</a>
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Deferred</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        (1) dump pending requests to disk if there is a disk queue</span>
+<span class="sd">        (2) return the result of the dupefilter&#39;s ``close`` method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dqs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dqs</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dqdir</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_write_dqs_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dqdir</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">reason</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Scheduler.enqueue_request">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.Scheduler.enqueue_request">[docs]</a>
+    <span class="k">def</span> <span class="nf">enqueue_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Unless the received request is filtered out by the Dupefilter, attempt to push</span>
+<span class="sd">        it into the disk queue, falling back to pushing it into the memory queue.</span>
+
+<span class="sd">        Increment the appropriate stats, such as: ``scheduler/enqueued``,</span>
+<span class="sd">        ``scheduler/enqueued/disk``, ``scheduler/enqueued/memory``.</span>
+
+<span class="sd">        Return ``True`` if the request was stored successfully, ``False`` otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">request</span><span class="o">.</span><span class="n">dont_filter</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">request_seen</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">df</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spider</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">dqok</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dqpush</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">stats</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">dqok</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">inc_value</span><span class="p">(</span><span class="s2">&quot;scheduler/enqueued/disk&quot;</span><span class="p">,</span> <span class="n">spider</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spider</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_mqpush</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">inc_value</span><span class="p">(</span><span class="s2">&quot;scheduler/enqueued/memory&quot;</span><span class="p">,</span> <span class="n">spider</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spider</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">inc_value</span><span class="p">(</span><span class="s2">&quot;scheduler/enqueued&quot;</span><span class="p">,</span> <span class="n">spider</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spider</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="Scheduler.next_request">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.Scheduler.next_request">[docs]</a>
+    <span class="k">def</span> <span class="nf">next_request</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Request</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return a :class:`~scrapy.Request` object from the memory queue,</span>
+<span class="sd">        falling back to the disk queue if the memory queue is empty.</span>
+<span class="sd">        Return ``None`` if there are no more enqueued requests.</span>
+
+<span class="sd">        Increment the appropriate stats, such as: ``scheduler/dequeued``,</span>
+<span class="sd">        ``scheduler/dequeued/disk``, ``scheduler/dequeued/memory``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">request</span><span class="p">:</span> <span class="n">Request</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mqs</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">stats</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">request</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">inc_value</span><span class="p">(</span><span class="s2">&quot;scheduler/dequeued/memory&quot;</span><span class="p">,</span> <span class="n">spider</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spider</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">request</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dqpop</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">request</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">inc_value</span><span class="p">(</span><span class="s2">&quot;scheduler/dequeued/disk&quot;</span><span class="p">,</span> <span class="n">spider</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spider</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">request</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">inc_value</span><span class="p">(</span><span class="s2">&quot;scheduler/dequeued&quot;</span><span class="p">,</span> <span class="n">spider</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spider</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">request</span></div>
+
+
+<div class="viewcode-block" id="Scheduler.__len__">
+<a class="viewcode-back" href="../../../topics/scheduler.html#scrapy.core.scheduler.Scheduler.__len__">[docs]</a>
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the total amount of enqueued requests</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dqs</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mqs</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dqs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mqs</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_dqpush</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dqs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dqs</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>  <span class="c1"># non serializable request</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">logunser</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;Unable to serialize request: </span><span class="si">%(request)s</span><span class="s2"> - reason:&quot;</span>
+                    <span class="s2">&quot; </span><span class="si">%(reason)s</span><span class="s2"> - no more unserializable requests will be&quot;</span>
+                    <span class="s2">&quot; logged (stats being collected)&quot;</span>
+                <span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="n">msg</span><span class="p">,</span>
+                    <span class="p">{</span><span class="s2">&quot;request&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span> <span class="s2">&quot;reason&quot;</span><span class="p">:</span> <span class="n">e</span><span class="p">},</span>
+                    <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;spider&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">spider</span><span class="p">},</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logunser</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">stats</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">inc_value</span><span class="p">(</span><span class="s2">&quot;scheduler/unserializable&quot;</span><span class="p">,</span> <span class="n">spider</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spider</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">_mqpush</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mqs</span><span class="o">.</span><span class="n">push</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_dqpop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Request</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dqs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dqs</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">_mq</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScrapyPriorityQueue</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new priority queue instance, with in-memory storage&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">crawler</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">pqclass</span>
+        <span class="k">return</span> <span class="n">build_from_crawler</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pqclass</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">crawler</span><span class="p">,</span>
+            <span class="n">downstream_queue_cls</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mqclass</span><span class="p">,</span>
+            <span class="n">key</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_dq</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScrapyPriorityQueue</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new priority queue instance, with disk storage&quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">crawler</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">dqdir</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">pqclass</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_dqs_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dqdir</span><span class="p">)</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">build_from_crawler</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pqclass</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">crawler</span><span class="p">,</span>
+            <span class="n">downstream_queue_cls</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dqclass</span><span class="p">,</span>
+            <span class="n">key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dqdir</span><span class="p">,</span>
+            <span class="n">startprios</span><span class="o">=</span><span class="n">state</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">q</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Resuming crawl (</span><span class="si">%(queuesize)d</span><span class="s2"> requests scheduled)&quot;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">&quot;queuesize&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">q</span><span class="p">)},</span>
+                <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;spider&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">spider</span><span class="p">},</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">q</span>
+
+    <span class="k">def</span> <span class="nf">_dqdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobdir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a folder name to keep disk queue state at&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">jobdir</span><span class="p">:</span>
+            <span class="n">dqdir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">jobdir</span><span class="p">,</span> <span class="s2">&quot;requests.queue&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">dqdir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">dqdir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">dqdir</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">_read_dqs_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dqdir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">dqdir</span><span class="p">,</span> <span class="s2">&quot;active.json&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="k">with</span> <span class="n">path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_write_dqs_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dqdir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">Path</span><span class="p">(</span><span class="n">dqdir</span><span class="p">,</span> <span class="s2">&quot;active.json&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

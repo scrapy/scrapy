@@ -1,0 +1,343 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exceptions &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=84389e84"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/js/hoverxref.js"></script>
+      <script src="../_static/js/tooltipster.bundle.min.js"></script>
+      <script src="../_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="../_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="../_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Logging" href="logging.html" />
+    <link rel="prev" title="Settings" href="settings.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="settings.html">Settings</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Exceptions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#built-in-exceptions-reference">Built-in Exceptions reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#closespider">CloseSpider</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.exceptions.CloseSpider"><code class="docutils literal notranslate"><span class="pre">CloseSpider</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#dontclosespider">DontCloseSpider</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.exceptions.DontCloseSpider"><code class="docutils literal notranslate"><span class="pre">DontCloseSpider</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#dropitem">DropItem</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.exceptions.DropItem"><code class="docutils literal notranslate"><span class="pre">DropItem</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#ignorerequest">IgnoreRequest</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.exceptions.IgnoreRequest"><code class="docutils literal notranslate"><span class="pre">IgnoreRequest</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#notconfigured">NotConfigured</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.exceptions.NotConfigured"><code class="docutils literal notranslate"><span class="pre">NotConfigured</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#notsupported">NotSupported</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.exceptions.NotSupported"><code class="docutils literal notranslate"><span class="pre">NotSupported</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#stopdownload">StopDownload</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.exceptions.StopDownload"><code class="docutils literal notranslate"><span class="pre">StopDownload</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extensions.html">Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Exceptions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/topics/exceptions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-scrapy.exceptions">
+<span id="exceptions"></span><span id="topics-exceptions"></span><h1>Exceptions<a class="headerlink" href="#module-scrapy.exceptions" title="Link to this heading"></a></h1>
+<section id="built-in-exceptions-reference">
+<span id="topics-exceptions-ref"></span><h2>Built-in Exceptions reference<a class="headerlink" href="#built-in-exceptions-reference" title="Link to this heading"></a></h2>
+<p>Here’s a list of all exceptions included in Scrapy and their usage.</p>
+<section id="closespider">
+<h3>CloseSpider<a class="headerlink" href="#closespider" title="Link to this heading"></a></h3>
+<dl class="py exception">
+<dt class="sig sig-object py" id="scrapy.exceptions.CloseSpider">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.exceptions.</span></span><span class="sig-name descname"><span class="pre">CloseSpider</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cancelled'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/scrapy/exceptions.html#CloseSpider"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.exceptions.CloseSpider" title="Link to this definition"></a></dt>
+<dd><p>This exception can be raised from a spider callback to request the spider to be
+closed/stopped. Supported arguments:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>reason</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – the reason for closing</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">parse_page</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
+    <span class="k">if</span> <span class="s2">&quot;Bandwidth exceeded&quot;</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">body</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">CloseSpider</span><span class="p">(</span><span class="s2">&quot;bandwidth_exceeded&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="dontclosespider">
+<h3>DontCloseSpider<a class="headerlink" href="#dontclosespider" title="Link to this heading"></a></h3>
+<dl class="py exception">
+<dt class="sig sig-object py" id="scrapy.exceptions.DontCloseSpider">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.exceptions.</span></span><span class="sig-name descname"><span class="pre">DontCloseSpider</span></span><a class="reference internal" href="../_modules/scrapy/exceptions.html#DontCloseSpider"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.exceptions.DontCloseSpider" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>This exception can be raised in a <a class="hxr-hoverxref hxr-tooltip reference internal" href="signals.html#std-signal-spider_idle"><code class="xref std std-signal docutils literal notranslate"><span class="pre">spider_idle</span></code></a> signal handler to
+prevent the spider from being closed.</p>
+</section>
+<section id="dropitem">
+<h3>DropItem<a class="headerlink" href="#dropitem" title="Link to this heading"></a></h3>
+<dl class="py exception">
+<dt class="sig sig-object py" id="scrapy.exceptions.DropItem">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.exceptions.</span></span><span class="sig-name descname"><span class="pre">DropItem</span></span><a class="reference internal" href="../_modules/scrapy/exceptions.html#DropItem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.exceptions.DropItem" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>The exception that must be raised by item pipeline stages to stop processing an
+Item. For more information see <a class="hxr-hoverxref hxr-tooltip reference internal" href="item-pipeline.html#topics-item-pipeline"><span class="std std-ref">Item Pipeline</span></a>.</p>
+</section>
+<section id="ignorerequest">
+<h3>IgnoreRequest<a class="headerlink" href="#ignorerequest" title="Link to this heading"></a></h3>
+<dl class="py exception">
+<dt class="sig sig-object py" id="scrapy.exceptions.IgnoreRequest">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.exceptions.</span></span><span class="sig-name descname"><span class="pre">IgnoreRequest</span></span><a class="reference internal" href="../_modules/scrapy/exceptions.html#IgnoreRequest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.exceptions.IgnoreRequest" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>This exception can be raised by the Scheduler or any downloader middleware to
+indicate that the request should be ignored.</p>
+</section>
+<section id="notconfigured">
+<h3>NotConfigured<a class="headerlink" href="#notconfigured" title="Link to this heading"></a></h3>
+<dl class="py exception">
+<dt class="sig sig-object py" id="scrapy.exceptions.NotConfigured">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.exceptions.</span></span><span class="sig-name descname"><span class="pre">NotConfigured</span></span><a class="reference internal" href="../_modules/scrapy/exceptions.html#NotConfigured"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.exceptions.NotConfigured" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>This exception can be raised by some components to indicate that they will
+remain disabled. Those components include:</p>
+<ul class="simple">
+<li><p>Extensions</p></li>
+<li><p>Item pipelines</p></li>
+<li><p>Downloader middlewares</p></li>
+<li><p>Spider middlewares</p></li>
+</ul>
+<p>The exception must be raised in the component’s <code class="docutils literal notranslate"><span class="pre">__init__</span></code> method.</p>
+</section>
+<section id="notsupported">
+<h3>NotSupported<a class="headerlink" href="#notsupported" title="Link to this heading"></a></h3>
+<dl class="py exception">
+<dt class="sig sig-object py" id="scrapy.exceptions.NotSupported">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.exceptions.</span></span><span class="sig-name descname"><span class="pre">NotSupported</span></span><a class="reference internal" href="../_modules/scrapy/exceptions.html#NotSupported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.exceptions.NotSupported" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>This exception is raised to indicate an unsupported feature.</p>
+</section>
+<section id="stopdownload">
+<h3>StopDownload<a class="headerlink" href="#stopdownload" title="Link to this heading"></a></h3>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.2.</span></p>
+</div>
+<dl class="py exception">
+<dt class="sig sig-object py" id="scrapy.exceptions.StopDownload">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.exceptions.</span></span><span class="sig-name descname"><span class="pre">StopDownload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fail</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/scrapy/exceptions.html#StopDownload"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.exceptions.StopDownload" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<p>Raised from a <a class="reference internal" href="signals.html#scrapy.signals.bytes_received" title="scrapy.signals.bytes_received"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes_received</span></code></a> or <a class="reference internal" href="signals.html#scrapy.signals.headers_received" title="scrapy.signals.headers_received"><code class="xref py py-class docutils literal notranslate"><span class="pre">headers_received</span></code></a>
+signal handler to indicate that no further bytes should be downloaded for a response.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">fail</span></code> boolean parameter controls which method will handle the resulting
+response:</p>
+<ul class="simple">
+<li><p>If <code class="docutils literal notranslate"><span class="pre">fail=True</span></code> (default), the request errback is called. The response object is
+available as the <code class="docutils literal notranslate"><span class="pre">response</span></code> attribute of the <code class="docutils literal notranslate"><span class="pre">StopDownload</span></code> exception,
+which is in turn stored as the <code class="docutils literal notranslate"><span class="pre">value</span></code> attribute of the received
+<a class="reference external" href="https://docs.twisted.org/en/stable/api/twisted.python.failure.Failure.html" title="(in Twisted)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Failure</span></code></a> object. This means that in an errback
+defined as <code class="docutils literal notranslate"><span class="pre">def</span> <span class="pre">errback(self,</span> <span class="pre">failure)</span></code>, the response can be accessed though
+<code class="docutils literal notranslate"><span class="pre">failure.value.response</span></code>.</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">fail=False</span></code>, the request callback is called instead.</p></li>
+</ul>
+<p>In both cases, the response could have its body truncated: the body contains
+all bytes received up until the exception is raised, including the bytes
+received in the signal handler that raises the exception. Also, the response
+object is marked with <code class="docutils literal notranslate"><span class="pre">&quot;download_stopped&quot;</span></code> in its <a class="reference internal" href="request-response.html#scrapy.http.Response.flags" title="scrapy.http.Response.flags"><code class="xref py py-attr docutils literal notranslate"><span class="pre">flags</span></code></a>
+attribute.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">fail</span></code> is a keyword-only parameter, i.e. raising
+<code class="docutils literal notranslate"><span class="pre">StopDownload(False)</span></code> or <code class="docutils literal notranslate"><span class="pre">StopDownload(True)</span></code> will raise
+a <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeError</span></code></a>.</p>
+</div>
+<p>See the documentation for the <a class="reference internal" href="signals.html#scrapy.signals.bytes_received" title="scrapy.signals.bytes_received"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes_received</span></code></a> and
+<a class="reference internal" href="signals.html#scrapy.signals.headers_received" title="scrapy.signals.headers_received"><code class="xref py py-class docutils literal notranslate"><span class="pre">headers_received</span></code></a> signals
+and the <a class="hxr-hoverxref hxr-tooltip reference internal" href="request-response.html#topics-stop-response-download"><span class="std std-ref">Stopping the download of a Response</span></a> topic for additional information and examples.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="settings.html" class="btn btn-neutral float-left" title="Settings" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="logging.html" class="btn btn-neutral float-right" title="Logging" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

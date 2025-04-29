@@ -1,0 +1,363 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Debugging Spiders &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=84389e84"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/js/hoverxref.js"></script>
+      <script src="../_static/js/tooltipster.bundle.min.js"></script>
+      <script src="../_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="../_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="../_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Spiders Contracts" href="contracts.html" />
+    <link rel="prev" title="Frequently Asked Questions" href="../faq.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1"><a class="reference internal" href="feed-exports.html">Feed exports</a></li>
+<li class="toctree-l1"><a class="reference internal" href="request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Debugging Spiders</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#parse-command">Parse Command</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#scrapy-shell">Scrapy Shell</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#open-in-browser">Open in browser</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#scrapy.utils.response.open_in_browser"><code class="docutils literal notranslate"><span class="pre">open_in_browser()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#logging">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#visual-studio-code">Visual Studio Code</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extensions.html">Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Debugging Spiders</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/topics/debug.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="debugging-spiders">
+<span id="topics-debug"></span><h1>Debugging Spiders<a class="headerlink" href="#debugging-spiders" title="Link to this heading"></a></h1>
+<p>This document explains the most common techniques for debugging spiders.
+Consider the following Scrapy spider below:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">scrapy</span>
+<span class="kn">from</span> <span class="nn">myproject.items</span> <span class="kn">import</span> <span class="n">MyItem</span>
+
+
+<span class="k">class</span> <span class="nc">MySpider</span><span class="p">(</span><span class="n">scrapy</span><span class="o">.</span><span class="n">Spider</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;myspider&quot;</span>
+    <span class="n">start_urls</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;http://example.com/page1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;http://example.com/page2&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
+        <span class="c1"># &lt;processing code not shown&gt;</span>
+        <span class="c1"># collect `item_urls`</span>
+        <span class="k">for</span> <span class="n">item_url</span> <span class="ow">in</span> <span class="n">item_urls</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">scrapy</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span><span class="n">item_url</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_item</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">parse_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
+        <span class="c1"># &lt;processing code not shown&gt;</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="n">MyItem</span><span class="p">()</span>
+        <span class="c1"># populate `item` fields</span>
+        <span class="c1"># and extract item_details_url</span>
+        <span class="k">yield</span> <span class="n">scrapy</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span>
+            <span class="n">item_details_url</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_details</span><span class="p">,</span> <span class="n">cb_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;item&quot;</span><span class="p">:</span> <span class="n">item</span><span class="p">}</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">parse_details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="c1"># populate more `item` fields</span>
+        <span class="k">return</span> <span class="n">item</span>
+</pre></div>
+</div>
+<p>Basically this is a simple spider which parses two pages of items (the
+start_urls). Items also have a details page with additional information, so we
+use the <code class="docutils literal notranslate"><span class="pre">cb_kwargs</span></code> functionality of <a class="reference internal" href="request-response.html#scrapy.Request" title="scrapy.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a> to pass a
+partially populated item.</p>
+<section id="parse-command">
+<h2>Parse Command<a class="headerlink" href="#parse-command" title="Link to this heading"></a></h2>
+<p>The most basic way of checking the output of your spider is to use the
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="commands.html#std-command-parse"><code class="xref std std-command docutils literal notranslate"><span class="pre">parse</span></code></a> command. It allows to check the behaviour of different parts
+of the spider at the method level. It has the advantage of being flexible and
+simple to use, but does not allow debugging code inside a method.</p>
+<p>In order to see the item scraped from a specific url:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ scrapy parse --spider=myspider -c parse_item -d 2 &lt;item_url&gt;
+[ ... scrapy log lines crawling example.com spider ... ]
+
+&gt;&gt;&gt; STATUS DEPTH LEVEL 2 &lt;&lt;&lt;
+# Scraped Items  ------------------------------------------------------------
+[{&#39;url&#39;: &lt;item_url&gt;}]
+
+# Requests  -----------------------------------------------------------------
+[]
+</pre></div>
+</div>
+<p>Using the <code class="docutils literal notranslate"><span class="pre">--verbose</span></code> or <code class="docutils literal notranslate"><span class="pre">-v</span></code> option we can see the status at each depth level:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ scrapy parse --spider=myspider -c parse_item -d 2 -v &lt;item_url&gt;
+[ ... scrapy log lines crawling example.com spider ... ]
+
+&gt;&gt;&gt; DEPTH LEVEL: 1 &lt;&lt;&lt;
+# Scraped Items  ------------------------------------------------------------
+[]
+
+# Requests  -----------------------------------------------------------------
+[&lt;GET item_details_url&gt;]
+
+
+&gt;&gt;&gt; DEPTH LEVEL: 2 &lt;&lt;&lt;
+# Scraped Items  ------------------------------------------------------------
+[{&#39;url&#39;: &lt;item_url&gt;}]
+
+# Requests  -----------------------------------------------------------------
+[]
+</pre></div>
+</div>
+<p>Checking items scraped from a single start_url, can also be easily achieved
+using:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>$ scrapy parse --spider=myspider -d 3 &#39;http://example.com/page1&#39;
+</pre></div>
+</div>
+</section>
+<section id="scrapy-shell">
+<h2>Scrapy Shell<a class="headerlink" href="#scrapy-shell" title="Link to this heading"></a></h2>
+<p>While the <a class="hxr-hoverxref hxr-tooltip reference internal" href="commands.html#std-command-parse"><code class="xref std std-command docutils literal notranslate"><span class="pre">parse</span></code></a> command is very useful for checking behaviour of a
+spider, it is of little help to check what happens inside a callback, besides
+showing the response received and the output. How to debug the situation when
+<code class="docutils literal notranslate"><span class="pre">parse_details</span></code> sometimes receives no item?</p>
+<p>Fortunately, the <a class="hxr-hoverxref hxr-tooltip reference internal" href="commands.html#std-command-shell"><code class="xref std std-command docutils literal notranslate"><span class="pre">shell</span></code></a> is your bread and butter in this case (see
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="shell.html#topics-shell-inspect-response"><span class="std std-ref">Invoking the shell from spiders to inspect responses</span></a>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scrapy.shell</span> <span class="kn">import</span> <span class="n">inspect_response</span>
+
+
+<span class="k">def</span> <span class="nf">parse_details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">item</span><span class="p">:</span>
+        <span class="c1"># populate more `item` fields</span>
+        <span class="k">return</span> <span class="n">item</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">inspect_response</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See also: <a class="hxr-hoverxref hxr-tooltip reference internal" href="shell.html#topics-shell-inspect-response"><span class="std std-ref">Invoking the shell from spiders to inspect responses</span></a>.</p>
+</section>
+<section id="open-in-browser">
+<h2>Open in browser<a class="headerlink" href="#open-in-browser" title="Link to this heading"></a></h2>
+<p>Sometimes you just want to see how a certain response looks in a browser, you
+can use the <a class="reference internal" href="#scrapy.utils.response.open_in_browser" title="scrapy.utils.response.open_in_browser"><code class="xref py py-func docutils literal notranslate"><span class="pre">open_in_browser()</span></code></a> function for that:</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="scrapy.utils.response.open_in_browser">
+<span class="sig-prename descclassname"><span class="pre">scrapy.utils.response.</span></span><span class="sig-name descname"><span class="pre">open_in_browser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">response:</span> <span class="pre">TextResponse,</span> <span class="pre">_openfunc:</span> <span class="pre">Callable[[str],</span> <span class="pre">Any]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">open&gt;</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="../_modules/scrapy/utils/response.html#open_in_browser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.utils.response.open_in_browser" title="Link to this definition"></a></dt>
+<dd><p>Open <em>response</em> in a local web browser, adjusting the <a class="reference external" href="https://www.w3schools.com/tags/tag_base.asp">base tag</a> for
+external links to work, e.g. so that images and styles are displayed.</p>
+<p>For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scrapy.utils.response</span> <span class="kn">import</span> <span class="n">open_in_browser</span>
+
+
+<span class="k">def</span> <span class="nf">parse_details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">):</span>
+    <span class="k">if</span> <span class="s2">&quot;item name&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">body</span><span class="p">:</span>
+        <span class="n">open_in_browser</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+<section id="logging">
+<h2>Logging<a class="headerlink" href="#logging" title="Link to this heading"></a></h2>
+<p>Logging is another useful option for getting information about your spider run.
+Although not as convenient, it comes with the advantage that the logs will be
+available in all future runs should they be necessary again:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">parse_details</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">,</span> <span class="n">item</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">item</span><span class="p">:</span>
+        <span class="c1"># populate more `item` fields</span>
+        <span class="k">return</span> <span class="n">item</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No item received for </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For more information, check the <a class="hxr-hoverxref hxr-tooltip reference internal" href="logging.html#topics-logging"><span class="std std-ref">Logging</span></a> section.</p>
+</section>
+<section id="visual-studio-code">
+<span id="debug-vscode"></span><h2>Visual Studio Code<a class="headerlink" href="#visual-studio-code" title="Link to this heading"></a></h2>
+<p>To debug spiders with Visual Studio Code you can use the following <code class="docutils literal notranslate"><span class="pre">launch.json</span></code>:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.1.0&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;configurations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Python: Launch Scrapy Spider&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;python&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;request&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;launch&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;module&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;scrapy&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="s2">&quot;runspider&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">&quot;${file}&quot;</span>
+<span class="w">            </span><span class="p">],</span>
+<span class="w">            </span><span class="nt">&quot;console&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;integratedTerminal&quot;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Also, make sure you enable “User Uncaught Exceptions”, to catch exceptions in
+your Scrapy spider.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../faq.html" class="btn btn-neutral float-left" title="Frequently Asked Questions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="contracts.html" class="btn btn-neutral float-right" title="Spiders Contracts" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

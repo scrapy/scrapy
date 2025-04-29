@@ -1,0 +1,989 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feed exports &mdash; Scrapy 2.12.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.custom.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster.bundle.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-shadow.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-punk.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-noir.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-light.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/tooltipster-sideTip-borderless.min.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/micromodal.css" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/sphinx_rtd_theme.css?v=3234e928" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=74c04d93" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/general.css?v=c0a7eb24" />
+      <link rel="stylesheet" type="text/css" href="../_static/dark_mode_css/dark.css?v=70edf1c7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=84389e84"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/js/hoverxref.js"></script>
+      <script src="../_static/js/tooltipster.bundle.min.js"></script>
+      <script src="../_static/js/micromodal.min.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="../_static/dark_mode_js/default_light.js?v=c2e647ce"></script>
+      <script src="../_static/dark_mode_js/theme_switcher.js?v=358d3910"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Requests and Responses" href="request-response.html" />
+    <link rel="prev" title="Item Pipeline" href="item-pipeline.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Scrapy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">First steps</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../intro/overview.html">Scrapy at a glance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/install.html">Installation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/tutorial.html">Scrapy Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../intro/examples.html">Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Basic concepts</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Command line tool</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spiders.html">Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="selectors.html">Selectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="items.html">Items</a></li>
+<li class="toctree-l1"><a class="reference internal" href="loaders.html">Item Loaders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shell.html">Scrapy shell</a></li>
+<li class="toctree-l1"><a class="reference internal" href="item-pipeline.html">Item Pipeline</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Feed exports</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#serialization-formats">Serialization formats</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#json">JSON</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#json-lines">JSON lines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#csv">CSV</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#xml">XML</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pickle">Pickle</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#marshal">Marshal</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#storages">Storages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#storage-uri-parameters">Storage URI parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#storage-backends">Storage backends</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#local-filesystem">Local filesystem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ftp">FTP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#s3">S3</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#google-cloud-storage-gcs">Google Cloud Storage (GCS)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#standard-output">Standard output</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#delayed-file-delivery">Delayed file delivery</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#item-filtering">Item filtering</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#itemfilter">ItemFilter</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.extensions.feedexport.ItemFilter"><code class="docutils literal notranslate"><span class="pre">ItemFilter</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#post-processing">Post-Processing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#built-in-plugins">Built-in Plugins</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.extensions.postprocessing.GzipPlugin"><code class="docutils literal notranslate"><span class="pre">GzipPlugin</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.extensions.postprocessing.LZMAPlugin"><code class="docutils literal notranslate"><span class="pre">LZMAPlugin</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.extensions.postprocessing.Bz2Plugin"><code class="docutils literal notranslate"><span class="pre">Bz2Plugin</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#custom-plugins">Custom Plugins</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#init__"><code class="docutils literal notranslate"><span class="pre">__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#write"><code class="docutils literal notranslate"><span class="pre">write()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#close"><code class="docutils literal notranslate"><span class="pre">close()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#settings">Settings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#feeds">FEEDS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feed-export-encoding">FEED_EXPORT_ENCODING</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feed-export-fields">FEED_EXPORT_FIELDS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feed-export-indent">FEED_EXPORT_INDENT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feed-store-empty">FEED_STORE_EMPTY</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feed-storages">FEED_STORAGES</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feed-storage-ftp-active">FEED_STORAGE_FTP_ACTIVE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feed-storage-s3-acl">FEED_STORAGE_S3_ACL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feed-storages-base">FEED_STORAGES_BASE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feed-exporters">FEED_EXPORTERS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feed-exporters-base">FEED_EXPORTERS_BASE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feed-export-batch-item-count">FEED_EXPORT_BATCH_ITEM_COUNT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feed-uri-params">FEED_URI_PARAMS</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#scrapy.extensions.feedexport.uri_params"><code class="docutils literal notranslate"><span class="pre">uri_params()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="request-response.html">Requests and Responses</a></li>
+<li class="toctree-l1"><a class="reference internal" href="link-extractors.html">Link Extractors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="settings.html">Settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Built-in services</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Stats Collection</a></li>
+<li class="toctree-l1"><a class="reference internal" href="email.html">Sending e-mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telnetconsole.html">Telnet Console</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Solving specific problems</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">Frequently Asked Questions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debugging Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contracts.html">Spiders Contracts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="practices.html">Common Practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="broad-crawls.html">Broad Crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer-tools.html">Using your browser’s Developer Tools for scraping</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dynamic-content.html">Selecting dynamically-loaded content</a></li>
+<li class="toctree-l1"><a class="reference internal" href="leaks.html">Debugging memory leaks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="media-pipeline.html">Downloading and processing files and images</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deploy.html">Deploying Spiders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="autothrottle.html">AutoThrottle extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarking.html">Benchmarking</a></li>
+<li class="toctree-l1"><a class="reference internal" href="jobs.html">Jobs: pausing and resuming crawls</a></li>
+<li class="toctree-l1"><a class="reference internal" href="coroutines.html">Coroutines</a></li>
+<li class="toctree-l1"><a class="reference internal" href="asyncio.html">asyncio</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Extending Scrapy</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">Architecture overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="addons.html">Add-ons</a></li>
+<li class="toctree-l1"><a class="reference internal" href="downloader-middleware.html">Downloader Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="spider-middleware.html">Spider Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="extensions.html">Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="signals.html">Signals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="scheduler.html">Scheduler</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporters.html">Item Exporters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="components.html">Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">Core API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">All the rest</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../news.html">Release notes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to Scrapy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versioning.html">Versioning and API stability</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Scrapy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Feed exports</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/topics/feed-exports.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="feed-exports">
+<span id="topics-feed-exports"></span><h1>Feed exports<a class="headerlink" href="#feed-exports" title="Link to this heading"></a></h1>
+<p>One of the most frequently required features when implementing scrapers is
+being able to store the scraped data properly and, quite often, that means
+generating an “export file” with the scraped data (commonly called “export
+feed”) to be consumed by other systems.</p>
+<p>Scrapy provides this functionality out of the box with the Feed Exports, which
+allows you to generate feeds with the scraped items, using multiple
+serialization formats and storage backends.</p>
+<p>This page provides detailed documentation for all feed export features. If you
+are looking for a step-by-step guide, check out <a class="reference external" href="https://docs.zyte.com/web-scraping/guides/export/index.html#exporting-scraped-data">Zyte’s export guides</a>.</p>
+<section id="serialization-formats">
+<span id="topics-feed-format"></span><h2>Serialization formats<a class="headerlink" href="#serialization-formats" title="Link to this heading"></a></h2>
+<p>For serializing the scraped data, the feed exports use the <a class="hxr-hoverxref hxr-tooltip reference internal" href="exporters.html#topics-exporters"><span class="std std-ref">Item exporters</span></a>. These formats are supported out of the box:</p>
+<ul class="simple">
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-format-json"><span class="std std-ref">JSON</span></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-format-jsonlines"><span class="std std-ref">JSON lines</span></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-format-csv"><span class="std std-ref">CSV</span></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-format-xml"><span class="std std-ref">XML</span></a></p></li>
+</ul>
+<p>But you can also extend the supported format through the
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORTERS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORTERS</span></code></a> setting.</p>
+<section id="json">
+<span id="topics-feed-format-json"></span><h3>JSON<a class="headerlink" href="#json" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Value for the <code class="docutils literal notranslate"><span class="pre">format</span></code> key in the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEEDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEEDS</span></code></a> setting: <code class="docutils literal notranslate"><span class="pre">json</span></code></p></li>
+<li><p>Exporter used: <a class="reference internal" href="exporters.html#scrapy.exporters.JsonItemExporter" title="scrapy.exporters.JsonItemExporter"><code class="xref py py-class docutils literal notranslate"><span class="pre">JsonItemExporter</span></code></a></p></li>
+<li><p>See <a class="hxr-hoverxref hxr-tooltip reference internal" href="exporters.html#json-with-large-data"><span class="std std-ref">this warning</span></a> if you’re using JSON with
+large feeds.</p></li>
+</ul>
+</section>
+<section id="json-lines">
+<span id="topics-feed-format-jsonlines"></span><h3>JSON lines<a class="headerlink" href="#json-lines" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Value for the <code class="docutils literal notranslate"><span class="pre">format</span></code> key in the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEEDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEEDS</span></code></a> setting: <code class="docutils literal notranslate"><span class="pre">jsonlines</span></code></p></li>
+<li><p>Exporter used: <a class="reference internal" href="exporters.html#scrapy.exporters.JsonLinesItemExporter" title="scrapy.exporters.JsonLinesItemExporter"><code class="xref py py-class docutils literal notranslate"><span class="pre">JsonLinesItemExporter</span></code></a></p></li>
+</ul>
+</section>
+<section id="csv">
+<span id="topics-feed-format-csv"></span><h3>CSV<a class="headerlink" href="#csv" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Value for the <code class="docutils literal notranslate"><span class="pre">format</span></code> key in the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEEDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEEDS</span></code></a> setting: <code class="docutils literal notranslate"><span class="pre">csv</span></code></p></li>
+<li><p>Exporter used: <a class="reference internal" href="exporters.html#scrapy.exporters.CsvItemExporter" title="scrapy.exporters.CsvItemExporter"><code class="xref py py-class docutils literal notranslate"><span class="pre">CsvItemExporter</span></code></a></p></li>
+<li><p>To specify columns to export, their order and their column names, use
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORT_FIELDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORT_FIELDS</span></code></a>. Other feed exporters can also use this
+option, but it is important for CSV because unlike many other export
+formats CSV uses a fixed header.</p></li>
+</ul>
+</section>
+<section id="xml">
+<span id="topics-feed-format-xml"></span><h3>XML<a class="headerlink" href="#xml" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Value for the <code class="docutils literal notranslate"><span class="pre">format</span></code> key in the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEEDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEEDS</span></code></a> setting: <code class="docutils literal notranslate"><span class="pre">xml</span></code></p></li>
+<li><p>Exporter used: <a class="reference internal" href="exporters.html#scrapy.exporters.XmlItemExporter" title="scrapy.exporters.XmlItemExporter"><code class="xref py py-class docutils literal notranslate"><span class="pre">XmlItemExporter</span></code></a></p></li>
+</ul>
+</section>
+<section id="pickle">
+<span id="topics-feed-format-pickle"></span><h3>Pickle<a class="headerlink" href="#pickle" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Value for the <code class="docutils literal notranslate"><span class="pre">format</span></code> key in the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEEDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEEDS</span></code></a> setting: <code class="docutils literal notranslate"><span class="pre">pickle</span></code></p></li>
+<li><p>Exporter used: <a class="reference internal" href="exporters.html#scrapy.exporters.PickleItemExporter" title="scrapy.exporters.PickleItemExporter"><code class="xref py py-class docutils literal notranslate"><span class="pre">PickleItemExporter</span></code></a></p></li>
+</ul>
+</section>
+<section id="marshal">
+<span id="topics-feed-format-marshal"></span><h3>Marshal<a class="headerlink" href="#marshal" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Value for the <code class="docutils literal notranslate"><span class="pre">format</span></code> key in the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEEDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEEDS</span></code></a> setting: <code class="docutils literal notranslate"><span class="pre">marshal</span></code></p></li>
+<li><p>Exporter used: <a class="reference internal" href="exporters.html#scrapy.exporters.MarshalItemExporter" title="scrapy.exporters.MarshalItemExporter"><code class="xref py py-class docutils literal notranslate"><span class="pre">MarshalItemExporter</span></code></a></p></li>
+</ul>
+</section>
+</section>
+<section id="storages">
+<span id="topics-feed-storage"></span><h2>Storages<a class="headerlink" href="#storages" title="Link to this heading"></a></h2>
+<p>When using the feed exports you define where to store the feed using one or multiple <a class="reference external" href="https://en.wikipedia.org/wiki/Uniform_Resource_Identifier">URIs</a>
+(through the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEEDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEEDS</span></code></a> setting). The feed exports supports multiple
+storage backend types which are defined by the URI scheme.</p>
+<p>The storages backends supported out of the box are:</p>
+<ul class="simple">
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-storage-fs"><span class="std std-ref">Local filesystem</span></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-storage-ftp"><span class="std std-ref">FTP</span></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-storage-s3"><span class="std std-ref">S3</span></a> (requires <a class="reference external" href="https://github.com/boto/boto3">boto3</a>)</p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-storage-gcs"><span class="std std-ref">Google Cloud Storage (GCS)</span></a> (requires <a class="reference external" href="https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python">google-cloud-storage</a>)</p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-storage-stdout"><span class="std std-ref">Standard output</span></a></p></li>
+</ul>
+<p>Some storage backends may be unavailable if the required external libraries are
+not available. For example, the S3 backend is only available if the <a class="reference external" href="https://github.com/boto/boto3">boto3</a>
+library is installed.</p>
+</section>
+<section id="storage-uri-parameters">
+<span id="topics-feed-uri-params"></span><h2>Storage URI parameters<a class="headerlink" href="#storage-uri-parameters" title="Link to this heading"></a></h2>
+<p>The storage URI can also contain parameters that get replaced when the feed is
+being created. These parameters are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">%(time)s</span></code> - gets replaced by a timestamp when the feed is being created</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">%(name)s</span></code> - gets replaced by the spider name</p></li>
+</ul>
+<p>Any other named parameter gets replaced by the spider attribute of the same
+name. For example, <code class="docutils literal notranslate"><span class="pre">%(site_id)s</span></code> would get replaced by the <code class="docutils literal notranslate"><span class="pre">spider.site_id</span></code>
+attribute the moment the feed is being created.</p>
+<p>Here are some examples to illustrate:</p>
+<ul class="simple">
+<li><p>Store in FTP using one directory per spider:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">ftp://user:password&#64;ftp.example.com/scraping/feeds/%(name)s/%(time)s.json</span></code></p></li>
+</ul>
+</li>
+<li><p>Store in S3 using one directory per spider:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">s3://mybucket/scraping/feeds/%(name)s/%(time)s.json</span></code></p></li>
+</ul>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="hxr-hoverxref hxr-tooltip reference internal" href="spiders.html#spiderargs"><span class="std std-ref">Spider arguments</span></a> become spider attributes, hence
+they can also be used as storage URI parameters.</p>
+</div>
+</section>
+<section id="storage-backends">
+<span id="topics-feed-storage-backends"></span><h2>Storage backends<a class="headerlink" href="#storage-backends" title="Link to this heading"></a></h2>
+<section id="local-filesystem">
+<span id="topics-feed-storage-fs"></span><h3>Local filesystem<a class="headerlink" href="#local-filesystem" title="Link to this heading"></a></h3>
+<p>The feeds are stored in the local filesystem.</p>
+<ul class="simple">
+<li><p>URI scheme: <code class="docutils literal notranslate"><span class="pre">file</span></code></p></li>
+<li><p>Example URI: <code class="docutils literal notranslate"><span class="pre">file:///tmp/export.csv</span></code></p></li>
+<li><p>Required external libraries: none</p></li>
+</ul>
+<p>Note that for the local filesystem storage (only) you can omit the scheme if
+you specify an absolute path like <code class="docutils literal notranslate"><span class="pre">/tmp/export.csv</span></code> (Unix systems only).
+Alternatively you can also use a <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pathlib.Path</span></code></a> object.</p>
+</section>
+<section id="ftp">
+<span id="topics-feed-storage-ftp"></span><h3>FTP<a class="headerlink" href="#ftp" title="Link to this heading"></a></h3>
+<p>The feeds are stored in a FTP server.</p>
+<ul class="simple">
+<li><p>URI scheme: <code class="docutils literal notranslate"><span class="pre">ftp</span></code></p></li>
+<li><p>Example URI: <code class="docutils literal notranslate"><span class="pre">ftp://user:pass&#64;ftp.example.com/path/to/export.csv</span></code></p></li>
+<li><p>Required external libraries: none</p></li>
+</ul>
+<p>FTP supports two different connection modes: <a class="reference external" href="https://stackoverflow.com/a/1699163">active or passive</a>. Scrapy uses the passive connection
+mode by default. To use the active connection mode instead, set the
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_STORAGE_FTP_ACTIVE"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_STORAGE_FTP_ACTIVE</span></code></a> setting to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<p>The default value for the <code class="docutils literal notranslate"><span class="pre">overwrite</span></code> key in the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEEDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEEDS</span></code></a> for this
+storage backend is: <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>The value <code class="docutils literal notranslate"><span class="pre">True</span></code> in <code class="docutils literal notranslate"><span class="pre">overwrite</span></code> will cause you to lose the
+previous version of your data.</p>
+</div>
+<p>This storage backend uses <a class="hxr-hoverxref hxr-tooltip reference internal" href="#delayed-file-delivery"><span class="std std-ref">delayed file delivery</span></a>.</p>
+</section>
+<section id="s3">
+<span id="topics-feed-storage-s3"></span><h3>S3<a class="headerlink" href="#s3" title="Link to this heading"></a></h3>
+<p>The feeds are stored on <a class="reference external" href="https://aws.amazon.com/s3/">Amazon S3</a>.</p>
+<ul class="simple">
+<li><p>URI scheme: <code class="docutils literal notranslate"><span class="pre">s3</span></code></p></li>
+<li><p>Example URIs:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">s3://mybucket/path/to/export.csv</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">s3://aws_key:aws_secret&#64;mybucket/path/to/export.csv</span></code></p></li>
+</ul>
+</li>
+<li><p>Required external libraries: <a class="reference external" href="https://github.com/boto/boto3">boto3</a> &gt;= 1.20.0</p></li>
+</ul>
+<p>The AWS credentials can be passed as user/password in the URI, or they can be
+passed through the following settings:</p>
+<ul class="simple">
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-AWS_ACCESS_KEY_ID"><code class="xref std std-setting docutils literal notranslate"><span class="pre">AWS_ACCESS_KEY_ID</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-AWS_SECRET_ACCESS_KEY"><code class="xref std std-setting docutils literal notranslate"><span class="pre">AWS_SECRET_ACCESS_KEY</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-AWS_SESSION_TOKEN"><code class="xref std std-setting docutils literal notranslate"><span class="pre">AWS_SESSION_TOKEN</span></code></a> (only needed for <a class="reference external" href="https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html">temporary security credentials</a>)</p></li>
+</ul>
+<p>You can also define a custom ACL, custom endpoint, and region name for exported
+feeds using these settings:</p>
+<ul class="simple">
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_STORAGE_S3_ACL"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_STORAGE_S3_ACL</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-AWS_ENDPOINT_URL"><code class="xref std std-setting docutils literal notranslate"><span class="pre">AWS_ENDPOINT_URL</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-AWS_REGION_NAME"><code class="xref std std-setting docutils literal notranslate"><span class="pre">AWS_REGION_NAME</span></code></a></p></li>
+</ul>
+<p>The default value for the <code class="docutils literal notranslate"><span class="pre">overwrite</span></code> key in the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEEDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEEDS</span></code></a> for this
+storage backend is: <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>The value <code class="docutils literal notranslate"><span class="pre">True</span></code> in <code class="docutils literal notranslate"><span class="pre">overwrite</span></code> will cause you to lose the
+previous version of your data.</p>
+</div>
+<p>This storage backend uses <a class="hxr-hoverxref hxr-tooltip reference internal" href="#delayed-file-delivery"><span class="std std-ref">delayed file delivery</span></a>.</p>
+</section>
+<section id="google-cloud-storage-gcs">
+<span id="topics-feed-storage-gcs"></span><h3>Google Cloud Storage (GCS)<a class="headerlink" href="#google-cloud-storage-gcs" title="Link to this heading"></a></h3>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.3.</span></p>
+</div>
+<p>The feeds are stored on <a class="reference external" href="https://cloud.google.com/storage/">Google Cloud Storage</a>.</p>
+<ul class="simple">
+<li><p>URI scheme: <code class="docutils literal notranslate"><span class="pre">gs</span></code></p></li>
+<li><p>Example URIs:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">gs://mybucket/path/to/export.csv</span></code></p></li>
+</ul>
+</li>
+<li><p>Required external libraries: <a class="reference external" href="https://cloud.google.com/storage/docs/reference/libraries#client-libraries-install-python">google-cloud-storage</a>.</p></li>
+</ul>
+<p>For more information about authentication, please refer to <a class="reference external" href="https://cloud.google.com/docs/authentication">Google Cloud documentation</a>.</p>
+<p>You can set a <em>Project ID</em> and <em>Access Control List (ACL)</em> through the following settings:</p>
+<ul class="simple">
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-FEED_STORAGE_GCS_ACL"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_STORAGE_GCS_ACL</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="settings.html#std-setting-GCS_PROJECT_ID"><code class="xref std std-setting docutils literal notranslate"><span class="pre">GCS_PROJECT_ID</span></code></a></p></li>
+</ul>
+<p>The default value for the <code class="docutils literal notranslate"><span class="pre">overwrite</span></code> key in the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEEDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEEDS</span></code></a> for this
+storage backend is: <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>The value <code class="docutils literal notranslate"><span class="pre">True</span></code> in <code class="docutils literal notranslate"><span class="pre">overwrite</span></code> will cause you to lose the
+previous version of your data.</p>
+</div>
+<p>This storage backend uses <a class="hxr-hoverxref hxr-tooltip reference internal" href="#delayed-file-delivery"><span class="std std-ref">delayed file delivery</span></a>.</p>
+</section>
+<section id="standard-output">
+<span id="topics-feed-storage-stdout"></span><h3>Standard output<a class="headerlink" href="#standard-output" title="Link to this heading"></a></h3>
+<p>The feeds are written to the standard output of the Scrapy process.</p>
+<ul class="simple">
+<li><p>URI scheme: <code class="docutils literal notranslate"><span class="pre">stdout</span></code></p></li>
+<li><p>Example URI: <code class="docutils literal notranslate"><span class="pre">stdout:</span></code></p></li>
+<li><p>Required external libraries: none</p></li>
+</ul>
+</section>
+<section id="delayed-file-delivery">
+<span id="id1"></span><h3>Delayed file delivery<a class="headerlink" href="#delayed-file-delivery" title="Link to this heading"></a></h3>
+<p>As indicated above, some of the described storage backends use delayed file
+delivery.</p>
+<p>These storage backends do not upload items to the feed URI as those items are
+scraped. Instead, Scrapy writes items into a temporary local file, and only
+once all the file contents have been written (i.e. at the end of the crawl) is
+that file uploaded to the feed URI.</p>
+<p>If you want item delivery to start earlier when using one of these storage
+backends, use <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORT_BATCH_ITEM_COUNT"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORT_BATCH_ITEM_COUNT</span></code></a> to split the output items
+in multiple files, with the specified maximum item count per file. That way, as
+soon as a file reaches the maximum item count, that file is delivered to the
+feed URI, allowing item delivery to start way before the end of the crawl.</p>
+</section>
+</section>
+<section id="item-filtering">
+<span id="item-filter"></span><h2>Item filtering<a class="headerlink" href="#item-filtering" title="Link to this heading"></a></h2>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.6.0.</span></p>
+</div>
+<p>You can filter items that you want to allow for a particular feed by using the
+<code class="docutils literal notranslate"><span class="pre">item_classes</span></code> option in <a class="hxr-hoverxref hxr-tooltip reference internal" href="#feed-options"><span class="std std-ref">feeds options</span></a>. Only items of
+the specified types will be added to the feed.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">item_classes</span></code> option is implemented by the <a class="reference internal" href="#scrapy.extensions.feedexport.ItemFilter" title="scrapy.extensions.feedexport.ItemFilter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ItemFilter</span></code></a>
+class, which is the default value of the <code class="docutils literal notranslate"><span class="pre">item_filter</span></code> <a class="hxr-hoverxref hxr-tooltip reference internal" href="#feed-options"><span class="std std-ref">feed option</span></a>.</p>
+<p>You can create your own custom filtering class by implementing <a class="reference internal" href="#scrapy.extensions.feedexport.ItemFilter" title="scrapy.extensions.feedexport.ItemFilter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ItemFilter</span></code></a>’s
+method <code class="docutils literal notranslate"><span class="pre">accepts</span></code> and taking <code class="docutils literal notranslate"><span class="pre">feed_options</span></code> as an argument.</p>
+<p>For instance:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyCustomFilter</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feed_options</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feed_options</span> <span class="o">=</span> <span class="n">feed_options</span>
+
+    <span class="k">def</span> <span class="nf">accepts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s2">&quot;field1&quot;</span> <span class="ow">in</span> <span class="n">item</span> <span class="ow">and</span> <span class="n">item</span><span class="p">[</span><span class="s2">&quot;field1&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;expected_data&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+</pre></div>
+</div>
+<p>You can assign your custom filtering class to the <code class="docutils literal notranslate"><span class="pre">item_filter</span></code> <a class="hxr-hoverxref hxr-tooltip reference internal" href="#feed-options"><span class="std std-ref">option of a feed</span></a>.
+See <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEEDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEEDS</span></code></a> for examples.</p>
+<section id="itemfilter">
+<h3>ItemFilter<a class="headerlink" href="#itemfilter" title="Link to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.feedexport.ItemFilter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.feedexport.</span></span><span class="sig-name descname"><span class="pre">ItemFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">feed_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/scrapy/extensions/feedexport.html#ItemFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.extensions.feedexport.ItemFilter" title="Link to this definition"></a></dt>
+<dd><p>This will be used by FeedExporter to decide if an item should be allowed
+to be exported to a particular feed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>feed_options</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><em>dict</em></a>) – feed specific options passed from FeedExporter</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="scrapy.extensions.feedexport.ItemFilter.accepts">
+<span class="sig-name descname"><span class="pre">accepts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/scrapy/extensions/feedexport.html#ItemFilter.accepts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.extensions.feedexport.ItemFilter.accepts" title="Link to this definition"></a></dt>
+<dd><p>Return <code class="docutils literal notranslate"><span class="pre">True</span></code> if <cite>item</cite> should be exported or <code class="docutils literal notranslate"><span class="pre">False</span></code> otherwise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>item</strong> (<a class="hxr-hoverxref hxr-tooltip reference internal" href="items.html#topics-items"><span class="std std-ref">Scrapy items</span></a>) – scraped item which user wants to check if is acceptable</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><cite>True</cite> if accepted, <cite>False</cite> otherwise</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+<section id="post-processing">
+<span id="id2"></span><h2>Post-Processing<a class="headerlink" href="#post-processing" title="Link to this heading"></a></h2>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.6.0.</span></p>
+</div>
+<p>Scrapy provides an option to activate plugins to post-process feeds before they are exported
+to feed storages. In addition to using <a class="hxr-hoverxref hxr-tooltip reference internal" href="#builtin-plugins"><span class="std std-ref">builtin plugins</span></a>, you
+can create your own <a class="hxr-hoverxref hxr-tooltip reference internal" href="#custom-plugins"><span class="std std-ref">plugins</span></a>.</p>
+<p>These plugins can be activated through the <code class="docutils literal notranslate"><span class="pre">postprocessing</span></code> option of a feed.
+The option must be passed a list of post-processing plugins in the order you want
+the feed to be processed. These plugins can be declared either as an import string
+or with the imported class of the plugin. Parameters to plugins can be passed
+through the feed options. See <a class="hxr-hoverxref hxr-tooltip reference internal" href="#feed-options"><span class="std std-ref">feed options</span></a> for examples.</p>
+<section id="built-in-plugins">
+<span id="builtin-plugins"></span><h3>Built-in Plugins<a class="headerlink" href="#built-in-plugins" title="Link to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.postprocessing.GzipPlugin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.postprocessing.</span></span><span class="sig-name descname"><span class="pre">GzipPlugin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.BinaryIO" title="(in Python v3.13)"><span class="pre">BinaryIO</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">feed_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/scrapy/extensions/postprocessing.html#GzipPlugin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.extensions.postprocessing.GzipPlugin" title="Link to this definition"></a></dt>
+<dd><p>Compresses received data using <a class="reference external" href="https://en.wikipedia.org/wiki/Gzip">gzip</a>.</p>
+<p>Accepted <code class="docutils literal notranslate"><span class="pre">feed_options</span></code> parameters:</p>
+<ul class="simple">
+<li><p><cite>gzip_compresslevel</cite></p></li>
+<li><p><cite>gzip_mtime</cite></p></li>
+<li><p><cite>gzip_filename</cite></p></li>
+</ul>
+<p>See <a class="reference external" href="https://docs.python.org/3/library/gzip.html#gzip.GzipFile" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">gzip.GzipFile</span></code></a> for more info about parameters.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.postprocessing.LZMAPlugin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.postprocessing.</span></span><span class="sig-name descname"><span class="pre">LZMAPlugin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.BinaryIO" title="(in Python v3.13)"><span class="pre">BinaryIO</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">feed_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/scrapy/extensions/postprocessing.html#LZMAPlugin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.extensions.postprocessing.LZMAPlugin" title="Link to this definition"></a></dt>
+<dd><p>Compresses received data using <a class="reference external" href="https://en.wikipedia.org/wiki/Lempel–Ziv–Markov_chain_algorithm">lzma</a>.</p>
+<p>Accepted <code class="docutils literal notranslate"><span class="pre">feed_options</span></code> parameters:</p>
+<ul class="simple">
+<li><p><cite>lzma_format</cite></p></li>
+<li><p><cite>lzma_check</cite></p></li>
+<li><p><cite>lzma_preset</cite></p></li>
+<li><p><cite>lzma_filters</cite></p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">lzma_filters</span></code> cannot be used in pypy version 7.3.1 and older.</p>
+</div>
+<p>See <a class="reference external" href="https://docs.python.org/3/library/lzma.html#lzma.LZMAFile" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">lzma.LZMAFile</span></code></a> for more info about parameters.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="scrapy.extensions.postprocessing.Bz2Plugin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">scrapy.extensions.postprocessing.</span></span><span class="sig-name descname"><span class="pre">Bz2Plugin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.BinaryIO" title="(in Python v3.13)"><span class="pre">BinaryIO</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">feed_options</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/scrapy/extensions/postprocessing.html#Bz2Plugin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#scrapy.extensions.postprocessing.Bz2Plugin" title="Link to this definition"></a></dt>
+<dd><p>Compresses received data using <a class="reference external" href="https://en.wikipedia.org/wiki/Bzip2">bz2</a>.</p>
+<p>Accepted <code class="docutils literal notranslate"><span class="pre">feed_options</span></code> parameters:</p>
+<ul class="simple">
+<li><p><cite>bz2_compresslevel</cite></p></li>
+</ul>
+<p>See <a class="reference external" href="https://docs.python.org/3/library/bz2.html#bz2.BZ2File" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bz2.BZ2File</span></code></a> for more info about parameters.</p>
+</dd></dl>
+
+</section>
+<section id="custom-plugins">
+<span id="id3"></span><h3>Custom Plugins<a class="headerlink" href="#custom-plugins" title="Link to this heading"></a></h3>
+<p>Each plugin is a class that must implement the following methods:</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feed_options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize the plugin.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file</strong> – file-like object having at least the <cite>write</cite>, <cite>tell</cite> and <cite>close</cite> methods implemented</p></li>
+<li><p><strong>feed_options</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>) – feed-specific <a class="hxr-hoverxref hxr-tooltip reference internal" href="#feed-options"><span class="std std-ref">options</span></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#write" title="Link to this definition"></a></dt>
+<dd><p>Process and write <cite>data</cite> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a> or <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#memoryview" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">memoryview</span></code></a>) into the plugin’s target file.
+It must return number of bytes written.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#close" title="Link to this definition"></a></dt>
+<dd><p>Clean up the plugin.</p>
+<p>For example, you might want to close a file wrapper that you might have
+used to compress data written into the file received in the <code class="docutils literal notranslate"><span class="pre">__init__</span></code>
+method.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Do not close the file from the <code class="docutils literal notranslate"><span class="pre">__init__</span></code> method.</p>
+</div>
+</dd></dl>
+
+<p>To pass a parameter to your plugin, use <a class="hxr-hoverxref hxr-tooltip reference internal" href="#feed-options"><span class="std std-ref">feed options</span></a>. You
+can then access those parameters from the <code class="docutils literal notranslate"><span class="pre">__init__</span></code> method of your plugin.</p>
+</section>
+</section>
+<section id="settings">
+<h2>Settings<a class="headerlink" href="#settings" title="Link to this heading"></a></h2>
+<p>These are the settings used for configuring the feed exports:</p>
+<ul class="simple">
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEEDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEEDS</span></code></a> (mandatory)</p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORT_ENCODING"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORT_ENCODING</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_STORE_EMPTY"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_STORE_EMPTY</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORT_FIELDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORT_FIELDS</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORT_INDENT"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORT_INDENT</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_STORAGES"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_STORAGES</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_STORAGE_FTP_ACTIVE"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_STORAGE_FTP_ACTIVE</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_STORAGE_S3_ACL"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_STORAGE_S3_ACL</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORTERS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORTERS</span></code></a></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORT_BATCH_ITEM_COUNT"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORT_BATCH_ITEM_COUNT</span></code></a></p></li>
+</ul>
+<section id="feeds">
+<span id="std-setting-FEEDS"></span><h3>FEEDS<a class="headerlink" href="#feeds" title="Link to this heading"></a></h3>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.1.</span></p>
+</div>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code></p>
+<p>A dictionary in which every key is a feed URI (or a <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pathlib.Path</span></code></a>
+object) and each value is a nested dictionary containing configuration
+parameters for the specific feed.</p>
+<p>This setting is required for enabling the feed export feature.</p>
+<p>See <a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-storage-backends"><span class="std std-ref">Storage backends</span></a> for supported URI schemes.</p>
+<p>For instance:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s1">&#39;items.json&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;format&#39;</span><span class="p">:</span> <span class="s1">&#39;json&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;encoding&#39;</span><span class="p">:</span> <span class="s1">&#39;utf8&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;store_empty&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s1">&#39;item_classes&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">MyItemClass1</span><span class="p">,</span> <span class="s1">&#39;myproject.items.MyItemClass2&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;fields&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s1">&#39;indent&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="s1">&#39;item_export_kwargs&#39;</span><span class="p">:</span> <span class="p">{</span>
+           <span class="s1">&#39;export_empty_fields&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;/home/user/documents/items.xml&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;format&#39;</span><span class="p">:</span> <span class="s1">&#39;xml&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;fields&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;price&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;item_filter&#39;</span><span class="p">:</span> <span class="n">MyCustomFilter1</span><span class="p">,</span>
+        <span class="s1">&#39;encoding&#39;</span><span class="p">:</span> <span class="s1">&#39;latin1&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;indent&#39;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="s1">&#39;items.csv.gz&#39;</span><span class="p">):</span> <span class="p">{</span>
+        <span class="s1">&#39;format&#39;</span><span class="p">:</span> <span class="s1">&#39;csv&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;fields&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;price&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;item_filter&#39;</span><span class="p">:</span> <span class="s1">&#39;myproject.filters.MyCustomFilter2&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;postprocessing&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">MyPlugin1</span><span class="p">,</span> <span class="s1">&#39;scrapy.extensions.postprocessing.GzipPlugin&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;gzip_compresslevel&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p id="feed-options">The following is a list of the accepted keys and the setting that is used
+as a fallback value if that key is not provided for a specific feed definition:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">format</span></code>: the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-format"><span class="std std-ref">serialization format</span></a>.</p>
+<p>This setting is mandatory, there is no fallback value.</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">batch_item_count</span></code>: falls back to
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORT_BATCH_ITEM_COUNT"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORT_BATCH_ITEM_COUNT</span></code></a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.3.0.</span></p>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">encoding</span></code>: falls back to <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORT_ENCODING"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORT_ENCODING</span></code></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fields</span></code>: falls back to <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORT_FIELDS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORT_FIELDS</span></code></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">item_classes</span></code>: list of <a class="hxr-hoverxref hxr-tooltip reference internal" href="items.html#topics-items"><span class="std std-ref">item classes</span></a> to export.</p>
+<p>If undefined or empty, all items are exported.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.6.0.</span></p>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">item_filter</span></code>: a <a class="hxr-hoverxref hxr-tooltip reference internal" href="#item-filter"><span class="std std-ref">filter class</span></a> to filter items to export.</p>
+<p><a class="reference internal" href="#scrapy.extensions.feedexport.ItemFilter" title="scrapy.extensions.feedexport.ItemFilter"><code class="xref py py-class docutils literal notranslate"><span class="pre">ItemFilter</span></code></a> is used be default.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.6.0.</span></p>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">indent</span></code>: falls back to <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORT_INDENT"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORT_INDENT</span></code></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">item_export_kwargs</span></code>: <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> with keyword arguments for the corresponding <a class="hxr-hoverxref hxr-tooltip reference internal" href="exporters.html#topics-exporters"><span class="std std-ref">item exporter class</span></a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.4.0.</span></p>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">overwrite</span></code>: whether to overwrite the file if it already exists
+(<code class="docutils literal notranslate"><span class="pre">True</span></code>) or append to its content (<code class="docutils literal notranslate"><span class="pre">False</span></code>).</p>
+<p>The default value depends on the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-storage-backends"><span class="std std-ref">storage backend</span></a>:</p>
+<ul>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-storage-fs"><span class="std std-ref">Local filesystem</span></a>: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-storage-ftp"><span class="std std-ref">FTP</span></a>: <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Some FTP servers may not support appending to files (the
+<code class="docutils literal notranslate"><span class="pre">APPE</span></code> FTP command).</p>
+</div>
+</li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-storage-s3"><span class="std std-ref">S3</span></a>: <code class="docutils literal notranslate"><span class="pre">True</span></code> (appending is not supported)</p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-storage-gcs"><span class="std std-ref">Google Cloud Storage (GCS)</span></a>: <code class="docutils literal notranslate"><span class="pre">True</span></code> (appending is not supported)</p></li>
+<li><p><a class="hxr-hoverxref hxr-tooltip reference internal" href="#topics-feed-storage-stdout"><span class="std std-ref">Standard output</span></a>: <code class="docutils literal notranslate"><span class="pre">False</span></code> (overwriting is not supported)</p></li>
+</ul>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.4.0.</span></p>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">store_empty</span></code>: falls back to <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_STORE_EMPTY"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_STORE_EMPTY</span></code></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">uri_params</span></code>: falls back to <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_URI_PARAMS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_URI_PARAMS</span></code></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">postprocessing</span></code>: list of <a class="hxr-hoverxref hxr-tooltip reference internal" href="#post-processing"><span class="std std-ref">plugins</span></a> to use for post-processing.</p>
+<p>The plugins will be used in the order of the list passed.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.6.0.</span></p>
+</div>
+</li>
+</ul>
+</section>
+<section id="feed-export-encoding">
+<span id="std-setting-FEED_EXPORT_ENCODING"></span><h3>FEED_EXPORT_ENCODING<a class="headerlink" href="#feed-export-encoding" title="Link to this heading"></a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+<p>The encoding to be used for the feed.</p>
+<p>If unset or set to <code class="docutils literal notranslate"><span class="pre">None</span></code> (default) it uses UTF-8 for everything except JSON output,
+which uses safe numeric encoding (<code class="docutils literal notranslate"><span class="pre">\uXXXX</span></code> sequences) for historic reasons.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">utf-8</span></code> if you want UTF-8 for JSON too.</p>
+<div class="versionchanged">
+<p><span class="versionmodified changed">Changed in version 2.8: </span>The <a class="hxr-hoverxref hxr-tooltip reference internal" href="commands.html#std-command-startproject"><code class="xref std std-command docutils literal notranslate"><span class="pre">startproject</span></code></a> command now sets this setting to
+<code class="docutils literal notranslate"><span class="pre">utf-8</span></code> in the generated <code class="docutils literal notranslate"><span class="pre">settings.py</span></code> file.</p>
+</div>
+</section>
+<section id="feed-export-fields">
+<span id="std-setting-FEED_EXPORT_FIELDS"></span><h3>FEED_EXPORT_FIELDS<a class="headerlink" href="#feed-export-fields" title="Link to this heading"></a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">FEED_EXPORT_FIELDS</span></code> setting to define the fields to export, their
+order and their output names. See <a class="reference internal" href="exporters.html#scrapy.exporters.BaseItemExporter.fields_to_export" title="scrapy.exporters.BaseItemExporter.fields_to_export"><code class="xref py py-attr docutils literal notranslate"><span class="pre">BaseItemExporter.fields_to_export</span></code></a> for more information.</p>
+</section>
+<section id="feed-export-indent">
+<span id="std-setting-FEED_EXPORT_INDENT"></span><h3>FEED_EXPORT_INDENT<a class="headerlink" href="#feed-export-indent" title="Link to this heading"></a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+<p>Amount of spaces used to indent the output on each level. If <code class="docutils literal notranslate"><span class="pre">FEED_EXPORT_INDENT</span></code>
+is a non-negative integer, then array elements and object members will be pretty-printed
+with that indent level. An indent level of <code class="docutils literal notranslate"><span class="pre">0</span></code> (the default), or negative,
+will put each item on a new line. <code class="docutils literal notranslate"><span class="pre">None</span></code> selects the most compact representation.</p>
+<p>Currently implemented only by <a class="reference internal" href="exporters.html#scrapy.exporters.JsonItemExporter" title="scrapy.exporters.JsonItemExporter"><code class="xref py py-class docutils literal notranslate"><span class="pre">JsonItemExporter</span></code></a>
+and <a class="reference internal" href="exporters.html#scrapy.exporters.XmlItemExporter" title="scrapy.exporters.XmlItemExporter"><code class="xref py py-class docutils literal notranslate"><span class="pre">XmlItemExporter</span></code></a>, i.e. when you are exporting
+to <code class="docutils literal notranslate"><span class="pre">.json</span></code> or <code class="docutils literal notranslate"><span class="pre">.xml</span></code>.</p>
+</section>
+<section id="feed-store-empty">
+<span id="std-setting-FEED_STORE_EMPTY"></span><h3>FEED_STORE_EMPTY<a class="headerlink" href="#feed-store-empty" title="Link to this heading"></a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+<p>Whether to export empty feeds (i.e. feeds with no items).
+If <code class="docutils literal notranslate"><span class="pre">False</span></code>, and there are no items to export, no new files are created and
+existing files are not modified, even if the <a class="hxr-hoverxref hxr-tooltip reference internal" href="#feed-options"><span class="std std-ref">overwrite feed option</span></a> is enabled.</p>
+</section>
+<section id="feed-storages">
+<span id="std-setting-FEED_STORAGES"></span><h3>FEED_STORAGES<a class="headerlink" href="#feed-storages" title="Link to this heading"></a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code></p>
+<p>A dict containing additional feed storage backends supported by your project.
+The keys are URI schemes and the values are paths to storage classes.</p>
+</section>
+<section id="feed-storage-ftp-active">
+<span id="std-setting-FEED_STORAGE_FTP_ACTIVE"></span><h3>FEED_STORAGE_FTP_ACTIVE<a class="headerlink" href="#feed-storage-ftp-active" title="Link to this heading"></a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+<p>Whether to use the active connection mode when exporting feeds to an FTP server
+(<code class="docutils literal notranslate"><span class="pre">True</span></code>) or use the passive connection mode instead (<code class="docutils literal notranslate"><span class="pre">False</span></code>, default).</p>
+<p>For information about FTP connection modes, see <a class="reference external" href="https://stackoverflow.com/a/1699163">What is the difference between
+active and passive FTP?</a>.</p>
+</section>
+<section id="feed-storage-s3-acl">
+<span id="std-setting-FEED_STORAGE_S3_ACL"></span><h3>FEED_STORAGE_S3_ACL<a class="headerlink" href="#feed-storage-s3-acl" title="Link to this heading"></a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">''</span></code> (empty string)</p>
+<p>A string containing a custom ACL for feeds exported to Amazon S3 by your project.</p>
+<p>For a complete list of available values, access the <a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl">Canned ACL</a> section on Amazon S3 docs.</p>
+</section>
+<section id="feed-storages-base">
+<span id="std-setting-FEED_STORAGES_BASE"></span><h3>FEED_STORAGES_BASE<a class="headerlink" href="#feed-storages-base" title="Link to this heading"></a></h3>
+<p>Default:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;&quot;</span><span class="p">:</span> <span class="s2">&quot;scrapy.extensions.feedexport.FileFeedStorage&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;file&quot;</span><span class="p">:</span> <span class="s2">&quot;scrapy.extensions.feedexport.FileFeedStorage&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;stdout&quot;</span><span class="p">:</span> <span class="s2">&quot;scrapy.extensions.feedexport.StdoutFeedStorage&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;s3&quot;</span><span class="p">:</span> <span class="s2">&quot;scrapy.extensions.feedexport.S3FeedStorage&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ftp&quot;</span><span class="p">:</span> <span class="s2">&quot;scrapy.extensions.feedexport.FTPFeedStorage&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>A dict containing the built-in feed storage backends supported by Scrapy. You
+can disable any of these backends by assigning <code class="docutils literal notranslate"><span class="pre">None</span></code> to their URI scheme in
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_STORAGES"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_STORAGES</span></code></a>. E.g., to disable the built-in FTP storage backend
+(without replacement), place this in your <code class="docutils literal notranslate"><span class="pre">settings.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">FEED_STORAGES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;ftp&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="feed-exporters">
+<span id="std-setting-FEED_EXPORTERS"></span><h3>FEED_EXPORTERS<a class="headerlink" href="#feed-exporters" title="Link to this heading"></a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">{}</span></code></p>
+<p>A dict containing additional exporters supported by your project. The keys are
+serialization formats and the values are paths to <a class="hxr-hoverxref hxr-tooltip reference internal" href="exporters.html#topics-exporters"><span class="std std-ref">Item exporter</span></a> classes.</p>
+</section>
+<section id="feed-exporters-base">
+<span id="std-setting-FEED_EXPORTERS_BASE"></span><h3>FEED_EXPORTERS_BASE<a class="headerlink" href="#feed-exporters-base" title="Link to this heading"></a></h3>
+<p>Default:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;json&quot;</span><span class="p">:</span> <span class="s2">&quot;scrapy.exporters.JsonItemExporter&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jsonlines&quot;</span><span class="p">:</span> <span class="s2">&quot;scrapy.exporters.JsonLinesItemExporter&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jsonl&quot;</span><span class="p">:</span> <span class="s2">&quot;scrapy.exporters.JsonLinesItemExporter&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jl&quot;</span><span class="p">:</span> <span class="s2">&quot;scrapy.exporters.JsonLinesItemExporter&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;csv&quot;</span><span class="p">:</span> <span class="s2">&quot;scrapy.exporters.CsvItemExporter&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;xml&quot;</span><span class="p">:</span> <span class="s2">&quot;scrapy.exporters.XmlItemExporter&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;marshal&quot;</span><span class="p">:</span> <span class="s2">&quot;scrapy.exporters.MarshalItemExporter&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;pickle&quot;</span><span class="p">:</span> <span class="s2">&quot;scrapy.exporters.PickleItemExporter&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>A dict containing the built-in feed exporters supported by Scrapy. You can
+disable any of these exporters by assigning <code class="docutils literal notranslate"><span class="pre">None</span></code> to their serialization
+format in <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORTERS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORTERS</span></code></a>. E.g., to disable the built-in CSV exporter
+(without replacement), place this in your <code class="docutils literal notranslate"><span class="pre">settings.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">FEED_EXPORTERS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;csv&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="feed-export-batch-item-count">
+<span id="std-setting-FEED_EXPORT_BATCH_ITEM_COUNT"></span><h3>FEED_EXPORT_BATCH_ITEM_COUNT<a class="headerlink" href="#feed-export-batch-item-count" title="Link to this heading"></a></h3>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.3.0.</span></p>
+</div>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">0</span></code></p>
+<p>If assigned an integer number higher than <code class="docutils literal notranslate"><span class="pre">0</span></code>, Scrapy generates multiple output files
+storing up to the specified number of items in each output file.</p>
+<p>When generating multiple output files, you must use at least one of the following
+placeholders in the feed URI to indicate how the different output file names are
+generated:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">%(batch_time)s</span></code> - gets replaced by a timestamp when the feed is being created
+(e.g. <code class="docutils literal notranslate"><span class="pre">2020-03-28T14-45-08.237134</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">%(batch_id)d</span></code> - gets replaced by the 1-based sequence number of the batch.</p>
+<p>Use <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#old-string-formatting" title="(in Python v3.13)"><span class="xref std std-ref">printf-style string formatting</span></a> to
+alter the number format. For example, to make the batch ID a 5-digit
+number by introducing leading zeroes as needed, use <code class="docutils literal notranslate"><span class="pre">%(batch_id)05d</span></code>
+(e.g. <code class="docutils literal notranslate"><span class="pre">3</span></code> becomes <code class="docutils literal notranslate"><span class="pre">00003</span></code>, <code class="docutils literal notranslate"><span class="pre">123</span></code> becomes <code class="docutils literal notranslate"><span class="pre">00123</span></code>).</p>
+</li>
+</ul>
+<p>For instance, if your settings include:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">FEED_EXPORT_BATCH_ITEM_COUNT</span> <span class="o">=</span> <span class="mi">100</span>
+</pre></div>
+</div>
+<p>And your <a class="hxr-hoverxref hxr-tooltip reference internal" href="commands.html#std-command-crawl"><code class="xref std std-command docutils literal notranslate"><span class="pre">crawl</span></code></a> command line is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">scrapy</span> <span class="n">crawl</span> <span class="n">spidername</span> <span class="o">-</span><span class="n">o</span> <span class="s2">&quot;dirname/</span><span class="si">%(batch_id)d</span><span class="s2">-filename</span><span class="si">%(batch_time)s</span><span class="s2">.json&quot;</span>
+</pre></div>
+</div>
+<p>The command line above can generate a directory tree like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-&gt;</span><span class="n">projectname</span>
+<span class="o">--&gt;</span><span class="n">dirname</span>
+<span class="o">---&gt;</span><span class="mi">1</span><span class="o">-</span><span class="n">filename2020</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">28</span><span class="n">T14</span><span class="o">-</span><span class="mi">45</span><span class="o">-</span><span class="mf">08.237134</span><span class="o">.</span><span class="n">json</span>
+<span class="o">---&gt;</span><span class="mi">2</span><span class="o">-</span><span class="n">filename2020</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">28</span><span class="n">T14</span><span class="o">-</span><span class="mi">45</span><span class="o">-</span><span class="mf">09.148903</span><span class="o">.</span><span class="n">json</span>
+<span class="o">---&gt;</span><span class="mi">3</span><span class="o">-</span><span class="n">filename2020</span><span class="o">-</span><span class="mi">03</span><span class="o">-</span><span class="mi">28</span><span class="n">T14</span><span class="o">-</span><span class="mi">45</span><span class="o">-</span><span class="mf">10.046092</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p>Where the first and second files contain exactly 100 items. The last one contains
+100 items or fewer.</p>
+</section>
+<section id="feed-uri-params">
+<span id="std-setting-FEED_URI_PARAMS"></span><h3>FEED_URI_PARAMS<a class="headerlink" href="#feed-uri-params" title="Link to this heading"></a></h3>
+<p>Default: <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+<p>A string with the import path of a function to set the parameters to apply with
+<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#old-string-formatting" title="(in Python v3.13)"><span class="xref std std-ref">printf-style string formatting</span></a> to the
+feed URI.</p>
+<p>The function signature should be as follows:</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="scrapy.extensions.feedexport.uri_params">
+<span class="sig-prename descclassname"><span class="pre">scrapy.extensions.feedexport.</span></span><span class="sig-name descname"><span class="pre">uri_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spider</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#scrapy.extensions.feedexport.uri_params" title="Link to this definition"></a></dt>
+<dd><p>Return a <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> of key-value pairs to apply to the feed URI using
+<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#old-string-formatting" title="(in Python v3.13)"><span class="xref std std-ref">printf-style string formatting</span></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><em>dict</em></a>) – <p>default key-value pairs</p>
+<p>Specifically:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">batch_id</span></code>: ID of the file batch. See
+<a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORT_BATCH_ITEM_COUNT"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORT_BATCH_ITEM_COUNT</span></code></a>.</p>
+<p>If <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORT_BATCH_ITEM_COUNT"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORT_BATCH_ITEM_COUNT</span></code></a> is <code class="docutils literal notranslate"><span class="pre">0</span></code>, <code class="docutils literal notranslate"><span class="pre">batch_id</span></code>
+is always <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.3.0.</span></p>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">batch_time</span></code>: UTC date and time, in ISO format with <code class="docutils literal notranslate"><span class="pre">:</span></code>
+replaced with <code class="docutils literal notranslate"><span class="pre">-</span></code>.</p>
+<p>See <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_EXPORT_BATCH_ITEM_COUNT"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_EXPORT_BATCH_ITEM_COUNT</span></code></a>.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 2.3.0.</span></p>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">time</span></code>: <code class="docutils literal notranslate"><span class="pre">batch_time</span></code>, with microseconds set to <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
+</ul>
+</p></li>
+<li><p><strong>spider</strong> (<a class="reference internal" href="spiders.html#scrapy.Spider" title="scrapy.Spider"><em>scrapy.Spider</em></a>) – source spider of the feed items</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>The function should return a new dictionary, modifying
+the received <code class="docutils literal notranslate"><span class="pre">params</span></code> in-place is deprecated.</p>
+</div>
+</dd></dl>
+
+<p>For example, to include the <a class="reference internal" href="spiders.html#scrapy.Spider.name" title="scrapy.Spider.name"><code class="xref py py-attr docutils literal notranslate"><span class="pre">name</span></code></a> of the
+source spider in the feed URI:</p>
+<ol class="arabic">
+<li><p>Define the following function somewhere in your project:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># myproject/utils.py</span>
+<span class="k">def</span> <span class="nf">uri_params</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">spider</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">params</span><span class="p">,</span> <span class="s2">&quot;spider_name&quot;</span><span class="p">:</span> <span class="n">spider</span><span class="o">.</span><span class="n">name</span><span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Point <a class="hxr-hoverxref hxr-tooltip reference internal" href="#std-setting-FEED_URI_PARAMS"><code class="xref std std-setting docutils literal notranslate"><span class="pre">FEED_URI_PARAMS</span></code></a> to that function in your settings:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># myproject/settings.py</span>
+<span class="n">FEED_URI_PARAMS</span> <span class="o">=</span> <span class="s2">&quot;myproject.utils.uri_params&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">%(spider_name)s</span></code> in your feed URI:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">scrapy</span> <span class="n">crawl</span> <span class="o">&lt;</span><span class="n">spider_name</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">o</span> <span class="s2">&quot;</span><span class="si">%(spider_name)s</span><span class="s2">.jsonl&quot;</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="item-pipeline.html" class="btn btn-neutral float-left" title="Item Pipeline" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="request-response.html" class="btn btn-neutral float-right" title="Requests and Responses" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright Scrapy developers.
+      <span class="lastupdated">Last updated on Apr 29, 2025.
+      </span></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
