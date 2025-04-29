@@ -98,10 +98,9 @@ class StatsCollector:
                 "Dumping Scrapy stats:\n" + pprint.pformat(self._stats),
                 extra={"spider": self._crawler.spider},
             )
-        if self._crawler.spider:
-            self._persist_stats(self._stats, self._crawler.spider)
+        self._persist_stats(self._stats)
 
-    def _persist_stats(self, stats: StatsT, spider: Spider) -> None:
+    def _persist_stats(self, stats: StatsT) -> None:
         pass
 
 
@@ -110,8 +109,8 @@ class MemoryStatsCollector(StatsCollector):
         super().__init__(crawler)
         self.spider_stats: dict[str, StatsT] = {}
 
-    def _persist_stats(self, stats: StatsT, spider: Spider) -> None:
-        self.spider_stats[spider.name] = stats
+    def _persist_stats(self, stats: StatsT) -> None:
+        self.spider_stats[self._crawler.spider.name] = stats
 
 
 class DummyStatsCollector(StatsCollector):
