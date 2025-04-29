@@ -107,7 +107,9 @@ New features
 -   Added new settings: :setting:`SCHEDULER_START_DISK_QUEUE` and
     :setting:`SCHEDULER_START_MEMORY_QUEUE`.
 
--   Added :class:`~scrapy.spidermiddlewares.start.StartSpiderMiddleware`.
+-   Added :class:`~scrapy.spidermiddlewares.start.StartSpiderMiddleware`, which
+    sets :reqmeta:`is_start_request` to ``True`` on :ref:`start requests
+    <start-requests>`.
 
 -   Exposed a new method of :class:`Crawler.engine
     <scrapy.core.engine.ExecutionEngine>`:

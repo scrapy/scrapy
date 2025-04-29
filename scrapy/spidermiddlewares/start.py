@@ -16,6 +16,13 @@ class StartSpiderMiddleware:
 
     This allows you to tell start requests apart from other requests, e.g.
     in :ref:`downloader middlewares <topics-downloader-middleware>`.
+
+    .. reqmeta:: is_start_request
+
+    is_start_request
+    ----------------
+
+    Set to ``True`` for :ref:`start requests <start-requests>`.
     """
 
     @staticmethod
