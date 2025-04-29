@@ -160,8 +160,6 @@ class ScrapyPriorityQueue:
             self.curprio = priority
 
     def pop(self) -> Request | None:
-        if self.curprio is None:
-            return None
         while self.curprio is not None:
             if self._start_queues:
                 try:
