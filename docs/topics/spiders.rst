@@ -374,32 +374,7 @@ Start requests
 :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` method of a
 :ref:`spider middleware <topics-spider-middleware>`.
 
-.. _start-requests-order:
-
-Start request priority and order
---------------------------------
-
-By default, :meth:`~scrapy.Spider.start` requests are handled differently from
-other requests:
-
--   Given the same :attr:`~scrapy.http.Request.priority`, start requests take
-    precedence.
-
--   Start requests are sent in the order they are yielded from
-    :meth:`~scrapy.Spider.start`, whereas other requests are sent in LIFO_
-    order.
-
-    .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
-
-You can change this in different ways:
-
--   Set :attr:`~scrapy.http.Request.priority` on requests.
-
--   Change :setting:`SCHEDULER_START_MEMORY_QUEUE` and
-    :setting:`SCHEDULER_START_DISK_QUEUE`.
-
--   :ref:`Use a custom scheduler <topics-scheduler>` for more control.
-
+.. seealso:: :ref:`start-request-order`
 
 .. _start-requests-lazy:
 

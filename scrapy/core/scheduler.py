@@ -53,9 +53,8 @@ class BaseSchedulerMeta(type):
 
 
 class BaseScheduler(metaclass=BaseSchedulerMeta):
-    """
-    The scheduler component is responsible for storing requests received from
-    the engine, and feeding them back upon request (also to the engine).
+    """The scheduler component is responsible for storing requests received
+    from the engine, and feeding them back upon request (also to the engine).
 
     The original sources of said requests are:
 
@@ -64,7 +63,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
     * Downloader middleware: ``process_request``, ``process_response`` and ``process_exception`` methods
 
     The order in which the scheduler returns its stored requests (via the ``next_request`` method)
-    plays a great part in determining the order in which those requests are downloaded.
+    plays a great part in determining the order in which those requests are downloaded. See :ref:`request-order`.
 
     The methods defined in this class constitute the minimal interface that the Scrapy engine will interact with.
     """
@@ -146,6 +145,75 @@ class Scheduler(BaseScheduler):
     is used directly.
 
     It also handles duplication filtering via :setting:`DUPEFILTER_CLASS`.
+
+    .. _request-order:
+
+    Request order
+    =============
+
+    With default settings, pending requests are stored in a LIFO_ queue
+    (:ref:`except for start requests <start-request-order>`). As a result,
+    crawling happens in `DFO order`_, which is usually the most convenient
+    crawl order. However, you can enforce :ref:`BFO <bfo>` or :ref:`a custom
+    order <custom-request-order>` (:ref:`except for the first few requests
+    <concurrency-v-order>`).
+
+    .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
+    .. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search
+
+    .. _start-request-order:
+
+    Start request order
+    -------------------
+
+    :ref:`Start requests <start-requests>` are sent in the order they are
+    yielded from :meth:`~scrapy.Spider.start`, and given the same
+    :attr:`~scrapy.http.Request.priority`, start requests take precedence over
+    other requests.
+
+    You can set :setting:`SCHEDULER_START_MEMORY_QUEUE` and
+    :setting:`SCHEDULER_START_DISK_QUEUE` to ``None`` to handle start requests
+    the same as other requests when it comes to order and priority.
+
+
+    .. _bfo:
+
+    Crawling in BFO order
+    ---------------------
+
+    If you do want to crawl in `BFO order`_, you can do it by setting the
+    following :ref:`settings <topics-settings>`:
+
+    | :setting:`DEPTH_PRIORITY` = ``1``
+    | :setting:`SCHEDULER_DISK_QUEUE` = ``"scrapy.squeues.PickleFifoDiskQueue"``
+    | :setting:`SCHEDULER_MEMORY_QUEUE` = ``"scrapy.squeues.FifoMemoryQueue"``
+
+    .. _BFO order: https://en.wikipedia.org/wiki/Breadth-first_search
+
+
+    .. _custom-request-order:
+
+    Crawling in a custom order
+    --------------------------
+
+    You can manually set :attr:`~scrapy.http.Request.priority` on requests to
+    force a specific request order.
+
+
+    .. _concurrency-v-order:
+
+    Concurrency affects order
+    -------------------------
+
+    While pending requests are below the configured values of
+    :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
+    or :setting:`CONCURRENT_REQUESTS_PER_IP`, those requests are sent
+    concurrently.
+
+    As a result, the first few requests of a crawl may not follow the desired
+    order. Lowering those settings to ``1`` enforces the desired order except
+    for the very first request, but it significantly slows down the crawl as a
+    whole.
     """
 
     @classmethod
