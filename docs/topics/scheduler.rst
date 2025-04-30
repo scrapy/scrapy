@@ -26,8 +26,8 @@ Minimal scheduler interface
    :members:
 
 
-Default Scrapy scheduler
-========================
+Default scheduler
+=================
 
 .. autoclass:: Scheduler()
    :members:

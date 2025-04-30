@@ -128,23 +128,28 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
 
 
 class Scheduler(BaseScheduler):
-    """Default Scrapy scheduler.
+    """Default scheduler.
 
-    Requests are stored into several priority queues (defined by the
-    :setting:`SCHEDULER_PRIORITY_QUEUE` setting). In turn, said priority queues
-    are backed by either memory or disk based queues (respectively defined by
-    the :setting:`SCHEDULER_START_MEMORY_QUEUE` and
-    :setting:`SCHEDULER_START_DISK_QUEUE` settings for :ref:`start requests
-    <start-requests>` and by the :setting:`SCHEDULER_MEMORY_QUEUE` and
-    :setting:`SCHEDULER_DISK_QUEUE` settings for other requests).
+    Requests are stored into priority queues
+    (:setting:`SCHEDULER_PRIORITY_QUEUE`) that sort requests by
+    :attr:`~scrapy.http.Request.priority`.
 
-    Request prioritization is almost entirely delegated to the priority queue. The only
-    prioritization performed by this scheduler is using the disk-based queue if present
-    (i.e. if the :setting:`JOBDIR` setting is defined) and falling back to the memory-based
-    queue if a serialization error occurs. If the disk queue is not present, the memory one
-    is used directly.
+    By default, a single, memory-based priority queue is used for all requests.
+    When using :setting:`JOBDIR`, a disk-based priority queue is also created,
+    and only unserializable requests are stored in the memory-based priority
+    queue. For a given priority value, requests in memory take precedence over
+    requests in disk.
 
-    It also handles duplication filtering via :setting:`DUPEFILTER_CLASS`.
+    Each priority queue stores requests in separate internal queues, one per
+    priority value. The memory priority queue uses
+    :setting:`SCHEDULER_MEMORY_QUEUE` queues, while the disk priority queue
+    uses :setting:`SCHEDULER_DISK_QUEUE` queues. The internal queues determine
+    :ref:`request order <request-order>` when requests have the same priority.
+    :ref:`Start requests <start-requests>` are stored into separate internal
+    queues by default, and :ref:`ordered differently <start-request-order>`.
+
+    Duplicate requests are filtered out with an instance of
+    :setting:`DUPEFILTER_CLASS`.
 
     .. _request-order:
 
