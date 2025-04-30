@@ -265,7 +265,7 @@ class ExecutionEngine:
             self.crawl(result)
             return None
 
-        d = self.scraper.enqueue_scrape(result, request, self.spider)
+        d = self.scraper.enqueue_scrape(result, request)
         d.addErrback(
             lambda f: logger.error(
                 "Error while enqueuing downloader output",
@@ -290,14 +290,14 @@ class ExecutionEngine:
         """Inject the request into the spider <-> downloader pipeline"""
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
-        self._schedule_request(request, self.spider)
+        self._schedule_request(request)
         self.slot.nextcall.schedule()  # type: ignore[union-attr]
 
-    def _schedule_request(self, request: Request, spider: Spider) -> None:
+    def _schedule_request(self, request: Request) -> None:
         request_scheduled_result = self.signals.send_catch_log(
             signals.request_scheduled,
             request=request,
-            spider=spider,
+            spider=self.spider,
             dont_log=IgnoreRequest,
         )
         for handler, result in request_scheduled_result:
@@ -305,7 +305,7 @@ class ExecutionEngine:
                 return
         if not self.slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
             self.signals.send_catch_log(
-                signals.request_dropped, request=request, spider=spider
+                signals.request_dropped, request=request, spider=self.spider
             )
 
     def download(self, request: Request) -> Deferred[Response]:
@@ -438,7 +438,7 @@ class ExecutionEngine:
         dfd.addBoth(lambda _: self.downloader.close())
         dfd.addErrback(log_failure("Downloader close failure"))
 
-        dfd.addBoth(lambda _: self.scraper.close_spider(spider))
+        dfd.addBoth(lambda _: self.scraper.close_spider())
         dfd.addErrback(log_failure("Scraper close failure"))
 
         if hasattr(self.slot.scheduler, "close"):
