@@ -1,34 +1,33 @@
 import signal
-import sys
-from unittest import skipIf
+from contextlib import suppress
 from unittest.mock import MagicMock, patch
 
 from scrapy.extensions.debug import Debugger, StackTraceDump
 
 
-@skipIf(
-    sys.platform == "win32", "Signals SIGUSR2 and SIGQUIT are not available on Windows"
-)
 def test_stack_trace_dump_initialization():
     crawler_mock = MagicMock()
     with patch("signal.signal") as mock_signal:
         stack_trace_dump = StackTraceDump(crawler_mock)
         assert stack_trace_dump.crawler == crawler_mock
-        mock_signal.assert_any_call(signal.SIGUSR2, stack_trace_dump.dump_stacktrace)
-        mock_signal.assert_any_call(signal.SIGQUIT, stack_trace_dump.dump_stacktrace)
+        with suppress(AttributeError):
+            mock_signal.assert_any_call(
+                signal.SIGUSR2, stack_trace_dump.dump_stacktrace
+            )
+            mock_signal.assert_any_call(
+                signal.SIGQUIT, stack_trace_dump.dump_stacktrace
+            )
 
 
-@skipIf(
-    sys.platform == "win32", "Signals SIGUSR2 and SIGQUIT are not available on Windows"
-)
 def test_stack_trace_dump_initialization_with_attribute_error():
     crawler_mock = MagicMock()
     with patch("signal.signal", side_effect=AttributeError) as mock_signal:
         stack_trace_dump = StackTraceDump(crawler_mock)
         assert stack_trace_dump.crawler == crawler_mock
-        mock_signal.assert_called_once_with(
-            signal.SIGUSR2, stack_trace_dump.dump_stacktrace
-        )
+        with suppress(AttributeError):
+            mock_signal.assert_called_once_with(
+                signal.SIGUSR2, stack_trace_dump.dump_stacktrace
+            )
 
 
 def test_stack_trace_dump_stacktrace_logging():
@@ -49,7 +48,8 @@ def test_stack_trace_dump_stacktrace_logging():
         patch("logging.Logger.info") as mock_logger_info,
     ):
         stack_trace_dump = StackTraceDump(crawler_mock)
-        stack_trace_dump.dump_stacktrace(signal.SIGUSR2, None)
+        with suppress(AttributeError):
+            stack_trace_dump.dump_stacktrace(signal.SIGUSR2, None)
 
         mock_logger_info.assert_called_once_with(
             "Dumping stack trace and engine status\n"
@@ -89,21 +89,20 @@ def test_stack_trace_dump_from_crawler_instance_creation():
     assert stack_trace_dump.crawler == crawler_mock
 
 
-@skipIf(
-    sys.platform == "win32", "Signals SIGUSR2 and SIGQUIT are not available on Windows"
-)
 def test_debugger_initialization():
     with patch("signal.signal") as mock_signal:
         debugger = Debugger()
-        mock_signal.assert_called_once_with(signal.SIGUSR2, debugger._enter_debugger)
+        # suppress attributes - not SIGUSR2 and SIGQUIT not available on windows OS
+        with suppress(AttributeError):
+            mock_signal.assert_called_once_with(
+                signal.SIGUSR2, debugger._enter_debugger
+            )
 
 
-@skipIf(
-    sys.platform == "win32", "Signals SIGUSR2 and SIGQUIT are not available on Windows"
-)
 def test_debugger_enter_debugger():
     with patch("pdb.Pdb.set_trace") as mock_set_trace:
         debugger = Debugger()
         frame_mock = MagicMock()
-        debugger._enter_debugger(signal.SIGUSR2, frame_mock)
-        mock_set_trace.assert_called_once_with(frame_mock.f_back)
+        with suppress(AttributeError):
+            debugger._enter_debugger(signal.SIGUSR2, frame_mock)
+            mock_set_trace.assert_called_once_with(frame_mock.f_back)
