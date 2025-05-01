@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import logging
 import unittest
@@ -723,3 +725,78 @@ class TestCrawlSpider(TestCase):
         assert crawler.spider.meta[
             "failure"
         ].value.response.headers == crawler.spider.meta.get("headers_received")
+
+    @defer.inlineCallbacks
+    def test_spider_errback(self):
+        failures = []
+
+        def eb(failure: Failure) -> Failure:
+            failures.append(failure)
+            return failure
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/status?n=400"), errback_func=eb
+            )
+        assert len(failures) == 1
+        assert "HTTP status code is not handled or not allowed" in str(log)
+        assert "Spider error processing" not in str(log)
+
+    @defer.inlineCallbacks
+    def test_spider_errback_silence(self):
+        failures = []
+
+        def eb(failure: Failure) -> None:
+            failures.append(failure)
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/status?n=400"), errback_func=eb
+            )
+        assert len(failures) == 1
+        assert "HTTP status code is not handled or not allowed" not in str(log)
+        assert "Spider error processing" not in str(log)
+
+    @defer.inlineCallbacks
+    def test_spider_errback_exception(self):
+        def eb(failure: Failure) -> None:
+            raise ValueError("foo")
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/status?n=400"), errback_func=eb
+            )
+        assert "Spider error processing" in str(log)
+
+    @defer.inlineCallbacks
+    def test_spider_errback_downloader_error(self):
+        failures = []
+
+        def eb(failure: Failure) -> Failure:
+            failures.append(failure)
+            return failure
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/drop?abort=1"), errback_func=eb
+            )
+        assert len(failures) == 1
+        assert "Error downloading" in str(log)
+        assert "Spider error processing" not in str(log)
+
+    @defer.inlineCallbacks
+    def test_spider_errback_exception_downloader_error(self):
+        def eb(failure: Failure) -> None:
+            raise ValueError("foo")
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/drop?abort=1"), errback_func=eb
+            )
+        assert "Error downloading" in str(log)
+        assert "Spider error processing" in str(log)
