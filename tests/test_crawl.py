@@ -16,7 +16,7 @@ from twisted.trial.unittest import TestCase
 
 from scrapy import signals
 from scrapy.crawler import CrawlerRunner
-from scrapy.exceptions import StopDownload
+from scrapy.exceptions import CloseSpider, StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.python import to_unicode
@@ -800,3 +800,25 @@ class TestCrawlSpider(TestCase):
             )
         assert "Error downloading" in str(log)
         assert "Spider error processing" in str(log)
+
+    @defer.inlineCallbacks
+    def test_raise_closespider(self):
+        def cb(response):
+            raise CloseSpider
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(seed=self.mockserver.url("/"), callback_func=cb)
+        assert "Closing spider (cancelled)" in str(log)
+        assert "Spider error processing" not in str(log)
+
+    @defer.inlineCallbacks
+    def test_raise_closespider_reason(self):
+        def cb(response):
+            raise CloseSpider("my_reason")
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(seed=self.mockserver.url("/"), callback_func=cb)
+        assert "Closing spider (my_reason)" in str(log)
+        assert "Spider error processing" not in str(log)
