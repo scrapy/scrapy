@@ -374,32 +374,24 @@ class Scraper:
         errors that got propagated thru here).
 
         spider_failure: the value passed into the errback of self.call_spider()
+        (likely raised in the request errback)
+
         download_failure: the value passed into _scrape2() from
         ExecutionEngine._handle_downloader_output() as "result"
+        (likely raised in the download handler or a downloader middleware)
         """
         if not download_failure.check(IgnoreRequest):
             assert self.crawler.spider
-            if download_failure.frames:
-                logkws = self.logformatter.download_error(
-                    download_failure, request, self.crawler.spider
-                )
-                logger.log(
-                    *logformatter_adapter(logkws),
-                    extra={"spider": self.crawler.spider},
-                    exc_info=failure_to_exc_info(download_failure),
-                )
-            else:
-                errmsg = download_failure.getErrorMessage()
-                if errmsg:
-                    logkws = self.logformatter.download_error(
-                        download_failure, request, self.crawler.spider, errmsg
-                    )
-                    logger.log(
-                        *logformatter_adapter(logkws),
-                        extra={"spider": self.crawler.spider},
-                    )
-
+            logkws = self.logformatter.download_error(
+                download_failure, request, self.crawler.spider
+            )
+            logger.log(
+                *logformatter_adapter(logkws),
+                extra={"spider": self.crawler.spider},
+                exc_info=failure_to_exc_info(download_failure),
+            )
         if spider_failure is not download_failure:
+            # a request errback raised a different exception, it needs to be handled later
             return spider_failure
         return None
 
