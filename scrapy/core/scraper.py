@@ -300,7 +300,7 @@ class Scraper:
     @inlineCallbacks
     def handle_spider_output(
         self,
-        result: Iterable[_T] | AsyncIterable[_T] | None,
+        result: Iterable[_T] | AsyncIterable[_T],
         request: Request,
         response: Response,
         spider: Spider | None = None,
@@ -313,9 +313,6 @@ class Scraper:
                 stacklevel=2,
             )
 
-        if not result:
-            yield _defer_sleep()
-            return
         if isinstance(result, AsyncIterable):
             ait = aiter_errback(result, self.handle_spider_error, request, response)
             yield parallel_async(
