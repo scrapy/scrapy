@@ -7,7 +7,7 @@ import logging
 import warnings
 from collections import deque
 from collections.abc import AsyncIterable
-from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 from twisted.internet.defer import Deferred, inlineCallbacks, maybeDeferred
 from twisted.python.failure import Failure
@@ -25,6 +25,7 @@ from scrapy.utils.defer import (
     _defer_sleep,
     aiter_errback,
     deferred_f_from_coro_f,
+    deferred_from_coro,
     iter_errback,
     maybe_deferred_to_future,
     parallel,
@@ -178,10 +179,8 @@ class Scraper:
             result, request, deferred = self.slot.next_response_request_deferred()
             self._scrape(result, request).chainDeferred(deferred)
 
-    @inlineCallbacks
-    def _scrape(
-        self, result: Response | Failure, request: Request
-    ) -> Generator[Deferred[Any], Any, None]:
+    @deferred_f_from_coro_f
+    async def _scrape(self, result: Response | Failure, request: Request) -> None:
         """Handle the downloaded response or failure through the spider callback/errback."""
         if not isinstance(result, (Response, Failure)):
             raise TypeError(
@@ -192,18 +191,20 @@ class Scraper:
         if isinstance(result, Response):
             try:
                 # call the spider middlewares and the request callback with the response
-                output = yield self.spidermw.scrape_response(  # type: ignore[return-value]
-                    self.call_spider, result, request, self.crawler.spider
+                output = await maybe_deferred_to_future(
+                    self.spidermw.scrape_response(  # type: ignore[return-value]
+                        self.call_spider, result, request, self.crawler.spider
+                    )
                 )
             except Exception:
                 self.handle_spider_error(Failure(), request, result)
             else:
-                yield self.handle_spider_output(output, request, cast(Response, result))
+                await self.handle_spider_output_async(output, request, result)
             return
 
         try:
             # call the request errback with the downloader error
-            yield self.call_spider(result, request)
+            await self.call_spider_async(result, request)
         except Exception as spider_exc:
             # the errback didn't silence the exception
             if not result.check(IgnoreRequest):
@@ -219,19 +220,22 @@ class Scraper:
                 # the errback raised a different exception, handle it
                 self.handle_spider_error(Failure(), request, result)
 
-    @inlineCallbacks
     def call_spider(
         self, result: Response | Failure, request: Request, spider: Spider | None = None
-    ) -> Generator[Deferred[Any], Any, Iterable[Any] | AsyncIterable[Any]]:
-        """Call the request callback or errback with the response or failure."""
+    ) -> Deferred[Iterable[Any] | AsyncIterable[Any]]:
         if spider is not None:
             warnings.warn(
                 "Passing a 'spider' argument to Scraper.call_spider() is deprecated.",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
+        return deferred_from_coro(self.call_spider_async(result, request))
 
-        yield _defer_sleep()
+    async def call_spider_async(
+        self, result: Response | Failure, request: Request
+    ) -> Iterable[Any] | AsyncIterable[Any]:
+        """Call the request callback or errback with the response or failure."""
+        await maybe_deferred_to_future(_defer_sleep())
         assert self.crawler.spider
         if isinstance(result, Response):
             if getattr(result, "request", None) is None:
@@ -251,7 +255,9 @@ class Scraper:
                 output.raiseException()
             # else the errback returned actual output (like a callback),
             # which needs to be passed to iterate_spider_output()
-        return (yield maybeDeferred(iterate_spider_output, output))
+        return await maybe_deferred_to_future(
+            maybeDeferred(iterate_spider_output, output)
+        )
 
     def handle_spider_error(
         self,
@@ -299,14 +305,13 @@ class Scraper:
             spider=self.crawler.spider,
         )
 
-    @deferred_f_from_coro_f
-    async def handle_spider_output(
+    def handle_spider_output(
         self,
         result: Iterable[_T] | AsyncIterable[_T],
         request: Request,
         response: Response,
         spider: Spider | None = None,
-    ) -> None:
+    ) -> Deferred[None]:
         """Pass items/requests produced by a callback to ``_process_spidermw_output()`` in parallel."""
         if spider is not None:
             warnings.warn(
@@ -314,7 +319,17 @@ class Scraper:
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
+        return deferred_from_coro(
+            self.handle_spider_output_async(result, request, response)
+        )
 
+    async def handle_spider_output_async(
+        self,
+        result: Iterable[_T] | AsyncIterable[_T],
+        request: Request,
+        response: Response,
+    ) -> None:
+        """Pass items/requests produced by a callback to ``_process_spidermw_output()`` in parallel."""
         if isinstance(result, AsyncIterable):
             ait = aiter_errback(result, self.handle_spider_error, request, response)
             await maybe_deferred_to_future(
