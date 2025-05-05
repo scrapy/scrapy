@@ -26,6 +26,9 @@ Modified requirements
 -   Dropped support for PyPy 3.9.
     (:issue:`6613`)
 
+-   Added support for PyPy 3.11.
+    (:issue:`6697`)
+
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -37,6 +40,10 @@ Backward-incompatible changes
     reactor. You can :ref:`change this setting in your project
     <disable-asyncio>` to use a different reactor.
     (:issue:`6659`, :issue:`6713`)
+
+-   The URL length limit, set by the :setting:`URLLENGTH_LIMIT` setting, is now
+    also enforced for start requests.
+    (:issue:`6777`)
 
 -   The ``from_settings()`` method of
     :class:`~scrapy.spidermiddlewares.urllength.UrlLengthMiddleware`,
@@ -174,6 +181,19 @@ Deprecations
     called.
     (:issue:`4151`)
 
+-   Passing the ``spider`` argument to the following methods of
+    :class:`~scrapy.core.scraper.Scraper` is deprecated:
+
+    - ``close_spider()``
+
+    - ``enqueue_scrape()``
+
+    - ``handle_spider_error()``
+
+    - ``handle_spider_output()``
+
+    (:issue:`6764`)
+
 New features
 ~~~~~~~~~~~~
 
@@ -189,7 +209,7 @@ New features
     helpful for writing :ref:`universal spider middlewares
     <universal-spider-middleware>` without boilerplate and code duplication.
     The built-in spider middlewares now inherit from this class.
-    (:issue:`6693`)
+    (:issue:`6693`, :issue:`6777`)
 
 -   :ref:`Scrapy add-ons <topics-addons>` can now define a class method called
     ``update_pre_crawler_settings()`` to update :ref:`pre-crawler settings
@@ -278,14 +298,17 @@ Bug fixes
 Documentation
 ~~~~~~~~~~~~~
 
+-   Documented the setting values set in the default project template.
+    (:issue:`6762`, :issue:`6775`)
+
 -   Improved the :ref:`docs <sync-async-spider-middleware>` about asynchronous
     iterable support in spider middlewares.
     (:issue:`6688`)
 
 -   Improved the :ref:`docs <coroutine-deferred-apis>` about using
     :class:`~twisted.internet.defer.Deferred`-based APIs in coroutine-based
-    code.
-    (:issue:`6734`)
+    code and included a list of such APIs.
+    (:issue:`6677`, :issue:`6734`, :issue:`6776`)
 
 -   Improved the :ref:`contribution docs <topics-contributing>`.
     (:issue:`6561`, :issue:`6575`)
@@ -307,13 +330,19 @@ Documentation
     :issue:`6623`,
     :issue:`6624`,
     :issue:`6721`,
-    :issue:`6723`)
+    :issue:`6723`,
+    :issue:`6780`)
 
 Packaging
 ~~~~~~~~~
 
 -   Switched from ``setup.py`` to ``pyproject.toml``.
     (:issue:`6514`, :issue:`6547`)
+
+-   Switched the build backend from setuptools_ to hatchling_.
+    (:issue:`6771`)
+
+    .. _hatchling: https://pypi.org/project/hatchling/
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
@@ -384,12 +413,17 @@ Quality assurance
     :issue:`6722`,
     :issue:`6724`,
     :issue:`6741`,
-    :issue:`6743`)
+    :issue:`6743`,
+    :issue:`6766`,
+    :issue:`6770`,
+    :issue:`6772`,
+    :issue:`6773`)
 
 -   Code cleanups.
     (:issue:`6600`,
     :issue:`6606`,
-    :issue:`6635`)
+    :issue:`6635`,
+    :issue:`6764`)
 
 
 .. _release-2.12.0:
