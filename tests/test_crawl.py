@@ -188,11 +188,18 @@ class TestCrawl(TestCase):
 
     @defer.inlineCallbacks
     def test_start_requests_items(self):
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
         with LogCapture("scrapy", level=logging.ERROR) as log:
             crawler = get_crawler(StartRequestsItemSpider)
+            crawler.signals.connect(_on_item_scraped, signals.item_scraped)
             yield crawler.crawl(mockserver=self.mockserver)
 
         assert len(log.records) == 0
+        assert items == [{"name": "test item"}]
 
     @defer.inlineCallbacks
     def test_start_requests_unsupported_output(self):
@@ -201,11 +208,19 @@ class TestCrawl(TestCase):
         things fail when ItemAdapter is actually used on the corresponding
         non-item object."""
 
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
         with LogCapture("scrapy", level=logging.ERROR) as log:
             crawler = get_crawler(StartRequestsGoodAndBadOutput)
+            crawler.signals.connect(_on_item_scraped, signals.item_scraped)
             yield crawler.crawl(mockserver=self.mockserver)
 
         assert len(log.records) == 0
+        assert len(items) == 3
+        assert not any(isinstance(item, Request) for item in items)
 
     @defer.inlineCallbacks
     def test_start_requests_laziness(self):
