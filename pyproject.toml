@@ -23,6 +23,7 @@ dependencies = [
     "tldextract",
     "lxml>=4.6.0",
     "defusedxml>=0.7.1",
+    "warcio>=1.7.5",
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
