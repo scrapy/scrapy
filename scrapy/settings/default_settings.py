@@ -317,11 +317,11 @@ SPIDER_MIDDLEWARES = {}
 
 SPIDER_MIDDLEWARES_BASE = {
     # Engine side
+    "scrapy.spidermiddlewares.start.StartSpiderMiddleware": 25,
     "scrapy.spidermiddlewares.httperror.HttpErrorMiddleware": 50,
     "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
     "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
     "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
-    "scrapy.spidermiddlewares.start.StartSpiderMiddleware": 1000,
     # Spider side
 }
 
