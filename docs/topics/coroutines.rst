@@ -156,7 +156,7 @@ For example:
 -   A custom download handler needs to define a ``download_request()`` method
     that returns a :class:`~twisted.internet.defer.Deferred` object. You can
     write a method that works with Deferreds and returns one directly, or you
-    can write a coroutine and convert it into a functions that returns a
+    can write a coroutine and convert it into a function that returns a
     Deferred with :func:`~scrapy.utils.defer.deferred_f_from_coro_f`.
 
 
