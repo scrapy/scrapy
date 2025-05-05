@@ -162,8 +162,17 @@ Those command-specific default settings are specified in the
 6. Default global settings
 --------------------------
 
-The global defaults are located in the ``scrapy.settings.default_settings``
-module and documented in the :ref:`topics-settings-ref` section.
+The ``scrapy.settings.default_settings`` module defines global default values
+for some :ref:`built-in settings <topics-settings-ref>`.
+
+.. note:: :command:`startproject` generates a ``settings.py`` file that sets
+    some settings to different values.
+
+    The reference documentation of settings indicates the default value if one
+    exists. If :command:`startproject` sets a value, that value is documented
+    as default, and the value from ``scrapy.settings.default_settings`` is
+    documented as “fallback”.
+
 
 Compatibility with pickle
 =========================
@@ -204,7 +213,7 @@ How to access settings
 
 .. highlight:: python
 
-In a spider, the settings are available through ``self.settings``:
+In a spider, settings are available through ``self.settings``:
 
 .. code-block:: python
 
@@ -217,37 +226,68 @@ In a spider, the settings are available through ``self.settings``:
 
 .. note::
     The ``settings`` attribute is set in the base Spider class after the spider
-    is initialized.  If you want to use the settings before the initialization
+    is initialized.  If you want to use settings before the initialization
     (e.g., in your spider's ``__init__()`` method), you'll need to override the
     :meth:`~scrapy.Spider.from_crawler` method.
 
-Settings can be accessed through the :attr:`scrapy.crawler.Crawler.settings`
-attribute of the Crawler that is passed to ``from_crawler`` method in
-extensions, middlewares and item pipelines:
+:ref:`Components <topics-components>` can also :ref:`access settings
+<component-settings>`.
+
+The ``settings`` object can be used like a :class:`dict` (e.g.
+``settings["LOG_ENABLED"]``). However, to support non-string setting values,
+which may be passed from the command line as strings, it is recommended to use
+one of the methods provided by the :class:`~scrapy.settings.Settings` API.
+
+
+.. _component-priority-dictionaries:
+
+Component priority dictionaries
+===============================
+
+A **component priority dictionary** is a :class:`dict` where keys are
+:ref:`components <topics-components>` and values are component priorities. For
+example:
+
+.. skip: next
+.. code-block:: python
+
+    {
+        "path.to.ComponentA": None,
+        ComponentB: 100,
+    }
+
+A component can be specified either as a class object or through an import
+path.
+
+.. warning:: Component priority dictionaries are regular :class:`dict` objects.
+    Be careful not to define the same component more than once, e.g. with
+    different import path strings or defining both an import path and a
+    :class:`type` object.
+
+A priority can be an :class:`int` or :data:`None`.
+
+A component with priority 1 goes *before* a component with priority 2. What
+going before entails, however, depends on the corresponding setting. For
+example, in the :setting:`DOWNLOADER_MIDDLEWARES` setting, components have
+their
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`
+method executed before that of later components, but have their
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`
+method executed after that of later components.
+
+A component with priority :data:`None` is disabled.
+
+Some component priority dictionaries get merged with some built-in value. For
+example, :setting:`DOWNLOADER_MIDDLEWARES` is merged with
+:setting:`DOWNLOADER_MIDDLEWARES_BASE`. This is where :data:`None` comes in
+handy, allowing you to disable a component from the base setting in the regular
+setting:
 
 .. code-block:: python
 
-    class MyExtension:
-        def __init__(self, log_is_enabled=False):
-            if log_is_enabled:
-                print("log is enabled!")
-
-        @classmethod
-        def from_crawler(cls, crawler):
-            settings = crawler.settings
-            return cls(settings.getbool("LOG_ENABLED"))
-
-The settings object can be used like a dict (e.g.,
-``settings['LOG_ENABLED']``), but it's usually preferred to extract the setting
-in the format you need it to avoid type errors, using one of the methods
-provided by the :class:`~scrapy.settings.Settings` API.
-
-Rationale for setting names
-===========================
-
-Setting names are usually prefixed with the component that they configure. For
-example, proper setting names for a fictional robots.txt extension would be
-``ROBOTSTXT_ENABLED``, ``ROBOTSTXT_OBEY``, ``ROBOTSTXT_CACHEDIR``, etc.
+    DOWNLOADER_MIDDLEWARES = {
+        "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": None,
+    }
 
 
 Special settings
@@ -430,7 +470,7 @@ Note that the event loop class must inherit from :class:`asyncio.AbstractEventLo
 BOT_NAME
 --------
 
-Default: ``'scrapybot'``
+Default: ``<project name>`` (:ref:`fallback <default-settings>`: ``'scrapybot'``)
 
 The name of the bot implemented by this Scrapy project (also known as the
 project name). This name will be used for the logging too.
@@ -1160,7 +1200,8 @@ EXTENSIONS
 
 Default:: ``{}``
 
-A dict containing the extensions enabled in your project, and their orders.
+:ref:`Component priority dictionary <component-priority-dictionaries>` of
+enabled extensions. See :ref:`topics-extensions`.
 
 .. setting:: EXTENSIONS_BASE
 
@@ -1531,7 +1572,7 @@ email notifying about it. If zero, no warning will be produced.
 NEWSPIDER_MODULE
 ----------------
 
-Default: ``''``
+Default: ``"<project name>.spiders"`` (:ref:`fallback <default-settings>`: ``""``)
 
 Module where to create new spiders using the :command:`genspider` command.
 
@@ -1590,9 +1631,7 @@ Adjust redirect request priority relative to original request:
 ROBOTSTXT_OBEY
 --------------
 
-Default: ``False``
-
-Scope: ``scrapy.downloadermiddlewares.robotstxt``
+Default: ``True`` (:ref:`fallback <default-settings>`: ``False``)
 
 If enabled, Scrapy will respect robots.txt policies. For more information see
 :ref:`topics-dlmw-robots`.
@@ -1806,7 +1845,7 @@ the spider. For more info see :ref:`topics-spider-middleware-setting`.
 SPIDER_MODULES
 --------------
 
-Default: ``[]``
+Default: ``["<project name>.spiders"]`` (:ref:`fallback <default-settings>`: ``[]``)
 
 A list of modules where Scrapy will look for spiders.
 
@@ -1879,7 +1918,7 @@ TWISTED_REACTOR
 
 .. versionadded:: 2.0
 
-Default: ``None``
+Default: ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``
 
 Import path of a given :mod:`~twisted.internet.reactor`.
 
@@ -1964,16 +2003,18 @@ which raises :exc:`Exception`, becomes:
             self.crawler.engine.close_spider(self, "timeout")
 
 
-The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
-means that Scrapy will use the existing reactor if one is already installed, or
-install the default reactor defined by Twisted for the current platform. This
-is to maintain backward compatibility and avoid possible problems caused by
-using a non-default reactor.
+If this setting is set ``None``, Scrapy will use the existing reactor if one is
+already installed, or install the default reactor defined by Twisted for the
+current platform.
 
 .. versionchanged:: 2.7
    The :command:`startproject` command now sets this setting to
    ``twisted.internet.asyncioreactor.AsyncioSelectorReactor`` in the generated
    ``settings.py`` file.
+
+.. versionchanged:: VERSION
+   The default value was changed from ``None`` to
+   ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``.
 
 For additional information, see :doc:`core/howto/choosing-reactor`.
 
@@ -2013,6 +2054,21 @@ also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware
 if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
 there is no overriding User-Agent header specified for the request.
 
+.. setting:: WARN_ON_GENERATOR_RETURN_VALUE
+
+WARN_ON_GENERATOR_RETURN_VALUE
+------------------------------
+
+Default: ``True``
+
+When enabled, Scrapy will warn if generator-based callback methods (like
+``parse``) contain return statements with non-``None`` values. This helps detect
+potential mistakes in spider development.
+
+Disable this setting to prevent syntax errors that may occur when dynamically
+modifying generator function source code during runtime, skip AST parsing of
+callback functions, or improve performance in auto-reloading development
+environments.
 
 Settings documented elsewhere:
 ------------------------------

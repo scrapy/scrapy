@@ -1,4 +1,3 @@
-import unittest
 from pathlib import Path
 from time import process_time
 from urllib.parse import urlparse
@@ -16,7 +15,7 @@ from scrapy.utils.response import (
 )
 
 
-class ResponseUtilsTest(unittest.TestCase):
+class TestResponseUtils:
     dummy_response = TextResponse(url="http://example.org/", body=b"dummy_response")
 
     def test_open_in_browser(self):
@@ -28,7 +27,7 @@ class ResponseUtilsTest(unittest.TestCase):
             if not path or not Path(path).exists():
                 path = burl.replace("file://", "")
             bbody = Path(path).read_bytes()
-            self.assertIn(b'<base href="' + to_bytes(url) + b'">', bbody)
+            assert b'<base href="' + to_bytes(url) + b'">' in bbody
             return True
 
         response = HtmlResponse(url, body=body)
@@ -68,9 +67,9 @@ class ResponseUtilsTest(unittest.TestCase):
     </script>
         """,
         )
-        self.assertEqual(get_meta_refresh(r1), (5.0, "http://example.org/newpage"))
-        self.assertEqual(get_meta_refresh(r2), (None, None))
-        self.assertEqual(get_meta_refresh(r3), (None, None))
+        assert get_meta_refresh(r1) == (5.0, "http://example.org/newpage")
+        assert get_meta_refresh(r2) == (None, None)
+        assert get_meta_refresh(r3) == (None, None)
 
     def test_get_base_url(self):
         resp = HtmlResponse(
@@ -81,19 +80,19 @@ class ResponseUtilsTest(unittest.TestCase):
         <body>blahablsdfsal&amp;</body>
         </html>""",
         )
-        self.assertEqual(get_base_url(resp), "http://www.example.com/img/")
+        assert get_base_url(resp) == "http://www.example.com/img/"
 
         resp2 = HtmlResponse(
             "http://www.example.com",
             body=b"""
         <html><body>blahablsdfsal&amp;</body></html>""",
         )
-        self.assertEqual(get_base_url(resp2), "http://www.example.com")
+        assert get_base_url(resp2) == "http://www.example.com"
 
     def test_response_status_message(self):
-        self.assertEqual(response_status_message(200), "200 OK")
-        self.assertEqual(response_status_message(404), "404 Not Found")
-        self.assertEqual(response_status_message(573), "573 Unknown Status")
+        assert response_status_message(200) == "200 OK"
+        assert response_status_message(404) == "404 Not Found"
+        assert response_status_message(573) == "573 Unknown Status"
 
     def test_inject_base_url(self):
         url = "http://www.example.com"
@@ -103,7 +102,7 @@ class ResponseUtilsTest(unittest.TestCase):
             if not path or not Path(path).exists():
                 path = burl.replace("file://", "")
             bbody = Path(path).read_bytes()
-            self.assertEqual(bbody.count(b'<base href="' + to_bytes(url) + b'">'), 1)
+            assert bbody.count(b'<base href="' + to_bytes(url) + b'">') == 1
             return True
 
         r1 = HtmlResponse(
@@ -185,7 +184,7 @@ class ResponseUtilsTest(unittest.TestCase):
         open_in_browser(response, lambda url: True)
 
         end_time = process_time()
-        self.assertLess(end_time - start_time, MAX_CPU_TIME)
+        assert end_time - start_time < MAX_CPU_TIME
 
     def test_open_in_browser_redos_head(self):
         MAX_CPU_TIME = 0.02
@@ -202,7 +201,7 @@ class ResponseUtilsTest(unittest.TestCase):
         open_in_browser(response, lambda url: True)
 
         end_time = process_time()
-        self.assertLess(end_time - start_time, MAX_CPU_TIME)
+        assert end_time - start_time < MAX_CPU_TIME
 
 
 @pytest.mark.parametrize(

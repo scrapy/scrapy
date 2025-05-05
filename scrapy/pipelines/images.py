@@ -68,7 +68,7 @@ class ImagesPipeline(FilesPipeline):
             self._Image = Image
         except ImportError:
             raise NotConfigured(
-                "ImagesPipeline requires installing Pillow 4.0.0 or later"
+                "ImagesPipeline requires installing Pillow 8.0.0 or later"
             )
 
         super().__init__(

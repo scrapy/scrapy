@@ -16,15 +16,19 @@ asyncio reactor <install-asyncio>`, you may use :mod:`asyncio` and
 Installing the asyncio reactor
 ==============================
 
-To enable :mod:`asyncio` support, set the :setting:`TWISTED_REACTOR` setting to
-``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``.
+To enable :mod:`asyncio` support, your :setting:`TWISTED_REACTOR` setting needs
+to be set to ``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``,
+which is the default value.
 
 If you are using :class:`~scrapy.crawler.CrawlerRunner`, you also need to
 install the :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`
 reactor manually. You can do that using
-:func:`~scrapy.utils.reactor.install_reactor`::
+:func:`~scrapy.utils.reactor.install_reactor`:
 
-    install_reactor('twisted.internet.asyncioreactor.AsyncioSelectorReactor')
+.. skip: next
+.. code-block:: python
+
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
 
 
 .. _asyncio-preinstalled-reactor:
@@ -68,23 +72,31 @@ those imports happen.
 
 .. _asyncio-await-dfd:
 
-Awaiting on Deferreds
-=====================
+Integrating Deferred code and asyncio code
+==========================================
 
-When the asyncio reactor isn't installed, you can await on Deferreds in the
-coroutines directly. When it is installed, this is not possible anymore, due to
-specifics of the Scrapy coroutine integration (the coroutines are wrapped into
-:class:`asyncio.Future` objects, not into
-:class:`~twisted.internet.defer.Deferred` directly), and you need to wrap them into
-Futures. Scrapy provides two helpers for this:
+Coroutine functions can await on Deferreds by wrapping them into
+:class:`asyncio.Future` objects. Scrapy provides two helpers for this:
 
 .. autofunction:: scrapy.utils.defer.deferred_to_future
 .. autofunction:: scrapy.utils.defer.maybe_deferred_to_future
+
+.. tip:: If you don't need to support reactors other than the default
+         :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`, you
+         can use :func:`~scrapy.utils.defer.deferred_to_future`, otherwise you
+         should use :func:`~scrapy.utils.defer.maybe_deferred_to_future`.
+
 .. tip:: If you need to use these functions in code that aims to be compatible
          with lower versions of Scrapy that do not provide these functions,
          down to Scrapy 2.0 (earlier versions do not support
          :mod:`asyncio`), you can copy the implementation of these functions
          into your own code.
+
+Coroutines and futures can be wrapped into Deferreds (for example, when a
+Scrapy API requires passing a Deferred to it) using the following helpers:
+
+.. autofunction:: scrapy.utils.defer.deferred_from_coro
+.. autofunction:: scrapy.utils.defer.deferred_f_from_coro_f
 
 
 .. _enforce-asyncio-requirement:
@@ -111,6 +123,8 @@ example:
                     f"TWISTED_REACTOR setting. See the asyncio documentation "
                     f"of Scrapy for more information."
                 )
+
+.. autofunction:: scrapy.utils.reactor.is_asyncio_reactor_installed
 
 
 .. _asyncio-windows:
@@ -144,3 +158,14 @@ Using custom asyncio loops
 You can also use custom asyncio event loops with the asyncio reactor. Set the
 :setting:`ASYNCIO_EVENT_LOOP` setting to the import path of the desired event
 loop class to use it instead of the default asyncio event loop.
+
+
+.. _disable-asyncio:
+
+Switching to a non-asyncio reactor
+==================================
+
+If for some reason your code doesn't work with the asyncio reactor, you can use
+a different reactor by setting the :setting:`TWISTED_REACTOR` setting to its
+import path (e.g. ``'twisted.internet.epollreactor.EPollReactor'``) or to
+``None``, which will use the default reactor for your platform.

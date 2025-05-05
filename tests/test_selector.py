@@ -3,7 +3,6 @@ import weakref
 import parsel
 import pytest
 from packaging import version
-from twisted.trial import unittest
 
 from scrapy.http import HtmlResponse, TextResponse, XmlResponse
 from scrapy.selector import Selector
@@ -12,7 +11,7 @@ PARSEL_VERSION = version.parse(getattr(parsel, "__version__", "0.0"))
 PARSEL_18_PLUS = PARSEL_VERSION >= version.parse("1.8.0")
 
 
-class SelectorTestCase(unittest.TestCase):
+class TestSelector:
     def test_simple_selection(self):
         """Simple selector tests"""
         body = b"<p><input name='a'value='1'/><input name='b'value='2'/></p>"
@@ -20,57 +19,46 @@ class SelectorTestCase(unittest.TestCase):
         sel = Selector(response)
 
         xl = sel.xpath("//input")
-        self.assertEqual(2, len(xl))
+        assert len(xl) == 2
         for x in xl:
             assert isinstance(x, Selector)
 
-        self.assertEqual(
-            sel.xpath("//input").getall(), [x.get() for x in sel.xpath("//input")]
-        )
-        self.assertEqual(
-            [x.get() for x in sel.xpath("//input[@name='a']/@name")], ["a"]
-        )
-        self.assertEqual(
-            [
-                x.get()
-                for x in sel.xpath(
-                    "number(concat(//input[@name='a']/@value, //input[@name='b']/@value))"
-                )
-            ],
-            ["12.0"],
-        )
-        self.assertEqual(sel.xpath("concat('xpath', 'rules')").getall(), ["xpathrules"])
-        self.assertEqual(
-            [
-                x.get()
-                for x in sel.xpath(
-                    "concat(//input[@name='a']/@value, //input[@name='b']/@value)"
-                )
-            ],
-            ["12"],
-        )
+        assert sel.xpath("//input").getall() == [x.get() for x in sel.xpath("//input")]
+        assert [x.get() for x in sel.xpath("//input[@name='a']/@name")] == ["a"]
+        assert [
+            x.get()
+            for x in sel.xpath(
+                "number(concat(//input[@name='a']/@value, //input[@name='b']/@value))"
+            )
+        ] == ["12.0"]
+        assert sel.xpath("concat('xpath', 'rules')").getall() == ["xpathrules"]
+        assert [
+            x.get()
+            for x in sel.xpath(
+                "concat(//input[@name='a']/@value, //input[@name='b']/@value)"
+            )
+        ] == ["12"]
 
     def test_root_base_url(self):
         body = b'<html><form action="/path"><input name="a" /></form></html>'
         url = "http://example.com"
         response = TextResponse(url=url, body=body, encoding="utf-8")
         sel = Selector(response)
-        self.assertEqual(url, sel.root.base)
+        assert url == sel.root.base
 
     def test_flavor_detection(self):
         text = b'<div><img src="a.jpg"><p>Hello</div>'
         sel = Selector(XmlResponse("http://example.com", body=text, encoding="utf-8"))
-        self.assertEqual(sel.type, "xml")
-        self.assertEqual(
-            sel.xpath("//div").getall(),
-            ['<div><img src="a.jpg"><p>Hello</p></img></div>'],
-        )
+        assert sel.type == "xml"
+        assert sel.xpath("//div").getall() == [
+            '<div><img src="a.jpg"><p>Hello</p></img></div>'
+        ]
 
         sel = Selector(HtmlResponse("http://example.com", body=text, encoding="utf-8"))
-        self.assertEqual(sel.type, "html")
-        self.assertEqual(
-            sel.xpath("//div").getall(), ['<div><img src="a.jpg"><p>Hello</p></div>']
-        )
+        assert sel.type == "html"
+        assert sel.xpath("//div").getall() == [
+            '<div><img src="a.jpg"><p>Hello</p></div>'
+        ]
 
     def test_http_header_encoding_precedence(self):
         # '\xa3'     = pound symbol in unicode
@@ -92,7 +80,7 @@ class SelectorTestCase(unittest.TestCase):
             url="http://example.com", headers=headers, body=html_utf8
         )
         x = Selector(response)
-        self.assertEqual(x.xpath("//span[@id='blank']/text()").getall(), ["\xa3"])
+        assert x.xpath("//span[@id='blank']/text()").getall() == ["\xa3"]
 
     def test_badly_encoded_body(self):
         # \xe9 alone isn't valid utf8 sequence
@@ -116,7 +104,7 @@ class SelectorTestCase(unittest.TestCase):
             Selector(TextResponse(url="http://example.com", body=b""), text="")
 
 
-class JMESPathTestCase(unittest.TestCase):
+class TestJMESPath:
     @pytest.mark.skipif(
         not PARSEL_18_PLUS, reason="parsel < 1.8 doesn't support jmespath"
     )
@@ -149,16 +137,13 @@ class JMESPathTestCase(unittest.TestCase):
         }
         """
         resp = TextResponse(url="http://example.com", body=body, encoding="utf-8")
-        self.assertEqual(
-            resp.jmespath("html").get(),
-            "<div><a>a<br>b</a>c</div><div><a>d</a>e<b>f</b></div>",
+        assert (
+            resp.jmespath("html").get()
+            == "<div><a>a<br>b</a>c</div><div><a>d</a>e<b>f</b></div>"
         )
-        self.assertEqual(
-            resp.jmespath("html").xpath("//div/a/text()").getall(),
-            ["a", "b", "d"],
-        )
-        self.assertEqual(resp.jmespath("html").css("div > b").getall(), ["<b>f</b>"])
-        self.assertEqual(resp.jmespath("content").jmespath("name.age").get(), "18")
+        assert resp.jmespath("html").xpath("//div/a/text()").getall() == ["a", "b", "d"]
+        assert resp.jmespath("html").css("div > b").getall() == ["<b>f</b>"]
+        assert resp.jmespath("content").jmespath("name.age").get() == "18"
 
     @pytest.mark.skipif(
         not PARSEL_18_PLUS, reason="parsel < 1.8 doesn't support jmespath"
@@ -194,15 +179,19 @@ class JMESPathTestCase(unittest.TestCase):
         </div>
         """
         resp = TextResponse(url="http://example.com", body=body, encoding="utf-8")
-        self.assertEqual(
-            resp.xpath("//div/content/text()").jmespath("user[*].name").getall(),
-            ["A", "B", "C", "D"],
-        )
-        self.assertEqual(
-            resp.xpath("//div/content").jmespath("user[*].name").getall(),
-            ["A", "B", "C", "D"],
-        )
-        self.assertEqual(resp.xpath("//div/content").jmespath("total").get(), "4")
+        assert resp.xpath("//div/content/text()").jmespath("user[*].name").getall() == [
+            "A",
+            "B",
+            "C",
+            "D",
+        ]
+        assert resp.xpath("//div/content").jmespath("user[*].name").getall() == [
+            "A",
+            "B",
+            "C",
+            "D",
+        ]
+        assert resp.xpath("//div/content").jmespath("total").get() == "4"
 
     @pytest.mark.skipif(
         not PARSEL_18_PLUS, reason="parsel < 1.8 doesn't support jmespath"
@@ -238,30 +227,26 @@ class JMESPathTestCase(unittest.TestCase):
             </div>
             """
         resp = TextResponse(url="http://example.com", body=body, encoding="utf-8")
-        self.assertEqual(
-            resp.xpath("//div/content/text()").jmespath("user[*].name").re(r"(\w+)"),
-            ["A", "B", "C", "D"],
-        )
-        self.assertEqual(
-            resp.xpath("//div/content").jmespath("user[*].name").re(r"(\w+)"),
-            ["A", "B", "C", "D"],
+        assert resp.xpath("//div/content/text()").jmespath("user[*].name").re(
+            r"(\w+)"
+        ) == ["A", "B", "C", "D"]
+        assert resp.xpath("//div/content").jmespath("user[*].name").re(r"(\w+)") == [
+            "A",
+            "B",
+            "C",
+            "D",
+        ]
+
+        assert resp.xpath("//div/content").jmespath("unavailable").re(r"(\d+)") == []
+
+        assert (
+            resp.xpath("//div/content").jmespath("unavailable").re_first(r"(\d+)")
+            is None
         )
 
-        self.assertEqual(
-            resp.xpath("//div/content").jmespath("unavailable").re(r"(\d+)"), []
-        )
-
-        self.assertEqual(
-            resp.xpath("//div/content").jmespath("unavailable").re_first(r"(\d+)"),
-            None,
-        )
-
-        self.assertEqual(
-            resp.xpath("//div/content")
-            .jmespath("user[*].age.to_string(@)")
-            .re(r"(\d+)"),
-            ["18", "32", "22", "25"],
-        )
+        assert resp.xpath("//div/content").jmespath("user[*].age.to_string(@)").re(
+            r"(\d+)"
+        ) == ["18", "32", "22", "25"]
 
     @pytest.mark.skipif(PARSEL_18_PLUS, reason="parsel >= 1.8 supports jmespath")
     def test_jmespath_not_available(self) -> None:

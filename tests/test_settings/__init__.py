@@ -1,4 +1,6 @@
-import unittest
+# pylint: disable=unsubscriptable-object,unsupported-membership-test,use-implicit-booleaness-not-comparison
+# (too many false positives)
+
 from unittest import mock
 
 import pytest
@@ -14,31 +16,31 @@ from scrapy.settings import (
 from . import default_settings
 
 
-class SettingsGlobalFuncsTest(unittest.TestCase):
+class TestSettingsGlobalFuncs:
     def test_get_settings_priority(self):
         for prio_str, prio_num in SETTINGS_PRIORITIES.items():
-            self.assertEqual(get_settings_priority(prio_str), prio_num)
-        self.assertEqual(get_settings_priority(99), 99)
+            assert get_settings_priority(prio_str) == prio_num
+        assert get_settings_priority(99) == 99
 
 
-class SettingsAttributeTest(unittest.TestCase):
-    def setUp(self):
+class TestSettingsAttribute:
+    def setup_method(self):
         self.attribute = SettingsAttribute("value", 10)
 
     def test_set_greater_priority(self):
         self.attribute.set("value2", 20)
-        self.assertEqual(self.attribute.value, "value2")
-        self.assertEqual(self.attribute.priority, 20)
+        assert self.attribute.value == "value2"
+        assert self.attribute.priority == 20
 
     def test_set_equal_priority(self):
         self.attribute.set("value2", 10)
-        self.assertEqual(self.attribute.value, "value2")
-        self.assertEqual(self.attribute.priority, 10)
+        assert self.attribute.value == "value2"
+        assert self.attribute.priority == 10
 
     def test_set_less_priority(self):
         self.attribute.set("value2", 0)
-        self.assertEqual(self.attribute.value, "value")
-        self.assertEqual(self.attribute.priority, 10)
+        assert self.attribute.value == "value"
+        assert self.attribute.priority == 10
 
     def test_overwrite_basesettings(self):
         original_dict = {"one": 10, "two": 20}
@@ -47,61 +49,59 @@ class SettingsAttributeTest(unittest.TestCase):
 
         new_dict = {"three": 11, "four": 21}
         attribute.set(new_dict, 10)
-        self.assertIsInstance(attribute.value, BaseSettings)
-        self.assertCountEqual(attribute.value, new_dict)
-        self.assertCountEqual(original_settings, original_dict)
+        assert isinstance(attribute.value, BaseSettings)
+        assert set(attribute.value) == set(new_dict)
+        assert set(original_settings) == set(original_dict)
 
         new_settings = BaseSettings({"five": 12}, 0)
         attribute.set(new_settings, 0)  # Insufficient priority
-        self.assertCountEqual(attribute.value, new_dict)
+        assert set(attribute.value) == set(new_dict)
         attribute.set(new_settings, 10)
-        self.assertCountEqual(attribute.value, new_settings)
+        assert set(attribute.value) == set(new_settings)
 
     def test_repr(self):
-        self.assertEqual(
-            repr(self.attribute), "<SettingsAttribute value='value' priority=10>"
-        )
+        assert repr(self.attribute) == "<SettingsAttribute value='value' priority=10>"
 
 
-class BaseSettingsTest(unittest.TestCase):
-    def setUp(self):
+class TestBaseSettings:
+    def setup_method(self):
         self.settings = BaseSettings()
 
     def test_setdefault_not_existing_value(self):
         settings = BaseSettings()
         value = settings.setdefault("TEST_OPTION", "value")
-        self.assertEqual(settings["TEST_OPTION"], "value")
-        self.assertEqual(value, "value")
-        self.assertIsNotNone(value)
+        assert settings["TEST_OPTION"] == "value"
+        assert value == "value"
+        assert value is not None
 
     def test_setdefault_existing_value(self):
         settings = BaseSettings({"TEST_OPTION": "value"})
         value = settings.setdefault("TEST_OPTION", None)
-        self.assertEqual(settings["TEST_OPTION"], "value")
-        self.assertEqual(value, "value")
+        assert settings["TEST_OPTION"] == "value"
+        assert value == "value"
 
     def test_set_new_attribute(self):
         self.settings.set("TEST_OPTION", "value", 0)
-        self.assertIn("TEST_OPTION", self.settings.attributes)
+        assert "TEST_OPTION" in self.settings.attributes
 
         attr = self.settings.attributes["TEST_OPTION"]
-        self.assertIsInstance(attr, SettingsAttribute)
-        self.assertEqual(attr.value, "value")
-        self.assertEqual(attr.priority, 0)
+        assert isinstance(attr, SettingsAttribute)
+        assert attr.value == "value"
+        assert attr.priority == 0
 
     def test_set_settingsattribute(self):
         myattr = SettingsAttribute(0, 30)  # Note priority 30
         self.settings.set("TEST_ATTR", myattr, 10)
-        self.assertEqual(self.settings.get("TEST_ATTR"), 0)
-        self.assertEqual(self.settings.getpriority("TEST_ATTR"), 30)
+        assert self.settings.get("TEST_ATTR") == 0
+        assert self.settings.getpriority("TEST_ATTR") == 30
 
     def test_set_instance_identity_on_update(self):
         attr = SettingsAttribute("value", 0)
         self.settings.attributes = {"TEST_OPTION": attr}
         self.settings.set("TEST_OPTION", "othervalue", 10)
 
-        self.assertIn("TEST_OPTION", self.settings.attributes)
-        self.assertIs(attr, self.settings.attributes["TEST_OPTION"])
+        assert "TEST_OPTION" in self.settings.attributes
+        assert attr is self.settings.attributes["TEST_OPTION"]
 
     def test_set_calls_settings_attributes_methods_on_update(self):
         attr = SettingsAttribute("value", 10)
@@ -114,7 +114,7 @@ class BaseSettingsTest(unittest.TestCase):
             for priority in (0, 10, 20):
                 self.settings.set("TEST_OPTION", "othervalue", priority)
                 mock_set.assert_called_once_with("othervalue", priority)
-                self.assertFalse(mock_setattr.called)
+                assert not mock_setattr.called
                 mock_set.reset_mock()
                 mock_setattr.reset_mock()
 
@@ -122,19 +122,19 @@ class BaseSettingsTest(unittest.TestCase):
         settings = BaseSettings()
         settings.set("key", "a", "default")
         settings["key"] = "b"
-        self.assertEqual(settings["key"], "b")
-        self.assertEqual(settings.getpriority("key"), 20)
+        assert settings["key"] == "b"
+        assert settings.getpriority("key") == 20
         settings["key"] = "c"
-        self.assertEqual(settings["key"], "c")
+        assert settings["key"] == "c"
         settings["key2"] = "x"
-        self.assertIn("key2", settings)
-        self.assertEqual(settings["key2"], "x")
-        self.assertEqual(settings.getpriority("key2"), 20)
+        assert "key2" in settings
+        assert settings["key2"] == "x"
+        assert settings.getpriority("key2") == 20
 
     def test_setdict_alias(self):
         with mock.patch.object(self.settings, "set") as mock_set:
             self.settings.setdict({"TEST_1": "value1", "TEST_2": "value2"}, 10)
-            self.assertEqual(mock_set.call_count, 2)
+            assert mock_set.call_count == 2
             calls = [
                 mock.call("TEST_1", "value1", 10),
                 mock.call("TEST_2", "value2", 10),
@@ -149,10 +149,10 @@ class BaseSettingsTest(unittest.TestCase):
 
         self.settings.attributes = {}
         self.settings.setmodule(ModuleMock(), 10)
-        self.assertIn("UPPERCASE_VAR", self.settings.attributes)
-        self.assertNotIn("MIXEDcase_VAR", self.settings.attributes)
-        self.assertNotIn("lowercase_var", self.settings.attributes)
-        self.assertEqual(len(self.settings.attributes), 1)
+        assert "UPPERCASE_VAR" in self.settings.attributes
+        assert "MIXEDcase_VAR" not in self.settings.attributes
+        assert "lowercase_var" not in self.settings.attributes
+        assert len(self.settings.attributes) == 1
 
     def test_setmodule_alias(self):
         with mock.patch.object(self.settings, "set") as mock_set:
@@ -168,13 +168,13 @@ class BaseSettingsTest(unittest.TestCase):
         self.settings.attributes = {}
         self.settings.setmodule("tests.test_settings.default_settings", 10)
 
-        self.assertCountEqual(self.settings.attributes.keys(), ctrl_attributes.keys())
+        assert set(self.settings.attributes) == set(ctrl_attributes)
 
         for key in ctrl_attributes:
             attr = self.settings.attributes[key]
             ctrl_attr = ctrl_attributes[key]
-            self.assertEqual(attr.value, ctrl_attr.value)
-            self.assertEqual(attr.priority, ctrl_attr.priority)
+            assert attr.value == ctrl_attr.value
+            assert attr.priority == ctrl_attr.priority
 
     def test_update(self):
         settings = BaseSettings({"key_lowprio": 0}, priority=0)
@@ -186,21 +186,21 @@ class BaseSettingsTest(unittest.TestCase):
         custom_dict = {"key_lowprio": 2, "key_highprio": 12, "newkey_two": None}
 
         settings.update(custom_dict, priority=20)
-        self.assertEqual(settings["key_lowprio"], 2)
-        self.assertEqual(settings.getpriority("key_lowprio"), 20)
-        self.assertEqual(settings["key_highprio"], 10)
-        self.assertIn("newkey_two", settings)
-        self.assertEqual(settings.getpriority("newkey_two"), 20)
+        assert settings["key_lowprio"] == 2
+        assert settings.getpriority("key_lowprio") == 20
+        assert settings["key_highprio"] == 10
+        assert "newkey_two" in settings
+        assert settings.getpriority("newkey_two") == 20
 
         settings.update(custom_settings)
-        self.assertEqual(settings["key_lowprio"], 1)
-        self.assertEqual(settings.getpriority("key_lowprio"), 30)
-        self.assertEqual(settings["key_highprio"], 10)
-        self.assertIn("newkey_one", settings)
-        self.assertEqual(settings.getpriority("newkey_one"), 50)
+        assert settings["key_lowprio"] == 1
+        assert settings.getpriority("key_lowprio") == 30
+        assert settings["key_highprio"] == 10
+        assert "newkey_one" in settings
+        assert settings.getpriority("newkey_one") == 50
 
         settings.update({"key_lowprio": 3}, priority=20)
-        self.assertEqual(settings["key_lowprio"], 1)
+        assert settings["key_lowprio"] == 1
 
     @pytest.mark.xfail(
         raises=TypeError, reason="BaseSettings.update doesn't support kwargs input"
@@ -220,21 +220,21 @@ class BaseSettingsTest(unittest.TestCase):
     def test_update_jsonstring(self):
         settings = BaseSettings({"number": 0, "dict": BaseSettings({"key": "val"})})
         settings.update('{"number": 1, "newnumber": 2}')
-        self.assertEqual(settings["number"], 1)
-        self.assertEqual(settings["newnumber"], 2)
+        assert settings["number"] == 1
+        assert settings["newnumber"] == 2
         settings.set("dict", '{"key": "newval", "newkey": "newval2"}')
-        self.assertEqual(settings["dict"]["key"], "newval")
-        self.assertEqual(settings["dict"]["newkey"], "newval2")
+        assert settings["dict"]["key"] == "newval"
+        assert settings["dict"]["newkey"] == "newval2"
 
     def test_delete(self):
         settings = BaseSettings({"key": None})
         settings.set("key_highprio", None, priority=50)
         settings.delete("key")
         settings.delete("key_highprio")
-        self.assertNotIn("key", settings)
-        self.assertIn("key_highprio", settings)
+        assert "key" not in settings
+        assert "key_highprio" in settings
         del settings["key_highprio"]
-        self.assertNotIn("key_highprio", settings)
+        assert "key_highprio" not in settings
         with pytest.raises(KeyError):
             settings.delete("notkey")
         with pytest.raises(KeyError):
@@ -260,6 +260,7 @@ class BaseSettingsTest(unittest.TestCase):
             "TEST_FLOAT2": "123.45",
             "TEST_LIST1": ["one", "two"],
             "TEST_LIST2": "one,two",
+            "TEST_LIST3": "",
             "TEST_STR": "value",
             "TEST_DICT1": {"key1": "val1", "ke2": 3},
             "TEST_DICT2": '{"key1": "val1", "ke2": 3}',
@@ -270,39 +271,40 @@ class BaseSettingsTest(unittest.TestCase):
             for key, value in test_configuration.items()
         }
 
-        self.assertTrue(settings.getbool("TEST_ENABLED1"))
-        self.assertTrue(settings.getbool("TEST_ENABLED2"))
-        self.assertTrue(settings.getbool("TEST_ENABLED3"))
-        self.assertTrue(settings.getbool("TEST_ENABLED4"))
-        self.assertTrue(settings.getbool("TEST_ENABLED5"))
-        self.assertFalse(settings.getbool("TEST_ENABLEDx"))
-        self.assertTrue(settings.getbool("TEST_ENABLEDx", True))
-        self.assertFalse(settings.getbool("TEST_DISABLED1"))
-        self.assertFalse(settings.getbool("TEST_DISABLED2"))
-        self.assertFalse(settings.getbool("TEST_DISABLED3"))
-        self.assertFalse(settings.getbool("TEST_DISABLED4"))
-        self.assertFalse(settings.getbool("TEST_DISABLED5"))
-        self.assertEqual(settings.getint("TEST_INT1"), 123)
-        self.assertEqual(settings.getint("TEST_INT2"), 123)
-        self.assertEqual(settings.getint("TEST_INTx"), 0)
-        self.assertEqual(settings.getint("TEST_INTx", 45), 45)
-        self.assertEqual(settings.getfloat("TEST_FLOAT1"), 123.45)
-        self.assertEqual(settings.getfloat("TEST_FLOAT2"), 123.45)
-        self.assertEqual(settings.getfloat("TEST_FLOATx"), 0.0)
-        self.assertEqual(settings.getfloat("TEST_FLOATx", 55.0), 55.0)
-        self.assertEqual(settings.getlist("TEST_LIST1"), ["one", "two"])
-        self.assertEqual(settings.getlist("TEST_LIST2"), ["one", "two"])
-        self.assertEqual(settings.getlist("TEST_LISTx"), [])
-        self.assertEqual(settings.getlist("TEST_LISTx", ["default"]), ["default"])
-        self.assertEqual(settings["TEST_STR"], "value")
-        self.assertEqual(settings.get("TEST_STR"), "value")
-        self.assertEqual(settings["TEST_STRx"], None)
-        self.assertEqual(settings.get("TEST_STRx"), None)
-        self.assertEqual(settings.get("TEST_STRx", "default"), "default")
-        self.assertEqual(settings.getdict("TEST_DICT1"), {"key1": "val1", "ke2": 3})
-        self.assertEqual(settings.getdict("TEST_DICT2"), {"key1": "val1", "ke2": 3})
-        self.assertEqual(settings.getdict("TEST_DICT3"), {})
-        self.assertEqual(settings.getdict("TEST_DICT3", {"key1": 5}), {"key1": 5})
+        assert settings.getbool("TEST_ENABLED1")
+        assert settings.getbool("TEST_ENABLED2")
+        assert settings.getbool("TEST_ENABLED3")
+        assert settings.getbool("TEST_ENABLED4")
+        assert settings.getbool("TEST_ENABLED5")
+        assert not settings.getbool("TEST_ENABLEDx")
+        assert settings.getbool("TEST_ENABLEDx", True)
+        assert not settings.getbool("TEST_DISABLED1")
+        assert not settings.getbool("TEST_DISABLED2")
+        assert not settings.getbool("TEST_DISABLED3")
+        assert not settings.getbool("TEST_DISABLED4")
+        assert not settings.getbool("TEST_DISABLED5")
+        assert settings.getint("TEST_INT1") == 123
+        assert settings.getint("TEST_INT2") == 123
+        assert settings.getint("TEST_INTx") == 0
+        assert settings.getint("TEST_INTx", 45) == 45
+        assert settings.getfloat("TEST_FLOAT1") == 123.45
+        assert settings.getfloat("TEST_FLOAT2") == 123.45
+        assert settings.getfloat("TEST_FLOATx") == 0.0
+        assert settings.getfloat("TEST_FLOATx", 55.0) == 55.0
+        assert settings.getlist("TEST_LIST1") == ["one", "two"]
+        assert settings.getlist("TEST_LIST2") == ["one", "two"]
+        assert settings.getlist("TEST_LIST3") == []
+        assert settings.getlist("TEST_LISTx") == []
+        assert settings.getlist("TEST_LISTx", ["default"]) == ["default"]
+        assert settings["TEST_STR"] == "value"
+        assert settings.get("TEST_STR") == "value"
+        assert settings["TEST_STRx"] is None
+        assert settings.get("TEST_STRx") is None
+        assert settings.get("TEST_STRx", "default") == "default"
+        assert settings.getdict("TEST_DICT1") == {"key1": "val1", "ke2": 3}
+        assert settings.getdict("TEST_DICT2") == {"key1": "val1", "ke2": 3}
+        assert settings.getdict("TEST_DICT3") == {}
+        assert settings.getdict("TEST_DICT3", {"key1": 5}) == {"key1": 5}
         with pytest.raises(
             ValueError,
             match="dictionary update sequence element #0 has length 3; 2 is required|sequence of pairs expected",
@@ -319,8 +321,8 @@ class BaseSettingsTest(unittest.TestCase):
 
     def test_getpriority(self):
         settings = BaseSettings({"key": "value"}, priority=99)
-        self.assertEqual(settings.getpriority("key"), 99)
-        self.assertEqual(settings.getpriority("nonexistentkey"), None)
+        assert settings.getpriority("key") == 99
+        assert settings.getpriority("nonexistentkey") is None
 
     def test_getwithbase(self):
         s = BaseSettings(
@@ -331,16 +333,16 @@ class BaseSettingsTest(unittest.TestCase):
             }
         )
         s["TEST"].set(2, 200, "cmdline")
-        self.assertCountEqual(s.getwithbase("TEST"), {1: 1, 2: 200, 3: 30})
-        self.assertCountEqual(s.getwithbase("HASNOBASE"), s["HASNOBASE"])
-        self.assertEqual(s.getwithbase("NONEXISTENT"), {})
+        assert set(s.getwithbase("TEST")) == {1, 2, 3}
+        assert set(s.getwithbase("HASNOBASE")) == set(s["HASNOBASE"])
+        assert s.getwithbase("NONEXISTENT") == {}
 
     def test_maxpriority(self):
         # Empty settings should return 'default'
-        self.assertEqual(self.settings.maxpriority(), 0)
+        assert self.settings.maxpriority() == 0
         self.settings.set("A", 0, 10)
         self.settings.set("B", 0, 30)
-        self.assertEqual(self.settings.maxpriority(), 30)
+        assert self.settings.maxpriority() == 30
 
     def test_copy(self):
         values = {
@@ -354,17 +356,15 @@ class BaseSettingsTest(unittest.TestCase):
         self.settings.setdict(values)
         copy = self.settings.copy()
         self.settings.set("TEST_BOOL", False)
-        self.assertTrue(copy.get("TEST_BOOL"))
+        assert copy.get("TEST_BOOL")
 
         test_list = self.settings.get("TEST_LIST")
         test_list.append("three")
-        self.assertListEqual(copy.get("TEST_LIST"), ["one", "two"])
+        assert copy.get("TEST_LIST") == ["one", "two"]
 
         test_list_of_lists = self.settings.get("TEST_LIST_OF_LISTS")
         test_list_of_lists[0].append("first_three")
-        self.assertListEqual(
-            copy.get("TEST_LIST_OF_LISTS")[0], ["first_one", "first_two"]
-        )
+        assert copy.get("TEST_LIST_OF_LISTS")[0] == ["first_one", "first_two"]
 
     def test_copy_to_dict(self):
         s = BaseSettings(
@@ -377,17 +377,14 @@ class BaseSettingsTest(unittest.TestCase):
                 "HASNOBASE": BaseSettings({3: 3000}, "default"),
             }
         )
-        self.assertDictEqual(
-            s.copy_to_dict(),
-            {
-                "HASNOBASE": {3: 3000},
-                "TEST": {1: 10, 3: 30},
-                "TEST_BASE": {1: 1, 2: 2},
-                "TEST_LIST": [1, 2],
-                "TEST_BOOLEAN": False,
-                "TEST_STRING": "a string",
-            },
-        )
+        assert s.copy_to_dict() == {
+            "HASNOBASE": {3: 3000},
+            "TEST": {1: 10, 3: 30},
+            "TEST_BASE": {1: 1, 2: 2},
+            "TEST_LIST": [1, 2],
+            "TEST_BOOLEAN": False,
+            "TEST_STRING": "a string",
+        }
 
     def test_freeze(self):
         self.settings.freeze()
@@ -398,55 +395,55 @@ class BaseSettingsTest(unittest.TestCase):
 
     def test_frozencopy(self):
         frozencopy = self.settings.frozencopy()
-        self.assertTrue(frozencopy.frozen)
-        self.assertIsNot(frozencopy, self.settings)
+        assert frozencopy.frozen
+        assert frozencopy is not self.settings
 
 
-class SettingsTest(unittest.TestCase):
-    def setUp(self):
+class TestSettings:
+    def setup_method(self):
         self.settings = Settings()
 
     @mock.patch.dict("scrapy.settings.SETTINGS_PRIORITIES", {"default": 10})
     @mock.patch("scrapy.settings.default_settings", default_settings)
     def test_initial_defaults(self):
         settings = Settings()
-        self.assertEqual(len(settings.attributes), 2)
-        self.assertIn("TEST_DEFAULT", settings.attributes)
+        assert len(settings.attributes) == 2
+        assert "TEST_DEFAULT" in settings.attributes
 
         attr = settings.attributes["TEST_DEFAULT"]
-        self.assertIsInstance(attr, SettingsAttribute)
-        self.assertEqual(attr.value, "defvalue")
-        self.assertEqual(attr.priority, 10)
+        assert isinstance(attr, SettingsAttribute)
+        assert attr.value == "defvalue"
+        assert attr.priority == 10
 
     @mock.patch.dict("scrapy.settings.SETTINGS_PRIORITIES", {})
     @mock.patch("scrapy.settings.default_settings", {})
     def test_initial_values(self):
         settings = Settings({"TEST_OPTION": "value"}, 10)
-        self.assertEqual(len(settings.attributes), 1)
-        self.assertIn("TEST_OPTION", settings.attributes)
+        assert len(settings.attributes) == 1
+        assert "TEST_OPTION" in settings.attributes
 
         attr = settings.attributes["TEST_OPTION"]
-        self.assertIsInstance(attr, SettingsAttribute)
-        self.assertEqual(attr.value, "value")
-        self.assertEqual(attr.priority, 10)
+        assert isinstance(attr, SettingsAttribute)
+        assert attr.value == "value"
+        assert attr.priority == 10
 
     @mock.patch("scrapy.settings.default_settings", default_settings)
     def test_autopromote_dicts(self):
         settings = Settings()
         mydict = settings.get("TEST_DICT")
-        self.assertIsInstance(mydict, BaseSettings)
-        self.assertIn("key", mydict)
-        self.assertEqual(mydict["key"], "val")  # pylint: disable=unsubscriptable-object
-        self.assertEqual(mydict.getpriority("key"), 0)
+        assert isinstance(mydict, BaseSettings)
+        assert "key" in mydict
+        assert mydict["key"] == "val"
+        assert mydict.getpriority("key") == 0
 
     @mock.patch("scrapy.settings.default_settings", default_settings)
     def test_getdict_autodegrade_basesettings(self):
         settings = Settings()
         mydict = settings.getdict("TEST_DICT")
-        self.assertIsInstance(mydict, dict)
-        self.assertEqual(len(mydict), 1)
-        self.assertIn("key", mydict)
-        self.assertEqual(mydict["key"], "val")
+        assert isinstance(mydict, dict)
+        assert len(mydict) == 1
+        assert "key" in mydict
+        assert mydict["key"] == "val"
 
     def test_passing_objects_as_values(self):
         from scrapy.core.downloader.handlers.file import FileDownloadHandler
@@ -468,19 +465,19 @@ class SettingsTest(unittest.TestCase):
             }
         )
 
-        self.assertIn("ITEM_PIPELINES", settings.attributes)
+        assert "ITEM_PIPELINES" in settings.attributes
 
         mypipeline, priority = settings.getdict("ITEM_PIPELINES").popitem()
-        self.assertEqual(priority, 800)
-        self.assertEqual(mypipeline, TestPipeline)
-        self.assertIsInstance(mypipeline(), TestPipeline)
-        self.assertEqual(mypipeline().process_item("item", None), "item")
+        assert priority == 800
+        assert mypipeline == TestPipeline
+        assert isinstance(mypipeline(), TestPipeline)
+        assert mypipeline().process_item("item", None) == "item"
 
         myhandler = settings.getdict("DOWNLOAD_HANDLERS").pop("ftp")
-        self.assertEqual(myhandler, FileDownloadHandler)
+        assert myhandler == FileDownloadHandler
         myhandler_instance = build_from_crawler(myhandler, get_crawler())
-        self.assertIsInstance(myhandler_instance, FileDownloadHandler)
-        self.assertTrue(hasattr(myhandler_instance, "download_request"))
+        assert isinstance(myhandler_instance, FileDownloadHandler)
+        assert hasattr(myhandler_instance, "download_request")
 
     def test_pop_item_with_default_value(self):
         settings = Settings()
@@ -489,14 +486,14 @@ class SettingsTest(unittest.TestCase):
             settings.pop("DUMMY_CONFIG")
 
         dummy_config_value = settings.pop("DUMMY_CONFIG", "dummy_value")
-        self.assertEqual(dummy_config_value, "dummy_value")
+        assert dummy_config_value == "dummy_value"
 
     def test_pop_item_with_immutable_settings(self):
         settings = Settings(
             {"DUMMY_CONFIG": "dummy_value", "OTHER_DUMMY_CONFIG": "other_dummy_value"}
         )
 
-        self.assertEqual(settings.pop("DUMMY_CONFIG"), "dummy_value")
+        assert settings.pop("DUMMY_CONFIG") == "dummy_value"
 
         settings.freeze()
 
@@ -504,3 +501,591 @@ class SettingsTest(unittest.TestCase):
             TypeError, match="Trying to modify an immutable Settings object"
         ):
             settings.pop("OTHER_DUMMY_CONFIG")
+
+
+@pytest.mark.parametrize(
+    ("before", "name", "item", "after"),
+    [
+        ({}, "FOO", "BAR", {"FOO": ["BAR"]}),
+        ({"FOO": []}, "FOO", "BAR", {"FOO": ["BAR"]}),
+        ({"FOO": ["BAR"]}, "FOO", "BAZ", {"FOO": ["BAR", "BAZ"]}),
+        ({"FOO": ["BAR"]}, "FOO", "BAR", {"FOO": ["BAR"]}),
+        ({"FOO": ""}, "FOO", "BAR", {"FOO": ["BAR"]}),
+        ({"FOO": "BAR"}, "FOO", "BAR", {"FOO": "BAR"}),
+        ({"FOO": "BAR"}, "FOO", "BAZ", {"FOO": ["BAR", "BAZ"]}),
+        ({"FOO": "BAR,BAZ"}, "FOO", "BAZ", {"FOO": "BAR,BAZ"}),
+        ({"FOO": "BAR,BAZ"}, "FOO", "QUX", {"FOO": ["BAR", "BAZ", "QUX"]}),
+    ],
+)
+def test_add_to_list(before, name, item, after):
+    settings = BaseSettings(before, priority=0)
+    settings.add_to_list(name, item)
+    expected_priority = settings.getpriority(name) or 0
+    expected_settings = BaseSettings(after, priority=expected_priority)
+    assert settings == expected_settings, (
+        f"{settings[name]=} != {expected_settings[name]=}"
+    )
+    assert settings.getpriority(name) == expected_settings.getpriority(name)
+
+
+@pytest.mark.parametrize(
+    ("before", "name", "item", "after"),
+    [
+        ({}, "FOO", "BAR", ValueError),
+        ({"FOO": ["BAR"]}, "FOO", "BAR", {"FOO": []}),
+        ({"FOO": ["BAR"]}, "FOO", "BAZ", ValueError),
+        ({"FOO": ["BAR", "BAZ"]}, "FOO", "BAR", {"FOO": ["BAZ"]}),
+        ({"FOO": ""}, "FOO", "BAR", ValueError),
+        ({"FOO": "[]"}, "FOO", "BAR", ValueError),
+        ({"FOO": "BAR"}, "FOO", "BAR", {"FOO": []}),
+        ({"FOO": "BAR"}, "FOO", "BAZ", ValueError),
+        ({"FOO": "BAR,BAZ"}, "FOO", "BAR", {"FOO": ["BAZ"]}),
+    ],
+)
+def test_remove_from_list(before, name, item, after):
+    settings = BaseSettings(before, priority=0)
+
+    if isinstance(after, type) and issubclass(after, Exception):
+        with pytest.raises(after):
+            settings.remove_from_list(name, item)
+        return
+
+    settings.remove_from_list(name, item)
+    expected_priority = settings.getpriority(name) or 0
+    expected_settings = BaseSettings(after, priority=expected_priority)
+    assert settings == expected_settings, (
+        f"{settings[name]=} != {expected_settings[name]=}"
+    )
+    assert settings.getpriority(name) == expected_settings.getpriority(name)
+
+
+class Component1:
+    pass
+
+
+Component1Alias = Component1
+
+
+class Component1Subclass(Component1):
+    pass
+
+
+Component1SubclassAlias = Component1Subclass
+
+
+class Component2:
+    pass
+
+
+class Component3:
+    pass
+
+
+class Component4:
+    pass
+
+
+@pytest.mark.parametrize(
+    ("before", "name", "old_cls", "new_cls", "priority", "after"),
+    [
+        ({}, "FOO", Component1, Component2, None, KeyError),
+        (
+            {"FOO": {Component1: 1}},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            {"FOO": {Component2: 1}},
+        ),
+        (
+            {"FOO": {Component1: 1}},
+            "FOO",
+            Component1,
+            Component2,
+            2,
+            {"FOO": {Component2: 2}},
+        ),
+        (
+            {"FOO": {"tests.test_settings.Component1": 1}},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            {"FOO": {Component2: 1}},
+        ),
+        (
+            {"FOO": {Component1Alias: 1}},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            {"FOO": {Component2: 1}},
+        ),
+        (
+            {"FOO": {Component1Alias: 1}},
+            "FOO",
+            Component1,
+            Component2,
+            2,
+            {"FOO": {Component2: 2}},
+        ),
+        (
+            {"FOO": {"tests.test_settings.Component1Alias": 1}},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            {"FOO": {Component2: 1}},
+        ),
+        (
+            {"FOO": {"tests.test_settings.Component1Alias": 1}},
+            "FOO",
+            Component1,
+            Component2,
+            2,
+            {"FOO": {Component2: 2}},
+        ),
+        (
+            {
+                "FOO": {
+                    "tests.test_settings.Component1": 1,
+                    "tests.test_settings.Component1Alias": 2,
+                }
+            },
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            {"FOO": {Component2: 2}},
+        ),
+        (
+            {
+                "FOO": {
+                    "tests.test_settings.Component1": 1,
+                    "tests.test_settings.Component1Alias": 2,
+                }
+            },
+            "FOO",
+            Component1,
+            Component2,
+            3,
+            {"FOO": {Component2: 3}},
+        ),
+        (
+            {"FOO": '{"tests.test_settings.Component1": 1}'},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            {"FOO": {Component2: 1}},
+        ),
+        (
+            {"FOO": '{"tests.test_settings.Component1": 1}'},
+            "FOO",
+            Component1,
+            Component2,
+            2,
+            {"FOO": {Component2: 2}},
+        ),
+        (
+            {"FOO": '{"tests.test_settings.Component1Alias": 1}'},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            {"FOO": {Component2: 1}},
+        ),
+        (
+            {"FOO": '{"tests.test_settings.Component1Alias": 1}'},
+            "FOO",
+            Component1,
+            Component2,
+            2,
+            {"FOO": {Component2: 2}},
+        ),
+        (
+            {
+                "FOO": '{"tests.test_settings.Component1": 1, "tests.test_settings.Component1Alias": 2}'
+            },
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            {"FOO": {Component2: 2}},
+        ),
+        (
+            {
+                "FOO": '{"tests.test_settings.Component1": 1, "tests.test_settings.Component1Alias": 2}'
+            },
+            "FOO",
+            Component1,
+            Component2,
+            3,
+            {"FOO": {Component2: 3}},
+        ),
+        # If old_cls has None as value, raise KeyError.
+        (
+            {"FOO": {Component1: None}},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            KeyError,
+        ),
+        (
+            {"FOO": '{"tests.test_settings.Component1": null}'},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            KeyError,
+        ),
+        (
+            {"FOO": {Component1: None, "tests.test_settings.Component1": None}},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            KeyError,
+        ),
+        (
+            {"FOO": {Component1: 1, "tests.test_settings.Component1": None}},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            KeyError,
+        ),
+        (
+            {"FOO": {Component1: None, "tests.test_settings.Component1": 1}},
+            "FOO",
+            Component1,
+            Component2,
+            None,
+            KeyError,
+        ),
+        # Unrelated components are kept as is, as expected.
+        (
+            {
+                "FOO": {
+                    Component1: 1,
+                    "tests.test_settings.Component2": 2,
+                    Component3: 3,
+                }
+            },
+            "FOO",
+            Component3,
+            Component4,
+            None,
+            {
+                "FOO": {
+                    Component1: 1,
+                    "tests.test_settings.Component2": 2,
+                    Component4: 3,
+                }
+            },
+        ),
+    ],
+)
+def test_replace_in_component_priority_dict(
+    before, name, old_cls, new_cls, priority, after
+):
+    settings = BaseSettings(before, priority=0)
+
+    if isinstance(after, type) and issubclass(after, Exception):
+        with pytest.raises(after):
+            settings.replace_in_component_priority_dict(
+                name, old_cls, new_cls, priority
+            )
+        return
+
+    expected_priority = settings.getpriority(name) or 0
+    settings.replace_in_component_priority_dict(name, old_cls, new_cls, priority)
+    expected_settings = BaseSettings(after, priority=expected_priority)
+    assert settings == expected_settings
+    assert settings.getpriority(name) == expected_settings.getpriority(name)
+
+
+@pytest.mark.parametrize(
+    ("before", "name", "cls", "priority", "after"),
+    [
+        # Set
+        ({}, "FOO", Component1, None, {"FOO": {Component1: None}}),
+        ({}, "FOO", Component1, 0, {"FOO": {Component1: 0}}),
+        ({}, "FOO", Component1, 1, {"FOO": {Component1: 1}}),
+        # Add
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            None,
+            {"FOO": {Component1: 0, Component2: None}},
+        ),
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            0,
+            {"FOO": {Component1: 0, Component2: 0}},
+        ),
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            1,
+            {"FOO": {Component1: 0, Component2: 1}},
+        ),
+        # Replace
+        (
+            {
+                "FOO": {
+                    Component1: None,
+                    "tests.test_settings.Component1": 0,
+                    "tests.test_settings.Component1Alias": 1,
+                    Component1Subclass: None,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1,
+                }
+            },
+            "FOO",
+            Component1,
+            None,
+            {
+                "FOO": {
+                    Component1: None,
+                    Component1Subclass: None,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1,
+                }
+            },
+        ),
+        (
+            {
+                "FOO": {
+                    Component1: 0,
+                    "tests.test_settings.Component1": 1,
+                    "tests.test_settings.Component1Alias": None,
+                    Component1Subclass: 0,
+                    "tests.test_settings.Component1Subclass": 1,
+                    "tests.test_settings.Component1SubclassAlias": None,
+                }
+            },
+            "FOO",
+            Component1,
+            0,
+            {
+                "FOO": {
+                    Component1: 0,
+                    Component1Subclass: 0,
+                    "tests.test_settings.Component1Subclass": 1,
+                    "tests.test_settings.Component1SubclassAlias": None,
+                }
+            },
+        ),
+        (
+            {
+                "FOO": {
+                    Component1: 1,
+                    "tests.test_settings.Component1": None,
+                    "tests.test_settings.Component1Alias": 0,
+                    Component1Subclass: 1,
+                    "tests.test_settings.Component1Subclass": None,
+                    "tests.test_settings.Component1SubclassAlias": 0,
+                }
+            },
+            "FOO",
+            Component1,
+            1,
+            {
+                "FOO": {
+                    Component1: 1,
+                    Component1Subclass: 1,
+                    "tests.test_settings.Component1Subclass": None,
+                    "tests.test_settings.Component1SubclassAlias": 0,
+                }
+            },
+        ),
+        # String-based setting values
+        (
+            {"FOO": '{"tests.test_settings.Component1": 0}'},
+            "FOO",
+            Component2,
+            None,
+            {"FOO": {"tests.test_settings.Component1": 0, Component2: None}},
+        ),
+        (
+            {
+                "FOO": """{
+                    "tests.test_settings.Component1": 0,
+                    "tests.test_settings.Component1Alias": 1,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1
+                }"""
+            },
+            "FOO",
+            Component1,
+            None,
+            {
+                "FOO": {
+                    Component1: None,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1,
+                }
+            },
+        ),
+    ],
+)
+def test_set_in_component_priority_dict(before, name, cls, priority, after):
+    settings = BaseSettings(before, priority=0)
+    expected_priority = settings.getpriority(name) or 0
+    settings.set_in_component_priority_dict(name, cls, priority)
+    expected_settings = BaseSettings(after, priority=expected_priority)
+    assert settings == expected_settings
+    assert settings.getpriority(name) == expected_settings.getpriority(name), (
+        f"{settings.getpriority(name)=} != {expected_settings.getpriority(name)=}"
+    )
+
+
+@pytest.mark.parametrize(
+    ("before", "name", "cls", "priority", "after"),
+    [
+        # Set
+        ({}, "FOO", Component1, None, {"FOO": {Component1: None}}),
+        ({}, "FOO", Component1, 0, {"FOO": {Component1: 0}}),
+        ({}, "FOO", Component1, 1, {"FOO": {Component1: 1}}),
+        # Add
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            None,
+            {"FOO": {Component1: 0, Component2: None}},
+        ),
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            0,
+            {"FOO": {Component1: 0, Component2: 0}},
+        ),
+        (
+            {"FOO": {Component1: 0}},
+            "FOO",
+            Component2,
+            1,
+            {"FOO": {Component1: 0, Component2: 1}},
+        ),
+        # Keep
+        (
+            {
+                "FOO": {
+                    Component1: None,
+                    "tests.test_settings.Component1": 0,
+                    "tests.test_settings.Component1Alias": 1,
+                    Component1Subclass: None,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1,
+                }
+            },
+            "FOO",
+            Component1,
+            None,
+            {
+                "FOO": {
+                    Component1: None,
+                    "tests.test_settings.Component1": 0,
+                    "tests.test_settings.Component1Alias": 1,
+                    Component1Subclass: None,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1,
+                }
+            },
+        ),
+        (
+            {
+                "FOO": {
+                    Component1: 0,
+                    "tests.test_settings.Component1": 1,
+                    "tests.test_settings.Component1Alias": None,
+                    Component1Subclass: 0,
+                    "tests.test_settings.Component1Subclass": 1,
+                    "tests.test_settings.Component1SubclassAlias": None,
+                }
+            },
+            "FOO",
+            Component1,
+            0,
+            {
+                "FOO": {
+                    Component1: 0,
+                    "tests.test_settings.Component1": 1,
+                    "tests.test_settings.Component1Alias": None,
+                    Component1Subclass: 0,
+                    "tests.test_settings.Component1Subclass": 1,
+                    "tests.test_settings.Component1SubclassAlias": None,
+                }
+            },
+        ),
+        (
+            {
+                "FOO": {
+                    Component1: 1,
+                    "tests.test_settings.Component1": None,
+                    "tests.test_settings.Component1Alias": 0,
+                    Component1Subclass: 1,
+                    "tests.test_settings.Component1Subclass": None,
+                    "tests.test_settings.Component1SubclassAlias": 0,
+                }
+            },
+            "FOO",
+            Component1,
+            1,
+            {
+                "FOO": {
+                    Component1: 1,
+                    "tests.test_settings.Component1": None,
+                    "tests.test_settings.Component1Alias": 0,
+                    Component1Subclass: 1,
+                    "tests.test_settings.Component1Subclass": None,
+                    "tests.test_settings.Component1SubclassAlias": 0,
+                }
+            },
+        ),
+        # String-based setting values
+        (
+            {"FOO": '{"tests.test_settings.Component1": 0}'},
+            "FOO",
+            Component2,
+            None,
+            {"FOO": {"tests.test_settings.Component1": 0, Component2: None}},
+        ),
+        (
+            {
+                "FOO": """{
+                    "tests.test_settings.Component1": 0,
+                    "tests.test_settings.Component1Alias": 1,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1
+                }"""
+            },
+            "FOO",
+            Component1,
+            None,
+            {
+                "FOO": """{
+                    "tests.test_settings.Component1": 0,
+                    "tests.test_settings.Component1Alias": 1,
+                    "tests.test_settings.Component1Subclass": 0,
+                    "tests.test_settings.Component1SubclassAlias": 1
+                }"""
+            },
+        ),
+    ],
+)
+def test_setdefault_in_component_priority_dict(before, name, cls, priority, after):
+    settings = BaseSettings(before, priority=0)
+    expected_priority = settings.getpriority(name) or 0
+    settings.setdefault_in_component_priority_dict(name, cls, priority)
+    expected_settings = BaseSettings(after, priority=expected_priority)
+    assert settings == expected_settings
+    assert settings.getpriority(name) == expected_settings.getpriority(name)

@@ -243,8 +243,9 @@ class CrawlerRun:
         self.signals_caught[sig] = signalargs
 
 
-class EngineTestBase(unittest.TestCase):
-    def _assert_visited_urls(self, run: CrawlerRun):
+class TestEngineBase(unittest.TestCase):
+    @staticmethod
+    def _assert_visited_urls(run: CrawlerRun) -> None:
         must_be_visited = [
             "/",
             "/redirect",
@@ -259,8 +260,9 @@ class EngineTestBase(unittest.TestCase):
             f"URLs not visited: {list(urls_expected - urls_visited)}"
         )
 
-    def _assert_scheduled_requests(self, run: CrawlerRun, count=None):
-        self.assertEqual(count, len(run.reqplug))
+    @staticmethod
+    def _assert_scheduled_requests(run: CrawlerRun, count: int) -> None:
+        assert len(run.reqplug) == count
 
         paths_expected = ["/item999.html", "/item2.html", "/item1.html"]
 
@@ -270,101 +272,104 @@ class EngineTestBase(unittest.TestCase):
         scheduled_requests_count = len(run.reqplug)
         dropped_requests_count = len(run.reqdropped)
         responses_count = len(run.respplug)
-        self.assertEqual(
-            scheduled_requests_count, dropped_requests_count + responses_count
-        )
-        self.assertEqual(len(run.reqreached), responses_count)
+        assert scheduled_requests_count == dropped_requests_count + responses_count
+        assert len(run.reqreached) == responses_count
 
-    def _assert_dropped_requests(self, run: CrawlerRun):
-        self.assertEqual(len(run.reqdropped), 1)
+    @staticmethod
+    def _assert_dropped_requests(run: CrawlerRun) -> None:
+        assert len(run.reqdropped) == 1
 
-    def _assert_downloaded_responses(self, run: CrawlerRun, count):
+    @staticmethod
+    def _assert_downloaded_responses(run: CrawlerRun, count: int) -> None:
         # response tests
-        self.assertEqual(count, len(run.respplug))
-        self.assertEqual(count, len(run.reqreached))
+        assert len(run.respplug) == count
+        assert len(run.reqreached) == count
 
         for response, _ in run.respplug:
             if run.getpath(response.url) == "/item999.html":
-                self.assertEqual(404, response.status)
+                assert response.status == 404
             if run.getpath(response.url) == "/redirect":
-                self.assertEqual(302, response.status)
+                assert response.status == 302
 
-    def _assert_items_error(self, run: CrawlerRun):
-        self.assertEqual(2, len(run.itemerror))
+    @staticmethod
+    def _assert_items_error(run: CrawlerRun) -> None:
+        assert len(run.itemerror) == 2
         for item, response, spider, failure in run.itemerror:
-            self.assertEqual(failure.value.__class__, ZeroDivisionError)
-            self.assertEqual(spider, run.spider)
+            assert failure.value.__class__ is ZeroDivisionError
+            assert spider == run.spider
 
-            self.assertEqual(item["url"], response.url)
+            assert item["url"] == response.url
             if "item1.html" in item["url"]:
-                self.assertEqual("Item 1 name", item["name"])
-                self.assertEqual("100", item["price"])
+                assert item["name"] == "Item 1 name"
+                assert item["price"] == "100"
             if "item2.html" in item["url"]:
-                self.assertEqual("Item 2 name", item["name"])
-                self.assertEqual("200", item["price"])
+                assert item["name"] == "Item 2 name"
+                assert item["price"] == "200"
 
-    def _assert_scraped_items(self, run: CrawlerRun):
-        self.assertEqual(2, len(run.itemresp))
+    @staticmethod
+    def _assert_scraped_items(run: CrawlerRun) -> None:
+        assert len(run.itemresp) == 2
         for item, response in run.itemresp:
             item = ItemAdapter(item)
-            self.assertEqual(item["url"], response.url)
+            assert item["url"] == response.url
             if "item1.html" in item["url"]:
-                self.assertEqual("Item 1 name", item["name"])
-                self.assertEqual("100", item["price"])
+                assert item["name"] == "Item 1 name"
+                assert item["price"] == "100"
             if "item2.html" in item["url"]:
-                self.assertEqual("Item 2 name", item["name"])
-                self.assertEqual("200", item["price"])
+                assert item["name"] == "Item 2 name"
+                assert item["price"] == "200"
 
-    def _assert_headers_received(self, run: CrawlerRun):
+    @staticmethod
+    def _assert_headers_received(run: CrawlerRun) -> None:
         for headers in run.headers.values():
-            self.assertIn(b"Server", headers)
-            self.assertIn(b"TwistedWeb", headers[b"Server"])
-            self.assertIn(b"Date", headers)
-            self.assertIn(b"Content-Type", headers)
+            assert b"Server" in headers
+            assert b"TwistedWeb" in headers[b"Server"]
+            assert b"Date" in headers
+            assert b"Content-Type" in headers
 
-    def _assert_bytes_received(self, run: CrawlerRun):
-        self.assertEqual(9, len(run.bytes))
+    @staticmethod
+    def _assert_bytes_received(run: CrawlerRun) -> None:
+        assert len(run.bytes) == 9
         for request, data in run.bytes.items():
             joined_data = b"".join(data)
             if run.getpath(request.url) == "/":
-                self.assertEqual(joined_data, get_testdata("test_site", "index.html"))
+                assert joined_data == get_testdata("test_site", "index.html")
             elif run.getpath(request.url) == "/item1.html":
-                self.assertEqual(joined_data, get_testdata("test_site", "item1.html"))
+                assert joined_data == get_testdata("test_site", "item1.html")
             elif run.getpath(request.url) == "/item2.html":
-                self.assertEqual(joined_data, get_testdata("test_site", "item2.html"))
+                assert joined_data == get_testdata("test_site", "item2.html")
             elif run.getpath(request.url) == "/redirected":
-                self.assertEqual(joined_data, b"Redirected here")
+                assert joined_data == b"Redirected here"
             elif run.getpath(request.url) == "/redirect":
-                self.assertEqual(
-                    joined_data,
-                    b"\n<html>\n"
+                assert (
+                    joined_data == b"\n<html>\n"
                     b"    <head>\n"
                     b'        <meta http-equiv="refresh" content="0;URL=/redirected">\n'
                     b"    </head>\n"
                     b'    <body bgcolor="#FFFFFF" text="#000000">\n'
                     b'    <a href="/redirected">click here</a>\n'
                     b"    </body>\n"
-                    b"</html>\n",
+                    b"</html>\n"
                 )
             elif run.getpath(request.url) == "/tem999.html":
-                self.assertEqual(
-                    joined_data,
-                    b"\n<html>\n"
+                assert (
+                    joined_data == b"\n<html>\n"
                     b"  <head><title>404 - No Such Resource</title></head>\n"
                     b"  <body>\n"
                     b"    <h1>No Such Resource</h1>\n"
                     b"    <p>File not found.</p>\n"
                     b"  </body>\n"
-                    b"</html>\n",
+                    b"</html>\n"
                 )
             elif run.getpath(request.url) == "/numbers":
                 # signal was fired multiple times
-                self.assertTrue(len(data) > 1)
+                assert len(data) > 1
                 # bytes were received in order
                 numbers = [str(x).encode("utf8") for x in range(2**18)]
-                self.assertEqual(joined_data, b"".join(numbers))
+                assert joined_data == b"".join(numbers)
 
-    def _assert_signals_caught(self, run: CrawlerRun):
+    @staticmethod
+    def _assert_signals_caught(run: CrawlerRun) -> None:
         assert signals.engine_started in run.signals_caught
         assert signals.engine_stopped in run.signals_caught
         assert signals.spider_opened in run.signals_caught
@@ -372,19 +377,14 @@ class EngineTestBase(unittest.TestCase):
         assert signals.spider_closed in run.signals_caught
         assert signals.headers_received in run.signals_caught
 
-        self.assertEqual(
-            {"spider": run.spider}, run.signals_caught[signals.spider_opened]
-        )
-        self.assertEqual(
-            {"spider": run.spider}, run.signals_caught[signals.spider_idle]
-        )
-        self.assertEqual(
-            {"spider": run.spider, "reason": "finished"},
-            run.signals_caught[signals.spider_closed],
-        )
+        assert {"spider": run.spider} == run.signals_caught[signals.spider_opened]
+        assert {"spider": run.spider} == run.signals_caught[signals.spider_idle]
+        assert {"spider": run.spider, "reason": "finished"} == run.signals_caught[
+            signals.spider_closed
+        ]
 
 
-class EngineTest(EngineTestBase):
+class TestEngine(TestEngineBase):
     @defer.inlineCallbacks
     def test_crawler(self):
         for spider in (
@@ -419,10 +419,9 @@ class EngineTest(EngineTestBase):
     def test_crawler_change_close_reason_on_idle(self):
         run = CrawlerRun(ChangeCloseReasonSpider)
         yield run.run()
-        self.assertEqual(
-            {"spider": run.spider, "reason": "custom_reason"},
-            run.signals_caught[signals.spider_closed],
-        )
+        assert {"spider": run.spider, "reason": "custom_reason"} == run.signals_caught[
+            signals.spider_closed
+        ]
 
     @defer.inlineCallbacks
     def test_close_downloader(self):
@@ -434,10 +433,12 @@ class EngineTest(EngineTestBase):
         e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
         yield e.open_spider(MySpider(), [])
         e.start()
+
+        def cb(exc: BaseException) -> None:
+            assert str(exc), "Engine already running"
+
         try:
-            yield self.assertFailure(e.start(), RuntimeError).addBoth(
-                lambda exc: self.assertEqual(str(exc), "Engine already running")
-            )
+            yield self.assertFailure(e.start(), RuntimeError).addBoth(cb)
         finally:
             yield e.stop()
 
@@ -470,7 +471,7 @@ class EngineTest(EngineTestBase):
         finally:
             timer.cancel()
 
-        self.assertNotIn(b"Traceback", stderr)
+        assert b"Traceback" not in stderr
 
 
 def test_request_scheduled_signal(caplog):
@@ -486,18 +487,17 @@ def test_request_scheduled_signal(caplog):
         if "drop" in request.url:
             raise IgnoreRequest
 
-    spider = MySpider()
-    crawler = get_crawler(spider.__class__)
+    crawler = get_crawler(MySpider)
     engine = ExecutionEngine(crawler, lambda _: None)
     engine.downloader._slot_gc_loop.stop()
     scheduler = TestScheduler()
     engine.slot = Slot((), None, Mock(), scheduler)
     crawler.signals.connect(signal_handler, request_scheduled)
     keep_request = Request("https://keep.example")
-    engine._schedule_request(keep_request, spider)
+    engine._schedule_request(keep_request)
     drop_request = Request("https://drop.example")
     caplog.set_level(DEBUG)
-    engine._schedule_request(drop_request, spider)
+    engine._schedule_request(drop_request)
     assert scheduler.enqueued == [keep_request], (
         f"{scheduler.enqueued!r} != [{keep_request!r}]"
     )

@@ -56,7 +56,7 @@ class AlternativeCallbacksMiddleware:
         return response.replace(request=new_request)
 
 
-class CrawlTestCase(TestCase):
+class TestCrawl(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mockserver = MockServer()
@@ -72,7 +72,7 @@ class CrawlTestCase(TestCase):
         crawler = get_crawler(SingleRequestSpider)
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
         response = crawler.spider.meta["responses"][0]
-        self.assertEqual(response.request.url, url)
+        assert response.request.url == url
 
     @defer.inlineCallbacks
     def test_response_error(self):
@@ -82,8 +82,8 @@ class CrawlTestCase(TestCase):
             yield crawler.crawl(seed=url, mockserver=self.mockserver)
             failure = crawler.spider.meta["failure"]
             response = failure.value.response
-            self.assertEqual(failure.request.url, url)
-            self.assertEqual(response.request.url, url)
+            assert failure.request.url == url
+            assert response.request.url == url
 
     @defer.inlineCallbacks
     def test_downloader_middleware_raise_exception(self):
@@ -98,8 +98,8 @@ class CrawlTestCase(TestCase):
         )
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
         failure = crawler.spider.meta["failure"]
-        self.assertEqual(failure.request.url, url)
-        self.assertIsInstance(failure.value, ZeroDivisionError)
+        assert failure.request.url == url
+        assert isinstance(failure.value, ZeroDivisionError)
 
     @defer.inlineCallbacks
     def test_downloader_middleware_override_request_in_process_response(self):
@@ -131,10 +131,10 @@ class CrawlTestCase(TestCase):
             yield crawler.crawl(seed=url, mockserver=self.mockserver)
 
         response = crawler.spider.meta["responses"][0]
-        self.assertEqual(response.request.url, OVERRIDDEN_URL)
+        assert response.request.url == OVERRIDDEN_URL
 
-        self.assertEqual(signal_params["response"].url, url)
-        self.assertEqual(signal_params["request"].url, OVERRIDDEN_URL)
+        assert signal_params["response"].url == url
+        assert signal_params["request"].url == OVERRIDDEN_URL
 
         log.check_present(
             (
@@ -164,8 +164,8 @@ class CrawlTestCase(TestCase):
         )
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
         response = crawler.spider.meta["responses"][0]
-        self.assertEqual(response.body, b"Caught ZeroDivisionError")
-        self.assertEqual(response.request.url, OVERRIDDEN_URL)
+        assert response.body == b"Caught ZeroDivisionError"
+        assert response.request.url == OVERRIDDEN_URL
 
     @defer.inlineCallbacks
     def test_downloader_middleware_do_not_override_in_process_exception(self):
@@ -187,8 +187,8 @@ class CrawlTestCase(TestCase):
         )
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
         response = crawler.spider.meta["responses"][0]
-        self.assertEqual(response.body, b"Caught ZeroDivisionError")
-        self.assertEqual(response.request.url, url)
+        assert response.body == b"Caught ZeroDivisionError"
+        assert response.request.url == url
 
     @defer.inlineCallbacks
     def test_downloader_middleware_alternative_callback(self):

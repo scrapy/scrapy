@@ -18,6 +18,7 @@ from twisted.trial.unittest import SkipTest
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.deprecate import create_deprecated_class
+from scrapy.utils.reactor import is_asyncio_reactor_installed
 from scrapy.utils.spider import DefaultSpider
 
 if TYPE_CHECKING:
@@ -34,11 +35,23 @@ _T = TypeVar("_T")
 
 
 def assert_gcs_environ() -> None:
+    warnings.warn(
+        "The assert_gcs_environ() function is deprecated and will be removed in a future version of Scrapy."
+        " Check GCS_PROJECT_ID directly.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     if "GCS_PROJECT_ID" not in os.environ:
         raise SkipTest("GCS_PROJECT_ID not found")
 
 
 def skip_if_no_boto() -> None:
+    warnings.warn(
+        "The skip_if_no_boto() function is deprecated and will be removed in a future version of Scrapy."
+        " Check scrapy.utils.boto.is_botocore_available() directly.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     if not is_botocore_available():
         raise SkipTest("missing botocore library")
 
@@ -48,6 +61,11 @@ def get_gcs_content_and_delete(
 ) -> tuple[bytes, list[dict[str, str]], Any]:
     from google.cloud import storage
 
+    warnings.warn(
+        "The get_gcs_content_and_delete() function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     client = storage.Client(project=os.environ.get("GCS_PROJECT_ID"))
     bucket = client.get_bucket(bucket)
     blob = bucket.get_blob(path)
@@ -67,6 +85,11 @@ def get_ftp_content_and_delete(
 ) -> bytes:
     from ftplib import FTP
 
+    warnings.warn(
+        "The get_ftp_content_and_delete() function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     ftp = FTP()
     ftp.connect(host, port)
     ftp.login(username, password)
@@ -87,6 +110,19 @@ def get_ftp_content_and_delete(
 TestSpider = create_deprecated_class("TestSpider", DefaultSpider)
 
 
+def get_reactor_settings() -> dict[str, Any]:
+    """Return a settings dict that works with the installed reactor.
+
+    ``Crawler._apply_settings()`` checks that the installed reactor matches the
+    settings, so tests that run the crawler in the current process may need to
+    pass a correct ``"TWISTED_REACTOR"`` setting value when creating it.
+    """
+    settings: dict[str, Any] = {}
+    if not is_asyncio_reactor_installed():
+        settings["TWISTED_REACTOR"] = None
+    return settings
+
+
 def get_crawler(
     spidercls: type[Spider] | None = None,
     settings_dict: dict[str, Any] | None = None,
@@ -98,9 +134,12 @@ def get_crawler(
     """
     from scrapy.crawler import CrawlerRunner
 
-    # Set by default settings that prevent deprecation warnings.
-    settings: dict[str, Any] = {}
-    settings.update(settings_dict or {})
+    # When needed, useful settings can be added here, e.g. ones that prevent
+    # deprecation warnings.
+    settings: dict[str, Any] = {
+        **get_reactor_settings(),
+        **(settings_dict or {}),
+    }
     runner = CrawlerRunner(settings)
     crawler = runner.create_crawler(spidercls or DefaultSpider)
     crawler._apply_settings()
@@ -134,7 +173,7 @@ def assert_samelines(
         category=ScrapyDeprecationWarning,
         stacklevel=2,
     )
-    testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
+    testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)  # noqa: PT009
 
 
 def get_from_asyncio_queue(value: _T) -> Awaitable[_T]:
@@ -149,6 +188,12 @@ def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
     classes and set their proper return values.
     """
     from google.cloud.storage import Blob, Bucket, Client
+
+    warnings.warn(
+        "The mock_google_cloud_storage() function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
 
     client_mock = mock.create_autospec(Client)
 

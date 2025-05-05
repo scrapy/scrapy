@@ -1,14 +1,38 @@
-import asyncio
-import sys
+import scrapy
+from scrapy.crawler import CrawlerProcess
+from scrapy.utils.reactor import (
+    install_reactor,
+    is_asyncio_reactor_installed,
+    is_reactor_installed,
+)
 
-from twisted.internet import asyncioreactor
+if is_reactor_installed():
+    raise RuntimeError(
+        "Reactor already installed before is_asyncio_reactor_installed()."
+    )
 
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-asyncioreactor.install(asyncio.get_event_loop())
+try:
+    is_asyncio_reactor_installed()
+except RuntimeError:
+    pass
+else:
+    raise RuntimeError("is_asyncio_reactor_installed() did not raise RuntimeError.")
 
-import scrapy  # noqa: E402
-from scrapy.crawler import CrawlerProcess  # noqa: E402
+if is_reactor_installed():
+    raise RuntimeError(
+        "Reactor already installed after is_asyncio_reactor_installed()."
+    )
+
+install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+
+if not is_asyncio_reactor_installed():
+    raise RuntimeError("Wrong reactor installed after install_reactor().")
+
+
+class ReactorCheckExtension:
+    def __init__(self):
+        if not is_asyncio_reactor_installed():
+            raise RuntimeError("ReactorCheckExtension requires the asyncio reactor.")
 
 
 class NoRequestsSpider(scrapy.Spider):
@@ -21,6 +45,7 @@ class NoRequestsSpider(scrapy.Spider):
 process = CrawlerProcess(
     settings={
         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+        "EXTENSIONS": {ReactorCheckExtension: 0},
     }
 )
 process.crawl(NoRequestsSpider)

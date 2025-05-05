@@ -21,18 +21,18 @@ from scrapy.utils.python import (
 )
 
 
-class MutableChainTest(unittest.TestCase):
+class TestMutableChain:
     def test_mutablechain(self):
         m = MutableChain(range(2), [2, 3], (4, 5))
         m.extend(range(6, 7))
         m.extend([7, 8])
         m.extend([9, 10], (11, 12))
-        self.assertEqual(next(m), 0)
-        self.assertEqual(m.__next__(), 1)
-        self.assertEqual(list(m), list(range(2, 13)))
+        assert next(m) == 0
+        assert m.__next__() == 1
+        assert list(m) == list(range(2, 13))
 
 
-class MutableAsyncChainTest(unittest.TestCase):
+class TestMutableAsyncChain(unittest.TestCase):
     @staticmethod
     async def g1():
         for i in range(3):
@@ -62,9 +62,9 @@ class MutableAsyncChainTest(unittest.TestCase):
         m.extend(self.g2())
         m.extend(self.g3())
 
-        self.assertEqual(await m.__anext__(), 0)
+        assert await m.__anext__() == 0
         results = await collect_asyncgen(m)
-        self.assertEqual(results, list(range(1, 10)))
+        assert results == list(range(1, 10))
 
     @deferred_f_from_coro_f
     async def test_mutableasyncchain_exc(self):
@@ -73,46 +73,46 @@ class MutableAsyncChainTest(unittest.TestCase):
         m.extend(self.g3())
 
         results = await collect_asyncgen(aiter_errback(m, lambda _: None))
-        self.assertEqual(results, list(range(5)))
+        assert results == list(range(5))
 
 
-class ToUnicodeTest(unittest.TestCase):
+class TestToUnicode:
     def test_converting_an_utf8_encoded_string_to_unicode(self):
-        self.assertEqual(to_unicode(b"lel\xc3\xb1e"), "lel\xf1e")
+        assert to_unicode(b"lel\xc3\xb1e") == "lel\xf1e"
 
     def test_converting_a_latin_1_encoded_string_to_unicode(self):
-        self.assertEqual(to_unicode(b"lel\xf1e", "latin-1"), "lel\xf1e")
+        assert to_unicode(b"lel\xf1e", "latin-1") == "lel\xf1e"
 
     def test_converting_a_unicode_to_unicode_should_return_the_same_object(self):
-        self.assertEqual(to_unicode("\xf1e\xf1e\xf1e"), "\xf1e\xf1e\xf1e")
+        assert to_unicode("\xf1e\xf1e\xf1e") == "\xf1e\xf1e\xf1e"
 
-    def test_converting_a_strange_object_should_raise_TypeError(self):
+    def test_converting_a_strange_object_should_raise_type_error(self):
         with pytest.raises(TypeError):
             to_unicode(423)
 
     def test_errors_argument(self):
-        self.assertEqual(to_unicode(b"a\xedb", "utf-8", errors="replace"), "a\ufffdb")
+        assert to_unicode(b"a\xedb", "utf-8", errors="replace") == "a\ufffdb"
 
 
-class ToBytesTest(unittest.TestCase):
+class TestToBytes:
     def test_converting_a_unicode_object_to_an_utf_8_encoded_string(self):
-        self.assertEqual(to_bytes("\xa3 49"), b"\xc2\xa3 49")
+        assert to_bytes("\xa3 49") == b"\xc2\xa3 49"
 
     def test_converting_a_unicode_object_to_a_latin_1_encoded_string(self):
-        self.assertEqual(to_bytes("\xa3 49", "latin-1"), b"\xa3 49")
+        assert to_bytes("\xa3 49", "latin-1") == b"\xa3 49"
 
     def test_converting_a_regular_bytes_to_bytes_should_return_the_same_object(self):
-        self.assertEqual(to_bytes(b"lel\xf1e"), b"lel\xf1e")
+        assert to_bytes(b"lel\xf1e") == b"lel\xf1e"
 
-    def test_converting_a_strange_object_should_raise_TypeError(self):
+    def test_converting_a_strange_object_should_raise_type_error(self):
         with pytest.raises(TypeError):
             to_bytes(pytest)
 
     def test_errors_argument(self):
-        self.assertEqual(to_bytes("a\ufffdb", "latin-1", errors="replace"), b"a?b")
+        assert to_bytes("a\ufffdb", "latin-1", errors="replace") == b"a?b"
 
 
-class MemoizedMethodTest(unittest.TestCase):
+class TestMemoizedMethod:
     def test_memoizemethod_noargs(self):
         class A:
             @memoizemethod_noargs
@@ -130,7 +130,7 @@ class MemoizedMethodTest(unittest.TestCase):
         assert one is not three
 
 
-class BinaryIsTextTest(unittest.TestCase):
+class TestBinaryIsText:
     def test_binaryistext(self):
         assert binary_is_text(b"hello")
 
@@ -144,7 +144,7 @@ class BinaryIsTextTest(unittest.TestCase):
         assert not binary_is_text(b"\x02\xa3")
 
 
-class UtilsPythonTestCase(unittest.TestCase):
+class TestUtilsPython:
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_equal_attributes(self):
         class Obj:
@@ -153,31 +153,31 @@ class UtilsPythonTestCase(unittest.TestCase):
         a = Obj()
         b = Obj()
         # no attributes given return False
-        self.assertFalse(equal_attributes(a, b, []))
+        assert not equal_attributes(a, b, [])
         # nonexistent attributes
-        self.assertFalse(equal_attributes(a, b, ["x", "y"]))
+        assert not equal_attributes(a, b, ["x", "y"])
 
         a.x = 1
         b.x = 1
         # equal attribute
-        self.assertTrue(equal_attributes(a, b, ["x"]))
+        assert equal_attributes(a, b, ["x"])
 
         b.y = 2
         # obj1 has no attribute y
-        self.assertFalse(equal_attributes(a, b, ["x", "y"]))
+        assert not equal_attributes(a, b, ["x", "y"])
 
         a.y = 2
         # equal attributes
-        self.assertTrue(equal_attributes(a, b, ["x", "y"]))
+        assert equal_attributes(a, b, ["x", "y"])
 
         a.y = 1
         # different attributes
-        self.assertFalse(equal_attributes(a, b, ["x", "y"]))
+        assert not equal_attributes(a, b, ["x", "y"])
 
         # test callable
         a.meta = {}
         b.meta = {}
-        self.assertTrue(equal_attributes(a, b, ["meta"]))
+        assert equal_attributes(a, b, ["meta"])
 
         # compare ['meta']['a']
         a.meta["z"] = 1
@@ -189,10 +189,10 @@ class UtilsPythonTestCase(unittest.TestCase):
         def compare_z(obj):
             return get_z(get_meta(obj))
 
-        self.assertTrue(equal_attributes(a, b, [compare_z, "x"]))
+        assert equal_attributes(a, b, [compare_z, "x"])
         # fail z equality
         a.meta["z"] = 2
-        self.assertFalse(equal_attributes(a, b, [compare_z, "x"]))
+        assert not equal_attributes(a, b, [compare_z, "x"])
 
     def test_get_func_args(self):
         def f1(a, b, c):
@@ -221,36 +221,35 @@ class UtilsPythonTestCase(unittest.TestCase):
         partial_f2 = functools.partial(f1, b=None)
         partial_f3 = functools.partial(partial_f2, None)
 
-        self.assertEqual(get_func_args(f1), ["a", "b", "c"])
-        self.assertEqual(get_func_args(f2), ["a", "b", "c"])
-        self.assertEqual(get_func_args(f3), ["a", "b", "c"])
-        self.assertEqual(get_func_args(A), ["a", "b", "c"])
-        self.assertEqual(get_func_args(a.method), ["a", "b", "c"])
-        self.assertEqual(get_func_args(partial_f1), ["b", "c"])
-        self.assertEqual(get_func_args(partial_f2), ["a", "c"])
-        self.assertEqual(get_func_args(partial_f3), ["c"])
-        self.assertEqual(get_func_args(cal), ["a", "b", "c"])
-        self.assertEqual(get_func_args(object), [])
-        self.assertEqual(get_func_args(str.split, stripself=True), ["sep", "maxsplit"])
-        self.assertEqual(get_func_args(" ".join, stripself=True), ["iterable"])
+        assert get_func_args(f1) == ["a", "b", "c"]
+        assert get_func_args(f2) == ["a", "b", "c"]
+        assert get_func_args(f3) == ["a", "b", "c"]
+        assert get_func_args(A) == ["a", "b", "c"]
+        assert get_func_args(a.method) == ["a", "b", "c"]
+        assert get_func_args(partial_f1) == ["b", "c"]
+        assert get_func_args(partial_f2) == ["a", "c"]
+        assert get_func_args(partial_f3) == ["c"]
+        assert get_func_args(cal) == ["a", "b", "c"]
+        assert get_func_args(object) == []
+        assert get_func_args(str.split, stripself=True) == ["sep", "maxsplit"]
+        assert get_func_args(" ".join, stripself=True) == ["iterable"]
 
         if sys.version_info >= (3, 13) or platform.python_implementation() == "PyPy":
             # the correct and correctly extracted signature
-            self.assertEqual(
-                get_func_args(operator.itemgetter(2), stripself=True), ["obj"]
-            )
+            assert get_func_args(operator.itemgetter(2), stripself=True) == ["obj"]
         elif platform.python_implementation() == "CPython":
             # ["args", "kwargs"] is a correct result for the pre-3.13 incorrect function signature
             # [] is an incorrect result on even older CPython (https://github.com/python/cpython/issues/86951)
-            self.assertIn(
-                get_func_args(operator.itemgetter(2), stripself=True),
-                [[], ["args", "kwargs"]],
-            )
+            assert get_func_args(operator.itemgetter(2), stripself=True) in [
+                [],
+                ["args", "kwargs"],
+            ]
 
     def test_without_none_values(self):
-        self.assertEqual(without_none_values([1, None, 3, 4]), [1, 3, 4])
-        self.assertEqual(without_none_values((1, None, 3, 4)), (1, 3, 4))
-        self.assertEqual(
-            without_none_values({"one": 1, "none": None, "three": 3, "four": 4}),
-            {"one": 1, "three": 3, "four": 4},
-        )
+        assert without_none_values([1, None, 3, 4]) == [1, 3, 4]
+        assert without_none_values((1, None, 3, 4)) == (1, 3, 4)
+        assert without_none_values({"one": 1, "none": None, "three": 3, "four": 4}) == {
+            "one": 1,
+            "three": 3,
+            "four": 4,
+        }

@@ -9,11 +9,11 @@ from __future__ import annotations
 import logging
 import re
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from scrapy import Spider, signals
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.http import Request, Response
+from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
 from scrapy.utils.httpobj import urlparse_cached
 
 warnings.warn(
@@ -23,61 +23,52 @@ warnings.warn(
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Iterable
-
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
+    from scrapy.http import Request, Response
     from scrapy.statscollectors import StatsCollector
 
 
 logger = logging.getLogger(__name__)
 
 
-class OffsiteMiddleware:
-    def __init__(self, stats: StatsCollector):
+class OffsiteMiddleware(BaseSpiderMiddleware):
+    crawler: Crawler
+
+    def __init__(self, stats: StatsCollector):  # pylint: disable=super-init-not-called
         self.stats: StatsCollector = stats
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         assert crawler.stats
         o = cls(crawler.stats)
+        o.crawler = crawler
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
 
-    def process_spider_output(
-        self, response: Response, result: Iterable[Any], spider: Spider
-    ) -> Iterable[Any]:
-        return (r for r in result if self._filter(r, spider))
-
-    async def process_spider_output_async(
-        self, response: Response, result: AsyncIterable[Any], spider: Spider
-    ) -> AsyncIterable[Any]:
-        async for r in result:
-            if self._filter(r, spider):
-                yield r
-
-    def _filter(self, request: Any, spider: Spider) -> bool:
-        if not isinstance(request, Request):
-            return True
+    def get_processed_request(
+        self, request: Request, response: Response
+    ) -> Request | None:
+        assert self.crawler.spider
         if (
             request.dont_filter
             or request.meta.get("allow_offsite")
-            or self.should_follow(request, spider)
+            or self.should_follow(request, self.crawler.spider)
         ):
-            return True
+            return request
         domain = urlparse_cached(request).hostname
         if domain and domain not in self.domains_seen:
             self.domains_seen.add(domain)
             logger.debug(
                 "Filtered offsite request to %(domain)r: %(request)s",
                 {"domain": domain, "request": request},
-                extra={"spider": spider},
+                extra={"spider": self.crawler.spider},
             )
-            self.stats.inc_value("offsite/domains", spider=spider)
-        self.stats.inc_value("offsite/filtered", spider=spider)
-        return False
+            self.stats.inc_value("offsite/domains", spider=self.crawler.spider)
+        self.stats.inc_value("offsite/filtered", spider=self.crawler.spider)
+        return None
 
     def should_follow(self, request: Request, spider: Spider) -> bool:
         regex = self.host_regex

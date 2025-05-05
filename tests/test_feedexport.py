@@ -17,7 +17,7 @@ from io import BytesIO
 from logging import getLogger
 from pathlib import Path
 from string import ascii_letters, digits
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest import mock
 from urllib.parse import quote, urljoin
 from urllib.request import pathname2url
@@ -48,7 +48,7 @@ from scrapy.extensions.feedexport import (
 )
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
-from scrapy.utils.test import get_crawler, mock_google_cloud_storage
+from scrapy.utils.test import get_crawler
 from tests.mockserver import MockFTPServer, MockServer
 from tests.spiders import ItemSpider
 
@@ -71,7 +71,24 @@ def build_url(path: str | PathLike) -> str:
     return urljoin("file:", path_str)
 
 
-class FileFeedStorageTest(unittest.TestCase):
+def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
+    """Creates autospec mocks for google-cloud-storage Client, Bucket and Blob
+    classes and set their proper return values.
+    """
+    from google.cloud.storage import Blob, Bucket, Client
+
+    client_mock = mock.create_autospec(Client)
+
+    bucket_mock = mock.create_autospec(Bucket)
+    client_mock.get_bucket.return_value = bucket_mock
+
+    blob_mock = mock.create_autospec(Blob)
+    bucket_mock.blob.return_value = blob_mock
+
+    return (client_mock, bucket_mock, blob_mock)
+
+
+class TestFileFeedStorage(unittest.TestCase):
     def test_store_file_uri(self):
         path = Path(self.mktemp()).resolve()
         uri = path_to_file_uri(str(path))
@@ -120,14 +137,14 @@ class FileFeedStorageTest(unittest.TestCase):
         file = storage.open(spider)
         file.write(b"content")
         yield storage.store(file)
-        self.assertTrue(path.exists())
+        assert path.exists()
         try:
-            self.assertEqual(path.read_bytes(), expected_content)
+            assert path.read_bytes() == expected_content
         finally:
             path.unlink()
 
 
-class FTPFeedStorageTest(unittest.TestCase):
+class TestFTPFeedStorage(unittest.TestCase):
     def get_test_spider(self, settings=None):
         class TestSpider(scrapy.Spider):
             name = "test_spider"
@@ -149,9 +166,9 @@ class FTPFeedStorageTest(unittest.TestCase):
         return storage.store(file)
 
     def _assert_stored(self, path: Path, content):
-        self.assertTrue(path.exists())
+        assert path.exists()
         try:
-            self.assertEqual(path.read_bytes(), content)
+            assert path.read_bytes() == content
         finally:
             path.unlink()
 
@@ -199,10 +216,10 @@ class FTPFeedStorageTest(unittest.TestCase):
         # RFC3986: 3.2.1. User Information
         pw_quoted = quote(string.punctuation, safe="")
         st = FTPFeedStorage(f"ftp://foo:{pw_quoted}@example.com/some_path", {})
-        self.assertEqual(st.password, string.punctuation)
+        assert st.password == string.punctuation
 
 
-class BlockingFeedStorageTest(unittest.TestCase):
+class TestBlockingFeedStorage:
     def get_test_spider(self, settings=None):
         class TestSpider(scrapy.Spider):
             name = "test_spider"
@@ -215,7 +232,7 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
         tmp = b.open(self.get_test_spider())
         tmp_path = Path(tmp.name).parent
-        self.assertEqual(str(tmp_path), tempfile.gettempdir())
+        assert str(tmp_path) == tempfile.gettempdir()
 
     def test_temp_file(self):
         b = BlockingFeedStorage()
@@ -224,7 +241,7 @@ class BlockingFeedStorageTest(unittest.TestCase):
         spider = self.get_test_spider({"FEED_TEMPDIR": str(tests_path)})
         tmp = b.open(spider)
         tmp_path = Path(tmp.name).parent
-        self.assertEqual(tmp_path, tests_path)
+        assert tmp_path == tests_path
 
     def test_invalid_folder(self):
         b = BlockingFeedStorage()
@@ -238,7 +255,7 @@ class BlockingFeedStorageTest(unittest.TestCase):
 
 
 @pytest.mark.requires_boto3
-class S3FeedStorageTest(unittest.TestCase):
+class TestS3FeedStorage(unittest.TestCase):
     def test_parse_credentials(self):
         aws_credentials = {
             "AWS_ACCESS_KEY_ID": "settings_key",
@@ -251,9 +268,9 @@ class S3FeedStorageTest(unittest.TestCase):
             crawler,
             "s3://mybucket/export.csv",
         )
-        self.assertEqual(storage.access_key, "settings_key")
-        self.assertEqual(storage.secret_key, "settings_secret")
-        self.assertEqual(storage.session_token, "settings_token")
+        assert storage.access_key == "settings_key"
+        assert storage.secret_key == "settings_secret"
+        assert storage.session_token == "settings_token"
         # Instantiate directly
         storage = S3FeedStorage(
             "s3://mybucket/export.csv",
@@ -261,17 +278,17 @@ class S3FeedStorageTest(unittest.TestCase):
             aws_credentials["AWS_SECRET_ACCESS_KEY"],
             session_token=aws_credentials["AWS_SESSION_TOKEN"],
         )
-        self.assertEqual(storage.access_key, "settings_key")
-        self.assertEqual(storage.secret_key, "settings_secret")
-        self.assertEqual(storage.session_token, "settings_token")
+        assert storage.access_key == "settings_key"
+        assert storage.secret_key == "settings_secret"
+        assert storage.session_token == "settings_token"
         # URI priority > settings priority
         storage = S3FeedStorage(
             "s3://uri_key:uri_secret@mybucket/export.csv",
             aws_credentials["AWS_ACCESS_KEY_ID"],
             aws_credentials["AWS_SECRET_ACCESS_KEY"],
         )
-        self.assertEqual(storage.access_key, "uri_key")
-        self.assertEqual(storage.secret_key, "uri_secret")
+        assert storage.access_key == "uri_key"
+        assert storage.secret_key == "uri_secret"
 
     @defer.inlineCallbacks
     def test_store(self):
@@ -289,24 +306,23 @@ class S3FeedStorageTest(unittest.TestCase):
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(file)
-        self.assertEqual(
-            storage.s3_client.upload_fileobj.call_args,
-            mock.call(Bucket=bucket, Key=key, Fileobj=file),
+        assert storage.s3_client.upload_fileobj.call_args == mock.call(
+            Bucket=bucket, Key=key, Fileobj=file
         )
 
     def test_init_without_acl(self):
         storage = S3FeedStorage("s3://mybucket/export.csv", "access_key", "secret_key")
-        self.assertEqual(storage.access_key, "access_key")
-        self.assertEqual(storage.secret_key, "secret_key")
-        self.assertEqual(storage.acl, None)
+        assert storage.access_key == "access_key"
+        assert storage.secret_key == "secret_key"
+        assert storage.acl is None
 
     def test_init_with_acl(self):
         storage = S3FeedStorage(
             "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
         )
-        self.assertEqual(storage.access_key, "access_key")
-        self.assertEqual(storage.secret_key, "secret_key")
-        self.assertEqual(storage.acl, "custom-acl")
+        assert storage.access_key == "access_key"
+        assert storage.secret_key == "secret_key"
+        assert storage.acl == "custom-acl"
 
     def test_init_with_endpoint_url(self):
         storage = S3FeedStorage(
@@ -315,9 +331,9 @@ class S3FeedStorageTest(unittest.TestCase):
             "secret_key",
             endpoint_url="https://example.com",
         )
-        self.assertEqual(storage.access_key, "access_key")
-        self.assertEqual(storage.secret_key, "secret_key")
-        self.assertEqual(storage.endpoint_url, "https://example.com")
+        assert storage.access_key == "access_key"
+        assert storage.secret_key == "secret_key"
+        assert storage.endpoint_url == "https://example.com"
 
     def test_init_with_region_name(self):
         region_name = "ap-east-1"
@@ -327,10 +343,10 @@ class S3FeedStorageTest(unittest.TestCase):
             "secret_key",
             region_name=region_name,
         )
-        self.assertEqual(storage.access_key, "access_key")
-        self.assertEqual(storage.secret_key, "secret_key")
-        self.assertEqual(storage.region_name, region_name)
-        self.assertEqual(storage.s3_client._client_config.region_name, region_name)
+        assert storage.access_key == "access_key"
+        assert storage.secret_key == "secret_key"
+        assert storage.region_name == region_name
+        assert storage.s3_client._client_config.region_name == region_name
 
     def test_from_crawler_without_acl(self):
         settings = {
@@ -342,9 +358,9 @@ class S3FeedStorageTest(unittest.TestCase):
             crawler,
             "s3://mybucket/export.csv",
         )
-        self.assertEqual(storage.access_key, "access_key")
-        self.assertEqual(storage.secret_key, "secret_key")
-        self.assertEqual(storage.acl, None)
+        assert storage.access_key == "access_key"
+        assert storage.secret_key == "secret_key"
+        assert storage.acl is None
 
     def test_without_endpoint_url(self):
         settings = {
@@ -356,9 +372,9 @@ class S3FeedStorageTest(unittest.TestCase):
             crawler,
             "s3://mybucket/export.csv",
         )
-        self.assertEqual(storage.access_key, "access_key")
-        self.assertEqual(storage.secret_key, "secret_key")
-        self.assertEqual(storage.endpoint_url, None)
+        assert storage.access_key == "access_key"
+        assert storage.secret_key == "secret_key"
+        assert storage.endpoint_url is None
 
     def test_without_region_name(self):
         settings = {
@@ -370,9 +386,9 @@ class S3FeedStorageTest(unittest.TestCase):
             crawler,
             "s3://mybucket/export.csv",
         )
-        self.assertEqual(storage.access_key, "access_key")
-        self.assertEqual(storage.secret_key, "secret_key")
-        self.assertEqual(storage.s3_client._client_config.region_name, "us-east-1")
+        assert storage.access_key == "access_key"
+        assert storage.secret_key == "secret_key"
+        assert storage.s3_client._client_config.region_name == "us-east-1"
 
     def test_from_crawler_with_acl(self):
         settings = {
@@ -385,9 +401,9 @@ class S3FeedStorageTest(unittest.TestCase):
             crawler,
             "s3://mybucket/export.csv",
         )
-        self.assertEqual(storage.access_key, "access_key")
-        self.assertEqual(storage.secret_key, "secret_key")
-        self.assertEqual(storage.acl, "custom-acl")
+        assert storage.access_key == "access_key"
+        assert storage.secret_key == "secret_key"
+        assert storage.acl == "custom-acl"
 
     def test_from_crawler_with_endpoint_url(self):
         settings = {
@@ -397,9 +413,9 @@ class S3FeedStorageTest(unittest.TestCase):
         }
         crawler = get_crawler(settings_dict=settings)
         storage = S3FeedStorage.from_crawler(crawler, "s3://mybucket/export.csv")
-        self.assertEqual(storage.access_key, "access_key")
-        self.assertEqual(storage.secret_key, "secret_key")
-        self.assertEqual(storage.endpoint_url, "https://example.com")
+        assert storage.access_key == "access_key"
+        assert storage.secret_key == "secret_key"
+        assert storage.endpoint_url == "https://example.com"
 
     def test_from_crawler_with_region_name(self):
         region_name = "ap-east-1"
@@ -410,10 +426,10 @@ class S3FeedStorageTest(unittest.TestCase):
         }
         crawler = get_crawler(settings_dict=settings)
         storage = S3FeedStorage.from_crawler(crawler, "s3://mybucket/export.csv")
-        self.assertEqual(storage.access_key, "access_key")
-        self.assertEqual(storage.secret_key, "secret_key")
-        self.assertEqual(storage.region_name, region_name)
-        self.assertEqual(storage.s3_client._client_config.region_name, region_name)
+        assert storage.access_key == "access_key"
+        assert storage.secret_key == "secret_key"
+        assert storage.region_name == region_name
+        assert storage.s3_client._client_config.region_name == region_name
 
     @defer.inlineCallbacks
     def test_store_without_acl(self):
@@ -422,9 +438,9 @@ class S3FeedStorageTest(unittest.TestCase):
             "access_key",
             "secret_key",
         )
-        self.assertEqual(storage.access_key, "access_key")
-        self.assertEqual(storage.secret_key, "secret_key")
-        self.assertEqual(storage.acl, None)
+        assert storage.access_key == "access_key"
+        assert storage.secret_key == "secret_key"
+        assert storage.acl is None
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b"test file"))
@@ -433,28 +449,28 @@ class S3FeedStorageTest(unittest.TestCase):
             .get("ExtraArgs", {})
             .get("ACL")
         )
-        self.assertIsNone(acl)
+        assert acl is None
 
     @defer.inlineCallbacks
     def test_store_with_acl(self):
         storage = S3FeedStorage(
             "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
         )
-        self.assertEqual(storage.access_key, "access_key")
-        self.assertEqual(storage.secret_key, "secret_key")
-        self.assertEqual(storage.acl, "custom-acl")
+        assert storage.access_key == "access_key"
+        assert storage.secret_key == "secret_key"
+        assert storage.acl == "custom-acl"
 
         storage.s3_client = mock.MagicMock()
         yield storage.store(BytesIO(b"test file"))
         acl = storage.s3_client.upload_fileobj.call_args[1]["ExtraArgs"]["ACL"]
-        self.assertEqual(acl, "custom-acl")
+        assert acl == "custom-acl"
 
     def test_overwrite_default(self):
         with LogCapture() as log:
             S3FeedStorage(
                 "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
             )
-        self.assertNotIn("S3 does not support appending to files", str(log))
+        assert "S3 does not support appending to files" not in str(log)
 
     def test_overwrite_false(self):
         with LogCapture() as log:
@@ -465,10 +481,10 @@ class S3FeedStorageTest(unittest.TestCase):
                 "custom-acl",
                 feed_options={"overwrite": False},
             )
-        self.assertIn("S3 does not support appending to files", str(log))
+        assert "S3 does not support appending to files" in str(log)
 
 
-class GCSFeedStorageTest(unittest.TestCase):
+class TestGCSFeedStorage(unittest.TestCase):
     def test_parse_settings(self):
         try:
             from google.cloud.storage import Client  # noqa: F401
@@ -526,7 +542,7 @@ class GCSFeedStorageTest(unittest.TestCase):
     def test_overwrite_default(self):
         with LogCapture() as log:
             GCSFeedStorage("gs://mybucket/export.csv", "myproject-123", "custom-acl")
-        self.assertNotIn("GCS does not support appending to files", str(log))
+        assert "GCS does not support appending to files" not in str(log)
 
     def test_overwrite_false(self):
         with LogCapture() as log:
@@ -536,10 +552,10 @@ class GCSFeedStorageTest(unittest.TestCase):
                 "custom-acl",
                 feed_options={"overwrite": False},
             )
-        self.assertIn("GCS does not support appending to files", str(log))
+        assert "GCS does not support appending to files" in str(log)
 
 
-class StdoutFeedStorageTest(unittest.TestCase):
+class TestStdoutFeedStorage(unittest.TestCase):
     @defer.inlineCallbacks
     def test_store(self):
         out = BytesIO()
@@ -547,20 +563,21 @@ class StdoutFeedStorageTest(unittest.TestCase):
         file = storage.open(scrapy.Spider("default"))
         file.write(b"content")
         yield storage.store(file)
-        self.assertEqual(out.getvalue(), b"content")
+        assert out.getvalue() == b"content"
 
     def test_overwrite_default(self):
         with LogCapture() as log:
             StdoutFeedStorage("stdout:")
-        self.assertNotIn(
-            "Standard output (stdout) storage does not support overwriting", str(log)
+        assert (
+            "Standard output (stdout) storage does not support overwriting"
+            not in str(log)
         )
 
     def test_overwrite_true(self):
         with LogCapture() as log:
             StdoutFeedStorage("stdout:", feed_options={"overwrite": True})
-        self.assertIn(
-            "Standard output (stdout) storage does not support overwriting", str(log)
+        assert "Standard output (stdout) storage does not support overwriting" in str(
+            log
         )
 
 
@@ -622,7 +639,7 @@ class LogOnStoreFileStorage:
         file.close()
 
 
-class FeedExportTestBase(ABC, unittest.TestCase):
+class TestFeedExportBase(ABC, unittest.TestCase):
     class MyItem(scrapy.Item):
         foo = scrapy.Field()
         egg = scrapy.Field()
@@ -752,7 +769,7 @@ class ExceptionJsonItemExporter(JsonItemExporter):
         raise RuntimeError("foo")
 
 
-class FeedExportTest(FeedExportTestBase):
+class TestFeedExport(TestFeedExportBase):
     @defer.inlineCallbacks
     def run_and_export(self, spider_cls, settings):
         """Run spider with specified settings; return exported data."""
@@ -795,8 +812,8 @@ class FeedExportTest(FeedExportTestBase):
         )
         data = yield self.exported_data(items, settings)
         reader = csv.DictReader(to_unicode(data["csv"]).splitlines())
-        self.assertEqual(reader.fieldnames, list(header))
-        self.assertEqual(rows, list(reader))
+        assert reader.fieldnames == list(header)
+        assert rows == list(reader)
 
     @defer.inlineCallbacks
     def assertExportedJsonLines(self, items, rows, settings=None):
@@ -811,7 +828,7 @@ class FeedExportTest(FeedExportTestBase):
         data = yield self.exported_data(items, settings)
         parsed = [json.loads(to_unicode(line)) for line in data["jl"].splitlines()]
         rows = [{k: v for k, v in row.items() if v} for row in rows]
-        self.assertEqual(rows, parsed)
+        assert rows == parsed
 
     @defer.inlineCallbacks
     def assertExportedXml(self, items, rows, settings=None):
@@ -827,7 +844,7 @@ class FeedExportTest(FeedExportTestBase):
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         root = lxml.etree.fromstring(data["xml"])
         got_rows = [{e.tag: e.text for e in it} for it in root.findall("item")]
-        self.assertEqual(rows, got_rows)
+        assert rows == got_rows
 
     @defer.inlineCallbacks
     def assertExportedMultiple(self, items, rows, settings=None):
@@ -845,10 +862,10 @@ class FeedExportTest(FeedExportTestBase):
         # XML
         root = lxml.etree.fromstring(data["xml"])
         xml_rows = [{e.tag: e.text for e in it} for it in root.findall("item")]
-        self.assertEqual(rows, xml_rows)
+        assert rows == xml_rows
         # JSON
         json_rows = json.loads(to_unicode(data["json"]))
-        self.assertEqual(rows, json_rows)
+        assert rows == json_rows
 
     @defer.inlineCallbacks
     def assertExportedPickle(self, items, rows, settings=None):
@@ -865,7 +882,7 @@ class FeedExportTest(FeedExportTestBase):
         import pickle
 
         result = self._load_until_eof(data["pickle"], load_func=pickle.load)
-        self.assertEqual(expected, result)
+        assert result == expected
 
     @defer.inlineCallbacks
     def assertExportedMarshal(self, items, rows, settings=None):
@@ -882,7 +899,7 @@ class FeedExportTest(FeedExportTestBase):
         import marshal
 
         result = self._load_until_eof(data["marshal"], load_func=marshal.load)
-        self.assertEqual(expected, result)
+        assert result == expected
 
     @defer.inlineCallbacks
     def test_stats_file_success(self):
@@ -895,12 +912,8 @@ class FeedExportTest(FeedExportTestBase):
         }
         crawler = get_crawler(ItemSpider, settings)
         yield crawler.crawl(mockserver=self.mockserver)
-        self.assertIn(
-            "feedexport/success_count/FileFeedStorage", crawler.stats.get_stats()
-        )
-        self.assertEqual(
-            crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 1
-        )
+        assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
+        assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 1
 
     @defer.inlineCallbacks
     def test_stats_file_failed(self):
@@ -917,12 +930,8 @@ class FeedExportTest(FeedExportTestBase):
             side_effect=KeyError("foo"),
         ):
             yield crawler.crawl(mockserver=self.mockserver)
-        self.assertIn(
-            "feedexport/failed_count/FileFeedStorage", crawler.stats.get_stats()
-        )
-        self.assertEqual(
-            crawler.stats.get_value("feedexport/failed_count/FileFeedStorage"), 1
-        )
+        assert "feedexport/failed_count/FileFeedStorage" in crawler.stats.get_stats()
+        assert crawler.stats.get_value("feedexport/failed_count/FileFeedStorage") == 1
 
     @defer.inlineCallbacks
     def test_stats_multiple_file(self):
@@ -939,17 +948,11 @@ class FeedExportTest(FeedExportTestBase):
         crawler = get_crawler(ItemSpider, settings)
         with mock.patch.object(S3FeedStorage, "store"):
             yield crawler.crawl(mockserver=self.mockserver)
-        self.assertIn(
-            "feedexport/success_count/FileFeedStorage", crawler.stats.get_stats()
-        )
-        self.assertIn(
-            "feedexport/success_count/StdoutFeedStorage", crawler.stats.get_stats()
-        )
-        self.assertEqual(
-            crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 1
-        )
-        self.assertEqual(
-            crawler.stats.get_value("feedexport/success_count/StdoutFeedStorage"), 1
+        assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
+        assert "feedexport/success_count/StdoutFeedStorage" in crawler.stats.get_stats()
+        assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 1
+        assert (
+            crawler.stats.get_value("feedexport/success_count/StdoutFeedStorage") == 1
         )
 
     @defer.inlineCallbacks
@@ -976,7 +979,7 @@ class FeedExportTest(FeedExportTestBase):
                 "FEED_STORE_EMPTY": False,
             }
             data = yield self.exported_no_data(settings)
-            self.assertEqual(None, data[fmt])
+            assert data[fmt] is None
 
     @defer.inlineCallbacks
     def test_start_finish_exporting_items(self):
@@ -995,8 +998,8 @@ class FeedExportTest(FeedExportTestBase):
 
         with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
             _ = yield self.exported_data(items, settings)
-            self.assertFalse(listener.start_without_finish)
-            self.assertFalse(listener.finish_without_start)
+            assert not listener.start_without_finish
+            assert not listener.finish_without_start
 
     @defer.inlineCallbacks
     def test_start_finish_exporting_no_items(self):
@@ -1013,8 +1016,8 @@ class FeedExportTest(FeedExportTestBase):
 
         with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
             _ = yield self.exported_data(items, settings)
-            self.assertFalse(listener.start_without_finish)
-            self.assertFalse(listener.finish_without_start)
+            assert not listener.start_without_finish
+            assert not listener.finish_without_start
 
     @defer.inlineCallbacks
     def test_start_finish_exporting_items_exception(self):
@@ -1034,8 +1037,8 @@ class FeedExportTest(FeedExportTestBase):
 
         with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
             _ = yield self.exported_data(items, settings)
-            self.assertFalse(listener.start_without_finish)
-            self.assertFalse(listener.finish_without_start)
+            assert not listener.start_without_finish
+            assert not listener.finish_without_start
 
     @defer.inlineCallbacks
     def test_start_finish_exporting_no_items_exception(self):
@@ -1053,8 +1056,8 @@ class FeedExportTest(FeedExportTestBase):
 
         with mock.patch("scrapy.extensions.feedexport.FeedSlot", InstrumentedFeedSlot):
             _ = yield self.exported_data(items, settings)
-            self.assertFalse(listener.start_without_finish)
-            self.assertFalse(listener.finish_without_start)
+            assert not listener.start_without_finish
+            assert not listener.finish_without_start
 
     @defer.inlineCallbacks
     def test_export_no_items_store_empty(self):
@@ -1074,7 +1077,7 @@ class FeedExportTest(FeedExportTestBase):
                 "FEED_EXPORT_INDENT": None,
             }
             data = yield self.exported_no_data(settings)
-            self.assertEqual(expctd, data[fmt])
+            assert expctd == data[fmt]
 
     @defer.inlineCallbacks
     def test_export_no_items_multiple_feeds(self):
@@ -1092,7 +1095,7 @@ class FeedExportTest(FeedExportTestBase):
         with LogCapture() as log:
             yield self.exported_no_data(settings)
 
-        self.assertEqual(str(log).count("Storage.store is called"), 0)
+        assert str(log).count("Storage.store is called") == 0
 
     @defer.inlineCallbacks
     def test_export_multiple_item_classes(self):
@@ -1221,7 +1224,7 @@ class FeedExportTest(FeedExportTestBase):
 
         data = yield self.exported_data(items, settings)
         for fmt, expected in formats.items():
-            self.assertEqual(expected, data[fmt])
+            assert data[fmt] == expected
 
     @defer.inlineCallbacks
     def test_export_based_on_custom_filters(self):
@@ -1280,7 +1283,7 @@ class FeedExportTest(FeedExportTestBase):
 
         data = yield self.exported_data(items, settings)
         for fmt, expected in formats.items():
-            self.assertEqual(expected, data[fmt])
+            assert data[fmt] == expected
 
     @defer.inlineCallbacks
     def test_export_dicts(self):
@@ -1354,7 +1357,7 @@ class FeedExportTest(FeedExportTestBase):
                 "FEED_EXPORT_INDENT": None,
             }
             data = yield self.exported_data(items, settings)
-            self.assertEqual(expected, data[fmt])
+            assert data[fmt] == expected
 
         formats = {
             "json": b'[{"foo": "Test\xd6"}]',
@@ -1375,7 +1378,7 @@ class FeedExportTest(FeedExportTestBase):
                 "FEED_EXPORT_ENCODING": "latin-1",
             }
             data = yield self.exported_data(items, settings)
-            self.assertEqual(expected, data[fmt])
+            assert data[fmt] == expected
 
     @defer.inlineCallbacks
     def test_export_multiple_configs(self):
@@ -1415,7 +1418,7 @@ class FeedExportTest(FeedExportTestBase):
 
         data = yield self.exported_data(items, settings)
         for fmt, expected in formats.items():
-            self.assertEqual(expected, data[fmt])
+            assert data[fmt] == expected
 
     @defer.inlineCallbacks
     def test_export_indentation(self):
@@ -1571,7 +1574,7 @@ class FeedExportTest(FeedExportTestBase):
                 },
             }
             data = yield self.exported_data(items, settings)
-            self.assertEqual(row["expected"], data[row["format"]])
+            assert data[row["format"]] == row["expected"]
 
     @defer.inlineCallbacks
     def test_init_exporters_storages_with_crawler(self):
@@ -1583,8 +1586,8 @@ class FeedExportTest(FeedExportTestBase):
             },
         }
         yield self.exported_data(items=[], settings=settings)
-        self.assertTrue(FromCrawlerCsvItemExporter.init_with_crawler)
-        self.assertTrue(FromCrawlerFileFeedStorage.init_with_crawler)
+        assert FromCrawlerCsvItemExporter.init_with_crawler
+        assert FromCrawlerFileFeedStorage.init_with_crawler
 
     @defer.inlineCallbacks
     def test_str_uri(self):
@@ -1593,7 +1596,7 @@ class FeedExportTest(FeedExportTestBase):
             "FEEDS": {str(self._random_temp_filename()): {"format": "csv"}},
         }
         data = yield self.exported_no_data(settings)
-        self.assertEqual(data["csv"], b"")
+        assert data["csv"] == b""
 
     @defer.inlineCallbacks
     def test_multiple_feeds_success_logs_blocking_feed_storage(self):
@@ -1614,7 +1617,7 @@ class FeedExportTest(FeedExportTestBase):
 
         print(log)
         for fmt in ["json", "xml", "csv"]:
-            self.assertIn(f"Stored {fmt} feed (2 items)", str(log))
+            assert f"Stored {fmt} feed (2 items)" in str(log)
 
     @defer.inlineCallbacks
     def test_multiple_feeds_failing_logs_blocking_feed_storage(self):
@@ -1635,7 +1638,7 @@ class FeedExportTest(FeedExportTestBase):
 
         print(log)
         for fmt in ["json", "xml", "csv"]:
-            self.assertIn(f"Error storing {fmt} feed (2 items)", str(log))
+            assert f"Error storing {fmt} feed (2 items)" in str(log)
 
     @defer.inlineCallbacks
     def test_extend_kwargs(self):
@@ -1672,7 +1675,7 @@ class FeedExportTest(FeedExportTestBase):
             }
 
             data = yield self.exported_data(items, settings)
-            self.assertEqual(row["expected"], data[feed_options["format"]])
+            assert data[feed_options["format"]] == row["expected"]
 
     @defer.inlineCallbacks
     def test_storage_file_no_postprocessing(self):
@@ -1694,7 +1697,7 @@ class FeedExportTest(FeedExportTestBase):
             "FEED_STORAGES": {"file": Storage},
         }
         yield self.exported_no_data(settings)
-        self.assertIs(Storage.open_file, Storage.store_file)
+        assert Storage.open_file is Storage.store_file
 
     @defer.inlineCallbacks
     def test_storage_file_postprocessing(self):
@@ -1724,11 +1727,11 @@ class FeedExportTest(FeedExportTestBase):
             "FEED_STORAGES": {"file": Storage},
         }
         yield self.exported_no_data(settings)
-        self.assertIs(Storage.open_file, Storage.store_file)
-        self.assertFalse(Storage.file_was_closed)
+        assert Storage.open_file is Storage.store_file
+        assert not Storage.file_was_closed
 
 
-class FeedPostProcessedExportsTest(FeedExportTestBase):
+class TestFeedPostProcessedExports(TestFeedExportBase):
     items = [{"foo": "bar"}]
     expected = b"foo\r\nbar\r\n"
 
@@ -1810,7 +1813,7 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
         try:
             gzip.decompress(data[filename])
         except OSError:
-            self.fail("Received invalid gzip data.")
+            pytest.fail("Received invalid gzip data.")
 
     @defer.inlineCallbacks
     def test_gzip_plugin_compresslevel(self):
@@ -1846,8 +1849,8 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
         for filename, compressed in filename_to_compressed.items():
             result = gzip.decompress(data[filename])
-            self.assertEqual(compressed, data[filename])
-            self.assertEqual(self.expected, result)
+            assert compressed == data[filename]
+            assert result == self.expected
 
     @defer.inlineCallbacks
     def test_gzip_plugin_mtime(self):
@@ -1881,8 +1884,8 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
         for filename, compressed in filename_to_compressed.items():
             result = gzip.decompress(data[filename])
-            self.assertEqual(compressed, data[filename])
-            self.assertEqual(self.expected, result)
+            assert compressed == data[filename]
+            assert result == self.expected
 
     @defer.inlineCallbacks
     def test_gzip_plugin_filename(self):
@@ -1916,8 +1919,8 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
         for filename, compressed in filename_to_compressed.items():
             result = gzip.decompress(data[filename])
-            self.assertEqual(compressed, data[filename])
-            self.assertEqual(self.expected, result)
+            assert compressed == data[filename]
+            assert result == self.expected
 
     @defer.inlineCallbacks
     def test_lzma_plugin(self):
@@ -1936,7 +1939,7 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
         try:
             lzma.decompress(data[filename])
         except lzma.LZMAError:
-            self.fail("Received invalid lzma data.")
+            pytest.fail("Received invalid lzma data.")
 
     @defer.inlineCallbacks
     def test_lzma_plugin_format(self):
@@ -1968,8 +1971,8 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
         for filename, compressed in filename_to_compressed.items():
             result = lzma.decompress(data[filename])
-            self.assertEqual(compressed, data[filename])
-            self.assertEqual(self.expected, result)
+            assert compressed == data[filename]
+            assert result == self.expected
 
     @defer.inlineCallbacks
     def test_lzma_plugin_check(self):
@@ -2001,8 +2004,8 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
         for filename, compressed in filename_to_compressed.items():
             result = lzma.decompress(data[filename])
-            self.assertEqual(compressed, data[filename])
-            self.assertEqual(self.expected, result)
+            assert compressed == data[filename]
+            assert result == self.expected
 
     @defer.inlineCallbacks
     def test_lzma_plugin_preset(self):
@@ -2034,8 +2037,8 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
         for filename, compressed in filename_to_compressed.items():
             result = lzma.decompress(data[filename])
-            self.assertEqual(compressed, data[filename])
-            self.assertEqual(self.expected, result)
+            assert compressed == data[filename]
+            assert result == self.expected
 
     @defer.inlineCallbacks
     def test_lzma_plugin_filters(self):
@@ -2058,9 +2061,9 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
         }
 
         data = yield self.exported_data(self.items, settings)
-        self.assertEqual(compressed, data[filename])
+        assert compressed == data[filename]
         result = lzma.decompress(data[filename])
-        self.assertEqual(self.expected, result)
+        assert result == self.expected
 
     @defer.inlineCallbacks
     def test_bz2_plugin(self):
@@ -2079,7 +2082,7 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
         try:
             bz2.decompress(data[filename])
         except OSError:
-            self.fail("Received invalid bz2 data.")
+            pytest.fail("Received invalid bz2 data.")
 
     @defer.inlineCallbacks
     def test_bz2_plugin_compresslevel(self):
@@ -2111,8 +2114,8 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
         for filename, compressed in filename_to_compressed.items():
             result = bz2.decompress(data[filename])
-            self.assertEqual(compressed, data[filename])
-            self.assertEqual(self.expected, result)
+            assert compressed == data[filename]
+            assert result == self.expected
 
     @defer.inlineCallbacks
     def test_custom_plugin(self):
@@ -2128,7 +2131,7 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
         }
 
         data = yield self.exported_data(self.items, settings)
-        self.assertEqual(self.expected, data[filename])
+        assert data[filename] == self.expected
 
     @defer.inlineCallbacks
     def test_custom_plugin_with_parameter(self):
@@ -2146,7 +2149,7 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
         }
 
         data = yield self.exported_data(self.items, settings)
-        self.assertEqual(expected, data[filename])
+        assert data[filename] == expected
 
     @defer.inlineCallbacks
     def test_custom_plugin_with_compression(self):
@@ -2191,7 +2194,7 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
 
         for filename, decompressor in filename_to_decompressor.items():
             result = decompressor(data[filename])
-            self.assertEqual(expected, result)
+            assert result == expected
 
     @defer.inlineCallbacks
     def test_exports_compatibility_with_postproc(self):
@@ -2245,10 +2248,10 @@ class FeedPostProcessedExportsTest(FeedExportTestBase):
                 expected, result = self.items[0], marshal.loads(result)
             else:
                 expected = filename_to_expected[filename]
-            self.assertEqual(expected, result)
+            assert result == expected
 
 
-class BatchDeliveriesTest(FeedExportTestBase):
+class TestBatchDeliveries(TestFeedExportBase):
     _file_mark = "_%(batch_time)s_#%(batch_id)02d_"
 
     @defer.inlineCallbacks
@@ -2293,7 +2296,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
                 json.loads(to_unicode(batch_item)) for batch_item in batch.splitlines()
             ]
             expected_batch, rows = rows[:batch_size], rows[batch_size:]
-            self.assertEqual(expected_batch, got_batch)
+            assert got_batch == expected_batch
 
     @defer.inlineCallbacks
     def assertExportedCsv(self, items, header, rows, settings=None):
@@ -2311,9 +2314,9 @@ class BatchDeliveriesTest(FeedExportTestBase):
         data = yield self.exported_data(items, settings)
         for batch in data["csv"]:
             got_batch = csv.DictReader(to_unicode(batch).splitlines())
-            self.assertEqual(list(header), got_batch.fieldnames)
+            assert list(header) == got_batch.fieldnames
             expected_batch, rows = rows[:batch_size], rows[batch_size:]
-            self.assertEqual(expected_batch, list(got_batch))
+            assert list(got_batch) == expected_batch
 
     @defer.inlineCallbacks
     def assertExportedXml(self, items, rows, settings=None):
@@ -2334,7 +2337,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             root = lxml.etree.fromstring(batch)
             got_batch = [{e.tag: e.text for e in it} for it in root.findall("item")]
             expected_batch, rows = rows[:batch_size], rows[batch_size:]
-            self.assertEqual(expected_batch, got_batch)
+            assert got_batch == expected_batch
 
     @defer.inlineCallbacks
     def assertExportedMultiple(self, items, rows, settings=None):
@@ -2360,13 +2363,13 @@ class BatchDeliveriesTest(FeedExportTestBase):
             root = lxml.etree.fromstring(batch)
             got_batch = [{e.tag: e.text for e in it} for it in root.findall("item")]
             expected_batch, xml_rows = xml_rows[:batch_size], xml_rows[batch_size:]
-            self.assertEqual(expected_batch, got_batch)
+            assert got_batch == expected_batch
         # JSON
         json_rows = rows.copy()
         for batch in data["json"]:
             got_batch = json.loads(batch.decode("utf-8"))
             expected_batch, json_rows = json_rows[:batch_size], json_rows[batch_size:]
-            self.assertEqual(expected_batch, got_batch)
+            assert got_batch == expected_batch
 
     @defer.inlineCallbacks
     def assertExportedPickle(self, items, rows, settings=None):
@@ -2388,7 +2391,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         for batch in data["pickle"]:
             got_batch = self._load_until_eof(batch, load_func=pickle.load)
             expected_batch, rows = rows[:batch_size], rows[batch_size:]
-            self.assertEqual(expected_batch, got_batch)
+            assert got_batch == expected_batch
 
     @defer.inlineCallbacks
     def assertExportedMarshal(self, items, rows, settings=None):
@@ -2410,7 +2413,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         for batch in data["marshal"]:
             got_batch = self._load_until_eof(batch, load_func=marshal.load)
             expected_batch, rows = rows[:batch_size], rows[batch_size:]
-            self.assertEqual(expected_batch, got_batch)
+            assert got_batch == expected_batch
 
     @defer.inlineCallbacks
     def test_export_items(self):
@@ -2455,7 +2458,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             }
             data = yield self.exported_no_data(settings)
             data = dict(data)
-            self.assertEqual(0, len(data[fmt]))
+            assert len(data[fmt]) == 0
 
     @defer.inlineCallbacks
     def test_export_no_items_store_empty(self):
@@ -2479,7 +2482,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             }
             data = yield self.exported_no_data(settings)
             data = dict(data)
-            self.assertEqual(expctd, data[fmt][0])
+            assert data[fmt][0] == expctd
 
     @defer.inlineCallbacks
     def test_export_multiple_configs(self):
@@ -2535,7 +2538,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         data = yield self.exported_data(items, settings)
         for fmt, expected in formats.items():
             for expected_batch, got_batch in zip(expected, data[fmt]):
-                self.assertEqual(expected_batch, got_batch)
+                assert got_batch == expected_batch
 
     @defer.inlineCallbacks
     def test_batch_item_count_feeds_setting(self):
@@ -2559,7 +2562,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
         data = yield self.exported_data(items, settings)
         for fmt, expected in formats.items():
             for expected_batch, got_batch in zip(expected, data[fmt]):
-                self.assertEqual(expected_batch, got_batch)
+                assert got_batch == expected_batch
 
     @defer.inlineCallbacks
     def test_batch_path_differ(self):
@@ -2581,7 +2584,7 @@ class BatchDeliveriesTest(FeedExportTestBase):
             "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
         }
         data = yield self.exported_data(items, settings)
-        self.assertEqual(len(items), len(data["json"]))
+        assert len(items) == len(data["json"])
 
     @defer.inlineCallbacks
     def test_stats_batch_file_success(self):
@@ -2597,12 +2600,8 @@ class BatchDeliveriesTest(FeedExportTestBase):
         }
         crawler = get_crawler(ItemSpider, settings)
         yield crawler.crawl(total=2, mockserver=self.mockserver)
-        self.assertIn(
-            "feedexport/success_count/FileFeedStorage", crawler.stats.get_stats()
-        )
-        self.assertEqual(
-            crawler.stats.get_value("feedexport/success_count/FileFeedStorage"), 12
-        )
+        assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
+        assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 12
 
     @pytest.mark.requires_boto3
     @defer.inlineCallbacks
@@ -2670,13 +2669,13 @@ class BatchDeliveriesTest(FeedExportTestBase):
         crawler = get_crawler(TestSpider, settings)
         yield crawler.crawl()
 
-        self.assertEqual(len(CustomS3FeedStorage.stubs), len(items))
+        assert len(CustomS3FeedStorage.stubs) == len(items)
         for stub in CustomS3FeedStorage.stubs[:-1]:
             stub.assert_no_pending_responses()
 
 
 # Test that the FeedExporer sends the feed_exporter_closed and feed_slot_closed signals
-class FeedExporterSignalsTest(unittest.TestCase):
+class TestFeedExporterSignals:
     items = [
         {"foo": "bar1", "egg": "spam1"},
         {"foo": "bar2", "egg": "spam2", "baz": "quux2"},
@@ -2737,8 +2736,8 @@ class FeedExporterSignalsTest(unittest.TestCase):
             self.feed_exporter_closed_signal_handler,
             self.feed_slot_closed_signal_handler,
         )
-        self.assertTrue(self.feed_slot_closed_received)
-        self.assertTrue(self.feed_exporter_closed_received)
+        assert self.feed_slot_closed_received
+        assert self.feed_exporter_closed_received
 
     def test_feed_exporter_signals_sent_deferred(self):
         self.feed_exporter_closed_received = False
@@ -2748,11 +2747,11 @@ class FeedExporterSignalsTest(unittest.TestCase):
             self.feed_exporter_closed_signal_handler_deferred,
             self.feed_slot_closed_signal_handler_deferred,
         )
-        self.assertTrue(self.feed_slot_closed_received)
-        self.assertTrue(self.feed_exporter_closed_received)
+        assert self.feed_slot_closed_received
+        assert self.feed_exporter_closed_received
 
 
-class FeedExportInitTest(unittest.TestCase):
+class TestFeedExportInit:
     def test_unsupported_storage(self):
         settings = {
             "FEEDS": {
@@ -2786,7 +2785,7 @@ class FeedExportInitTest(unittest.TestCase):
             }
             crawler = get_crawler(settings_dict=settings)
             exporter = FeedExporter.from_crawler(crawler)
-            self.assertIsInstance(exporter, FeedExporter)
+            assert isinstance(exporter, FeedExporter)
 
     def test_relative_pathlib_as_uri(self):
         settings = {
@@ -2798,13 +2797,14 @@ class FeedExportInitTest(unittest.TestCase):
         }
         crawler = get_crawler(settings_dict=settings)
         exporter = FeedExporter.from_crawler(crawler)
-        self.assertIsInstance(exporter, FeedExporter)
+        assert isinstance(exporter, FeedExporter)
 
 
-class URIParamsTest:
+class TestURIParams(ABC):
     spider_name = "uri_params_spider"
     deprecated_options = False
 
+    @abstractmethod
     def build_settings(self, uri="file:///tmp/foobar", uri_params=None):
         raise NotImplementedError
 
@@ -2833,7 +2833,7 @@ class URIParamsTest:
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             feed_exporter.open_spider(spider)
 
-        self.assertEqual(feed_exporter.slots[0].uri, f"file:///tmp/{self.spider_name}")
+        assert feed_exporter.slots[0].uri == f"file:///tmp/{self.spider_name}"
 
     def test_none(self):
         def uri_params(params, spider):
@@ -2849,7 +2849,7 @@ class URIParamsTest:
 
         feed_exporter.open_spider(spider)
 
-        self.assertEqual(feed_exporter.slots[0].uri, f"file:///tmp/{self.spider_name}")
+        assert feed_exporter.slots[0].uri == f"file:///tmp/{self.spider_name}"
 
     def test_empty_dict(self):
         def uri_params(params, spider):
@@ -2883,7 +2883,7 @@ class URIParamsTest:
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             feed_exporter.open_spider(spider)
 
-        self.assertEqual(feed_exporter.slots[0].uri, f"file:///tmp/{self.spider_name}")
+        assert feed_exporter.slots[0].uri == f"file:///tmp/{self.spider_name}"
 
     def test_custom_param(self):
         def uri_params(params, spider):
@@ -2900,10 +2900,10 @@ class URIParamsTest:
             warnings.simplefilter("error", ScrapyDeprecationWarning)
             feed_exporter.open_spider(spider)
 
-        self.assertEqual(feed_exporter.slots[0].uri, f"file:///tmp/{self.spider_name}")
+        assert feed_exporter.slots[0].uri == f"file:///tmp/{self.spider_name}"
 
 
-class URIParamsSettingTest(URIParamsTest, unittest.TestCase):
+class TestURIParamsSetting(TestURIParams):
     deprecated_options = True
 
     def build_settings(self, uri="file:///tmp/foobar", uri_params=None):
@@ -2916,7 +2916,7 @@ class URIParamsSettingTest(URIParamsTest, unittest.TestCase):
         }
 
 
-class URIParamsFeedOptionTest(URIParamsTest, unittest.TestCase):
+class TestURIParamsFeedOption(TestURIParams):
     deprecated_options = False
 
     def build_settings(self, uri="file:///tmp/foobar", uri_params=None):

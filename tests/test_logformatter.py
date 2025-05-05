@@ -1,11 +1,10 @@
 import logging
-import unittest
 
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase as TwistedTestCase
+from twisted.trial.unittest import TestCase
 
 from scrapy.exceptions import DropItem
 from scrapy.http import Request, Response
@@ -24,8 +23,8 @@ class CustomItem(Item):
         return f"name: {self['name']}"
 
 
-class LogFormatterTestCase(unittest.TestCase):
-    def setUp(self):
+class TestLogFormatter:
+    def setup_method(self):
         self.formatter = LogFormatter()
         self.spider = Spider("default")
         self.spider.crawler = get_crawler()
@@ -35,9 +34,7 @@ class LogFormatterTestCase(unittest.TestCase):
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws["msg"] % logkws["args"]
-        self.assertEqual(
-            logline, "Crawled (200) <GET http://www.example.com> (referer: None)"
-        )
+        assert logline == "Crawled (200) <GET http://www.example.com> (referer: None)"
 
     def test_crawled_without_referer(self):
         req = Request(
@@ -46,9 +43,9 @@ class LogFormatterTestCase(unittest.TestCase):
         res = Response("http://www.example.com", flags=["cached"])
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws["msg"] % logkws["args"]
-        self.assertEqual(
-            logline,
-            "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']",
+        assert (
+            logline
+            == "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']"
         )
 
     def test_flags_in_request(self):
@@ -56,9 +53,9 @@ class LogFormatterTestCase(unittest.TestCase):
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws["msg"] % logkws["args"]
-        self.assertEqual(
-            logline,
-            "Crawled (200) <GET http://www.example.com> ['test', 'flag'] (referer: None)",
+        assert (
+            logline
+            == "Crawled (200) <GET http://www.example.com> ['test', 'flag'] (referer: None)"
         )
 
     def test_dropped(self):
@@ -69,7 +66,7 @@ class LogFormatterTestCase(unittest.TestCase):
         logline = logkws["msg"] % logkws["args"]
         lines = logline.splitlines()
         assert all(isinstance(x, str) for x in lines)
-        self.assertEqual(lines, ["Dropped: \u2018", "{}"])
+        assert lines == ["Dropped: \u2018", "{}"]
 
     def test_dropitem_default_log_level(self):
         item = {}
@@ -79,38 +76,38 @@ class LogFormatterTestCase(unittest.TestCase):
         spider.crawler = get_crawler(Spider)
 
         logkws = self.formatter.dropped(item, exception, response, spider)
-        self.assertEqual(logkws["level"], logging.WARNING)
+        assert logkws["level"] == logging.WARNING
 
         spider.crawler.settings.frozen = False
         spider.crawler.settings["DEFAULT_DROPITEM_LOG_LEVEL"] = logging.INFO
         spider.crawler.settings.frozen = True
         logkws = self.formatter.dropped(item, exception, response, spider)
-        self.assertEqual(logkws["level"], logging.INFO)
+        assert logkws["level"] == logging.INFO
 
         spider.crawler.settings.frozen = False
         spider.crawler.settings["DEFAULT_DROPITEM_LOG_LEVEL"] = "INFO"
         spider.crawler.settings.frozen = True
         logkws = self.formatter.dropped(item, exception, response, spider)
-        self.assertEqual(logkws["level"], logging.INFO)
+        assert logkws["level"] == logging.INFO
 
         spider.crawler.settings.frozen = False
         spider.crawler.settings["DEFAULT_DROPITEM_LOG_LEVEL"] = 10
         spider.crawler.settings.frozen = True
         logkws = self.formatter.dropped(item, exception, response, spider)
-        self.assertEqual(logkws["level"], logging.DEBUG)
+        assert logkws["level"] == logging.DEBUG
 
         spider.crawler.settings.frozen = False
         spider.crawler.settings["DEFAULT_DROPITEM_LOG_LEVEL"] = 0
         spider.crawler.settings.frozen = True
         logkws = self.formatter.dropped(item, exception, response, spider)
-        self.assertEqual(logkws["level"], logging.NOTSET)
+        assert logkws["level"] == logging.NOTSET
 
         unsupported_value = object()
         spider.crawler.settings.frozen = False
         spider.crawler.settings["DEFAULT_DROPITEM_LOG_LEVEL"] = unsupported_value
         spider.crawler.settings.frozen = True
         logkws = self.formatter.dropped(item, exception, response, spider)
-        self.assertEqual(logkws["level"], unsupported_value)
+        assert logkws["level"] == unsupported_value
 
         with pytest.raises(TypeError):
             logging.log(logkws["level"], "message")
@@ -121,11 +118,11 @@ class LogFormatterTestCase(unittest.TestCase):
 
         exception = DropItem("Test drop", log_level="INFO")
         logkws = self.formatter.dropped(item, exception, response, self.spider)
-        self.assertEqual(logkws["level"], logging.INFO)
+        assert logkws["level"] == logging.INFO
 
         exception = DropItem("Test drop", log_level="ERROR")
         logkws = self.formatter.dropped(item, exception, response, self.spider)
-        self.assertEqual(logkws["level"], logging.ERROR)
+        assert logkws["level"] == logging.ERROR
 
     def test_item_error(self):
         # In practice, the complete traceback is shown by passing the
@@ -135,7 +132,7 @@ class LogFormatterTestCase(unittest.TestCase):
         response = Response("http://www.example.com")
         logkws = self.formatter.item_error(item, exception, response, self.spider)
         logline = logkws["msg"] % logkws["args"]
-        self.assertEqual(logline, "Error processing {'key': 'value'}")
+        assert logline == "Error processing {'key': 'value'}"
 
     def test_spider_error(self):
         # In practice, the complete traceback is shown by passing the
@@ -147,9 +144,9 @@ class LogFormatterTestCase(unittest.TestCase):
         response = Response("http://www.example.com", request=request)
         logkws = self.formatter.spider_error(failure, request, response, self.spider)
         logline = logkws["msg"] % logkws["args"]
-        self.assertEqual(
-            logline,
-            "Spider error processing <GET http://www.example.com> (referer: http://example.org)",
+        assert (
+            logline
+            == "Spider error processing <GET http://www.example.com> (referer: http://example.org)"
         )
 
     def test_download_error_short(self):
@@ -159,7 +156,7 @@ class LogFormatterTestCase(unittest.TestCase):
         request = Request("http://www.example.com")
         logkws = self.formatter.download_error(failure, request, self.spider)
         logline = logkws["msg"] % logkws["args"]
-        self.assertEqual(logline, "Error downloading <GET http://www.example.com>")
+        assert logline == "Error downloading <GET http://www.example.com>"
 
     def test_download_error_long(self):
         # In practice, the complete traceback is shown by passing the
@@ -170,9 +167,7 @@ class LogFormatterTestCase(unittest.TestCase):
             failure, request, self.spider, "Some message"
         )
         logline = logkws["msg"] % logkws["args"]
-        self.assertEqual(
-            logline, "Error downloading <GET http://www.example.com>: Some message"
-        )
+        assert logline == "Error downloading <GET http://www.example.com>: Some message"
 
     def test_scraped(self):
         item = CustomItem()
@@ -182,9 +177,7 @@ class LogFormatterTestCase(unittest.TestCase):
         logline = logkws["msg"] % logkws["args"]
         lines = logline.splitlines()
         assert all(isinstance(x, str) for x in lines)
-        self.assertEqual(
-            lines, ["Scraped from <200 http://www.example.com>", "name: \xa3"]
-        )
+        assert lines == ["Scraped from <200 http://www.example.com>", "name: \xa3"]
 
 
 class LogFormatterSubclass(LogFormatter):
@@ -200,8 +193,8 @@ class LogFormatterSubclass(LogFormatter):
         }
 
 
-class LogformatterSubclassTest(LogFormatterTestCase):
-    def setUp(self):
+class TestLogformatterSubclass(TestLogFormatter):
+    def setup_method(self):
         self.formatter = LogFormatterSubclass()
         self.spider = Spider("default")
         self.spider.crawler = get_crawler(Spider)
@@ -211,8 +204,8 @@ class LogformatterSubclassTest(LogFormatterTestCase):
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws["msg"] % logkws["args"]
-        self.assertEqual(
-            logline, "Crawled (200) <GET http://www.example.com> (referer: None) []"
+        assert (
+            logline == "Crawled (200) <GET http://www.example.com> (referer: None) []"
         )
 
     def test_crawled_without_referer(self):
@@ -224,9 +217,9 @@ class LogformatterSubclassTest(LogFormatterTestCase):
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws["msg"] % logkws["args"]
-        self.assertEqual(
-            logline,
-            "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']",
+        assert (
+            logline
+            == "Crawled (200) <GET http://www.example.com> (referer: http://example.com) ['cached']"
         )
 
     def test_flags_in_request(self):
@@ -234,9 +227,9 @@ class LogformatterSubclassTest(LogFormatterTestCase):
         res = Response("http://www.example.com")
         logkws = self.formatter.crawled(req, res, self.spider)
         logline = logkws["msg"] % logkws["args"]
-        self.assertEqual(
-            logline,
-            "Crawled (200) <GET http://www.example.com> (referer: None) ['test', 'flag']",
+        assert (
+            logline
+            == "Crawled (200) <GET http://www.example.com> (referer: None) ['test', 'flag']"
         )
 
 
@@ -261,7 +254,7 @@ class DropSomeItemsPipeline:
         self.drop = True
 
 
-class ShowOrSkipMessagesTestCase(TwistedTestCase):
+class TestShowOrSkipMessages(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mockserver = MockServer()
@@ -284,9 +277,9 @@ class ShowOrSkipMessagesTestCase(TwistedTestCase):
         crawler = get_crawler(ItemSpider, self.base_settings)
         with LogCapture() as lc:
             yield crawler.crawl(mockserver=self.mockserver)
-        self.assertIn("Scraped from <200 http://127.0.0.1:", str(lc))
-        self.assertIn("Crawled (200) <GET http://127.0.0.1:", str(lc))
-        self.assertIn("Dropped: Ignoring item", str(lc))
+        assert "Scraped from <200 http://127.0.0.1:" in str(lc)
+        assert "Crawled (200) <GET http://127.0.0.1:" in str(lc)
+        assert "Dropped: Ignoring item" in str(lc)
 
     @defer.inlineCallbacks
     def test_skip_messages(self):
@@ -295,6 +288,6 @@ class ShowOrSkipMessagesTestCase(TwistedTestCase):
         crawler = get_crawler(ItemSpider, settings)
         with LogCapture() as lc:
             yield crawler.crawl(mockserver=self.mockserver)
-        self.assertNotIn("Scraped from <200 http://127.0.0.1:", str(lc))
-        self.assertNotIn("Crawled (200) <GET http://127.0.0.1:", str(lc))
-        self.assertNotIn("Dropped: Ignoring item", str(lc))
+        assert "Scraped from <200 http://127.0.0.1:" not in str(lc)
+        assert "Crawled (200) <GET http://127.0.0.1:" not in str(lc)
+        assert "Dropped: Ignoring item" not in str(lc)

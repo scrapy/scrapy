@@ -63,16 +63,37 @@ particular setting. See each middleware documentation for more info.
 Writing your own spider middleware
 ==================================
 
-Each spider middleware is a Python class that defines one or more of the
-methods defined below.
-
-The main entry point is the ``from_crawler`` class method, which receives a
-:class:`~scrapy.crawler.Crawler` instance. The :class:`~scrapy.crawler.Crawler`
-object gives you access, for example, to the :ref:`settings <topics-settings>`.
+Each spider middleware is a :ref:`component <topics-components>` that defines
+one or more of these methods:
 
 .. module:: scrapy.spidermiddlewares
 
 .. class:: SpiderMiddleware
+
+    .. method:: process_start_requests(start_requests, spider)
+
+        This method is called with the start requests of the spider, and works
+        similarly to the :meth:`process_spider_output` method, except that it
+        doesn't have a response associated and must return only requests (not
+        items).
+
+        It receives an iterable (in the ``start_requests`` parameter) and must
+        return another iterable of :class:`~scrapy.Request` objects and/or :ref:`item objects <topics-items>`.
+
+        .. note:: When implementing this method in your spider middleware, you
+           should always return an iterable (that follows the input one) and
+           not consume all ``start_requests`` iterator because it can be very
+           large (or even unbounded) and cause a memory overflow. The Scrapy
+           engine is designed to pull start requests while it has capacity to
+           process them, so the start requests iterator can be effectively
+           endless where there is some other condition for stopping the spider
+           (like a time limit or item/page count).
+
+        :param start_requests: the start requests
+        :type start_requests: an iterable of :class:`~scrapy.Request`
+
+        :param spider: the spider to whom the start requests belong
+        :type spider: :class:`~scrapy.Spider` object
 
     .. method:: process_spider_input(response, spider)
 
@@ -168,41 +189,18 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :param spider: the spider which raised the exception
         :type spider: :class:`~scrapy.Spider` object
 
-    .. method:: process_start_requests(start_requests, spider)
+Base class for custom spider middlewares
+----------------------------------------
 
-        This method is called with the start requests of the spider, and works
-        similarly to the :meth:`process_spider_output` method, except that it
-        doesn't have a response associated and must return only requests (not
-        items).
+Scrapy provides a base class for custom spider middlewares. It's not required
+to use it but it can help with simplifying middleware implementations and
+reducing the amount of boilerplate code in :ref:`universal middlewares
+<universal-spider-middleware>`.
 
-        It receives an iterable (in the ``start_requests`` parameter) and must
-        return another iterable of :class:`~scrapy.Request` objects and/or :ref:`item objects <topics-items>`.
+.. module:: scrapy.spidermiddlewares.base
 
-        .. note:: When implementing this method in your spider middleware, you
-           should always return an iterable (that follows the input one) and
-           not consume all ``start_requests`` iterator because it can be very
-           large (or even unbounded) and cause a memory overflow. The Scrapy
-           engine is designed to pull start requests while it has capacity to
-           process them, so the start requests iterator can be effectively
-           endless where there is some other condition for stopping the spider
-           (like a time limit or item/page count).
-
-        :param start_requests: the start requests
-        :type start_requests: an iterable of :class:`~scrapy.Request`
-
-        :param spider: the spider to whom the start requests belong
-        :type spider: :class:`~scrapy.Spider` object
-
-    .. method:: from_crawler(cls, crawler)
-
-       If present, this classmethod is called to create a middleware instance
-       from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
-       of the middleware. Crawler object provides access to all Scrapy core
-       components like settings and signals; it is a way for middleware to
-       access them and hook its functionality into Scrapy.
-
-       :param crawler: crawler that uses this middleware
-       :type crawler: :class:`~scrapy.crawler.Crawler` object
+.. autoclass:: BaseSpiderMiddleware
+   :members:
 
 .. _topics-spider-middleware-ref:
 

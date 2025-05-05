@@ -6,7 +6,7 @@ import json
 import logging
 from typing import TYPE_CHECKING, Any, TypeVar, overload
 
-from itemadapter import ItemAdapter, is_item
+from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
 from w3lib.url import is_url
 
@@ -211,10 +211,10 @@ class Command(BaseRunSpiderCommand):
     ) -> tuple[list[Any], list[Request], argparse.Namespace, int, Spider, CallbackT]:
         items, requests = [], []
         for x in spider_output:
-            if is_item(x):
-                items.append(x)
-            elif isinstance(x, Request):
+            if isinstance(x, Request):
                 requests.append(x)
+            else:
+                items.append(x)
         return items, requests, opts, depth, spider, callback
 
     def run_callback(

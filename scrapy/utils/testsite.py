@@ -1,6 +1,14 @@
+import warnings
 from urllib.parse import urljoin
 
 from twisted.web import resource, server, static, util
+
+from scrapy.exceptions import ScrapyDeprecationWarning
+
+warnings.warn(
+    "The scrapy.utils.testsite module is deprecated.",
+    ScrapyDeprecationWarning,
+)
 
 
 class SiteTest:
@@ -48,7 +56,7 @@ def test_site():
 
 
 if __name__ == "__main__":
-    from twisted.internet import reactor
+    from twisted.internet import reactor  # pylint: disable=ungrouped-imports
 
     port = reactor.listenTCP(0, test_site(), interface="127.0.0.1")
     print(f"http://localhost:{port.getHost().port}/")

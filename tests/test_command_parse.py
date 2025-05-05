@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 from pathlib import Path
 
 from twisted.internet import defer
@@ -7,18 +8,18 @@ from twisted.internet import defer
 from scrapy.commands import parse
 from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
-from scrapy.utils.testproc import ProcessTest
-from scrapy.utils.testsite import SiteTest
-from tests.test_commands import CommandTest
+from tests.test_commands import TestCommandBase
+from tests.utils.testproc import ProcessTest
+from tests.utils.testsite import SiteTest
 
 
-def _textmode(bstr):
+def _textmode(bstr: bytes) -> str:
     """Normalize input the same as writing to a file
     and reading from it in text mode"""
     return to_unicode(bstr).replace(os.linesep, "\n")
 
 
-class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
+class TestParseCommand(ProcessTest, SiteTest, TestCommandBase):
     command = "parse"
 
     def setUp(self):
@@ -184,7 +185,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
                 self.url("/html"),
             ]
         )
-        self.assertIn("DEBUG: It Works!", _textmode(stderr))
+        assert "DEBUG: It Works!" in _textmode(stderr)
 
     @defer.inlineCallbacks
     def test_request_with_meta(self):
@@ -201,7 +202,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
                 self.url("/html"),
             ]
         )
-        self.assertIn("DEBUG: It Works!", _textmode(stderr))
+        assert "DEBUG: It Works!" in _textmode(stderr)
 
         _, _, stderr = yield self.execute(
             [
@@ -215,7 +216,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
                 self.url("/html"),
             ]
         )
-        self.assertIn("DEBUG: It Works!", _textmode(stderr))
+        assert "DEBUG: It Works!" in _textmode(stderr)
 
     @defer.inlineCallbacks
     def test_request_with_cb_kwargs(self):
@@ -233,9 +234,9 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
             ]
         )
         log = _textmode(stderr)
-        self.assertIn("DEBUG: It Works!", log)
-        self.assertIn(
-            "DEBUG: request.callback signature: (response, foo=None, key=None)", log
+        assert "DEBUG: It Works!" in log
+        assert (
+            "DEBUG: request.callback signature: (response, foo=None, key=None)" in log
         )
 
     @defer.inlineCallbacks
@@ -250,7 +251,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
                 self.url("/html"),
             ]
         )
-        self.assertIn("DEBUG: It Works!", _textmode(stderr))
+        assert "DEBUG: It Works!" in _textmode(stderr)
 
     @defer.inlineCallbacks
     def test_pipelines(self):
@@ -265,7 +266,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
                 self.url("/html"),
             ]
         )
-        self.assertIn("INFO: It Works!", _textmode(stderr))
+        assert "INFO: It Works!" in _textmode(stderr)
 
     @defer.inlineCallbacks
     def test_async_def_asyncio_parse_items_list(self):
@@ -278,9 +279,9 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
                 self.url("/html"),
             ]
         )
-        self.assertIn("INFO: Got response 200", _textmode(stderr))
-        self.assertIn("{'id': 1}", _textmode(out))
-        self.assertIn("{'id': 2}", _textmode(out))
+        assert "INFO: Got response 200" in _textmode(stderr)
+        assert "{'id': 1}" in _textmode(out)
+        assert "{'id': 2}" in _textmode(out)
 
     @defer.inlineCallbacks
     def test_async_def_asyncio_parse_items_single_element(self):
@@ -293,8 +294,8 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
                 self.url("/html"),
             ]
         )
-        self.assertIn("INFO: Got response 200", _textmode(stderr))
-        self.assertIn("{'foo': 42}", _textmode(out))
+        assert "INFO: Got response 200" in _textmode(stderr)
+        assert "{'foo': 42}" in _textmode(out)
 
     @defer.inlineCallbacks
     def test_async_def_asyncgen_parse_loop(self):
@@ -307,9 +308,9 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
                 self.url("/html"),
             ]
         )
-        self.assertIn("INFO: Got response 200", _textmode(stderr))
+        assert "INFO: Got response 200" in _textmode(stderr)
         for i in range(10):
-            self.assertIn(f"{{'foo': {i}}}", _textmode(out))
+            assert f"{{'foo': {i}}}" in _textmode(out)
 
     @defer.inlineCallbacks
     def test_async_def_asyncgen_parse_exc(self):
@@ -322,9 +323,9 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
                 self.url("/html"),
             ]
         )
-        self.assertIn("ValueError", _textmode(stderr))
+        assert "ValueError" in _textmode(stderr)
         for i in range(7):
-            self.assertIn(f"{{'foo': {i}}}", _textmode(out))
+            assert f"{{'foo': {i}}}" in _textmode(out)
 
     @defer.inlineCallbacks
     def test_async_def_asyncio_parse(self):
@@ -337,29 +338,29 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
                 self.url("/html"),
             ]
         )
-        self.assertIn("DEBUG: Got response 200", _textmode(stderr))
+        assert "DEBUG: Got response 200" in _textmode(stderr)
 
     @defer.inlineCallbacks
     def test_parse_items(self):
         status, out, stderr = yield self.execute(
             ["--spider", self.spider_name, "-c", "parse", self.url("/html")]
         )
-        self.assertIn("""[{}, {'foo': 'bar'}]""", _textmode(out))
+        assert "[{}, {'foo': 'bar'}]" in _textmode(out)
 
     @defer.inlineCallbacks
     def test_parse_items_no_callback_passed(self):
         status, out, stderr = yield self.execute(
             ["--spider", self.spider_name, self.url("/html")]
         )
-        self.assertIn("""[{}, {'foo': 'bar'}]""", _textmode(out))
+        assert "[{}, {'foo': 'bar'}]" in _textmode(out)
 
     @defer.inlineCallbacks
     def test_wrong_callback_passed(self):
         status, out, stderr = yield self.execute(
             ["--spider", self.spider_name, "-c", "dummy", self.url("/html")]
         )
-        self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
-        self.assertIn("""Cannot find callback""", _textmode(stderr))
+        assert re.search(r"# Scraped Items  -+\n\[\]", _textmode(out))
+        assert "Cannot find callback" in _textmode(stderr)
 
     @defer.inlineCallbacks
     def test_crawlspider_matching_rule_callback_set(self):
@@ -367,7 +368,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         status, out, stderr = yield self.execute(
             ["--spider", "goodcrawl" + self.spider_name, "-r", self.url("/html")]
         )
-        self.assertIn("""[{}, {'foo': 'bar'}]""", _textmode(out))
+        assert "[{}, {'foo': 'bar'}]" in _textmode(out)
 
     @defer.inlineCallbacks
     def test_crawlspider_matching_rule_default_callback(self):
@@ -375,7 +376,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         status, out, stderr = yield self.execute(
             ["--spider", "goodcrawl" + self.spider_name, "-r", self.url("/text")]
         )
-        self.assertIn("""[{}, {'nomatch': 'default'}]""", _textmode(out))
+        assert "[{}, {'nomatch': 'default'}]" in _textmode(out)
 
     @defer.inlineCallbacks
     def test_spider_with_no_rules_attribute(self):
@@ -383,15 +384,15 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         status, out, stderr = yield self.execute(
             ["--spider", self.spider_name, "-r", self.url("/html")]
         )
-        self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
-        self.assertIn("""No CrawlSpider rules found""", _textmode(stderr))
+        assert re.search(r"# Scraped Items  -+\n\[\]", _textmode(out))
+        assert "No CrawlSpider rules found" in _textmode(stderr)
 
     @defer.inlineCallbacks
     def test_crawlspider_missing_callback(self):
         status, out, stderr = yield self.execute(
             ["--spider", "badcrawl" + self.spider_name, "-r", self.url("/html")]
         )
-        self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
+        assert re.search(r"# Scraped Items  -+\n\[\]", _textmode(out))
 
     @defer.inlineCallbacks
     def test_crawlspider_no_matching_rule(self):
@@ -399,13 +400,13 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         status, out, stderr = yield self.execute(
             ["--spider", "badcrawl" + self.spider_name, "-r", self.url("/enc-gb18030")]
         )
-        self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
-        self.assertIn("""Cannot find a rule that matches""", _textmode(stderr))
+        assert re.search(r"# Scraped Items  -+\n\[\]", _textmode(out))
+        assert "Cannot find a rule that matches" in _textmode(stderr)
 
     @defer.inlineCallbacks
     def test_crawlspider_not_exists_with_not_matched_url(self):
         status, out, stderr = yield self.execute([self.url("/invalid_url")])
-        self.assertEqual(status, 0)
+        assert status == 0
 
     @defer.inlineCallbacks
     def test_output_flag(self):
@@ -426,11 +427,11 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
             ]
         )
 
-        self.assertTrue(file_path.exists())
-        self.assertTrue(file_path.is_file())
+        assert file_path.exists()
+        assert file_path.is_file()
 
         content = '[\n{},\n{"foo": "bar"}\n]'
-        self.assertEqual(file_path.read_text(encoding="utf-8"), content)
+        assert file_path.read_text(encoding="utf-8") == content
 
     def test_parse_add_options(self):
         command = parse.Command()
@@ -445,7 +446,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         namespace = parser.parse_args(
             ["--verbose", "--nolinks", "-d", "2", "--spider", self.spider_name]
         )
-        self.assertTrue(namespace.nolinks)
-        self.assertEqual(namespace.depth, 2)
-        self.assertEqual(namespace.spider, self.spider_name)
-        self.assertTrue(namespace.verbose)
+        assert namespace.nolinks
+        assert namespace.depth == 2
+        assert namespace.spider == self.spider_name
+        assert namespace.verbose

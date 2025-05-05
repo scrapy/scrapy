@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools >= 61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
 
 [project]
 name = "Scrapy"
@@ -10,29 +10,28 @@ dependencies = [
     "Twisted>=21.7.0",
     "cryptography>=37.0.0",
     "cssselect>=0.9.1",
+    "defusedxml>=0.7.1",
+    "itemadapter>=0.1.0",
     "itemloaders>=1.0.1",
+    "lxml>=4.6.0",
+    "packaging",
     "parsel>=1.5.0",
+    "protego>=0.1.15",
     "pyOpenSSL>=22.0.0",
     "queuelib>=1.4.2",
     "service_identity>=18.1.0",
+    "tldextract",
     "w3lib>=1.17.0",
     "zope.interface>=5.1.0",
-    "protego>=0.1.15",
-    "itemadapter>=0.1.0",
-    "packaging",
-    "tldextract",
-    "lxml>=4.6.0",
-    "defusedxml>=0.7.1",
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
 ]
 classifiers = [
-    "Framework :: Scrapy",
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
+    "Framework :: Scrapy",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
@@ -47,6 +46,8 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Application Frameworks",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+license = "BSD-3-Clause"
+license-files = ["LICENSE", "AUTHORS"]
 readme = "README.rst"
 requires-python = ">=3.9"
 authors = [{ name = "Scrapy developers", email = "pablo@pablohoffman.com" }]
@@ -63,12 +64,26 @@ releasenotes = "https://docs.scrapy.org/en/latest/news.html"
 [project.scripts]
 scrapy = "scrapy.cmdline:execute"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["scrapy", "scrapy.*",]
+[tool.hatch.build.targets.sdist]
+include = [
+  "/docs",
+  "/extras",
+  "/scrapy",
+  "/tests",
+  "/tests_typing",
+  "/CODE_OF_CONDUCT.md",
+  "/CONTRIBUTING.md",
+  "/INSTALL.md",
+  "/NEWS",
+  "/SECURITY.md",
+  "/codecov.yml",
+  "/conftest.py",
+  "/tox.ini",
+]
 
-[tool.setuptools.dynamic]
-version = {file = "./scrapy/VERSION"}
+[tool.hatch.version]
+path = "scrapy/VERSION"
+pattern = "^(?P<version>.+)$"
 
 [tool.mypy]
 ignore_missing_imports = true
@@ -374,10 +389,6 @@ ignore = [
     "B904",
     # Use capitalized environment variable
     "SIM112",
-
-    # Temporarily silenced PT rules
-    # Use a regular `assert` instead of unittest-style `assertEqual`
-    "PT009",
 ]
 
 [tool.ruff.lint.per-file-ignores]
