@@ -188,11 +188,18 @@ class TestCrawl(TestCase):
 
     @defer.inlineCallbacks
     def test_start_items(self):
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
         with LogCapture("scrapy", level=logging.ERROR) as log:
             crawler = get_crawler(StartItemSpider)
+            crawler.signals.connect(_on_item_scraped, signals.item_scraped)
             yield crawler.crawl(mockserver=self.mockserver)
 
         assert len(log.records) == 0
+        assert items == [{"name": "test item"}]
 
     @defer.inlineCallbacks
     def test_start_unsupported_output(self):
@@ -200,11 +207,20 @@ class TestCrawl(TestCase):
         potentially expensive call to itemadapter.is_item(), and letting
         instead things fail when ItemAdapter is actually used on the
         corresponding non-item object."""
+
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
         with LogCapture("scrapy", level=logging.ERROR) as log:
             crawler = get_crawler(StartGoodAndBadOutput)
+            crawler.signals.connect(_on_item_scraped, signals.item_scraped)
             yield crawler.crawl(mockserver=self.mockserver)
 
         assert len(log.records) == 0
+        assert len(items) == 3
+        assert not any(isinstance(item, Request) for item in items)
 
     @defer.inlineCallbacks
     def test_start_dupes(self):
