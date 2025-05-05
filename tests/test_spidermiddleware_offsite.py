@@ -10,7 +10,7 @@ from scrapy.utils.test import get_crawler
 class TestOffsiteMiddleware:
     def setup_method(self):
         crawler = get_crawler(Spider)
-        self.spider = crawler._create_spider(**self._get_spiderargs())
+        self.spider = crawler.spider = crawler._create_spider(**self._get_spiderargs())
         self.mw = OffsiteMiddleware.from_crawler(crawler)
         self.mw.spider_opened(self.spider)
 

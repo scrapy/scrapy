@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 ScrapeFunc = Callable[
-    [Union[Response, Failure], Request, Spider], Union[Iterable[_T], AsyncIterator[_T]]
+    [Union[Response, Failure], Request], Union[Iterable[_T], AsyncIterator[_T]]
 ]
 
 
@@ -150,8 +150,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
             except _InvalidOutput:
                 raise
             except Exception:
-                return scrape_func(Failure(), request, spider)
-        return scrape_func(response, request, spider)
+                return scrape_func(Failure(), request)
+        return scrape_func(response, request)
 
     def _evaluate_iterable(
         self,
