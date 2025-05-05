@@ -539,18 +539,18 @@ as a fallback value if that key is not provided for a specific feed definition:
 FEED_EXPORT_ENCODING
 --------------------
 
-Default: ``None``
+Default: ``"utf-8"`` (:ref:`fallback <default-settings>`: ``None``)
 
 The encoding to be used for the feed.
 
-If unset or set to ``None`` (default) it uses UTF-8 for everything except JSON output,
-which uses safe numeric encoding (``\uXXXX`` sequences) for historic reasons.
+If set to ``None``, it uses UTF-8 for everything except JSON output, which uses
+safe numeric encoding (``\uXXXX`` sequences) for historic reasons.
 
-Use ``utf-8`` if you want UTF-8 for JSON too.
+Use ``"utf-8"`` if you want UTF-8 for JSON too.
 
 .. versionchanged:: 2.8
    The :command:`startproject` command now sets this setting to
-   ``utf-8`` in the generated ``settings.py`` file.
+   ``"utf-8"`` in the generated ``settings.py`` file.
 
 .. setting:: FEED_EXPORT_FIELDS
 
