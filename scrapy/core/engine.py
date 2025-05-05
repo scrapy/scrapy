@@ -16,7 +16,7 @@ from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
 
 from scrapy import signals
-from scrapy.core.scraper import Scraper, _HandleOutputDeferred
+from scrapy.core.scraper import Scraper
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
@@ -250,11 +250,10 @@ class ExecutionEngine:
         )
         return d2
 
+    @inlineCallbacks
     def _handle_downloader_output(
         self, result: Request | Response | Failure, request: Request
-    ) -> _HandleOutputDeferred | None:
-        assert self.spider is not None  # typing
-
+    ) -> Generator[Deferred[Any], Any, None]:
         if not isinstance(result, (Request, Response, Failure)):
             raise TypeError(
                 f"Incorrect type: expected Request, Response or Failure, got {type(result)}: {result!r}"
@@ -263,17 +262,17 @@ class ExecutionEngine:
         # downloader middleware can return requests (for example, redirects)
         if isinstance(result, Request):
             self.crawl(result)
-            return None
+            return
 
-        d = self.scraper.enqueue_scrape(result, request)
-        d.addErrback(
-            lambda f: logger.error(
-                "Error while enqueuing downloader output",
-                exc_info=failure_to_exc_info(f),
+        try:
+            yield self.scraper.enqueue_scrape(result, request)
+        except Exception:
+            assert self.spider is not None
+            logger.error(
+                "Error while enqueuing scrape",
+                exc_info=True,
                 extra={"spider": self.spider},
             )
-        )
-        return d
 
     def spider_is_idle(self) -> bool:
         if self.slot is None:
