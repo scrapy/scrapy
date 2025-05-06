@@ -41,7 +41,8 @@ logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 ScrapeFunc = Callable[
-    [Union[Response, Failure], Request], Union[Iterable[_T], AsyncIterator[_T]]
+    [Union[Response, Failure], Request],
+    Deferred[Union[Iterable[_T], AsyncIterator[_T]]],
 ]
 
 
@@ -136,7 +137,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         response: Response,
         request: Request,
         spider: Spider,
-    ) -> Iterable[_T] | AsyncIterator[_T]:
+    ) -> Deferred[Iterable[_T] | AsyncIterator[_T]]:
         for method in self.methods["process_spider_input"]:
             method = cast(Callable, method)
             try:

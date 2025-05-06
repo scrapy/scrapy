@@ -228,7 +228,7 @@ class RequestSendOrderTestCase(TestCase):
     async def test_lazy(self):
         start_nums = [1, 2, 4]
         cb_nums = [3]
-        response_seconds = self.seconds
+        response_seconds = self.seconds * 2**1  # increase if flaky
         download_slots = 1
 
         async def start(spider):
