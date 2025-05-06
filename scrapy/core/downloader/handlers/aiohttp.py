@@ -2,11 +2,17 @@ import asyncio
 from typing import Self
 import aiohttp
 
+from scrapy import responsetypes
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.crawler import Crawler
+from scrapy.http.headers import Headers
 from scrapy.http.request import Request
+from scrapy.http.response import Response
 from scrapy.settings import Settings
-from twisted.internet import reactor
+
+from twisted.internet import Deferred
+from twisted.internet.defer import ensureDeferred
+from scrapy.spiders import Spider
 from scrapy.utils.reactor import is_asyncio_reactor_installed
 import ssl
 
@@ -35,35 +41,42 @@ class AiohttpHandler:
     def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler.settings, crawler)
 
-    def download_request(self, request: Request):
-        d = self._download_request(request)
-        #needa pick apart client response into the response they use in their code
+    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
+        d = ensureDeferred(self._download_request(request))
         return d
     
-    async def _download_request(self, request: Request) :
-        """pure aiohttp function for separation of concerns and all"""
+    async def _download_request(self, request: Request):
+        """download through aiohttp interface"""
 
         proxy = request.meta.get("proxy")
         url = request.url
-        method = request.method  # You can change this if needed, e.g., 'POST'
-        headers = {'User-Agent': 'my-app', 'Accept-Encoding': 'gzip, deflate'}
-        cookies = {'session_id': '1234'}
-        body = request.body  # GET requests typically don't have a body, but you can add it for other methods like POST
-        encoding = request.encoding  # Can be set in Accept-Encoding or as a custom header
-
-
-        if proxy:
-            pass
+        method = request.method 
+        headers = request.headers.to_unicode_dict
+        if(isinstance(request.cookies, dict)):
+            cookies = request.cookies
         else:
-            async with self.session.get(
-                url=url,
-                method = method,
-                headers = headers,
-                body = body,
-                encoding = encoding
-                                        ) as response:
-                return await response
+            cookies = dict(map(lambda item: (item.name, item.value), request.cookies))
+        body = request.body 
+        encoding = request.encoding 
+
+        self.session.cookie_jar.update_cookies(cookies)
+
+        async with self.session.get(
+            url=url,
+            method = method,
+            headers = headers,
+            body = body,
+            encoding = encoding,
+            proxy = proxy,
+            allow_redirects=False
+        ) as response:
             
+            body = await response.read()
+            status = response.status
+            headers = Headers(response.raw_headers) 
+
+            respcls = responsetypes.from_args(headers=headers, url=request.url)
+            return respcls(url=request.url, status=status, headers=headers, body=body)
 
     def close(self):
         task = asyncio.ensure_future(self._close())
