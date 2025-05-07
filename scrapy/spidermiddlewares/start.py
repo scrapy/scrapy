@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from scrapy.http import Request
+from .base import BaseSpiderMiddleware
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Iterable
+    from scrapy.http import Request
+    from scrapy.http.response import Response
 
-    from scrapy import Spider
 
-
-class StartSpiderMiddleware:
+class StartSpiderMiddleware(BaseSpiderMiddleware):
     """Set :reqmeta:`is_start_request`.
 
     .. reqmeta:: is_start_request
@@ -24,21 +23,9 @@ class StartSpiderMiddleware:
     <topics-downloader-middleware>`.
     """
 
-    @staticmethod
-    def _process(item_or_request: Any) -> Any:
-        if isinstance(item_or_request, Request):
-            item_or_request.meta.setdefault("is_start_request", True)
-        return item_or_request
-
-    async def process_start(
-        self,
-        start: AsyncIterator[Any],
-    ) -> AsyncIterator[Any]:
-        async for item_or_request in start:
-            yield self._process(item_or_request)
-
-    def process_start_requests(
-        self, start: Iterable[Any], spider: Spider
-    ) -> Iterable[Any]:
-        for item_or_request in start:
-            yield self._process(item_or_request)
+    def get_processed_request(
+        self, request: Request, response: Response
+    ) -> Request | None:
+        if response is None:
+            request.meta.setdefault("is_start_request", True)
+        return request
