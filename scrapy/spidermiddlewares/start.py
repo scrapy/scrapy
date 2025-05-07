@@ -24,7 +24,7 @@ class StartSpiderMiddleware(BaseSpiderMiddleware):
     """
 
     def get_processed_request(
-        self, request: Request, response: Response
+        self, request: Request, response: Response | None
     ) -> Request | None:
         if response is None:
             request.meta.setdefault("is_start_request", True)
