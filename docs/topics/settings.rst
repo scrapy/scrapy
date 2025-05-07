@@ -162,8 +162,17 @@ Those command-specific default settings are specified in the
 6. Default global settings
 --------------------------
 
-The global defaults are located in the ``scrapy.settings.default_settings``
-module and documented in the :ref:`topics-settings-ref` section.
+The ``scrapy.settings.default_settings`` module defines global default values
+for some :ref:`built-in settings <topics-settings-ref>`.
+
+.. note:: :command:`startproject` generates a ``settings.py`` file that sets
+    some settings to different values.
+
+    The reference documentation of settings indicates the default value if one
+    exists. If :command:`startproject` sets a value, that value is documented
+    as default, and the value from ``scrapy.settings.default_settings`` is
+    documented as “fallback”.
+
 
 Compatibility with pickle
 =========================
@@ -461,7 +470,7 @@ Note that the event loop class must inherit from :class:`asyncio.AbstractEventLo
 BOT_NAME
 --------
 
-Default: ``'scrapybot'``
+Default: ``<project name>`` (:ref:`fallback <default-settings>`: ``'scrapybot'``)
 
 The name of the bot implemented by this Scrapy project (also known as the
 project name). This name will be used for the logging too.
@@ -1320,6 +1329,7 @@ Default: ``{}``
 A dict containing the pipelines enabled by default in Scrapy. You should never
 modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
 
+
 .. setting:: JOBDIR
 
 JOBDIR
@@ -1329,6 +1339,7 @@ Default: ``None``
 
 A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.
+
 
 .. setting:: LOG_ENABLED
 
@@ -1566,7 +1577,7 @@ email notifying about it. If zero, no warning will be produced.
 NEWSPIDER_MODULE
 ----------------
 
-Default: ``''``
+Default: ``"<project name>.spiders"`` (:ref:`fallback <default-settings>`: ``""``)
 
 Module where to create new spiders using the :command:`genspider` command.
 
@@ -1625,9 +1636,7 @@ Adjust redirect request priority relative to original request:
 ROBOTSTXT_OBEY
 --------------
 
-Default: ``False``
-
-Scope: ``scrapy.downloadermiddlewares.robotstxt``
+Default: ``True`` (:ref:`fallback <default-settings>`: ``False``)
 
 If enabled, Scrapy will respect robots.txt policies. For more information see
 :ref:`topics-dlmw-robots`.
@@ -1735,6 +1744,51 @@ request prioritization. See :ref:`priority-queues` and
 
 The default scheduler, :class:`~scrapy.core.scheduler.Scheduler`, uses this
 component.
+
+
+.. setting:: SCHEDULER_START_DISK_QUEUE
+
+SCHEDULER_START_DISK_QUEUE
+--------------------------
+
+Default: :class:`~scrapy.squeues.PickleFifoDiskQueue`
+
+Type of disk queue (see :setting:`JOBDIR`) that the :ref:`scheduler
+<topics-scheduler>` uses for :ref:`start requests <start-requests>`.
+
+For available choices, see :ref:`disk-queues` and :ref:`custom-internal-queue`.
+
+.. queue-common-starts
+
+Use ``None`` or ``""`` to disable these separate queues entirely, and instead
+have start requests share the same queues as other requests.
+
+.. note::
+
+    Disabling separate start request queues makes :ref:`start request order
+    <start-request-order>` unintuitive: start requests will be sent in order
+    only until :setting:`CONCURRENT_REQUESTS` is reached, then remaining start
+    requests will be sent in reverse order.
+
+.. queue-common-ends
+
+
+.. setting:: SCHEDULER_START_MEMORY_QUEUE
+
+SCHEDULER_START_MEMORY_QUEUE
+----------------------------
+
+Default: :class:`~scrapy.squeues.FifoMemoryQueue`
+
+Type of in-memory queue that the :ref:`scheduler <topics-scheduler>` uses for
+:ref:`start requests <start-requests>`.
+
+For available choices, see :ref:`memory-queues` and
+:ref:`custom-internal-queue`.
+
+.. include:: settings.rst
+    :start-after: queue-common-starts
+    :end-before: queue-common-ends
 
 
 .. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
@@ -1856,7 +1910,7 @@ the spider. For more info see :ref:`topics-spider-middleware-setting`.
 SPIDER_MODULES
 --------------
 
-Default: ``[]``
+Default: ``["<project name>.spiders"]`` (:ref:`fallback <default-settings>`: ``[]``)
 
 A list of modules where Scrapy will look for spiders.
 

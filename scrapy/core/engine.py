@@ -12,12 +12,12 @@ from time import time
 from traceback import format_exc
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
-from twisted.internet.defer import Deferred, succeed
+from twisted.internet.defer import Deferred, inlineCallbacks, succeed
 from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.core.scheduler import BaseScheduler
-from scrapy.core.scraper import Scraper, _HandleOutputDeferred
+from scrapy.core.scraper import Scraper
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.utils.defer import (
@@ -30,7 +30,7 @@ from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable
+    from collections.abc import AsyncIterator, Callable, Generator
 
     from scrapy.core.downloader import Downloader
     from scrapy.crawler import Crawler
@@ -344,11 +344,10 @@ class ExecutionEngine:
         )
         return True
 
+    @inlineCallbacks
     def _handle_downloader_output(
         self, result: Request | Response | Failure, request: Request
-    ) -> _HandleOutputDeferred | None:
-        assert self.spider is not None  # typing
-
+    ) -> Generator[Deferred[Any], Any, None]:
         if not isinstance(result, (Request, Response, Failure)):
             raise TypeError(
                 f"Incorrect type: expected Request, Response or Failure, got {type(result)}: {result!r}"
@@ -357,17 +356,17 @@ class ExecutionEngine:
         # downloader middleware can return requests (for example, redirects)
         if isinstance(result, Request):
             self.crawl(result)
-            return None
+            return
 
-        d = self.scraper.enqueue_scrape(result, request, self.spider)
-        d.addErrback(
-            lambda f: logger.error(
-                "Error while enqueuing downloader output",
-                exc_info=failure_to_exc_info(f),
+        try:
+            yield self.scraper.enqueue_scrape(result, request)
+        except Exception:
+            assert self.spider is not None
+            logger.error(
+                "Error while enqueuing scrape",
+                exc_info=True,
                 extra={"spider": self.spider},
             )
-        )
-        return d
 
     def spider_is_idle(self) -> bool:
         if self._slot is None:
@@ -387,20 +386,20 @@ class ExecutionEngine:
         """Inject the request into the spider <-> downloader pipeline"""
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
-        self._schedule_request(request, self.spider)
+        self._schedule_request(request)
         self._slot.nextcall.schedule()  # type: ignore[union-attr]
 
-    def _schedule_request(self, request: Request, spider: Spider) -> None:
-        assert self.scheduler is not None  # typing
+    def _schedule_request(self, request: Request) -> None:
         request_scheduled_result = self.signals.send_catch_log(
             signals.request_scheduled,
             request=request,
-            spider=spider,
+            spider=self.spider,
             dont_log=IgnoreRequest,
         )
         for handler, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
+        assert self.scheduler is not None
         try:
             request_was_enqueued = self.scheduler.enqueue_request(request)
         except Exception as exception:
@@ -411,7 +410,7 @@ class ExecutionEngine:
             request_was_enqueued = False
         if not request_was_enqueued:
             self.signals.send_catch_log(
-                signals.request_dropped, request=request, spider=spider
+                signals.request_dropped, request=request, spider=self.spider
             )
 
     def download(self, request: Request) -> Deferred[Response]:
@@ -481,9 +480,7 @@ class ExecutionEngine:
         nextcall = CallLaterOnce(self._start_scheduled_requests)
         self.scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
         self._slot = _Slot(close_if_idle, nextcall)
-        self._start = await maybe_deferred_to_future(
-            self.scraper.spidermw.process_start(spider)
-        )
+        self._start = await self.scraper.spidermw.process_start(spider)
         if hasattr(self.scheduler, "open") and (d := self.scheduler.open(spider)):
             await maybe_deferred_to_future(d)
         await maybe_deferred_to_future(self.scraper.open_spider(spider))
@@ -543,7 +540,7 @@ class ExecutionEngine:
         dfd.addBoth(lambda _: self.downloader.close())
         dfd.addErrback(log_failure("Downloader close failure"))
 
-        dfd.addBoth(lambda _: self.scraper.close_spider(spider))
+        dfd.addBoth(lambda _: self.scraper.close_spider())
         dfd.addErrback(log_failure("Scraper close failure"))
 
         if hasattr(self.scheduler, "close"):

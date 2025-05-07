@@ -10,6 +10,7 @@ from twisted.trial.unittest import TestCase
 
 from scrapy import Request, Spider, signals
 from scrapy.core.engine import ExecutionEngine
+from scrapy.squeues import LifoMemoryQueue
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
@@ -208,10 +209,10 @@ class RequestSendOrderTestCase(TestCase):
     def tearDownClass(cls):
         cls.mockserver.__exit__(None, None, None)  # increase if flaky
 
-    def request(self, num, response_seconds, download_slots=1):
+    def request(self, num, response_seconds, download_slots=1, priority=0):
         url = self.mockserver.url(f"/delay?n={response_seconds}&{num}")
         meta = {"download_slot": str(num % download_slots)}
-        return Request(url, meta=meta)
+        return Request(url, meta=meta, priority=priority)
 
     def get_num(self, request_or_response: Request | Response):
         return int(request_or_response.url.rsplit("&", maxsplit=1)[1])
@@ -264,54 +265,155 @@ class RequestSendOrderTestCase(TestCase):
         expected_nums = sorted(start_nums + cb_nums)
         assert actual_nums == expected_nums, f"{actual_nums=} != {expected_nums=}"
 
+    @deferred_f_from_coro_f
+    async def test_default(self):
+        """By default, start requests take priority over callback requests and
+        are sent in order. Priority matters, but given the same priority, a
+        start request takes precedence."""
+        nums = [1, 2, 3, 4, 5, 6]
+        response_seconds = 0
+        download_slots = 1
+
+        def _request(num, priority=0):
+            return self.request(
+                num, response_seconds, download_slots, priority=priority
+            )
+
+        async def start(spider):
+            # The first CONCURRENT_REQUESTS start requests are sent
+            # immediately.
+            yield _request(1)
+
+            for request in (
+                _request(4, priority=1),
+                _request(6),
+            ):
+                spider.crawler.engine.scheduler.enqueue_request(request)
+            yield _request(5)
+            yield _request(2, priority=1)
+            yield _request(3, priority=1)
+
+        def parse(spider, response):
+            return
+            yield
+
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=nums,
+                settings={"CONCURRENT_REQUESTS": 1},
+                response_seconds=response_seconds,
+                start_fn=start,
+                parse_fn=parse,
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_lifo_start(self):
+        """Changing the queues of start requests to LIFO, matching the queues
+        of non-start requests, does not cause all requests to be stored in the
+        same queue objects, it only affects the order of start requests."""
+        nums = [1, 2, 3, 4, 5, 6]
+        response_seconds = 0
+        download_slots = 1
+
+        def _request(num, priority=0):
+            return self.request(
+                num, response_seconds, download_slots, priority=priority
+            )
+
+        async def start(spider):
+            # The first CONCURRENT_REQUESTS start requests are sent
+            # immediately.
+            yield _request(1)
+
+            for request in (
+                _request(4, priority=1),
+                _request(6),
+            ):
+                spider.crawler.engine.scheduler.enqueue_request(request)
+            yield _request(5)
+            yield _request(3, priority=1)
+            yield _request(2, priority=1)
+
+        def parse(spider, response):
+            return
+            yield
+
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=nums,
+                settings={
+                    "CONCURRENT_REQUESTS": 1,
+                    "SCHEDULER_START_MEMORY_QUEUE": "scrapy.squeues.LifoMemoryQueue",
+                },
+                response_seconds=response_seconds,
+                start_fn=start,
+                parse_fn=parse,
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_shared_queues(self):
+        """If SCHEDULER_START_*_QUEUE is falsy, start requests and other
+        requests share the same queue, i.e. start requests are not priorized
+        over other requests if their priority matches."""
+        nums = list(range(1, 14))
+        response_seconds = 0
+        download_slots = 1
+
+        def _request(num, priority=0):
+            return self.request(
+                num, response_seconds, download_slots, priority=priority
+            )
+
+        async def start(spider):
+            # The first CONCURRENT_REQUESTS start requests are sent
+            # immediately.
+            yield _request(1)
+
+            # Below, priority 1 requests are sent first, and requests are sent
+            # in LIFO order.
+
+            for request in (
+                _request(7, priority=1),
+                _request(6, priority=1),
+                _request(13),
+                _request(12),
+            ):
+                spider.crawler.engine.scheduler.enqueue_request(request)
+
+            yield _request(11)
+            yield _request(10)
+            yield _request(5, priority=1)
+            yield _request(4, priority=1)
+
+            for request in (
+                _request(3, priority=1),
+                _request(2, priority=1),
+                _request(9),
+                _request(8),
+            ):
+                spider.crawler.engine.scheduler.enqueue_request(request)
+
+        def parse(spider, response):
+            return
+            yield
+
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=nums,
+                settings={
+                    "CONCURRENT_REQUESTS": 1,
+                    "SCHEDULER_START_MEMORY_QUEUE": None,
+                },
+                response_seconds=response_seconds,
+                start_fn=start,
+                parse_fn=parse,
+            )
+        )
+
     # Examples from the “Start requests” section of the documentation about
     # spiders.
-
-    @deferred_f_from_coro_f
-    async def test_start_requests_first(self):
-        start_nums = [1, 3, 2]
-        cb_nums = [4]
-        response_seconds = self.seconds
-        download_slots = 1
-
-        async def start(spider):
-            for num in start_nums:
-                request = self.request(num, response_seconds, download_slots)
-                yield request.replace(priority=1)
-
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=start_nums,
-                cb_nums=cb_nums,
-                settings={"CONCURRENT_REQUESTS": 1},
-                response_seconds=response_seconds,
-                start_fn=start,
-            )
-        )
-
-    @deferred_f_from_coro_f
-    async def test_start_requests_first_sorted(self):
-        start_nums = [1, 2, 3]
-        cb_nums = [4]
-        response_seconds = self.seconds
-        download_slots = 1
-
-        async def start(spider):
-            priority = len(start_nums)
-            for num in start_nums:
-                request = self.request(num, response_seconds, download_slots)
-                yield request.replace(priority=priority)
-                priority -= 1
-
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=start_nums,
-                cb_nums=cb_nums,
-                settings={"CONCURRENT_REQUESTS": 1},
-                response_seconds=response_seconds,
-                start_fn=start,
-            )
-        )
 
     @deferred_f_from_coro_f
     async def test_front_load(self):
@@ -325,8 +427,8 @@ class RequestSendOrderTestCase(TestCase):
             assert isinstance(spider.crawler.engine.scheduler, MemoryScheduler)
 
             spider.crawler.engine.scheduler.pause()
-            # By pausing the scheduler, a is scheduled before b is sent,
-            # and since the scheduler uses a LIFO queue, a is sent first.
+            # By pausing the scheduler, 1 is scheduled before 2 is sent,
+            # and provided the scheduler uses a LIFO queue, 1 is sent first.
             yield self.request(2, response_seconds, download_slots)
             yield self.request(1, response_seconds, download_slots)
             spider.crawler.engine.scheduler.unpause()
@@ -336,6 +438,9 @@ class RequestSendOrderTestCase(TestCase):
                 start_nums=start_nums,
                 response_seconds=response_seconds,
                 start_fn=start,
+                settings={
+                    "SCHEDULER_START_MEMORY_QUEUE": LifoMemoryQueue,
+                },
             )
         )
 

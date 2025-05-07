@@ -190,6 +190,19 @@ one or more of these methods:
         :param spider: the spider which raised the exception
         :type spider: :class:`~scrapy.Spider` object
 
+Base class for custom spider middlewares
+----------------------------------------
+
+Scrapy provides a base class for custom spider middlewares. It's not required
+to use it but it can help with simplifying middleware implementations and
+reducing the amount of boilerplate code in :ref:`universal middlewares
+<universal-spider-middleware>`.
+
+.. module:: scrapy.spidermiddlewares.base
+
+.. autoclass:: BaseSpiderMiddleware
+   :members:
+
 .. _topics-spider-middleware-ref:
 
 Built-in spider middleware reference
@@ -403,6 +416,14 @@ String value                             Class name (as a string)
 .. _"origin-when-cross-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-origin-when-cross-origin
 .. _"strict-origin-when-cross-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin-when-cross-origin
 .. _"unsafe-url": https://www.w3.org/TR/referrer-policy/#referrer-policy-unsafe-url
+
+
+StartSpiderMiddleware
+---------------------
+
+.. module:: scrapy.spidermiddlewares.start
+
+.. autoclass:: StartSpiderMiddleware
 
 
 UrlLengthMiddleware

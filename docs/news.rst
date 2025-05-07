@@ -23,12 +23,18 @@ Modified requirements
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+-   The ``from_settings()`` method of
+    :class:`~scrapy.spidermiddlewares.urllength.UrlLengthMiddleware` is removed
+    without a deprecation period (this was needed because after the
+    introduction of the
+    :class:`~scrapy.spidermiddlewares.base.BaseSpiderMiddleware` base class and
+    switching built-in spider middlewares to it those middlewares need the
+    :class:`~scrapy.crawler.Crawler` instance at run time). Please use
+    ``from_crawler()`` instead.
+
 -   The iteration of start requests and items no longer stops once there are
     requests in the scheduler, and instead runs continuously until all start
     requests have been scheduled.
-
-    As a result, the order in which start requests are sent may change. See
-    :ref:`start-requests` for details.
 
     To restore the previous behavior, :ref:`use lazy start request scheduling
     <start-requests-lazy>`.
@@ -63,6 +69,12 @@ Backward-incompatible changes
     instead of being defined as a generator, is now executed *after* the
     :ref:`scheduler <topics-scheduler>` instance has been created.
 
+-   When using :setting:`JOBDIR`, :ref:`start requests <start-requests>` are
+    now serialized into their own, ``s``-suffixed priority folders. You can set
+    :setting:`SCHEDULER_START_DISK_QUEUE` to ``None`` or ``""`` to change that,
+    but the side effects may be undesirable. See
+    :setting:`SCHEDULER_START_DISK_QUEUE` for details.
+
 Deprecations
 ~~~~~~~~~~~~
 
@@ -78,6 +90,12 @@ Deprecations
     or both to maintain support for lower Scrapy versions.
 
     (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
+
+-   The ``__init__`` method of priority queue classes (see
+    :setting:`SCHEDULER_PRIORITY_QUEUE`) should now support a keyword-only
+    ``start_queue_cls`` parameter.
+
+    (:issue:`6752`)
 
 New features
 ~~~~~~~~~~~~
@@ -132,6 +150,13 @@ New features
 
 -   Added new signals: :signal:`spider_start_blocking`,
     :signal:`scheduler_empty`.
+
+-   Added new settings: :setting:`SCHEDULER_START_DISK_QUEUE` and
+    :setting:`SCHEDULER_START_MEMORY_QUEUE`.
+
+-   Added :class:`~scrapy.spidermiddlewares.start.StartSpiderMiddleware`, which
+    sets :reqmeta:`is_start_request` to ``True`` on :ref:`start requests
+    <start-requests>`.
 
 -   In :class:`~scrapy.core.engine.ExecutionEngine`:
 

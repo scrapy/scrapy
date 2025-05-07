@@ -177,8 +177,6 @@ PickleFifoDiskQueue = _scrapy_serialization_queue(_PickleFifoSerializationDiskQu
 
 #: LIFO_ disk queue that serializes :ref:`requests <request>` using
 #: :mod:`pickle`.
-#:
-#: .. _LIFO: https://en.wikipedia.org/wiki/LIFO_(computing)
 PickleLifoDiskQueue = _scrapy_serialization_queue(_PickleLifoSerializationDiskQueue)
 
 #: FIFO_ disk queue that serializes :ref:`requests <request>` using

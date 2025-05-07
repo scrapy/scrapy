@@ -96,26 +96,14 @@ How can I simulate a user login in my spider?
 
 See :ref:`topics-request-response-ref-request-userlogin`.
 
+
 .. _faq-bfo-dfo:
 
 Does Scrapy crawl in breadth-first or depth-first order?
 --------------------------------------------------------
 
-By default, Scrapy uses a `LIFO`_ queue for storing pending requests, which
-basically means that it crawls in `DFO order`_. This order is more convenient
-in most cases.
+:ref:`DFO by default, but other orders are possible <request-order>`.
 
-To crawl in `BFO order`_:
-
--   Set :setting:`DEPTH_PRIORITY` to ``1``.
-
--   Set :setting:`SCHEDULER_MEMORY_QUEUE` to
-    :class:`~scrapy.squeues.FifoMemoryQueue`.
-
--   Set :setting:`SCHEDULER_DISK_QUEUE` to
-    :class:`~scrapy.squeues.PickleFifoDiskQueue`.
-
--   :ref:`Send start requests before other requests <start-requests-order>`.
 
 My Scrapy crawler has memory leaks. What can I do?
 --------------------------------------------------
@@ -431,6 +419,3 @@ See :issue:`2680`.
 .. _Python standard library modules: https://docs.python.org/3/py-modindex.html
 .. _Python package: https://pypi.org/
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
-.. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
-.. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search
-.. _BFO order: https://en.wikipedia.org/wiki/Breadth-first_search

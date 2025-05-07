@@ -647,6 +647,7 @@ Those are:
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
 * :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`is_start_request`
 * :reqmeta:`max_retry_times`
 * :reqmeta:`proxy`
 * :reqmeta:`redirect_reasons`

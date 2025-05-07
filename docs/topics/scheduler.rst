@@ -54,8 +54,8 @@ Built-in scheduler
 ------------------
 
 .. autoclass:: Scheduler()
-    :members: __len__, pause, unpause
-    :member-order: bysource
+   :members:
+   :special-members: __init__, __len__, pause, unpause
 
 
 .. _priority-queues:
@@ -118,6 +118,7 @@ Writing a priority queue
     :members:
     :special-members: __init__, __len__
     :member-order: bysource
+
 
 .. _custom-internal-queue:
 

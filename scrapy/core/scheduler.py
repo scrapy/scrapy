@@ -5,13 +5,16 @@ import logging
 from abc import abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
+from warnings import warn
 
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
 from twisted.internet.defer import Deferred  # noqa: TC002
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.spiders import Spider  # noqa: TC001
 from scrapy.utils.job import job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     # requires queuelib >= 1.6.2
@@ -117,13 +120,101 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
 class Scheduler(BaseScheduler):
     """Default :ref:`scheduler <topics-scheduler>`.
 
-    Requests are stored in memory by default. Set :setting:`JOBDIR` to switch
-    to disk storage.
+    Requests are stored into priority queues
+    (:setting:`SCHEDULER_PRIORITY_QUEUE`) that sort requests by
+    :attr:`~scrapy.http.Request.priority`.
 
-    Requests are dropped if :attr:`~scrapy.Request.dont_filter` is ``False``
-    and :setting:`DUPEFILTER_CLASS` flags them as duplicate requests.
+    By default, a single, memory-based priority queue is used for all requests.
+    When using :setting:`JOBDIR`, a disk-based priority queue is also created,
+    and only unserializable requests are stored in the memory-based priority
+    queue. For a given priority value, requests in memory take precedence over
+    requests in disk.
 
-    :setting:`SCHEDULER_PRIORITY_QUEUE` handles request prioritization.
+    Each priority queue stores requests in separate internal queues, one per
+    priority value. The memory priority queue uses
+    :setting:`SCHEDULER_MEMORY_QUEUE` queues, while the disk priority queue
+    uses :setting:`SCHEDULER_DISK_QUEUE` queues. The internal queues determine
+    :ref:`request order <request-order>` when requests have the same priority.
+    :ref:`Start requests <start-requests>` are stored into separate internal
+    queues by default, and :ref:`ordered differently <start-request-order>`.
+
+    Duplicate requests are filtered out with an instance of
+    :setting:`DUPEFILTER_CLASS` if :attr:`~scrapy.Request.dont_filter` is
+    ``False``.
+
+    .. seealso:: :ref:`topics-jobs`
+
+    .. _request-order:
+
+    Request order
+    =============
+
+    With default settings, pending requests are stored in a LIFO_ queue
+    (:ref:`except for start requests <start-request-order>`). As a result,
+    crawling happens in `DFO order`_, which is usually the most convenient
+    crawl order. However, you can enforce :ref:`BFO <bfo>` or :ref:`a custom
+    order <custom-request-order>` (:ref:`except for the first few requests
+    <concurrency-v-order>`).
+
+    .. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
+    .. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search
+
+    .. _start-request-order:
+
+    Start request order
+    -------------------
+
+    :ref:`Start requests <start-requests>` are sent in the order they are
+    yielded from :meth:`~scrapy.Spider.start`, and given the same
+    :attr:`~scrapy.http.Request.priority`, start requests take precedence over
+    other requests.
+
+    You can set :setting:`SCHEDULER_START_MEMORY_QUEUE` and
+    :setting:`SCHEDULER_START_DISK_QUEUE` to ``None`` to handle start requests
+    the same as other requests when it comes to order and priority.
+
+
+    .. _bfo:
+
+    Crawling in BFO order
+    ---------------------
+
+    If you do want to crawl in `BFO order`_, you can do it by setting the
+    following :ref:`settings <topics-settings>`:
+
+    | :setting:`DEPTH_PRIORITY` = ``1``
+    | :setting:`SCHEDULER_DISK_QUEUE` = ``"scrapy.squeues.PickleFifoDiskQueue"``
+    | :setting:`SCHEDULER_MEMORY_QUEUE` = ``"scrapy.squeues.FifoMemoryQueue"``
+
+    .. _BFO order: https://en.wikipedia.org/wiki/Breadth-first_search
+
+
+    .. _custom-request-order:
+
+    Crawling in a custom order
+    --------------------------
+
+    You can manually set :attr:`~scrapy.http.Request.priority` on requests to
+    force a specific request order.
+
+
+    .. _concurrency-v-order:
+
+    Concurrency affects order
+    -------------------------
+
+    While pending requests are below the configured values of
+    :setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
+    or :setting:`CONCURRENT_REQUESTS_PER_IP`, those requests are sent
+    concurrently.
+
+    As a result, the first few requests of a crawl may not follow the desired
+    order. Lowering those settings to ``1`` enforces the desired order except
+    for the very first request, but it significantly slows down the crawl as a
+    whole.
+
+    Stats
+    =====
 
     The following stats are generated:
 
@@ -141,30 +232,7 @@ class Scheduler(BaseScheduler):
     enabling :setting:`SCHEDULER_DEBUG` to log a warning message with details
     about the first unserializable request, to try and figure out how to make
     it serializable.
-
-    .. seealso:: :ref:`topics-jobs`
     """
-
-    def __init__(
-        self,
-        dupefilter: BaseDupeFilter,
-        jobdir: str | None = None,
-        dqclass: type[BaseQueue] | None = None,
-        mqclass: type[BaseQueue] | None = None,
-        logunser: bool = False,
-        stats: StatsCollector | None = None,
-        pqclass: type[PriorityQueueProtocol] | None = None,
-        crawler: Crawler | None = None,
-    ):
-        self.df: BaseDupeFilter = dupefilter
-        self.dqdir: str | None = self._dqdir(jobdir)
-        self.pqclass: type[PriorityQueueProtocol] | None = pqclass
-        self.dqclass: type[BaseQueue] | None = dqclass
-        self.mqclass: type[BaseQueue] | None = mqclass
-        self.logunser: bool = logunser
-        self.stats: StatsCollector | None = stats
-        self.crawler: Crawler | None = crawler
-        self._paused = False
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -179,6 +247,79 @@ class Scheduler(BaseScheduler):
             pqclass=load_object(crawler.settings["SCHEDULER_PRIORITY_QUEUE"]),
             crawler=crawler,
         )
+
+    def __init__(
+        self,
+        dupefilter: BaseDupeFilter,
+        jobdir: str | None = None,
+        dqclass: type[BaseQueue] | None = None,
+        mqclass: type[BaseQueue] | None = None,
+        logunser: bool = False,
+        stats: StatsCollector | None = None,
+        pqclass: type[PriorityQueueProtocol] | None = None,
+        crawler: Crawler | None = None,
+    ):
+        """Initialize the scheduler.
+
+        :param dupefilter: An object responsible for checking and filtering duplicate requests.
+                        The value for the :setting:`DUPEFILTER_CLASS` setting is used by default.
+        :type dupefilter: :class:`scrapy.dupefilters.BaseDupeFilter` instance or similar:
+                        any class that implements the `BaseDupeFilter` interface
+
+        :param jobdir: The path of a directory to be used for persisting the crawl's state.
+                    The value for the :setting:`JOBDIR` setting is used by default.
+                    See :ref:`topics-jobs`.
+        :type jobdir: :class:`str` or ``None``
+
+        :param dqclass: A class to be used as persistent request queue.
+                        The value for the :setting:`SCHEDULER_DISK_QUEUE` setting is used by default.
+        :type dqclass: class
+
+        :param mqclass: A class to be used as non-persistent request queue.
+                        The value for the :setting:`SCHEDULER_MEMORY_QUEUE` setting is used by default.
+        :type mqclass: class
+
+        :param logunser: A boolean that indicates whether or not unserializable requests should be logged.
+                        The value for the :setting:`SCHEDULER_DEBUG` setting is used by default.
+        :type logunser: bool
+
+        :param stats: A stats collector object to record stats about the request scheduling process.
+                    The value for the :setting:`STATS_CLASS` setting is used by default.
+        :type stats: :class:`scrapy.statscollectors.StatsCollector` instance or similar:
+                    any class that implements the `StatsCollector` interface
+
+        :param pqclass: A class to be used as priority queue for requests.
+                        The value for the :setting:`SCHEDULER_PRIORITY_QUEUE` setting is used by default.
+        :type pqclass: class
+
+        :param crawler: The crawler object corresponding to the current crawl.
+        :type crawler: :class:`scrapy.crawler.Crawler`
+        """
+        self.df: BaseDupeFilter = dupefilter
+        self.dqdir: str | None = self._dqdir(jobdir)
+        self.pqclass: type[PriorityQueueProtocol] | None = pqclass
+        self.dqclass: type[BaseQueue] | None = dqclass
+        self.mqclass: type[BaseQueue] | None = mqclass
+        self.logunser: bool = logunser
+        self.stats: StatsCollector | None = stats
+        self.crawler: Crawler | None = crawler
+        self._paused = False
+        self._sdqclass: type[BaseQueue] | None = self._get_start_queue_cls(
+            crawler, "DISK"
+        )
+        self._smqclass: type[BaseQueue] | None = self._get_start_queue_cls(
+            crawler, "MEMORY"
+        )
+
+    def _get_start_queue_cls(
+        self, crawler: Crawler | None, queue: str
+    ) -> type[BaseQueue] | None:
+        if crawler is None:
+            return None
+        cls = crawler.settings[f"SCHEDULER_START_{queue}_QUEUE"]
+        if not cls:
+            return None
+        return load_object(cls)
 
     def has_pending_requests(self) -> bool:
         return len(self) > 0
@@ -278,12 +419,27 @@ class Scheduler(BaseScheduler):
         """Create a new priority queue instance, with in-memory storage"""
         assert self.crawler
         assert self.pqclass
-        return build_from_crawler(
-            self.pqclass,
-            self.crawler,
-            downstream_queue_cls=self.mqclass,
-            key="",
-        )
+        try:
+            return build_from_crawler(
+                self.pqclass,
+                self.crawler,
+                downstream_queue_cls=self.mqclass,
+                key="",
+                start_queue_cls=self._smqclass,
+            )
+        except TypeError:
+            warn(
+                f"The __init__ method of {global_object_name(self.pqclass)} "
+                f"does not support a `start_queue_cls` keyword-only "
+                f"parameter.",
+                ScrapyDeprecationWarning,
+            )
+            return build_from_crawler(
+                self.pqclass,
+                self.crawler,
+                downstream_queue_cls=self.mqclass,
+                key="",
+            )
 
     def _dq(self) -> PriorityQueueProtocol:
         """Create a new priority queue instance, with disk storage"""
@@ -291,13 +447,29 @@ class Scheduler(BaseScheduler):
         assert self.dqdir
         assert self.pqclass
         state = self._read_dqs_state(self.dqdir)
-        q = build_from_crawler(
-            self.pqclass,
-            self.crawler,
-            downstream_queue_cls=self.dqclass,
-            key=self.dqdir,
-            startprios=state,
-        )
+        try:
+            q = build_from_crawler(
+                self.pqclass,
+                self.crawler,
+                downstream_queue_cls=self.dqclass,
+                key=self.dqdir,
+                startprios=state,
+                start_queue_cls=self._sdqclass,
+            )
+        except TypeError:
+            warn(
+                f"The __init__ method of {global_object_name(self.pqclass)} "
+                f"does not support a `start_queue_cls` keyword-only "
+                f"parameter.",
+                ScrapyDeprecationWarning,
+            )
+            q = build_from_crawler(
+                self.pqclass,
+                self.crawler,
+                downstream_queue_cls=self.dqclass,
+                key=self.dqdir,
+                startprios=state,
+            )
         if q:
             logger.info(
                 "Resuming crawl (%(queuesize)d requests scheduled)",

@@ -41,7 +41,8 @@ logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 ScrapeFunc = Callable[
-    [Union[Response, Failure], Request, Spider], Union[Iterable[_T], AsyncIterator[_T]]
+    [Union[Response, Failure], Request],
+    Deferred[Union[Iterable[_T], AsyncIterator[_T]]],
 ]
 
 
@@ -77,16 +78,15 @@ class SpiderMiddlewareManager(MiddlewareManager):
         ]
         if deprecated_middlewares and modern_middlewares:
             raise ValueError(
-                f"You are trying to combine spider middlewares that only "
-                f"define the deprecated process_start_requests() method "
-                f"({deprecated_middlewares}) with spider middlewares that "
-                f"only define the process_start() method "
-                f"({modern_middlewares}). This is not possible. You must "
-                f"either disable or make universal 1 of those 2 sets of "
-                f"spider middlewares. Making a spider middleware universal "
-                f"means having it define both methods. See the release notes "
-                f"of Scrapy VERSION for details: "
-                f"https://docs.scrapy.org/en/VERSION/news.html"
+                "You are trying to combine spider middlewares that only "
+                "define the deprecated process_start_requests() method () "
+                "with spider middlewares that only define the "
+                "process_start() method (). This is not possible. You must "
+                "either disable or make universal 1 of those 2 sets of "
+                "spider middlewares. Making a spider middleware universal "
+                "means having it define both methods. See the release notes "
+                "of Scrapy VERSION for details: "
+                "https://docs.scrapy.org/en/VERSION/news.html"
             )
 
         self._use_start_requests = bool(deprecated_middlewares)
@@ -137,7 +137,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         response: Response,
         request: Request,
         spider: Spider,
-    ) -> Iterable[_T] | AsyncIterator[_T]:
+    ) -> Deferred[Iterable[_T] | AsyncIterator[_T]]:
         for method in self.methods["process_spider_input"]:
             method = cast(Callable, method)
             try:
@@ -151,8 +151,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
             except _InvalidOutput:
                 raise
             except Exception:
-                return scrape_func(Failure(), request, spider)
-        return scrape_func(response, request, spider)
+                return scrape_func(Failure(), request)
+        return scrape_func(response, request)
 
     def _evaluate_iterable(
         self,
@@ -388,20 +388,18 @@ class SpiderMiddlewareManager(MiddlewareManager):
         dfd2.addErrback(process_spider_exception)
         return dfd2
 
-    @deferred_f_from_coro_f
     async def process_start(self, spider: Spider) -> AsyncIterator[Any] | None:
         try:
             self._check_deprecated_start_requests_use(spider)
         except ValueError as exception:
             logger.error(exception)
             return None
-        start: AsyncIterator[Any]
         if self._use_start_requests:
             sync_start = iter(spider.start_requests())
             sync_start = await maybe_deferred_to_future(
                 self._process_chain("process_start_requests", sync_start, spider)
             )
-            start = as_async_generator(sync_start)
+            start: AsyncIterator[Any] = as_async_generator(sync_start)
         else:
             error_found = False
             for fn in (spider.start, *self.methods["process_start"]):

@@ -369,81 +369,12 @@ See `Scrapyd documentation`_.
 Start requests
 ==============
 
-**Start requests** are the :ref:`requests <request>` that serve as a starting
-point for a spider.
+**Start requests** are :class:`~scrapy.Request` objects yielded from the
+:meth:`~scrapy.Spider.start` method of a spider or from the
+:meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` method of a
+:ref:`spider middleware <topics-spider-middleware>`.
 
-They are yielded by the :meth:`~scrapy.Spider.start` method, and may be
-modified by :ref:`spider middlewares <topics-spider-middleware>`.
-
-They are not necessarily the *first* requests sent, and may not be sent in
-order; reaching :setting:`CONCURRENT_REQUESTS` and :ref:`scheduling
-<topics-scheduler>` start requests is prioritized by default. But you can
-change that.
-
-..
-    The request send order when all start requests and callback requests have
-    the same priority is rather unintuitive:
-
-    1.  First, the first CONCURRENT_REQUESTS start requests are sent in order.
-
-        Awaiting slow operations in Spider.start() can lower that.
-
-    2.  Then, assuming an even domain distribution in start requests (i.e.
-        ABCABC, not AABBCC), the last N start requests are sent in reverse
-        order, where N is:
-
-            min(CONCURRENT_REQUESTS, CONCURRENT_REQUESTS_PER_DOMAIN * domain_count)
-
-    3.  Finally, the remaining start requests are also sent in reverse order,
-        but only when there are not enough pending requests yielded from
-        callbacks to reach the configured concurrency.
-
-    The reverse order is because the scheduler uses a LIFO queue by default
-    (SCHEDULER_MEMORY_QUEUE, SCHEDULER_DISK_QUEUE). The order of the first few
-    requests is unnaffected because they are sent as soon as they are
-    scheduled. The last start requests sent before callback requests are those
-    that can be sent before the first callback requests are scheduled.
-
-    We do not document this behavior, so that we may change it in the future
-    without breaking the contract.
-
-.. _start-requests-order:
-
-Start request order
--------------------
-
-To force a specific request order, override the :meth:`~scrapy.Spider.start`
-method to set :attr:`Request.priority <scrapy.http.Request.priority>`.
-
-For example:
-
--   To send start requests before other requests:
-
-    .. code-block:: python
-
-            async def start(self):
-                async for item_or_request in super().start():
-                    if isinstance(item_or_request, Request):
-                        item_or_request = item_or_request.replace(priority=1)
-                    yield item_or_request
-
--   To send start requests in yield order:
-
-    .. code-block:: python
-
-            async def start(self):
-                priority = len(self.start_urls)
-                async for item_or_request in super().start():
-                    if isinstance(item_or_request, Request):
-                        item_or_request = item_or_request.replace(priority=priority)
-                    yield item_or_request
-                    priority -= 1
-
-You can also :ref:`customize the scheduler <topics-scheduler>` if you need
-more control over request prioritization.
-
-.. note:: By default, :ref:`the first few requests are sent in yield order
-    <start-requests-front-load>` regardless, for performance reasons.
+.. seealso:: :ref:`start-request-order`
 
 .. _start-requests-front-load:
 
@@ -452,7 +383,7 @@ Start request front loading
 
 By default, the first few requests yielded by :meth:`~scrapy.Spider.start` are
 sent in yield order, even if you :ref:`try to sort them differently
-<start-requests-order>`. This is because, until :setting:`CONCURRENT_REQUESTS`
+<start-request-order>`. This is because, until :setting:`CONCURRENT_REQUESTS`
 is reached, start requests are removed from the scheduler immediately after
 they are scheduled.
 
