@@ -122,36 +122,36 @@ class MainTestCase(TestCase):
             warnings.simplefilter("error")
             await self._test_spider(TestSpider, [ITEM_A])
 
-        @deferred_f_from_coro_f
-        async def test_universal_subclass(self):
-            class BaseSpider(Spider):
-                async def start(self):
-                    yield ITEM_A
+    @deferred_f_from_coro_f
+    async def test_universal_subclass(self):
+        class BaseSpider(Spider):
+            async def start(self):
+                yield ITEM_A
 
-                def start_requests(self):
-                    yield ITEM_B
+            def start_requests(self):
+                yield ITEM_B
 
-            class TestSpider(BaseSpider):
-                name = "test"
+        class TestSpider(BaseSpider):
+            name = "test"
 
-            with warnings.catch_warnings():
-                warnings.simplefilter("error")
-                await self._test_spider(TestSpider, [ITEM_A])
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            await self._test_spider(TestSpider, [ITEM_A])
 
-        @deferred_f_from_coro_f
-        async def test_start_deprecated_super(self):
-            class TestSpider(Spider):
-                name = "test"
+    @deferred_f_from_coro_f
+    async def test_start_deprecated_super(self):
+        class TestSpider(Spider):
+            name = "test"
 
-                async def start(self):
-                    for item_or_request in super().start_requests():
-                        yield item_or_request
+            async def start(self):
+                for item_or_request in super().start_requests():
+                    yield item_or_request
 
-            with pytest.warns(
-                ScrapyDeprecationWarning, match=r"use Spider\.start\(\) instead"
-            ) as messages:
-                await self._test_spider(TestSpider, [])
-            assert messages[0].filename.endswith("test_spider_start.py")
+        with pytest.warns(
+            ScrapyDeprecationWarning, match=r"use Spider\.start\(\) instead"
+        ) as messages:
+            await self._test_spider(TestSpider, [])
+        assert messages[0].filename.endswith("test_spider_start.py")
 
     @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
