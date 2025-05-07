@@ -13,6 +13,13 @@ Highlights:
 -   Replaced ``start_requests()`` (sync) with :meth:`~scrapy.Spider.start`
     (async) and changed how it is iterated.
 
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   Minimum versions increased for these dependencies:
+
+    -   lxml_: 4.6.0 → 4.9.3
+
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -29,14 +36,15 @@ Backward-incompatible changes
     requests in the scheduler, and instead runs continuously until all start
     requests have been scheduled.
 
-    To reproduce the previous behavior, see :ref:`start-requests-lazy`.
+    To restore the previous behavior, :ref:`use lazy start request scheduling
+    <start-requests-lazy>`.
 
 -   An unhandled exception from the
     :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.open_spider` method of a
     :ref:`spider middleware <topics-spider-middleware>` no longer stops the
     crawl.
 
--   In ``scrapy.core.engine.ExecutionEngine``:
+-   In :class:`~scrapy.core.engine.ExecutionEngine`:
 
     -   The second parameter of ``open_spider()``, ``start_requests``, has been
         removed. The start requests are determined by the ``spider`` parameter
@@ -44,6 +52,10 @@ Backward-incompatible changes
 
     -   The ``slot`` attribute has been renamed to ``_slot`` and should not be
         used.
+
+        To access the running scheduler, previously at ``slot.scheduler``, use
+        the :attr:`~scrapy.core.engine.ExecutionEngine.scheduler` attribute of
+        the running engine instead.
 
 -   In ``scrapy.core.engine``, the ``Slot`` class has been renamed to ``_Slot``
     and should not be used.
@@ -108,10 +120,36 @@ New features
 
     (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
 
+-   Added official support for :ref:`idle <start-requests-idle>` and
+    :ref:`front load <start-requests-front-load>` start request scheduling.
+
+    (:issue:`740`, :issue:`1051`, :issue:`1443`, :issue:`3237`, :issue:`5282`,
+    :issue:`6715`)
+
+-   You can now raise :exc:`~scrapy.exceptions.CloseSpider` from
+    :meth:`~scrapy.Spider.start` and from
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start`.
+
+    (:issue:`3463`, :issue:`4058`, :issue:`6148`, :issue:`6715`, :issue:`6728`)
+
+-   Unlike its precedesors, if :meth:`~scrapy.Spider.start` or
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` are not
+    asynchronous generators, the crawl starts nonetheless, without start
+    requests.
+
+    This aligns with the behavior of spider callbacks, and allows the crawl to
+    process requests from the scheduler, e.g. when :ref:`resuming a paused job
+    <topics-jobs>`.
+
+    The logged errors have also been improved.
+
+    (:issue:`5426`)
+
 -   :class:`Crawler.signals <scrapy.signalmanager.SignalManager>` has a new
     :meth:`~scrapy.signalmanager.SignalManager.wait_for` method.
 
--   Added a new :signal:`scheduler_empty` signal.
+-   Added new signals: :signal:`spider_start_blocking`,
+    :signal:`scheduler_empty`.
 
 -   Added new settings: :setting:`SCHEDULER_START_DISK_QUEUE` and
     :setting:`SCHEDULER_START_MEMORY_QUEUE`.
@@ -120,9 +158,13 @@ New features
     sets :reqmeta:`is_start_request` to ``True`` on :ref:`start requests
     <start-requests>`.
 
--   Exposed a new method of :class:`Crawler.engine
-    <scrapy.core.engine.ExecutionEngine>`:
-    :meth:`~scrapy.core.engine.ExecutionEngine.needs_backout`.
+-   In :class:`~scrapy.core.engine.ExecutionEngine`:
+
+    -   Added a :attr:`~scrapy.core.engine.ExecutionEngine.scheduler`
+        attribute.
+
+    -   Added a :meth:`~scrapy.core.engine.ExecutionEngine.needs_backout`
+        method.
 
 Bug fixes
 ~~~~~~~~~
@@ -750,7 +792,7 @@ Bug fixes
 
 -   During :ref:`feed export <topics-feed-exports>`, do not close the
     underlying file from :ref:`built-in post-processing plugins
-    <builtin-plugins>`.
+    <post-processing-plugins>`.
     (:issue:`5932`, :issue:`6178`, :issue:`6239`)
 
 -   :class:`LinkExtractor <scrapy.linkextractors.lxmlhtml.LxmlLinkExtractor>`
@@ -2069,8 +2111,9 @@ New features
     :issue:`5161`, :issue:`5203`)
 
 -   You can now apply :ref:`post-processing <post-processing>` to feeds, and
-    :ref:`built-in post-processing plugins <builtin-plugins>` are provided for
-    output file compression. (:issue:`2174`, :issue:`5168`, :issue:`5190`)
+    :ref:`built-in post-processing plugins <post-processing-plugins>` are
+    provided for output file compression.
+    (:issue:`2174`, :issue:`5168`, :issue:`5190`)
 
 -   The :setting:`FEEDS` setting now supports :class:`pathlib.Path` objects as
     keys. (:issue:`5383`, :issue:`5384`)
@@ -5086,7 +5129,7 @@ New features
 ~~~~~~~~~~~~
 
 - Support ``'True'`` and ``'False'`` string values for boolean settings (:issue:`2519`);
-  you can now do something like ``scrapy crawl myspider -s REDIRECT_ENABLED=False``.
+  you can now do something like ``scrapy crawl my_spider -s REDIRECT_ENABLED=False``.
 - Support kwargs with ``response.xpath()`` to use :ref:`XPath variables <topics-selectors-xpath-variables>`
   and ad-hoc namespaces declarations ;
   this requires at least Parsel v1.1 (:issue:`2457`).

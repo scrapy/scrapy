@@ -35,7 +35,30 @@ class DontCloseSpider(Exception):
 
 
 class CloseSpider(Exception):
-    """Raise this from callbacks to request the spider to be closed"""
+    """Raised to request the closing of the running :ref:`spider
+    <topics-spiders>`.
+
+    You may specify a *reason* for closing the spider. It can be an arbitrary
+    string, but it is a best practice to name it like a Python variable name,
+    for example:
+
+    .. code-block:: python
+
+        def parse(self, response):
+            if "Bandwidth exceeded" in response.body:
+                raise CloseSpider("bandwidth_exceeded")
+
+    This exception may be raised from:
+
+    -   The :ref:`callbacks
+        <topics-request-response-ref-request-callback-arguments>` and the
+        :meth:`~scrapy.Spider.start` method of spiders.
+
+    -   The :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start`
+        method of :ref:`spider middlewares <topics-spider-middleware>`.
+
+    -   :ref:`Handlers <topics-signals>` of the :signal:`spider_idle` signal.
+    """
 
     def __init__(self, reason: str = "cancelled"):
         super().__init__()

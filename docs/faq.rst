@@ -108,7 +108,7 @@ Does Scrapy crawl in breadth-first or depth-first order?
 My Scrapy crawler has memory leaks. What can I do?
 --------------------------------------------------
 
-See :ref:`topics-leaks`.
+See :ref:`optimize-memory` and :ref:`topics-leaks`.
 
 Also, Python has a builtin memory leak issue which is described in
 :ref:`topics-leaks-without-leaks`.
@@ -116,7 +116,7 @@ Also, Python has a builtin memory leak issue which is described in
 How can I make Scrapy consume less memory?
 ------------------------------------------
 
-See previous question.
+See the previous question.
 
 How can I prevent memory errors due to many allowed domains?
 ------------------------------------------------------------
@@ -222,7 +222,7 @@ higher) in your spider:
 
 
     class MySpider(CrawlSpider):
-        name = "myspider"
+        name = "my_spider"
 
         download_delay = 2
 
@@ -245,15 +245,15 @@ Simplest way to dump all my scraped items into a JSON/CSV/XML file?
 
 To dump into a JSON file::
 
-    scrapy crawl myspider -O items.json
+    scrapy crawl my_spider -O items.json
 
 To dump into a CSV file::
 
-    scrapy crawl myspider -O items.csv
+    scrapy crawl my_spider -O items.csv
 
 To dump into an XML file::
 
-    scrapy crawl myspider -O items.xml
+    scrapy crawl my_spider -O items.xml
 
 For more information see :ref:`topics-feed-exports`
 

@@ -93,7 +93,7 @@ class Spider(object_ref):
 
 
             class MySpider(Spider):
-                name = "myspider"
+                name = "my_spider"
 
                 async def start(self):
                     yield Request("https://toscrape.com/")
@@ -114,6 +114,19 @@ class Spider(object_ref):
 
             async def start(self):
                 yield {"foo": "bar"}
+
+        It is also possible to raise :exc:`~scrapy.exceptions.CloseSpider`, for
+        example to customize the close reason when there are no start requests
+        to yield:
+
+        .. code-block:: python
+
+            async def start(self):
+                requests = await queue_service_client.get_request_batch()
+                if not requests:
+                    raise CloseSpider("no_start_requests")
+                for request in requests:
+                    yield request
 
         To write spiders that work on Scrapy versions lower than VERSION,
         define also a synchronous ``start_requests()`` method that returns an
@@ -137,9 +150,17 @@ class Spider(object_ref):
         warnings.warn(
             (
                 "The Spider.start_requests() method is deprecated, use "
-                "Spider.start() instead. If you are calling "
-                "super().start_requests() from a Spider.start() override, "
-                "iterate super().start() instead."
+                "Spider.start() instead.\n"
+                "\n"
+                "If you are calling super().start_requests() from a "
+                "Spider.start() override, iterate super().start() instead.\n"
+                "\n"
+                "If you are calling super().start_requests() from a "
+                "Spider.start_requests() override, either redefine your "
+                "override to avoid a call to super().start_requests(), or use "
+                "warnings.catch_warnings() with warnings.filterwarnings() to "
+                "silence this warning (see the Spider.start() implementation "
+                "for an example)."
             ),
             ScrapyDeprecationWarning,
             stacklevel=2,

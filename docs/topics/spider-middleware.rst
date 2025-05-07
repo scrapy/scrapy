@@ -84,6 +84,7 @@ one or more of these methods:
                     yield item_or_request
 
         You may yield the same type of objects as :meth:`~scrapy.Spider.start`.
+        You may also raise :exc:`~scrapy.exceptions.CloseSpider`.
 
         To write spider middlewares that work on Scrapy versions lower than
         VERSION, define also a synchronous ``process_start_requests()`` method

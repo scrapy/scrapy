@@ -3,7 +3,6 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# pylint: disable=import-error
 import os
 import sys
 from collections.abc import Sequence
@@ -154,6 +153,7 @@ intersphinx_mapping = {
     "tox": ("https://tox.wiki/en/latest/", None),
     "twisted": ("https://docs.twisted.org/en/stable/", None),
     "twistedapi": ("https://docs.twisted.org/en/stable/api/", None),
+    "uvloop": ("https://uvloop.readthedocs.io", None),
     "w3lib": ("https://w3lib.readthedocs.io/en/latest", None),
 }
 intersphinx_disabled_reftypes: Sequence[str] = []
@@ -177,3 +177,21 @@ hoverxref_role_types = {
 hoverxref_roles = ["command", "reqmeta", "setting", "signal"]
 
 default_dark_mode = False
+
+# -- setup -------------------------------------------------------------------
+
+
+def setup(app):
+    # https://stackoverflow.com/a/58982001
+    for cls_name in (
+        "FifoMemoryQueue",
+        "LifoMemoryQueue",
+        "PickleFifoDiskQueue",
+        "PickleLifoDiskQueue",
+        "MarshalFifoDiskQueue",
+        "MarshalLifoDiskQueue",
+    ):
+        import scrapy.squeues
+
+        cls = getattr(scrapy.squeues, cls_name)
+        cls.__name__ = cls_name

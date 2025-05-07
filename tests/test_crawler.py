@@ -143,7 +143,7 @@ class TestCrawler(TestBaseCrawler):
                 TrackingDownloaderMiddleware.instances.append(self)
 
         class MySpider(Spider):
-            name = "myspider"
+            name = "my_spider"
 
             @classmethod
             def from_crawler(cls, crawler):
@@ -197,7 +197,7 @@ class TestCrawler(TestBaseCrawler):
     @inlineCallbacks
     def test_get_downloader_middleware_no_engine(self):
         class MySpider(Spider):
-            name = "myspider"
+            name = "my_spider"
 
             @classmethod
             def from_crawler(cls, crawler):
@@ -223,7 +223,7 @@ class TestCrawler(TestBaseCrawler):
                 TrackingExtension.instances.append(self)
 
         class MySpider(Spider):
-            name = "myspider"
+            name = "my_spider"
 
             @classmethod
             def from_crawler(cls, crawler):
@@ -277,7 +277,7 @@ class TestCrawler(TestBaseCrawler):
     @inlineCallbacks
     def test_get_extension_no_engine(self):
         class MySpider(Spider):
-            name = "myspider"
+            name = "my_spider"
 
             @classmethod
             def from_crawler(cls, crawler):
@@ -303,7 +303,7 @@ class TestCrawler(TestBaseCrawler):
                 TrackingItemPipeline.instances.append(self)
 
         class MySpider(Spider):
-            name = "myspider"
+            name = "my_spider"
 
             @classmethod
             def from_crawler(cls, crawler):
@@ -357,7 +357,7 @@ class TestCrawler(TestBaseCrawler):
     @inlineCallbacks
     def test_get_item_pipeline_no_engine(self):
         class MySpider(Spider):
-            name = "myspider"
+            name = "my_spider"
 
             @classmethod
             def from_crawler(cls, crawler):
@@ -383,7 +383,7 @@ class TestCrawler(TestBaseCrawler):
                 TrackingSpiderMiddleware.instances.append(self)
 
         class MySpider(Spider):
-            name = "myspider"
+            name = "my_spider"
 
             @classmethod
             def from_crawler(cls, crawler):
@@ -437,7 +437,7 @@ class TestCrawler(TestBaseCrawler):
     @inlineCallbacks
     def test_get_spider_middleware_no_engine(self):
         class MySpider(Spider):
-            name = "myspider"
+            name = "my_spider"
 
             @classmethod
             def from_crawler(cls, crawler):
@@ -913,7 +913,7 @@ class TestCrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         p.expect_exact("shutting down gracefully")
         # sending the second signal too fast often causes problems
         d = Deferred()
-        reactor.callLater(0.01, d.callback, None)
+        reactor.callLater(0.1, d.callback, None)
         yield d
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")

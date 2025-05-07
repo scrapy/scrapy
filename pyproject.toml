@@ -13,7 +13,7 @@ dependencies = [
     "defusedxml>=0.7.1",
     "itemadapter>=0.1.0",
     "itemloaders>=1.0.1",
-    "lxml>=4.6.0",
+    "lxml>=4.9.3",
     "packaging",
     "parsel>=1.5.0",
     "protego>=0.1.15",

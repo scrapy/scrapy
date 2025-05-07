@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
     from scrapy.dupefilters import BaseDupeFilter
     from scrapy.http.request import Request
-    from scrapy.pqueues import ScrapyPriorityQueue
+    from scrapy.pqueues import PriorityQueueProtocol
     from scrapy.statscollectors import StatsCollector
 
 
@@ -53,82 +53,72 @@ class BaseSchedulerMeta(type):
 
 
 class BaseScheduler(metaclass=BaseSchedulerMeta):
-    """The scheduler component is responsible for storing requests received
-    from the engine, and feeding them back upon request (also to the engine).
-
-    The original sources of said requests are:
-
-    * Spider: ``start`` method, requests created for URLs in the ``start_urls`` attribute, request callbacks
-    * Spider middleware: ``process_spider_output`` and ``process_spider_exception`` methods
-    * Downloader middleware: ``process_request``, ``process_response`` and ``process_exception`` methods
-
-    The order in which the scheduler returns its stored requests (via the ``next_request`` method)
-    plays a great part in determining the order in which those requests are downloaded. See :ref:`request-order`.
-
-    The methods defined in this class constitute the minimal interface that the Scrapy engine will interact with.
-    """
-
-    @classmethod
-    def from_crawler(cls, crawler: Crawler) -> Self:
-        """
-        Factory method which receives the current :class:`~scrapy.crawler.Crawler` object as argument.
-        """
-        return cls()
-
-    def open(self, spider: Spider) -> Deferred[None] | None:
-        """
-        Called when the spider is opened by the engine. It receives the spider
-        instance as argument and it's useful to execute initialization code.
-
-        :param spider: the spider object for the current crawl
-        :type spider: :class:`~scrapy.spiders.Spider`
-        """
-
-    def close(self, reason: str) -> Deferred[None] | None:
-        """
-        Called when the spider is closed by the engine. It receives the reason why the crawl
-        finished as argument and it's useful to execute cleaning code.
-
-        :param reason: a string which describes the reason why the spider was closed
-        :type reason: :class:`str`
-        """
-
-    @abstractmethod
-    def has_pending_requests(self) -> bool:
-        """
-        ``True`` if the scheduler has enqueued requests, ``False`` otherwise
-        """
-        raise NotImplementedError
+    """Base class for :ref:`scheduler <topics-scheduler>` :ref:`components
+    <topics-components>`."""
 
     @abstractmethod
     def enqueue_request(self, request: Request) -> bool:
-        """
-        Process a request received by the engine.
+        """Store or drop *request*.
 
-        Return ``True`` if the request is stored correctly, ``False`` otherwise.
+        Return ``True`` if the request is stored or ``False`` if the request is
+        dropped, e.g. because it is deemed a duplicate of a previously-seen
+        request.
 
-        If ``False``, the engine will fire a ``request_dropped`` signal, and
-        will not make further attempts to schedule the request at a later time.
-        For reference, the default Scrapy scheduler returns ``False`` when the
-        request is rejected by the dupefilter.
+        Returning ``False`` triggers the :signal:`request_dropped` signal.
         """
         raise NotImplementedError
 
     @abstractmethod
     def next_request(self) -> Request | None:
-        """
-        Return the next :class:`~scrapy.Request` to be processed, or ``None``
-        to indicate that there are no requests to be considered ready at the moment.
+        """Return the next :class:`~scrapy.Request` to send or ``None`` if
+        there are no requests to be sent.
 
-        Returning ``None`` implies that no request from the scheduler will be sent
-        to the downloader in the current reactor cycle. The engine will continue
-        calling ``next_request`` until ``has_pending_requests`` is ``False``.
+        .. note:: Returning ``None`` does not prevent future calls to this
+            method. See :meth:`has_pending_requests`.
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def has_pending_requests(self) -> bool:
+        """Return ``True`` if there are pending requests or ``False``
+        otherwise.
+
+        It is OK to return ``True`` even is the next call to
+        :meth:`next_request` returns ``None``.
+
+        .. tip:: If you do this with the goal of feeding your crawl *start*
+            requests from a slow resource, like a network service, instead of a
+            custom scheduler, consider writing a :ref:`spider middleware
+            <topics-spider-middleware>` that implements
+            :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start`.
+
+        .. warning:: The crawl will continue running as long as this method
+            returns ``True``.
+        """
+        raise NotImplementedError
+
+    def open(self, spider: Spider) -> Deferred[None] | None:
+        """Called after the spider opens.
+
+        Useful for initialization code that needs to run later than the
+        ``__init__`` method, e.g. once the iteration of the
+        :meth:`~scrapy.Spider.start` method has started.
+
+        May return a :class:`~twisted.internet.defer.Deferred`.
+        """
+
+    def close(self, reason: str) -> Deferred[None] | None:
+        """Called after the spider closes due to *reason* (see
+        :exc:`~scrapy.exceptions.CloseSpider`).
+
+        Useful for cleanup code.
+
+        May return a :class:`~twisted.internet.defer.Deferred`.
+        """
+
 
 class Scheduler(BaseScheduler):
-    """Default scheduler.
+    """Default :ref:`scheduler <topics-scheduler>`.
 
     Requests are stored into priority queues
     (:setting:`SCHEDULER_PRIORITY_QUEUE`) that sort requests by
@@ -149,7 +139,10 @@ class Scheduler(BaseScheduler):
     queues by default, and :ref:`ordered differently <start-request-order>`.
 
     Duplicate requests are filtered out with an instance of
-    :setting:`DUPEFILTER_CLASS`.
+    :setting:`DUPEFILTER_CLASS` if :attr:`~scrapy.Request.dont_filter` is
+    ``False``.
+
+    .. seealso:: :ref:`topics-jobs`
 
     .. _request-order:
 
@@ -219,6 +212,26 @@ class Scheduler(BaseScheduler):
     order. Lowering those settings to ``1`` enforces the desired order except
     for the very first request, but it significantly slows down the crawl as a
     whole.
+
+    Stats
+    =====
+
+    The following stats are generated:
+
+    .. code-block:: none
+
+        scheduler/enqueued
+        scheduler/enqueued/memory
+        scheduler/enqueued/disk
+        scheduler/dequeued
+        scheduler/dequeued/memory
+        scheduler/dequeued/disk
+        scheduler/unserializable
+
+    If the value of the ``scheduler/unserializable`` stat is non-zero, consider
+    enabling :setting:`SCHEDULER_DEBUG` to log a warning message with details
+    about the first unserializable request, to try and figure out how to make
+    it serializable.
     """
 
     @classmethod
@@ -243,7 +256,7 @@ class Scheduler(BaseScheduler):
         mqclass: type[BaseQueue] | None = None,
         logunser: bool = False,
         stats: StatsCollector | None = None,
-        pqclass: type[ScrapyPriorityQueue] | None = None,
+        pqclass: type[PriorityQueueProtocol] | None = None,
         crawler: Crawler | None = None,
     ):
         """Initialize the scheduler.
@@ -284,12 +297,13 @@ class Scheduler(BaseScheduler):
         """
         self.df: BaseDupeFilter = dupefilter
         self.dqdir: str | None = self._dqdir(jobdir)
-        self.pqclass: type[ScrapyPriorityQueue] | None = pqclass
+        self.pqclass: type[PriorityQueueProtocol] | None = pqclass
         self.dqclass: type[BaseQueue] | None = dqclass
         self.mqclass: type[BaseQueue] | None = mqclass
         self.logunser: bool = logunser
         self.stats: StatsCollector | None = stats
         self.crawler: Crawler | None = crawler
+        self._paused = False
         self._sdqclass: type[BaseQueue] | None = self._get_start_queue_cls(
             crawler, "DISK"
         )
@@ -311,21 +325,12 @@ class Scheduler(BaseScheduler):
         return len(self) > 0
 
     def open(self, spider: Spider) -> Deferred[None] | None:
-        """
-        (1) initialize the memory queue
-        (2) initialize the disk queue if the ``jobdir`` attribute is a valid directory
-        (3) return the result of the dupefilter's ``open`` method
-        """
         self.spider: Spider = spider
-        self.mqs: ScrapyPriorityQueue = self._mq()
-        self.dqs: ScrapyPriorityQueue | None = self._dq() if self.dqdir else None
+        self.mqs: PriorityQueueProtocol = self._mq()
+        self.dqs: PriorityQueueProtocol | None = self._dq() if self.dqdir else None
         return self.df.open()
 
     def close(self, reason: str) -> Deferred[None] | None:
-        """
-        (1) dump pending requests to disk if there is a disk queue
-        (2) return the result of the dupefilter's ``close`` method
-        """
         if self.dqs is not None:
             state = self.dqs.close()
             assert isinstance(self.dqdir, str)
@@ -333,15 +338,6 @@ class Scheduler(BaseScheduler):
         return self.df.close(reason)
 
     def enqueue_request(self, request: Request) -> bool:
-        """
-        Unless the received request is filtered out by the Dupefilter, attempt to push
-        it into the disk queue, falling back to pushing it into the memory queue.
-
-        Increment the appropriate stats, such as: ``scheduler/enqueued``,
-        ``scheduler/enqueued/disk``, ``scheduler/enqueued/memory``.
-
-        Return ``True`` if the request was stored successfully, ``False`` otherwise.
-        """
         if not request.dont_filter and self.df.request_seen(request):
             self.df.log(request, self.spider)
             return False
@@ -356,14 +352,8 @@ class Scheduler(BaseScheduler):
         return True
 
     def next_request(self) -> Request | None:
-        """
-        Return a :class:`~scrapy.Request` object from the memory queue,
-        falling back to the disk queue if the memory queue is empty.
-        Return ``None`` if there are no more enqueued requests.
-
-        Increment the appropriate stats, such as: ``scheduler/dequeued``,
-        ``scheduler/dequeued/disk``, ``scheduler/dequeued/memory``.
-        """
+        if self._paused:
+            return None
         request: Request | None = self.mqs.pop()
         assert self.stats is not None
         if request is not None:
@@ -377,10 +367,21 @@ class Scheduler(BaseScheduler):
         return request
 
     def __len__(self) -> int:
-        """
-        Return the total amount of enqueued requests
-        """
+        """Return the number of pending requests."""
         return len(self.dqs) + len(self.mqs) if self.dqs is not None else len(self.mqs)
+
+    def pause(self) -> None:
+        """Stop sending pending requests.
+
+        It does not affect enqueing.
+
+        See :ref:`start-requests-front-load` for an example.
+        """
+        self._paused = True
+
+    def unpause(self) -> None:
+        """Resume sending pending requests."""
+        self._paused = False
 
     def _dqpush(self, request: Request) -> bool:
         if self.dqs is None:
@@ -414,7 +415,7 @@ class Scheduler(BaseScheduler):
             return self.dqs.pop()
         return None
 
-    def _mq(self) -> ScrapyPriorityQueue:
+    def _mq(self) -> PriorityQueueProtocol:
         """Create a new priority queue instance, with in-memory storage"""
         assert self.crawler
         assert self.pqclass
@@ -440,7 +441,7 @@ class Scheduler(BaseScheduler):
                 key="",
             )
 
-    def _dq(self) -> ScrapyPriorityQueue:
+    def _dq(self) -> PriorityQueueProtocol:
         """Create a new priority queue instance, with disk storage"""
         assert self.crawler
         assert self.dqdir
@@ -486,13 +487,13 @@ class Scheduler(BaseScheduler):
             return str(dqdir)
         return None
 
-    def _read_dqs_state(self, dqdir: str) -> list[int]:
+    def _read_dqs_state(self, dqdir: str) -> Any:
         path = Path(dqdir, "active.json")
         if not path.exists():
             return []
         with path.open(encoding="utf-8") as f:
-            return cast(list[int], json.load(f))
+            return cast(Any, json.load(f))
 
-    def _write_dqs_state(self, dqdir: str, state: list[int]) -> None:
+    def _write_dqs_state(self, dqdir: str, state: Any) -> None:
         with Path(dqdir, "active.json").open("w", encoding="utf-8") as f:
             json.dump(state, f)

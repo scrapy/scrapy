@@ -25,7 +25,7 @@ class TestParseCommand(ProcessTest, SiteTest, TestCommandBase):
     def setUp(self):
         super().setUp()
         self.spider_name = "parse_spider"
-        (self.proj_mod_path / "spiders" / "myspider.py").write_text(
+        (self.proj_mod_path / "spiders" / "my_spider.py").write_text(
             f"""
 import scrapy
 from scrapy.linkextractors import LinkExtractor

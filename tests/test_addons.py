@@ -187,7 +187,7 @@ class TestAddonManager(unittest.TestCase):
     @inlineCallbacks
     def test_enable_addon_in_spider(self):
         class MySpider(Spider):
-            name = "myspider"
+            name = "my_spider"
 
             @classmethod
             def from_crawler(cls, crawler, *args, **kwargs):

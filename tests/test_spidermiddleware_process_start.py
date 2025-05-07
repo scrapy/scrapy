@@ -1,7 +1,10 @@
+import re
 import warnings
 from asyncio import sleep
+from logging import ERROR
 
 import pytest
+from testfixtures import LogCapture
 from twisted.trial.unittest import TestCase
 
 from scrapy import Spider, signals
@@ -107,6 +110,8 @@ class DeprecatedWrapSpiderMiddleware:
 
 
 class MainTestCase(TestCase):
+    # Helper methods.
+
     async def _test(self, spider_middlewares, spider_cls, expected_items):
         actual_items = []
 
@@ -123,12 +128,29 @@ class MainTestCase(TestCase):
         assert actual_items == expected_items, f"{actual_items=} != {expected_items=}"
 
     async def _test_wrap(self, spider_middleware, spider_cls, expected_items=None):
-        expected_items = expected_items or [ITEM_A, ITEM_B, ITEM_C]
+        expected_items = (
+            expected_items if expected_items is not None else [ITEM_A, ITEM_B, ITEM_C]
+        )
         await self._test([spider_middleware], spider_cls, expected_items)
 
     async def _test_douple_wrap(self, smw1, smw2, spider_cls, expected_items=None):
-        expected_items = expected_items or [ITEM_A, ITEM_A, ITEM_B, ITEM_C, ITEM_C]
+        expected_items = (
+            expected_items
+            if expected_items is not None
+            else [ITEM_A, ITEM_A, ITEM_B, ITEM_C, ITEM_C]
+        )
         await self._test([smw1, smw2], spider_cls, expected_items)
+
+    async def _test_process_start(self, process_start_fn, expected_items=None):
+        class TestSpiderMiddleware:
+            process_start = process_start_fn
+
+        class TestSpider(Spider):
+            name = "test"
+
+        await self._test([TestSpiderMiddleware], TestSpider, expected_items)
+
+    # Deprecation and universal.
 
     @deferred_f_from_coro_f
     async def test_modern_mw_modern_spider(self):
@@ -174,11 +196,10 @@ class MainTestCase(TestCase):
             pytest.warns(
                 ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
             ),
-            pytest.raises(
-                ValueError, match=r"only compatible with \(deprecated\) spiders"
-            ),
+            LogCapture(level=ERROR) as log,
         ):
-            await self._test_wrap(DeprecatedWrapSpiderMiddleware, ModernWrapSpider)
+            await self._test_wrap(DeprecatedWrapSpiderMiddleware, ModernWrapSpider, [])
+        assert "To solve this issue" in str(log), log
 
     @deferred_f_from_coro_f
     async def test_deprecated_mw_modern_spider_subclass(self):
@@ -186,14 +207,15 @@ class MainTestCase(TestCase):
             pytest.warns(
                 ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
             ),
-            pytest.raises(
-                ValueError,
-                match=r"^\S+?\.ModernWrapSpider \(inherited by \S+?.ModernWrapSpiderSubclass\) .*? only compatible with \(deprecated\) spiders",
-            ),
+            LogCapture(level=ERROR) as log,
         ):
             await self._test_wrap(
-                DeprecatedWrapSpiderMiddleware, ModernWrapSpiderSubclass
+                DeprecatedWrapSpiderMiddleware, ModernWrapSpiderSubclass, []
             )
+        assert re.search(
+            r"\S+?\.ModernWrapSpider \(inherited by \S+?.ModernWrapSpiderSubclass\) .*? only compatible with \(deprecated\) spiders",
+            str(log),
+        ), log
 
     @deferred_f_from_coro_f
     async def test_deprecated_mw_universal_spider(self):
@@ -243,15 +265,15 @@ class MainTestCase(TestCase):
             pytest.warns(
                 ScrapyDeprecationWarning, match=r"deprecated process_start_requests\(\)"
             ),
-            pytest.raises(
-                ValueError, match=r"only compatible with \(deprecated\) spiders"
-            ),
+            LogCapture(level=ERROR) as log,
         ):
             await self._test_douple_wrap(
                 UniversalWrapSpiderMiddleware,
                 DeprecatedWrapSpiderMiddleware,
                 ModernWrapSpider,
+                [],
             )
+        assert re.search(r"only compatible with \(deprecated\) spiders", str(log)), log
 
     @deferred_f_from_coro_f
     async def test_modern_mw_universal_mw_universal_spider(self):
@@ -320,33 +342,59 @@ class MainTestCase(TestCase):
                 DeprecatedWrapSpider,
             )
 
-    async def _test_sleep(self, spider_middlewares):
-        class TestSpider(Spider):
-            name = "test"
-
-            async def start(self):
-                yield ITEM_A
-
-        await self._test(spider_middlewares, TestSpider, [ITEM_A])
-
-    @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
-    async def test_asyncio_sleep_single(self):
-        await self._test_sleep([AsyncioSleepSpiderMiddleware])
-
-    @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
-    async def test_asyncio_sleep_multiple(self):
-        await self._test_sleep(
-            [NoOpSpiderMiddleware, AsyncioSleepSpiderMiddleware, NoOpSpiderMiddleware]
-        )
+    # Bad definitions.
 
     @deferred_f_from_coro_f
-    async def test_twisted_sleep_single(self):
-        await self._test_sleep([TwistedSleepSpiderMiddleware])
+    async def test_async_function(self):
+        async def process_start(mw, start):
+            return
+
+        with LogCapture() as log:
+            await self._test_process_start(process_start, [])
+
+        assert ".process_start must be an asynchronous generator" in str(log), log
 
     @deferred_f_from_coro_f
-    async def test_twisted_sleep_multiple(self):
-        await self._test_sleep(
-            [NoOpSpiderMiddleware, TwistedSleepSpiderMiddleware, NoOpSpiderMiddleware]
-        )
+    async def test_sync_function(self):
+        def process_start(mw, spider):
+            return []
+
+        with LogCapture() as log:
+            await self._test_process_start(process_start, [])
+
+        assert ".process_start must be an asynchronous generator" in str(log)
+
+    @deferred_f_from_coro_f
+    async def test_sync_generator(self):
+        def process_start(mw, spider):
+            return
+            yield
+
+        with LogCapture() as log:
+            await self._test_process_start(process_start, [])
+
+        assert ".process_start must be an asynchronous generator" in str(log)
+
+    # Exceptions during iteration.
+
+    @deferred_f_from_coro_f
+    async def test_exception_before_yield(self):
+        async def process_start(mw, start):
+            raise RuntimeError
+            yield  # pylint: disable=unreachable
+
+        with LogCapture() as log:
+            await self._test_process_start(process_start, [])
+
+        assert "in process_start\n    raise RuntimeError" in str(log), log
+
+    @deferred_f_from_coro_f
+    async def test_exception_after_yield(self):
+        async def process_start(mw, spider):
+            yield ITEM_A
+            raise RuntimeError
+
+        with LogCapture() as log:
+            await self._test_process_start(process_start, [ITEM_A])
+
+        assert "in process_start\n    raise RuntimeError" in str(log), log

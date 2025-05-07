@@ -78,7 +78,8 @@ class SignalManager:
     async def wait_for(self, signal):
         """Await the next *signal*.
 
-        See :ref:`start-requests-lazy` for an example.
+        Can be used, for example, for :ref:`lazy start request scheduling
+        <start-requests-lazy>`.
         """
         d = Deferred()
 

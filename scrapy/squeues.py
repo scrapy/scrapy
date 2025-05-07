@@ -167,10 +167,28 @@ _MarshalLifoSerializationDiskQueue = _serializable_queue(
     marshal.loads,
 )
 
-# public queue classes
+# Public queue classes
+
+#: FIFO_ disk queue that serializes :ref:`requests <request>` using
+#: :mod:`pickle`.
+#:
+#: .. _FIFO: https://en.wikipedia.org/wiki/FIFO_(computing_and_electronics)
 PickleFifoDiskQueue = _scrapy_serialization_queue(_PickleFifoSerializationDiskQueue)
+
+#: LIFO_ disk queue that serializes :ref:`requests <request>` using
+#: :mod:`pickle`.
 PickleLifoDiskQueue = _scrapy_serialization_queue(_PickleLifoSerializationDiskQueue)
+
+#: FIFO_ disk queue that serializes :ref:`requests <request>` using
+#: :mod:`marshal`.
 MarshalFifoDiskQueue = _scrapy_serialization_queue(_MarshalFifoSerializationDiskQueue)
+
+#: LIFO_ disk queue that serializes :ref:`requests <request>` using
+#: :mod:`marshal`.
 MarshalLifoDiskQueue = _scrapy_serialization_queue(_MarshalLifoSerializationDiskQueue)
+
+#: FIFO_ memory queue.
 FifoMemoryQueue = _scrapy_non_serialization_queue(queue.FifoMemoryQueue)  # type: ignore[arg-type]
+
+#: LIFO_ memory queue.
 LifoMemoryQueue = _scrapy_non_serialization_queue(queue.LifoMemoryQueue)  # type: ignore[arg-type]

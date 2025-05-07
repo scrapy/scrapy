@@ -389,7 +389,11 @@ class SpiderMiddlewareManager(MiddlewareManager):
         return dfd2
 
     async def process_start(self, spider: Spider) -> AsyncIterator[Any] | None:
-        self._check_deprecated_start_requests_use(spider)
+        try:
+            self._check_deprecated_start_requests_use(spider)
+        except ValueError as exception:
+            logger.error(exception)
+            return None
         if self._use_start_requests:
             sync_start = iter(spider.start_requests())
             sync_start = await maybe_deferred_to_future(
@@ -397,9 +401,20 @@ class SpiderMiddlewareManager(MiddlewareManager):
             )
             start: AsyncIterator[Any] = as_async_generator(sync_start)
         else:
-            start = spider.start()
+            error_found = False
+            for fn in (spider.start, *self.methods["process_start"]):
+                if isasyncgenfunction(fn):
+                    continue
+                logger.error(
+                    f"{global_object_name(fn)} must be an asynchronous "
+                    f"generator, i.e. an async def function with yield "
+                    f"statements."
+                )
+                error_found = True
+            if error_found:
+                return None
             start = await maybe_deferred_to_future(
-                self._process_chain("process_start", start)
+                self._process_chain("process_start", spider.start())
             )
         return start
 

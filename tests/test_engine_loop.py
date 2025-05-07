@@ -9,6 +9,8 @@ from twisted.internet.defer import Deferred
 from twisted.trial.unittest import TestCase
 
 from scrapy import Request, Spider, signals
+from scrapy.core.engine import ExecutionEngine
+from scrapy.squeues import LifoMemoryQueue
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
@@ -19,7 +21,7 @@ if TYPE_CHECKING:
     from scrapy.http import Response
 
 
-async def sleep(seconds: float = 0.001) -> None:
+async def sleep(seconds: float = ExecutionEngine._MIN_BACK_IN_SECONDS) -> None:
     from twisted.internet import reactor
 
     deferred: Deferred[None] = Deferred()
@@ -29,47 +31,17 @@ async def sleep(seconds: float = 0.001) -> None:
 
 class MainTestCase(TestCase):
     @deferred_f_from_coro_f
-    async def test_sleep(self):
-        """Neither asynchronous sleeps on Spider.start() nor the equivalent on
-        the scheduler (returning no requests while also returning True from
-        the has_pending_requests() method) should cause the spider to miss the
-        processing of any later requests."""
-        seconds = 2
+    async def test_start_exception(self):
+        """If Spider.start() raises an unhandled exception, scheduler requests
+        should still be processed."""
 
         class TestSpider(Spider):
             name = "test"
 
             async def start(self):
-                from twisted.internet import reactor
-
                 yield Request("data:,a")
-
-                await sleep(seconds)
-
-                self.crawler.engine._slot.scheduler.pause()
-                self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,b"))
-
-                # During this time, the scheduler reports having requests but
-                # returns None.
-                await sleep(seconds)
-
-                self.crawler.engine._slot.scheduler.unpause()
-
-                # The scheduler request is processed.
-                await sleep(seconds)
-
-                yield Request("data:,c")
-
-                await sleep(seconds)
-
-                self.crawler.engine._slot.scheduler.pause()
-                self.crawler.engine._slot.scheduler.enqueue_request(Request("data:,d"))
-
-                # The last start request is processed during the time until the
-                # delayed call below, proving that the start iteration can
-                # finish before a scheduler “sleep” without causing the
-                # scheduler to finish.
-                reactor.callLater(seconds, self.crawler.engine._slot.scheduler.unpause)
+                self.crawler.engine.scheduler.enqueue_request(Request("data:,b"))
+                raise RuntimeError
 
             def parse(self, response):
                 pass
@@ -82,10 +54,13 @@ class MainTestCase(TestCase):
         settings = {"SCHEDULER": MemoryScheduler}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
-        await maybe_deferred_to_future(crawler.crawl())
+        with LogCapture() as log:
+            await maybe_deferred_to_future(crawler.crawl())
         assert crawler.stats.get_value("finish_reason") == "finished"
-        expected_urls = ["data:,a", "data:,b", "data:,c", "data:,d"]
-        assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
+        expected_urls = ["data:,a", "data:,b"]
+        assert actual_urls == expected_urls, (
+            f"{actual_urls=} != {expected_urls=}\n{log}"
+        )
 
     @deferred_f_from_coro_f
     async def test_close_during_start_iteration(self):
@@ -118,6 +93,109 @@ class MainTestCase(TestCase):
         expected_urls = []
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
+    # Unexpected scheduler exceptions
+
+    @deferred_f_from_coro_f
+    async def test_scheduler_has_pending_requests_exception(self):
+        """If Scheduler.has_pending_requests() raises an exception while
+        checking if the spider is idle, consider the return value to be False
+        (i.e. the spider is indeed idle), and log a traceback."""
+
+        class TestScheduler(MemoryScheduler):
+            def has_pending_requests(self):
+                raise RuntimeError
+
+            def next_request(self):
+                return None
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = []
+
+            def parse(self, response):
+                pass
+
+        actual_urls = []
+
+        def track_url(request, spider):
+            actual_urls.append(request.url)
+
+        settings = {"SCHEDULER": TestScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+        crawler.signals.connect(track_url, signals.request_reached_downloader)
+        with LogCapture() as log:
+            await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.stats.get_value("finish_reason") == "finished"
+        expected_urls = []
+        assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
+        assert "in has_pending_requests\n    raise RuntimeError" in str(log), log
+
+    @deferred_f_from_coro_f
+    async def test_scheduler_enqueue_request_exception(self):
+        class TestScheduler(MemoryScheduler):
+            def enqueue_request(self, request):
+                raise RuntimeError
+
+        class TestSpider(Spider):
+            name = "test"
+            start_urls = ["data:,"]
+
+            def parse(self, response):
+                pass
+
+        actual_dropped_urls = []
+
+        def track_dropped_url(request, spider):
+            actual_dropped_urls.append(request.url)
+
+        settings = {"SCHEDULER": TestScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+        crawler.signals.connect(track_dropped_url, signals.request_dropped)
+        with LogCapture() as log:
+            await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.stats.get_value("finish_reason") == "finished"
+        expected_dropped_urls = ["data:,"]
+        assert actual_dropped_urls == expected_dropped_urls, (
+            f"{actual_dropped_urls=} != {expected_dropped_urls=}"
+        )
+        assert "in enqueue_request\n    raise RuntimeError" in str(log), log
+
+    @deferred_f_from_coro_f
+    async def test_scheduler_next_request_exception(self):
+        class TestScheduler(MemoryScheduler):
+            queue = ["data:,b", RuntimeError(), "data:,a"]
+
+            def next_request(self):
+                request = super().next_request()
+                if isinstance(request, Exception):
+                    raise request
+                return request
+
+        class TestSpider(Spider):
+            name = "test"
+
+            async def start(self):
+                await self.crawler.signals.wait_for(signals.scheduler_empty)
+                yield Request("data:,c")
+
+            def parse(self, response):
+                pass
+
+        actual_urls = []
+
+        def track_url(request, spider):
+            actual_urls.append(request.url)
+
+        settings = {"SCHEDULER": TestScheduler}
+        crawler = get_crawler(TestSpider, settings_dict=settings)
+        crawler.signals.connect(track_url, signals.request_reached_downloader)
+        with LogCapture() as log:
+            await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.stats.get_value("finish_reason") == "finished"
+        expected_urls = ["data:,a", "data:,b", "data:,c"]
+        assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
+        assert "in next_request\n    raise request" in str(log), log
+
 
 class RequestSendOrderTestCase(TestCase):
     seconds = 0.1  # increase if flaky
@@ -131,7 +209,7 @@ class RequestSendOrderTestCase(TestCase):
     def tearDownClass(cls):
         cls.mockserver.__exit__(None, None, None)  # increase if flaky
 
-    def request(self, num, response_seconds, download_slots, priority=0):
+    def request(self, num, response_seconds, download_slots=1, priority=0):
         url = self.mockserver.url(f"/delay?n={response_seconds}&{num}")
         meta = {"download_slot": str(num % download_slots)}
         return Request(url, meta=meta, priority=priority)
@@ -210,7 +288,7 @@ class RequestSendOrderTestCase(TestCase):
                 _request(4, priority=1),
                 _request(6),
             ):
-                spider.crawler.engine._slot.scheduler.enqueue_request(request)
+                spider.crawler.engine.scheduler.enqueue_request(request)
             yield _request(5)
             yield _request(2, priority=1)
             yield _request(3, priority=1)
@@ -252,7 +330,7 @@ class RequestSendOrderTestCase(TestCase):
                 _request(4, priority=1),
                 _request(6),
             ):
-                spider.crawler.engine._slot.scheduler.enqueue_request(request)
+                spider.crawler.engine.scheduler.enqueue_request(request)
             yield _request(5)
             yield _request(3, priority=1)
             yield _request(2, priority=1)
@@ -302,7 +380,7 @@ class RequestSendOrderTestCase(TestCase):
                 _request(13),
                 _request(12),
             ):
-                spider.crawler.engine._slot.scheduler.enqueue_request(request)
+                spider.crawler.engine.scheduler.enqueue_request(request)
 
             yield _request(11)
             yield _request(10)
@@ -315,7 +393,7 @@ class RequestSendOrderTestCase(TestCase):
                 _request(9),
                 _request(8),
             ):
-                spider.crawler.engine._slot.scheduler.enqueue_request(request)
+                spider.crawler.engine.scheduler.enqueue_request(request)
 
         def parse(spider, response):
             return
@@ -338,6 +416,35 @@ class RequestSendOrderTestCase(TestCase):
     # spiders.
 
     @deferred_f_from_coro_f
+    async def test_front_load(self):
+        start_nums = [2, 1]
+        response_seconds = 0
+        download_slots = 1
+
+        async def start(spider):
+            # typing:
+            assert spider.crawler.engine is not None
+            assert isinstance(spider.crawler.engine.scheduler, MemoryScheduler)
+
+            spider.crawler.engine.scheduler.pause()
+            # By pausing the scheduler, 1 is scheduled before 2 is sent,
+            # and provided the scheduler uses a LIFO queue, 1 is sent first.
+            yield self.request(2, response_seconds, download_slots)
+            yield self.request(1, response_seconds, download_slots)
+            spider.crawler.engine.scheduler.unpause()
+
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=start_nums,
+                response_seconds=response_seconds,
+                start_fn=start,
+                settings={
+                    "SCHEDULER_START_MEMORY_QUEUE": LifoMemoryQueue,
+                },
+            )
+        )
+
+    @deferred_f_from_coro_f
     async def test_lazy(self):
         start_nums = [1, 2, 4]
         cb_nums = [3]
@@ -357,8 +464,107 @@ class RequestSendOrderTestCase(TestCase):
                 cb_nums=cb_nums,
                 settings={
                     "CONCURRENT_REQUESTS": 1,
+                    # Without the lazy approach, a FIFO queue would yield the
+                    # start requests in a different order.
+                    "SCHEDULER_MEMORY_QUEUE": "scrapy.squeues.FifoMemoryQueue",
                 },
                 response_seconds=response_seconds,
+                start_fn=start,
+            )
+        )
+
+    @deferred_f_from_coro_f
+    async def test_idle(self):
+        # The requests already in the scheduler (a) take priority over start
+        # requests.
+        # Callback requests (b, c) take priority over start requests as well. a
+        # yields b, b yields c.
+        # Once there are no more ongoing requests, the first start request (d)
+        # is sent. Then the requests from its callback (e) take priority. This
+        # is recursive, the requests from the callback of the callback (f) take
+        # priority as well.
+        # Only once there are no more ongoing requests again is the second
+        # start request (g) sent.
+
+        nums = [1, 2, 3, 4, 5, 6, 7]
+        response_seconds = 0
+        download_slots = 1
+
+        def _request(num):
+            return self.request(num, response_seconds, download_slots)
+
+        class TestScheduler(MemoryScheduler):
+            queue = [_request(1)]
+
+        async def start(spider):
+            for request in [_request(4), _request(7)]:
+                await spider.crawler.signals.wait_for(signals.spider_start_blocking)
+                yield request
+
+        def parse(spider, response):
+            num = self.get_num(response)
+            if num in {1, 2, 4, 5}:
+                yield _request(num + 1)
+
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=nums,
+                settings={"SCHEDULER": TestScheduler},
+                response_seconds=response_seconds,
+                start_fn=start,
+                parse_fn=parse,
+            )
+        )
+
+    # Delay handling
+
+    @deferred_f_from_coro_f
+    async def test_delays(self):
+        """Delays in Spider.start() or in the scheduler (i.e. returning no
+        requests while also returning True from the has_pending_requests()
+        method) should cause the spider to miss the processing of any later
+        requests."""
+        seconds = ExecutionEngine._MIN_BACK_IN_SECONDS
+
+        def _request(num):
+            return self.request(num, seconds)
+
+        async def start(spider):
+            from twisted.internet import reactor
+
+            yield _request(1)
+
+            # Let request 1 be processed.
+            await spider.crawler.signals.wait_for(signals.scheduler_empty)
+
+            spider.crawler.engine.scheduler.pause()
+            spider.crawler.engine.scheduler.enqueue_request(_request(2))
+
+            # During this time, the scheduler reports having requests but
+            # returns None.
+            await spider.crawler.signals.wait_for(signals.scheduler_empty)
+
+            spider.crawler.engine.scheduler.unpause()
+
+            # The scheduler request is processed.
+            await spider.crawler.signals.wait_for(signals.scheduler_empty)
+
+            yield _request(3)
+
+            spider.crawler.engine.scheduler.pause()
+            spider.crawler.engine.scheduler.enqueue_request(_request(4))
+
+            # The last start request is processed during the time until the
+            # delayed call below, proving that the start iteration can
+            # finish before a scheduler “sleep” without causing the
+            # scheduler to finish.
+            reactor.callLater(0, spider.crawler.engine.scheduler.unpause)
+
+        await maybe_deferred_to_future(
+            self._test_request_order(
+                start_nums=[1, 2, 3, 4],
+                settings={"SCHEDULER": MemoryScheduler},
+                response_seconds=seconds,
                 start_fn=start,
             )
         )

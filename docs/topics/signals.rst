@@ -112,7 +112,7 @@ engine_started
 .. signal:: engine_started
 .. function:: engine_started()
 
-    Sent when the Scrapy engine has started crawling.
+    Sent when the the :ref:`engine <engine>` has started crawling.
 
     This signal supports returning deferreds from its handlers.
 
@@ -126,23 +126,22 @@ engine_stopped
 .. signal:: engine_stopped
 .. function:: engine_stopped()
 
-    Sent when the Scrapy engine is stopped (for example, when a crawling
-    process has finished).
+    Sent when the the :ref:`engine <engine>` is stopped (for example, when a
+    crawling process has finished).
 
     This signal supports returning deferreds from its handlers.
+
+spider_start_blocking
+~~~~~~~~~~~~~~~~~~~~~
+
+.. signal:: spider_start_blocking
+.. autofunction:: spider_start_blocking()
 
 scheduler_empty
 ~~~~~~~~~~~~~~~
 
 .. signal:: scheduler_empty
-.. function:: scheduler_empty()
-
-    Sent whenever the engine asks for a pending request from the
-    :ref:`scheduler <topics-scheduler>` (i.e. calls its
-    :meth:`~scrapy.core.scheduler.BaseScheduler.next_request` method) and the
-    scheduler returns none.
-
-    See :ref:`start-requests-lazy` for an example.
+.. autofunction:: scheduler_empty()
 
 Item signals
 ------------
@@ -298,6 +297,8 @@ spider_idle
 
     :param spider: the spider which has gone idle
     :type spider: :class:`~scrapy.Spider` object
+
+    .. seealso:: :signal:`spider_start_blocking`
 
 .. note:: Scheduling some requests in your :signal:`spider_idle` handler does
     **not** guarantee that it can prevent the spider from being closed,

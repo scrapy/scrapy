@@ -1,14 +1,45 @@
-"""
-Extension for processing data before they are exported to feeds.
-"""
+"""Extension for processing data before they are exported to feeds."""
+
+from __future__ import annotations
 
 from bz2 import BZ2File
 from gzip import GzipFile
 from io import IOBase
 from lzma import LZMAFile
-from typing import IO, Any, BinaryIO, cast
+from typing import IO, Any, BinaryIO, Protocol, cast
 
 from scrapy.utils.misc import load_object
+
+
+class PostprocessingPluginProtocol(Protocol):
+    """:class:`~typing.Protocol` of :ref:`post-processing plugins
+    <post-processing>`."""
+
+    def __init__(self, file: BinaryIO, feed_options: dict[str, Any]) -> None:
+        """Initialize the plugin.
+
+        *file* is a file-like object that implements at least the
+        :meth:`~typing.BinaryIO.write`, :meth:`~typing.BinaryIO.tell` and
+        :meth:`~typing.BinaryIO.close` methods.
+
+        *feed_options* are the :ref:`options of the feed <feed-options>` that
+        uses the plugin, which may be used to modify the behavior of the
+        plugin.
+        """
+
+    def write(self, data: bytes | memoryview) -> int:
+        """Process and write *data* into the target file of the plugin, and
+        return the number of bytes written."""
+
+    def close(self) -> None:
+        """Run clean-up code.
+
+        For example, you might want to close a file wrapper that you might have
+        used to compress data written into the file received in the
+        :meth:`__init__` method.
+
+        .. warning:: Do *not* close the file from the :meth:`__init__` method.
+        """
 
 
 class GzipPlugin:
@@ -81,9 +112,6 @@ class LZMAPlugin:
     - `lzma_check`
     - `lzma_preset`
     - `lzma_filters`
-
-    .. note::
-        ``lzma_filters`` cannot be used in pypy version 7.3.1 and older.
 
     See :py:class:`lzma.LZMAFile` for more info about parameters.
     """

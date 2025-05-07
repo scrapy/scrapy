@@ -662,13 +662,13 @@ Unknown command: abc
 
 
 class TestRunSpiderCommand(TestCommandBase):
-    spider_filename = "myspider.py"
+    spider_filename = "my_spider.py"
 
     debug_log_spider = """
 import scrapy
 
 class MySpider(scrapy.Spider):
-    name = 'myspider'
+    name = 'my_spider'
 
     async def start(self):
         self.logger.debug("It Works!")
@@ -740,7 +740,7 @@ class BadSpider(scrapy.Spider):
 import scrapy
 
 class MySpider(scrapy.Spider):
-    name = 'myspider'
+    name = 'my_spider'
     start_urls = ['http://localhost:12345']
 
     def parse(self, response):
@@ -752,12 +752,12 @@ class MySpider(scrapy.Spider):
 
     def test_runspider_log_short_names(self):
         log1 = self.get_log(self.debug_log_spider, args=("-s", "LOG_SHORT_NAMES=1"))
-        assert "[myspider] DEBUG: It Works!" in log1
+        assert "[my_spider] DEBUG: It Works!" in log1
         assert "[scrapy]" in log1
         assert "[scrapy.core.engine]" not in log1
 
         log2 = self.get_log(self.debug_log_spider, args=("-s", "LOG_SHORT_NAMES=0"))
-        assert "[myspider] DEBUG: It Works!" in log2
+        assert "[my_spider] DEBUG: It Works!" in log2
         assert "[scrapy]" not in log2
         assert "[scrapy.core.engine]" in log2
 
@@ -770,7 +770,7 @@ class MySpider(scrapy.Spider):
         assert "File not found: some_non_existent_file" in log
 
     def test_runspider_unable_to_load(self):
-        log = self.get_log("", name="myspider.txt")
+        log = self.get_log("", name="my_spider.txt")
         assert "Unable to load" in log
 
     def test_start_errors(self):
@@ -846,7 +846,7 @@ class MySpider(scrapy.Spider):
 import scrapy
 
 class MySpider(scrapy.Spider):
-    name = 'myspider'
+    name = 'my_spider'
 
     async def start(self):
         self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
@@ -855,7 +855,7 @@ class MySpider(scrapy.Spider):
 """
         args = ["-o", "example.json"]
         log = self.get_log(spider_code, args=args)
-        assert "[myspider] DEBUG: FEEDS: {'example.json': {'format': 'json'}}" in log
+        assert "[my_spider] DEBUG: FEEDS: {'example.json': {'format': 'json'}}" in log
 
     def test_overwrite_output(self):
         spider_code = """
@@ -863,7 +863,7 @@ import json
 import scrapy
 
 class MySpider(scrapy.Spider):
-    name = 'myspider'
+    name = 'my_spider'
 
     async def start(self):
         self.logger.debug(
@@ -878,7 +878,7 @@ class MySpider(scrapy.Spider):
         args = ["-O", "example.json"]
         log = self.get_log(spider_code, args=args)
         assert (
-            '[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}'
+            '[my_spider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}'
             in log
         )
         with Path(self.cwd, "example.json").open(encoding="utf-8") as f2:
@@ -890,7 +890,7 @@ class MySpider(scrapy.Spider):
 import scrapy
 
 class MySpider(scrapy.Spider):
-    name = 'myspider'
+    name = 'my_spider'
 
     async def start(self):
         return
@@ -907,7 +907,7 @@ class MySpider(scrapy.Spider):
 import scrapy
 
 class MySpider(scrapy.Spider):
-    name = 'myspider'
+    name = 'my_spider'
 
     async def start(self):
         self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
@@ -916,7 +916,7 @@ class MySpider(scrapy.Spider):
 """
         args = ["-o", "-:json"]
         log = self.get_log(spider_code, args=args)
-        assert "[myspider] DEBUG: FEEDS: {'stdout:': {'format': 'json'}}" in log
+        assert "[my_spider] DEBUG: FEEDS: {'stdout:': {'format': 'json'}}" in log
 
     @skipIf(platform.system() == "Windows", reason="Linux only")
     def test_absolute_path_linux(self):
@@ -924,7 +924,7 @@ class MySpider(scrapy.Spider):
 import scrapy
 
 class MySpider(scrapy.Spider):
-    name = 'myspider'
+    name = 'my_spider'
 
     start_urls = ["data:,"]
 
@@ -953,7 +953,7 @@ class MySpider(scrapy.Spider):
 import scrapy
 
 class MySpider(scrapy.Spider):
-    name = 'myspider'
+    name = 'my_spider'
 
     start_urls = ["data:,"]
 
@@ -981,7 +981,7 @@ class MySpider(scrapy.Spider):
 import scrapy
 
 class MySpider(scrapy.Spider):
-    name = 'myspider'
+    name = 'my_spider'
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
@@ -1001,7 +1001,7 @@ class MySpider(scrapy.Spider):
 
 
 class TestWindowsRunSpiderCommand(TestRunSpiderCommand):
-    spider_filename = "myspider.pyw"
+    spider_filename = "my_spider.pyw"
 
     def setUp(self):
         if platform.system() != "Windows":
@@ -1044,10 +1044,10 @@ class TestViewCommand(TestCommandBase):
 
 class TestCrawlCommand(TestCommandBase):
     def crawl(self, code, args=()):
-        Path(self.proj_mod_path, "spiders", "myspider.py").write_text(
+        Path(self.proj_mod_path, "spiders", "my_spider.py").write_text(
             code, encoding="utf-8"
         )
-        return self.proc("crawl", "myspider", *args)
+        return self.proc("crawl", "my_spider", *args)
 
     def get_log(self, code, args=()):
         _, _, stderr = self.crawl(code, args=args)
@@ -1058,7 +1058,7 @@ class TestCrawlCommand(TestCommandBase):
 import scrapy
 
 class MySpider(scrapy.Spider):
-    name = 'myspider'
+    name = 'my_spider'
 
     async def start(self):
         self.logger.debug('It works!')
@@ -1066,14 +1066,14 @@ class MySpider(scrapy.Spider):
         yield
 """
         log = self.get_log(spider_code)
-        assert "[myspider] DEBUG: It works!" in log
+        assert "[my_spider] DEBUG: It works!" in log
 
     def test_output(self):
         spider_code = """
 import scrapy
 
 class MySpider(scrapy.Spider):
-    name = 'myspider'
+    name = 'my_spider'
 
     async def start(self):
         self.logger.debug('FEEDS: {}'.format(self.settings.getdict('FEEDS')))
@@ -1082,7 +1082,7 @@ class MySpider(scrapy.Spider):
 """
         args = ["-o", "example.json"]
         log = self.get_log(spider_code, args=args)
-        assert "[myspider] DEBUG: FEEDS: {'example.json': {'format': 'json'}}" in log
+        assert "[my_spider] DEBUG: FEEDS: {'example.json': {'format': 'json'}}" in log
 
     def test_overwrite_output(self):
         spider_code = """
@@ -1090,7 +1090,7 @@ import json
 import scrapy
 
 class MySpider(scrapy.Spider):
-    name = 'myspider'
+    name = 'my_spider'
 
     async def start(self):
         self.logger.debug(
@@ -1105,7 +1105,7 @@ class MySpider(scrapy.Spider):
         args = ["-O", "example.json"]
         log = self.get_log(spider_code, args=args)
         assert (
-            '[myspider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}'
+            '[my_spider] DEBUG: FEEDS: {"example.json": {"format": "json", "overwrite": true}}'
             in log
         )
         with Path(self.cwd, "example.json").open(encoding="utf-8") as f2:
@@ -1117,7 +1117,7 @@ class MySpider(scrapy.Spider):
 import scrapy
 
 class MySpider(scrapy.Spider):
-    name = 'myspider'
+    name = 'my_spider'
 
     async def start(self):
         return

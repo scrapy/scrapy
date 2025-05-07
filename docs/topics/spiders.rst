@@ -176,7 +176,7 @@ scrapy.Spider
 
 
            class MySpider(scrapy.Spider):
-               name = "myspider"
+               name = "my_spider"
                custom_feed = {
                    "/home/user/documents/items.json": {
                        "format": "json",
@@ -301,7 +301,7 @@ functionality of the spider.
 Spider arguments are passed through the :command:`crawl` command using the
 ``-a`` option. For example::
 
-    scrapy crawl myspider -a category=electronics
+    scrapy crawl my_spider -a category=electronics
 
 Spiders can access arguments in their `__init__` methods:
 
@@ -311,7 +311,7 @@ Spiders can access arguments in their `__init__` methods:
 
 
     class MySpider(scrapy.Spider):
-        name = "myspider"
+        name = "my_spider"
 
         def __init__(self, category=None, *args, **kwargs):
             super(MySpider, self).__init__(*args, **kwargs)
@@ -328,7 +328,7 @@ The above example can also be written as follows:
 
 
     class MySpider(scrapy.Spider):
-        name = "myspider"
+        name = "my_spider"
 
         async def start(self):
             yield scrapy.Request(f"http://www.example.com/categories/{self.category}")
@@ -359,7 +359,7 @@ used by :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`
 or the user agent
 used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
 
-    scrapy crawl myspider -a http_user=myuser -a http_pass=mypassword -a user_agent=mybot
+    scrapy crawl my_spider -a http_user=myuser -a http_pass=mypassword -a user_agent=mybot
 
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
@@ -376,13 +376,45 @@ Start requests
 
 .. seealso:: :ref:`start-request-order`
 
+.. _start-requests-front-load:
+
+Start request front loading
+---------------------------
+
+By default, the first few requests yielded by :meth:`~scrapy.Spider.start` are
+sent in yield order, even if you :ref:`try to sort them differently
+<start-request-order>`. This is because, until :setting:`CONCURRENT_REQUESTS`
+is reached, start requests are removed from the scheduler immediately after
+they are scheduled.
+
+If you do not yield the highest-priority start requests first, and you want
+request priorities to be respected since the very first request, pause the
+:ref:`scheduler <topics-scheduler>` while yielding your start requests:
+
+.. code-block:: python
+
+    async def start(self):
+        self.crawler.engine.scheduler.pause()
+        async for item_or_request in super().start():
+            yield item_or_request
+        self.crawler.engine.scheduler.unpause()
+
+.. note:: If you use a :ref:`custom scheduler <custom-scheduler>`, make sure it
+    supports pausing like :class:`~scrapy.core.scheduler.Scheduler`.
+
+Delaying start request scheduling
+---------------------------------
+
+When :ref:`optimizing memory usage <optimize-memory>`, it can sometimes be
+useful to delay start request scheduling :ref:`until the scheduler is empty
+<start-requests-lazy>` or :ref:`until the engine is idle
+<start-requests-idle>`.
+
 .. _start-requests-lazy:
 
-Delaying start request iteration
---------------------------------
-
-You can override the :meth:`~scrapy.Spider.start` method as follows to pause
-its iteration whenever there are scheduled requests:
+To use **lazy** start request scheduling, where the iteration of start requests
+is paused until the :ref:`scheduler <topics-scheduler>` is empty, override the
+:meth:`~scrapy.Spider.start` method as follows:
 
 .. code-block:: python
 
@@ -392,9 +424,60 @@ its iteration whenever there are scheduled requests:
                 await self.crawler.signals.wait_for(signals.scheduler_empty)
             yield item_or_request
 
-This can help minimize the number of requests in the scheduler at any given
-time, to minimize resource usage (memory or disk, depending on
-:setting:`JOBDIR`).
+.. _start-requests-idle:
+
+To use **idle** start request scheduling, where the iteration of start requests
+is paused until the :ref:`engine <engine>` needs a start request to continue,
+override the :meth:`~scrapy.Spider.start` method as follows:
+
+.. code-block:: python
+
+    async def start(self):
+        async for item_or_request in super().start():
+            await self.crawler.signals.wait_for(signals.spider_start_blocking)
+            yield item_or_request
+
+.. warning:: While lazy scheduling only affects request order, **idle
+    scheduling can slow down your crawl**. It is functionally equivalent to
+    running a spider multiple times in a row, one per start request.
+
+.. seealso:: :class:`~scrapy.crawler.Crawler`, :ref:`topics-signals`.
+
+Universal start request definition
+----------------------------------
+
+The :meth:`~scrapy.Spider.start` method was introduced in Scrapy VERSION. It
+replaced ``start_requests()``, which could be defined either as a synchronous
+:term:`generator` or as a synchronous method returning an
+:class:`~collections.abc.Iterable`.
+
+If you write spiders that must work with both Scrapy VERSION+ and lower
+versions, you must define both methods. For example:
+
+.. code-block:: python
+
+    from scrapy import Spider
+
+
+    class MySpider(Spider):
+        name = "my_spider"
+
+        def start_requests(self):
+            yield Request("https://toscrape.com", headers={"Foo": "Bar"})
+
+        async def start(self):
+            for request in self.start_requests():
+                yield request
+
+Spiders that define both methods will not trigger a deprecation warning about
+``start_requests()``. When subclassing such a spider, if you override one of
+these methods, also override the other method, or you will get a warning.
+
+.. warning:: Do not call the ``start_requests()`` method of
+    :class:`~scrapy.Spider` or of other spider classes not defined by yourself
+    (e.g. using  ``super().start_requests()``) from your
+    :meth:`~scrapy.Spider.start` implementation. However, you can call your own
+    ``start_requests()`` method, as shown above.
 
 .. _builtin-spiders:
 
