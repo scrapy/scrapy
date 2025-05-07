@@ -388,7 +388,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
         dfd2.addErrback(process_spider_exception)
         return dfd2
 
-    @deferred_f_from_coro_f
     async def process_start(self, spider: Spider) -> AsyncIterator[Any] | None:
         self._check_deprecated_start_requests_use(spider)
         if self._use_start_requests:

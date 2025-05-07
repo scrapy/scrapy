@@ -73,8 +73,11 @@ class DepthMiddleware(BaseSpiderMiddleware):
                 self.stats.inc_value("request_depth_count/0", spider=spider)
 
     def get_processed_request(
-        self, request: Request, response: Response
+        self, request: Request, response: Response | None
     ) -> Request | None:
+        if response is None:
+            # start requests
+            return request
         depth = response.meta["depth"] + 1
         request.meta["depth"] = depth
         if self.prio:
