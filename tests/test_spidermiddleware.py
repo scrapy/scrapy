@@ -347,7 +347,7 @@ class TestProcessStartSimple(TestBaseAsyncSpiderMiddleware):
         )
         self.spider = self.crawler._create_spider()
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
-        return await maybe_deferred_to_future(self.mwman.process_start(self.spider))
+        return await self.mwman.process_start(self.spider)
 
     @deferred_f_from_coro_f
     async def test_simple(self):

@@ -416,9 +416,7 @@ class ExecutionEngine:
         nextcall = CallLaterOnce(self._start_scheduled_requests)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
         self._slot = _Slot(close_if_idle, nextcall, scheduler)
-        self._start = await maybe_deferred_to_future(
-            self.scraper.spidermw.process_start(spider)
-        )
+        self._start = await self.scraper.spidermw.process_start(spider)
         if hasattr(scheduler, "open") and (d := scheduler.open(spider)):
             await maybe_deferred_to_future(d)
         await maybe_deferred_to_future(self.scraper.open_spider(spider))
