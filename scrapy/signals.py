@@ -7,6 +7,7 @@ signals here without documenting them there.
 
 engine_started = object()
 engine_stopped = object()
+scheduler_empty = object()
 spider_opened = object()
 spider_idle = object()
 spider_closed = object()

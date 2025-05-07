@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterable
+from inspect import isasyncgen
 from typing import Any
 from unittest import mock
 
@@ -111,7 +112,7 @@ class TestProcessSpiderExceptionReRaise(TestSpiderMiddleware):
 class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
     """Helpers for testing sync, async and mixed middlewares.
 
-    Should work for process_spider_output and, when it's supported, process_start_requests.
+    Should work for process_spider_output and, when it's supported, process_start.
     """
 
     ITEM_TYPE: type | tuple
@@ -200,7 +201,7 @@ class ProcessSpiderExceptionSimpleIterableMiddleware:
         yield {"foo": 3}
 
 
-class ProcessSpiderExceptionAsyncIterableMiddleware:
+class ProcessSpiderExceptionAsyncIteratorMiddleware:
     async def process_spider_exception(self, response, exception, spider):
         yield {"foo": 1}
         d = defer.Deferred()
@@ -319,37 +320,43 @@ class TestProcessSpiderOutputInvalidResult(TestBaseAsyncSpiderMiddleware):
             )
 
 
-class ProcessStartRequestsSimpleMiddleware:
-    def process_start_requests(self, start_requests, spider):
-        yield from start_requests
+class ProcessStartSimpleMiddleware:
+    async def process_start(self, start):
+        async for item_or_request in start:
+            yield item_or_request
 
 
-class TestProcessStartRequestsSimple(TestBaseAsyncSpiderMiddleware):
-    """process_start_requests tests for simple start_requests"""
+class TestProcessStartSimple(TestBaseAsyncSpiderMiddleware):
+    """process_start tests for simple start"""
 
     ITEM_TYPE = (Request, dict)
-    MW_SIMPLE = ProcessStartRequestsSimpleMiddleware
+    MW_SIMPLE = ProcessStartSimpleMiddleware
 
-    def _start_requests(self):
-        for i in range(2):
-            yield Request(f"https://example.com/{i}", dont_filter=True)
-        yield {"name": "test item"}
+    async def _get_processed_start(self, *mw_classes):
+        class TestSpider(Spider):
+            name = "test"
 
-    @defer.inlineCallbacks
-    def _get_middleware_result(self, *mw_classes, start_index: int | None = None):
-        setting = self._construct_mw_setting(*mw_classes, start_index=start_index)
+            async def start(self):
+                for i in range(2):
+                    yield Request(f"https://example.com/{i}", dont_filter=True)
+                yield {"name": "test item"}
+
+        setting = self._construct_mw_setting(*mw_classes)
         self.crawler = get_crawler(
-            Spider, {"SPIDER_MIDDLEWARES_BASE": {}, "SPIDER_MIDDLEWARES": setting}
+            TestSpider, {"SPIDER_MIDDLEWARES_BASE": {}, "SPIDER_MIDDLEWARES": setting}
         )
-        self.spider = self.crawler._create_spider("foo")
+        self.spider = self.crawler._create_spider()
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
-        start_requests = iter(self._start_requests())
-        results = yield self.mwman.process_start_requests(start_requests, self.spider)
-        return results
+        return await self.mwman.process_start(self.spider)
 
-    def test_simple(self):
+    @deferred_f_from_coro_f
+    async def test_simple(self):
         """Simple mw"""
-        return self._test_simple_base(self.MW_SIMPLE)
+        start = await self._get_processed_start(self.MW_SIMPLE)
+        assert isasyncgen(start)
+        start_list = await collect_asyncgen(start)
+        assert len(start_list) == self.RESULT_COUNT
+        assert isinstance(start_list[0], self.ITEM_TYPE)
 
 
 class UniversalMiddlewareNoSync:
@@ -507,7 +514,7 @@ class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
     MW_ASYNCGEN = ProcessSpiderOutputAsyncGenMiddleware
     MW_UNIVERSAL = ProcessSpiderOutputUniversalMiddleware
     MW_EXC_SIMPLE = ProcessSpiderExceptionSimpleIterableMiddleware
-    MW_EXC_ASYNCGEN = ProcessSpiderExceptionAsyncIterableMiddleware
+    MW_EXC_ASYNCGEN = ProcessSpiderExceptionAsyncIteratorMiddleware
 
     def _scrape_func(self, *args, **kwargs):
         1 / 0

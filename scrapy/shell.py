@@ -24,6 +24,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.conf import get_config
 from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
 from scrapy.utils.response import open_in_browser
@@ -102,25 +103,33 @@ class Shell:
             # set the asyncio event loop for the current thread
             event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
             set_asyncio_event_loop(event_loop_path)
-        spider = self._open_spider(request, spider)
+
+        def crawl_request(_):
+            assert self.crawler.engine is not None
+            self.crawler.engine.crawl(request)
+
+        d2 = self._open_spider(request, spider)
+        d2.addCallback(crawl_request)
+
         d = _request_deferred(request)
         d.addCallback(lambda x: (x, spider))
-        assert self.crawler.engine
-        self.crawler.engine.crawl(request)
         return d
 
-    def _open_spider(self, request: Request, spider: Spider | None) -> Spider:
+    @deferred_f_from_coro_f
+    async def _open_spider(self, request: Request, spider: Spider | None) -> None:
         if self.spider:
-            return self.spider
+            return
 
         if spider is None:
             spider = self.crawler.spider or self.crawler._create_spider()
 
         self.crawler.spider = spider
         assert self.crawler.engine
-        self.crawler.engine.open_spider(spider, close_if_idle=False)
+        await maybe_deferred_to_future(
+            self.crawler.engine.open_spider(spider, close_if_idle=False)
+        )
+        self.crawler.engine._start_request_processing()
         self.spider = spider
-        return spider
 
     def fetch(
         self,

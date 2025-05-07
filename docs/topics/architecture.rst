@@ -150,7 +150,7 @@ requests).
 Use a Spider middleware if you need to
 
 * post-process output of spider callbacks - change/add/remove requests or items;
-* post-process start_requests;
+* post-process start requests or items;
 * handle spider exceptions;
 * call errback instead of callback for some of the requests based on response
   content.

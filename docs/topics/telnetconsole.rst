@@ -59,6 +59,8 @@ Default Username and Password can be overridden by the settings
 You need the telnet program which comes installed by default in Windows, and
 most Linux distros.
 
+.. _telnet-vars:
+
 Available variables in the telnet console
 =========================================
 
@@ -76,8 +78,6 @@ convenience:
 | ``engine``     | Crawler.engine attribute                                          |
 +----------------+-------------------------------------------------------------------+
 | ``spider``     | the active spider                                                 |
-+----------------+-------------------------------------------------------------------+
-| ``slot``       | the engine slot                                                   |
 +----------------+-------------------------------------------------------------------+
 | ``extensions`` | the Extension Manager (Crawler.extensions attribute)              |
 +----------------+-------------------------------------------------------------------+
@@ -114,10 +114,10 @@ using the telnet console::
     engine.scraper.is_idle()                        : False
     engine.spider.name                              : followall
     engine.spider_is_idle()                         : False
-    engine.slot.closing                             : False
-    len(engine.slot.inprogress)                     : 16
-    len(engine.slot.scheduler.dqs or [])            : 0
-    len(engine.slot.scheduler.mqs)                  : 92
+    engine._slot.closing                            : False
+    len(engine._slot.inprogress)                    : 16
+    len(engine._slot.scheduler.dqs or [])           : 0
+    len(engine._slot.scheduler.mqs)                 : 92
     len(engine.scraper.slot.queue)                  : 0
     len(engine.scraper.slot.active)                 : 0
     engine.scraper.slot.active_size                 : 0

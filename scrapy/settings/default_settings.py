@@ -305,6 +305,8 @@ SCHEDULER = "scrapy.core.scheduler.Scheduler"
 SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleLifoDiskQueue"
 SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.LifoMemoryQueue"
 SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ScrapyPriorityQueue"
+SCHEDULER_START_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
+SCHEDULER_START_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE = 5000000
 
@@ -315,6 +317,7 @@ SPIDER_MIDDLEWARES = {}
 
 SPIDER_MIDDLEWARES_BASE = {
     # Engine side
+    "scrapy.spidermiddlewares.start.StartSpiderMiddleware": 25,
     "scrapy.spidermiddlewares.httperror.HttpErrorMiddleware": 50,
     "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
     "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,

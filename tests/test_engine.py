@@ -29,7 +29,7 @@ from twisted.trial import unittest
 from twisted.web import server, static, util
 
 from scrapy import signals
-from scrapy.core.engine import ExecutionEngine, Slot
+from scrapy.core.engine import ExecutionEngine, _Slot
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import CloseSpider, IgnoreRequest
 from scrapy.http import Request
@@ -92,8 +92,9 @@ class MySpider(Spider):
 
 
 class DupeFilterSpider(MySpider):
-    def start_requests(self):
-        return (Request(url) for url in self.start_urls)  # no dont_filter=True
+    async def start(self):
+        for url in self.start_urls:
+            yield Request(url)  # no dont_filter=True
 
 
 class DictItemsSpider(MySpider):
@@ -149,7 +150,6 @@ class CrawlerRun:
     """A class to run the crawler and keep track of events occurred"""
 
     def __init__(self, spider_class):
-        self.spider = None
         self.respplug = []
         self.reqplug = []
         self.reqdropped = []
@@ -190,7 +190,6 @@ class CrawlerRun:
             self.response_downloaded, signals.response_downloaded
         )
         self.crawler.crawl(start_urls=start_urls)
-        self.spider = self.crawler.spider
 
         self.deferred = defer.Deferred()
         dispatcher.connect(self.stop, signals.engine_stopped)
@@ -296,7 +295,7 @@ class TestEngineBase(unittest.TestCase):
         assert len(run.itemerror) == 2
         for item, response, spider, failure in run.itemerror:
             assert failure.value.__class__ is ZeroDivisionError
-            assert spider == run.spider
+            assert spider == run.crawler.spider
 
             assert item["url"] == response.url
             if "item1.html" in item["url"]:
@@ -377,11 +376,14 @@ class TestEngineBase(unittest.TestCase):
         assert signals.spider_closed in run.signals_caught
         assert signals.headers_received in run.signals_caught
 
-        assert {"spider": run.spider} == run.signals_caught[signals.spider_opened]
-        assert {"spider": run.spider} == run.signals_caught[signals.spider_idle]
-        assert {"spider": run.spider, "reason": "finished"} == run.signals_caught[
-            signals.spider_closed
+        assert {"spider": run.crawler.spider} == run.signals_caught[
+            signals.spider_opened
         ]
+        assert {"spider": run.crawler.spider} == run.signals_caught[signals.spider_idle]
+        assert {
+            "spider": run.crawler.spider,
+            "reason": "finished",
+        } == run.signals_caught[signals.spider_closed]
 
 
 class TestEngine(TestEngineBase):
@@ -419,9 +421,10 @@ class TestEngine(TestEngineBase):
     def test_crawler_change_close_reason_on_idle(self):
         run = CrawlerRun(ChangeCloseReasonSpider)
         yield run.run()
-        assert {"spider": run.spider, "reason": "custom_reason"} == run.signals_caught[
-            signals.spider_closed
-        ]
+        assert {
+            "spider": run.crawler.spider,
+            "reason": "custom_reason",
+        } == run.signals_caught[signals.spider_closed]
 
     @defer.inlineCallbacks
     def test_close_downloader(self):
@@ -471,7 +474,7 @@ class TestEngine(TestEngineBase):
         finally:
             timer.cancel()
 
-        assert b"Traceback" not in stderr
+        assert b"Traceback" not in stderr, stderr
 
 
 def test_request_scheduled_signal(caplog):
@@ -491,7 +494,13 @@ def test_request_scheduled_signal(caplog):
     engine = ExecutionEngine(crawler, lambda _: None)
     engine.downloader._slot_gc_loop.stop()
     scheduler = TestScheduler()
-    engine.slot = Slot((), None, Mock(), scheduler)
+
+    async def start():
+        return
+        yield
+
+    engine._start = start()
+    engine._slot = _Slot(False, Mock(), scheduler)
     crawler.signals.connect(signal_handler, request_scheduled)
     keep_request = Request("https://keep.example")
     engine._schedule_request(keep_request)

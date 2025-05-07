@@ -80,10 +80,14 @@ class Command(ScrapyCommand):
         assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
 
+        async def start(self):
+            for request in conman.from_spider(self, result):
+                yield request
+
         with set_environ(SCRAPY_CHECK="true"):
             for spidername in args or spider_loader.list():
                 spidercls = spider_loader.load(spidername)
-                spidercls.start_requests = lambda s: conman.from_spider(s, result)  # type: ignore[assignment,method-assign,return-value]
+                spidercls.start = start  # type: ignore[assignment,method-assign,return-value]
 
                 tested_methods = conman.tested_methods_from_spidercls(spidercls)
                 if opts.list:
@@ -101,10 +105,10 @@ class Command(ScrapyCommand):
                     for method in sorted(methods):
                         print(f"  * {method}")
             else:
-                start = time.time()
+                start_time = time.time()
                 self.crawler_process.start()
                 stop = time.time()
 
                 result.printErrors()
-                result.printSummary(start, stop)
+                result.printSummary(start_time, stop)
                 self.exitcode = int(not result.wasSuccessful())

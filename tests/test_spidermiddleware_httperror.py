@@ -30,7 +30,7 @@ class _HttpErrorSpider(MockServerSpider):
         self.skipped = set()
         self.parsed = set()
 
-    def start_requests(self):
+    async def start(self):
         for url in self.start_urls:
             yield Request(url, self.parse, errback=self.on_error)
 

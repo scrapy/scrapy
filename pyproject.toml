@@ -238,7 +238,9 @@ markers = [
     "requires_botocore: marks tests that need botocore (but not boto3)",
     "requires_boto3: marks tests that need botocore and boto3",
 ]
-filterwarnings = []
+filterwarnings = [
+    "ignore::DeprecationWarning:twisted.web.static"
+]
 
 [tool.ruff.lint]
 extend-select = [

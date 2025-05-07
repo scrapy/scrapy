@@ -6,8 +6,8 @@ Coroutines
 
 .. versionadded:: 2.0
 
-Scrapy has :ref:`partial support <coroutine-support>` for the
-:ref:`coroutine syntax <async>`.
+Scrapy :ref:`supports <coroutine-support>` the :ref:`coroutine syntax <async>`
+(i.e. ``async def``).
 
 
 .. _coroutine-support:
@@ -17,6 +17,11 @@ Supported callables
 
 The following callables may be defined as coroutines using ``async def``, and
 hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
+
+-   The :meth:`~scrapy.spiders.Spider.start` spider method, which *must* be
+    defined as an :term:`asynchronous generator`.
+
+    .. versionadded: VERSION
 
 -   :class:`~scrapy.Request` callbacks.
 
@@ -38,19 +43,25 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     methods of
     :ref:`downloader middlewares <topics-downloader-middleware-custom>`.
 
--   :ref:`Signal handlers that support deferreds <signal-deferred>`.
-
 -   The
     :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`
     method of :ref:`spider middlewares <topics-spider-middleware>`.
 
-    It must be defined as an :term:`asynchronous generator`. The input
-    ``result`` parameter is an :term:`asynchronous iterable`.
+    If defined as a coroutine, it must be an :term:`asynchronous generator`.
+    The input ``result`` parameter is an :term:`asynchronous iterable`.
 
     See also :ref:`sync-async-spider-middleware` and
     :ref:`universal-spider-middleware`.
 
     .. versionadded:: 2.7
+
+-   The :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` method
+    of :ref:`spider middlewares <custom-spider-middleware>`, which *must* be
+    defined as an :term:`asynchronous generator`.
+
+    .. versionadded:: VERSION
+
+-   :ref:`Signal handlers that support deferreds <signal-deferred>`.
 
 
 .. _coroutine-deferred-apis:
@@ -232,8 +243,9 @@ This means you can use many useful Python libraries providing such code:
 
 Common use cases for asynchronous code include:
 
-* requesting data from websites, databases and other services (in callbacks,
-  pipelines and middlewares);
+* requesting data from websites, databases and other services (in
+  :meth:`~scrapy.spiders.Spider.start`, callbacks, pipelines and
+  middlewares);
 * storing data in databases (in pipelines and middlewares);
 * delaying the spider initialization until some external event (in the
   :signal:`spider_opened` handler);

@@ -153,7 +153,7 @@ class TestCrawler(TestBaseCrawler):
                 super().__init__(**kwargs)
                 self.crawler = crawler
 
-            def start_requests(self):
+            async def start(self):
                 MySpider.result = crawler.get_downloader_middleware(MySpider.cls)
                 return
                 yield
@@ -233,7 +233,7 @@ class TestCrawler(TestBaseCrawler):
                 super().__init__(**kwargs)
                 self.crawler = crawler
 
-            def start_requests(self):
+            async def start(self):
                 MySpider.result = crawler.get_extension(MySpider.cls)
                 return
                 yield
@@ -313,7 +313,7 @@ class TestCrawler(TestBaseCrawler):
                 super().__init__(**kwargs)
                 self.crawler = crawler
 
-            def start_requests(self):
+            async def start(self):
                 MySpider.result = crawler.get_item_pipeline(MySpider.cls)
                 return
                 yield
@@ -393,7 +393,7 @@ class TestCrawler(TestBaseCrawler):
                 super().__init__(**kwargs)
                 self.crawler = crawler
 
-            def start_requests(self):
+            async def start(self):
                 MySpider.result = crawler.get_spider_middleware(MySpider.cls)
                 return
                 yield
@@ -580,8 +580,9 @@ class ExceptionSpider(scrapy.Spider):
 class NoRequestsSpider(scrapy.Spider):
     name = "no_request"
 
-    def start_requests(self):
-        return []
+    async def start(self):
+        return
+        yield
 
 
 @pytest.mark.usefixtures("reactor_pytest")
