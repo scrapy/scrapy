@@ -162,8 +162,17 @@ Those command-specific default settings are specified in the
 6. Default global settings
 --------------------------
 
-The global defaults are located in the ``scrapy.settings.default_settings``
-module and documented in the :ref:`topics-settings-ref` section.
+The ``scrapy.settings.default_settings`` module defines global default values
+for some :ref:`built-in settings <topics-settings-ref>`.
+
+.. note:: :command:`startproject` generates a ``settings.py`` file that sets
+    some settings to different values.
+
+    The reference documentation of settings indicates the default value if one
+    exists. If :command:`startproject` sets a value, that value is documented
+    as default, and the value from ``scrapy.settings.default_settings`` is
+    documented as “fallback”.
+
 
 Compatibility with pickle
 =========================
@@ -461,7 +470,7 @@ Note that the event loop class must inherit from :class:`asyncio.AbstractEventLo
 BOT_NAME
 --------
 
-Default: ``'scrapybot'``
+Default: ``<project name>`` (:ref:`fallback <default-settings>`: ``'scrapybot'``)
 
 The name of the bot implemented by this Scrapy project (also known as the
 project name). This name will be used for the logging too.
@@ -1563,7 +1572,7 @@ email notifying about it. If zero, no warning will be produced.
 NEWSPIDER_MODULE
 ----------------
 
-Default: ``''``
+Default: ``"<project name>.spiders"`` (:ref:`fallback <default-settings>`: ``""``)
 
 Module where to create new spiders using the :command:`genspider` command.
 
@@ -1622,9 +1631,7 @@ Adjust redirect request priority relative to original request:
 ROBOTSTXT_OBEY
 --------------
 
-Default: ``False``
-
-Scope: ``scrapy.downloadermiddlewares.robotstxt``
+Default: ``True`` (:ref:`fallback <default-settings>`: ``False``)
 
 If enabled, Scrapy will respect robots.txt policies. For more information see
 :ref:`topics-dlmw-robots`.
@@ -1838,7 +1845,7 @@ the spider. For more info see :ref:`topics-spider-middleware-setting`.
 SPIDER_MODULES
 --------------
 
-Default: ``[]``
+Default: ``["<project name>.spiders"]`` (:ref:`fallback <default-settings>`: ``[]``)
 
 A list of modules where Scrapy will look for spiders.
 
