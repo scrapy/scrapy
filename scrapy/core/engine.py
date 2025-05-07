@@ -383,7 +383,7 @@ class ExecutionEngine:
             yield d
         yield self.scraper.open_spider(spider)
         assert self.crawler.stats
-        self.crawler.stats.open_spider(spider)
+        self.crawler.stats.open_spider()
         yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
         self.slot.nextcall.schedule()
         self.slot.heartbeat.start(5)
@@ -456,7 +456,7 @@ class ExecutionEngine:
 
         def close_stats(_: Any) -> None:
             assert self.crawler.stats
-            self.crawler.stats.close_spider(spider, reason=reason)
+            self.crawler.stats.close_spider(reason=reason)
 
         dfd.addBoth(close_stats)
         dfd.addErrback(log_failure("Stats close failure"))

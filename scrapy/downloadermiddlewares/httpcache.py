@@ -83,16 +83,16 @@ class HttpCacheMiddleware:
             spider, request
         )
         if cachedresponse is None:
-            self.stats.inc_value("httpcache/miss", spider=spider)
+            self.stats.inc_value("httpcache/miss")
             if self.ignore_missing:
-                self.stats.inc_value("httpcache/ignore", spider=spider)
+                self.stats.inc_value("httpcache/ignore")
                 raise IgnoreRequest(f"Ignored request not in cache: {request}")
             return None  # first time request
 
         # Return cached response only if not expired
         cachedresponse.flags.append("cached")
         if self.policy.is_cached_response_fresh(cachedresponse, request):
-            self.stats.inc_value("httpcache/hit", spider=spider)
+            self.stats.inc_value("httpcache/hit")
             return cachedresponse
 
         # Keep a reference to cached response to avoid a second cache lookup on
@@ -120,15 +120,15 @@ class HttpCacheMiddleware:
         # Do not validate first-hand responses
         cachedresponse: Response | None = request.meta.pop("cached_response", None)
         if cachedresponse is None:
-            self.stats.inc_value("httpcache/firsthand", spider=spider)
+            self.stats.inc_value("httpcache/firsthand")
             self._cache_response(spider, response, request, cachedresponse)
             return response
 
         if self.policy.is_cached_response_valid(cachedresponse, response, request):
-            self.stats.inc_value("httpcache/revalidate", spider=spider)
+            self.stats.inc_value("httpcache/revalidate")
             return cachedresponse
 
-        self.stats.inc_value("httpcache/invalidate", spider=spider)
+        self.stats.inc_value("httpcache/invalidate")
         self._cache_response(spider, response, request, cachedresponse)
         return response
 
@@ -139,7 +139,7 @@ class HttpCacheMiddleware:
         if cachedresponse is not None and isinstance(
             exception, self.DOWNLOAD_EXCEPTIONS
         ):
-            self.stats.inc_value("httpcache/errorrecovery", spider=spider)
+            self.stats.inc_value("httpcache/errorrecovery")
             return cachedresponse
         return None
 
@@ -151,7 +151,7 @@ class HttpCacheMiddleware:
         cachedresponse: Response | None,
     ) -> None:
         if self.policy.should_cache_response(response, request):
-            self.stats.inc_value("httpcache/store", spider=spider)
+            self.stats.inc_value("httpcache/store")
             self.storage.store_response(spider, request, response)
         else:
-            self.stats.inc_value("httpcache/uncacheable", spider=spider)
+            self.stats.inc_value("httpcache/uncacheable")
