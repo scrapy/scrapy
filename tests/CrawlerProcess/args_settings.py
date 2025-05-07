@@ -13,9 +13,10 @@ class NoRequestsSpider(scrapy.Spider):
         spider.settings.set("FOO", kwargs.get("foo"))
         return spider
 
-    def start_requests(self):
+    async def start(self):
         self.logger.info(f"The value of FOO is {self.settings.getint('FOO')}")
-        return []
+        return
+        yield
 
 
 process = CrawlerProcess(settings={})

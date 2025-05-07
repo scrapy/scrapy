@@ -10,8 +10,9 @@ selectreactor.install()
 class NoRequestsSpider(scrapy.Spider):
     name = "no_request"
 
-    def start_requests(self):
-        return []
+    async def start(self):
+        return
+        yield
 
 
 process = CrawlerProcess(settings={})
