@@ -710,7 +710,8 @@ connections (for ``HTTP10DownloadHandler``).
 
 .. note::
 
-    HTTP/1.0 is rarely used nowadays so you can safely ignore this setting,
+    HTTP/1.0 is rarely used nowadays and its Scrapy support is deprecated,
+    so you can safely ignore this setting,
     unless you really want to use HTTP/1.0 and override
     :setting:`DOWNLOAD_HANDLERS` for ``http(s)`` scheme accordingly,
     i.e. to ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
@@ -2064,7 +2065,7 @@ current platform.
    ``twisted.internet.asyncioreactor.AsyncioSelectorReactor`` in the generated
    ``settings.py`` file.
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.13
    The default value was changed from ``None`` to
    ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``.
 

@@ -17,6 +17,8 @@ if TYPE_CHECKING:
 class BaseSpiderMiddleware:
     """Optional base class for spider middlewares.
 
+    .. versionadded:: 2.13
+
     This class provides helper methods for asynchronous
     ``process_spider_output()`` and ``process_start()`` methods. Middlewares
     that don't have either of these methods don't need to use this class.

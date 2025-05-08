@@ -21,7 +21,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 -   The :meth:`~scrapy.spiders.Spider.start` spider method, which *must* be
     defined as an :term:`asynchronous generator`.
 
-    .. versionadded: VERSION
+    .. versionadded: 2.13
 
 -   :class:`~scrapy.Request` callbacks.
 
@@ -59,7 +59,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     of :ref:`spider middlewares <custom-spider-middleware>`, which *must* be
     defined as an :term:`asynchronous generator`.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.13
 
 -   :ref:`Signal handlers that support deferreds <signal-deferred>`.
 
@@ -441,3 +441,9 @@ For example:
           feature will be removed, and all spider middlewares will be expected
           to define their ``process_spider_output`` method as an asynchronous
           generator.
+
+Since 2.13.0, Scrapy provides a base class,
+:class:`~scrapy.spidermiddlewares.base.BaseSpiderMiddleware`, which implements
+the ``process_spider_output()`` and ``process_spider_output_async()`` methods,
+so instead of duplicating the processing code you can override the
+``get_processed_request()`` and/or the ``get_processed_item()`` method.
