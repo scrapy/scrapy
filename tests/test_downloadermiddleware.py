@@ -25,7 +25,7 @@ class TestManagerBase(TestCase):
         self.spider = self.crawler._create_spider("foo")
         self.mwman = DownloaderMiddlewareManager.from_crawler(self.crawler)
         self.crawler.engine = self.crawler._create_engine()
-        return self.crawler.engine.open_spider(self.spider, start_requests=())
+        return self.crawler.engine.open_spider(self.spider)
 
     def tearDown(self):
         return self.crawler.engine.close_spider(self.spider)
