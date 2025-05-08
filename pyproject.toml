@@ -116,7 +116,7 @@ module = "twisted"
 implicit_reexport = true
 
 [tool.bumpversion]
-current_version = "2.12.0"
+current_version = "2.13.0"
 commit = true
 tag = true
 tag_name = "{new_version}"
