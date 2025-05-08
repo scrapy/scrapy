@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.13.0:
 
-Scrapy 2.13.0 (unreleased)
+Scrapy 2.13.0 (2025-05-08)
 --------------------------
 
 Highlights:
