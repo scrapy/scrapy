@@ -85,8 +85,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 "either disable or make universal 1 of those 2 sets of "
                 "spider middlewares. Making a spider middleware universal "
                 "means having it define both methods. See the release notes "
-                "of Scrapy VERSION for details: "
-                "https://docs.scrapy.org/en/VERSION/news.html"
+                "of Scrapy 2.13 for details: "
+                "https://docs.scrapy.org/en/2.13/news.html"
             )
 
         self._use_start_requests = bool(deprecated_middlewares)
@@ -103,15 +103,15 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 f"been deprecated in favor of a new method, process_start(), "
                 f"to support asynchronous code execution. "
                 f"process_start_requests() will stop being called in a future "
-                f"version of Scrapy. If you use Scrapy VERSION or higher "
+                f"version of Scrapy. If you use Scrapy 2.13 or higher "
                 f"only, replace process_start_requests() with "
                 f"process_start(); note that process_start() is a coroutine "
                 f"(async def). If you need to maintain compatibility with "
                 f"lower Scrapy versions, when defining "
                 f"process_start_requests() in a spider middleware class, "
                 f"define process_start() as well. See the release notes of "
-                f"Scrapy VERSION for details: "
-                f"https://docs.scrapy.org/en/VERSION/news.html",
+                f"Scrapy 2.13 for details: "
+                f"https://docs.scrapy.org/en/2.13/news.html",
                 ScrapyDeprecationWarning,
             )
 
@@ -435,15 +435,15 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 f"start_requests() has been deprecated in favor of a new "
                 f"method, start(), to support asynchronous code "
                 f"execution. start_requests() will stop being called in a "
-                f"future version of Scrapy. If you use Scrapy VERSION or "
+                f"future version of Scrapy. If you use Scrapy 2.13 or "
                 f"higher only, replace start_requests() with start(); "
                 f"note that start() is a coroutine (async def). If you "
                 f"need to maintain compatibility with lower Scrapy versions, "
                 f"when overriding start_requests() in a spider class, "
                 f"override start() as well; you can use super() to "
                 f"reuse the inherited start() implementation without "
-                f"copy-pasting. See the release notes of Scrapy VERSION for "
-                f"details: https://docs.scrapy.org/en/VERSION/news.html",
+                f"copy-pasting. See the release notes of Scrapy 2.13 for "
+                f"details: https://docs.scrapy.org/en/2.13/news.html",
                 ScrapyDeprecationWarning,
             )
 
@@ -469,8 +469,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 f"deprecated spider middlewares (and earlier Scrapy versions) "
                 f"by defining a sync start_requests() method that works "
                 f"similarly to its existing start() method. See the "
-                f"release notes of Scrapy VERSION for details: "
-                f"https://docs.scrapy.org/en/VERSION/news.html"
+                f"release notes of Scrapy 2.13 for details: "
+                f"https://docs.scrapy.org/en/2.13/news.html"
             )
 
     # This method is only needed until _async compatibility methods are removed.

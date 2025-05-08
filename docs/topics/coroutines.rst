@@ -21,7 +21,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 -   The :meth:`~scrapy.spiders.Spider.start` spider method, which *must* be
     defined as an :term:`asynchronous generator`.
 
-    .. versionadded: VERSION
+    .. versionadded: 2.13
 
 -   :class:`~scrapy.Request` callbacks.
 
@@ -59,7 +59,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     of :ref:`spider middlewares <custom-spider-middleware>`, which *must* be
     defined as an :term:`asynchronous generator`.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.13
 
 -   :ref:`Signal handlers that support deferreds <signal-deferred>`.
 
