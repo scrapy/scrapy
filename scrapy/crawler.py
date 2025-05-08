@@ -46,7 +46,6 @@ if TYPE_CHECKING:
     from scrapy.statscollectors import StatsCollector
     from scrapy.utils.request import RequestFingerprinterProtocol
 
-
 logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
@@ -83,6 +82,9 @@ class Crawler:
         self.request_fingerprinter: RequestFingerprinterProtocol | None = None
         self.spider: Spider | None = None
         self.engine: ExecutionEngine | None = None
+
+        self._component_cache: dict = {}
+        self._cache_max_size: int = 5
 
     def _update_root_log_handler(self) -> None:
         if get_scrapy_root_handler() is not None:
@@ -211,6 +213,26 @@ class Crawler:
             )
         return self._get_component(cls, self.engine.downloader.middleware.middlewares)
 
+    def LRU(self) -> None:
+        """Remove the least recently used component from the component cache.
+
+        This method implements the Least Recently Used (LRU) cache eviction policy,
+        removing the component that has not been accessed for the longest time.
+
+        .. versionadded:: 2.12
+
+        This method is called internally when the component cache reaches its
+        maximum size of 5 items.
+        """
+        older = 0
+        key_older = None
+        for component in self._component_cache.items():
+            if component[1][1] > older:
+                older = component[1][1]
+                key_older = component[0]
+
+        self._component_cache.pop(key_older)
+
     def get_extension(self, cls: type[_T]) -> _T | None:
         """Return the run-time instance of an :ref:`extension
         <topics-extensions>` of the specified class or a subclass,
@@ -227,7 +249,22 @@ class Crawler:
                 "Crawler.get_extension() can only be called after the "
                 "extension manager has been created."
             )
-        return self._get_component(cls, self.extensions.middlewares)
+
+        # Update the cache timestamp for all components
+        for k in self._component_cache:
+            self._component_cache[k][1] += 1
+
+        in_cache = self._component_cache.get(cls)
+        if in_cache:
+            self._component_cache[cls][1] = 0
+            return in_cache
+
+        result = self._get_component(cls, self.extensions.middlewares)
+        if len(self._component_cache) >= self._cache_max_size:
+            self.LRU()
+
+        self._component_cache[cls] = [result, 0]
+        return result
 
     def get_item_pipeline(self, cls: type[_T]) -> _T | None:
         """Return the run-time instance of a :ref:`item pipeline
