@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 from twisted.internet import error, reactor
-from twisted.internet.defer import Deferred, maybeDeferred
+from twisted.internet.defer import Deferred
 from twisted.python import failure
 from twisted.trial import unittest
 
@@ -15,7 +15,7 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import deferred_f_from_coro_f
 from tests.test_robotstxt_interface import rerp_available
 
 if TYPE_CHECKING:
@@ -153,9 +153,7 @@ Disallow: /some/randome/page.html
 
         middleware = RobotsTxtMiddleware(self.crawler)
         middleware._logerror = mock.MagicMock(side_effect=middleware._logerror)
-        await maybe_deferred_to_future(
-            middleware.process_request(Request("http://site.local"), None)
-        )
+        await middleware.process_request(Request("http://site.local"), None)
         assert middleware._logerror.called
 
     @deferred_f_from_coro_f
@@ -164,9 +162,7 @@ Disallow: /some/randome/page.html
         err = error.DNSLookupError("Robotstxt address not found")
 
         def immediate_failure(request):
-            deferred = Deferred()
-            deferred.errback(failure.Failure(err))
-            return deferred
+            raise err
 
         self.crawler.engine.download.side_effect = immediate_failure
 
@@ -199,38 +195,39 @@ Disallow: /some/randome/page.html
         middleware.process_request_2(rp, Request("http://site.local/allowed"), None)
         rp.allowed.assert_called_once_with("http://site.local/allowed", "Examplebot")
 
-    def test_robotstxt_local_file(self):
+    @deferred_f_from_coro_f
+    async def test_robotstxt_local_file(self):
         middleware = RobotsTxtMiddleware(self._get_emptybody_crawler())
-        assert not middleware.process_request(
+        middleware.process_request_2 = mock.MagicMock()
+
+        await middleware.process_request(
             Request("data:text/plain,Hello World data"), None
         )
-        assert not middleware.process_request(
+        assert not middleware.process_request_2.called
+
+        await middleware.process_request(
             Request("file:///tests/sample_data/test_site/nothinghere.html"), None
         )
-        assert isinstance(
-            middleware.process_request(Request("http://site.local/allowed"), None),
-            Deferred,
-        )
+        assert not middleware.process_request_2.called
+
+        await middleware.process_request(Request("http://site.local/allowed"), None)
+        assert middleware.process_request_2.called
 
     async def assertNotIgnored(
         self, request: Request, middleware: RobotsTxtMiddleware
     ) -> None:
         spider = None  # not actually used
-        result = await maybe_deferred_to_future(
-            maybeDeferred(middleware.process_request, request, spider)  # type: ignore[call-overload]
-        )
-        assert result is None
+        try:
+            await middleware.process_request(request, spider)  # type: ignore[arg-type]
+        except IgnoreRequest:
+            pytest.fail("IgnoreRequest was raised unexpectedly")
 
     async def assertIgnored(
         self, request: Request, middleware: RobotsTxtMiddleware
     ) -> None:
         spider = None  # not actually used
-        await maybe_deferred_to_future(
-            self.assertFailure(
-                middleware.process_request(request, spider),  # type: ignore[arg-type]
-                IgnoreRequest,
-            )
-        )
+        with pytest.raises(IgnoreRequest):
+            await middleware.process_request(request, spider)  # type: ignore[arg-type]
 
     def assertRobotsTxtRequested(self, base_url: str) -> None:
         calls = self.crawler.engine.download.call_args_list
