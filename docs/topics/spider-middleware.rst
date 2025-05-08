@@ -86,7 +86,7 @@ one or more of these methods:
         You may yield the same type of objects as :meth:`~scrapy.Spider.start`.
 
         To write spider middlewares that work on Scrapy versions lower than
-        VERSION, define also a synchronous ``process_start_requests()`` method
+        2.13, define also a synchronous ``process_start_requests()`` method
         that returns an iterable. For example:
 
         .. code-block:: python

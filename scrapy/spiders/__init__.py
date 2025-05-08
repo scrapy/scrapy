@@ -83,7 +83,7 @@ class Spider(object_ref):
     async def start(self) -> AsyncIterator[Any]:
         """Yield the initial :class:`~scrapy.Request` objects to send.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.13
 
         For example:
 
@@ -115,7 +115,7 @@ class Spider(object_ref):
             async def start(self):
                 yield {"foo": "bar"}
 
-        To write spiders that work on Scrapy versions lower than VERSION,
+        To write spiders that work on Scrapy versions lower than 2.13,
         define also a synchronous ``start_requests()`` method that returns an
         iterable. For example:
 
