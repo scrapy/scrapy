@@ -62,17 +62,102 @@ In addition to native coroutine APIs Scrapy has some APIs that return a
 :class:`~twisted.internet.defer.Deferred` object or take a user-supplied
 function that returns a :class:`~twisted.internet.defer.Deferred` object. These
 APIs are also asynchronous but don't yet support native ``async def`` syntax.
-For example:
+In the future we plan to add support for the ``async def`` syntax to these APIs
+or replace them with other APIs where changing the existing ones is
+possible.
 
--   The :meth:`ExecutionEngine.download` method returns a
-    :class:`~twisted.internet.defer.Deferred` object.
--   A custom download handler needs to define a ``download_request()`` method that
-    returns a :class:`~twisted.internet.defer.Deferred` object.
+The following Scrapy methods return :class:`~twisted.internet.defer.Deferred`
+objects (this list is not complete as it only includes methods that we think
+may be useful for user code):
+
+-   :class:`scrapy.crawler.Crawler`:
+
+    - :meth:`~scrapy.crawler.Crawler.crawl`
+
+    - :meth:`~scrapy.crawler.Crawler.stop`
+
+-   :class:`scrapy.crawler.CrawlerRunner` (also inherited by
+    :class:`scrapy.crawler.CrawlerProcess`):
+
+    - :meth:`~scrapy.crawler.CrawlerRunner.crawl`
+
+    - :meth:`~scrapy.crawler.CrawlerRunner.stop`
+
+    - :meth:`~scrapy.crawler.CrawlerRunner.join`
+
+-   :class:`scrapy.core.engine.ExecutionEngine`:
+
+    - :meth:`~scrapy.core.engine.ExecutionEngine.download`
+
+-   :class:`scrapy.signalmanager.SignalManager`:
+
+    - :meth:`~scrapy.signalmanager.SignalManager.send_catch_log_deferred`
+
+-   :class:`~scrapy.mail.MailSender`
+
+    - :meth:`~scrapy.mail.MailSender.send`
+
+The following user-supplied methods can return
+:class:`~twisted.internet.defer.Deferred` objects (the methods that can also
+return coroutines are listed in :ref:`coroutine-support`):
+
+-   Custom download handlers (see :setting:`DOWNLOAD_HANDLERS`):
+
+    - ``download_request()``
+
+    - ``close()``
+
+-   Custom downloader implementations (see :setting:`DOWNLOADER`):
+
+    - ``fetch()``
+
+-   Custom scheduler implementations (see :setting:`SCHEDULER`):
+
+    - :meth:`~scrapy.core.scheduler.BaseScheduler.open`
+
+    - :meth:`~scrapy.core.scheduler.BaseScheduler.close`
+
+-   Custom dupefilters (see :setting:`DUPEFILTER_CLASS`):
+
+    - ``open()``
+
+    - ``close()``
+
+-   Custom feed storages (see :setting:`FEED_STORAGES`):
+
+    - ``store()``
+
+-   Subclasses of :class:`scrapy.pipelines.media.MediaPipeline`:
+
+    - ``media_to_download()``
+
+    - ``item_completed()``
+
+-   Custom storages used by subclasses of
+    :class:`scrapy.pipelines.files.FilesPipeline`:
+
+    - ``persist_file()``
+
+    - ``stat_file()``
 
 In most cases you can use these APIs in code that otherwise uses coroutines, by
 wrapping a :class:`~twisted.internet.defer.Deferred` object into a
 :class:`~asyncio.Future` object or vice versa. See :ref:`asyncio-await-dfd` for
 more information about this.
+
+For example:
+
+-   The :meth:`ExecutionEngine.download()
+    <scrapy.core.engine.ExecutionEngine.download>` method returns a
+    :class:`~twisted.internet.defer.Deferred` object that fires with the
+    downloaded response. You can use this object directly in Deferred-based
+    code or convert it into a :class:`~asyncio.Future` object with
+    :func:`~scrapy.utils.defer.maybe_deferred_to_future`.
+-   A custom download handler needs to define a ``download_request()`` method
+    that returns a :class:`~twisted.internet.defer.Deferred` object. You can
+    write a method that works with Deferreds and returns one directly, or you
+    can write a coroutine and convert it into a function that returns a
+    Deferred with :func:`~scrapy.utils.defer.deferred_f_from_coro_f`.
 
 
 General usage

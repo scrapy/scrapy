@@ -487,18 +487,17 @@ def test_request_scheduled_signal(caplog):
         if "drop" in request.url:
             raise IgnoreRequest
 
-    spider = MySpider()
-    crawler = get_crawler(spider.__class__)
+    crawler = get_crawler(MySpider)
     engine = ExecutionEngine(crawler, lambda _: None)
     engine.downloader._slot_gc_loop.stop()
     scheduler = TestScheduler()
     engine.slot = Slot((), None, Mock(), scheduler)
     crawler.signals.connect(signal_handler, request_scheduled)
     keep_request = Request("https://keep.example")
-    engine._schedule_request(keep_request, spider)
+    engine._schedule_request(keep_request)
     drop_request = Request("https://drop.example")
     caplog.set_level(DEBUG)
-    engine._schedule_request(drop_request, spider)
+    engine._schedule_request(drop_request)
     assert scheduler.enqueued == [keep_request], (
         f"{scheduler.enqueued!r} != [{keep_request!r}]"
     )
