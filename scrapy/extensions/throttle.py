@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import logging
+import warnings
 from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider, signals
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -44,25 +45,45 @@ class AutoThrottle:
 
     def _spider_opened(self, spider: Spider) -> None:
         self.mindelay = self._min_delay(spider)
-        self.maxdelay = self._max_delay(spider)
-        spider.download_delay = self._start_delay(spider)  # type: ignore[attr-defined]
+        self.maxdelay = self._max_delay()
+        spider.download_delay = self._start_delay()  # type: ignore[attr-defined]
 
-    def _min_delay(self, spider: Spider) -> float:
-        s = self.crawler.settings
-        return getattr(spider, "download_delay", s.getfloat("DOWNLOAD_DELAY"))
+    def _min_delay(self, spider: Spider | None = None) -> float:
+        if spider is not None:
+            warnings.warn(
+                "Passing a 'spider' argument to AutoThrottle._min_delay is deprecated.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            return getattr(
+                spider,
+                "download_delay",
+                self.crawler.settings.getfloat("DOWNLOAD_DELAY"),
+            )
+        return getattr(
+            self.crawler.spider,
+            "download_delay",
+            self.crawler.settings.getfloat("DOWNLOAD_DELAY"),
+        )
 
-    def _max_delay(self, spider: Spider) -> float:
+    def _max_delay(self) -> float:
         return self.crawler.settings.getfloat("AUTOTHROTTLE_MAX_DELAY")
 
-    def _start_delay(self, spider: Spider) -> float:
+    def _start_delay(self) -> float:
         return max(
             self.mindelay, self.crawler.settings.getfloat("AUTOTHROTTLE_START_DELAY")
         )
 
     def _response_downloaded(
-        self, response: Response, request: Request, spider: Spider
+        self, response: Response, request: Request, spider: Spider | None = None
     ) -> None:
-        key, slot = self._get_slot(request, spider)
+        if spider is not None:
+            warnings.warn(
+                "Passing a 'spider' argument to AutoThrottle._response_downloaded is deprecated.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        key, slot = self._get_slot(request)
         latency = request.meta.get("download_latency")
         if (
             latency is None
@@ -89,12 +110,10 @@ class AutoThrottle:
                     "latency": latency * 1000,
                     "size": size,
                 },
-                extra={"spider": spider},
+                extra={"spider": self.crawler.spider},
             )
 
-    def _get_slot(
-        self, request: Request, spider: Spider
-    ) -> tuple[str | None, Slot | None]:
+    def _get_slot(self, request: Request) -> tuple[str | None, Slot | None]:
         key: str | None = request.meta.get("download_slot")
         if key is None:
             return None, None
