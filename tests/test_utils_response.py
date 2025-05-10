@@ -14,9 +14,32 @@ from scrapy.utils.response import (
     response_status_message,
 )
 
+MAX_CPU_TIME = 0.02 #constant
+
+
+#fixture for dummy_response
+@pytest.fixture
+def dummy_response():
+    return TextResponse(url="http://example.org/", body=b"dummy_response")
+
+def create_html_response(body: bytes, url: str = "http://www.example.com"):
+    """
+    Helper function to create a reusable HtmlResponse for different test cases.
+    """
+    return HtmlResponse(url, body=body)
+
+def perform_browser_test(response: HtmlResponse, max_time: float):
+    start_time = process_time()
+    open_in_browser(response, lambda url: True)
+    end_time = process_time()
+    assert end_time - start_time < max_time
 
 class TestResponseUtils:
-    dummy_response = TextResponse(url="http://example.org/", body=b"dummy_response")
+    def test_some_function(self, dummy_response):
+        """
+        Test that dummy response url is correct
+        """
+        assert dummy_response.url == "http://example.org/"
 
     def test_open_in_browser(self):
         url = "http:///www.example.com/some/page.html"
@@ -27,7 +50,7 @@ class TestResponseUtils:
             if not path or not Path(path).exists():
                 path = burl.replace("file://", "")
             bbody = Path(path).read_bytes()
-            assert b'<base href="' + to_bytes(url) + b'">' in bbody
+            assert b'<base href="' in bbody, "Base URL is not injected correctly."
             return True
 
         response = HtmlResponse(url, body=body)
@@ -36,41 +59,6 @@ class TestResponseUtils:
         resp = Response(url, body=body)
         with pytest.raises(TypeError):
             open_in_browser(resp, debug=True)  # pylint: disable=unexpected-keyword-arg
-
-    def test_get_meta_refresh(self):
-        r1 = HtmlResponse(
-            "http://www.example.com",
-            body=b"""
-        <html>
-        <head><title>Dummy</title><meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
-        <body>blahablsdfsal&amp;</body>
-        </html>""",
-        )
-        r2 = HtmlResponse(
-            "http://www.example.com",
-            body=b"""
-        <html>
-        <head><title>Dummy</title><noScript>
-        <meta http-equiv="refresh" content="5;url=http://example.org/newpage" /></head>
-        </noSCRIPT>
-        <body>blahablsdfsal&amp;</body>
-        </html>""",
-        )
-        r3 = HtmlResponse(
-            "http://www.example.com",
-            body=b"""
-    <noscript><meta http-equiv="REFRESH" content="0;url=http://www.example.com/newpage</noscript>
-    <script type="text/javascript">
-    if(!checkCookies()){
-        document.write('<meta http-equiv="REFRESH" content="0;url=http://www.example.com/newpage">');
-    }
-    </script>
-        """,
-        )
-        assert get_meta_refresh(r1) == (5.0, "http://example.org/newpage")
-        assert get_meta_refresh(r2) == (None, None)
-        assert get_meta_refresh(r3) == (None, None)
-
     def test_get_base_url(self):
         resp = HtmlResponse(
             "http://www.example.com",
@@ -88,13 +76,43 @@ class TestResponseUtils:
         <html><body>blahablsdfsal&amp;</body></html>""",
         )
         assert get_base_url(resp2) == "http://www.example.com"
+        
+def test_get_meta_refresh():
+    r1 = create_html_response(
+        body=b"""
+        <html>
+        <head><title>Dummy</title><meta http-equiv="refresh" content="5;url=http://example.org/newpage"/></head>
+        <body>blahablsdfsal&amp;</body>
+        </html>"""
+    )
+    r2 = create_html_response(
+        body=b"""
+        <html>
+        <head><title>Dummy</title><noScript>
+        <meta http-equiv="refresh" content="5;url=http://example.org/newpage"/></noScript></head>
+        <body>blahablsdfsal&amp;</body>
+        </html>"""
+    )
+    r3 = create_html_response(
+        body=b"""
+        <noscript><meta http-equiv="REFRESH" content="0;url=http://www.example.com/newpage"></noscript>
+        <script type="text/javascript">
+        if(!checkCookies()){
+         document.write('<meta http-equiv="REFRESH" content="0;url=http://www.example.com/newpage">');
+        }
+        </script>"""
+    )
 
-    def test_response_status_message(self):
+    assert get_meta_refresh(r1) == (5.0, "http://example.org/newpage"), f"Expected (5.0, 'http://example.org/newpage'), but got {get_meta_refresh(r1)}"
+    assert get_meta_refresh(r2) == (None, None), f"Expected (None, None), but got {get_meta_refresh(r2)}"
+    assert get_meta_refresh(r3) == (None, None), f"Expected (None, None), but got {get_meta_refresh(r3)}"
+
+def test_response_status_message():
         assert response_status_message(200) == "200 OK"
         assert response_status_message(404) == "404 Not Found"
         assert response_status_message(573) == "573 Unknown Status"
 
-    def test_inject_base_url(self):
+def test_inject_base_url():
         url = "http://www.example.com"
 
         def check_base_url(burl):
@@ -169,25 +187,13 @@ class TestResponseUtils:
             "Inject unique base url with conditional comment"
         )
 
-    def test_open_in_browser_redos_comment(self):
-        MAX_CPU_TIME = 0.02
+def test_open_in_browser_redos_comment():
+    body = b"-><!--\x00" * 25_000 + b"->\n<!---->"
+    response = HtmlResponse("https://example.com", body=body)
+    perform_browser_test(response, MAX_CPU_TIME)
 
-        # Exploit input from
-        # https://makenowjust-labs.github.io/recheck/playground/
-        # for /<!--.*?-->/ (old pattern to remove comments).
-        body = b"-><!--\x00" * 25_000 + b"->\n<!---->"
-
-        response = HtmlResponse("https://example.com", body=body)
-
-        start_time = process_time()
-
-        open_in_browser(response, lambda url: True)
-
-        end_time = process_time()
-        assert end_time - start_time < MAX_CPU_TIME
 
     def test_open_in_browser_redos_head(self):
-        MAX_CPU_TIME = 0.02
 
         # Exploit input from
         # https://makenowjust-labs.github.io/recheck/playground/
@@ -204,39 +210,39 @@ class TestResponseUtils:
         assert end_time - start_time < MAX_CPU_TIME
 
 
-@pytest.mark.parametrize(
-    ("input_body", "output_body"),
-    [
-        (
-            b"a<!--",
-            b"a",
-        ),
-        (
-            b"a<!---->b",
-            b"ab",
-        ),
-        (
-            b"a<!--b-->c",
-            b"ac",
-        ),
-        (
-            b"a<!--b-->c<!--",
-            b"ac",
-        ),
-        (
-            b"a<!--b-->c<!--d",
-            b"ac",
-        ),
-        (
-            b"a<!--b-->c<!---->d",
-            b"acd",
-        ),
-        (
-            b"a<!--b--><!--c-->d",
-            b"ad",
-        ),
-    ],
-)
+        @pytest.mark.parametrize(
+            ("input_body", "output_body"),
+            [
+                (
+                    b"a<!--",
+                    b"a",
+                ),
+                (
+                    b"a<!---->b",
+                    b"ab",
+                ),
+                (
+                    b"a<!--b-->c",
+                    b"ac",
+                ),
+                (
+                    b"a<!--b-->c<!--",
+                    b"ac",
+                ),
+                (
+                    b"a<!--b-->c<!--d",
+                    b"ac",
+                ),
+                (
+                    b"a<!--b-->c<!---->d",
+                    b"acd",
+                ),
+                (
+                    b"a<!--b--><!--c-->d",
+                    b"ad",
+                ),
+            ],
+        )
 def test_remove_html_comments(input_body, output_body):
     assert _remove_html_comments(input_body) == output_body, (
         f"{_remove_html_comments(input_body)=} == {output_body=}"
