@@ -111,11 +111,11 @@ class Scraper:
         assert crawler.logformatter
         self.logformatter: LogFormatter = crawler.logformatter
 
-    @inlineCallbacks
-    def open_spider(self, spider: Spider) -> Generator[Deferred[Any], Any, None]:
+    @deferred_f_from_coro_f
+    async def open_spider(self, spider: Spider) -> None:
         """Open the given spider for scraping and allocate resources for it"""
         self.slot = Slot(self.crawler.settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE"))
-        yield self.itemproc.open_spider(spider)
+        await maybe_deferred_to_future(self.itemproc.open_spider(spider))
 
     def close_spider(self, spider: Spider | None = None) -> Deferred[Spider]:
         """Close a spider being scraped and release its resources"""
@@ -191,10 +191,8 @@ class Scraper:
         if isinstance(result, Response):
             try:
                 # call the spider middlewares and the request callback with the response
-                output = await maybe_deferred_to_future(
-                    self.spidermw.scrape_response(
-                        self.call_spider, result, request, self.crawler.spider
-                    )
+                output = await self.spidermw.scrape_response_async(
+                    self.call_spider, result, request, self.crawler.spider
                 )
             except Exception:
                 self.handle_spider_error(Failure(), request, result)
@@ -363,12 +361,19 @@ class Scraper:
             self.crawler.engine.crawl(request=output)
             return
         if output is not None:
-            await maybe_deferred_to_future(
-                self.start_itemproc(output, response=response)
-            )
+            await self.start_itemproc_async(output, response=response)
 
-    @deferred_f_from_coro_f
-    async def start_itemproc(self, item: Any, *, response: Response | None) -> None:
+    def start_itemproc(self, item: Any, *, response: Response | None) -> Deferred[None]:
+        """Send *item* to the item pipelines for processing.
+
+        *response* is the source of the item data. If the item does not come
+        from response data, e.g. it was hard-coded, set it to ``None``.
+        """
+        return deferred_from_coro(self.start_itemproc_async(item, response=response))
+
+    async def start_itemproc_async(
+        self, item: Any, *, response: Response | None
+    ) -> None:
         """Send *item* to the item pipelines for processing.
 
         *response* is the source of the item data. If the item does not come
