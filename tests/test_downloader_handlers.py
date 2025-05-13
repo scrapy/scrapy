@@ -22,6 +22,7 @@ from twisted.web.http import _DataLoss
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers import DownloadHandlerProtocol, DownloadHandlers
+from scrapy.core.downloader.handlers.aiohttp import AiohttpHandler
 from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
@@ -440,6 +441,12 @@ class TestHttp10(TestHttp):
 
 class TestHttps10(TestHttp10):
     scheme = "https"
+
+
+class TestAiohttp(TestHttp):
+    @property
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        return AiohttpHandler
 
 
 class TestHttp11(TestHttp):
