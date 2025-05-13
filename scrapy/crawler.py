@@ -10,7 +10,6 @@ from twisted.internet.defer import (
     Deferred,
     DeferredList,
     inlineCallbacks,
-    maybeDeferred,
 )
 from zope.interface.verify import verifyClass
 
@@ -175,7 +174,7 @@ class Crawler:
         if self.crawling:
             self.crawling = False
             assert self.engine
-            yield maybeDeferred(self.engine.stop)
+            yield self.engine.stop()
 
     @staticmethod
     def _get_component(
@@ -277,12 +276,6 @@ class CrawlerRunner:
     process. See :ref:`run-from-script` for an example.
     """
 
-    crawlers = property(
-        lambda self: self._crawlers,
-        doc="Set of :class:`crawlers <scrapy.crawler.Crawler>` started by "
-        ":meth:`crawl` and managed by this class.",
-    )
-
     @staticmethod
     def _get_spider_loader(settings: BaseSettings) -> SpiderLoaderProtocol:
         """Get SpiderLoader instance from settings"""
@@ -302,6 +295,12 @@ class CrawlerRunner:
         self._crawlers: set[Crawler] = set()
         self._active: set[Deferred[None]] = set()
         self.bootstrap_failed = False
+
+    @property
+    def crawlers(self) -> set[Crawler]:
+        """Set of :class:`crawlers <scrapy.crawler.Crawler>` started by
+        :meth:`crawl` and managed by this class."""
+        return self._crawlers
 
     def crawl(
         self,
@@ -338,18 +337,19 @@ class CrawlerRunner:
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
 
-    def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> Deferred[None]:
+    @inlineCallbacks
+    def _crawl(
+        self, crawler: Crawler, *args: Any, **kwargs: Any
+    ) -> Generator[Deferred[Any], Any, None]:
         self.crawlers.add(crawler)
         d = crawler.crawl(*args, **kwargs)
         self._active.add(d)
-
-        def _done(result: _T) -> _T:
+        try:
+            yield d
+        finally:
             self.crawlers.discard(crawler)
             self._active.discard(d)
             self.bootstrap_failed |= not getattr(crawler, "spider", None)
-            return result
-
-        return d.addBoth(_done)
 
     def create_crawler(
         self, crawler_or_spidercls: type[Spider] | str | Crawler
@@ -501,10 +501,12 @@ class CrawlerProcess(CrawlerRunner):
             )
         reactor.run(installSignalHandlers=install_signal_handlers)  # blocking call
 
-    def _graceful_stop_reactor(self) -> Deferred[Any]:
-        d = self.stop()
-        d.addBoth(self._stop_reactor)
-        return d
+    @inlineCallbacks
+    def _graceful_stop_reactor(self) -> Generator[Deferred[Any], Any, None]:
+        try:
+            yield self.stop()
+        finally:
+            self._stop_reactor()
 
     def _stop_reactor(self, _: Any = None) -> None:
         from twisted.internet import reactor
