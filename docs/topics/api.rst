@@ -109,6 +109,9 @@ how you :ref:`configure the downloader middlewares
 
     .. automethod:: stop
 
+.. autoclass:: AsyncCrawlerRunner
+   :members:
+
 .. autoclass:: CrawlerRunner
    :members:
 

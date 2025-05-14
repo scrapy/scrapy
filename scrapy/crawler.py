@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import logging
 import pprint
@@ -20,6 +21,7 @@ from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
 from scrapy.settings import BaseSettings, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
+from scrapy.utils.defer import deferred_to_future
 from scrapy.utils.log import (
     LogCounterHandler,
     configure_logging,
@@ -263,19 +265,7 @@ class Crawler:
         return self._get_component(cls, self.engine.scraper.spidermw.middlewares)
 
 
-class CrawlerRunner:
-    """
-    This is a convenient helper class that keeps track of, manages and runs
-    crawlers inside an already setup :mod:`~twisted.internet.reactor`.
-
-    The CrawlerRunner object must be instantiated with a
-    :class:`~scrapy.settings.Settings` object.
-
-    This class shouldn't be needed (since Scrapy is responsible of using it
-    accordingly) unless writing scripts that manually handle the crawling
-    process. See :ref:`run-from-script` for an example.
-    """
-
+class CrawlerRunnerBase:
     @staticmethod
     def _get_spider_loader(settings: BaseSettings) -> SpiderLoaderProtocol:
         """Get SpiderLoader instance from settings"""
@@ -293,7 +283,6 @@ class CrawlerRunner:
         self.settings: Settings = settings
         self.spider_loader: SpiderLoaderProtocol = self._get_spider_loader(settings)
         self._crawlers: set[Crawler] = set()
-        self._active: set[Deferred[None]] = set()
         self.bootstrap_failed = False
 
     @property
@@ -301,6 +290,57 @@ class CrawlerRunner:
         """Set of :class:`crawlers <scrapy.crawler.Crawler>` started by
         :meth:`crawl` and managed by this class."""
         return self._crawlers
+
+    def create_crawler(
+        self, crawler_or_spidercls: type[Spider] | str | Crawler
+    ) -> Crawler:
+        """
+        Return a :class:`~scrapy.crawler.Crawler` object.
+
+        * If ``crawler_or_spidercls`` is a Crawler, it is returned as-is.
+        * If ``crawler_or_spidercls`` is a Spider subclass, a new Crawler
+          is constructed for it.
+        * If ``crawler_or_spidercls`` is a string, this function finds
+          a spider with this name in a Scrapy project (using spider loader),
+          then creates a Crawler instance for it.
+        """
+        if isinstance(crawler_or_spidercls, Spider):
+            raise ValueError(
+                "The crawler_or_spidercls argument cannot be a spider object, "
+                "it must be a spider class (or a Crawler object)"
+            )
+        if isinstance(crawler_or_spidercls, Crawler):
+            return crawler_or_spidercls
+        return self._create_crawler(crawler_or_spidercls)
+
+    def _create_crawler(self, spidercls: str | type[Spider]) -> Crawler:
+        if isinstance(spidercls, str):
+            spidercls = self.spider_loader.load(spidercls)
+        return Crawler(spidercls, self.settings)
+
+    def _stop(self) -> Deferred[Any]:
+        return DeferredList([c.stop() for c in list(self.crawlers)])
+
+
+class CrawlerRunner(CrawlerRunnerBase):
+    """
+    This is a convenient helper class that keeps track of, manages and runs
+    crawlers inside an already setup :mod:`~twisted.internet.reactor`.
+
+    The CrawlerRunner object must be instantiated with a
+    :class:`~scrapy.settings.Settings` object.
+
+    This class shouldn't be needed (since Scrapy is responsible of using it
+    accordingly) unless writing scripts that manually handle the crawling
+    process. See :ref:`run-from-script` for an example.
+
+    This class provides Deferred-based APIs. Use :class:`AsyncCrawlerRunner`
+    for modern coroutine APIs.
+    """
+
+    def __init__(self, settings: dict[str, Any] | Settings | None = None):
+        super().__init__(settings)
+        self._active: set[Deferred[None]] = set()
 
     def crawl(
         self,
@@ -351,40 +391,13 @@ class CrawlerRunner:
             self._active.discard(d)
             self.bootstrap_failed |= not getattr(crawler, "spider", None)
 
-    def create_crawler(
-        self, crawler_or_spidercls: type[Spider] | str | Crawler
-    ) -> Crawler:
-        """
-        Return a :class:`~scrapy.crawler.Crawler` object.
-
-        * If ``crawler_or_spidercls`` is a Crawler, it is returned as-is.
-        * If ``crawler_or_spidercls`` is a Spider subclass, a new Crawler
-          is constructed for it.
-        * If ``crawler_or_spidercls`` is a string, this function finds
-          a spider with this name in a Scrapy project (using spider loader),
-          then creates a Crawler instance for it.
-        """
-        if isinstance(crawler_or_spidercls, Spider):
-            raise ValueError(
-                "The crawler_or_spidercls argument cannot be a spider object, "
-                "it must be a spider class (or a Crawler object)"
-            )
-        if isinstance(crawler_or_spidercls, Crawler):
-            return crawler_or_spidercls
-        return self._create_crawler(crawler_or_spidercls)
-
-    def _create_crawler(self, spidercls: str | type[Spider]) -> Crawler:
-        if isinstance(spidercls, str):
-            spidercls = self.spider_loader.load(spidercls)
-        return Crawler(spidercls, self.settings)
-
     def stop(self) -> Deferred[Any]:
         """
         Stops simultaneously all the crawling jobs taking place.
 
         Returns a deferred that is fired when they all have ended.
         """
-        return DeferredList([c.stop() for c in list(self.crawlers)])
+        return self._stop()
 
     @inlineCallbacks
     def join(self) -> Generator[Deferred[Any], Any, None]:
@@ -396,6 +409,96 @@ class CrawlerRunner:
         """
         while self._active:
             yield DeferredList(self._active)
+
+
+class AsyncCrawlerRunner(CrawlerRunnerBase):
+    """
+    This is a convenient helper class that keeps track of, manages and runs
+    crawlers inside an already setup :mod:`~twisted.internet.reactor`.
+
+    The AsyncCrawlerRunner object must be instantiated with a
+    :class:`~scrapy.settings.Settings` object.
+
+    This class shouldn't be needed (since Scrapy is responsible of using it
+    accordingly) unless writing scripts that manually handle the crawling
+    process. See :ref:`run-from-script` for an example.
+
+    This class provides coroutine APIs. It requires
+    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+    """
+
+    def __init__(self, settings: dict[str, Any] | Settings | None = None):
+        super().__init__(settings)
+        self._active: set[asyncio.Future[None]] = set()
+
+    def crawl(
+        self,
+        crawler_or_spidercls: type[Spider] | str | Crawler,
+        *args: Any,
+        **kwargs: Any,
+    ) -> asyncio.Future[None]:
+        """
+        Run a crawler with the provided arguments.
+
+        It will call the given Crawler's :meth:`~Crawler.crawl` method, while
+        keeping track of it so it can be stopped later.
+
+        If ``crawler_or_spidercls`` isn't a :class:`~scrapy.crawler.Crawler`
+        instance, this method will try to create one using this parameter as
+        the spider class given to it.
+
+        Returns a :class:`~asyncio.Future` object which completes when the
+        crawling is finished.
+
+        :param crawler_or_spidercls: already created crawler, or a spider class
+            or spider's name inside the project to create it
+        :type crawler_or_spidercls: :class:`~scrapy.crawler.Crawler` instance,
+            :class:`~scrapy.spiders.Spider` subclass or string
+
+        :param args: arguments to initialize the spider
+
+        :param kwargs: keyword arguments to initialize the spider
+        """
+        if isinstance(crawler_or_spidercls, Spider):
+            raise ValueError(
+                "The crawler_or_spidercls argument cannot be a spider object, "
+                "it must be a spider class (or a Crawler object)"
+            )
+        if not is_asyncio_reactor_installed():
+            raise RuntimeError("AsyncCrawlerRunner requires AsyncioSelectorReactor.")
+        crawler = self.create_crawler(crawler_or_spidercls)
+        return self._crawl(crawler, *args, **kwargs)
+
+    def _crawl(
+        self, crawler: Crawler, *args: Any, **kwargs: Any
+    ) -> asyncio.Future[None]:
+        self.crawlers.add(crawler)
+        future = deferred_to_future(crawler.crawl(*args, **kwargs))
+        self._active.add(future)
+
+        def _done(_: asyncio.Future[None]) -> None:
+            self.crawlers.discard(crawler)
+            self._active.discard(future)
+            self.bootstrap_failed |= not getattr(crawler, "spider", None)
+
+        future.add_done_callback(_done)
+        return future
+
+    async def stop(self) -> None:
+        """
+        Stops simultaneously all the crawling jobs taking place.
+
+        Completes when they all have ended.
+        """
+        await deferred_to_future(self._stop())
+
+    async def join(self) -> None:
+        """
+        Completes when all managed :attr:`crawlers` have completed their
+        executions.
+        """
+        while self._active:
+            await asyncio.gather(*self._active)
 
 
 class CrawlerProcess(CrawlerRunner):
@@ -458,7 +561,6 @@ class CrawlerProcess(CrawlerRunner):
             spidercls = self.spider_loader.load(spidercls)
         init_reactor = not self._initialized_reactor
         self._initialized_reactor = True
-        # temporary cast until self.spider_loader is typed
         return Crawler(spidercls, self.settings, init_reactor=init_reactor)
 
     def start(
