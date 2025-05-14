@@ -588,7 +588,6 @@ class CrawlerProcess(CrawlerRunner):
             spidercls = self.spider_loader.load(spidercls)
         init_reactor = not self._initialized_reactor
         self._initialized_reactor = True
-        # temporary cast until self.spider_loader is typed
         return Crawler(spidercls, self.settings, init_reactor=init_reactor)
 
     def start(
