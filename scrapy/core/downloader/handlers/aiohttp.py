@@ -17,7 +17,7 @@ from scrapy.utils.reactor import (
 )
 
 
-class AiohttpHandler:
+class AiohttpDownloadHandler:
     def __init__(self, settings: Settings, crawler: Crawler):
         verify_installed_reactor(
             "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
