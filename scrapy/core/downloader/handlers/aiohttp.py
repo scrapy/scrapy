@@ -1,5 +1,4 @@
 import asyncio
-import ssl
 from typing import Self
 
 import aiohttp
@@ -12,28 +11,25 @@ from scrapy.http.request import Request
 from scrapy.http.response import Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
-from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop, verify_installed_reactor
+from scrapy.utils.reactor import (
+    set_asyncio_event_loop,
+    verify_installed_reactor,
+)
 
 
 class AiohttpHandler:
     def __init__(self, settings: Settings, crawler: Crawler):
-        if not is_asyncio_reactor_installed:
-            raise Exception("Wrong reactor config")
+        verify_installed_reactor(
+            "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+        )
 
-        verify_installed_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
-        
-        self.loop= set_asyncio_event_loop(None)
+        self.loop = set_asyncio_event_loop(None)
 
-        ssl_create_context = ssl.create_default_context()
         self.connector = aiohttp.TCPConnector(
-            ssl_context=ssl_create_context,
             limit_per_host=settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN"),
-            loop=self.loop
+            loop=self.loop,
         )
-        self.session = aiohttp.ClientSession(
-            connector=self.connector,
-            loop=self.loop
-        )
+        self.session = aiohttp.ClientSession(connector=self.connector, loop=self.loop)
         self._crawler = (
             crawler  # idk about this just added bc all other major components do this
         )
@@ -43,9 +39,9 @@ class AiohttpHandler:
         return cls(crawler.settings, crawler)
 
     def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
-
-        d = Deferred.fromFuture(asyncio.ensure_future(self._download_request(request)))
-        return d
+        return Deferred.fromFuture(
+            asyncio.ensure_future(self._download_request(request))
+        )
 
     async def _download_request(self, request: Request):
         """download through aiohttp interface"""
@@ -54,13 +50,15 @@ class AiohttpHandler:
         url = request.url
         method = request.method
         body = request.body
-        headers = None if request.headers == None else request.headers.to_unicode_dict()
+        headers = None if request.headers is None else request.headers.to_unicode_dict()
         if isinstance(request.cookies, dict):
             cookies = request.cookies
         else:
-            cookies = {item.name: item.value for item in request.cookies}
+            cookies = {
+                str(item["name"]): str(item["value"]) for item in request.cookies
+            }
         body = request.body
-        encoding = request.encoding
+        # encoding = None if request.method == "GET" else request.encoding
 
         self.session.cookie_jar.update_cookies(cookies)
 
@@ -70,17 +68,21 @@ class AiohttpHandler:
             proxy=proxy,
             data=body,
             headers=headers,
-            allow_redirects=False
+            allow_redirects=False,
         ) as response:
             body = await response.read()
             status = response.status
-            headers = Headers(response.raw_headers)
+            new_headers = Headers(response.raw_headers)
 
-            respcls = responsetypes.responsetypes.from_args(headers=headers, url=request.url)
-            return respcls(url=request.url, status=status, headers=headers, body=body)
+            respcls = responsetypes.responsetypes.from_args(
+                headers=new_headers, url=request.url
+            )
+            return respcls(
+                url=request.url, status=status, headers=new_headers, body=body
+            )
 
     def close(self):
-        asyncio.ensure_future(self._close())
+        return Deferred.fromFuture(asyncio.ensure_future(self.session.close()))
 
     async def _close(self):
         await self.session.close()
