@@ -14,7 +14,11 @@ from types import CoroutineType
 from typing import TYPE_CHECKING, Any, Generic, TypeVar, Union, cast, overload
 
 from twisted.internet import defer
-from twisted.internet.defer import Deferred, DeferredList, ensureDeferred
+from twisted.internet.defer import (
+    Deferred,
+    DeferredList,
+    ensureDeferred,
+)
 from twisted.internet.task import Cooperator
 from twisted.python import failure
 
@@ -22,7 +26,7 @@ from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 from scrapy.utils.reactor import _get_asyncio_event_loop, is_asyncio_reactor_installed
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, AsyncIterator, Callable
+    from collections.abc import AsyncIterator, Callable
 
     from twisted.python.failure import Failure
 
@@ -36,6 +40,9 @@ _T = TypeVar("_T")
 _T2 = TypeVar("_T2")
 
 
+_DEFER_DELAY = 0.1
+
+
 def defer_fail(_failure: Failure) -> Deferred[Any]:
     """Same as twisted.internet.defer.fail but delay calling errback until
     next reactor loop
@@ -46,7 +53,7 @@ def defer_fail(_failure: Failure) -> Deferred[Any]:
     from twisted.internet import reactor
 
     d: Deferred[Any] = Deferred()
-    reactor.callLater(0.1, d.errback, _failure)
+    reactor.callLater(_DEFER_DELAY, d.errback, _failure)
     return d
 
 
@@ -60,7 +67,16 @@ def defer_succeed(result: _T) -> Deferred[_T]:
     from twisted.internet import reactor
 
     d: Deferred[_T] = Deferred()
-    reactor.callLater(0.1, d.callback, result)
+    reactor.callLater(_DEFER_DELAY, d.callback, result)
+    return d
+
+
+def _defer_sleep() -> Deferred[None]:
+    """Like ``defer_succeed`` and ``defer_fail`` but doesn't call any real callbacks."""
+    from twisted.internet import reactor
+
+    d: Deferred[None] = Deferred()
+    reactor.callLater(_DEFER_DELAY, d.callback, None)
     return d
 
 
@@ -177,7 +193,7 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
 
     def __init__(
         self,
-        aiterable: AsyncIterable[_T],
+        aiterable: AsyncIterator[_T],
         callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],
         *callable_args: _P.args,
         **callable_kwargs: _P.kwargs,
@@ -234,7 +250,7 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
 
 
 def parallel_async(
-    async_iterable: AsyncIterable[_T],
+    async_iterable: AsyncIterator[_T],
     count: int,
     callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],
     *args: _P.args,
@@ -332,13 +348,13 @@ def iter_errback(
 
 
 async def aiter_errback(
-    aiterable: AsyncIterable[_T],
+    aiterable: AsyncIterator[_T],
     errback: Callable[Concatenate[Failure, _P], Any],
     *a: _P.args,
     **kw: _P.kwargs,
-) -> AsyncIterable[_T]:
+) -> AsyncIterator[_T]:
     """Wraps an async iterable calling an errback if an error is caught while
-    iterating it. Similar to scrapy.utils.defer.iter_errback()
+    iterating it. Similar to :func:`scrapy.utils.defer.iter_errback`.
     """
     it = aiterable.__aiter__()
     while True:
