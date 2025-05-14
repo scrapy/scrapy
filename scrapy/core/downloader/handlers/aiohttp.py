@@ -30,9 +30,7 @@ class AiohttpDownloadHandler:
             loop=self.loop,
         )
         self.session = aiohttp.ClientSession(connector=self.connector, loop=self.loop)
-        self._crawler = (
-            crawler  # idk about this just added bc all other major components do this
-        )
+        self._crawler = crawler
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -58,7 +56,6 @@ class AiohttpDownloadHandler:
                 str(item["name"]): str(item["value"]) for item in request.cookies
             }
         body = request.body
-        # encoding = None if request.method == "GET" else request.encoding
 
         self.session.cookie_jar.update_cookies(cookies)
 
