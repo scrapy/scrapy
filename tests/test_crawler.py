@@ -18,11 +18,12 @@ from zope.interface.exceptions import MultipleInvalid
 
 import scrapy
 from scrapy import Spider
-from scrapy.crawler import Crawler, CrawlerProcess, CrawlerRunner
+from scrapy.crawler import AsyncCrawlerRunner, Crawler, CrawlerProcess, CrawlerRunner
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
+from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
@@ -153,7 +154,7 @@ class TestCrawler(TestBaseCrawler):
                 super().__init__(**kwargs)
                 self.crawler = crawler
 
-            def start_requests(self):
+            async def start(self):
                 MySpider.result = crawler.get_downloader_middleware(MySpider.cls)
                 return
                 yield
@@ -233,7 +234,7 @@ class TestCrawler(TestBaseCrawler):
                 super().__init__(**kwargs)
                 self.crawler = crawler
 
-            def start_requests(self):
+            async def start(self):
                 MySpider.result = crawler.get_extension(MySpider.cls)
                 return
                 yield
@@ -313,7 +314,7 @@ class TestCrawler(TestBaseCrawler):
                 super().__init__(**kwargs)
                 self.crawler = crawler
 
-            def start_requests(self):
+            async def start(self):
                 MySpider.result = crawler.get_item_pipeline(MySpider.cls)
                 return
                 yield
@@ -393,7 +394,7 @@ class TestCrawler(TestBaseCrawler):
                 super().__init__(**kwargs)
                 self.crawler = crawler
 
-            def start_requests(self):
+            async def start(self):
                 MySpider.result = crawler.get_spider_middleware(MySpider.cls)
                 return
                 yield
@@ -558,6 +559,26 @@ class TestCrawlerRunner(TestBaseCrawler):
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
 
+class TestAsyncCrawlerRunner(TestBaseCrawler):
+    def test_spider_manager_verify_interface(self):
+        settings = Settings(
+            {
+                "SPIDER_LOADER_CLASS": SpiderLoaderWithWrongInterface,
+            }
+        )
+        with pytest.raises(MultipleInvalid):
+            AsyncCrawlerRunner(settings)
+
+    def test_crawler_runner_accepts_dict(self):
+        runner = AsyncCrawlerRunner({"foo": "bar"})
+        assert runner.settings["foo"] == "bar"
+        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
+
+    def test_crawler_runner_accepts_None(self):
+        runner = AsyncCrawlerRunner()
+        self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
+
+
 class TestCrawlerProcess(TestBaseCrawler):
     def test_crawler_process_accepts_dict(self):
         runner = CrawlerProcess({"foo": "bar"})
@@ -580,26 +601,32 @@ class ExceptionSpider(scrapy.Spider):
 class NoRequestsSpider(scrapy.Spider):
     name = "no_request"
 
-    def start_requests(self):
-        return []
+    async def start(self):
+        return
+        yield
 
 
 @pytest.mark.usefixtures("reactor_pytest")
 class TestCrawlerRunnerHasSpider(unittest.TestCase):
-    def _runner(self):
+    @staticmethod
+    def _runner():
         return CrawlerRunner(get_reactor_settings())
+
+    @staticmethod
+    def _crawl(runner, spider):
+        return runner.crawl(spider)
 
     @inlineCallbacks
     def test_crawler_runner_bootstrap_successful(self):
         runner = self._runner()
-        yield runner.crawl(NoRequestsSpider)
+        yield self._crawl(runner, NoRequestsSpider)
         assert not runner.bootstrap_failed
 
     @inlineCallbacks
     def test_crawler_runner_bootstrap_successful_for_several(self):
         runner = self._runner()
-        yield runner.crawl(NoRequestsSpider)
-        yield runner.crawl(NoRequestsSpider)
+        yield self._crawl(runner, NoRequestsSpider)
+        yield self._crawl(runner, NoRequestsSpider)
         assert not runner.bootstrap_failed
 
     @inlineCallbacks
@@ -607,7 +634,7 @@ class TestCrawlerRunnerHasSpider(unittest.TestCase):
         runner = self._runner()
 
         try:
-            yield runner.crawl(ExceptionSpider)
+            yield self._crawl(runner, ExceptionSpider)
         except ValueError:
             pass
         else:
@@ -620,13 +647,13 @@ class TestCrawlerRunnerHasSpider(unittest.TestCase):
         runner = self._runner()
 
         try:
-            yield runner.crawl(ExceptionSpider)
+            yield self._crawl(runner, ExceptionSpider)
         except ValueError:
             pass
         else:
             pytest.fail("Exception should be raised from spider")
 
-        yield runner.crawl(NoRequestsSpider)
+        yield self._crawl(runner, NoRequestsSpider)
 
         assert runner.bootstrap_failed
 
@@ -642,13 +669,27 @@ class TestCrawlerRunnerHasSpider(unittest.TestCase):
                 Exception,
                 match=r"The installed reactor \(.*?\) does not match the requested one \(.*?\)",
             ):
-                yield runner.crawl(NoRequestsSpider)
+                yield self._crawl(runner, NoRequestsSpider)
         else:
             CrawlerRunner(
                 settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
                 }
             )
+
+
+@pytest.mark.only_asyncio
+class TestAsyncCrawlerRunnerHasSpider(TestCrawlerRunnerHasSpider):
+    @staticmethod
+    def _runner():
+        return AsyncCrawlerRunner(get_reactor_settings())
+
+    @staticmethod
+    def _crawl(runner, spider):
+        return deferred_from_coro(runner.crawl(spider))
+
+    def test_crawler_runner_asyncio_enabled_true(self):
+        pytest.skip("This test is only for CrawlerRunner")
 
 
 class ScriptRunnerMixin:
@@ -890,7 +931,7 @@ class TestCrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
 
     def test_shutdown_graceful(self):
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
-        args = self.get_script_args("sleeping.py", "-a", "sleep=3")
+        args = self.get_script_args("sleeping.py", "3")
         p = PopenSpawn(args, timeout=5)
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
@@ -904,7 +945,7 @@ class TestCrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
         from twisted.internet import reactor
 
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
-        args = self.get_script_args("sleeping.py", "-a", "sleep=10")
+        args = self.get_script_args("sleeping.py", "10")
         p = PopenSpawn(args, timeout=5)
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
@@ -922,6 +963,48 @@ class TestCrawlerProcessSubprocess(ScriptRunnerMixin, unittest.TestCase):
 class TestCrawlerRunnerSubprocess(ScriptRunnerMixin):
     script_dir = Path(__file__).parent.resolve() / "CrawlerRunner"
 
+    def test_simple(self):
+        log = self.run_script("simple.py")
+        assert "Spider closed (finished)" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
+        )
+
+    def test_explicit_default_reactor(self):
+        log = self.run_script("explicit_default_reactor.py")
+        assert "Spider closed (finished)" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            not in log
+        )
+
+    def test_multi_parallel(self):
+        log = self.run_script("multi_parallel.py")
+        assert "Spider closed (finished)" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
+        )
+        assert re.search(
+            r"Spider opened.+Spider opened.+Closing spider.+Closing spider",
+            log,
+            re.DOTALL,
+        )
+
+    def test_multi_seq(self):
+        log = self.run_script("multi_seq.py")
+        assert "Spider closed (finished)" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
+        )
+        assert re.search(
+            r"Spider opened.+Closing spider.+Spider opened.+Closing spider",
+            log,
+            re.DOTALL,
+        )
+
     def test_response_ip_address(self):
         log = self.run_script("ip_address.py")
         assert "INFO: Spider closed (finished)" in log
@@ -936,6 +1019,49 @@ class TestCrawlerRunnerSubprocess(ScriptRunnerMixin):
             in log
         )
         assert "DEBUG: Using asyncio event loop" in log
+
+
+class TestAsyncCrawlerRunnerSubprocess(ScriptRunnerMixin):
+    script_dir = Path(__file__).parent.resolve() / "AsyncCrawlerRunner"
+
+    def test_simple(self):
+        log = self.run_script("simple.py")
+        assert "Spider closed (finished)" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
+        )
+
+    def test_simple_default_reactor(self):
+        log = self.run_script("simple_default_reactor.py")
+        assert "Spider closed (finished)" not in log
+        assert "RuntimeError: AsyncCrawlerRunner requires AsyncioSelectorReactor" in log
+
+    def test_multi_parallel(self):
+        log = self.run_script("multi_parallel.py")
+        assert "Spider closed (finished)" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
+        )
+        assert re.search(
+            r"Spider opened.+Spider opened.+Closing spider.+Closing spider",
+            log,
+            re.DOTALL,
+        )
+
+    def test_multi_seq(self):
+        log = self.run_script("multi_seq.py")
+        assert "Spider closed (finished)" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
+        )
+        assert re.search(
+            r"Spider opened.+Closing spider.+Spider opened.+Closing spider",
+            log,
+            re.DOTALL,
+        )
 
 
 @pytest.mark.parametrize(

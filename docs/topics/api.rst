@@ -109,6 +109,9 @@ how you :ref:`configure the downloader middlewares
 
     .. automethod:: stop
 
+.. autoclass:: AsyncCrawlerRunner
+   :members:
+
 .. autoclass:: CrawlerRunner
    :members:
 
@@ -280,3 +283,9 @@ class (which they all inherit from).
 
         Close the given spider. After this is called, no more specific stats
         can be accessed or collected.
+
+Engine API
+==========
+
+.. autoclass:: scrapy.core.engine.ExecutionEngine()
+   :members: needs_backout

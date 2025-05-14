@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator, Iterable
+from inspect import isasyncgen
+from typing import Any
 from unittest import mock
 
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
 from scrapy.core.spidermw import SpiderMiddlewareManager
@@ -14,7 +15,11 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
-from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
+from scrapy.utils.defer import (
+    deferred_f_from_coro_f,
+    deferred_from_coro,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.test import get_crawler
 
 
@@ -26,53 +31,51 @@ class TestSpiderMiddleware(TestCase):
         self.spider = self.crawler._create_spider("foo")
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
 
-    def _scrape_response(self):
+    async def _scrape_response(self) -> Any:
         """Execute spider mw manager's scrape_response method and return the result.
         Raise exception in case of failure.
         """
         scrape_func = mock.MagicMock()
-        dfd = self.mwman.scrape_response(
-            scrape_func, self.response, self.request, self.spider
+        return await maybe_deferred_to_future(
+            self.mwman.scrape_response(
+                scrape_func, self.response, self.request, self.spider
+            )
         )
-        # catch deferred result and return the value
-        results = []
-        dfd.addBoth(results.append)
-        self._wait(dfd)
-        return results[0]
 
 
 class TestProcessSpiderInputInvalidOutput(TestSpiderMiddleware):
     """Invalid return value for process_spider_input method"""
 
-    def test_invalid_process_spider_input(self):
+    @deferred_f_from_coro_f
+    async def test_invalid_process_spider_input(self):
         class InvalidProcessSpiderInputMiddleware:
             def process_spider_input(self, response, spider):
                 return 1
 
         self.mwman._add_middleware(InvalidProcessSpiderInputMiddleware())
-        result = self._scrape_response()
-        assert isinstance(result, Failure)
-        assert isinstance(result.value, _InvalidOutput)
+        with pytest.raises(_InvalidOutput):
+            await self._scrape_response()
 
 
 class TestProcessSpiderOutputInvalidOutput(TestSpiderMiddleware):
     """Invalid return value for process_spider_output method"""
 
-    def test_invalid_process_spider_output(self):
+    @deferred_f_from_coro_f
+    async def test_invalid_process_spider_output(self):
         class InvalidProcessSpiderOutputMiddleware:
             def process_spider_output(self, response, result, spider):
                 return 1
 
         self.mwman._add_middleware(InvalidProcessSpiderOutputMiddleware())
-        result = self._scrape_response()
-        assert isinstance(result, Failure)
-        assert isinstance(result.value, _InvalidOutput)
+        with pytest.raises(_InvalidOutput):
+            await self._scrape_response()
 
 
 class TestProcessSpiderExceptionInvalidOutput(TestSpiderMiddleware):
     """Invalid return value for process_spider_exception method"""
 
-    def test_invalid_process_spider_exception(self):
+    @deferred_f_from_coro_f
+    async def test_invalid_process_spider_exception(self):
         class InvalidProcessSpiderOutputExceptionMiddleware:
             def process_spider_exception(self, response, exception, spider):
                 return 1
@@ -83,15 +86,15 @@ class TestProcessSpiderExceptionInvalidOutput(TestSpiderMiddleware):
 
         self.mwman._add_middleware(InvalidProcessSpiderOutputExceptionMiddleware())
         self.mwman._add_middleware(RaiseExceptionProcessSpiderOutputMiddleware())
-        result = self._scrape_response()
-        assert isinstance(result, Failure)
-        assert isinstance(result.value, _InvalidOutput)
+        with pytest.raises(_InvalidOutput):
+            await self._scrape_response()
 
 
 class TestProcessSpiderExceptionReRaise(TestSpiderMiddleware):
     """Re raise the exception by returning None"""
 
-    def test_process_spider_exception_return_none(self):
+    @deferred_f_from_coro_f
+    async def test_process_spider_exception_return_none(self):
         class ProcessSpiderExceptionReturnNoneMiddleware:
             def process_spider_exception(self, response, exception, spider):
                 return None
@@ -102,15 +105,14 @@ class TestProcessSpiderExceptionReRaise(TestSpiderMiddleware):
 
         self.mwman._add_middleware(ProcessSpiderExceptionReturnNoneMiddleware())
         self.mwman._add_middleware(RaiseExceptionProcessSpiderOutputMiddleware())
-        result = self._scrape_response()
-        assert isinstance(result, Failure)
-        assert isinstance(result.value, ZeroDivisionError)
+        with pytest.raises(ZeroDivisionError):
+            await self._scrape_response()
 
 
 class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
     """Helpers for testing sync, async and mixed middlewares.
 
-    Should work for process_spider_output and, when it's supported, process_start_requests.
+    Should work for process_spider_output and, when it's supported, process_start.
     """
 
     ITEM_TYPE: type | tuple
@@ -199,7 +201,7 @@ class ProcessSpiderExceptionSimpleIterableMiddleware:
         yield {"foo": 3}
 
 
-class ProcessSpiderExceptionAsyncIterableMiddleware:
+class ProcessSpiderExceptionAsyncIteratorMiddleware:
     async def process_spider_exception(self, response, exception, spider):
         yield {"foo": 1}
         d = defer.Deferred()
@@ -318,37 +320,43 @@ class TestProcessSpiderOutputInvalidResult(TestBaseAsyncSpiderMiddleware):
             )
 
 
-class ProcessStartRequestsSimpleMiddleware:
-    def process_start_requests(self, start_requests, spider):
-        yield from start_requests
+class ProcessStartSimpleMiddleware:
+    async def process_start(self, start):
+        async for item_or_request in start:
+            yield item_or_request
 
 
-class TestProcessStartRequestsSimple(TestBaseAsyncSpiderMiddleware):
-    """process_start_requests tests for simple start_requests"""
+class TestProcessStartSimple(TestBaseAsyncSpiderMiddleware):
+    """process_start tests for simple start"""
 
     ITEM_TYPE = (Request, dict)
-    MW_SIMPLE = ProcessStartRequestsSimpleMiddleware
+    MW_SIMPLE = ProcessStartSimpleMiddleware
 
-    def _start_requests(self):
-        for i in range(2):
-            yield Request(f"https://example.com/{i}", dont_filter=True)
-        yield {"name": "test item"}
+    async def _get_processed_start(self, *mw_classes):
+        class TestSpider(Spider):
+            name = "test"
 
-    @defer.inlineCallbacks
-    def _get_middleware_result(self, *mw_classes, start_index: int | None = None):
-        setting = self._construct_mw_setting(*mw_classes, start_index=start_index)
+            async def start(self):
+                for i in range(2):
+                    yield Request(f"https://example.com/{i}", dont_filter=True)
+                yield {"name": "test item"}
+
+        setting = self._construct_mw_setting(*mw_classes)
         self.crawler = get_crawler(
-            Spider, {"SPIDER_MIDDLEWARES_BASE": {}, "SPIDER_MIDDLEWARES": setting}
+            TestSpider, {"SPIDER_MIDDLEWARES_BASE": {}, "SPIDER_MIDDLEWARES": setting}
         )
-        self.spider = self.crawler._create_spider("foo")
+        self.spider = self.crawler._create_spider()
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
-        start_requests = iter(self._start_requests())
-        results = yield self.mwman.process_start_requests(start_requests, self.spider)
-        return results
+        return await self.mwman.process_start(self.spider)
 
-    def test_simple(self):
+    @deferred_f_from_coro_f
+    async def test_simple(self):
         """Simple mw"""
-        return self._test_simple_base(self.MW_SIMPLE)
+        start = await self._get_processed_start(self.MW_SIMPLE)
+        assert isasyncgen(start)
+        start_list = await collect_asyncgen(start)
+        assert len(start_list) == self.RESULT_COUNT
+        assert isinstance(start_list[0], self.ITEM_TYPE)
 
 
 class UniversalMiddlewareNoSync:
@@ -506,7 +514,7 @@ class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
     MW_ASYNCGEN = ProcessSpiderOutputAsyncGenMiddleware
     MW_UNIVERSAL = ProcessSpiderOutputUniversalMiddleware
     MW_EXC_SIMPLE = ProcessSpiderExceptionSimpleIterableMiddleware
-    MW_EXC_ASYNCGEN = ProcessSpiderExceptionAsyncIterableMiddleware
+    MW_EXC_ASYNCGEN = ProcessSpiderExceptionAsyncIteratorMiddleware
 
     def _scrape_func(self, *args, **kwargs):
         1 / 0

@@ -73,72 +73,87 @@ project as example.
     process.start()  # the script will block here until the crawling is finished
 
 There's another Scrapy utility that provides more control over the crawling
-process: :class:`scrapy.crawler.CrawlerRunner`. This class is a thin wrapper
-that encapsulates some simple helpers to run multiple crawlers, but it won't
-start or interfere with existing reactors in any way.
+process: :class:`scrapy.crawler.AsyncCrawlerRunner` and
+:class:`scrapy.crawler.CrawlerRunner`. These classes are thin wrappers
+that encapsulate some simple helpers to run multiple crawlers, but they won't
+start or interfere with existing reactors in any way. They have similar
+functionality, differing in their asynchronous API style:
+:class:`~scrapy.crawler.AsyncCrawlerRunner` returns coroutines from its
+asynchronous methods while :class:`~scrapy.crawler.CrawlerRunner` returns
+:class:`~twisted.internet.defer.Deferred` objects.
 
-Using this class the reactor should be explicitly run after scheduling your
-spiders. It's recommended you use :class:`~scrapy.crawler.CrawlerRunner`
-instead of :class:`~scrapy.crawler.CrawlerProcess` if your application is
-already using Twisted and you want to run Scrapy in the same reactor.
+When using these classes the reactor should be explicitly run after scheduling
+your spiders. It's recommended that you use
+:class:`~scrapy.crawler.AsyncCrawlerRunner` or
+:class:`~scrapy.crawler.CrawlerRunner` instead of
+:class:`~scrapy.crawler.CrawlerProcess` if your application is already using
+Twisted and you want to run Scrapy in the same reactor.
 
-Note that you will also have to shutdown the Twisted reactor yourself after the
-spider is finished. This can be achieved by adding callbacks to the deferred
-returned by the :meth:`CrawlerRunner.crawl
-<scrapy.crawler.CrawlerRunner.crawl>` method.
+If you want to stop the reactor or run any other code right after the spider
+finishes you can do that after the :meth:`AsyncCrawlerRunner.crawl()
+<scrapy.crawler.AsyncCrawlerRunner.crawl>` coroutine completes (or the Deferred
+returned from :meth:`CrawlerRunner.crawl()
+<scrapy.crawler.CrawlerRunner.crawl>` fires). In the simplest case you can also
+use :func:`twisted.internet.task.react` to start and stop the reactor, though
+it may be easier to just use :class:`~scrapy.crawler.CrawlerProcess` instead.
 
-Here's an example of its usage, along with a callback to manually stop the
-reactor after ``MySpider`` has finished running.
-
-.. code-block:: python
-
-    import scrapy
-    from scrapy.crawler import CrawlerRunner
-    from scrapy.utils.log import configure_logging
-
-
-    class MySpider(scrapy.Spider):
-        # Your spider definition
-        ...
-
-
-    configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
-    runner = CrawlerRunner()
-
-    d = runner.crawl(MySpider)
-
-    from twisted.internet import reactor
-
-    d.addBoth(lambda _: reactor.stop())
-    reactor.run()  # the script will block here until the crawling is finished
-
-Same example but using a non-default reactor, it's only necessary call
-``install_reactor`` if you are using ``CrawlerRunner`` since ``CrawlerProcess`` already does this automatically.
+Here's an example of using :class:`~scrapy.crawler.AsyncCrawlerRunner` together
+with simple reactor management code:
 
 .. code-block:: python
 
     import scrapy
-    from scrapy.crawler import CrawlerRunner
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.defer import deferred_f_from_coro_f
     from scrapy.utils.log import configure_logging
-
-
-    class MySpider(scrapy.Spider):
-        # Your spider definition
-        ...
-
-
-    configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
-
     from scrapy.utils.reactor import install_reactor
+    from twisted.internet.task import react
+
+
+    class MySpider(scrapy.Spider):
+        # Your spider definition
+        ...
+
+
+    async def crawl(_):
+        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+        runner = AsyncCrawlerRunner()
+        await runner.crawl(MySpider)  # completes when the spider finishes
+
 
     install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
-    runner = CrawlerRunner()
-    d = runner.crawl(MySpider)
+    react(deferred_f_from_coro_f(crawl))
 
-    from twisted.internet import reactor
+Same example but using :class:`~scrapy.crawler.CrawlerRunner` and a
+different reactor (:class:`~scrapy.crawler.AsyncCrawlerRunner` only works
+with :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`):
 
-    d.addBoth(lambda _: reactor.stop())
-    reactor.run()  # the script will block here until the crawling is finished
+.. code-block:: python
+
+    import scrapy
+    from scrapy.crawler import CrawlerRunner
+    from scrapy.utils.log import configure_logging
+    from scrapy.utils.reactor import install_reactor
+    from twisted.internet.task import react
+
+
+    class MySpider(scrapy.Spider):
+        custom_settings = {
+            "TWISTED_REACTOR": "twisted.internet.epollreactor.EPollReactor",
+        }
+        # Your spider definition
+        ...
+
+
+    def crawl(_):
+        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+        runner = CrawlerRunner()
+        d = runner.crawl(MySpider)
+        return d  # this Deferred fires when the spider finishes
+
+
+    install_reactor("twisted.internet.epollreactor.EPollReactor")
+    react(crawl)
 
 .. seealso:: :doc:`twisted:core/howto/reactor-basics`
 
@@ -176,14 +191,16 @@ Here is an example that runs multiple spiders simultaneously:
     process.crawl(MySpider2)
     process.start()  # the script will block here until all crawling jobs are finished
 
-Same example using :class:`~scrapy.crawler.CrawlerRunner`:
+Same example using :class:`~scrapy.crawler.AsyncCrawlerRunner`:
 
 .. code-block:: python
 
     import scrapy
-    from scrapy.crawler import CrawlerRunner
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.defer import deferred_f_from_coro_f
     from scrapy.utils.log import configure_logging
-    from scrapy.utils.project import get_project_settings
+    from scrapy.utils.reactor import install_reactor
+    from twisted.internet.task import react
 
 
     class MySpider1(scrapy.Spider):
@@ -196,27 +213,29 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
         ...
 
 
-    configure_logging()
-    settings = get_project_settings()
-    runner = CrawlerRunner(settings)
-    runner.crawl(MySpider1)
-    runner.crawl(MySpider2)
-    d = runner.join()
+    async def crawl(_):
+        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+        runner = AsyncCrawlerRunner()
+        runner.crawl(MySpider1)
+        runner.crawl(MySpider2)
+        await runner.join()  # completes when both spiders finish
 
-    from twisted.internet import reactor
 
-    d.addBoth(lambda _: reactor.stop())
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    react(deferred_f_from_coro_f(crawl))
 
-    reactor.run()  # the script will block here until all crawling jobs are finished
 
-Same example but running the spiders sequentially by chaining the deferreds:
+Same example but running the spiders sequentially by awaiting until each one
+finishes before starting the next one:
 
 .. code-block:: python
 
-    from twisted.internet import defer
-    from scrapy.crawler import CrawlerRunner
+    import scrapy
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.defer import deferred_f_from_coro_f
     from scrapy.utils.log import configure_logging
-    from scrapy.utils.project import get_project_settings
+    from scrapy.utils.reactor import install_reactor
+    from twisted.internet.task import react
 
 
     class MySpider1(scrapy.Spider):
@@ -229,22 +248,15 @@ Same example but running the spiders sequentially by chaining the deferreds:
         ...
 
 
-    settings = get_project_settings()
-    configure_logging(settings)
-    runner = CrawlerRunner(settings)
+    async def crawl(_):
+        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+        runner = AsyncCrawlerRunner()
+        await runner.crawl(MySpider1)
+        await runner.crawl(MySpider2)
 
 
-    @defer.inlineCallbacks
-    def crawl():
-        yield runner.crawl(MySpider1)
-        yield runner.crawl(MySpider2)
-        reactor.stop()
-
-
-    from twisted.internet import reactor
-
-    crawl()
-    reactor.run()  # the script will block here until the last crawl call is finished
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    react(deferred_f_from_coro_f(crawl))
 
 .. note:: When running multiple spiders in the same process, :ref:`reactor
     settings <reactor-settings>` should not have a different value per spider.

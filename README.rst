@@ -17,18 +17,13 @@ Scrapy
    :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AUbuntu
    :alt: Ubuntu
 
-.. .. image:: https://github.com/scrapy/scrapy/workflows/macOS/badge.svg
-   .. :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AmacOS
-   .. :alt: macOS
-
+.. image:: https://github.com/scrapy/scrapy/workflows/macOS/badge.svg
+   :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AmacOS
+   :alt: macOS
 
 .. image:: https://github.com/scrapy/scrapy/workflows/Windows/badge.svg
    :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AWindows
    :alt: Windows
-
-.. image:: https://img.shields.io/badge/wheel-yes-brightgreen.svg
-   :target: https://pypi.org/pypi/Scrapy
-   :alt: Wheel Status
 
 .. image:: https://img.shields.io/codecov/c/github/scrapy/scrapy/master.svg
    :target: https://codecov.io/github/scrapy/scrapy?branch=master
@@ -37,6 +32,10 @@ Scrapy
 .. image:: https://anaconda.org/conda-forge/scrapy/badges/version.svg
    :target: https://anaconda.org/conda-forge/scrapy
    :alt: Conda Version
+
+.. image:: https://deepwiki.com/badge.svg
+   :target: https://deepwiki.com/scrapy/scrapy
+   :alt: Ask DeepWiki
 
 
 Overview
