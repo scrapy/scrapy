@@ -57,6 +57,7 @@ operation to finish.
 
 Let's take an example using :ref:`coroutines <topics-coroutines>`:
 
+.. skip: next
 .. code-block:: python
 
     import scrapy
