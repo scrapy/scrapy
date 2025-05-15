@@ -30,7 +30,7 @@ def send_catch_log(
     *arguments: TypingAny,
     **named: TypingAny,
 ) -> list[tuple[TypingAny, TypingAny]]:
-    """Like pydispatcher.robust.sendRobust but it also logs errors and returns
+    """Like ``pydispatcher.robust.sendRobust()`` but it also logs errors and returns
     Failures instead of exceptions.
     """
     dont_log = named.pop("dont_log", ())
@@ -73,7 +73,8 @@ def send_catch_log_deferred(
     *arguments: TypingAny,
     **named: TypingAny,
 ) -> Generator[Deferred[TypingAny], TypingAny, list[tuple[TypingAny, TypingAny]]]:
-    """Like send_catch_log but supports asynchronous signal handlers.
+    """Like :func:`send_catch_log` but supports :ref:`asynchronous signal handlers
+    <signal-deferred>`.
 
     Returns a deferred that gets fired once all signal handlers have finished.
     """
@@ -115,7 +116,8 @@ async def send_catch_log_async(
     *arguments: TypingAny,
     **named: TypingAny,
 ) -> list[tuple[TypingAny, TypingAny]]:
-    """Like send_catch_log but supports asynchronous signal handlers.
+    """Like :func:`send_catch_log` but supports :ref:`asynchronous signal handlers
+    <signal-deferred>`.
 
     Returns a coroutine that completes once all signal handlers have finished.
     """
@@ -126,7 +128,7 @@ async def send_catch_log_async(
 
 def disconnect_all(signal: TypingAny = Any, sender: TypingAny = Any) -> None:
     """Disconnect all signal handlers. Useful for cleaning up after running
-    tests
+    tests.
     """
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
         disconnect(receiver, signal=signal, sender=sender)
