@@ -53,7 +53,8 @@ class SignalManager:
         self, signal: Any, **kwargs: Any
     ) -> Deferred[list[tuple[Any, Any]]]:
         """
-        Like :meth:`send_catch_log` but supports asynchronous signal handlers.
+        Like :meth:`send_catch_log` but supports :ref:`asynchronous signal
+        handlers <signal-deferred>`.
 
         Returns a Deferred that gets fired once all signal handlers
         have finished. Send a signal, catch exceptions and log them.
@@ -68,7 +69,8 @@ class SignalManager:
         self, signal: Any, **kwargs: Any
     ) -> list[tuple[Any, Any]]:
         """
-        Like :meth:`send_catch_log` but supports asynchronous signal handlers.
+        Like :meth:`send_catch_log` but supports :ref:`asynchronous signal
+        handlers <signal-deferred>`.
 
         Returns a coroutine that completes once all signal handlers
         have finished. Send a signal, catch exceptions and log them.
