@@ -46,8 +46,8 @@ Here is a simple example showing how you can catch signals and perform some acti
 
 .. _signal-deferred:
 
-Deferred signal handlers
-========================
+Asynchronous signal handlers
+============================
 
 Some signals support returning :class:`~twisted.internet.defer.Deferred`
 or :term:`awaitable objects <awaitable>` from their handlers, allowing
@@ -114,7 +114,7 @@ engine_started
 
     Sent when the Scrapy engine has started crawling.
 
-    This signal supports returning deferreds from its handlers.
+    This signal supports asynchronous handlers.
 
 .. note:: This signal may be fired *after* the :signal:`spider_opened` signal,
     depending on how the spider was started. So **don't** rely on this signal
@@ -129,7 +129,7 @@ engine_stopped
     Sent when the Scrapy engine is stopped (for example, when a crawling
     process has finished).
 
-    This signal supports returning deferreds from its handlers.
+    This signal supports asynchronous handlers.
 
 scheduler_empty
 ~~~~~~~~~~~~~~~
@@ -164,7 +164,7 @@ item_scraped
     Sent when an item has been scraped, after it has passed all the
     :ref:`topics-item-pipeline` stages (without being dropped).
 
-    This signal supports returning deferreds from its handlers.
+    This signal supports asynchronous handlers.
 
     :param item: the scraped item
     :type item: :ref:`item object <item-types>`
@@ -185,7 +185,7 @@ item_dropped
     Sent after an item has been dropped from the :ref:`topics-item-pipeline`
     when some stage raised a :exc:`~scrapy.exceptions.DropItem` exception.
 
-    This signal supports returning deferreds from its handlers.
+    This signal supports asynchronous handlers.
 
     :param item: the item dropped from the :ref:`topics-item-pipeline`
     :type item: :ref:`item object <item-types>`
@@ -211,7 +211,7 @@ item_error
     Sent when a :ref:`topics-item-pipeline` generates an error (i.e. raises
     an exception), except :exc:`~scrapy.exceptions.DropItem` exception.
 
-    This signal supports returning deferreds from its handlers.
+    This signal supports asynchronous handlers.
 
     :param item: the item that caused the error in the :ref:`topics-item-pipeline`
     :type item: :ref:`item object <item-types>`
@@ -239,7 +239,7 @@ spider_closed
     Sent after a spider has been closed. This can be used to release per-spider
     resources reserved on :signal:`spider_opened`.
 
-    This signal supports returning deferreds from its handlers.
+    This signal supports asynchronous handlers.
 
     :param spider: the spider which has been closed
     :type spider: :class:`~scrapy.Spider` object
@@ -263,7 +263,7 @@ spider_opened
     reserve per-spider resources, but can be used for any task that needs to be
     performed when a spider is opened.
 
-    This signal supports returning deferreds from its handlers.
+    This signal supports asynchronous handlers.
 
     :param spider: the spider which has been opened
     :type spider: :class:`~scrapy.Spider` object
@@ -332,7 +332,7 @@ feed_slot_closed
 
     Sent when a :ref:`feed exports <topics-feed-exports>` slot is closed.
 
-    This signal supports returning deferreds from its handlers.
+    This signal supports asynchronous handlers.
 
     :param slot: the slot closed
     :type slot: scrapy.extensions.feedexport.FeedSlot
@@ -348,7 +348,7 @@ feed_exporter_closed
     during the handling of the :signal:`spider_closed` signal by the extension,
     after all feed exporting has been handled.
 
-    This signal supports returning deferreds from its handlers.
+    This signal supports asynchronous handlers.
 
 
 Request signals

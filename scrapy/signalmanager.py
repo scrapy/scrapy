@@ -53,17 +53,31 @@ class SignalManager:
         self, signal: Any, **kwargs: Any
     ) -> Deferred[list[tuple[Any, Any]]]:
         """
-        Like :meth:`send_catch_log` but supports returning
-        :class:`~twisted.internet.defer.Deferred` objects from signal handlers.
+        Like :meth:`send_catch_log` but supports asynchronous signal handlers.
 
         Returns a Deferred that gets fired once all signal handlers
-        deferreds were fired. Send a signal, catch exceptions and log them.
+        have finished. Send a signal, catch exceptions and log them.
 
         The keyword arguments are passed to the signal handlers (connected
         through the :meth:`connect` method).
         """
         kwargs.setdefault("sender", self.sender)
         return _signal.send_catch_log_deferred(signal, **kwargs)
+
+    async def send_catch_log_async(
+        self, signal: Any, **kwargs: Any
+    ) -> list[tuple[Any, Any]]:
+        """
+        Like :meth:`send_catch_log` but supports asynchronous signal handlers.
+
+        Returns a coroutine that completes once all signal handlers
+        have finished. Send a signal, catch exceptions and log them.
+
+        The keyword arguments are passed to the signal handlers (connected
+        through the :meth:`connect` method).
+        """
+        kwargs.setdefault("sender", self.sender)
+        return await _signal.send_catch_log_async(signal, **kwargs)
 
     def disconnect_all(self, signal: Any, **kwargs: Any) -> None:
         """
