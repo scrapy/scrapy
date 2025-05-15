@@ -392,14 +392,12 @@ class Scraper:
                 logger.log(
                     *logformatter_adapter(logkws), extra={"spider": self.crawler.spider}
                 )
-            await maybe_deferred_to_future(
-                self.signals.send_catch_log_deferred(
-                    signal=signals.item_dropped,
-                    item=item,
-                    response=response,
-                    spider=self.crawler.spider,
-                    exception=ex,
-                )
+            await self.signals.send_catch_log_async(
+                signal=signals.item_dropped,
+                item=item,
+                response=response,
+                spider=self.crawler.spider,
+                exception=ex,
             )
         except Exception as ex:
             logkws = self.logformatter.item_error(
@@ -410,14 +408,12 @@ class Scraper:
                 extra={"spider": self.crawler.spider},
                 exc_info=True,
             )
-            await maybe_deferred_to_future(
-                self.signals.send_catch_log_deferred(
-                    signal=signals.item_error,
-                    item=item,
-                    response=response,
-                    spider=self.crawler.spider,
-                    failure=Failure(),
-                )
+            await self.signals.send_catch_log_async(
+                signal=signals.item_error,
+                item=item,
+                response=response,
+                spider=self.crawler.spider,
+                failure=Failure(),
             )
         else:
             logkws = self.logformatter.scraped(output, response, self.crawler.spider)
@@ -425,13 +421,11 @@ class Scraper:
                 logger.log(
                     *logformatter_adapter(logkws), extra={"spider": self.crawler.spider}
                 )
-            await maybe_deferred_to_future(
-                self.signals.send_catch_log_deferred(
-                    signal=signals.item_scraped,
-                    item=output,
-                    response=response,
-                    spider=self.crawler.spider,
-                )
+            await self.signals.send_catch_log_async(
+                signal=signals.item_scraped,
+                item=output,
+                response=response,
+                spider=self.crawler.spider,
             )
         finally:
             self.slot.itemproc_size -= 1

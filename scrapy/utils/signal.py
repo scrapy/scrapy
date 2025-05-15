@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Generator, Sequence
 from typing import Any as TypingAny
 
 from pydispatch.dispatcher import (
@@ -14,11 +14,11 @@ from pydispatch.dispatcher import (
     liveReceivers,
 )
 from pydispatch.robustapply import robustApply
-from twisted.internet.defer import Deferred, DeferredList
+from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy.exceptions import StopDownload
-from scrapy.utils.defer import maybeDeferred_coro
+from scrapy.utils.defer import maybe_deferred_to_future, maybeDeferred_coro
 from scrapy.utils.log import failure_to_exc_info
 
 logger = logging.getLogger(__name__)
@@ -66,18 +66,19 @@ def send_catch_log(
     return responses
 
 
+@inlineCallbacks
 def send_catch_log_deferred(
     signal: TypingAny = Any,
     sender: TypingAny = Anonymous,
     *arguments: TypingAny,
     **named: TypingAny,
-) -> Deferred[list[tuple[TypingAny, TypingAny]]]:
-    """Like send_catch_log but supports returning deferreds on signal handlers.
-    Returns a deferred that gets fired once all signal handlers deferreds were
-    fired.
+) -> Generator[Deferred[TypingAny], TypingAny, list[tuple[TypingAny, TypingAny]]]:
+    """Like send_catch_log but supports asynchronous signal handlers.
+
+    Returns a deferred that gets fired once all signal handlers have finished.
     """
 
-    def logerror(failure: Failure, recv: Any) -> Failure:
+    def logerror(failure: Failure, recv: TypingAny) -> Failure:
         if dont_log is None or not isinstance(failure.value, dont_log):
             logger.error(
                 "Error caught on signal handler: %(receiver)s",
@@ -103,11 +104,24 @@ def send_catch_log_deferred(
             )
         )
         dfds.append(d2)
-    dl = DeferredList(dfds)
-    d3: Deferred[list[tuple[TypingAny, TypingAny]]] = dl.addCallback(
-        lambda out: [x[1] for x in out]
+
+    results = yield DeferredList(dfds)
+    return [result[1] for result in results]
+
+
+async def send_catch_log_async(
+    signal: TypingAny = Any,
+    sender: TypingAny = Anonymous,
+    *arguments: TypingAny,
+    **named: TypingAny,
+) -> list[tuple[TypingAny, TypingAny]]:
+    """Like send_catch_log but supports asynchronous signal handlers.
+
+    Returns a coroutine that completes once all signal handlers have finished.
+    """
+    return await maybe_deferred_to_future(
+        send_catch_log_deferred(signal, sender, *arguments, **named)
     )
-    return d3
 
 
 def disconnect_all(signal: TypingAny = Any, sender: TypingAny = Any) -> None:
