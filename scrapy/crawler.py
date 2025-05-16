@@ -33,6 +33,7 @@ from scrapy.utils.log import (
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.reactor import (
+    _get_asyncio_event_loop,
     install_reactor,
     is_asyncio_reactor_installed,
     verify_installed_asyncio_event_loop,
@@ -178,6 +179,10 @@ class Crawler:
             assert self.engine
             yield self.engine.stop()
 
+    async def stop_async(self) -> None:
+        """Starts a graceful stop of the crawler and completes when the crawler is stopped."""
+        await deferred_to_future(self.stop())
+
     @staticmethod
     def _get_component(
         component_class: type[_T], components: Iterable[Any]
@@ -264,6 +269,28 @@ class Crawler:
             )
         return self._get_component(cls, self.engine.scraper.spidermw.middlewares)
 
+    async def crawl_async(self, *args: Any, **kwargs: Any) -> None:
+        if self.crawling:
+            raise RuntimeError("Crawling already taking place")
+        if self._started:
+            raise RuntimeError(
+                "Cannot run Crawler.crawl_async() more than once on the same instance."
+            )
+        self.crawling = self._started = True
+
+        try:
+            self.spider = self._create_spider(*args, **kwargs)
+            self._apply_settings()
+            self._update_root_log_handler()
+            self.engine = self._create_engine()
+            await self.engine.open_spider_async(self.spider)
+            await self.engine.start_async()
+        except Exception:
+            self.crawling = False
+            if self.engine is not None:
+                await deferred_to_future(self.engine.close())
+            raise
+
 
 class CrawlerRunnerBase:
     @staticmethod
@@ -317,9 +344,6 @@ class CrawlerRunnerBase:
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
         return Crawler(spidercls, self.settings)
-
-    def _stop(self) -> Deferred[Any]:
-        return DeferredList([c.stop() for c in list(self.crawlers)])
 
 
 class CrawlerRunner(CrawlerRunnerBase):
@@ -397,7 +421,7 @@ class CrawlerRunner(CrawlerRunnerBase):
 
         Returns a deferred that is fired when they all have ended.
         """
-        return self._stop()
+        return DeferredList([c.stop() for c in list(self.crawlers)])
 
     @inlineCallbacks
     def join(self) -> Generator[Deferred[Any], Any, None]:
@@ -429,14 +453,14 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
 
     def __init__(self, settings: dict[str, Any] | Settings | None = None):
         super().__init__(settings)
-        self._active: set[asyncio.Future[None]] = set()
+        self._active: set[asyncio.Task[None]] = set()
 
     def crawl(
         self,
         crawler_or_spidercls: type[Spider] | str | Crawler,
         *args: Any,
         **kwargs: Any,
-    ) -> asyncio.Future[None]:
+    ) -> asyncio.Task[None]:
         """
         Run a crawler with the provided arguments.
 
@@ -447,7 +471,7 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         instance, this method will try to create one using this parameter as
         the spider class given to it.
 
-        Returns a :class:`~asyncio.Future` object which completes when the
+        Returns a :class:`~asyncio.Task` object which completes when the
         crawling is finished.
 
         :param crawler_or_spidercls: already created crawler, or a spider class
@@ -469,20 +493,19 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
 
-    def _crawl(
-        self, crawler: Crawler, *args: Any, **kwargs: Any
-    ) -> asyncio.Future[None]:
+    def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> asyncio.Task[None]:
+        loop = _get_asyncio_event_loop()
         self.crawlers.add(crawler)
-        future = deferred_to_future(crawler.crawl(*args, **kwargs))
-        self._active.add(future)
+        task = loop.create_task(crawler.crawl_async(*args, **kwargs))
+        self._active.add(task)
 
-        def _done(_: asyncio.Future[None]) -> None:
+        def _done(_: asyncio.Task[None]) -> None:
             self.crawlers.discard(crawler)
-            self._active.discard(future)
+            self._active.discard(task)
             self.bootstrap_failed |= not getattr(crawler, "spider", None)
 
-        future.add_done_callback(_done)
-        return future
+        task.add_done_callback(_done)
+        return task
 
     async def stop(self) -> None:
         """
@@ -490,7 +513,7 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
 
         Completes when they all have ended.
         """
-        await deferred_to_future(self._stop())
+        await asyncio.gather(*[c.stop_async() for c in list(self.crawlers)])
 
     async def join(self) -> None:
         """
