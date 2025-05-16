@@ -45,6 +45,23 @@ Scrapy is a BSD-licensed fast high-level web crawling and web scraping framework
 crawl websites and extract structured data from their pages. It can be used for
 a wide range of purposes, from data mining to monitoring and automated testing.
 
+Welcome to Scrapy, A web crawler or spider are synonymous terms for a utility written 
+in a programming language that indexes content from all over the Internet. The goal
+of such a web crawler is to learn what the page is about and then retrieve what is
+actually needed. Scrapy is simply an instance of this application. They are called
+such as they automatically go around websites looking at metadata and obtaining
+the data via a software program usually written in this case Python. 
+
+A web crawler is similar to going to a library of unorganized books and putting
+together a card catalog quickly so information can be found easily.  In order
+to do the task, the web crawler will look at the topics, title, and summary to
+figure out what goes where. This is similar to how this will function on the
+internet. You can use Scrapy in a multitude of ways. One example would be 
+extracting headlines from a news source and creating your own headline
+aggregating platform for things that you are interested in. The sky is
+the limit with Scrapy. Please see our technical documentation to get started.
+
+
 Scrapy is maintained by Zyte_ (formerly Scrapinghub) and `many other
 contributors`_.
 
