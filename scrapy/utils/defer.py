@@ -10,14 +10,13 @@ import warnings
 from asyncio import Future
 from collections.abc import Awaitable, Coroutine, Iterable, Iterator
 from functools import wraps
-from types import CoroutineType
-from typing import TYPE_CHECKING, Any, Generic, TypeVar, Union, cast, overload
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast, overload
 
-from twisted.internet import defer
 from twisted.internet.defer import (
     Deferred,
     DeferredList,
-    ensureDeferred,
+    fail,
+    succeed,
 )
 from twisted.internet.task import Cooperator
 from twisted.python import failure
@@ -315,7 +314,7 @@ def process_parallel(
     """Return a Deferred with the output of all successful calls to the given
     callbacks
     """
-    dfds = [defer.succeed(input).addCallback(x, *a, **kw) for x in callbacks]
+    dfds = [succeed(input).addCallback(x, *a, **kw) for x in callbacks]
     d: Deferred[list[tuple[bool, _T2]]] = DeferredList(
         dfds, fireOnOneErrback=True, consumeErrors=True
     )
@@ -366,27 +365,24 @@ async def aiter_errback(
             errback(failure.Failure(), *a, **kw)
 
 
-_CT = TypeVar("_CT", bound=Union[Awaitable, CoroutineType, Future])
+@overload
+def deferred_from_coro(o: Awaitable[_T]) -> Deferred[_T]: ...
 
 
 @overload
-def deferred_from_coro(o: _CT) -> Deferred: ...
+def deferred_from_coro(o: _T2) -> _T2: ...
 
 
-@overload
-def deferred_from_coro(o: _T) -> _T: ...
-
-
-def deferred_from_coro(o: _T) -> Deferred | _T:
+def deferred_from_coro(o: Awaitable[_T] | _T2) -> Deferred[_T] | _T2:
     """Converts a coroutine or other awaitable object into a Deferred,
     or returns the object as is if it isn't a coroutine."""
     if isinstance(o, Deferred):
         return o
-    if asyncio.isfuture(o) or inspect.isawaitable(o):
+    if inspect.isawaitable(o):
         if not is_asyncio_reactor_installed():
             # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
             # that use asyncio, e.g. "await asyncio.sleep(1)"
-            return ensureDeferred(cast(Coroutine[Deferred, Any, Any], o))
+            return Deferred.fromCoroutine(cast(Coroutine[Deferred[Any], Any, _T], o))
         # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
         event_loop = _get_asyncio_event_loop()
         return Deferred.fromFuture(asyncio.ensure_future(o, loop=event_loop))
@@ -394,7 +390,7 @@ def deferred_from_coro(o: _T) -> Deferred | _T:
 
 
 def deferred_f_from_coro_f(
-    coro_f: Callable[_P, Coroutine[Any, Any, _T]],
+    coro_f: Callable[_P, Awaitable[_T]],
 ) -> Callable[_P, Deferred[_T]]:
     """Converts a coroutine function into a function that returns a Deferred.
 
@@ -403,7 +399,7 @@ def deferred_f_from_coro_f(
     """
 
     @wraps(coro_f)
-    def f(*coro_args: _P.args, **coro_kwargs: _P.kwargs) -> Any:
+    def f(*coro_args: _P.args, **coro_kwargs: _P.kwargs) -> Deferred[_T]:
         return deferred_from_coro(coro_f(*coro_args, **coro_kwargs))
 
     return f
@@ -416,15 +412,15 @@ def maybeDeferred_coro(
     try:
         result = f(*args, **kw)
     except:  # noqa: E722  # pylint: disable=bare-except
-        return defer.fail(failure.Failure(captureVars=Deferred.debug))
+        return fail(failure.Failure(captureVars=Deferred.debug))
 
     if isinstance(result, Deferred):
         return result
     if asyncio.isfuture(result) or inspect.isawaitable(result):
         return deferred_from_coro(result)
     if isinstance(result, failure.Failure):
-        return defer.fail(result)
-    return defer.succeed(result)
+        return fail(result)
+    return succeed(result)
 
 
 def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
