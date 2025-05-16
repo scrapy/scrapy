@@ -35,26 +35,24 @@ class CoreStats:
 
     def spider_opened(self, spider: Spider) -> None:
         self.start_time = datetime.now(tz=timezone.utc)
-        self.stats.set_value("start_time", self.start_time, spider=spider)
+        self.stats.set_value("start_time", self.start_time)
 
     def spider_closed(self, spider: Spider, reason: str) -> None:
         assert self.start_time is not None
         finish_time = datetime.now(tz=timezone.utc)
         elapsed_time = finish_time - self.start_time
         elapsed_time_seconds = elapsed_time.total_seconds()
-        self.stats.set_value(
-            "elapsed_time_seconds", elapsed_time_seconds, spider=spider
-        )
-        self.stats.set_value("finish_time", finish_time, spider=spider)
-        self.stats.set_value("finish_reason", reason, spider=spider)
+        self.stats.set_value("elapsed_time_seconds", elapsed_time_seconds)
+        self.stats.set_value("finish_time", finish_time)
+        self.stats.set_value("finish_reason", reason)
 
     def item_scraped(self, item: Any, spider: Spider) -> None:
-        self.stats.inc_value("item_scraped_count", spider=spider)
+        self.stats.inc_value("item_scraped_count")
 
     def response_received(self, spider: Spider) -> None:
-        self.stats.inc_value("response_received_count", spider=spider)
+        self.stats.inc_value("response_received_count")
 
     def item_dropped(self, item: Any, spider: Spider, exception: BaseException) -> None:
         reason = exception.__class__.__name__
-        self.stats.inc_value("item_dropped_count", spider=spider)
-        self.stats.inc_value(f"item_dropped_reasons_count/{reason}", spider=spider)
+        self.stats.inc_value("item_dropped_count")
+        self.stats.inc_value(f"item_dropped_reasons_count/{reason}")

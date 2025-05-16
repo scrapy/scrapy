@@ -410,7 +410,7 @@ class ExecutionEngine:
             await maybe_deferred_to_future(d)
         await maybe_deferred_to_future(self.scraper.open_spider(spider))
         assert self.crawler.stats
-        self.crawler.stats.open_spider(spider)
+        self.crawler.stats.open_spider()
         await self.signals.send_catch_log_async(signals.spider_opened, spider=spider)
 
     def _spider_idle(self) -> None:
@@ -481,7 +481,7 @@ class ExecutionEngine:
 
         def close_stats(_: Any) -> None:
             assert self.crawler.stats
-            self.crawler.stats.close_spider(spider, reason=reason)
+            self.crawler.stats.close_spider(reason=reason)
 
         dfd.addBoth(close_stats)
         dfd.addErrback(log_failure("Stats close failure"))
