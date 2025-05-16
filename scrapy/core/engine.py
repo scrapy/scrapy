@@ -411,7 +411,7 @@ class ExecutionEngine:
         await maybe_deferred_to_future(self.scraper.open_spider(spider))
         assert self.crawler.stats
         self.crawler.stats.open_spider()
-        yield self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
+        await self.signals.send_catch_log_async(signals.spider_opened, spider=spider)
 
     def _spider_idle(self) -> None:
         """
