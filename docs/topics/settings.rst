@@ -710,7 +710,8 @@ connections (for ``HTTP10DownloadHandler``).
 
 .. note::
 
-    HTTP/1.0 is rarely used nowadays so you can safely ignore this setting,
+    HTTP/1.0 is rarely used nowadays and its Scrapy support is deprecated,
+    so you can safely ignore this setting,
     unless you really want to use HTTP/1.0 and override
     :setting:`DOWNLOAD_HANDLERS` for ``http(s)`` scheme accordingly,
     i.e. to ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
@@ -1326,6 +1327,7 @@ Default: ``{}``
 A dict containing the pipelines enabled by default in Scrapy. You should never
 modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
 
+
 .. setting:: JOBDIR
 
 JOBDIR
@@ -1335,6 +1337,7 @@ Default: ``None``
 
 A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.
+
 
 .. setting:: LOG_ENABLED
 
@@ -1700,23 +1703,28 @@ SCHEDULER_DISK_QUEUE
 
 Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
 
-Type of disk queue that will be used by scheduler. Other available types are
-``scrapy.squeues.PickleFifoDiskQueue``, ``scrapy.squeues.MarshalFifoDiskQueue``,
+Type of disk queue that will be used by the scheduler. Other available types
+are ``scrapy.squeues.PickleFifoDiskQueue``,
+``scrapy.squeues.MarshalFifoDiskQueue``,
 ``scrapy.squeues.MarshalLifoDiskQueue``.
+
 
 .. setting:: SCHEDULER_MEMORY_QUEUE
 
 SCHEDULER_MEMORY_QUEUE
 ----------------------
+
 Default: ``'scrapy.squeues.LifoMemoryQueue'``
 
-Type of in-memory queue used by scheduler. Other available type is:
+Type of in-memory queue used by the scheduler. Other available type is:
 ``scrapy.squeues.FifoMemoryQueue``.
+
 
 .. setting:: SCHEDULER_PRIORITY_QUEUE
 
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
+
 Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
 
 Type of priority queue used by the scheduler. Another available type is
@@ -1725,6 +1733,51 @@ Type of priority queue used by the scheduler. Another available type is
 ``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
 domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
 does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
+
+
+.. setting:: SCHEDULER_START_DISK_QUEUE
+
+SCHEDULER_START_DISK_QUEUE
+--------------------------
+
+Default: ``'scrapy.squeues.PickleFifoDiskQueue'``
+
+Type of disk queue (see :setting:`JOBDIR`) that the :ref:`scheduler
+<topics-scheduler>` uses for :ref:`start requests <start-requests>`.
+
+For available choices, see :setting:`SCHEDULER_DISK_QUEUE`.
+
+.. queue-common-starts
+
+Use ``None`` or ``""`` to disable these separate queues entirely, and instead
+have start requests share the same queues as other requests.
+
+.. note::
+
+    Disabling separate start request queues makes :ref:`start request order
+    <start-request-order>` unintuitive: start requests will be sent in order
+    only until :setting:`CONCURRENT_REQUESTS` is reached, then remaining start
+    requests will be sent in reverse order.
+
+.. queue-common-ends
+
+
+.. setting:: SCHEDULER_START_MEMORY_QUEUE
+
+SCHEDULER_START_MEMORY_QUEUE
+----------------------------
+
+Default: ``'scrapy.squeues.FifoMemoryQueue'``
+
+Type of in-memory queue that the :ref:`scheduler <topics-scheduler>` uses for
+:ref:`start requests <start-requests>`.
+
+For available choices, see :setting:`SCHEDULER_MEMORY_QUEUE`.
+
+.. include:: settings.rst
+    :start-after: queue-common-starts
+    :end-before: queue-common-ends
+
 
 .. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
 
@@ -1957,7 +2010,7 @@ In order to use the reactor installed by Scrapy:
             self.timeout = int(kwargs.pop("timeout", "60"))
             super(QuotesSpider, self).__init__(*args, **kwargs)
 
-        def start_requests(self):
+        async def start(self):
             reactor.callLater(self.timeout, self.stop)
 
             urls = ["https://quotes.toscrape.com/page/1"]
@@ -1986,7 +2039,7 @@ which raises :exc:`Exception`, becomes:
             self.timeout = int(kwargs.pop("timeout", "60"))
             super(QuotesSpider, self).__init__(*args, **kwargs)
 
-        def start_requests(self):
+        async def start(self):
             from twisted.internet import reactor
 
             reactor.callLater(self.timeout, self.stop)
@@ -2012,7 +2065,7 @@ current platform.
    ``twisted.internet.asyncioreactor.AsyncioSelectorReactor`` in the generated
    ``settings.py`` file.
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.13
    The default value was changed from ``None`` to
    ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``.
 

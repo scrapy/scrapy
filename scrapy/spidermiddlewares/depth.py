@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Iterable
+    from collections.abc import AsyncIterator, Iterable
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -59,8 +59,8 @@ class DepthMiddleware(BaseSpiderMiddleware):
         yield from super().process_spider_output(response, result, spider)
 
     async def process_spider_output_async(
-        self, response: Response, result: AsyncIterable[Any], spider: Spider
-    ) -> AsyncIterable[Any]:
+        self, response: Response, result: AsyncIterator[Any], spider: Spider
+    ) -> AsyncIterator[Any]:
         self._init_depth(response, spider)
         async for o in super().process_spider_output_async(response, result, spider):
             yield o
@@ -73,8 +73,11 @@ class DepthMiddleware(BaseSpiderMiddleware):
                 self.stats.inc_value("request_depth_count/0")
 
     def get_processed_request(
-        self, request: Request, response: Response
+        self, request: Request, response: Response | None
     ) -> Request | None:
+        if response is None:
+            # start requests
+            return request
         depth = response.meta["depth"] + 1
         request.meta["depth"] = depth
         if self.prio:
