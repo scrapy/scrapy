@@ -193,7 +193,7 @@ class CrawlSpider(Spider):
                 "it will be removed in future Scrapy releases. "
                 "Please use CrawlSpider.parse_with_rules method instead."
             )
-        self.parse_with_rules(response, callback, cb_kwargs, follow)
+        return self.parse_with_rules(response, callback, cb_kwargs, follow)
 
     def _handle_failure(
         self, failure: Failure, errback: Callable[[Failure], Any] | None
