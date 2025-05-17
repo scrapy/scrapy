@@ -443,6 +443,7 @@ class TestHttps10(TestHttp10):
     scheme = "https"
 
 
+@pytest.mark.only_asyncio
 class TestAiohttp(TestHttp):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
@@ -804,6 +805,13 @@ class TestHttp10Proxy(TestHttpProxy):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return HTTP10DownloadHandler
+
+
+@pytest.mark.only_asyncio
+class TestAiohttpProxy(TestHttpProxy):
+    @property
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        return AiohttpDownloadHandler
 
 
 class TestHttp11Proxy(TestHttpProxy):

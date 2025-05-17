@@ -1,24 +1,40 @@
-import asyncio
-from typing import Self
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import aiohttp
-from twisted.internet.defer import Deferred
 
 from scrapy import responsetypes
-from scrapy.crawler import Crawler
 from scrapy.http.headers import Headers
-from scrapy.http.request import Request
-from scrapy.http.response import Response
-from scrapy.settings import Settings
-from scrapy.spiders import Spider
+from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.reactor import (
+    is_asyncio_reactor_installed,
     set_asyncio_event_loop,
     verify_installed_reactor,
 )
 
+if TYPE_CHECKING:
+    from typing import Self
+
+    from twisted.internet.defer import Deferred
+
+    from scrapy.crawler import Crawler
+    from scrapy.http.request import Request
+    from scrapy.http.response import Response
+    from scrapy.settings import Settings
+    from scrapy.spiders import Spider
+
 
 class AiohttpDownloadHandler:
     def __init__(self, settings: Settings, crawler: Crawler):
+        if not is_asyncio_reactor_installed():
+            raise ValueError(
+                "AiohttpDownloadHandler requires the asyncio Twisted "
+                "reactor. Make sure you have it configured in the "
+                "TWISTED_REACTOR setting. See the asyncio documentation "
+                "of Scrapy for more information."
+            )
+
         verify_installed_reactor(
             "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
         )
@@ -37,14 +53,14 @@ class AiohttpDownloadHandler:
         return cls(crawler.settings, crawler)
 
     def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
-        return Deferred.fromFuture(
-            asyncio.ensure_future(self._download_request(request))
-        )
+        return deferred_from_coro(self._download_request(request))
 
     async def _download_request(self, request: Request):
         """download through aiohttp interface"""
 
         proxy = request.meta.get("proxy")
+        timeout = aiohttp.ClientTimeout(total=request.meta.get("download_timeout"))
+
         url = request.url
         method = request.method
         body = request.body
@@ -66,6 +82,7 @@ class AiohttpDownloadHandler:
             data=body,
             headers=headers,
             allow_redirects=False,
+            timeout=timeout,
         ) as response:
             body = await response.read()
             status = response.status
@@ -79,7 +96,7 @@ class AiohttpDownloadHandler:
             )
 
     def close(self):
-        return Deferred.fromFuture(asyncio.ensure_future(self.session.close()))
+        return deferred_from_coro(self.session.close())
 
     async def _close(self):
         await self.session.close()
