@@ -20,6 +20,7 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.spider import iterate_spider_output
+from scrapy.utils.deprecate import method_is_overridden
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -96,6 +97,12 @@ class CrawlSpider(Spider):
     def __init__(self, *a: Any, **kw: Any):
         super().__init__(*a, **kw)
         self._compile_rules()
+        if method_is_overridden(self.__class__, CrawlSpider, "_parse_response"):
+            warnings.warn(
+                "CrawlSpider._parse_response method is deprecated: "
+                "it will be removed in future Scrapy releases. "
+                "Please override CrawlSpider.parse_with_rules method instead."
+            )
 
     def _parse(self, response: Response, **kwargs: Any) -> Any:
         return self.parse_with_rules(
