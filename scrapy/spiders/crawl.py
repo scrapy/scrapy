@@ -19,8 +19,8 @@ from scrapy.link import Link
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
-from scrapy.utils.spider import iterate_spider_output
 from scrapy.utils.deprecate import method_is_overridden
+from scrapy.utils.spider import iterate_spider_output
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -185,12 +185,14 @@ class CrawlSpider(Spider):
         callback: CallbackT | None,
         cb_kwargs: dict[str, Any],
         follow: bool = True,
+        warn: bool = True,
     ) -> AsyncIterator[Any]:
-        warnings.warn(
-            "CrawlSpider._parse_response method is deprecated: "
-            "it will be removed in future Scrapy releases. "
-            "Please use CrawlSpider.parse_with_rules method instead."
-        )
+        if warn:
+            warnings.warn(
+                "CrawlSpider._parse_response method is deprecated: "
+                "it will be removed in future Scrapy releases. "
+                "Please use CrawlSpider.parse_with_rules method instead."
+            )
         self.parse_with_rules(response, callback, cb_kwargs, follow)
 
     def _handle_failure(
