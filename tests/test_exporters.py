@@ -42,6 +42,15 @@ class CustomFieldItem(Item):
     age = Field(serializer=custom_serializer)
 
 
+class UnorderedAttributesItem(Item):
+    z = Field()
+    y = Field()
+    x = Field()
+    c = Field()
+    b = Field()
+    a = Field()
+
+
 @dataclasses.dataclass
 class MyDataClass:
     name: str
@@ -631,6 +640,17 @@ class TestJsonItemExporter(TestJsonLinesItemExporter):
         exported = json.loads(to_unicode(self.output.getvalue()))
         item["time"] = str(item["time"])
         assert exported == [item]
+
+    def test_item_attributes_order(self):
+        unordered_attributes_item = UnorderedAttributesItem(
+            z=1, y=2, a=3, x=4, c=5, b=6
+        )
+        self.ie.start_exporting()
+        self.ie.export_item(unordered_attributes_item)
+        self.ie.finish_exporting()
+        del self.ie  # See the first “del self.ie” in this file for context.
+        exported = to_unicode(self.output.getvalue())
+        assert exported == '[{"z": 1, "y": 2, "x": 4, "c": 5, "b": 6, "a": 3}]'
 
 
 class TestJsonItemExporterToBytes(TestBaseItemExporter):
