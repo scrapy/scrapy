@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 
 import aiohttp
+from twisted.internet import error
 
 from scrapy import responsetypes
 from scrapy.http.headers import Headers
@@ -10,23 +12,20 @@ from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.reactor import (
     is_asyncio_reactor_installed,
     set_asyncio_event_loop,
-    verify_installed_reactor,
 )
 
 if TYPE_CHECKING:
-    from typing import Self
-
     from twisted.internet.defer import Deferred
+    from typing_extensions import Self
 
     from scrapy.crawler import Crawler
     from scrapy.http.request import Request
     from scrapy.http.response import Response
-    from scrapy.settings import Settings
     from scrapy.spiders import Spider
 
 
 class AiohttpDownloadHandler:
-    def __init__(self, settings: Settings, crawler: Crawler):
+    def __init__(self, crawler: Crawler):
         if not is_asyncio_reactor_installed():
             raise ValueError(
                 "AiohttpDownloadHandler requires the asyncio Twisted "
@@ -35,11 +34,9 @@ class AiohttpDownloadHandler:
                 "of Scrapy for more information."
             )
 
-        verify_installed_reactor(
-            "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-        )
-
         self.loop = set_asyncio_event_loop(None)
+
+        settings = crawler.settings
 
         self.connector = aiohttp.TCPConnector(
             limit_per_host=settings.getint("CONCURRENT_REQUESTS_PER_DOMAIN"),
@@ -50,7 +47,7 @@ class AiohttpDownloadHandler:
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        return cls(crawler.settings, crawler)
+        return cls(crawler)
 
     def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         return deferred_from_coro(self._download_request(request))
@@ -65,35 +62,29 @@ class AiohttpDownloadHandler:
         method = request.method
         body = request.body
         headers = None if request.headers is None else request.headers.to_unicode_dict()
-        if isinstance(request.cookies, dict):
-            cookies = request.cookies
-        else:
-            cookies = {
-                str(item["name"]): str(item["value"]) for item in request.cookies
-            }
-        body = request.body
 
-        self.session.cookie_jar.update_cookies(cookies)
+        try:
+            async with self.session.request(
+                url=url,
+                method=method,
+                proxy=proxy,
+                data=body,
+                headers=headers,
+                allow_redirects=False,
+                timeout=timeout,
+            ) as response:
+                body = await response.read()
+                status = response.status
+                new_headers = Headers(response.raw_headers)
 
-        async with self.session.request(
-            url=url,
-            method=method,
-            proxy=proxy,
-            data=body,
-            headers=headers,
-            allow_redirects=False,
-            timeout=timeout,
-        ) as response:
-            body = await response.read()
-            status = response.status
-            new_headers = Headers(response.raw_headers)
-
-            respcls = responsetypes.responsetypes.from_args(
-                headers=new_headers, url=request.url
-            )
-            return respcls(
-                url=request.url, status=status, headers=new_headers, body=body
-            )
+                respcls = responsetypes.responsetypes.from_args(
+                    headers=new_headers, url=request.url
+                )
+                return respcls(
+                    url=request.url, status=status, headers=new_headers, body=body
+                )
+        except asyncio.TimeoutError:
+            raise error.TimeoutError
 
     def close(self):
         return deferred_from_coro(self.session.close())

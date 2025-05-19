@@ -449,6 +449,10 @@ class TestAiohttp(TestHttp):
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return AiohttpDownloadHandler
 
+    def test_dh_close(self):
+        instance = build_from_crawler(self.download_handler_cls, get_crawler())
+        return instance.close()
+
 
 class TestHttp11(TestHttp):
     """HTTP 1.1 test case"""
