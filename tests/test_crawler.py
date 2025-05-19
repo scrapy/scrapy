@@ -1020,6 +1020,25 @@ class TestCrawlerRunnerSubprocess(ScriptRunnerMixin):
         )
         assert "DEBUG: Using asyncio event loop" in log
 
+    @pytest.mark.requires_uvloop
+    def test_custom_loop_same(self):
+        log = self.run_script("custom_loop_same.py")
+        assert "Spider closed (finished)" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
+        )
+        assert "Using asyncio event loop: uvloop.Loop" in log
+
+    @pytest.mark.requires_uvloop
+    def test_custom_loop_different(self):
+        log = self.run_script("custom_loop_different.py")
+        assert "Spider closed (finished)" not in log
+        assert (
+            "does not match the one specified in the ASYNCIO_EVENT_LOOP "
+            "setting (uvloop.Loop)"
+        ) in log
+
 
 class TestAsyncCrawlerRunnerSubprocess(ScriptRunnerMixin):
     script_dir = Path(__file__).parent.resolve() / "AsyncCrawlerRunner"
@@ -1062,6 +1081,25 @@ class TestAsyncCrawlerRunnerSubprocess(ScriptRunnerMixin):
             log,
             re.DOTALL,
         )
+
+    @pytest.mark.requires_uvloop
+    def test_custom_loop_same(self):
+        log = self.run_script("custom_loop_same.py")
+        assert "Spider closed (finished)" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
+        )
+        assert "Using asyncio event loop: uvloop.Loop" in log
+
+    @pytest.mark.requires_uvloop
+    def test_custom_loop_different(self):
+        log = self.run_script("custom_loop_different.py")
+        assert "Spider closed (finished)" not in log
+        assert (
+            "does not match the one specified in the ASYNCIO_EVENT_LOOP "
+            "setting (uvloop.Loop)"
+        ) in log
 
 
 @pytest.mark.parametrize(
