@@ -124,6 +124,11 @@ how you :ref:`configure the downloader middlewares
 .. autoclass:: CrawlerRunner
    :members:
 
+.. autoclass:: AsyncCrawlerProcess
+   :show-inheritance:
+   :members:
+   :inherited-members:
+
 .. autoclass:: CrawlerProcess
    :show-inheritance:
    :members:
