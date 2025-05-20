@@ -388,7 +388,7 @@ its iteration whenever there are scheduled requests:
 
     async def start(self):
         async for item_or_request in super().start():
-            if self.crawler.engine.needs_backoff():
+            if self.crawler.engine.needs_backout():
                 await self.crawler.signals.wait_for(signals.scheduler_empty)
             yield item_or_request
 
