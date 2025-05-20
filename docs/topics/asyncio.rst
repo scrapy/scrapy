@@ -20,7 +20,8 @@ To enable :mod:`asyncio` support, your :setting:`TWISTED_REACTOR` setting needs
 to be set to ``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``,
 which is the default value.
 
-If you are using :class:`~scrapy.crawler.CrawlerRunner`, you also need to
+If you are using :class:`~scrapy.crawler.AsyncCrawlerRunner` or
+:class:`~scrapy.crawler.CrawlerRunner`, you also need to
 install the :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`
 reactor manually. You can do that using
 :func:`~scrapy.utils.reactor.install_reactor`:
