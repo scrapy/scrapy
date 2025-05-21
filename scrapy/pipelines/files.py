@@ -317,7 +317,7 @@ class GCSFilesStore:
 
         blob_path = self._get_blob_path(path)
         return cast(
-            Deferred[StatInfo],
+            "Deferred[StatInfo]",
             deferToThread(self.bucket.get_blob, blob_path).addCallback(_onsuccess),
         )
 
@@ -531,7 +531,9 @@ class FilesPipeline(MediaPipeline):
 
     @classmethod
     def _update_stores(cls, settings: BaseSettings) -> None:
-        s3store: type[S3FilesStore] = cast(type[S3FilesStore], cls.STORE_SCHEMES["s3"])
+        s3store: type[S3FilesStore] = cast(
+            "type[S3FilesStore]", cls.STORE_SCHEMES["s3"]
+        )
         s3store.AWS_ACCESS_KEY_ID = settings["AWS_ACCESS_KEY_ID"]
         s3store.AWS_SECRET_ACCESS_KEY = settings["AWS_SECRET_ACCESS_KEY"]
         s3store.AWS_SESSION_TOKEN = settings["AWS_SESSION_TOKEN"]
@@ -542,13 +544,13 @@ class FilesPipeline(MediaPipeline):
         s3store.POLICY = settings["FILES_STORE_S3_ACL"]
 
         gcs_store: type[GCSFilesStore] = cast(
-            type[GCSFilesStore], cls.STORE_SCHEMES["gs"]
+            "type[GCSFilesStore]", cls.STORE_SCHEMES["gs"]
         )
         gcs_store.GCS_PROJECT_ID = settings["GCS_PROJECT_ID"]
         gcs_store.POLICY = settings["FILES_STORE_GCS_ACL"] or None
 
         ftp_store: type[FTPFilesStore] = cast(
-            type[FTPFilesStore], cls.STORE_SCHEMES["ftp"]
+            "type[FTPFilesStore]", cls.STORE_SCHEMES["ftp"]
         )
         ftp_store.FTP_USERNAME = settings["FTP_USER"]
         ftp_store.FTP_PASSWORD = settings["FTP_PASSWORD"]
@@ -636,7 +638,8 @@ class FilesPipeline(MediaPipeline):
     ) -> FileInfo:
         referer = referer_str(request)
 
-        if response.status != 200:
+        # Add 201 as an acceptable status code
+        if response.status not in (200, 201):
             logger.warning(
                 "File (code: %(status)s): Error downloading file from "
                 "%(request)s referred in <%(referer)s>",
@@ -644,6 +647,20 @@ class FilesPipeline(MediaPipeline):
                 extra={"spider": info.spider},
             )
             raise FileException("download-error")
+
+        # Handle 201 responses with Location header
+        if response.status == 201:
+            location = response.headers.get(b"Location")
+            if location:
+                # Create new request with same meta data
+                new_request = Request(
+                    url=location.decode(),
+                    meta=request.meta,
+                    headers=request.headers,
+                )
+                # Use _download_request to handle the new request
+                return self._download_request(new_request, info, item=item)
+            raise FileException("missing-location-header")
 
         if not response.body:
             logger.warning(
@@ -742,5 +759,5 @@ class FilesPipeline(MediaPipeline):
             media_ext = ""
             media_type = mimetypes.guess_type(request.url)[0]
             if media_type:
-                media_ext = cast(str, mimetypes.guess_extension(media_type))
+                media_ext = cast("str", mimetypes.guess_extension(media_type))
         return f"full/{media_guid}{media_ext}"
