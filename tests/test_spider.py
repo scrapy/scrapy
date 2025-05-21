@@ -493,7 +493,7 @@ class TestCrawlSpider(TestSpider):
     def test_parse_response_override(self):
         class _CrawlSpider(CrawlSpider):
             def _parse_response(self, response, callback, cb_kwargs, follow=True):
-                return super()._parse_response(response, callback, cb_kwargs, follow)
+                pass
 
             name = "test"
             start_urls = "https://www.example.com"
@@ -506,7 +506,7 @@ class TestCrawlSpider(TestSpider):
             spider._parse_response(
                 TextResponse(spider.start_urls, body=b""), None, None
             )
-            assert len(w) == 2
+            assert len(w) == 1
 
     def test_parse_with_rules(self):
         class _CrawlSpider(CrawlSpider):

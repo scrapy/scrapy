@@ -185,14 +185,12 @@ class CrawlSpider(Spider):
         callback: CallbackT | None,
         cb_kwargs: dict[str, Any],
         follow: bool = True,
-        warn: bool = True,
     ) -> AsyncIterator[Any]:
-        if warn:
-            warnings.warn(
-                "CrawlSpider._parse_response method is deprecated: "
-                "it will be removed in future Scrapy releases. "
-                "Please use CrawlSpider.parse_with_rules method instead."
-            )
+        warnings.warn(
+            "CrawlSpider._parse_response method is deprecated: "
+            "it will be removed in future Scrapy releases. "
+            "Please use CrawlSpider.parse_with_rules method instead."
+        )
         return self.parse_with_rules(response, callback, cb_kwargs, follow)
 
     def _handle_failure(
