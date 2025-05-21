@@ -1,5 +1,13 @@
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING
+
 import scrapy
 from scrapy.crawler import AsyncCrawlerProcess
+
+if TYPE_CHECKING:
+    from asyncio import Task
 
 
 class AsyncioReactorSpider(scrapy.Spider):
@@ -9,6 +17,14 @@ class AsyncioReactorSpider(scrapy.Spider):
     }
 
 
+def log_task_exception(task: Task) -> None:
+    try:
+        task.result()
+    except Exception:
+        logging.exception("Crawl task failed")
+
+
 process = AsyncCrawlerProcess()
-process.crawl(AsyncioReactorSpider)
+task = process.crawl(AsyncioReactorSpider)
+task.add_done_callback(log_task_exception)
 process.start()

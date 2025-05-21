@@ -30,7 +30,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
 from scrapy.spiderloader import SpiderLoader
-from scrapy.utils.defer import deferred_from_coro
+from scrapy.utils.defer import deferred_f_from_coro_f, deferred_from_coro
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
@@ -100,6 +100,13 @@ class TestCrawler(TestBaseCrawler):
         yield crawler.crawl()
         with pytest.raises(RuntimeError, match="more than once on the same instance"):
             yield crawler.crawl()
+
+    @deferred_f_from_coro_f
+    async def test_crawler_crawl_async_twice_unsupported(self):
+        crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
+        await crawler.crawl_async()
+        with pytest.raises(RuntimeError, match="more than once on the same instance"):
+            await crawler.crawl_async()
 
     def test_get_addon(self):
         class ParentAddon:
@@ -597,6 +604,7 @@ class TestCrawlerProcess(TestBaseCrawler):
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
 
+@pytest.mark.only_asyncio
 class TestAsyncCrawlerProcess(TestBaseCrawler):
     def test_crawler_process_accepts_dict(self):
         runner = AsyncCrawlerProcess({"foo": "bar"})
