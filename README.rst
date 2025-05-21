@@ -111,3 +111,53 @@ Commercial Support
 ==================
 
 See https://scrapy.org/support/ for details.
+
+scrapy-spider-metadata
+======================
+
+`scrapy-spider-metadata` is an extension for Scrapy that allows you to declare and document spider arguments in a structured way, making your spiders more discoverable and easier to use. It can automatically generate metadata for your spiders, which is useful for documentation, automation, and integration with other tools.
+
+To use `scrapy-spider-metadata`, first install it:
+
+.. code:: bash
+
+    pip install scrapy-spider-metadata
+
+Then, in your spider, you can declare arguments and their metadata using the provided decorators. Here is a rich example:
+
+.. code:: python
+
+    import scrapy
+    from scrapy_spider_metadata import argument, SpiderMetadataMixin
+
+    class BooksSpider(SpiderMetadataMixin, scrapy.Spider):
+        name = "books"
+
+        @argument(
+            name="category",
+            type=str,
+            required=True,
+            help="Category of books to scrape (e.g. 'fiction', 'science')."
+        )
+        @argument(
+            name="max_pages",
+            type=int,
+            default=5,
+            help="Maximum number of pages to crawl."
+        )
+        def __init__(self, category, max_pages=5, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.category = category
+            self.max_pages = int(max_pages)
+
+        def start_requests(self):
+            url = f"https://example.com/books/{self.category}/"
+            yield scrapy.Request(url, self.parse)
+
+        def parse(self, response):
+            # ... your parsing logic ...
+            pass
+
+With this setup, tools and users can programmatically discover the available arguments, their types, defaults, and help texts. This improves usability and maintainability for complex spiders.
+
+For more details, see the `scrapy-spider-metadata documentation <https://github.com/scrapinghub/scrapy-spider-metadata>`_.
