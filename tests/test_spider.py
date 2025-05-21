@@ -488,7 +488,6 @@ class TestCrawlSpider(TestSpider):
             spider._parse_response(
                 TextResponse(spider.start_urls, body=b""), None, None
             )
-            print(len(w))
             assert len(w) == 1
 
     def test_parse_response_override(self):
@@ -503,12 +502,10 @@ class TestCrawlSpider(TestSpider):
         with warnings.catch_warnings(record=True) as w:
             assert len(w) == 0
             spider = _CrawlSpider()
-            print(len(w))
             assert len(w) == 1
             spider._parse_response(
                 TextResponse(spider.start_urls, body=b""), None, None
             )
-            print(len(w))
             assert len(w) == 2
 
     def test_parse_with_rules(self):
