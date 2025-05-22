@@ -169,4 +169,8 @@ Switching to a non-asyncio reactor
 If for some reason your code doesn't work with the asyncio reactor, you can use
 a different reactor by setting the :setting:`TWISTED_REACTOR` setting to its
 import path (e.g. ``'twisted.internet.epollreactor.EPollReactor'``) or to
-``None``, which will use the default reactor for your platform.
+``None``, which will use the default reactor for your platform. If you are
+using :class:`~scrapy.crawler.AsyncCrawlerRunner` or
+:class:`~scrapy.crawler.AsyncCrawlerProcess` you also need to switch to their
+Deferred-based counterparts: :class:`~scrapy.crawler.CrawlerRunner` or
+:class:`~scrapy.crawler.CrawlerProcess` respectively.
