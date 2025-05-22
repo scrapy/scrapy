@@ -4,7 +4,6 @@ import asyncio
 from typing import TYPE_CHECKING
 
 import aiohttp
-from twisted.internet import error
 
 from scrapy import responsetypes
 from scrapy.http.headers import Headers
@@ -83,8 +82,8 @@ class AiohttpDownloadHandler:
                 return respcls(
                     url=request.url, status=status, headers=new_headers, body=body
                 )
-        except asyncio.TimeoutError:
-            raise error.TimeoutError
+        except asyncio.TimeoutError as e:
+            raise e
 
     def close(self):
         return deferred_from_coro(self.session.close())

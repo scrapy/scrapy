@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import os
 import shutil
@@ -452,6 +453,39 @@ class TestAiohttp(TestHttp):
     def test_dh_close(self):
         instance = build_from_crawler(self.download_handler_cls, get_crawler())
         return instance.close()
+
+    @defer.inlineCallbacks
+    def test_timeout_download_from_spider_nodata_rcvd(self):
+        if self.reactor_pytest != "default" and sys.platform == "win32":
+            # https://twistedmatrix.com/trac/ticket/10279
+            raise unittest.SkipTest(
+                "This test produces DirtyReactorAggregateError on Windows with asyncio"
+            )
+
+        # client connects but no data is received
+        spider = Spider("foo")
+        meta = {"download_timeout": 0.5}
+        request = Request(self.getURL("wait"), meta=meta)
+        d = self.download_request(request, spider)
+        yield self.assertFailure(
+            d, defer.TimeoutError, error.TimeoutError, asyncio.TimeoutError
+        )
+
+    @defer.inlineCallbacks
+    def test_timeout_download_from_spider_server_hangs(self):
+        if self.reactor_pytest != "default" and sys.platform == "win32":
+            # https://twistedmatrix.com/trac/ticket/10279
+            raise unittest.SkipTest(
+                "This test produces DirtyReactorAggregateError on Windows with asyncio"
+            )
+        # client connects, server send headers and some body bytes but hangs
+        spider = Spider("foo")
+        meta = {"download_timeout": 0.5}
+        request = Request(self.getURL("hang-after-headers"), meta=meta)
+        d = self.download_request(request, spider)
+        yield self.assertFailure(
+            d, defer.TimeoutError, error.TimeoutError, asyncio.TimeoutError
+        )
 
 
 class TestHttp11(TestHttp):
