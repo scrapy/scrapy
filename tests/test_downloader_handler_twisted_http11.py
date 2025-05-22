@@ -1,4 +1,4 @@
-"""Tests for scrapy.core.downloader.handlers.http11.DH."""
+"""Tests for scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler."""
 
 from __future__ import annotations
 
