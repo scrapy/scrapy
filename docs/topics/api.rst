@@ -107,6 +107,15 @@ how you :ref:`configure the downloader middlewares
 
         Returns a deferred that is fired when the crawl is finished.
 
+    .. method:: crawl_async(*args, **kwargs)
+        :async:
+
+        Starts the crawler by instantiating its spider class with the given
+        ``args`` and ``kwargs`` arguments, while setting the execution engine in
+        motion. Should be called only once.
+
+        Completes when the crawl is finished.
+
     .. automethod:: stop
 
 .. autoclass:: AsyncCrawlerRunner
@@ -114,6 +123,11 @@ how you :ref:`configure the downloader middlewares
 
 .. autoclass:: CrawlerRunner
    :members:
+
+.. autoclass:: AsyncCrawlerProcess
+   :show-inheritance:
+   :members:
+   :inherited-members:
 
 .. autoclass:: CrawlerProcess
    :show-inheritance:

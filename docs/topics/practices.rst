@@ -21,16 +21,21 @@ Remember that Scrapy is built on top of the Twisted
 asynchronous networking library, so you need to run it inside the Twisted reactor.
 
 The first utility you can use to run your spiders is
-:class:`scrapy.crawler.CrawlerProcess`. This class will start a Twisted reactor
-for you, configuring the logging and setting shutdown handlers. This class is
-the one used by all Scrapy commands.
+:class:`scrapy.crawler.AsyncCrawlerProcess` and
+:class:`scrapy.crawler.CrawlerProcess`. These classes will start a Twisted
+reactor for you, configuring the logging and setting shutdown handlers. These
+classes are the ones used by all Scrapy commands. They have similar
+functionality, differing in their asynchronous API style:
+:class:`~scrapy.crawler.AsyncCrawlerProcess` returns coroutines from its
+asynchronous methods while :class:`~scrapy.crawler.CrawlerProcess` returns
+:class:`~twisted.internet.defer.Deferred` objects.
 
 Here's an example showing how to run a single spider with it.
 
 .. code-block:: python
 
     import scrapy
-    from scrapy.crawler import CrawlerProcess
+    from scrapy.crawler import AsyncCrawlerProcess
 
 
     class MySpider(scrapy.Spider):
@@ -38,7 +43,7 @@ Here's an example showing how to run a single spider with it.
         ...
 
 
-    process = CrawlerProcess(
+    process = AsyncCrawlerProcess(
         settings={
             "FEEDS": {
                 "items.json": {"format": "json"},
@@ -49,24 +54,27 @@ Here's an example showing how to run a single spider with it.
     process.crawl(MySpider)
     process.start()  # the script will block here until the crawling is finished
 
-Define settings within dictionary in CrawlerProcess. Make sure to check :class:`~scrapy.crawler.CrawlerProcess`
+You can define :ref:`settings <topics-settings>` within the dictionary passed
+to :class:`~scrapy.crawler.AsyncCrawlerProcess`. Make sure to check the
+:class:`~scrapy.crawler.AsyncCrawlerProcess`
 documentation to get acquainted with its usage details.
 
 If you are inside a Scrapy project there are some additional helpers you can
 use to import those components within the project. You can automatically import
-your spiders passing their name to :class:`~scrapy.crawler.CrawlerProcess`, and
-use ``get_project_settings`` to get a :class:`~scrapy.settings.Settings`
-instance with your project settings.
+your spiders passing their name to
+:class:`~scrapy.crawler.AsyncCrawlerProcess`, and use
+:func:`scrapy.utils.project.get_project_settings` to get a
+:class:`~scrapy.settings.Settings` instance with your project settings.
 
 What follows is a working example of how to do that, using the `testspiders`_
 project as example.
 
 .. code-block:: python
 
-    from scrapy.crawler import CrawlerProcess
+    from scrapy.crawler import AsyncCrawlerProcess
     from scrapy.utils.project import get_project_settings
 
-    process = CrawlerProcess(get_project_settings())
+    process = AsyncCrawlerProcess(get_project_settings())
 
     # 'followall' is the name of one of the spiders of the project.
     process.crawl("followall", domain="scrapy.org")
@@ -76,26 +84,27 @@ There's another Scrapy utility that provides more control over the crawling
 process: :class:`scrapy.crawler.AsyncCrawlerRunner` and
 :class:`scrapy.crawler.CrawlerRunner`. These classes are thin wrappers
 that encapsulate some simple helpers to run multiple crawlers, but they won't
-start or interfere with existing reactors in any way. They have similar
-functionality, differing in their asynchronous API style:
-:class:`~scrapy.crawler.AsyncCrawlerRunner` returns coroutines from its
-asynchronous methods while :class:`~scrapy.crawler.CrawlerRunner` returns
-:class:`~twisted.internet.defer.Deferred` objects.
+start or interfere with existing reactors in any way. Just like
+:class:`scrapy.crawler.AsyncCrawlerProcess` and
+:class:`scrapy.crawler.CrawlerProcess` they differ in their asynchronous API
+style.
 
 When using these classes the reactor should be explicitly run after scheduling
 your spiders. It's recommended that you use
 :class:`~scrapy.crawler.AsyncCrawlerRunner` or
 :class:`~scrapy.crawler.CrawlerRunner` instead of
+:class:`~scrapy.crawler.AsyncCrawlerProcess` or
 :class:`~scrapy.crawler.CrawlerProcess` if your application is already using
 Twisted and you want to run Scrapy in the same reactor.
 
 If you want to stop the reactor or run any other code right after the spider
-finishes you can do that after the :meth:`AsyncCrawlerRunner.crawl()
-<scrapy.crawler.AsyncCrawlerRunner.crawl>` coroutine completes (or the Deferred
-returned from :meth:`CrawlerRunner.crawl()
+finishes you can do that after the task returned from
+:meth:`AsyncCrawlerRunner.crawl() <scrapy.crawler.AsyncCrawlerRunner.crawl>`
+completes (or the Deferred returned from :meth:`CrawlerRunner.crawl()
 <scrapy.crawler.CrawlerRunner.crawl>` fires). In the simplest case you can also
 use :func:`twisted.internet.task.react` to start and stop the reactor, though
-it may be easier to just use :class:`~scrapy.crawler.CrawlerProcess` instead.
+it may be easier to just use :class:`~scrapy.crawler.AsyncCrawlerProcess` or
+:class:`~scrapy.crawler.CrawlerProcess` instead.
 
 Here's an example of using :class:`~scrapy.crawler.AsyncCrawlerRunner` together
 with simple reactor management code:
@@ -171,7 +180,7 @@ Here is an example that runs multiple spiders simultaneously:
 .. code-block:: python
 
     import scrapy
-    from scrapy.crawler import CrawlerProcess
+    from scrapy.crawler import AsyncCrawlerProcess
     from scrapy.utils.project import get_project_settings
 
 
@@ -186,7 +195,7 @@ Here is an example that runs multiple spiders simultaneously:
 
 
     settings = get_project_settings()
-    process = CrawlerProcess(settings)
+    process = AsyncCrawlerProcess(settings)
     process.crawl(MySpider1)
     process.crawl(MySpider2)
     process.start()  # the script will block here until all crawling jobs are finished

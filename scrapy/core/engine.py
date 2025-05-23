@@ -22,6 +22,7 @@ from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.utils.defer import (
     deferred_f_from_coro_f,
+    deferred_from_coro,
     maybe_deferred_to_future,
 )
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
@@ -122,8 +123,10 @@ class ExecutionEngine:
             )
         return scheduler_cls
 
-    @deferred_f_from_coro_f
-    async def start(self, _start_request_processing=True) -> None:
+    def start(self, _start_request_processing=True) -> Deferred[None]:
+        return deferred_from_coro(self.start_async(_start_request_processing))
+
+    async def start_async(self, _start_request_processing=True) -> None:
         if self.running:
             raise RuntimeError("Engine already running")
         self.start_time = time()
@@ -392,8 +395,10 @@ class ExecutionEngine:
         finally:
             self._slot.nextcall.schedule()
 
-    @deferred_f_from_coro_f
-    async def open_spider(
+    def open_spider(self, spider: Spider, close_if_idle: bool = True) -> Deferred[None]:
+        return deferred_from_coro(self.open_spider_async(spider, close_if_idle))
+
+    async def open_spider_async(
         self,
         spider: Spider,
         close_if_idle: bool = True,
