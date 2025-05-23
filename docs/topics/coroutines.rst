@@ -21,7 +21,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 -   The :meth:`~scrapy.spiders.Spider.start` spider method, which *must* be
     defined as an :term:`asynchronous generator`.
 
-    .. versionadded: 2.13
+    .. versionadded:: 2.13
 
 -   :class:`~scrapy.Request` callbacks.
 
