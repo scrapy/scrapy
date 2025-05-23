@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import os
 import shutil
@@ -22,6 +23,7 @@ from twisted.web.http import _DataLoss
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers import DownloadHandlerProtocol, DownloadHandlers
+from scrapy.core.downloader.handlers.aiohttp import AiohttpDownloadHandler
 from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
@@ -318,7 +320,9 @@ class TestHttp(unittest.TestCase, ABC):
         meta = {"download_timeout": 0.5}
         request = Request(self.getURL("wait"), meta=meta)
         d = self.download_request(request, spider)
-        yield self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
+        yield self.assertFailure(
+            d, defer.TimeoutError, error.TimeoutError, asyncio.TimeoutError
+        )
 
     @defer.inlineCallbacks
     def test_timeout_download_from_spider_server_hangs(self):
@@ -332,7 +336,9 @@ class TestHttp(unittest.TestCase, ABC):
         meta = {"download_timeout": 0.5}
         request = Request(self.getURL("hang-after-headers"), meta=meta)
         d = self.download_request(request, spider)
-        yield self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
+        yield self.assertFailure(
+            d, defer.TimeoutError, error.TimeoutError, asyncio.TimeoutError
+        )
 
     def test_host_header_not_in_request_headers(self):
         def _test(response):
@@ -440,6 +446,17 @@ class TestHttp10(TestHttp):
 
 class TestHttps10(TestHttp10):
     scheme = "https"
+
+
+@pytest.mark.only_asyncio
+class TestAiohttp(TestHttp):
+    @property
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        return AiohttpDownloadHandler
+
+    def test_dh_close(self):
+        instance = build_from_crawler(self.download_handler_cls, get_crawler())
+        return instance.close()
 
 
 class TestHttp11(TestHttp):
@@ -797,6 +814,13 @@ class TestHttp10Proxy(TestHttpProxy):
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         return HTTP10DownloadHandler
+
+
+@pytest.mark.only_asyncio
+class TestAiohttpProxy(TestHttpProxy):
+    @property
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        return AiohttpDownloadHandler
 
 
 class TestHttp11Proxy(TestHttpProxy):
