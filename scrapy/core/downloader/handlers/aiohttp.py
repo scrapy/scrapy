@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from typing import TYPE_CHECKING
 
 import aiohttp
@@ -62,28 +61,25 @@ class AiohttpDownloadHandler:
         body = request.body
         headers = None if request.headers is None else request.headers.to_unicode_dict()
 
-        try:
-            async with self.session.request(
-                url=url,
-                method=method,
-                proxy=proxy,
-                data=body,
-                headers=headers,
-                allow_redirects=False,
-                timeout=timeout,
-            ) as response:
-                body = await response.read()
-                status = response.status
-                new_headers = Headers(response.raw_headers)
+        async with self.session.request(
+            url=url,
+            method=method,
+            proxy=proxy,
+            data=body,
+            headers=headers,
+            allow_redirects=False,
+            timeout=timeout,
+        ) as response:
+            body = await response.read()
+            status = response.status
+            new_headers = Headers(response.raw_headers)
 
-                respcls = responsetypes.responsetypes.from_args(
-                    headers=new_headers, url=request.url
-                )
-                return respcls(
-                    url=request.url, status=status, headers=new_headers, body=body
-                )
-        except asyncio.TimeoutError as e:
-            raise e
+            respcls = responsetypes.responsetypes.from_args(
+                headers=new_headers, url=request.url
+            )
+            return respcls(
+                url=request.url, status=status, headers=new_headers, body=body
+            )
 
     def close(self):
         return deferred_from_coro(self.session.close())
