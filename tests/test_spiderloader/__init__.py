@@ -17,7 +17,7 @@ from scrapy.crawler import CrawlerRunner
 from scrapy.http import Request
 from scrapy.interfaces import ISpiderLoader
 from scrapy.settings import Settings
-from scrapy.spiderloader import SpiderLoader
+from scrapy.spiderloader import SpiderLoader, get_spider_loader
 
 module_dir = Path(__file__).resolve().parent
 
@@ -247,3 +247,17 @@ class TestDuplicateSpiderNameLoader:
 
             spiders = set(spider_loader.list())
             assert spiders == {"spider1", "spider2", "spider3", "spider4"}
+
+
+class CustomSpiderLoader(SpiderLoader):
+    pass
+
+
+def test_custom_spider_loader():
+    settings = Settings(
+        {
+            "SPIDER_LOADER_CLASS": CustomSpiderLoader,
+        }
+    )
+    spider_loader = get_spider_loader(settings)
+    assert isinstance(spider_loader, CustomSpiderLoader)
