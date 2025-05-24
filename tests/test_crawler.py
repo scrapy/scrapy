@@ -22,7 +22,6 @@ from scrapy.crawler import AsyncCrawlerRunner, Crawler, CrawlerProcess, CrawlerR
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
-from scrapy.spiderloader import SpiderLoader
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
@@ -533,10 +532,6 @@ class TestCrawlerLogging:
 class SpiderLoaderWithWrongInterface:
     def unneeded_method(self):
         pass
-
-
-class CustomSpiderLoader(SpiderLoader):
-    pass
 
 
 class TestCrawlerRunner(TestBaseCrawler):

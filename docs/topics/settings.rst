@@ -1858,10 +1858,7 @@ warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
     Some :ref:`scrapy commands <topics-commands>` run with this setting to ``True``
     already (i.e. they will only issue a warning and will not fail)
     since they do not actually need to load spider classes to work:
-    :command:`scrapy runspider <runspider>`,
-    :command:`scrapy settings <settings>`,
-    :command:`scrapy startproject <startproject>`,
-    :command:`scrapy version <version>`.
+    :command:`scrapy runspider <runspider>` is currently the only such command.
 
 .. setting:: SPIDER_MIDDLEWARES
 

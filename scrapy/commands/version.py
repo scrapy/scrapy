@@ -6,7 +6,8 @@ from scrapy.utils.versions import get_versions
 
 
 class Command(ScrapyCommand):
-    default_settings = {"LOG_ENABLED": False, "SPIDER_LOADER_WARN_ONLY": True}
+    requires_crawler_process = False
+    default_settings = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
         return "[-v]"

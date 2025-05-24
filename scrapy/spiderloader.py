@@ -3,12 +3,13 @@ from __future__ import annotations
 import traceback
 import warnings
 from collections import defaultdict
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, cast
 
 from zope.interface import implementer
+from zope.interface.verify import verifyClass
 
 from scrapy.interfaces import ISpiderLoader
-from scrapy.utils.misc import walk_modules
+from scrapy.utils.misc import load_object, walk_modules
 from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
@@ -19,6 +20,14 @@ if TYPE_CHECKING:
 
     from scrapy import Request, Spider
     from scrapy.settings import BaseSettings
+
+
+def get_spider_loader(settings: BaseSettings) -> SpiderLoaderProtocol:
+    """Get SpiderLoader instance from settings"""
+    cls_path = settings.get("SPIDER_LOADER_CLASS")
+    loader_cls = load_object(cls_path)
+    verifyClass(ISpiderLoader, loader_cls)
+    return cast("SpiderLoaderProtocol", loader_cls.from_settings(settings.frozencopy()))
 
 
 class SpiderLoaderProtocol(Protocol):
