@@ -27,6 +27,18 @@ this directory must not be shared by different spiders, or even different
 jobs/runs of the same spider, as it's meant to be used for storing the state of
 a *single* job.
 
+Files inside the job directory
+==============================
+
+The job directory contains several files that Scrapy uses to keep track of the crawl state:
+
+- ``requests.seen``: a list of request fingerprints that have been visited.
+- ``requests.queue``: a queue of scheduled requests waiting to be processed.
+- ``spider_state.json``: stores persistent spider state data between runs.
+- Other temporary files used internally to manage the crawl.
+
+**Important:** Do not edit or delete these files manually, as this can cause the spider to behave unexpectedly or lose its state.
+
 How to use it
 =============
 
