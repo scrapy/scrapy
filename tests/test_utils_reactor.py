@@ -23,7 +23,7 @@ class TestAsyncio(TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
-            assert len(w) == 0
+            assert len(w) == 0, w
         from twisted.internet import reactor  # pylint: disable=reimported
 
         assert original_reactor == reactor
