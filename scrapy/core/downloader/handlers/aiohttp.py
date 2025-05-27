@@ -78,7 +78,11 @@ class AiohttpDownloadHandler:
             respcls = responsetypes.responsetypes.from_args(
                 headers=new_headers, url=request.url, body=body
             )
-            protocol = f"HTTP/{response.version.major}.{response.version.minor}"
+            protocol = (
+                f"HTTP/{response.version.major}.{response.version.minor}"
+                if response.version
+                else None
+            )
             return respcls(
                 url=request.url,
                 status=status,
