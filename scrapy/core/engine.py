@@ -127,9 +127,7 @@ class ExecutionEngine:
         if self.running:
             raise RuntimeError("Engine already running")
         self.start_time = time()
-        await maybe_deferred_to_future(
-            self.signals.send_catch_log_deferred(signal=signals.engine_started)
-        )
+        await self.signals.send_catch_log_async(signal=signals.engine_started)
         self.running = True
         self._closewait: Deferred[None] = Deferred()
         if _start_request_processing:
@@ -141,9 +139,7 @@ class ExecutionEngine:
 
         @deferred_f_from_coro_f
         async def _finish_stopping_engine(_: Any) -> None:
-            await maybe_deferred_to_future(
-                self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
-            )
+            await self.signals.send_catch_log_async(signal=signals.engine_stopped)
             self._closewait.callback(None)
 
         if not self.running:
@@ -415,9 +411,7 @@ class ExecutionEngine:
         await maybe_deferred_to_future(self.scraper.open_spider(spider))
         assert self.crawler.stats
         self.crawler.stats.open_spider(spider)
-        await maybe_deferred_to_future(
-            self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
-        )
+        await self.signals.send_catch_log_async(signals.spider_opened, spider=spider)
 
     def _spider_idle(self) -> None:
         """

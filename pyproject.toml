@@ -59,8 +59,7 @@ Homepage = "https://scrapy.org/"
 Documentation = "https://docs.scrapy.org/"
 Source = "https://github.com/scrapy/scrapy"
 Tracker = "https://github.com/scrapy/scrapy/issues"
-Changelog = "https://github.com/scrapy/scrapy/commits/master/"
-releasenotes = "https://docs.scrapy.org/en/latest/news.html"
+"Release notes" = "https://docs.scrapy.org/en/latest/news.html"
 
 [project.scripts]
 scrapy = "scrapy.cmdline:execute"
