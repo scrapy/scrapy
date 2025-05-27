@@ -390,6 +390,8 @@ class ExecutionEngine:
 
     async def async_download(self, request: Request) -> Response:
         """Asynchronous version of download() that returns a Response."""
+        if self.spider is None:
+            raise RuntimeError(f"No open spider to crawl: {request}")
         try:
             response_or_request = await maybe_deferred_to_future(
                 self._download(request)

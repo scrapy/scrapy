@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from logging import DEBUG
 from pathlib import Path
 from threading import Timer
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 from urllib.parse import urlparse
 
 import attr
@@ -35,11 +35,12 @@ from scrapy import signals
 from scrapy.core.engine import ExecutionEngine, _Slot
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import CloseSpider, IgnoreRequest
-from scrapy.http import Request
+from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.linkextractors import LinkExtractor
 from scrapy.signals import request_scheduled
 from scrapy.spiders import Spider
+from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
 from tests import get_testdata, tests_datadir
@@ -508,6 +509,212 @@ class TestEngine(TestEngineBase):
             timer.cancel()
 
         assert b"Traceback" not in stderr, stderr
+
+
+class TestEngineDownloadSync(TestEngineBase):
+    """Test cases for the synchronous download method of ExecutionEngine."""
+
+    def setUp(self):
+        super().setUp()
+        self.crawler = get_crawler(MySpider)
+        self.engine = ExecutionEngine(self.crawler, lambda _: None)
+        self.engine.downloader = Mock()
+        self.engine._slot = Mock()
+        self.engine._slot.inprogress = set()
+
+        # Stop the downloader's slot GC loop to prevent reactor cleanup issues
+        # self.engine.downloader._slot_gc_loop = Mock()
+        # self.engine.downloader._slot_gc_loop.running = False
+
+    def tearDown(self):
+        # Clean up any pending calls
+        for c in reactor.getDelayedCalls():
+            c.cancel()
+        return self.engine.close()
+
+    @defer.inlineCallbacks
+    def test_download_success(self):
+        """Test basic successful download of a request."""
+        # Arrange
+        request = Request("http://example.com")
+        response = Response("http://example.com", body=b"test body")
+        self.engine.spider = Mock()
+        self.engine.downloader.fetch.return_value = defer.succeed(response)
+        self.engine._slot.add_request = Mock()
+        self.engine._slot.remove_request = Mock()
+
+        # Act
+        result = yield self.engine.download(request)
+
+        # Assert
+        assert result == response
+        self.engine._slot.add_request.assert_called_once_with(request)
+        self.engine._slot.remove_request.assert_called_once_with(request)
+        self.engine.downloader.fetch.assert_called_once_with(
+            request, self.engine.spider
+        )
+
+    @defer.inlineCallbacks
+    def test_download_redirect(self):
+        """Test download with a redirect request."""
+        # Arrange
+        original_request = Request("http://example.com")
+        redirect_request = Request("http://example.com/redirect")
+        final_response = Response("http://example.com/redirect", body=b"redirected")
+
+        # First call returns redirect request, second call returns final response
+        self.engine.downloader.fetch.side_effect = [
+            defer.succeed(redirect_request),
+            defer.succeed(final_response),
+        ]
+        self.engine.spider = Mock()
+        self.engine._slot.add_request = Mock()
+        self.engine._slot.remove_request = Mock()
+
+        # Act
+        result = yield self.engine.download(original_request)
+
+        # Assert
+        assert result == final_response
+        assert self.engine.downloader.fetch.call_count == 2
+        self.engine._slot.add_request.assert_has_calls(
+            [call(original_request), call(redirect_request)]
+        )
+        self.engine._slot.remove_request.assert_has_calls(
+            [call(original_request), call(redirect_request)]
+        )
+
+    @defer.inlineCallbacks
+    def test_download_no_spider(self):
+        """Test download attempt when no spider is available."""
+        # Arrange
+        request = Request("http://example.com")
+        self.engine.spider = None
+
+        # Act & Assert
+        with pytest.raises(RuntimeError) as exc_info:
+            yield self.engine.download(request)
+        assert "No open spider to crawl" in str(exc_info.value)
+
+    @defer.inlineCallbacks
+    def test_download_failure(self):
+        """Test download when the downloader raises an exception."""
+        # Arrange
+        request = Request("http://example.com")
+        error = RuntimeError("Download failed")
+        self.engine.spider = Mock()
+        self.engine.downloader.fetch.return_value = defer.fail(error)
+        self.engine._slot.add_request = Mock()
+        self.engine._slot.remove_request = Mock()
+
+        # Act & Assert
+        with pytest.raises(RuntimeError) as exc_info:
+            yield self.engine.download(request)
+        assert str(exc_info.value) == "Download failed"
+        self.engine._slot.add_request.assert_called_once_with(request)
+        self.engine._slot.remove_request.assert_called_once_with(request)
+
+
+class TestEngineDownloadAsync(TestEngineBase):
+    """Test cases for the asynchronous download method of ExecutionEngine."""
+
+    def setUp(self):
+        super().setUp()
+        self.crawler = get_crawler(MySpider)
+        self.engine = ExecutionEngine(self.crawler, lambda _: None)
+        self.engine.downloader = Mock()
+        self.engine._slot = Mock()
+        self.engine._slot.inprogress = set()
+
+    def tearDown(self):
+        # Clean up any pending calls
+        for c in reactor.getDelayedCalls():
+            c.cancel()
+        return self.engine.close()
+
+    @defer.inlineCallbacks
+    def test_async_download_success(self):
+        """Test basic successful async download of a request."""
+        # Arrange
+        request = Request("http://example.com")
+        response = Response("http://example.com", body=b"test body")
+        self.engine.spider = Mock()
+        self.engine.downloader.fetch.return_value = defer.succeed(response)
+        self.engine._slot.add_request = Mock()
+        self.engine._slot.remove_request = Mock()
+
+        # Act
+        result = yield deferred_f_from_coro_f(self.engine.async_download)(request)
+
+        # Assert
+        assert result == response
+        self.engine._slot.add_request.assert_called_once_with(request)
+        self.engine._slot.remove_request.assert_called_once_with(request)
+        self.engine.downloader.fetch.assert_called_once_with(
+            request, self.engine.spider
+        )
+
+    @defer.inlineCallbacks
+    def test_async_download_redirect(self):
+        """Test async download with a redirect request."""
+        # Arrange
+        original_request = Request("http://example.com")
+        redirect_request = Request("http://example.com/redirect")
+        final_response = Response("http://example.com/redirect", body=b"redirected")
+
+        # First call returns redirect request, second call returns final response
+        self.engine.downloader.fetch.side_effect = [
+            defer.succeed(redirect_request),
+            defer.succeed(final_response),
+        ]
+        self.engine.spider = Mock()
+        self.engine._slot.add_request = Mock()
+        self.engine._slot.remove_request = Mock()
+
+        # Act
+        result = yield deferred_f_from_coro_f(self.engine.async_download)(
+            original_request
+        )
+
+        # Assert
+        assert result == final_response
+        assert self.engine.downloader.fetch.call_count == 2
+        self.engine._slot.add_request.assert_has_calls(
+            [call(original_request), call(redirect_request)]
+        )
+        self.engine._slot.remove_request.assert_has_calls(
+            [call(original_request), call(redirect_request)]
+        )
+
+    @defer.inlineCallbacks
+    def test_async_download_no_spider(self):
+        """Test async download attempt when no spider is available."""
+        # Arrange
+        request = Request("http://example.com")
+        self.engine.spider = None
+
+        # Act & Assert
+        with pytest.raises(RuntimeError) as exc_info:
+            yield deferred_f_from_coro_f(self.engine.async_download)(request)
+        assert f"No open spider to crawl: {request}" == str(exc_info.value)
+
+    @defer.inlineCallbacks
+    def test_async_download_failure(self):
+        """Test async download when the downloader raises an exception."""
+        # Arrange
+        request = Request("http://example.com")
+        error = RuntimeError("Download failed")
+        self.engine.spider = Mock()
+        self.engine.downloader.fetch.return_value = defer.fail(error)
+        self.engine._slot.add_request = Mock()
+        self.engine._slot.remove_request = Mock()
+
+        # Act & Assert
+        with pytest.raises(RuntimeError) as exc_info:
+            yield deferred_f_from_coro_f(self.engine.async_download)(request)
+        assert str(exc_info.value) == "Download failed"
+        self.engine._slot.add_request.assert_called_once_with(request)
+        self.engine._slot.remove_request.assert_called_once_with(request)
 
 
 def test_request_scheduled_signal(caplog):
