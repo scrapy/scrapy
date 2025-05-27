@@ -388,6 +388,19 @@ class ExecutionEngine:
             return (yield self.download(response_or_request))
         return response_or_request
 
+    async def async_download(self, request: Request) -> Response:
+        """Asynchronous version of download() that returns a Response."""
+        try:
+            response_or_request = await maybe_deferred_to_future(
+                self._download(request)
+            )  # using existing _download
+        finally:
+            assert self._slot is not None
+            self._slot.remove_request(request)
+        if isinstance(response_or_request, Request):
+            return await self.async_download(response_or_request)
+        return response_or_request
+
     @inlineCallbacks
     def _download(
         self, request: Request
