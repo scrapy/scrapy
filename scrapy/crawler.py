@@ -5,6 +5,7 @@ import contextlib
 import logging
 import pprint
 import signal
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from twisted.internet.defer import (
@@ -212,12 +213,37 @@ class Crawler:
             )
         return self._get_component(cls, self.engine.downloader.middleware.middlewares)
 
+    # Create a cached helper method with lru_cache decorator
+    @staticmethod
+    @lru_cache(maxsize=32)
+    def _cached_get_extension(cls: type[_T], middlewares: tuple) -> _T | None:
+        """A cached version of the component lookup functionality.
+        
+        This method is decorated with lru_cache to avoid repeated lookups
+        of the same extension class. The middlewares parameter must be a tuple
+        because lru_cache requires all arguments to be hashable.
+        
+        Args:
+            cls: The extension class to find
+            middlewares: A tuple of middleware instances to search through
+            
+        Returns:
+            The extension instance or None if not found
+        """
+        for component in middlewares:
+            if isinstance(component, cls):
+                return component
+        return None
+
     def get_extension(self, cls: type[_T]) -> _T | None:
         """Return the run-time instance of an :ref:`extension
         <topics-extensions>` of the specified class or a subclass,
         or ``None`` if none is found.
 
         .. versionadded:: 2.12
+
+        This method utilizes the lru_cache decorator for efficient lookups
+        when the same extension class is requested multiple times.
 
         This method can only be called after the extension manager has been
         created, e.g. at signals :signal:`engine_started` or
@@ -228,7 +254,12 @@ class Crawler:
                 "Crawler.get_extension() can only be called after the "
                 "extension manager has been created."
             )
-        return self._get_component(cls, self.extensions.middlewares)
+        
+        # Convert middlewares to a tuple since lru_cache requires hashable arguments
+        middlewares_tuple = tuple(self.extensions.middlewares)
+        
+        # Use the cached helper method
+        return self._cached_get_extension(cls, middlewares_tuple)
 
     def get_item_pipeline(self, cls: type[_T]) -> _T | None:
         """Return the run-time instance of a :ref:`item pipeline
