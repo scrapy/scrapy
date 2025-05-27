@@ -129,3 +129,21 @@ class SpiderLoader:
         Return a list with the names of all spiders available in the project.
         """
         return list(self._spiders.keys())
+
+
+@implementer(ISpiderLoader)
+class DummySpiderLoader:
+    """A dummy spider loader that does not load any spiders."""
+
+    @classmethod
+    def from_settings(cls, settings: BaseSettings) -> Self:
+        return cls()
+
+    def load(self, spider_name: str) -> type[Spider]:
+        raise KeyError("DummySpiderLoader doesn't load any spiders")
+
+    def list(self) -> list[str]:
+        return []
+
+    def find_by_request(self, request: Request) -> __builtins__.list[str]:
+        return []

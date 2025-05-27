@@ -1854,12 +1854,6 @@ it will fail loudly if there is any ``ImportError`` or ``SyntaxError`` exception
 But you can choose to silence this exception and turn it into a simple
 warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
 
-.. note::
-    Some :ref:`scrapy commands <topics-commands>` run with this setting to ``True``
-    already (i.e. they will only issue a warning and will not fail)
-    since they do not actually need to load spider classes to work:
-    :command:`scrapy runspider <runspider>` is currently the only such command.
-
 .. setting:: SPIDER_MIDDLEWARES
 
 SPIDER_MIDDLEWARES

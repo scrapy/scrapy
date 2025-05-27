@@ -210,6 +210,8 @@ SpiderLoader API
        :param request: queried request
        :type request: :class:`~scrapy.Request` instance
 
+.. autoclass:: DummySpiderLoader
+
 .. _topics-api-signals:
 
 Signals API
