@@ -15,16 +15,15 @@ if TYPE_CHECKING:
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
 
 
-DH = HTTP10DownloadHandler
+class HTTP10DownloadHandlerMixin:
+    @property
+    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        return HTTP10DownloadHandler
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class TestHttp10(TestHttpBase):
+class TestHttp10(HTTP10DownloadHandlerMixin, TestHttpBase):
     """HTTP 1.0 test case"""
-
-    @property
-    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return DH
 
     def test_protocol(self):
         request = Request(self.getURL("host"), method="GET")
@@ -39,11 +38,7 @@ class TestHttps10(TestHttp10):
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class TestHttp10Proxy(TestHttpProxyBase):
-    @property
-    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return DH
-
+class TestHttp10Proxy(HTTP10DownloadHandlerMixin, TestHttpProxyBase):
     def test_download_with_proxy_https_timeout(self):
         pytest.skip("Not implemented")
 

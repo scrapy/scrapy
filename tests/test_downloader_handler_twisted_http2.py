@@ -38,19 +38,17 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _get_dh() -> type[DownloadHandlerProtocol]:
-    # the import can fail when H2_ENABLED is False
-    from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
-
-    return H2DownloadHandler
-
-
-class TestHttps2(TestHttps11Base):
-    HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
-
+class H2DownloadHandlerMixin:
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return _get_dh()
+        # the import can fail when H2_ENABLED is False
+        from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
+
+        return H2DownloadHandler
+
+
+class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
+    HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
 
     def test_protocol(self):
         request = Request(self.getURL("host"), method="GET")
@@ -168,28 +166,20 @@ class TestHttps2(TestHttps11Base):
         return d
 
 
-class Https2WrongHostnameTestCase(TestHttpsWrongHostnameBase):
-    @property
-    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return _get_dh()
+class Https2WrongHostnameTestCase(H2DownloadHandlerMixin, TestHttpsWrongHostnameBase):
+    pass
 
 
-class Https2InvalidDNSId(TestHttpsInvalidDNSIdBase):
-    @property
-    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return _get_dh()
+class Https2InvalidDNSId(H2DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
+    pass
 
 
-class Https2InvalidDNSPattern(TestHttpsInvalidDNSPatternBase):
-    @property
-    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return _get_dh()
+class Https2InvalidDNSPattern(H2DownloadHandlerMixin, TestHttpsInvalidDNSPatternBase):
+    pass
 
 
-class Https2CustomCiphers(TestHttpsCustomCiphersBase):
-    @property
-    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return _get_dh()
+class Https2CustomCiphers(H2DownloadHandlerMixin, TestHttpsCustomCiphersBase):
+    pass
 
 
 class Http2MockServerTestCase(TestHttpMockServerBase):
@@ -206,7 +196,7 @@ class Http2MockServerTestCase(TestHttpMockServerBase):
     is_secure = True
 
 
-class Https2ProxyTestCase(TestHttpProxyBase):
+class Https2ProxyTestCase(H2DownloadHandlerMixin, TestHttpProxyBase):
     # only used for HTTPS tests
     keyfile = "keys/localhost.key"
     certfile = "keys/localhost.crt"
@@ -215,10 +205,6 @@ class Https2ProxyTestCase(TestHttpProxyBase):
     host = "127.0.0.1"
 
     expected_http_proxy_request_body = b"/"
-
-    @property
-    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return _get_dh()
 
     def setUp(self):
         site = server.Site(UriResource(), timeout=None)

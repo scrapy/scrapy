@@ -21,49 +21,42 @@ if TYPE_CHECKING:
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
 
 
-DH = HTTP11DownloadHandler
-
-
-class TestHttp11(TestHttp11Base):
+class HTTP11DownloadHandlerMixin:
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return DH
+        return HTTP11DownloadHandler
 
 
-class TestHttps11(TestHttps11Base):
-    @property
-    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return DH
+class TestHttp11(HTTP11DownloadHandlerMixin, TestHttp11Base):
+    pass
 
 
-class TestSimpleHttps(TestSimpleHttpsBase):
-    @property
-    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return DH
+class TestHttps11(HTTP11DownloadHandlerMixin, TestHttps11Base):
+    pass
 
 
-class Https11WrongHostnameTestCase(TestHttpsWrongHostnameBase):
-    @property
-    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return DH
+class TestSimpleHttps(HTTP11DownloadHandlerMixin, TestSimpleHttpsBase):
+    pass
 
 
-class Https11InvalidDNSId(TestHttpsInvalidDNSIdBase):
-    @property
-    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return DH
+class Https11WrongHostnameTestCase(
+    HTTP11DownloadHandlerMixin, TestHttpsWrongHostnameBase
+):
+    pass
 
 
-class Https11InvalidDNSPattern(TestHttpsInvalidDNSPatternBase):
-    @property
-    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return DH
+class Https11InvalidDNSId(HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
+    pass
 
 
-class Https11CustomCiphers(TestHttpsCustomCiphersBase):
-    @property
-    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return DH
+class Https11InvalidDNSPattern(
+    HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSPatternBase
+):
+    pass
+
+
+class Https11CustomCiphers(HTTP11DownloadHandlerMixin, TestHttpsCustomCiphersBase):
+    pass
 
 
 class TestHttp11MockServer(TestHttpMockServerBase):
@@ -72,7 +65,5 @@ class TestHttp11MockServer(TestHttpMockServerBase):
         return None  # default handler settings
 
 
-class TestHttp11Proxy(TestHttpProxyBase):
-    @property
-    def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
-        return DH
+class TestHttp11Proxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):
+    pass
