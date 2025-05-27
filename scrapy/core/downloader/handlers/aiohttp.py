@@ -89,6 +89,3 @@ class AiohttpDownloadHandler:
 
     def close(self):
         return deferred_from_coro(self.session.close())
-
-    async def _close(self):
-        await self.session.close()
