@@ -69,16 +69,22 @@ class AiohttpDownloadHandler:
             headers=headers,
             allow_redirects=False,
             timeout=timeout,
+            ssl=False,
         ) as response:
             body = await response.read()
             status = response.status
             new_headers = Headers(response.raw_headers)
 
             respcls = responsetypes.responsetypes.from_args(
-                headers=new_headers, url=request.url
+                headers=new_headers, url=request.url, body=body
             )
+            protocol = f"HTTP/{response.version.major}.{response.version.minor}"
             return respcls(
-                url=request.url, status=status, headers=new_headers, body=body
+                url=request.url,
+                status=status,
+                headers=new_headers,
+                body=body,
+                protocol=protocol,
             )
 
     def close(self):
