@@ -18,6 +18,21 @@ Scrapy 2.13.1 (unreleased)
     only sent when there are not enough pending callback requests to reach
     concurrency limits.
 
+    (:issue:`6828`)
+
+-   Added a deepwiki_ badge to the README. (:issue:`6793`)
+
+    .. _deepwiki: https://deepwiki.com/scrapy/scrapy
+
+-   Fixed a typo in the code example of :ref:`start-requests-lazy`.
+    (:issue:`6812`, :issue:`6815`)
+
+-   Fixed a typo in the :ref:`coroutine-support` section of the documentation.
+    (:issue:`6822`)
+
+-   Made this page more prominently listed in PyPI project links.
+    (:issue:`6826`)
+
 
 .. _release-2.13.0:
 
