@@ -476,6 +476,50 @@ class TestCrawlSpider(TestSpider):
         assert "Error while reading start items and requests" in str(log)
         assert "did you miss an 's'?" in str(log)
 
+    def test_parse_response_use(self):
+        class _CrawlSpider(CrawlSpider):
+            name = "test"
+            start_urls = "https://www.example.com"
+            _follow_links = False
+
+        with warnings.catch_warnings(record=True) as w:
+            spider = _CrawlSpider()
+            assert len(w) == 0
+            spider._parse_response(
+                TextResponse(spider.start_urls, body=b""), None, None
+            )
+            assert len(w) == 1
+
+    def test_parse_response_override(self):
+        class _CrawlSpider(CrawlSpider):
+            def _parse_response(self, response, callback, cb_kwargs, follow=True):
+                pass
+
+            name = "test"
+            start_urls = "https://www.example.com"
+            _follow_links = False
+
+        with warnings.catch_warnings(record=True) as w:
+            assert len(w) == 0
+            spider = _CrawlSpider()
+            assert len(w) == 1
+            spider._parse_response(
+                TextResponse(spider.start_urls, body=b""), None, None
+            )
+            assert len(w) == 1
+
+    def test_parse_with_rules(self):
+        class _CrawlSpider(CrawlSpider):
+            name = "test"
+            start_urls = "https://www.example.com"
+
+        with warnings.catch_warnings(record=True) as w:
+            spider = _CrawlSpider()
+            spider.parse_with_rules(
+                TextResponse(spider.start_urls, body=b""), None, None
+            )
+            assert len(w) == 0
+
 
 class TestSitemapSpider(TestSpider):
     spider_class = SitemapSpider
