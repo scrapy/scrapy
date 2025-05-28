@@ -3,6 +3,8 @@
     :target: https://scrapy.org/
 
 .. image:: https://raw.githubusercontent.com/scrapy/scrapy/new-logo/docs/_static/logo.svg
+    :width: 480 px
+    :align: center
     :target: https://scrapy.org/
 
 ======
