@@ -5,22 +5,21 @@ import contextlib
 import logging
 import pprint
 import signal
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from twisted.internet.defer import (
     Deferred,
     DeferredList,
     inlineCallbacks,
 )
-from zope.interface.verify import verifyClass
 
 from scrapy import Spider, signals
 from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
 from scrapy.extension import ExtensionManager
-from scrapy.interfaces import ISpiderLoader
-from scrapy.settings import BaseSettings, Settings, overridden_settings
+from scrapy.settings import Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
+from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import deferred_from_coro, deferred_to_future
 from scrapy.utils.log import (
@@ -46,7 +45,6 @@ if TYPE_CHECKING:
     from collections.abc import Generator, Iterable
 
     from scrapy.logformatter import LogFormatter
-    from scrapy.spiderloader import SpiderLoaderProtocol
     from scrapy.statscollectors import StatsCollector
     from scrapy.utils.request import RequestFingerprinterProtocol
 
@@ -324,22 +322,12 @@ class Crawler:
 
 
 class CrawlerRunnerBase:
-    @staticmethod
-    def _get_spider_loader(settings: BaseSettings) -> SpiderLoaderProtocol:
-        """Get SpiderLoader instance from settings"""
-        cls_path = settings.get("SPIDER_LOADER_CLASS")
-        loader_cls = load_object(cls_path)
-        verifyClass(ISpiderLoader, loader_cls)
-        return cast(
-            "SpiderLoaderProtocol", loader_cls.from_settings(settings.frozencopy())
-        )
-
     def __init__(self, settings: dict[str, Any] | Settings | None = None):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
         AddonManager.load_pre_crawler_settings(settings)
         self.settings: Settings = settings
-        self.spider_loader: SpiderLoaderProtocol = self._get_spider_loader(settings)
+        self.spider_loader: SpiderLoaderProtocol = get_spider_loader(settings)
         self._crawlers: set[Crawler] = set()
         self.bootstrap_failed = False
 

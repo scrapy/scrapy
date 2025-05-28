@@ -201,7 +201,8 @@ def execute(argv: list[str] | None = None, settings: Settings | None = None) -> 
     opts, args = parser.parse_known_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
-    cmd.crawler_process = CrawlerProcess(settings)
+    if cmd.requires_crawler_process:
+        cmd.crawler_process = CrawlerProcess(settings)
     _run_print_help(parser, _run_command, cmd, args, opts)
     sys.exit(cmd.exitcode)
 
