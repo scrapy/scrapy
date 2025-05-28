@@ -1,5 +1,6 @@
 import scrapy
 from scrapy.crawler import CrawlerProcess
+from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.reactor import (
     install_reactor,
     is_asyncio_reactor_installed,
@@ -18,6 +19,13 @@ except RuntimeError:
 else:
     raise RuntimeError("is_asyncio_reactor_installed() did not raise RuntimeError.")
 
+try:
+    is_asyncio_available()
+except RuntimeError:
+    pass
+else:
+    raise RuntimeError("is_asyncio_available() did not raise RuntimeError.")
+
 if is_reactor_installed():
     raise RuntimeError(
         "Reactor already installed after is_asyncio_reactor_installed()."
@@ -33,6 +41,8 @@ class ReactorCheckExtension:
     def __init__(self):
         if not is_asyncio_reactor_installed():
             raise RuntimeError("ReactorCheckExtension requires the asyncio reactor.")
+        if not is_asyncio_available():
+            raise RuntimeError("ReactorCheckExtension requires asyncio support.")
 
 
 class NoRequestsSpider(scrapy.Spider):

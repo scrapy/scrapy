@@ -243,7 +243,7 @@ class TestWarnWhenSubclassed:
             )
 
         w = self._mywarnings(w)
-        assert len(w) == 0, str(map(str, w))
+        assert len(w) == 0, [str(warning) for warning in w]
 
         with warnings.catch_warnings(record=True) as w:
             AlsoDeprecated()

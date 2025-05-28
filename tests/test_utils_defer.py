@@ -311,6 +311,7 @@ class TestDeferredFFromCoroF(unittest.TestCase):
         yield self._assert_result(c_f)
 
 
+@pytest.mark.only_asyncio
 class TestDeferredToFuture(unittest.TestCase):
     @deferred_f_from_coro_f
     async def test_deferred(self):
@@ -332,7 +333,6 @@ class TestDeferredToFuture(unittest.TestCase):
         future_result = await result
         assert future_result == 42
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
     async def test_wrapped_coroutine_asyncio(self):
         async def c_f() -> int:
@@ -340,7 +340,7 @@ class TestDeferredToFuture(unittest.TestCase):
             return 42
 
         d = deferred_from_coro(c_f())
-        result = maybe_deferred_to_future(d)
+        result = deferred_to_future(d)
         assert isinstance(result, Future)
         future_result = await result
         assert future_result == 42
