@@ -2,14 +2,14 @@
     .. image:: https://docs.scrapy.org/en/2.13/_static/logo.svg
     :target: https://scrapy.org/
 
-.. image:: https://raw.githubusercontent.com/scrapy/scrapy/new-logo/docs/_static/logo.svg
-    :width: 480 px
-    :align: center
-    :target: https://scrapy.org/
+.. raw:: html
 
-======
-Scrapy
-======
+    <h1 align="center">
+        <br/>
+        <a href="https://scrapy.org/">
+            <img src="https://raw.githubusercontent.com/scrapy/scrapy/new-logo/docs/_static/logo.svg" alt="Scrapy" width="480px">
+        </a>
+    </h1>
 
 .. image:: https://img.shields.io/pypi/v/Scrapy.svg
    :target: https://pypi.org/pypi/Scrapy
