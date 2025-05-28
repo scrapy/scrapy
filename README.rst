@@ -1,4 +1,4 @@
-.. image:: https://scrapy.org/img/scrapylogo.png
+.. image:: https://docs.scrapy.org/en/2.13/_static/logo.svg
    :target: https://scrapy.org/
 
 ======
