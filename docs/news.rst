@@ -3,6 +3,22 @@
 Release notes
 =============
 
+.. _release-2.13.1:
+
+Scrapy 2.13.1 (unreleased)
+--------------------------
+
+-   Give callback requests precedence over start requests when priority values
+    are the same.
+
+    This makes changes from 2.13.0 to start request handling more intuitive and
+    backward compatible. For scenarios where all requests have the same
+    priorities, in 2.13.0 all start requests were sent before the first
+    callback request. In 2.13.1, same as in 2.12 and lower, start requests are
+    only sent when there are not enough pending callback requests to reach
+    concurrency limits.
+
+
 .. _release-2.13.0:
 
 Scrapy 2.13.0 (2025-05-08)
