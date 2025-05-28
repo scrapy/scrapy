@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.13.1:
 
-Scrapy 2.13.1 (unreleased)
+Scrapy 2.13.1 (2025-05-28)
 --------------------------
 
 -   Give callback requests precedence over start requests when priority values
