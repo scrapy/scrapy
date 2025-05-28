@@ -8,7 +8,6 @@ from typing import Any
 
 import OpenSSL.SSL
 import pytest
-from twisted.internet import reactor
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.protocols.policies import WrappingFactory
 from twisted.trial import unittest
@@ -40,6 +39,8 @@ class TestContextFactoryBase(unittest.TestCase):
     context_factory = None
 
     def _listen(self, site):
+        from twisted.internet import reactor
+
         return reactor.listenSSL(
             0,
             site,
@@ -71,6 +72,8 @@ class TestContextFactoryBase(unittest.TestCase):
         client_context_factory: BrowserLikePolicyForHTTPS,
         body: str | None = None,
     ) -> bytes:
+        from twisted.internet import reactor
+
         agent = Agent(reactor, contextFactory=client_context_factory)
         body_producer = _RequestBodyProducer(body.encode()) if body else None
         response: TxResponse = await maybe_deferred_to_future(

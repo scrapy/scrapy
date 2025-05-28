@@ -12,7 +12,7 @@ from unittest import mock
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet import defer, error, reactor
+from twisted.internet import defer, error
 from twisted.protocols.policies import WrappingFactory
 from twisted.trial import unittest
 from twisted.web import resource, server, static, util
@@ -52,6 +52,8 @@ class ContentLengthHeaderResource(resource.Resource):
 
 class ChunkedResource(resource.Resource):
     def render(self, request):
+        from twisted.internet import reactor
+
         def response():
             request.write(b"chunked ")
             request.write(b"content\n")
@@ -63,6 +65,8 @@ class ChunkedResource(resource.Resource):
 
 class BrokenChunkedResource(resource.Resource):
     def render(self, request):
+        from twisted.internet import reactor
+
         def response():
             request.write(b"chunked ")
             request.write(b"content\n")
@@ -76,6 +80,8 @@ class BrokenChunkedResource(resource.Resource):
 
 class BrokenDownloadResource(resource.Resource):
     def render(self, request):
+        from twisted.internet import reactor
+
         def response():
             request.setHeader(b"Content-Length", b"20")
             request.write(b"partial")
@@ -105,6 +111,8 @@ class EmptyContentTypeHeaderResource(resource.Resource):
 
 class LargeChunkedFileResource(resource.Resource):
     def render(self, request):
+        from twisted.internet import reactor
+
         def response():
             for i in range(1024):
                 request.write(b"x" * 1024)
@@ -133,6 +141,8 @@ class TestHttpBase(unittest.TestCase, ABC):
         raise NotImplementedError
 
     def setUp(self):
+        from twisted.internet import reactor
+
         self.tmpname = Path(mkdtemp())
         (self.tmpname / "file").write_bytes(b"0123456789")
         r = static.File(str(self.tmpname))
@@ -365,6 +375,9 @@ class TestHttp11Base(TestHttpBase):
 
     @defer.inlineCallbacks
     def test_download_with_maxsize_very_large_file(self):
+        from twisted.internet import reactor
+
+        # TODO: the logger check is specific to scrapy.core.downloader.handlers.http11
         with mock.patch("scrapy.core.downloader.handlers.http11.logger") as logger:
             request = Request(self.getURL("largechunkedfile"))
 
@@ -501,6 +514,8 @@ class TestSimpleHttpsBase(unittest.TestCase, ABC):
         raise NotImplementedError
 
     def setUp(self):
+        from twisted.internet import reactor
+
         self.tmpname = Path(mkdtemp())
         (self.tmpname / "file").write_bytes(b"0123456789")
         r = static.File(str(self.tmpname))
@@ -639,6 +654,8 @@ class TestHttpProxyBase(unittest.TestCase, ABC):
         raise NotImplementedError
 
     def setUp(self):
+        from twisted.internet import reactor
+
         site = server.Site(UriResource(), timeout=None)
         wrapper = WrappingFactory(site)
         self.port = reactor.listenTCP(0, wrapper, interface="127.0.0.1")

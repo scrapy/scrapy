@@ -3,7 +3,7 @@ import asyncio
 import pytest
 from pydispatch import dispatcher
 from testfixtures import LogCapture
-from twisted.internet import defer, reactor
+from twisted.internet import defer
 from twisted.python.failure import Failure
 from twisted.trial import unittest
 
@@ -65,6 +65,8 @@ class SendCatchLogDeferredTest(TestSendCatchLog):
 
 class SendCatchLogDeferredTest2(SendCatchLogDeferredTest):
     def ok_handler(self, arg, handlers_called):
+        from twisted.internet import reactor
+
         handlers_called.add(self.ok_handler)
         assert arg == "test"
         d = defer.Deferred()
@@ -97,6 +99,8 @@ class SendCatchLogAsyncTest(TestSendCatchLog):
 
 class SendCatchLogAsyncTest2(SendCatchLogAsyncTest):
     def ok_handler(self, arg, handlers_called):
+        from twisted.internet import reactor
+
         handlers_called.add(self.ok_handler)
         assert arg == "test"
         d = defer.Deferred()

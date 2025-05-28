@@ -24,7 +24,7 @@ from urllib.parse import urlparse
 import attr
 from itemadapter import ItemAdapter
 from pydispatch import dispatcher
-from twisted.internet import defer, reactor
+from twisted.internet import defer
 from twisted.trial import unittest
 from twisted.web import server, static, util
 
@@ -130,6 +130,8 @@ class ChangeCloseReasonSpider(MySpider):
 
 
 def start_test_site(debug=False):
+    from twisted.internet import reactor
+
     root_dir = Path(tests_datadir, "test_site")
     r = static.File(str(root_dir))
     r.putChild(b"redirect", util.Redirect(b"/redirected"))
@@ -514,6 +516,8 @@ def test_request_scheduled_signal(caplog):
 
 
 if __name__ == "__main__":
+    from twisted.internet import reactor  # pylint: disable=ungrouped-imports
+
     if len(sys.argv) > 1 and sys.argv[1] == "runserver":
         start_test_site(debug=True)
         reactor.run()

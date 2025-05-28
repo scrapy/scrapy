@@ -299,6 +299,8 @@ extend-select = [
     "T10",
     # flake8-type-checking
     "TC",
+    # flake8-tidy-imports
+    "TID",
     # pyupgrade
     "UP",
     # pycodestyle warnings
@@ -396,6 +398,11 @@ ignore = [
     "B904",
     # Use capitalized environment variable
     "SIM112",
+]
+
+[tool.ruff.lint.flake8-tidy-imports]
+banned-module-level-imports = [
+    "twisted.internet.reactor",
 ]
 
 [tool.ruff.lint.per-file-ignores]
