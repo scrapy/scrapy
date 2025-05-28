@@ -1,9 +1,10 @@
-.. image:: https://scrapy.org/img/scrapylogo.png
-   :target: https://scrapy.org/
+.. raw:: html
 
-======
-Scrapy
-======
+    <p align="center">
+        <a href="https://scrapy.org/">
+            <img src="https://raw.githubusercontent.com/scrapy/scrapy/master/docs/_static/logo.svg" alt="Scrapy" width="480px">
+        </a>
+    </p>
 
 .. image:: https://img.shields.io/pypi/v/Scrapy.svg
    :target: https://pypi.org/pypi/Scrapy
@@ -37,13 +38,10 @@ Scrapy
    :target: https://deepwiki.com/scrapy/scrapy
    :alt: Ask DeepWiki
 
-
-Overview
-========
-
-Scrapy is a BSD-licensed fast high-level web crawling and web scraping framework, used to
-crawl websites and extract structured data from their pages. It can be used for
-a wide range of purposes, from data mining to monitoring and automated testing.
+Scrapy is a BSD-licensed fast high-level web crawling and web scraping
+framework, used to crawl websites and extract structured data from their pages.
+It can be used for a wide range of purposes, from data mining to monitoring and
+automated testing.
 
 Scrapy is maintained by Zyte_ (formerly Scrapinghub) and `many other
 contributors`_.
