@@ -6,6 +6,7 @@ from twisted.trial.unittest import TestCase
 
 from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.reactor import (
+    _asyncio_reactor_path,
     install_reactor,
     is_asyncio_reactor_installed,
     set_asyncio_event_loop,
@@ -22,7 +23,7 @@ class TestAsyncio(TestCase):
         from twisted.internet import reactor as original_reactor
 
         with warnings.catch_warnings(record=True) as w:
-            install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+            install_reactor(_asyncio_reactor_path)
             assert len(w) == 0, [str(warning) for warning in w]
         from twisted.internet import reactor  # pylint: disable=reimported
 
@@ -31,5 +32,5 @@ class TestAsyncio(TestCase):
     @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
     async def test_set_asyncio_event_loop(self):
-        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+        install_reactor(_asyncio_reactor_path)
         assert set_asyncio_event_loop(None) is asyncio.get_running_loop()
