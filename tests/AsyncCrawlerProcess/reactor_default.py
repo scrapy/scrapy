@@ -1,4 +1,4 @@
-from twisted.internet import reactor  # noqa: F401
+from twisted.internet import reactor  # noqa: F401,TID253
 
 import scrapy
 from scrapy.crawler import AsyncCrawlerProcess
