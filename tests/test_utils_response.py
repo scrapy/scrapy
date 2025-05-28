@@ -1,3 +1,4 @@
+import unittest
 from pathlib import Path
 from time import process_time
 from urllib.parse import urlparse
@@ -202,6 +203,64 @@ class TestResponseUtils:
 
         end_time = process_time()
         assert end_time - start_time < MAX_CPU_TIME
+
+
+class TestOpenInBrowserWithoutHead(unittest.TestCase):
+    def setUp(self):
+        self.url = "http://example.com"
+
+    def _assertBaseTagIn(self, html, expected_count=1):
+        """Helper to verify base tag is correctly inserted"""
+
+        def browser_open(burl):
+            path = urlparse(burl).path
+            if not path or not Path(path).exists():
+                path = burl.replace("file://", "")
+            bbody = Path(path).read_bytes()
+            count = bbody.count(b'<base href="' + to_bytes(self.url) + b'">')
+            assert count == expected_count, (
+                f"Expected {expected_count} base tags, found {count}"
+            )
+            return True
+
+        response = HtmlResponse(self.url, body=html)
+        assert open_in_browser(response, _openfunc=browser_open), "Browser not called"
+
+    def test_without_head_tag(self):
+        """Test with HTML missing the head tag"""
+        html = b"""
+        <html>
+            <body>
+                <p>Hello</p>
+            </body>
+        </html>
+        """
+        self._assertBaseTagIn(html)
+
+    def test_with_only_body_tag(self):
+        """Test with HTML that has body but no html or head tags"""
+        html = b"""
+        <body>
+            <p>Hello</p>
+        </body>
+        """
+        self._assertBaseTagIn(html)
+
+    def test_with_only_html_tag(self):
+        """Test with HTML that has html tag but no head or body tags"""
+        html = b"""
+        <html>
+            <p>Hello</p>
+        </html>
+        """
+        self._assertBaseTagIn(html)
+
+    def test_with_minimal_html(self):
+        """Test with minimal HTML that doesn't have html, head, or body tags"""
+        html = b"""
+        <p>Hello</p>
+        """
+        self._assertBaseTagIn(html)
 
 
 @pytest.mark.parametrize(
