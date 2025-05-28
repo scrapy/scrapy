@@ -21,7 +21,8 @@ from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
 from scrapy.settings import BaseSettings, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
-from scrapy.utils.defer import deferred_to_future
+from scrapy.utils.asyncio import is_asyncio_available
+from scrapy.utils.defer import deferred_from_coro, deferred_to_future
 from scrapy.utils.log import (
     LogCounterHandler,
     configure_logging,
@@ -33,8 +34,10 @@ from scrapy.utils.log import (
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.ossignal import install_shutdown_handlers, signal_names
 from scrapy.utils.reactor import (
+    _asyncio_reactor_path,
     install_reactor,
     is_asyncio_reactor_installed,
+    is_reactor_installed,
     verify_installed_asyncio_event_loop,
     verify_installed_reactor,
 )
@@ -142,6 +145,12 @@ class Crawler:
     # this method.
     @inlineCallbacks
     def crawl(self, *args: Any, **kwargs: Any) -> Generator[Deferred[Any], Any, None]:
+        """Start the crawler by instantiating its spider class with the given
+        *args* and *kwargs* arguments, while setting the execution engine in
+        motion. Should be called only once.
+
+        Return a deferred that is fired when the crawl is finished.
+        """
         if self.crawling:
             raise RuntimeError("Crawling already taking place")
         if self._started:
@@ -163,6 +172,42 @@ class Crawler:
                 yield self.engine.close()
             raise
 
+    async def crawl_async(self, *args: Any, **kwargs: Any) -> None:
+        """Start the crawler by instantiating its spider class with the given
+        *args* and *kwargs* arguments, while setting the execution engine in
+        motion. Should be called only once.
+
+        .. versionadded:: VERSION
+
+        Complete when the crawl is finished.
+
+        This function requires
+        :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
+        installed.
+        """
+        if not is_asyncio_available():
+            raise RuntimeError("Crawler.crawl_async() requires AsyncioSelectorReactor.")
+        if self.crawling:
+            raise RuntimeError("Crawling already taking place")
+        if self._started:
+            raise RuntimeError(
+                "Cannot run Crawler.crawl_async() more than once on the same instance."
+            )
+        self.crawling = self._started = True
+
+        try:
+            self.spider = self._create_spider(*args, **kwargs)
+            self._apply_settings()
+            self._update_root_log_handler()
+            self.engine = self._create_engine()
+            await self.engine.open_spider_async(self.spider)
+            await self.engine.start_async()
+        except Exception:
+            self.crawling = False
+            if self.engine is not None:
+                await deferred_to_future(self.engine.close())
+            raise
+
     def _create_spider(self, *args: Any, **kwargs: Any) -> Spider:
         return self.spidercls.from_crawler(self, *args, **kwargs)
 
@@ -171,12 +216,25 @@ class Crawler:
 
     @inlineCallbacks
     def stop(self) -> Generator[Deferred[Any], Any, None]:
-        """Starts a graceful stop of the crawler and returns a deferred that is
+        """Start a graceful stop of the crawler and return a deferred that is
         fired when the crawler is stopped."""
         if self.crawling:
             self.crawling = False
             assert self.engine
             yield self.engine.stop()
+
+    async def stop_async(self) -> None:
+        """Start a graceful stop of the crawler and complete when the crawler is stopped.
+
+        .. versionadded:: VERSION
+
+        This function requires
+        :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
+        installed.
+        """
+        if not is_asyncio_available():
+            raise RuntimeError("Crawler.stop_async() requires AsyncioSelectorReactor.")
+        await deferred_to_future(self.stop())
 
     @staticmethod
     def _get_component(
@@ -318,9 +376,6 @@ class CrawlerRunnerBase:
             spidercls = self.spider_loader.load(spidercls)
         return Crawler(spidercls, self.settings)
 
-    def _stop(self) -> Deferred[Any]:
-        return DeferredList([c.stop() for c in list(self.crawlers)])
-
 
 class CrawlerRunner(CrawlerRunnerBase):
     """
@@ -397,7 +452,7 @@ class CrawlerRunner(CrawlerRunnerBase):
 
         Returns a deferred that is fired when they all have ended.
         """
-        return self._stop()
+        return DeferredList(c.stop() for c in self.crawlers)
 
     @inlineCallbacks
     def join(self) -> Generator[Deferred[Any], Any, None]:
@@ -429,14 +484,14 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
 
     def __init__(self, settings: dict[str, Any] | Settings | None = None):
         super().__init__(settings)
-        self._active: set[asyncio.Future[None]] = set()
+        self._active: set[asyncio.Task[None]] = set()
 
     def crawl(
         self,
         crawler_or_spidercls: type[Spider] | str | Crawler,
         *args: Any,
         **kwargs: Any,
-    ) -> asyncio.Future[None]:
+    ) -> asyncio.Task[None]:
         """
         Run a crawler with the provided arguments.
 
@@ -447,7 +502,7 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         instance, this method will try to create one using this parameter as
         the spider class given to it.
 
-        Returns a :class:`~asyncio.Future` object which completes when the
+        Returns a :class:`~asyncio.Task` object which completes when the
         crawling is finished.
 
         :param crawler_or_spidercls: already created crawler, or a spider class
@@ -465,24 +520,27 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
                 "it must be a spider class (or a Crawler object)"
             )
         if not is_asyncio_reactor_installed():
-            raise RuntimeError("AsyncCrawlerRunner requires AsyncioSelectorReactor.")
+            raise RuntimeError(
+                f"{type(self).__name__} requires AsyncioSelectorReactor."
+            )
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
 
-    def _crawl(
-        self, crawler: Crawler, *args: Any, **kwargs: Any
-    ) -> asyncio.Future[None]:
+    def _crawl(self, crawler: Crawler, *args: Any, **kwargs: Any) -> asyncio.Task[None]:
+        # At this point the asyncio loop has been installed either by the user
+        # or by AsyncCrawlerProcess (but it isn't running yet, so no asyncio.create_task()).
+        loop = asyncio.get_event_loop()
         self.crawlers.add(crawler)
-        future = deferred_to_future(crawler.crawl(*args, **kwargs))
-        self._active.add(future)
+        task = loop.create_task(crawler.crawl_async(*args, **kwargs))
+        self._active.add(task)
 
-        def _done(_: asyncio.Future[None]) -> None:
+        def _done(_: asyncio.Task[None]) -> None:
             self.crawlers.discard(crawler)
-            self._active.discard(future)
+            self._active.discard(task)
             self.bootstrap_failed |= not getattr(crawler, "spider", None)
 
-        future.add_done_callback(_done)
-        return future
+        task.add_done_callback(_done)
+        return task
 
     async def stop(self) -> None:
         """
@@ -490,7 +548,10 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
 
         Completes when they all have ended.
         """
-        await deferred_to_future(self._stop())
+        if self.crawlers:
+            await asyncio.wait(
+                [asyncio.create_task(c.stop_async()) for c in self.crawlers]
+            )
 
     async def join(self) -> None:
         """
@@ -498,33 +559,10 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         executions.
         """
         while self._active:
-            await asyncio.gather(*self._active)
+            await asyncio.wait(self._active)
 
 
-class CrawlerProcess(CrawlerRunner):
-    """
-    A class to run multiple scrapy crawlers in a process simultaneously.
-
-    This class extends :class:`~scrapy.crawler.CrawlerRunner` by adding support
-    for starting a :mod:`~twisted.internet.reactor` and handling shutdown
-    signals, like the keyboard interrupt command Ctrl-C. It also configures
-    top-level logging.
-
-    This utility should be a better fit than
-    :class:`~scrapy.crawler.CrawlerRunner` if you aren't running another
-    :mod:`~twisted.internet.reactor` within your application.
-
-    The CrawlerProcess object must be instantiated with a
-    :class:`~scrapy.settings.Settings` object.
-
-    :param install_root_handler: whether to install root logging handler
-        (default: True)
-
-    This class shouldn't be needed (since Scrapy is responsible of using it
-    accordingly) unless writing scripts that manually handle the crawling
-    process. See :ref:`run-from-script` for an example.
-    """
-
+class CrawlerProcessBase(CrawlerRunnerBase):
     def __init__(
         self,
         settings: dict[str, Any] | Settings | None = None,
@@ -533,7 +571,6 @@ class CrawlerProcess(CrawlerRunner):
         super().__init__(settings)
         configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
-        self._initialized_reactor: bool = False
 
     def _signal_shutdown(self, signum: int, _: Any) -> None:
         from twisted.internet import reactor
@@ -556,12 +593,84 @@ class CrawlerProcess(CrawlerRunner):
         )
         reactor.callFromThread(self._stop_reactor)
 
+    def _setup_reactor(self, install_signal_handlers: bool) -> None:
+        from twisted.internet import reactor
+
+        resolver_class = load_object(self.settings["DNS_RESOLVER"])
+        # We pass self, which is CrawlerProcess, instead of Crawler here,
+        # which works because the default resolvers only use crawler.settings.
+        resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[arg-type]
+        resolver.install_on_reactor()
+        tp = reactor.getThreadPool()
+        tp.adjustPoolsize(maxthreads=self.settings.getint("REACTOR_THREADPOOL_MAXSIZE"))
+        reactor.addSystemEventTrigger("before", "shutdown", self._stop_dfd)
+        if install_signal_handlers:
+            reactor.addSystemEventTrigger(
+                "after", "startup", install_shutdown_handlers, self._signal_shutdown
+            )
+
+    def _stop_dfd(self) -> Deferred[Any]:
+        raise NotImplementedError
+
+    @inlineCallbacks
+    def _graceful_stop_reactor(self) -> Generator[Deferred[Any], Any, None]:
+        try:
+            yield self._stop_dfd()
+        finally:
+            self._stop_reactor()
+
+    def _stop_reactor(self, _: Any = None) -> None:
+        from twisted.internet import reactor
+
+        # raised if already stopped or in shutdown stage
+        with contextlib.suppress(RuntimeError):
+            reactor.stop()
+
+
+class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
+    """
+    A class to run multiple scrapy crawlers in a process simultaneously.
+
+    This class extends :class:`~scrapy.crawler.CrawlerRunner` by adding support
+    for starting a :mod:`~twisted.internet.reactor` and handling shutdown
+    signals, like the keyboard interrupt command Ctrl-C. It also configures
+    top-level logging.
+
+    This utility should be a better fit than
+    :class:`~scrapy.crawler.CrawlerRunner` if you aren't running another
+    :mod:`~twisted.internet.reactor` within your application.
+
+    The CrawlerProcess object must be instantiated with a
+    :class:`~scrapy.settings.Settings` object.
+
+    :param install_root_handler: whether to install root logging handler
+        (default: True)
+
+    This class shouldn't be needed (since Scrapy is responsible of using it
+    accordingly) unless writing scripts that manually handle the crawling
+    process. See :ref:`run-from-script` for an example.
+
+    This class provides Deferred-based APIs. Use :class:`AsyncCrawlerProcess`
+    for modern coroutine APIs.
+    """
+
+    def __init__(
+        self,
+        settings: dict[str, Any] | Settings | None = None,
+        install_root_handler: bool = True,
+    ):
+        super().__init__(settings, install_root_handler)
+        self._initialized_reactor: bool = False
+
     def _create_crawler(self, spidercls: type[Spider] | str) -> Crawler:
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
         init_reactor = not self._initialized_reactor
         self._initialized_reactor = True
         return Crawler(spidercls, self.settings, init_reactor=init_reactor)
+
+    def _stop_dfd(self) -> Deferred[Any]:
+        return self.stop()
 
     def start(
         self, stop_after_crawl: bool = True, install_signal_handlers: bool = True
@@ -589,30 +698,86 @@ class CrawlerProcess(CrawlerRunner):
                 return
             d.addBoth(self._stop_reactor)
 
-        resolver_class = load_object(self.settings["DNS_RESOLVER"])
-        # We pass self, which is CrawlerProcess, instead of Crawler here,
-        # which works because the default resolvers only use crawler.settings.
-        resolver = build_from_crawler(resolver_class, self, reactor=reactor)  # type: ignore[arg-type]
-        resolver.install_on_reactor()
-        tp = reactor.getThreadPool()
-        tp.adjustPoolsize(maxthreads=self.settings.getint("REACTOR_THREADPOOL_MAXSIZE"))
-        reactor.addSystemEventTrigger("before", "shutdown", self.stop)
-        if install_signal_handlers:
-            reactor.addSystemEventTrigger(
-                "after", "startup", install_shutdown_handlers, self._signal_shutdown
-            )
+        self._setup_reactor(install_signal_handlers)
         reactor.run(installSignalHandlers=install_signal_handlers)  # blocking call
 
-    @inlineCallbacks
-    def _graceful_stop_reactor(self) -> Generator[Deferred[Any], Any, None]:
-        try:
-            yield self.stop()
-        finally:
-            self._stop_reactor()
 
-    def _stop_reactor(self, _: Any = None) -> None:
+class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
+    """
+    A class to run multiple scrapy crawlers in a process simultaneously.
+
+    This class extends :class:`~scrapy.crawler.AsyncCrawlerRunner` by adding support
+    for starting a :mod:`~twisted.internet.reactor` and handling shutdown
+    signals, like the keyboard interrupt command Ctrl-C. It also configures
+    top-level logging.
+
+    This utility should be a better fit than
+    :class:`~scrapy.crawler.AsyncCrawlerRunner` if you aren't running another
+    :mod:`~twisted.internet.reactor` within your application.
+
+    The AsyncCrawlerProcess object must be instantiated with a
+    :class:`~scrapy.settings.Settings` object.
+
+    :param install_root_handler: whether to install root logging handler
+        (default: True)
+
+    This class shouldn't be needed (since Scrapy is responsible of using it
+    accordingly) unless writing scripts that manually handle the crawling
+    process. See :ref:`run-from-script` for an example.
+
+    This class provides coroutine APIs. It requires
+    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
+    """
+
+    def __init__(
+        self,
+        settings: dict[str, Any] | Settings | None = None,
+        install_root_handler: bool = True,
+    ):
+        super().__init__(settings, install_root_handler)
+        # We want the asyncio event loop to be installed early, so that it's
+        # always the correct one. And as we do that, we can also install the
+        # reactor here.
+        # The ASYNCIO_EVENT_LOOP setting cannot be overridden by add-ons and
+        # spiders when using AsyncCrawlerProcess.
+        loop_path = self.settings["ASYNCIO_EVENT_LOOP"]
+        if is_reactor_installed():
+            # The user could install a reactor before this class is instantiated.
+            # We need to make sure the reactor is the correct one and the loop
+            # type matches the setting.
+            verify_installed_reactor(_asyncio_reactor_path)
+            if loop_path:
+                verify_installed_asyncio_event_loop(loop_path)
+        else:
+            install_reactor(_asyncio_reactor_path, loop_path)
+        self._initialized_reactor = True
+
+    def _stop_dfd(self) -> Deferred[Any]:
+        return deferred_from_coro(self.stop())
+
+    def start(
+        self, stop_after_crawl: bool = True, install_signal_handlers: bool = True
+    ) -> None:
+        """
+        This method starts a :mod:`~twisted.internet.reactor`, adjusts its pool
+        size to :setting:`REACTOR_THREADPOOL_MAXSIZE`, and installs a DNS cache
+        based on :setting:`DNSCACHE_ENABLED` and :setting:`DNSCACHE_SIZE`.
+
+        If ``stop_after_crawl`` is True, the reactor will be stopped after all
+        crawlers have finished, using :meth:`join`.
+
+        :param bool stop_after_crawl: stop or not the reactor when all
+            crawlers have finished
+
+        :param bool install_signal_handlers: whether to install the OS signal
+            handlers from Twisted and Scrapy (default: True)
+        """
         from twisted.internet import reactor
 
-        # raised if already stopped or in shutdown stage
-        with contextlib.suppress(RuntimeError):
-            reactor.stop()
+        if stop_after_crawl:
+            loop = asyncio.get_event_loop()
+            join_task = loop.create_task(self.join())
+            join_task.add_done_callback(self._stop_reactor)
+
+        self._setup_reactor(install_signal_handlers)
+        reactor.run(installSignalHandlers=install_signal_handlers)  # blocking call

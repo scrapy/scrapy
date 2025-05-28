@@ -173,8 +173,8 @@ class Scheduler(BaseScheduler):
 
     :ref:`Start requests <start-requests>` are sent in the order they are
     yielded from :meth:`~scrapy.Spider.start`, and given the same
-    :attr:`~scrapy.http.Request.priority`, start requests take precedence over
-    other requests.
+    :attr:`~scrapy.http.Request.priority`, other requests take precedence over
+    start requests.
 
     You can set :setting:`SCHEDULER_START_MEMORY_QUEUE` and
     :setting:`SCHEDULER_START_DISK_QUEUE` to ``None`` to handle start requests
