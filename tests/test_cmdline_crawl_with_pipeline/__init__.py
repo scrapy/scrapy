@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 from subprocess import PIPE, Popen
 
-from .. import TWISTED_KEEPS_TRACEBACKS
+from tests import TWISTED_KEEPS_TRACEBACKS
 
 
 class TestCmdlineCrawlPipeline:

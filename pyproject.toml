@@ -58,8 +58,7 @@ Homepage = "https://scrapy.org/"
 Documentation = "https://docs.scrapy.org/"
 Source = "https://github.com/scrapy/scrapy"
 Tracker = "https://github.com/scrapy/scrapy/issues"
-Changelog = "https://github.com/scrapy/scrapy/commits/master/"
-releasenotes = "https://docs.scrapy.org/en/latest/news.html"
+"Release notes" = "https://docs.scrapy.org/en/latest/news.html"
 
 [project.scripts]
 scrapy = "scrapy.cmdline:execute"
@@ -116,10 +115,16 @@ module = "twisted"
 implicit_reexport = true
 
 [tool.bumpversion]
-current_version = "2.13.0"
+current_version = "2.13.1"
 commit = true
 tag = true
 tag_name = "{new_version}"
+
+[[tool.bumpversion.files]]
+filename = "docs/news.rst"
+search = "\\(unreleased\\)$"
+replace = "({now:%Y-%m-%d})"
+regex = true
 
 [[tool.bumpversion.files]]
 filename = "scrapy/VERSION"
@@ -294,6 +299,8 @@ extend-select = [
     "T10",
     # flake8-type-checking
     "TC",
+    # flake8-tidy-imports
+    "TID",
     # pyupgrade
     "UP",
     # pycodestyle warnings
@@ -391,6 +398,11 @@ ignore = [
     "B904",
     # Use capitalized environment variable
     "SIM112",
+]
+
+[tool.ruff.lint.flake8-tidy-imports]
+banned-module-level-imports = [
+    "twisted.internet.reactor",
 ]
 
 [tool.ruff.lint.per-file-ignores]
