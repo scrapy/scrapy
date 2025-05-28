@@ -12,7 +12,6 @@ from unittest import mock
 
 import pytest
 from twisted.cred import checkers, credentials, portal
-from twisted.internet import reactor
 from twisted.protocols.ftp import FTPFactory, FTPRealm
 from twisted.trial import unittest
 from w3lib.url import path_to_file_uri
@@ -310,6 +309,8 @@ class TestFTPBase(unittest.TestCase):
     )
 
     def setUp(self):
+        from twisted.internet import reactor
+
         # setup dirs and test file
         self.directory = Path(mkdtemp())
         userdir = self.directory / self.username
@@ -451,6 +452,8 @@ class TestAnonymousFTP(TestFTPBase):
     req_meta = {}
 
     def setUp(self):
+        from twisted.internet import reactor
+
         # setup dir and test file
         self.directory = Path(mkdtemp())
         for filename, content in self.test_files:
