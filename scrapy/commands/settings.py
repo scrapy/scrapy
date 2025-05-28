@@ -7,7 +7,8 @@ from scrapy.settings import BaseSettings
 
 class Command(ScrapyCommand):
     requires_project = False
-    default_settings = {"LOG_ENABLED": False, "SPIDER_LOADER_WARN_ONLY": True}
+    requires_crawler_process = False
+    default_settings = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
         return "[options]"
@@ -46,8 +47,8 @@ class Command(ScrapyCommand):
         )
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
-        assert self.crawler_process
-        settings = self.crawler_process.settings
+        assert self.settings is not None
+        settings = self.settings
         if opts.get:
             s = settings.get(opts.get)
             if isinstance(s, BaseSettings):

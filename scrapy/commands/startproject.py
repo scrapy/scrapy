@@ -34,7 +34,8 @@ def _make_writable(path: Path) -> None:
 
 class Command(ScrapyCommand):
     requires_project = False
-    default_settings = {"LOG_ENABLED": False, "SPIDER_LOADER_WARN_ONLY": True}
+    requires_crawler_process = False
+    default_settings = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
         return "<project_name> [project_dir]"
@@ -132,6 +133,7 @@ class Command(ScrapyCommand):
 
     @property
     def templates_dir(self) -> str:
+        assert self.settings is not None
         return str(
             Path(
                 self.settings["TEMPLATES_DIR"] or Path(scrapy.__path__[0], "templates"),
