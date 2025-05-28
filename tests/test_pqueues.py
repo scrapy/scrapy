@@ -7,6 +7,7 @@ from scrapy.http.request import Request
 from scrapy.pqueues import DownloaderAwarePriorityQueue, ScrapyPriorityQueue
 from scrapy.spiders import Spider
 from scrapy.squeues import FifoMemoryQueue
+from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
 from tests.test_scheduler import MockDownloader, MockEngine
 
@@ -155,3 +156,56 @@ class TestDownloaderAwarePriorityQueue:
         assert self.queue.peek().url == req3.url
         assert self.queue.pop().url == req3.url
         assert self.queue.peek() is None
+
+
+@pytest.mark.parametrize(
+    ("input", "output"),
+    [
+        # By default, start requests are FIFO, other requests are LIFO.
+        ([{}, {}], [2, 1]),
+        ([{"start": True}, {"start": True}], [1, 2]),
+        # Priority matters.
+        ([{"priority": 1}, {"start": True}], [1, 2]),
+        ([{}, {"start": True, "priority": 1}], [2, 1]),
+        # For the same priority, start requests pop last.
+        ([{}, {"start": True}], [1, 2]),
+        ([{"start": True}, {}], [2, 1]),
+    ],
+)
+def test_pop_order(input, output):
+    def make_url(index):
+        return f"https://toscrape.com/{index}"
+
+    def make_request(index, data):
+        meta = {}
+        if data.get("start", False):
+            meta["is_start_request"] = True
+        return Request(
+            url=make_url(index),
+            priority=data.get("priority", 0),
+            meta=meta,
+        )
+
+    input_requests = [
+        make_request(index, data) for index, data in enumerate(input, start=1)
+    ]
+    expected_output_urls = [make_url(index) for index in output]
+
+    crawler = get_crawler(Spider)
+    settings = crawler.settings
+    queue = build_from_crawler(
+        ScrapyPriorityQueue,
+        crawler,
+        downstream_queue_cls=load_object(settings["SCHEDULER_MEMORY_QUEUE"]),
+        key="",
+        start_queue_cls=load_object(settings["SCHEDULER_START_MEMORY_QUEUE"]),
+    )
+
+    for request in input_requests:
+        queue.push(request)
+
+    actual_output_urls = []
+    while request := queue.pop():
+        actual_output_urls.append(request.url)
+
+    assert actual_output_urls == expected_output_urls
