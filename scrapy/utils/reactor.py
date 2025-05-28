@@ -219,6 +219,12 @@ def is_asyncio_reactor_installed() -> bool:
     """Check whether the installed reactor is :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
 
     Raise a :exc:`RuntimeError` if no reactor is installed.
+
+    In a future Scrapy version, when Scrapy supports running without a Twisted
+    reactor, this function won't be useful for checking if it's possible to use
+    asyncio features, so the code that that doesn't directly require a Twisted
+    reactor should use :func:`scrapy.utils.asyncio.is_asyncio_available`
+    instead of this function.
     """
     if not is_reactor_installed():
         raise RuntimeError(

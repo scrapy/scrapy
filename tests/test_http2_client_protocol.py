@@ -13,7 +13,6 @@ from unittest import mock, skipIf
 from urllib.parse import urlencode
 
 import pytest
-from twisted.internet import reactor
 from twisted.internet.defer import (
     CancelledError,
     Deferred,
@@ -209,6 +208,8 @@ class TestHttps2ClientProtocol(TestCase):
 
     @inlineCallbacks
     def setUp(self):
+        from twisted.internet import reactor
+
         # Initialize resource tree
         root = self._init_resource()
         self.site = Site(root, timeout=None)
