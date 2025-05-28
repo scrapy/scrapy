@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import platform
 import re
@@ -95,18 +96,37 @@ class TestCrawler(TestBaseCrawler):
             Crawler(DefaultSpider())
 
     @inlineCallbacks
-    def test_crawler_crawl_twice_unsupported(self):
+    def test_crawler_crawl_twice_seq_unsupported(self):
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
         yield crawler.crawl()
         with pytest.raises(RuntimeError, match="more than once on the same instance"):
             yield crawler.crawl()
 
+    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
-    async def test_crawler_crawl_async_twice_unsupported(self):
+    async def test_crawler_crawl_async_twice_seq_unsupported(self):
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
         await crawler.crawl_async()
         with pytest.raises(RuntimeError, match="more than once on the same instance"):
             await crawler.crawl_async()
+
+    @inlineCallbacks
+    def test_crawler_crawl_twice_parallel_unsupported(self):
+        crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
+        d1 = crawler.crawl()
+        d2 = crawler.crawl()
+        yield d1
+        with pytest.raises(RuntimeError, match="Crawling already taking place"):
+            yield d2
+
+    @pytest.mark.only_asyncio
+    @deferred_f_from_coro_f
+    async def test_crawler_crawl_async_twice_parallel_unsupported(self):
+        crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
+        c1 = crawler.crawl_async()
+        c2 = crawler.crawl_async()
+        with pytest.raises(RuntimeError, match="Crawling already taking place"):
+            await asyncio.gather(c1, c2)
 
     def test_get_addon(self):
         class ParentAddon:
@@ -1013,6 +1033,25 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             "(twisted.internet.asyncioreactor.AsyncioSelectorReactor) "
             "does not match the requested one "
             "(twisted.internet.selectreactor.SelectReactor)"
+        ) in log
+
+    @pytest.mark.requires_uvloop
+    def test_asyncio_enabled_reactor_same_loop(self):
+        log = self.run_script("asyncio_custom_loop_custom_settings_same.py")
+        assert "Spider closed (finished)" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
+        )
+        assert "Using asyncio event loop: uvloop.Loop" in log
+
+    @pytest.mark.requires_uvloop
+    def test_asyncio_enabled_reactor_different_loop(self):
+        log = self.run_script("asyncio_custom_loop_custom_settings_different.py")
+        assert "Spider closed (finished)" not in log
+        assert (
+            "does not match the one specified in the ASYNCIO_EVENT_LOOP "
+            "setting (uvloop.Loop)"
         ) in log
 
 

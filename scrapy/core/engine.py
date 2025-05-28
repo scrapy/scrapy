@@ -396,11 +396,14 @@ class ExecutionEngine:
             self._slot.nextcall.schedule()
 
     def open_spider(self, spider: Spider, close_if_idle: bool = True) -> Deferred[None]:
-        return deferred_from_coro(self.open_spider_async(spider, close_if_idle))
+        return deferred_from_coro(
+            self.open_spider_async(spider, close_if_idle=close_if_idle)
+        )
 
     async def open_spider_async(
         self,
         spider: Spider,
+        *,
         close_if_idle: bool = True,
     ) -> None:
         if self._slot is not None:

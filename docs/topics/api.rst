@@ -99,22 +99,11 @@ how you :ref:`configure the downloader middlewares
         provided while constructing the crawler, and it is created after the
         arguments given in the :meth:`crawl` method.
 
-    .. method:: crawl(*args, **kwargs)
+    .. automethod:: crawl_async
 
-        Starts the crawler by instantiating its spider class with the given
-        ``args`` and ``kwargs`` arguments, while setting the execution engine in
-        motion. Should be called only once.
+    .. automethod:: crawl
 
-        Returns a deferred that is fired when the crawl is finished.
-
-    .. method:: crawl_async(*args, **kwargs)
-        :async:
-
-        Starts the crawler by instantiating its spider class with the given
-        ``args`` and ``kwargs`` arguments, while setting the execution engine in
-        motion. Should be called only once.
-
-        Completes when the crawl is finished.
+    .. automethod:: stop_async
 
     .. automethod:: stop
 

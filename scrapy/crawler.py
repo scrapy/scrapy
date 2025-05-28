@@ -21,6 +21,7 @@ from scrapy.extension import ExtensionManager
 from scrapy.interfaces import ISpiderLoader
 from scrapy.settings import BaseSettings, Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
+from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import deferred_from_coro, deferred_to_future
 from scrapy.utils.log import (
     LogCounterHandler,
@@ -144,6 +145,12 @@ class Crawler:
     # this method.
     @inlineCallbacks
     def crawl(self, *args: Any, **kwargs: Any) -> Generator[Deferred[Any], Any, None]:
+        """Start the crawler by instantiating its spider class with the given
+        *args* and *kwargs* arguments, while setting the execution engine in
+        motion. Should be called only once.
+
+        Return a deferred that is fired when the crawl is finished.
+        """
         if self.crawling:
             raise RuntimeError("Crawling already taking place")
         if self._started:
@@ -165,6 +172,42 @@ class Crawler:
                 yield self.engine.close()
             raise
 
+    async def crawl_async(self, *args: Any, **kwargs: Any) -> None:
+        """Start the crawler by instantiating its spider class with the given
+        *args* and *kwargs* arguments, while setting the execution engine in
+        motion. Should be called only once.
+
+        .. versionadded:: VERSION
+
+        Complete when the crawl is finished.
+
+        This function requires
+        :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
+        installed.
+        """
+        if not is_asyncio_available():
+            raise RuntimeError("Crawler.crawl_async() requires AsyncioSelectorReactor.")
+        if self.crawling:
+            raise RuntimeError("Crawling already taking place")
+        if self._started:
+            raise RuntimeError(
+                "Cannot run Crawler.crawl_async() more than once on the same instance."
+            )
+        self.crawling = self._started = True
+
+        try:
+            self.spider = self._create_spider(*args, **kwargs)
+            self._apply_settings()
+            self._update_root_log_handler()
+            self.engine = self._create_engine()
+            await self.engine.open_spider_async(self.spider)
+            await self.engine.start_async()
+        except Exception:
+            self.crawling = False
+            if self.engine is not None:
+                await deferred_to_future(self.engine.close())
+            raise
+
     def _create_spider(self, *args: Any, **kwargs: Any) -> Spider:
         return self.spidercls.from_crawler(self, *args, **kwargs)
 
@@ -173,7 +216,7 @@ class Crawler:
 
     @inlineCallbacks
     def stop(self) -> Generator[Deferred[Any], Any, None]:
-        """Starts a graceful stop of the crawler and returns a deferred that is
+        """Start a graceful stop of the crawler and return a deferred that is
         fired when the crawler is stopped."""
         if self.crawling:
             self.crawling = False
@@ -181,7 +224,16 @@ class Crawler:
             yield self.engine.stop()
 
     async def stop_async(self) -> None:
-        """Starts a graceful stop of the crawler and completes when the crawler is stopped."""
+        """Start a graceful stop of the crawler and complete when the crawler is stopped.
+
+        .. versionadded:: VERSION
+
+        This function requires
+        :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
+        installed.
+        """
+        if not is_asyncio_available():
+            raise RuntimeError("Crawler.stop_async() requires AsyncioSelectorReactor.")
         await deferred_to_future(self.stop())
 
     @staticmethod
@@ -269,28 +321,6 @@ class Crawler:
                 "crawl engine has been created."
             )
         return self._get_component(cls, self.engine.scraper.spidermw.middlewares)
-
-    async def crawl_async(self, *args: Any, **kwargs: Any) -> None:
-        if self.crawling:
-            raise RuntimeError("Crawling already taking place")
-        if self._started:
-            raise RuntimeError(
-                "Cannot run Crawler.crawl_async() more than once on the same instance."
-            )
-        self.crawling = self._started = True
-
-        try:
-            self.spider = self._create_spider(*args, **kwargs)
-            self._apply_settings()
-            self._update_root_log_handler()
-            self.engine = self._create_engine()
-            await self.engine.open_spider_async(self.spider)
-            await self.engine.start_async()
-        except Exception:
-            self.crawling = False
-            if self.engine is not None:
-                await deferred_to_future(self.engine.close())
-            raise
 
 
 class CrawlerRunnerBase:

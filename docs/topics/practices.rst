@@ -21,7 +21,7 @@ Remember that Scrapy is built on top of the Twisted
 asynchronous networking library, so you need to run it inside the Twisted reactor.
 
 The first utility you can use to run your spiders is
-:class:`scrapy.crawler.AsyncCrawlerProcess` and
+:class:`scrapy.crawler.AsyncCrawlerProcess` or
 :class:`scrapy.crawler.CrawlerProcess`. These classes will start a Twisted
 reactor for you, configuring the logging and setting shutdown handlers. These
 classes are the ones used by all Scrapy commands. They have similar
@@ -81,7 +81,7 @@ project as example.
     process.start()  # the script will block here until the crawling is finished
 
 There's another Scrapy utility that provides more control over the crawling
-process: :class:`scrapy.crawler.AsyncCrawlerRunner` and
+process: :class:`scrapy.crawler.AsyncCrawlerRunner` or
 :class:`scrapy.crawler.CrawlerRunner`. These classes are thin wrappers
 that encapsulate some simple helpers to run multiple crawlers, but they won't
 start or interfere with existing reactors in any way. Just like

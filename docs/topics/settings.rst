@@ -330,8 +330,8 @@ exception is raised.
 
 These settings are:
 
--   :setting:`ASYNCIO_EVENT_LOOP` (when not using
-    :class:`~scrapy.crawler.AsyncCrawlerProcess`)
+-   :setting:`ASYNCIO_EVENT_LOOP` (not possible to set per-spider when using
+    :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
 
 -   :setting:`DNS_RESOLVER` and settings used by the corresponding
     component, e.g. :setting:`DNSCACHE_ENABLED`, :setting:`DNSCACHE_SIZE`
@@ -339,8 +339,8 @@ These settings are:
 
 -   :setting:`REACTOR_THREADPOOL_MAXSIZE`
 
--   :setting:`TWISTED_REACTOR` (when not using
-    :class:`~scrapy.crawler.AsyncCrawlerProcess`)
+-   :setting:`TWISTED_REACTOR` (ignored when using
+    :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
 
 :setting:`ASYNCIO_EVENT_LOOP` and :setting:`TWISTED_REACTOR` are used upon
 installing the reactor. The rest of the settings are applied when starting
@@ -353,8 +353,10 @@ it installs :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`,
 ignoring the value of :setting:`TWISTED_REACTOR` and using the value of
 :setting:`ASYNCIO_EVENT_LOOP` that was passed to
 :meth:`AsyncCrawlerProcess.__init__()
-<scrapy.crawler.AsyncCrawlerProcess.__init__>`, so the latter setting cannot be
-modified by spiders or add-ons after that.
+<scrapy.crawler.AsyncCrawlerProcess.__init__>`. If a different value for
+:setting:`TWISTED_REACTOR` or :setting:`ASYNCIO_EVENT_LOOP` is provided later,
+e.g. in :ref:`per-spider settings <spider-settings>`, an exception will be
+raised.
 
 
 .. _topics-settings-ref:
