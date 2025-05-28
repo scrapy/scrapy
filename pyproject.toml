@@ -121,11 +121,6 @@ tag = true
 tag_name = "{new_version}"
 
 [[tool.bumpversion.files]]
-filename = "README.rst"
-parse = """(?<=)docs\\.scrapy\\.org/en/)(?P<major>0|[1-9]\\d*)\\.(?P<minor>0|[1-9]\\d*)"""
-serialize = ["{major}.{minor}"]
-
-[[tool.bumpversion.files]]
 filename = "scrapy/VERSION"
 
 [[tool.bumpversion.files]]
