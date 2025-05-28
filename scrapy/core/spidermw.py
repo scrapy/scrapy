@@ -23,7 +23,6 @@ from scrapy.middleware import MiddlewareManager
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
-    deferred_f_from_coro_f,
     deferred_from_coro,
     maybe_deferred_to_future,
     mustbe_deferred,
@@ -169,7 +168,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 exception_result = cast(
                     Union[Failure, MutableChain[_T]],
                     self._process_spider_exception(
-                        response, spider, Failure(ex), exception_processor_index
+                        response, spider, ex, exception_processor_index
                     ),
                 )
                 if isinstance(exception_result, Failure):
@@ -185,7 +184,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 exception_result = cast(
                     Union[Failure, MutableAsyncChain[_T]],
                     self._process_spider_exception(
-                        response, spider, Failure(ex), exception_processor_index
+                        response, spider, ex, exception_processor_index
                     ),
                 )
                 if isinstance(exception_result, Failure):
@@ -201,13 +200,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self,
         response: Response,
         spider: Spider,
-        _failure: Failure,
+        exception: Exception,
         start_index: int = 0,
-    ) -> Failure | MutableChain[_T] | MutableAsyncChain[_T]:
-        exception = _failure.value
+    ) -> MutableChain[_T] | MutableAsyncChain[_T]:
         # don't handle _InvalidOutput exception
         if isinstance(exception, _InvalidOutput):
-            return _failure
+            raise exception
         method_list = islice(
             self.methods["process_spider_exception"], start_index, None
         )
@@ -242,7 +240,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 f"or an iterable, got {type(result)}"
             )
             raise _InvalidOutput(msg)
-        return _failure
+        raise exception
 
     # This method cannot be made async def, as _process_spider_exception relies on the Deferred result
     # being available immediately which doesn't work when it's a wrapped coroutine.
@@ -308,7 +306,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             except Exception as ex:
                 exception_result: Failure | MutableChain[_T] | MutableAsyncChain[_T] = (
                     self._process_spider_exception(
-                        response, spider, Failure(ex), method_index + 1
+                        response, spider, ex, method_index + 1
                     )
                 )
                 if isinstance(exception_result, Failure):
@@ -369,24 +367,36 @@ class SpiderMiddlewareManager(MiddlewareManager):
         request: Request,
         spider: Spider,
     ) -> Deferred[MutableChain[_T] | MutableAsyncChain[_T]]:
+        return deferred_from_coro(
+            self.scrape_response_async(scrape_func, response, request, spider)
+        )
+
+    async def scrape_response_async(
+        self,
+        scrape_func: ScrapeFunc[_T],
+        response: Response,
+        request: Request,
+        spider: Spider,
+    ) -> MutableChain[_T] | MutableAsyncChain[_T]:
         async def process_callback_output(
             result: Iterable[_T] | AsyncIterator[_T],
         ) -> MutableChain[_T] | MutableAsyncChain[_T]:
             return await self._process_callback_output(response, spider, result)
 
         def process_spider_exception(
-            _failure: Failure,
-        ) -> Failure | MutableChain[_T] | MutableAsyncChain[_T]:
-            return self._process_spider_exception(response, spider, _failure)
+            exception: Exception,
+        ) -> MutableChain[_T] | MutableAsyncChain[_T]:
+            return self._process_spider_exception(response, spider, exception)
 
-        dfd: Deferred[Iterable[_T] | AsyncIterator[_T]] = mustbe_deferred(
-            self._process_spider_input, scrape_func, response, request, spider
-        )
-        dfd2: Deferred[MutableChain[_T] | MutableAsyncChain[_T]] = dfd.addCallback(
-            deferred_f_from_coro_f(process_callback_output)
-        )
-        dfd2.addErrback(process_spider_exception)
-        return dfd2
+        try:
+            it: Iterable[_T] | AsyncIterator[_T] = await maybe_deferred_to_future(
+                mustbe_deferred(
+                    self._process_spider_input, scrape_func, response, request, spider
+                )
+            )
+            return await process_callback_output(it)
+        except Exception as ex:
+            return process_spider_exception(ex)
 
     async def process_start(self, spider: Spider) -> AsyncIterator[Any] | None:
         self._check_deprecated_start_requests_use(spider)

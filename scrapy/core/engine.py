@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from time import time
 from traceback import format_exc
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
 from twisted.internet.task import LoopingCall
@@ -41,8 +41,6 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-
-_T = TypeVar("_T")
 
 
 class _Slot:
@@ -129,9 +127,7 @@ class ExecutionEngine:
         if self.running:
             raise RuntimeError("Engine already running")
         self.start_time = time()
-        await maybe_deferred_to_future(
-            self.signals.send_catch_log_deferred(signal=signals.engine_started)
-        )
+        await self.signals.send_catch_log_async(signal=signals.engine_started)
         self.running = True
         self._closewait: Deferred[None] = Deferred()
         if _start_request_processing:
@@ -143,9 +139,7 @@ class ExecutionEngine:
 
         @deferred_f_from_coro_f
         async def _finish_stopping_engine(_: Any) -> None:
-            await maybe_deferred_to_future(
-                self.signals.send_catch_log_deferred(signal=signals.engine_stopped)
-            )
+            await self.signals.send_catch_log_async(signal=signals.engine_stopped)
             self._closewait.callback(None)
 
         if not self.running:
@@ -349,28 +343,32 @@ class ExecutionEngine:
                 signals.request_dropped, request=request, spider=self.spider
             )
 
-    def download(self, request: Request) -> Deferred[Response]:
+    @inlineCallbacks
+    def download(self, request: Request) -> Generator[Deferred[Any], Any, Response]:
         """Return a Deferred which fires with a Response as result, only downloader middlewares are applied"""
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
-        d: Deferred[Response | Request] = self._download(request)
-        # Deferred.addBoth() overloads don't seem to support a Union[_T, Deferred[_T]] return type
-        d2: Deferred[Response] = d.addBoth(self._downloaded, request)  # type: ignore[call-overload]
-        return d2
+        try:
+            response_or_request = yield self._download(request)
+        finally:
+            assert self._slot is not None
+            self._slot.remove_request(request)
+        if isinstance(response_or_request, Request):
+            return (yield self.download(response_or_request))
+        return response_or_request
 
-    def _downloaded(
-        self, result: Response | Request | Failure, request: Request
-    ) -> Deferred[Response] | Response | Failure:
+    @inlineCallbacks
+    def _download(
+        self, request: Request
+    ) -> Generator[Deferred[Any], Any, Response | Request]:
         assert self._slot is not None  # typing
-        self._slot.remove_request(request)
-        return self.download(result) if isinstance(result, Request) else result
-
-    def _download(self, request: Request) -> Deferred[Response | Request]:
-        assert self._slot is not None  # typing
+        assert self.spider is not None
 
         self._slot.add_request(request)
-
-        def _on_success(result: Response | Request) -> Response | Request:
+        try:
+            result: Response | Request = yield self.downloader.fetch(
+                request, self.spider
+            )
             if not isinstance(result, (Response, Request)):
                 raise TypeError(
                     f"Incorrect type: expected Response or Request, got {type(result)}: {result!r}"
@@ -391,17 +389,8 @@ class ExecutionEngine:
                     spider=self.spider,
                 )
             return result
-
-        def _on_complete(_: _T) -> _T:
-            assert self._slot is not None
+        finally:
             self._slot.nextcall.schedule()
-            return _
-
-        assert self.spider is not None
-        dwld: Deferred[Response | Request] = self.downloader.fetch(request, self.spider)
-        dwld.addCallback(_on_success)
-        dwld.addBoth(_on_complete)
-        return dwld
 
     @deferred_f_from_coro_f
     async def open_spider(
@@ -422,9 +411,7 @@ class ExecutionEngine:
         await maybe_deferred_to_future(self.scraper.open_spider(spider))
         assert self.crawler.stats
         self.crawler.stats.open_spider(spider)
-        await maybe_deferred_to_future(
-            self.signals.send_catch_log_deferred(signals.spider_opened, spider=spider)
-        )
+        await self.signals.send_catch_log_async(signals.spider_opened, spider=spider)
 
     def _spider_idle(self) -> None:
         """

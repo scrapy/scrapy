@@ -131,6 +131,39 @@ class TestResponseFromProcessRequest(TestManagerBase):
         assert not download_func.called
 
 
+class TestResponseFromProcessException(TestManagerBase):
+    """Tests middleware returning a response from process_exception."""
+
+    @deferred_f_from_coro_f
+    async def test_process_response_called(self):
+        resp = Response("http://example.com/index.html")
+        calls = []
+
+        def download_func(request, spider):
+            raise ValueError("test")
+
+        class ResponseMiddleware:
+            def process_response(self, request, response, spider):
+                calls.append("process_response")
+                return resp
+
+            def process_exception(self, request, exception, spider):
+                calls.append("process_exception")
+                return resp
+
+        self.mwman._add_middleware(ResponseMiddleware())
+
+        req = Request("http://example.com/index.html")
+        result = await maybe_deferred_to_future(
+            self.mwman.download(download_func, req, self.spider)
+        )
+        assert result is resp
+        assert calls == [
+            "process_exception",
+            "process_response",
+        ]
+
+
 class TestInvalidOutput(TestManagerBase):
     @deferred_f_from_coro_f
     async def test_invalid_process_request(self):
