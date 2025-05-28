@@ -1,12 +1,8 @@
-..
-    .. image:: https://docs.scrapy.org/en/2.13/_static/logo.svg
-    :target: https://scrapy.org/
-
 .. raw:: html
 
     <p align="center">
         <a href="https://scrapy.org/">
-            <img src="https://raw.githubusercontent.com/scrapy/scrapy/new-logo/docs/_static/logo.svg" alt="Scrapy" width="480px">
+            <img src="https://raw.githubusercontent.com/scrapy/scrapy/master/docs/_static/logo.svg" alt="Scrapy" width="480px">
         </a>
     </p>
 
