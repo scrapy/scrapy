@@ -8,7 +8,7 @@ from unittest import mock
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet import defer, error, reactor
+from twisted.internet import defer, error
 from twisted.web import server
 from twisted.web.error import SchemeNotSupported
 from twisted.web.http import H2_ENABLED
@@ -59,6 +59,8 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
 
     @defer.inlineCallbacks
     def test_download_with_maxsize_very_large_file(self):
+        from twisted.internet import reactor
+
         with mock.patch("scrapy.core.http2.stream.logger") as logger:
             request = Request(self.getURL("largechunkedfile"))
 
@@ -207,6 +209,8 @@ class Https2ProxyTestCase(H2DownloadHandlerMixin, TestHttpProxyBase):
     expected_http_proxy_request_body = b"/"
 
     def setUp(self):
+        from twisted.internet import reactor
+
         site = server.Site(UriResource(), timeout=None)
         self.port = reactor.listenSSL(
             0,
