@@ -4,10 +4,11 @@
 
 .. raw:: html
 
-    <a href="https://scrapy.org/">
-        <img src="https://raw.githubusercontent.com/scrapy/scrapy/new-logo/docs/_static/logo.svg" alt="Scrapy" width="480px" style="display: block; margin: 0 auto;">
-        <br>
-    </a>
+    <p align="center">
+        <a href="https://scrapy.org/">
+            <img src="https://raw.githubusercontent.com/scrapy/scrapy/new-logo/docs/_static/logo.svg" alt="Scrapy" width="480px">
+        </a>
+    </p>
 
 .. image:: https://img.shields.io/pypi/v/Scrapy.svg
    :target: https://pypi.org/pypi/Scrapy
