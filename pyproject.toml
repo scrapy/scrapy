@@ -121,6 +121,12 @@ tag = true
 tag_name = "{new_version}"
 
 [[tool.bumpversion.files]]
+filename = "docs/news.rst"
+search = "\\(unreleased\\)$"
+replace = "({now:%Y-%m-%d})"
+regex = true
+
+[[tool.bumpversion.files]]
 filename = "scrapy/VERSION"
 
 [[tool.bumpversion.files]]
