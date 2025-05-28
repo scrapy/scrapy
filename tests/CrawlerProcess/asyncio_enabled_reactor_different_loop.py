@@ -4,12 +4,12 @@ import sys
 from twisted.internet import asyncioreactor
 from twisted.python import log
 
+import scrapy
+from scrapy.crawler import CrawlerProcess
+
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-asyncioreactor.install(asyncio.get_event_loop())
-
-import scrapy  # noqa: E402
-from scrapy.crawler import CrawlerProcess  # noqa: E402
+asyncioreactor.install()
 
 
 class NoRequestsSpider(scrapy.Spider):

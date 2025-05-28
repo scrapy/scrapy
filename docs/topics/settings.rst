@@ -330,7 +330,8 @@ exception is raised.
 
 These settings are:
 
--   :setting:`ASYNCIO_EVENT_LOOP`
+-   :setting:`ASYNCIO_EVENT_LOOP` (not possible to set per-spider when using
+    :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
 
 -   :setting:`DNS_RESOLVER` and settings used by the corresponding
     component, e.g. :setting:`DNSCACHE_ENABLED`, :setting:`DNSCACHE_SIZE`
@@ -338,11 +339,24 @@ These settings are:
 
 -   :setting:`REACTOR_THREADPOOL_MAXSIZE`
 
--   :setting:`TWISTED_REACTOR`
+-   :setting:`TWISTED_REACTOR` (ignored when using
+    :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
 
 :setting:`ASYNCIO_EVENT_LOOP` and :setting:`TWISTED_REACTOR` are used upon
 installing the reactor. The rest of the settings are applied when starting
 the reactor.
+
+There is an additional restriction for :setting:`TWISTED_REACTOR` and
+:setting:`ASYNCIO_EVENT_LOOP` when using
+:class:`~scrapy.crawler.AsyncCrawlerProcess`: when this class is instantiated,
+it installs :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`,
+ignoring the value of :setting:`TWISTED_REACTOR` and using the value of
+:setting:`ASYNCIO_EVENT_LOOP` that was passed to
+:meth:`AsyncCrawlerProcess.__init__()
+<scrapy.crawler.AsyncCrawlerProcess.__init__>`. If a different value for
+:setting:`TWISTED_REACTOR` or :setting:`ASYNCIO_EVENT_LOOP` is provided later,
+e.g. in :ref:`per-spider settings <spider-settings>`, an exception will be
+raised.
 
 
 .. _topics-settings-ref:
@@ -1977,9 +1991,11 @@ Import path of a given :mod:`~twisted.internet.reactor`.
 
 Scrapy will install this reactor if no other reactor is installed yet, such as
 when the ``scrapy`` CLI program is invoked or when using the
+:class:`~scrapy.crawler.AsyncCrawlerProcess` class or the
 :class:`~scrapy.crawler.CrawlerProcess` class.
 
-If you are using the :class:`~scrapy.crawler.CrawlerRunner` class, you also
+If you are using the :class:`~scrapy.crawler.AsyncCrawlerRunner` class or the
+:class:`~scrapy.crawler.CrawlerRunner` class, you also
 need to install the correct reactor manually. You can do that using
 :func:`~scrapy.utils.reactor.install_reactor`:
 
@@ -1988,12 +2004,12 @@ need to install the correct reactor manually. You can do that using
 If a reactor is already installed,
 :func:`~scrapy.utils.reactor.install_reactor` has no effect.
 
-:meth:`CrawlerRunner.__init__ <scrapy.crawler.CrawlerRunner.__init__>` raises
-:exc:`Exception` if the installed reactor does not match the
+:class:`~scrapy.crawler.AsyncCrawlerRunner` and other similar classes raise an
+exception if the installed reactor does not match the
 :setting:`TWISTED_REACTOR` setting; therefore, having top-level
 :mod:`~twisted.internet.reactor` imports in project files and imported
-third-party libraries will make Scrapy raise :exc:`Exception` when
-it checks which reactor is installed.
+third-party libraries will make Scrapy raise an exception when it checks which
+reactor is installed.
 
 In order to use the reactor installed by Scrapy:
 
@@ -2025,7 +2041,7 @@ In order to use the reactor installed by Scrapy:
             self.crawler.engine.close_spider(self, "timeout")
 
 
-which raises :exc:`Exception`, becomes:
+which raises an exception, becomes:
 
 .. code-block:: python
 
