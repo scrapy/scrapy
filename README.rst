@@ -6,6 +6,7 @@
 
     <a href="https://scrapy.org/">
         <img src="https://raw.githubusercontent.com/scrapy/scrapy/new-logo/docs/_static/logo.svg" alt="Scrapy" width="480px">
+        <br>
     </a>
 
 .. image:: https://img.shields.io/pypi/v/Scrapy.svg
