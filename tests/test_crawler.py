@@ -123,10 +123,11 @@ class TestCrawler(TestBaseCrawler):
     @deferred_f_from_coro_f
     async def test_crawler_crawl_async_twice_parallel_unsupported(self):
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
-        c1 = crawler.crawl_async()
-        c2 = crawler.crawl_async()
+        t1 = asyncio.create_task(crawler.crawl_async())
+        t2 = asyncio.create_task(crawler.crawl_async())
+        await t1
         with pytest.raises(RuntimeError, match="Crawling already taking place"):
-            await asyncio.gather(c1, c2)
+            await t2
 
     def test_get_addon(self):
         class ParentAddon:
