@@ -49,8 +49,11 @@ class OffsiteMiddleware(BaseSpiderMiddleware):
         return o
 
     def get_processed_request(
-        self, request: Request, response: Response
+        self, request: Request, response: Response | None
     ) -> Request | None:
+        if response is None:
+            # skip start requests for backward compatibility
+            return request
         assert self.crawler.spider
         if (
             request.dont_filter

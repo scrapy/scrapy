@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import logging
 import unittest
@@ -14,7 +16,7 @@ from twisted.trial.unittest import TestCase
 
 from scrapy import signals
 from scrapy.crawler import CrawlerRunner
-from scrapy.exceptions import StopDownload
+from scrapy.exceptions import CloseSpider, StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.python import to_unicode
@@ -34,7 +36,7 @@ from tests.spiders import (
     AsyncDefDeferredMaybeWrappedSpider,
     AsyncDefDeferredWrappedSpider,
     AsyncDefSpider,
-    BrokenStartRequestsSpider,
+    BrokenStartSpider,
     BytesReceivedCallbackSpider,
     BytesReceivedErrbackSpider,
     CrawlSpiderWithAsyncCallback,
@@ -43,14 +45,14 @@ from tests.spiders import (
     CrawlSpiderWithParseMethod,
     CrawlSpiderWithProcessRequestCallbackKeywordArguments,
     DelaySpider,
-    DuplicateStartRequestsSpider,
+    DuplicateStartSpider,
     FollowAllSpider,
     HeadersReceivedCallbackSpider,
     HeadersReceivedErrbackSpider,
     SimpleSpider,
     SingleRequestSpider,
-    StartRequestsGoodAndBadOutput,
-    StartRequestsItemSpider,
+    StartGoodAndBadOutput,
+    StartItemSpider,
 )
 
 
@@ -163,9 +165,9 @@ class TestCrawl(TestCase):
         self._assert_retried(log)
 
     @defer.inlineCallbacks
-    def test_start_requests_bug_before_yield(self):
+    def test_start_bug_before_yield(self):
         with LogCapture("scrapy", level=logging.ERROR) as log:
-            crawler = get_crawler(BrokenStartRequestsSpider)
+            crawler = get_crawler(BrokenStartSpider)
             yield crawler.crawl(fail_before_yield=1, mockserver=self.mockserver)
 
         assert len(log.records) == 1
@@ -174,9 +176,9 @@ class TestCrawl(TestCase):
         assert record.exc_info[0] is ZeroDivisionError
 
     @defer.inlineCallbacks
-    def test_start_requests_bug_yielding(self):
+    def test_start_bug_yielding(self):
         with LogCapture("scrapy", level=logging.ERROR) as log:
-            crawler = get_crawler(BrokenStartRequestsSpider)
+            crawler = get_crawler(BrokenStartSpider)
             yield crawler.crawl(fail_yielding=1, mockserver=self.mockserver)
 
         assert len(log.records) == 1
@@ -185,45 +187,51 @@ class TestCrawl(TestCase):
         assert record.exc_info[0] is ZeroDivisionError
 
     @defer.inlineCallbacks
-    def test_start_requests_items(self):
+    def test_start_items(self):
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
+
         with LogCapture("scrapy", level=logging.ERROR) as log:
-            crawler = get_crawler(StartRequestsItemSpider)
+            crawler = get_crawler(StartItemSpider)
+            crawler.signals.connect(_on_item_scraped, signals.item_scraped)
             yield crawler.crawl(mockserver=self.mockserver)
 
         assert len(log.records) == 0
+        assert items == [{"name": "test item"}]
 
     @defer.inlineCallbacks
-    def test_start_requests_unsupported_output(self):
+    def test_start_unsupported_output(self):
         """Anything that is not a request is assumed to be an item, avoiding a
-        potentially expensive call to itemadapter.is_item, and letting instead
-        things fail when ItemAdapter is actually used on the corresponding
-        non-item object."""
+        potentially expensive call to itemadapter.is_item(), and letting
+        instead things fail when ItemAdapter is actually used on the
+        corresponding non-item object."""
+
+        items = []
+
+        def _on_item_scraped(item):
+            items.append(item)
 
         with LogCapture("scrapy", level=logging.ERROR) as log:
-            crawler = get_crawler(StartRequestsGoodAndBadOutput)
+            crawler = get_crawler(StartGoodAndBadOutput)
+            crawler.signals.connect(_on_item_scraped, signals.item_scraped)
             yield crawler.crawl(mockserver=self.mockserver)
 
         assert len(log.records) == 0
+        assert len(items) == 3
+        assert not any(isinstance(item, Request) for item in items)
 
     @defer.inlineCallbacks
-    def test_start_requests_laziness(self):
+    def test_start_dupes(self):
         settings = {"CONCURRENT_REQUESTS": 1}
-        crawler = get_crawler(BrokenStartRequestsSpider, settings)
-        yield crawler.crawl(mockserver=self.mockserver)
-        assert crawler.spider.seedsseen.index(None) < crawler.spider.seedsseen.index(
-            99
-        ), crawler.spider.seedsseen
-
-    @defer.inlineCallbacks
-    def test_start_requests_dupes(self):
-        settings = {"CONCURRENT_REQUESTS": 1}
-        crawler = get_crawler(DuplicateStartRequestsSpider, settings)
+        crawler = get_crawler(DuplicateStartSpider, settings)
         yield crawler.crawl(
             dont_filter=True, distinct_urls=2, dupe_factor=3, mockserver=self.mockserver
         )
         assert crawler.spider.visited == 6
 
-        crawler = get_crawler(DuplicateStartRequestsSpider, settings)
+        crawler = get_crawler(DuplicateStartSpider, settings)
         yield crawler.crawl(
             dont_filter=False,
             distinct_urls=3,
@@ -305,10 +313,10 @@ with multiples lines
         # basic asserts in case of weird communication errors
         assert "responses" in crawler.spider.meta
         assert "failures" not in crawler.spider.meta
-        # start requests doesn't set Referer header
+        # start() doesn't set Referer header
         echo0 = json.loads(to_unicode(crawler.spider.meta["responses"][2].body))
         assert "Referer" not in echo0["headers"]
-        # following request sets Referer to start request url
+        # following request sets Referer to the source request url
         echo1 = json.loads(to_unicode(crawler.spider.meta["responses"][1].body))
         assert echo1["headers"].get("Referer") == [req0.url]
         # next request avoids Referer header
@@ -360,27 +368,6 @@ with multiples lines
 
         assert s["engine.spider.name"] == crawler.spider.name
         assert s["len(engine.scraper.slot.active)"] == "1"
-
-    @defer.inlineCallbacks
-    def test_graceful_crawl_error_handling(self):
-        """
-        Test whether errors happening anywhere in Crawler.crawl() are properly
-        reported (and not somehow swallowed) after a graceful engine shutdown.
-        The errors should not come from within Scrapy's core but from within
-        spiders/middlewares/etc., e.g. raised in Spider.start_requests(),
-        SpiderMiddleware.process_start_requests(), etc.
-        """
-
-        class TestError(Exception):
-            pass
-
-        class FaultySpider(SimpleSpider):
-            def start_requests(self):
-                raise TestError
-
-        crawler = get_crawler(FaultySpider)
-        yield self.assertFailure(crawler.crawl(mockserver=self.mockserver), TestError)
-        assert not crawler.crawling
 
     @defer.inlineCallbacks
     def test_open_spider_error_on_faulty_pipeline(self):
@@ -723,3 +710,100 @@ class TestCrawlSpider(TestCase):
         assert crawler.spider.meta[
             "failure"
         ].value.response.headers == crawler.spider.meta.get("headers_received")
+
+    @defer.inlineCallbacks
+    def test_spider_errback(self):
+        failures = []
+
+        def eb(failure: Failure) -> Failure:
+            failures.append(failure)
+            return failure
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/status?n=400"), errback_func=eb
+            )
+        assert len(failures) == 1
+        assert "HTTP status code is not handled or not allowed" in str(log)
+        assert "Spider error processing" not in str(log)
+
+    @defer.inlineCallbacks
+    def test_spider_errback_silence(self):
+        failures = []
+
+        def eb(failure: Failure) -> None:
+            failures.append(failure)
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/status?n=400"), errback_func=eb
+            )
+        assert len(failures) == 1
+        assert "HTTP status code is not handled or not allowed" not in str(log)
+        assert "Spider error processing" not in str(log)
+
+    @defer.inlineCallbacks
+    def test_spider_errback_exception(self):
+        def eb(failure: Failure) -> None:
+            raise ValueError("foo")
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/status?n=400"), errback_func=eb
+            )
+        assert "Spider error processing" in str(log)
+
+    @defer.inlineCallbacks
+    def test_spider_errback_downloader_error(self):
+        failures = []
+
+        def eb(failure: Failure) -> Failure:
+            failures.append(failure)
+            return failure
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/drop?abort=1"), errback_func=eb
+            )
+        assert len(failures) == 1
+        assert "Error downloading" in str(log)
+        assert "Spider error processing" not in str(log)
+
+    @defer.inlineCallbacks
+    def test_spider_errback_exception_downloader_error(self):
+        def eb(failure: Failure) -> None:
+            raise ValueError("foo")
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/drop?abort=1"), errback_func=eb
+            )
+        assert "Error downloading" in str(log)
+        assert "Spider error processing" in str(log)
+
+    @defer.inlineCallbacks
+    def test_raise_closespider(self):
+        def cb(response):
+            raise CloseSpider
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(seed=self.mockserver.url("/"), callback_func=cb)
+        assert "Closing spider (cancelled)" in str(log)
+        assert "Spider error processing" not in str(log)
+
+    @defer.inlineCallbacks
+    def test_raise_closespider_reason(self):
+        def cb(response):
+            raise CloseSpider("my_reason")
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(seed=self.mockserver.url("/"), callback_func=cb)
+        assert "Closing spider (my_reason)" in str(log)
+        assert "Spider error processing" not in str(log)

@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 
 import OpenSSL.SSL
 import pytest
-from twisted.internet import defer, reactor
+from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.testing import StringTransport
 from twisted.protocols.policies import WrappingFactory
@@ -205,6 +205,8 @@ class EncodingResource(resource.Resource):
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestWebClient(unittest.TestCase):
     def _listen(self, site):
+        from twisted.internet import reactor
+
         return reactor.listenTCP(0, site, interface="127.0.0.1")
 
     def setUp(self):
@@ -318,6 +320,8 @@ class TestWebClient(unittest.TestCase):
         assert b"404 - No Such Resource" in pageData
 
     def testFactoryInfo(self):
+        from twisted.internet import reactor
+
         url = self.getURL("file")
         parsed = urlparse(url)
         factory = client.ScrapyHTTPClientFactory(Request(url))

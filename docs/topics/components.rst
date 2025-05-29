@@ -37,6 +37,10 @@ That includes the classes that you may assign to the following settings:
 
 -   :setting:`SCHEDULER_PRIORITY_QUEUE`
 
+-   :setting:`SCHEDULER_START_DISK_QUEUE`
+
+-   :setting:`SCHEDULER_START_MEMORY_QUEUE`
+
 -   :setting:`SPIDER_MIDDLEWARES`
 
 Third-party Scrapy components may also let you define additional Scrapy

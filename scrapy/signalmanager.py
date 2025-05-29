@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from pydispatch import dispatcher
+from twisted.internet.defer import Deferred
 
 from scrapy.utils import signal as _signal
-
-if TYPE_CHECKING:
-    from twisted.internet.defer import Deferred
+from scrapy.utils.defer import maybe_deferred_to_future
 
 
 class SignalManager:
@@ -54,17 +53,33 @@ class SignalManager:
         self, signal: Any, **kwargs: Any
     ) -> Deferred[list[tuple[Any, Any]]]:
         """
-        Like :meth:`send_catch_log` but supports returning
-        :class:`~twisted.internet.defer.Deferred` objects from signal handlers.
+        Like :meth:`send_catch_log` but supports :ref:`asynchronous signal
+        handlers <signal-deferred>`.
 
         Returns a Deferred that gets fired once all signal handlers
-        deferreds were fired. Send a signal, catch exceptions and log them.
+        have finished. Send a signal, catch exceptions and log them.
 
         The keyword arguments are passed to the signal handlers (connected
         through the :meth:`connect` method).
         """
         kwargs.setdefault("sender", self.sender)
         return _signal.send_catch_log_deferred(signal, **kwargs)
+
+    async def send_catch_log_async(
+        self, signal: Any, **kwargs: Any
+    ) -> list[tuple[Any, Any]]:
+        """
+        Like :meth:`send_catch_log` but supports :ref:`asynchronous signal
+        handlers <signal-deferred>`.
+
+        Returns a coroutine that completes once all signal handlers
+        have finished. Send a signal, catch exceptions and log them.
+
+        The keyword arguments are passed to the signal handlers (connected
+        through the :meth:`connect` method).
+        """
+        kwargs.setdefault("sender", self.sender)
+        return await _signal.send_catch_log_async(signal, **kwargs)
 
     def disconnect_all(self, signal: Any, **kwargs: Any) -> None:
         """
@@ -75,3 +90,17 @@ class SignalManager:
         """
         kwargs.setdefault("sender", self.sender)
         _signal.disconnect_all(signal, **kwargs)
+
+    async def wait_for(self, signal):
+        """Await the next *signal*.
+
+        See :ref:`start-requests-lazy` for an example.
+        """
+        d = Deferred()
+
+        def handle():
+            self.disconnect(handle, signal)
+            d.callback(None)
+
+        self.connect(handle, signal)
+        await maybe_deferred_to_future(d)

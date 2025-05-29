@@ -39,7 +39,7 @@ class UrlLengthMiddleware(BaseSpiderMiddleware):
         return o
 
     def get_processed_request(
-        self, request: Request, response: Response
+        self, request: Request, response: Response | None
     ) -> Request | None:
         if len(request.url) <= self.maxlength:
             return request

@@ -127,10 +127,7 @@ Request objects
        body to bytes (if given as a string).
     :type encoding: str
 
-    :param priority: the priority of this request (defaults to ``0``).
-       The priority is used by the scheduler to define the order used to process
-       requests.  Requests with a higher priority value will execute earlier.
-       Negative values are allowed in order to indicate relatively low-priority.
+    :param priority: sets :attr:`priority`, defaults to ``0``.
     :type priority: int
 
     :param dont_filter: sets :attr:`dont_filter`, defaults to ``False``.
@@ -178,6 +175,8 @@ Request objects
     .. autoattribute:: callback
 
     .. autoattribute:: errback
+
+    .. autoattribute:: priority
 
     .. attribute:: Request.cb_kwargs
 
@@ -353,7 +352,7 @@ errors if needed:
             "https://example.invalid/",  # DNS error expected
         ]
 
-        def start_requests(self):
+        async def start(self):
             for u in self.start_urls:
                 yield scrapy.Request(
                     u,
@@ -647,6 +646,7 @@ Those are:
 * ``ftp_user`` (See :setting:`FTP_USER` for more info)
 * :reqmeta:`handle_httpstatus_all`
 * :reqmeta:`handle_httpstatus_list`
+* :reqmeta:`is_start_request`
 * :reqmeta:`max_retry_times`
 * :reqmeta:`proxy`
 * :reqmeta:`redirect_reasons`

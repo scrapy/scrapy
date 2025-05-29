@@ -6,7 +6,6 @@ install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
 
 from urllib.parse import urlparse
 
-from twisted.internet import reactor
 from twisted.names import cache, resolve
 from twisted.names import hosts as hostsModule
 from twisted.names.client import Resolver
@@ -32,7 +31,7 @@ def createResolver(servers=None, resolvconf=None, hosts=None):
 class LocalhostSpider(Spider):
     name = "localhost_spider"
 
-    def start_requests(self):
+    async def start(self):
         yield Request(self.url)
 
     def parse(self, response):
@@ -44,6 +43,8 @@ class LocalhostSpider(Spider):
 
 
 if __name__ == "__main__":
+    from twisted.internet import reactor
+
     with MockServer() as mock_http_server, MockDNSServer() as mock_dns_server:
         port = urlparse(mock_http_server.http_address).port
         url = f"http://not.a.real.domain:{port}/echo"

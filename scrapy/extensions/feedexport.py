@@ -531,9 +531,7 @@ class FeedExporter:
             await maybe_deferred_to_future(DeferredList(self._pending_deferreds))
 
         # Send FEED_EXPORTER_CLOSED signal
-        await maybe_deferred_to_future(
-            self.crawler.signals.send_catch_log_deferred(signals.feed_exporter_closed)
-        )
+        await self.crawler.signals.send_catch_log_async(signals.feed_exporter_closed)
 
     def _close_slot(self, slot: FeedSlot, spider: Spider) -> Deferred[None] | None:
         def get_file(slot_: FeedSlot) -> IO[bytes]:

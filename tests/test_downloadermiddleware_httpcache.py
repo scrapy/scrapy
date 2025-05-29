@@ -15,8 +15,7 @@ from scrapy.utils.test import get_crawler
 
 
 class TestBase:
-    storage_class = "scrapy.extensions.httpcache.FilesystemCacheStorage"
-    policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
+    """Base class with common setup and helper methods."""
 
     def setup_method(self):
         self.yesterday = email.utils.formatdate(time.time() - 86400)
@@ -90,23 +89,10 @@ class TestBase:
         )
         assert request1.body == request2.body
 
-    def test_dont_cache(self):
-        with self._middleware() as mw:
-            self.request.meta["dont_cache"] = True
-            mw.process_response(self.request, self.response, self.spider)
-            assert mw.storage.retrieve_response(self.spider, self.request) is None
 
-        with self._middleware() as mw:
-            self.request.meta["dont_cache"] = False
-            mw.process_response(self.request, self.response, self.spider)
-            if mw.policy.should_cache_response(self.response, self.request):
-                assert isinstance(
-                    mw.storage.retrieve_response(self.spider, self.request),
-                    self.response.__class__,
-                )
+class StorageTestMixin:
+    """Mixin containing storage-specific test methods."""
 
-
-class TestDefaultStorage(TestBase):
     def test_storage(self):
         with self._storage() as storage:
             request2 = self.request.copy()
@@ -143,31 +129,27 @@ class TestDefaultStorage(TestBase):
             self.assertEqualResponse(response, cached_response)
 
 
-class TestDbmStorage(TestDefaultStorage):
-    storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
+class PolicyTestMixin:
+    """Mixin containing policy-specific test methods."""
+
+    def test_dont_cache(self):
+        with self._middleware() as mw:
+            self.request.meta["dont_cache"] = True
+            mw.process_response(self.request, self.response, self.spider)
+            assert mw.storage.retrieve_response(self.spider, self.request) is None
+
+        with self._middleware() as mw:
+            self.request.meta["dont_cache"] = False
+            mw.process_response(self.request, self.response, self.spider)
+            if mw.policy.should_cache_response(self.response, self.request):
+                assert isinstance(
+                    mw.storage.retrieve_response(self.spider, self.request),
+                    self.response.__class__,
+                )
 
 
-class TestDbmStorageWithCustomDbmModule(TestDbmStorage):
-    dbm_module = "tests.mocks.dummydbm"
-
-    def _get_settings(self, **new_settings):
-        new_settings.setdefault("HTTPCACHE_DBM_MODULE", self.dbm_module)
-        return super()._get_settings(**new_settings)
-
-    def test_custom_dbm_module_loaded(self):
-        # make sure our dbm module has been loaded
-        with self._storage() as storage:
-            assert storage.dbmodule.__name__ == self.dbm_module
-
-
-class TestFilesystemStorageGzip(TestDefaultStorage):
-    def _get_settings(self, **new_settings):
-        new_settings.setdefault("HTTPCACHE_GZIP", True)
-        return super()._get_settings(**new_settings)
-
-
-class TestDummyPolicy(TestBase):
-    policy_class = "scrapy.extensions.httpcache.DummyPolicy"
+class DummyPolicyTestMixin(PolicyTestMixin):
+    """Mixin containing dummy policy specific test methods."""
 
     def test_middleware(self):
         with self._middleware() as mw:
@@ -258,8 +240,8 @@ class TestDummyPolicy(TestBase):
             assert "cached" in response.flags
 
 
-class TestRFC2616Policy(TestDefaultStorage):
-    policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
+class RFC2616PolicyTestMixin(PolicyTestMixin):
+    """Mixin containing RFC2616 policy specific test methods."""
 
     def _process_requestresponse(self, mw, request, response):
         result = None
@@ -562,3 +544,51 @@ class TestRFC2616Policy(TestDefaultStorage):
                 res2 = self._process_requestresponse(mw, req0, None)
                 self.assertEqualResponse(res1, res2)
                 assert "cached" in res2.flags
+
+
+# Concrete test classes that combine storage and policy mixins
+
+
+class TestFilesystemStorageWithDummyPolicy(
+    TestBase, StorageTestMixin, DummyPolicyTestMixin
+):
+    storage_class = "scrapy.extensions.httpcache.FilesystemCacheStorage"
+    policy_class = "scrapy.extensions.httpcache.DummyPolicy"
+
+
+class TestFilesystemStorageWithRFC2616Policy(
+    TestBase, StorageTestMixin, RFC2616PolicyTestMixin
+):
+    storage_class = "scrapy.extensions.httpcache.FilesystemCacheStorage"
+    policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
+
+
+class TestDbmStorageWithDummyPolicy(TestBase, StorageTestMixin, DummyPolicyTestMixin):
+    storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
+    policy_class = "scrapy.extensions.httpcache.DummyPolicy"
+
+
+class TestDbmStorageWithRFC2616Policy(
+    TestBase, StorageTestMixin, RFC2616PolicyTestMixin
+):
+    storage_class = "scrapy.extensions.httpcache.DbmCacheStorage"
+    policy_class = "scrapy.extensions.httpcache.RFC2616Policy"
+
+
+class TestDbmStorageWithCustomDbmModule(TestDbmStorageWithDummyPolicy):
+    dbm_module = "tests.mocks.dummydbm"
+
+    def _get_settings(self, **new_settings):
+        new_settings.setdefault("HTTPCACHE_DBM_MODULE", self.dbm_module)
+        return super()._get_settings(**new_settings)
+
+    def test_custom_dbm_module_loaded(self):
+        # make sure our dbm module has been loaded
+        with self._storage() as storage:
+            assert storage.dbmodule.__name__ == self.dbm_module
+
+
+class TestFilesystemStorageGzipWithDummyPolicy(TestFilesystemStorageWithDummyPolicy):
+    def _get_settings(self, **new_settings):
+        new_settings.setdefault("HTTPCACHE_GZIP", True)
+        return super()._get_settings(**new_settings)

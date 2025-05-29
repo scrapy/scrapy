@@ -24,9 +24,9 @@ if TYPE_CHECKING:
 class Command(ScrapyCommand):
     requires_project = False
     default_settings = {
+        "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
         "KEEP_ALIVE": True,
         "LOGSTATS_INTERVAL": 0,
-        "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
     }
 
     def syntax(self) -> str:
@@ -85,7 +85,7 @@ class Command(ScrapyCommand):
         crawler._apply_settings()
         # The Shell class needs a persistent engine in the crawler
         crawler.engine = crawler._create_engine()
-        crawler.engine.start()
+        crawler.engine.start(_start_request_processing=False)
 
         self._start_crawler_thread()
 

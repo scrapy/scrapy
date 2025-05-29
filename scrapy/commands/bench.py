@@ -13,9 +13,7 @@ from scrapy.linkextractors import LinkExtractor
 
 if TYPE_CHECKING:
     import argparse
-    from collections.abc import Iterable
-
-    from scrapy import Request
+    from collections.abc import AsyncIterator
 
 
 class Command(ScrapyCommand):
@@ -61,10 +59,10 @@ class _BenchSpider(scrapy.Spider):
     baseurl = "http://localhost:8998"
     link_extractor = LinkExtractor()
 
-    def start_requests(self) -> Iterable[Request]:
+    async def start(self) -> AsyncIterator[Any]:
         qargs = {"total": self.total, "show": self.show}
         url = f"{self.baseurl}?{urlencode(qargs, doseq=True)}"
-        return [scrapy.Request(url, dont_filter=True)]
+        yield scrapy.Request(url, dont_filter=True)
 
     def parse(self, response: Response) -> Any:
         assert isinstance(response, TextResponse)

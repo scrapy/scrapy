@@ -124,6 +124,8 @@ Set some basic configuration:
                 "ITEM_PIPELINES", MyPipeline, 200
             )
 
+.. _priority-dict-helpers:
+
 .. tip:: When editing a :ref:`component priority dictionary
     <component-priority-dictionaries>` setting, like :setting:`ITEM_PIPELINES`,
     consider using setting methods like

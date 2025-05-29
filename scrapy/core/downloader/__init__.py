@@ -5,27 +5,30 @@ import warnings
 from collections import deque
 from datetime import datetime
 from time import time
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet import task
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, inlineCallbacks
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.resolver import dnscache
-from scrapy.utils.defer import mustbe_deferred
+from scrapy.utils.defer import (
+    deferred_from_coro,
+    maybe_deferred_to_future,
+    mustbe_deferred,
+)
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
+
     from scrapy.crawler import Crawler
     from scrapy.http import Response
     from scrapy.settings import BaseSettings
     from scrapy.signalmanager import SignalManager
-
-
-_T = TypeVar("_T")
 
 
 class Slot:
@@ -114,16 +117,17 @@ class Downloader:
             "DOWNLOAD_SLOTS", {}
         )
 
-    def fetch(self, request: Request, spider: Spider) -> Deferred[Response | Request]:
-        def _deactivate(response: _T) -> _T:
-            self.active.remove(request)
-            return response
-
+    @inlineCallbacks
+    def fetch(
+        self, request: Request, spider: Spider
+    ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
-        dfd: Deferred[Response | Request] = self.middleware.download(
-            self._enqueue_request, request, spider
-        )
-        return dfd.addBoth(_deactivate)
+        try:
+            return (
+                yield self.middleware.download(self._enqueue_request, request, spider)
+            )
+        finally:
+            self.active.remove(request)
 
     def needs_backout(self) -> bool:
         return len(self.active) >= self.total_concurrency
@@ -164,22 +168,23 @@ class Downloader:
         )
         return self.get_slot_key(request)
 
-    def _enqueue_request(self, request: Request, spider: Spider) -> Deferred[Response]:
+    @inlineCallbacks
+    def _enqueue_request(
+        self, request: Request, spider: Spider
+    ) -> Generator[Deferred[Any], Any, Response]:
         key, slot = self._get_slot(request, spider)
         request.meta[self.DOWNLOAD_SLOT] = key
-
-        def _deactivate(response: Response) -> Response:
-            slot.active.remove(request)
-            return response
-
         slot.active.add(request)
         self.signals.send_catch_log(
             signal=signals.request_reached_downloader, request=request, spider=spider
         )
-        deferred: Deferred[Response] = Deferred().addBoth(_deactivate)
-        slot.queue.append((request, deferred))
+        d: Deferred[Response] = Deferred()
+        slot.queue.append((request, d))
         self._process_queue(spider, slot)
-        return deferred
+        try:
+            return (yield d)
+        finally:
+            slot.active.remove(request)
 
     def _process_queue(self, spider: Spider, slot: Slot) -> None:
         from twisted.internet import reactor
@@ -202,26 +207,23 @@ class Downloader:
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
             request, deferred = slot.queue.popleft()
-            dfd = self._download(slot, request, spider)
+            dfd = deferred_from_coro(self._download(slot, request, spider))
             dfd.chainDeferred(deferred)
             # prevent burst if inter-request delays were configured
             if delay:
                 self._process_queue(spider, slot)
                 break
 
-    def _download(
-        self, slot: Slot, request: Request, spider: Spider
-    ) -> Deferred[Response]:
-        # The order is very important for the following deferreds. Do not change!
-
-        # 1. Create the download deferred
-        dfd: Deferred[Response] = mustbe_deferred(
-            self.handlers.download_request, request, spider
-        )
-
-        # 2. Notify response_downloaded listeners about the recent download
-        # before querying queue for next request
-        def _downloaded(response: Response) -> Response:
+    async def _download(self, slot: Slot, request: Request, spider: Spider) -> Response:
+        # The order is very important for the following logic. Do not change!
+        slot.transferring.add(request)
+        try:
+            # 1. Download the response
+            response: Response = await maybe_deferred_to_future(
+                mustbe_deferred(self.handlers.download_request, request, spider)
+            )
+            # 2. Notify response_downloaded listeners about the recent download
+            # before querying queue for next request
             self.signals.send_catch_log(
                 signal=signals.response_downloaded,
                 response=response,
@@ -229,24 +231,16 @@ class Downloader:
                 spider=spider,
             )
             return response
-
-        dfd.addCallback(_downloaded)
-
-        # 3. After response arrives, remove the request from transferring
-        # state to free up the transferring slot so it can be used by the
-        # following requests (perhaps those which came from the downloader
-        # middleware itself)
-        slot.transferring.add(request)
-
-        def finish_transferring(_: _T) -> _T:
+        finally:
+            # 3. After response arrives, remove the request from transferring
+            # state to free up the transferring slot so it can be used by the
+            # following requests (perhaps those which came from the downloader
+            # middleware itself)
             slot.transferring.remove(request)
             self._process_queue(spider, slot)
             self.signals.send_catch_log(
                 signal=signals.request_left_downloader, request=request, spider=spider
             )
-            return _
-
-        return dfd.addBoth(finish_transferring)
 
     def close(self) -> None:
         self._slot_gc_loop.stop()

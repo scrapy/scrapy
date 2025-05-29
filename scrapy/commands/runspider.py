@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from scrapy.commands import BaseRunSpiderCommand
 from scrapy.exceptions import UsageError
+from scrapy.spiderloader import DummySpiderLoader
 from scrapy.utils.spider import iter_spider_classes
 
 if TYPE_CHECKING:
@@ -30,7 +31,7 @@ def _import_file(filepath: str | PathLike[str]) -> ModuleType:
 
 class Command(BaseRunSpiderCommand):
     requires_project = False
-    default_settings = {"SPIDER_LOADER_WARN_ONLY": True}
+    default_settings = {"SPIDER_LOADER_CLASS": DummySpiderLoader}
 
     def syntax(self) -> str:
         return "[options] <spider_file>"

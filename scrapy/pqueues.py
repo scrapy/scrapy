@@ -72,7 +72,6 @@ class ScrapyPriorityQueue:
     startprios is a sequence of priorities to start with. If the queue was
     previously closed leaving some priority buckets non-empty, those priorities
     should be passed in startprios.
-
     """
 
     @classmethod
@@ -82,8 +81,16 @@ class ScrapyPriorityQueue:
         downstream_queue_cls: type[QueueProtocol],
         key: str,
         startprios: Iterable[int] = (),
+        *,
+        start_queue_cls: type[QueueProtocol] | None = None,
     ) -> Self:
-        return cls(crawler, downstream_queue_cls, key, startprios)
+        return cls(
+            crawler,
+            downstream_queue_cls,
+            key,
+            startprios,
+            start_queue_cls=start_queue_cls,
+        )
 
     def __init__(
         self,
@@ -91,11 +98,15 @@ class ScrapyPriorityQueue:
         downstream_queue_cls: type[QueueProtocol],
         key: str,
         startprios: Iterable[int] = (),
+        *,
+        start_queue_cls: type[QueueProtocol] | None = None,
     ):
         self.crawler: Crawler = crawler
         self.downstream_queue_cls: type[QueueProtocol] = downstream_queue_cls
+        self._start_queue_cls: type[QueueProtocol] | None = start_queue_cls
         self.key: str = key
         self.queues: dict[int, QueueProtocol] = {}
+        self._start_queues: dict[int, QueueProtocol] = {}
         self.curprio: int | None = None
         self.init_prios(startprios)
 
@@ -104,7 +115,13 @@ class ScrapyPriorityQueue:
             return
 
         for priority in startprios:
-            self.queues[priority] = self.qfactory(priority)
+            q = self.qfactory(priority)
+            if q:
+                self.queues[priority] = q
+            if self._start_queue_cls:
+                q = self._sqfactory(priority)
+                if q:
+                    self._start_queues[priority] = q
 
         self.curprio = min(startprios)
 
@@ -115,29 +132,70 @@ class ScrapyPriorityQueue:
             self.key + "/" + str(key),
         )
 
+    def _sqfactory(self, key: int) -> QueueProtocol:
+        assert self._start_queue_cls is not None
+        return build_from_crawler(
+            self._start_queue_cls,
+            self.crawler,
+            f"{self.key}/{key}s",
+        )
+
     def priority(self, request: Request) -> int:
         return -request.priority
 
     def push(self, request: Request) -> None:
         priority = self.priority(request)
-        if priority not in self.queues:
-            self.queues[priority] = self.qfactory(priority)
-        q = self.queues[priority]
+        is_start_request = request.meta.get("is_start_request", False)
+        if is_start_request and self._start_queue_cls:
+            if priority not in self._start_queues:
+                self._start_queues[priority] = self._sqfactory(priority)
+            q = self._start_queues[priority]
+        else:
+            if priority not in self.queues:
+                self.queues[priority] = self.qfactory(priority)
+            q = self.queues[priority]
         q.push(request)  # this may fail (eg. serialization error)
         if self.curprio is None or priority < self.curprio:
             self.curprio = priority
 
     def pop(self) -> Request | None:
-        if self.curprio is None:
-            return None
-        q = self.queues[self.curprio]
-        m = q.pop()
-        if not q:
-            del self.queues[self.curprio]
-            q.close()
-            prios = [p for p, q in self.queues.items() if q]
-            self.curprio = min(prios) if prios else None
-        return m
+        while self.curprio is not None:
+            try:
+                q = self.queues[self.curprio]
+            except KeyError:
+                pass
+            else:
+                m = q.pop()
+                if not q:
+                    del self.queues[self.curprio]
+                    q.close()
+                    if not self._start_queues:
+                        self._update_curprio()
+                return m
+            if self._start_queues:
+                try:
+                    q = self._start_queues[self.curprio]
+                except KeyError:
+                    self._update_curprio()
+                else:
+                    m = q.pop()
+                    if not q:
+                        del self._start_queues[self.curprio]
+                        q.close()
+                        self._update_curprio()
+                    return m
+            else:
+                self._update_curprio()
+        return None
+
+    def _update_curprio(self) -> None:
+        prios = {
+            p
+            for queues in (self.queues, self._start_queues)
+            for p, q in queues.items()
+            if q
+        }
+        self.curprio = min(prios) if prios else None
 
     def peek(self) -> Request | None:
         """Returns the next object to be returned by :meth:`pop`,
@@ -148,19 +206,31 @@ class ScrapyPriorityQueue:
         """
         if self.curprio is None:
             return None
-        queue = self.queues[self.curprio]
+        try:
+            queue = self._start_queues[self.curprio]
+        except KeyError:
+            queue = self.queues[self.curprio]
         # Protocols can't declare optional members
         return cast(Request, queue.peek())  # type: ignore[attr-defined]
 
     def close(self) -> list[int]:
-        active: list[int] = []
-        for p, q in self.queues.items():
-            active.append(p)
-            q.close()
-        return active
+        active: set[int] = set()
+        for queues in (self.queues, self._start_queues):
+            for p, q in queues.items():
+                active.add(p)
+                q.close()
+        return list(active)
 
     def __len__(self) -> int:
-        return sum(len(x) for x in self.queues.values()) if self.queues else 0
+        return (
+            sum(
+                len(x)
+                for queues in (self.queues, self._start_queues)
+                for x in queues.values()
+            )
+            if self.queues or self._start_queues
+            else 0
+        )
 
 
 class DownloaderInterface:
@@ -194,8 +264,16 @@ class DownloaderAwarePriorityQueue:
         downstream_queue_cls: type[QueueProtocol],
         key: str,
         startprios: dict[str, Iterable[int]] | None = None,
+        *,
+        start_queue_cls: type[QueueProtocol] | None = None,
     ) -> Self:
-        return cls(crawler, downstream_queue_cls, key, startprios)
+        return cls(
+            crawler,
+            downstream_queue_cls,
+            key,
+            startprios,
+            start_queue_cls=start_queue_cls,
+        )
 
     def __init__(
         self,
@@ -203,6 +281,8 @@ class DownloaderAwarePriorityQueue:
         downstream_queue_cls: type[QueueProtocol],
         key: str,
         slot_startprios: dict[str, Iterable[int]] | None = None,
+        *,
+        start_queue_cls: type[QueueProtocol] | None = None,
     ):
         if crawler.settings.getint("CONCURRENT_REQUESTS_PER_IP") != 0:
             raise ValueError(
@@ -222,6 +302,7 @@ class DownloaderAwarePriorityQueue:
 
         self._downloader_interface: DownloaderInterface = DownloaderInterface(crawler)
         self.downstream_queue_cls: type[QueueProtocol] = downstream_queue_cls
+        self._start_queue_cls: type[QueueProtocol] | None = start_queue_cls
         self.key: str = key
         self.crawler: Crawler = crawler
 
@@ -237,6 +318,7 @@ class DownloaderAwarePriorityQueue:
             self.downstream_queue_cls,
             self.key + "/" + _path_safe(slot),
             startprios,
+            start_queue_cls=self._start_queue_cls,
         )
 
     def pop(self) -> Request | None:

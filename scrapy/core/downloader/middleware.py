@@ -20,8 +20,6 @@ from scrapy.utils.defer import deferred_from_coro, mustbe_deferred
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-    from twisted.python.failure import Failure
-
     from scrapy import Spider
     from scrapy.settings import BaseSettings
 
@@ -41,12 +39,13 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         if hasattr(mw, "process_exception"):
             self.methods["process_exception"].appendleft(mw.process_exception)
 
+    @inlineCallbacks
     def download(
         self,
         download_func: Callable[[Request, Spider], Deferred[Response]],
         request: Request,
         spider: Spider,
-    ) -> Deferred[Response | Request]:
+    ) -> Generator[Deferred[Any], Any, Response | Request]:
         @inlineCallbacks
         def process_request(
             request: Request,
@@ -92,9 +91,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):
 
         @inlineCallbacks
         def process_exception(
-            failure: Failure,
-        ) -> Generator[Deferred[Any], Any, Failure | Response | Request]:
-            exception = failure.value
+            exception: Exception,
+        ) -> Generator[Deferred[Any], Any, Response | Request]:
             for method in self.methods["process_exception"]:
                 method = cast(Callable, method)
                 response = yield deferred_from_coro(
@@ -109,11 +107,12 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     )
                 if response:
                     return response
-            return failure
+            raise exception
 
-        deferred: Deferred[Response | Request] = mustbe_deferred(
-            process_request, request
-        )
-        deferred.addErrback(process_exception)
-        deferred.addCallback(process_response)
-        return deferred
+        try:
+            result: Response | Request = yield mustbe_deferred(process_request, request)
+        except Exception as ex:
+            # either returns a request or response (which we pass to process_response())
+            # or reraises the exception
+            result = yield process_exception(ex)
+        return (yield process_response(result))

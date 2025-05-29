@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
-from twisted.internet import error, reactor
+from twisted.internet import error
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.python import failure
 from twisted.trial import unittest
@@ -53,6 +53,8 @@ Disallow: /some/randome/page.html
         response = TextResponse("http://site.local/robots.txt", body=ROBOTS)
 
         def return_response(request):
+            from twisted.internet import reactor
+
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
@@ -102,6 +104,8 @@ Disallow: /some/randome/page.html
         )
 
         def return_response(request):
+            from twisted.internet import reactor
+
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
@@ -124,6 +128,8 @@ Disallow: /some/randome/page.html
         response = Response("http://site.local/robots.txt")
 
         def return_response(request):
+            from twisted.internet import reactor
+
             deferred = Deferred()
             reactor.callFromThread(deferred.callback, response)
             return deferred
@@ -145,6 +151,8 @@ Disallow: /some/randome/page.html
         err = error.DNSLookupError("Robotstxt address not found")
 
         def return_failure(request):
+            from twisted.internet import reactor
+
             deferred = Deferred()
             reactor.callFromThread(deferred.errback, failure.Failure(err))
             return deferred
@@ -178,6 +186,8 @@ Disallow: /some/randome/page.html
         self.crawler.settings.set("ROBOTSTXT_OBEY", True)
 
         def ignore_request(request):
+            from twisted.internet import reactor
+
             deferred = Deferred()
             reactor.callFromThread(deferred.errback, failure.Failure(IgnoreRequest()))
             return deferred
