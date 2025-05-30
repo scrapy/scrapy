@@ -21,6 +21,7 @@ from scrapy.exceptions import (
     ScrapyDeprecationWarning,
 )
 from scrapy.http import Request, Response
+from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
     _defer_sleep,
     aiter_errback,
@@ -328,11 +329,21 @@ class Scraper:
         response: Response,
     ) -> None:
         """Pass items/requests produced by a callback to ``_process_spidermw_output()`` in parallel."""
+        it: Iterable[_T] | AsyncIterator[_T]
+        if is_asyncio_available():
+            if isinstance(result, AsyncIterator):
+                it = aiter_errback(result, self.handle_spider_error, request, response)
+            else:
+                it = iter_errback(result, self.handle_spider_error, request, response)
+            await _parallel_asyncio(
+                it, self.concurrent_items, self._process_spidermw_output_async, response
+            )
+            return
         if isinstance(result, AsyncIterator):
-            ait = aiter_errback(result, self.handle_spider_error, request, response)
+            it = aiter_errback(result, self.handle_spider_error, request, response)
             await maybe_deferred_to_future(
                 parallel_async(
-                    ait,
+                    it,
                     self.concurrent_items,
                     self._process_spidermw_output,
                     response,
@@ -349,8 +360,19 @@ class Scraper:
             )
         )
 
-    @deferred_f_from_coro_f
-    async def _process_spidermw_output(self, output: Any, response: Response) -> None:
+    def _process_spidermw_output(
+        self, output: Any, response: Response
+    ) -> Deferred[None]:
+        """Process each Request/Item (given in the output parameter) returned
+        from the given spider.
+
+        Items are sent to the item pipelines, requests are scheduled.
+        """
+        return deferred_from_coro(self._process_spidermw_output_async(output, response))
+
+    async def _process_spidermw_output_async(
+        self, output: Any, response: Response
+    ) -> None:
         """Process each Request/Item (given in the output parameter) returned
         from the given spider.
 

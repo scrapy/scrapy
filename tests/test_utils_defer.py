@@ -164,7 +164,7 @@ class TestAsyncDefTestsuite(unittest.TestCase):
         raise RuntimeError("This is expected to be raised")
 
 
-class TestAsyncCooperator(unittest.TestCase):
+class TestParallelAsync(unittest.TestCase):
     """This tests _AsyncCooperatorAdapter by testing parallel_async which is its only usage.
 
     parallel_async is called with the results of a callback (so an iterable of items, requests and None,
@@ -194,6 +194,27 @@ class TestAsyncCooperator(unittest.TestCase):
         results.append(o)
         return None
 
+    def callable_wrapped(
+        self,
+        o: int,
+        results: list[int],
+        parallel_count: list[int],
+        max_parallel_count: list[int],
+    ) -> Deferred[None] | None:
+        parallel_count[0] += 1
+        max_parallel_count[0] = max(max_parallel_count[0], parallel_count[0])
+        dfd = self.callable(o, results)
+
+        def decrement(_: Any = None) -> None:
+            assert parallel_count[0] > 0, parallel_count[0]
+            parallel_count[0] -= 1
+
+        if dfd is not None:
+            dfd.addBoth(decrement)
+        else:
+            decrement()
+        return dfd
+
     @staticmethod
     def get_async_iterable(length: int) -> AsyncGenerator[int, None]:
         # simulate a simple callback without delays between results
@@ -215,20 +236,42 @@ class TestAsyncCooperator(unittest.TestCase):
     @inlineCallbacks
     def test_simple(self):
         for length in [20, 50, 100]:
+            parallel_count = [0]
+            max_parallel_count = [0]
             results = []
             ait = self.get_async_iterable(length)
-            dl = parallel_async(ait, self.CONCURRENT_ITEMS, self.callable, results)
+            dl = parallel_async(
+                ait,
+                self.CONCURRENT_ITEMS,
+                self.callable_wrapped,
+                results,
+                parallel_count,
+                max_parallel_count,
+            )
             yield dl
             assert list(range(length)) == sorted(results)
+            assert parallel_count[0] == 0
+            assert max_parallel_count[0] <= self.CONCURRENT_ITEMS, max_parallel_count[0]
 
     @inlineCallbacks
     def test_delays(self):
         for length in [20, 50, 100]:
+            parallel_count = [0]
+            max_parallel_count = [0]
             results = []
             ait = self.get_async_iterable_with_delays(length)
-            dl = parallel_async(ait, self.CONCURRENT_ITEMS, self.callable, results)
+            dl = parallel_async(
+                ait,
+                self.CONCURRENT_ITEMS,
+                self.callable_wrapped,
+                results,
+                parallel_count,
+                max_parallel_count,
+            )
             yield dl
             assert list(range(length)) == sorted(results)
+            assert parallel_count[0] == 0
+            assert max_parallel_count[0] <= self.CONCURRENT_ITEMS, max_parallel_count[0]
 
 
 class TestDeferredFromCoro(unittest.TestCase):
