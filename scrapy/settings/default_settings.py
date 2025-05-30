@@ -179,6 +179,8 @@ FEED_STORAGE_S3_ACL = ""
 FILES_STORE_S3_ACL = "private"
 FILES_STORE_GCS_ACL = ""
 
+FORCE_CRAWLER_PROCESS = False
+
 FTP_USER = "anonymous"
 FTP_PASSWORD = "guest"  # noqa: S105
 FTP_PASSIVE_MODE = True

@@ -5,6 +5,7 @@ import contextlib
 import logging
 import pprint
 import signal
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from twisted.internet.defer import (
@@ -42,7 +43,7 @@ from scrapy.utils.reactor import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Iterable
+    from collections.abc import Awaitable, Generator, Iterable
 
     from scrapy.logformatter import LogFormatter
     from scrapy.statscollectors import StatsCollector
@@ -321,7 +322,7 @@ class Crawler:
         return self._get_component(cls, self.engine.scraper.spidermw.middlewares)
 
 
-class CrawlerRunnerBase:
+class CrawlerRunnerBase(ABC):
     def __init__(self, settings: dict[str, Any] | Settings | None = None):
         if isinstance(settings, dict) or settings is None:
             settings = Settings(settings)
@@ -363,6 +364,15 @@ class CrawlerRunnerBase:
         if isinstance(spidercls, str):
             spidercls = self.spider_loader.load(spidercls)
         return Crawler(spidercls, self.settings)
+
+    @abstractmethod
+    def crawl(
+        self,
+        crawler_or_spidercls: type[Spider] | str | Crawler,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Awaitable[None]:
+        raise NotImplementedError
 
 
 class CrawlerRunner(CrawlerRunnerBase):
@@ -560,6 +570,12 @@ class CrawlerProcessBase(CrawlerRunnerBase):
         configure_logging(self.settings, install_root_handler)
         log_scrapy_info(self.settings)
 
+    @abstractmethod
+    def start(
+        self, stop_after_crawl: bool = True, install_signal_handlers: bool = True
+    ) -> None:
+        raise NotImplementedError
+
     def _signal_shutdown(self, signum: int, _: Any) -> None:
         from twisted.internet import reactor
 
@@ -597,6 +613,7 @@ class CrawlerProcessBase(CrawlerRunnerBase):
                 "after", "startup", install_shutdown_handlers, self._signal_shutdown
             )
 
+    @abstractmethod
     def _stop_dfd(self) -> Deferred[Any]:
         raise NotImplementedError
 

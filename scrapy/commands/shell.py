@@ -22,7 +22,6 @@ if TYPE_CHECKING:
 
 
 class Command(ScrapyCommand):
-    requires_project = False
     default_settings = {
         "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
         "KEEP_ALIVE": True,

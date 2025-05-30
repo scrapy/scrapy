@@ -46,7 +46,6 @@ def verify_url_scheme(url: str) -> str:
 
 
 class Command(ScrapyCommand):
-    requires_project = False
     requires_crawler_process = False
     default_settings = {"LOG_ENABLED": False}
 

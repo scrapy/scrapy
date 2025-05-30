@@ -7,6 +7,7 @@ from pexpect.popen_spawn import PopenSpawn
 from twisted.internet import defer
 from twisted.trial import unittest
 
+from scrapy.utils.reactor import _asyncio_reactor_path
 from tests import NON_EXISTING_RESOLVABLE, tests_datadir
 from tests.mockserver import MockServer
 from tests.utils.testproc import ProcessTest
@@ -132,10 +133,9 @@ class TestShellCommand(ProcessTest, SiteTest, unittest.TestCase):
 
     @defer.inlineCallbacks
     def test_shell_fetch_async(self):
-        reactor_path = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
         url = self.url("/html")
         code = f"fetch('{url}')"
-        args = ["-c", code, "--set", f"TWISTED_REACTOR={reactor_path}"]
+        args = ["-c", code, "--set", f"TWISTED_REACTOR={_asyncio_reactor_path}"]
         _, _, err = yield self.execute(args, check_code=True)
         assert b"RuntimeError: There is no current event loop in thread" not in err
 

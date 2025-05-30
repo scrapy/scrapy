@@ -65,8 +65,10 @@ class BadSpider(scrapy.Spider):
     def test_runspider(self):
         log = self.get_log(self.debug_log_spider)
         assert "DEBUG: It Works!" in log
-        assert "INFO: Spider opened" in log
-        assert "INFO: Closing spider (finished)" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
+        )
         assert "INFO: Spider closed (finished)" in log
 
     def test_run_fail_spider(self):
@@ -87,6 +89,17 @@ class BadSpider(scrapy.Spider):
         log = self.get_log(self.debug_log_spider, args=("-s", "LOG_LEVEL=INFO"))
         assert "DEBUG: It Works!" not in log
         assert "INFO: Spider opened" in log
+
+    def test_runspider_default_reactor(self):
+        log = self.get_log(self.debug_log_spider, args=("-s", "TWISTED_REACTOR="))
+        assert "DEBUG: It Works!" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            not in log
+        )
+        assert "INFO: Spider opened" in log
+        assert "INFO: Closing spider (finished)" in log
+        assert "INFO: Spider closed (finished)" in log
 
     def test_runspider_dnscache_disabled(self):
         # see https://github.com/scrapy/scrapy/issues/2811

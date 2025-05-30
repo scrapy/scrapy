@@ -30,7 +30,6 @@ def _import_file(filepath: str | PathLike[str]) -> ModuleType:
 
 
 class Command(BaseRunSpiderCommand):
-    requires_project = False
     default_settings = {"SPIDER_LOADER_CLASS": DummySpiderLoader}
 
     def syntax(self) -> str:
