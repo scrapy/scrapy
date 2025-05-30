@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import shutil
 import sys
 from abc import ABC, abstractmethod
@@ -231,7 +232,9 @@ class TestHttpBase(unittest.TestCase, ABC):
         meta = {"download_timeout": 0.5}
         request = Request(self.getURL("wait"), meta=meta)
         d = self.download_request(request, spider)
-        yield self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
+        yield self.assertFailure(
+            d, defer.TimeoutError, error.TimeoutError, asyncio.TimeoutError
+        )
 
     @defer.inlineCallbacks
     def test_timeout_download_from_spider_server_hangs(self):
@@ -245,7 +248,9 @@ class TestHttpBase(unittest.TestCase, ABC):
         meta = {"download_timeout": 0.5}
         request = Request(self.getURL("hang-after-headers"), meta=meta)
         d = self.download_request(request, spider)
-        yield self.assertFailure(d, defer.TimeoutError, error.TimeoutError)
+        yield self.assertFailure(
+            d, defer.TimeoutError, error.TimeoutError, asyncio.TimeoutError
+        )
 
     def test_host_header_not_in_request_headers(self):
         def _test(response):
