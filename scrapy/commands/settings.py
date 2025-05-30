@@ -6,7 +6,6 @@ from scrapy.settings import BaseSettings
 
 
 class Command(ScrapyCommand):
-    requires_project = False
     requires_crawler_process = False
     default_settings = {"LOG_ENABLED": False}
 

@@ -18,14 +18,14 @@ from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from scrapy.crawler import Crawler, CrawlerProcess
+    from scrapy.crawler import Crawler, CrawlerProcessBase
     from scrapy.settings import Settings
 
 
 class ScrapyCommand:
     requires_project: bool = False
     requires_crawler_process: bool = True
-    crawler_process: CrawlerProcess | None = None  # set in scrapy.cmdline
+    crawler_process: CrawlerProcessBase | None = None  # set in scrapy.cmdline
 
     # default settings to be used for this command instead of global defaults
     default_settings: dict[str, Any] = {}

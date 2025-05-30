@@ -256,7 +256,7 @@ class TestDeferredFromCoro(unittest.TestCase):
     @inlineCallbacks
     def test_coroutine_asyncio(self):
         async def coroutine() -> int:
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.01)
             return 42
 
         result = deferred_from_coro(coroutine())
@@ -336,7 +336,7 @@ class TestDeferredToFuture(unittest.TestCase):
     @deferred_f_from_coro_f
     async def test_wrapped_coroutine_asyncio(self):
         async def c_f() -> int:
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.01)
             return 42
 
         d = deferred_from_coro(c_f())
@@ -371,7 +371,7 @@ class TestMaybeDeferredToFutureAsyncio(unittest.TestCase):
     @deferred_f_from_coro_f
     async def test_wrapped_coroutine_asyncio(self):
         async def c_f() -> int:
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.01)
             return 42
 
         d = deferred_from_coro(c_f())
