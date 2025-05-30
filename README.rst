@@ -1,40 +1,41 @@
-.. raw:: html
+|logo|
 
-    <p align="center">
-        <a href="https://scrapy.org/">
-            <img src="https://raw.githubusercontent.com/scrapy/scrapy/master/docs/_static/logo.svg" alt="Scrapy" width="480px">
-        </a>
-    </p>
+.. |logo| image:: https://raw.githubusercontent.com/scrapy/scrapy/master/docs/_static/logo.svg
+   :target: https://scrapy.org
+   :alt: Scrapy
+   :width: 480px
 
-.. image:: https://img.shields.io/pypi/v/Scrapy.svg
+|version| |python_version| |ubuntu| |macos| |windows| |coverage| |conda| |deepwiki|
+
+.. |version| image:: https://img.shields.io/pypi/v/Scrapy.svg
    :target: https://pypi.org/pypi/Scrapy
    :alt: PyPI Version
 
-.. image:: https://img.shields.io/pypi/pyversions/Scrapy.svg
+.. |python_version| image:: https://img.shields.io/pypi/pyversions/Scrapy.svg
    :target: https://pypi.org/pypi/Scrapy
    :alt: Supported Python Versions
 
-.. image:: https://github.com/scrapy/scrapy/workflows/Ubuntu/badge.svg
+.. |ubuntu| image:: https://github.com/scrapy/scrapy/workflows/Ubuntu/badge.svg
    :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AUbuntu
    :alt: Ubuntu
 
-.. image:: https://github.com/scrapy/scrapy/workflows/macOS/badge.svg
+.. |macos| image:: https://github.com/scrapy/scrapy/workflows/macOS/badge.svg
    :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AmacOS
    :alt: macOS
 
-.. image:: https://github.com/scrapy/scrapy/workflows/Windows/badge.svg
+.. |windows| image:: https://github.com/scrapy/scrapy/workflows/Windows/badge.svg
    :target: https://github.com/scrapy/scrapy/actions?query=workflow%3AWindows
    :alt: Windows
 
-.. image:: https://img.shields.io/codecov/c/github/scrapy/scrapy/master.svg
+.. |coverage| image:: https://img.shields.io/codecov/c/github/scrapy/scrapy/master.svg
    :target: https://codecov.io/github/scrapy/scrapy?branch=master
    :alt: Coverage report
 
-.. image:: https://anaconda.org/conda-forge/scrapy/badges/version.svg
+.. |conda| image:: https://anaconda.org/conda-forge/scrapy/badges/version.svg
    :target: https://anaconda.org/conda-forge/scrapy
    :alt: Conda Version
 
-.. image:: https://deepwiki.com/badge.svg
+.. |deepwiki| image:: https://deepwiki.com/badge.svg
    :target: https://deepwiki.com/scrapy/scrapy
    :alt: Ask DeepWiki
 
