@@ -54,6 +54,14 @@ class BaseItemExporter:
         if not dont_fail and options:
             raise TypeError(f"Unexpected options: {', '.join(options.keys())}")
 
+    @staticmethod
+    def _get_ordered_attrs(item: Any) -> list[str]:
+        """Return the ordered attributes if available."""
+        if isinstance(item, Item):
+            attrs = getattr(item, "_ordered_attrs", [])
+            return attrs if isinstance(attrs, list) else []
+        return []
+
     def export_item(self, item: Any) -> None:
         raise NotImplementedError
 
@@ -79,7 +87,7 @@ class BaseItemExporter:
 
         if include_empty is None:
             include_empty = self.export_empty_fields
-
+        ordered_attrs = self._get_ordered_attrs(item)
         if self.fields_to_export is None:
             field_iter = item.field_names() if include_empty else item.keys()
         elif isinstance(self.fields_to_export, Mapping):
@@ -91,6 +99,8 @@ class BaseItemExporter:
                 )
         elif include_empty:
             field_iter = self.fields_to_export
+        elif ordered_attrs:
+            field_iter = (f for f in ordered_attrs if f in item)
         else:
             field_iter = (x for x in self.fields_to_export if x in item)
 
@@ -99,6 +109,7 @@ class BaseItemExporter:
                 item_field, output_field = field_name, field_name
             else:
                 item_field, output_field = field_name
+
             if item_field in item:
                 field_meta = item.get_field_meta(item_field)
                 value = self.serialize_field(field_meta, output_field, item[item_field])
@@ -282,12 +293,14 @@ class CsvItemExporter(BaseItemExporter):
             if not self.fields_to_export:
                 # use declared field names, or keys if the item is a dict
                 self.fields_to_export = ItemAdapter(item).field_names()
+
             fields: Iterable[str]
             if isinstance(self.fields_to_export, Mapping):
                 fields = self.fields_to_export.values()
             else:
                 assert self.fields_to_export
                 fields = self.fields_to_export
+
             row = list(self._build_row(fields))
             self.csv_writer.writerow(row)
 
