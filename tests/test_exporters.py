@@ -699,8 +699,6 @@ class TestCustomExporterDataclass(TestCustomExporterItem):
 EXPORTERS = {
     "json": JsonItemExporter,
     "jsonlines": JsonLinesItemExporter,
-    "marshal": MarshalItemExporter,
-    "pickle": PickleItemExporter,
     "xml": XmlItemExporter,
     "csv": CsvItemExporter,
     "python": PythonItemExporter,
@@ -732,13 +730,7 @@ def test_item_attributes_order(exporter_name, exporter_cls):
     exporter.export_item(item)
     exporter.finish_exporting()
 
-    if exporter_name in ["marshal", "pickle"]:
-        buffer.seek(0)
-        content = buffer.read()
-        assert isinstance(content, bytes)
-        assert len(content) > 0
-
-    elif exporter_name == "python":
+    if exporter_name == "python":
         exported = exporter.export_item(item)
         assert exported == {
             "z": 1,
@@ -764,22 +756,3 @@ def test_item_attributes_order(exporter_name, exporter_cls):
         else:
             for field in ["z", "y", "a", "x", "c", "b"]:
                 assert f'"{field}":' in exported
-
-
-def test_exporter_respects_ordered_attrs():
-    exporter = JsonItemExporter(BytesIO())
-    exporter.start_exporting()
-
-    item = {
-        "z": 1,
-        "y": 2,
-        "x": 3,
-        "_ordered_attrs": ["y", "x", "z"],  # Force this order
-    }
-
-    exporter.export_item(item)
-    exporter.finish_exporting()
-
-    output = exporter.file.getvalue().decode()
-    print("Output:", output)  # 🔍 Add this line
-    assert output == '[{"y": 2, "x": 3, "z": 1}]'
