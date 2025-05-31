@@ -69,8 +69,8 @@ class OffsiteMiddleware(BaseSpiderMiddleware):
                 {"domain": domain, "request": request},
                 extra={"spider": self.crawler.spider},
             )
-            self.stats.inc_value("offsite/domains", spider=self.crawler.spider)
-        self.stats.inc_value("offsite/filtered", spider=self.crawler.spider)
+            self.stats.inc_value("offsite/domains")
+        self.stats.inc_value("offsite/filtered")
         return None
 
     def should_follow(self, request: Request, spider: Spider) -> bool:

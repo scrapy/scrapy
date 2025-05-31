@@ -694,8 +694,8 @@ class FilesPipeline(MediaPipeline):
 
     def inc_stats(self, spider: Spider, status: str) -> None:
         assert spider.crawler.stats
-        spider.crawler.stats.inc_value("file_count", spider=spider)
-        spider.crawler.stats.inc_value(f"file_status_count/{status}", spider=spider)
+        spider.crawler.stats.inc_value("file_count")
+        spider.crawler.stats.inc_value(f"file_status_count/{status}")
 
     # Overridable Interface
     def get_media_requests(
