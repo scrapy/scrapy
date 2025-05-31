@@ -189,7 +189,7 @@ def log_scrapy_info(settings: Settings) -> None:
         "Scrapy %(version)s started (bot: %(bot)s)",
         {"version": scrapy.__version__, "bot": settings["BOT_NAME"]},
     )
-    software = settings.getlist("LOG_VERSIONS")
+    software: list[str] = settings.getlist("LOG_VERSIONS")
     if not software:
         return
     versions = pprint.pformat(dict(get_versions(software)), sort_dicts=False)

@@ -265,5 +265,5 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         logger.warning(warning_msg)
         raise DownloadCancelledError(warning_msg)
 
-    async def close(self):
+    async def close(self) -> None:
         await self._client.aclose()

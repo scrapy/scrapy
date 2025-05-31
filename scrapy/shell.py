@@ -104,7 +104,7 @@ class Shell:
             event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
             set_asyncio_event_loop(event_loop_path)
 
-        def crawl_request(_):
+        def crawl_request(_: None) -> None:
             assert self.crawler.engine is not None
             self.crawler.engine.crawl(request)
 
