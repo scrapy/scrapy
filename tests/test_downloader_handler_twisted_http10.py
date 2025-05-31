@@ -9,6 +9,7 @@ import pytest
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.http import Request
 from scrapy.spiders import Spider
+from scrapy.utils.defer import deferred_f_from_coro_f
 from tests.test_downloader_handlers_http_base import TestHttpBase, TestHttpProxyBase
 
 if TYPE_CHECKING:
@@ -25,12 +26,11 @@ class HTTP10DownloadHandlerMixin:
 class TestHttp10(HTTP10DownloadHandlerMixin, TestHttpBase):
     """HTTP 1.0 test case"""
 
-    def test_protocol(self):
+    @deferred_f_from_coro_f
+    async def test_protocol(self):
         request = Request(self.getURL("host"), method="GET")
-        d = self.download_request(request, Spider("foo"))
-        d.addCallback(lambda r: r.protocol)
-        d.addCallback(self.assertEqual, "HTTP/1.0")
-        return d
+        response = await self.download_request(request, Spider("foo"))
+        assert response.protocol == "HTTP/1.0"
 
 
 class TestHttps10(TestHttp10):
