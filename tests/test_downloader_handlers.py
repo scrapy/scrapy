@@ -123,7 +123,8 @@ class TestFile(unittest.TestCase):
     @deferred_f_from_coro_f
     async def test_non_existent(self):
         request = Request(path_to_file_uri(mkdtemp()))
-        with pytest.raises(IsADirectoryError):
+        # the specific exception differs between platforms
+        with pytest.raises(OSError):  # noqa: PT011
             await self.download_request(request, Spider("foo"))
 
 
