@@ -19,11 +19,13 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from scrapy.crawler import Crawler, CrawlerProcess
+    from scrapy.settings import Settings
 
 
 class ScrapyCommand:
     requires_project: bool = False
-    crawler_process: CrawlerProcess | None = None
+    requires_crawler_process: bool = True
+    crawler_process: CrawlerProcess | None = None  # set in scrapy.cmdline
 
     # default settings to be used for this command instead of global defaults
     default_settings: dict[str, Any] = {}
@@ -31,7 +33,7 @@ class ScrapyCommand:
     exitcode: int = 0
 
     def __init__(self) -> None:
-        self.settings: Any = None  # set in scrapy.cmdline
+        self.settings: Settings | None = None  # set in scrapy.cmdline
 
     def set_crawler(self, crawler: Crawler) -> None:
         if hasattr(self, "_crawler"):
@@ -68,6 +70,7 @@ class ScrapyCommand:
         """
         Populate option parse with options available for this command
         """
+        assert self.settings is not None
         group = parser.add_argument_group(title="Global Options")
         group.add_argument(
             "--logfile", metavar="FILE", help="log file. if omitted stderr will be used"
@@ -100,6 +103,7 @@ class ScrapyCommand:
         group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
 
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
+        assert self.settings is not None
         try:
             self.settings.setdict(arglist_to_dict(opts.set), priority="cmdline")
         except ValueError:
@@ -170,6 +174,7 @@ class BaseRunSpiderCommand(ScrapyCommand):
         except ValueError:
             raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
         if opts.output or opts.overwrite_output:
+            assert self.settings is not None
             feeds = feed_process_params_from_cli(
                 self.settings,
                 opts.output,
