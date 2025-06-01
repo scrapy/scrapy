@@ -99,9 +99,11 @@ class CrawlSpider(Spider):
         self._compile_rules()
         if method_is_overridden(self.__class__, CrawlSpider, "_parse_response"):
             warnings.warn(
-                "CrawlSpider._parse_response method is deprecated: "
-                "it will be removed in future Scrapy releases. "
-                "Please override CrawlSpider.parse_with_rules method instead."
+                f"The CrawlSpider._parse_response method, which the "
+                f"{global_object_name(self.__class__)} class overrides, is "
+                f"deprecated: it will be removed in future Scrapy releases. "
+                f"Please override the CrawlSpider.parse_with_rules method "
+                f"instead."
             )
 
     def _parse(self, response: Response, **kwargs: Any) -> Any:
@@ -187,9 +189,10 @@ class CrawlSpider(Spider):
         follow: bool = True,
     ) -> AsyncIterator[Any]:
         warnings.warn(
-            "CrawlSpider._parse_response method is deprecated: "
+            "The CrawlSpider._parse_response method is deprecated: "
             "it will be removed in future Scrapy releases. "
-            "Please use CrawlSpider.parse_with_rules method instead."
+            "Please use the CrawlSpider.parse_with_rules method instead.",
+            stacklevel=2,
         )
         return self.parse_with_rules(response, callback, cb_kwargs, follow)
 
