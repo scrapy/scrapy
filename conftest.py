@@ -19,6 +19,10 @@ collect_ignore = [
     "tests/mockserver.py",
     "tests/pipelines.py",
     "tests/spiders.py",
+    # contains scripts to be run by tests/test_crawler.py::AsyncCrawlerProcessSubprocess
+    *_py_files("tests/AsyncCrawlerProcess"),
+    # contains scripts to be run by tests/test_crawler.py::AsyncCrawlerRunnerSubprocess
+    *_py_files("tests/AsyncCrawlerRunner"),
     # contains scripts to be run by tests/test_crawler.py::CrawlerProcessSubprocess
     *_py_files("tests/CrawlerProcess"),
     # contains scripts to be run by tests/test_crawler.py::CrawlerRunnerSubprocess
@@ -119,6 +123,9 @@ def requires_boto3(request):
 def pytest_configure(config):
     if config.getoption("--reactor") != "default":
         install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+    else:
+        # install the reactor explicitly
+        from twisted.internet import reactor  # noqa: F401
 
 
 # Generate localhost certificate files, needed by some tests

@@ -41,6 +41,9 @@ jobs:
         - python-version: pypy3.10
           env:
             TOXENV: pypy3
+        - python-version: pypy3.11
+          env:
+            TOXENV: pypy3
 
         # pinned deps
         - python-version: "3.9.21"
@@ -62,7 +65,7 @@ jobs:
         - python-version: "3.14.0-alpha.5"
           env:
             TOXENV: extra-deps
-        - python-version: pypy3.10
+        - python-version: pypy3.11
           env:
             TOXENV: pypy3-extra-deps
         - python-version: "3.14.0-alpha.5"
@@ -91,3 +94,7 @@ jobs:
 
     - name: Upload coverage report
       uses: codecov/codecov-action@v5
+
+    - name: Upload test results
+      if: ${{ !cancelled() }}
+      uses: codecov/test-results-action@v1

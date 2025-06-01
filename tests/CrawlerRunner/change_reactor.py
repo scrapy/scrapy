@@ -10,8 +10,9 @@ class NoRequestsSpider(Spider):
         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
     }
 
-    def start_requests(self):
-        return []
+    async def start(self):
+        return
+        yield
 
 
 configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s", "LOG_LEVEL": "DEBUG"})
@@ -25,7 +26,7 @@ runner = CrawlerRunner()
 
 d = runner.crawl(NoRequestsSpider)
 
-from twisted.internet import reactor  # noqa: E402
+from twisted.internet import reactor  # noqa: E402,TID253
 
 d.addBoth(callback=lambda _: reactor.stop())
 reactor.run()

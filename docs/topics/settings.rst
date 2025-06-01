@@ -162,8 +162,17 @@ Those command-specific default settings are specified in the
 6. Default global settings
 --------------------------
 
-The global defaults are located in the ``scrapy.settings.default_settings``
-module and documented in the :ref:`topics-settings-ref` section.
+The ``scrapy.settings.default_settings`` module defines global default values
+for some :ref:`built-in settings <topics-settings-ref>`.
+
+.. note:: :command:`startproject` generates a ``settings.py`` file that sets
+    some settings to different values.
+
+    The reference documentation of settings indicates the default value if one
+    exists. If :command:`startproject` sets a value, that value is documented
+    as default, and the value from ``scrapy.settings.default_settings`` is
+    documented as “fallback”.
+
 
 Compatibility with pickle
 =========================
@@ -321,7 +330,8 @@ exception is raised.
 
 These settings are:
 
--   :setting:`ASYNCIO_EVENT_LOOP`
+-   :setting:`ASYNCIO_EVENT_LOOP` (not possible to set per-spider when using
+    :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
 
 -   :setting:`DNS_RESOLVER` and settings used by the corresponding
     component, e.g. :setting:`DNSCACHE_ENABLED`, :setting:`DNSCACHE_SIZE`
@@ -329,11 +339,24 @@ These settings are:
 
 -   :setting:`REACTOR_THREADPOOL_MAXSIZE`
 
--   :setting:`TWISTED_REACTOR`
+-   :setting:`TWISTED_REACTOR` (ignored when using
+    :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
 
 :setting:`ASYNCIO_EVENT_LOOP` and :setting:`TWISTED_REACTOR` are used upon
 installing the reactor. The rest of the settings are applied when starting
 the reactor.
+
+There is an additional restriction for :setting:`TWISTED_REACTOR` and
+:setting:`ASYNCIO_EVENT_LOOP` when using
+:class:`~scrapy.crawler.AsyncCrawlerProcess`: when this class is instantiated,
+it installs :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`,
+ignoring the value of :setting:`TWISTED_REACTOR` and using the value of
+:setting:`ASYNCIO_EVENT_LOOP` that was passed to
+:meth:`AsyncCrawlerProcess.__init__()
+<scrapy.crawler.AsyncCrawlerProcess.__init__>`. If a different value for
+:setting:`TWISTED_REACTOR` or :setting:`ASYNCIO_EVENT_LOOP` is provided later,
+e.g. in :ref:`per-spider settings <spider-settings>`, an exception will be
+raised.
 
 
 .. _topics-settings-ref:
@@ -461,7 +484,7 @@ Note that the event loop class must inherit from :class:`asyncio.AbstractEventLo
 BOT_NAME
 --------
 
-Default: ``'scrapybot'``
+Default: ``<project name>`` (:ref:`fallback <default-settings>`: ``'scrapybot'``)
 
 The name of the bot implemented by this Scrapy project (also known as the
 project name). This name will be used for the logging too.
@@ -701,7 +724,8 @@ connections (for ``HTTP10DownloadHandler``).
 
 .. note::
 
-    HTTP/1.0 is rarely used nowadays so you can safely ignore this setting,
+    HTTP/1.0 is rarely used nowadays and its Scrapy support is deprecated,
+    so you can safely ignore this setting,
     unless you really want to use HTTP/1.0 and override
     :setting:`DOWNLOAD_HANDLERS` for ``http(s)`` scheme accordingly,
     i.e. to ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
@@ -1317,6 +1341,7 @@ Default: ``{}``
 A dict containing the pipelines enabled by default in Scrapy. You should never
 modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
 
+
 .. setting:: JOBDIR
 
 JOBDIR
@@ -1326,6 +1351,7 @@ Default: ``None``
 
 A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.
+
 
 .. setting:: LOG_ENABLED
 
@@ -1563,7 +1589,7 @@ email notifying about it. If zero, no warning will be produced.
 NEWSPIDER_MODULE
 ----------------
 
-Default: ``''``
+Default: ``"<project name>.spiders"`` (:ref:`fallback <default-settings>`: ``""``)
 
 Module where to create new spiders using the :command:`genspider` command.
 
@@ -1622,9 +1648,7 @@ Adjust redirect request priority relative to original request:
 ROBOTSTXT_OBEY
 --------------
 
-Default: ``False``
-
-Scope: ``scrapy.downloadermiddlewares.robotstxt``
+Default: ``True`` (:ref:`fallback <default-settings>`: ``False``)
 
 If enabled, Scrapy will respect robots.txt policies. For more information see
 :ref:`topics-dlmw-robots`.
@@ -1693,23 +1717,28 @@ SCHEDULER_DISK_QUEUE
 
 Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
 
-Type of disk queue that will be used by scheduler. Other available types are
-``scrapy.squeues.PickleFifoDiskQueue``, ``scrapy.squeues.MarshalFifoDiskQueue``,
+Type of disk queue that will be used by the scheduler. Other available types
+are ``scrapy.squeues.PickleFifoDiskQueue``,
+``scrapy.squeues.MarshalFifoDiskQueue``,
 ``scrapy.squeues.MarshalLifoDiskQueue``.
+
 
 .. setting:: SCHEDULER_MEMORY_QUEUE
 
 SCHEDULER_MEMORY_QUEUE
 ----------------------
+
 Default: ``'scrapy.squeues.LifoMemoryQueue'``
 
-Type of in-memory queue used by scheduler. Other available type is:
+Type of in-memory queue used by the scheduler. Other available type is:
 ``scrapy.squeues.FifoMemoryQueue``.
+
 
 .. setting:: SCHEDULER_PRIORITY_QUEUE
 
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
+
 Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
 
 Type of priority queue used by the scheduler. Another available type is
@@ -1718,6 +1747,51 @@ Type of priority queue used by the scheduler. Another available type is
 ``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
 domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
 does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
+
+
+.. setting:: SCHEDULER_START_DISK_QUEUE
+
+SCHEDULER_START_DISK_QUEUE
+--------------------------
+
+Default: ``'scrapy.squeues.PickleFifoDiskQueue'``
+
+Type of disk queue (see :setting:`JOBDIR`) that the :ref:`scheduler
+<topics-scheduler>` uses for :ref:`start requests <start-requests>`.
+
+For available choices, see :setting:`SCHEDULER_DISK_QUEUE`.
+
+.. queue-common-starts
+
+Use ``None`` or ``""`` to disable these separate queues entirely, and instead
+have start requests share the same queues as other requests.
+
+.. note::
+
+    Disabling separate start request queues makes :ref:`start request order
+    <start-request-order>` unintuitive: start requests will be sent in order
+    only until :setting:`CONCURRENT_REQUESTS` is reached, then remaining start
+    requests will be sent in reverse order.
+
+.. queue-common-ends
+
+
+.. setting:: SCHEDULER_START_MEMORY_QUEUE
+
+SCHEDULER_START_MEMORY_QUEUE
+----------------------------
+
+Default: ``'scrapy.squeues.FifoMemoryQueue'``
+
+Type of in-memory queue that the :ref:`scheduler <topics-scheduler>` uses for
+:ref:`start requests <start-requests>`.
+
+For available choices, see :setting:`SCHEDULER_MEMORY_QUEUE`.
+
+.. include:: settings.rst
+    :start-after: queue-common-starts
+    :end-before: queue-common-ends
+
 
 .. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
 
@@ -1794,15 +1868,6 @@ it will fail loudly if there is any ``ImportError`` or ``SyntaxError`` exception
 But you can choose to silence this exception and turn it into a simple
 warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
 
-.. note::
-    Some :ref:`scrapy commands <topics-commands>` run with this setting to ``True``
-    already (i.e. they will only issue a warning and will not fail)
-    since they do not actually need to load spider classes to work:
-    :command:`scrapy runspider <runspider>`,
-    :command:`scrapy settings <settings>`,
-    :command:`scrapy startproject <startproject>`,
-    :command:`scrapy version <version>`.
-
 .. setting:: SPIDER_MIDDLEWARES
 
 SPIDER_MIDDLEWARES
@@ -1838,7 +1903,7 @@ the spider. For more info see :ref:`topics-spider-middleware-setting`.
 SPIDER_MODULES
 --------------
 
-Default: ``[]``
+Default: ``["<project name>.spiders"]`` (:ref:`fallback <default-settings>`: ``[]``)
 
 A list of modules where Scrapy will look for spiders.
 
@@ -1917,9 +1982,11 @@ Import path of a given :mod:`~twisted.internet.reactor`.
 
 Scrapy will install this reactor if no other reactor is installed yet, such as
 when the ``scrapy`` CLI program is invoked or when using the
+:class:`~scrapy.crawler.AsyncCrawlerProcess` class or the
 :class:`~scrapy.crawler.CrawlerProcess` class.
 
-If you are using the :class:`~scrapy.crawler.CrawlerRunner` class, you also
+If you are using the :class:`~scrapy.crawler.AsyncCrawlerRunner` class or the
+:class:`~scrapy.crawler.CrawlerRunner` class, you also
 need to install the correct reactor manually. You can do that using
 :func:`~scrapy.utils.reactor.install_reactor`:
 
@@ -1928,12 +1995,12 @@ need to install the correct reactor manually. You can do that using
 If a reactor is already installed,
 :func:`~scrapy.utils.reactor.install_reactor` has no effect.
 
-:meth:`CrawlerRunner.__init__ <scrapy.crawler.CrawlerRunner.__init__>` raises
-:exc:`Exception` if the installed reactor does not match the
+:class:`~scrapy.crawler.AsyncCrawlerRunner` and other similar classes raise an
+exception if the installed reactor does not match the
 :setting:`TWISTED_REACTOR` setting; therefore, having top-level
 :mod:`~twisted.internet.reactor` imports in project files and imported
-third-party libraries will make Scrapy raise :exc:`Exception` when
-it checks which reactor is installed.
+third-party libraries will make Scrapy raise an exception when it checks which
+reactor is installed.
 
 In order to use the reactor installed by Scrapy:
 
@@ -1950,7 +2017,7 @@ In order to use the reactor installed by Scrapy:
             self.timeout = int(kwargs.pop("timeout", "60"))
             super(QuotesSpider, self).__init__(*args, **kwargs)
 
-        def start_requests(self):
+        async def start(self):
             reactor.callLater(self.timeout, self.stop)
 
             urls = ["https://quotes.toscrape.com/page/1"]
@@ -1965,7 +2032,7 @@ In order to use the reactor installed by Scrapy:
             self.crawler.engine.close_spider(self, "timeout")
 
 
-which raises :exc:`Exception`, becomes:
+which raises an exception, becomes:
 
 .. code-block:: python
 
@@ -1979,7 +2046,7 @@ which raises :exc:`Exception`, becomes:
             self.timeout = int(kwargs.pop("timeout", "60"))
             super(QuotesSpider, self).__init__(*args, **kwargs)
 
-        def start_requests(self):
+        async def start(self):
             from twisted.internet import reactor
 
             reactor.callLater(self.timeout, self.stop)
@@ -2005,7 +2072,7 @@ current platform.
    ``twisted.internet.asyncioreactor.AsyncioSelectorReactor`` in the generated
    ``settings.py`` file.
 
-.. versionchanged:: VERSION
+.. versionchanged:: 2.13
    The default value was changed from ``None`` to
    ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``.
 
@@ -2047,6 +2114,21 @@ also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware
 if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
 there is no overriding User-Agent header specified for the request.
 
+.. setting:: WARN_ON_GENERATOR_RETURN_VALUE
+
+WARN_ON_GENERATOR_RETURN_VALUE
+------------------------------
+
+Default: ``True``
+
+When enabled, Scrapy will warn if generator-based callback methods (like
+``parse``) contain return statements with non-``None`` values. This helps detect
+potential mistakes in spider development.
+
+Disable this setting to prevent syntax errors that may occur when dynamically
+modifying generator function source code during runtime, skip AST parsing of
+callback functions, or improve performance in auto-reloading development
+environments.
 
 Settings documented elsewhere:
 ------------------------------

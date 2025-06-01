@@ -3,6 +3,571 @@
 Release notes
 =============
 
+.. _release-2.13.1:
+
+Scrapy 2.13.1 (2025-05-28)
+--------------------------
+
+-   Give callback requests precedence over start requests when priority values
+    are the same.
+
+    This makes changes from 2.13.0 to start request handling more intuitive and
+    backward compatible. For scenarios where all requests have the same
+    priorities, in 2.13.0 all start requests were sent before the first
+    callback request. In 2.13.1, same as in 2.12 and lower, start requests are
+    only sent when there are not enough pending callback requests to reach
+    concurrency limits.
+
+    (:issue:`6828`)
+
+-   Added a deepwiki_ badge to the README. (:issue:`6793`)
+
+    .. _deepwiki: https://deepwiki.com/scrapy/scrapy
+
+-   Fixed a typo in the code example of :ref:`start-requests-lazy`.
+    (:issue:`6812`, :issue:`6815`)
+
+-   Fixed a typo in the :ref:`coroutine-support` section of the documentation.
+    (:issue:`6822`)
+
+-   Made this page more prominently listed in PyPI project links.
+    (:issue:`6826`)
+
+
+.. _release-2.13.0:
+
+Scrapy 2.13.0 (2025-05-08)
+--------------------------
+
+Highlights:
+
+-   The asyncio reactor is now enabled by default
+
+-   Replaced ``start_requests()`` (sync) with :meth:`~scrapy.Spider.start`
+    (async) and changed how it is iterated.
+
+-   Added the :reqmeta:`allow_offsite` request meta key
+
+-   :ref:`Spider middlewares that don't support asynchronous spider output
+    <sync-async-spider-middleware>` are deprecated
+
+-   Added a base class for :ref:`universal spider middlewares
+    <universal-spider-middleware>`
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   Dropped support for PyPy 3.9.
+    (:issue:`6613`)
+
+-   Added support for PyPy 3.11.
+    (:issue:`6697`)
+
+Backward-incompatible changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-   The default value of the :setting:`TWISTED_REACTOR` setting was changed
+    from ``None`` to
+    ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``. This value
+    was used in newly generated projects since Scrapy 2.7.0 but now existing
+    projects that don't explicitly set this setting will also use the asyncio
+    reactor. You can :ref:`change this setting in your project
+    <disable-asyncio>` to use a different reactor.
+    (:issue:`6659`, :issue:`6713`)
+
+-   The iteration of start requests and items no longer stops once there are
+    requests in the scheduler, and instead runs continuously until all start
+    requests have been scheduled.
+
+    To reproduce the previous behavior, see :ref:`start-requests-lazy`.
+    (:issue:`6729`)
+
+-   An unhandled exception from the
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.open_spider` method of a
+    :ref:`spider middleware <topics-spider-middleware>` no longer stops the
+    crawl.
+    (:issue:`6729`)
+
+-   In ``scrapy.core.engine.ExecutionEngine``:
+
+    -   The second parameter of ``open_spider()``, ``start_requests``, has been
+        removed. The start requests are determined by the ``spider`` parameter
+        instead (see :meth:`~scrapy.Spider.start`).
+
+    -   The ``slot`` attribute has been renamed to ``_slot`` and should not be
+        used.
+
+    (:issue:`6729`)
+
+-   In ``scrapy.core.engine``, the ``Slot`` class has been renamed to ``_Slot``
+    and should not be used.
+    (:issue:`6729`)
+
+-   The ``slot`` :ref:`telnet variable <telnet-vars>` has been removed.
+    (:issue:`6729`)
+
+-   In ``scrapy.core.spidermw.SpiderMiddlewareManager``,
+    ``process_start_requests()`` has been replaced by ``process_start()``.
+    (:issue:`6729`)
+
+-   The now-deprecated ``start_requests()`` method, when it returns an iterable
+    instead of being defined as a generator, is now executed *after* the
+    :ref:`scheduler <topics-scheduler>` instance has been created.
+    (:issue:`6729`)
+
+-   When using :setting:`JOBDIR`, :ref:`start requests <start-requests>` are
+    now serialized into their own, ``s``-suffixed priority folders. You can set
+    :setting:`SCHEDULER_START_DISK_QUEUE` to ``None`` or ``""`` to change that,
+    but the side effects may be undesirable. See
+    :setting:`SCHEDULER_START_DISK_QUEUE` for details.
+    (:issue:`6729`)
+
+-   The URL length limit, set by the :setting:`URLLENGTH_LIMIT` setting, is now
+    also enforced for start requests.
+    (:issue:`6777`)
+
+-   The ``from_settings()`` method of
+    :class:`~scrapy.spidermiddlewares.urllength.UrlLengthMiddleware`,
+    deprecated in Scrapy 2.12.0, is removed earlier than the usual deprecation
+    period (this was needed because after the introduction of the
+    :class:`~scrapy.spidermiddlewares.base.BaseSpiderMiddleware` base class and
+    switching built-in spider middlewares to it those middlewares need the
+    :class:`~scrapy.crawler.Crawler` instance at run time). Please use
+    ``from_crawler()`` instead.
+    (:issue:`6693`)
+
+-   ``scrapy.utils.url.escape_ajax()`` is no longer called when a
+    :class:`~scrapy.Request` instance is created. It was only useful for
+    websites supporting the ``_escaped_fragment_`` feature which most modern
+    websites don't support. If you still need this you can modify the URLs
+    before passing them to :class:`~scrapy.Request`.
+    (:issue:`6523`, :issue:`6651`)
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   Removed old deprecated name aliases for some signals:
+
+    - ``stats_spider_opened`` (use ``spider_opened`` instead)
+
+    - ``stats_spider_closing`` and ``stats_spider_closed`` (use
+      ``spider_closed`` instead)
+
+    - ``item_passed`` (use ``item_scraped`` instead)
+
+    - ``request_received`` (use ``request_scheduled`` instead)
+
+    (:issue:`6654`, :issue:`6655`)
+
+Deprecations
+~~~~~~~~~~~~
+
+-   The ``start_requests()`` method of :class:`~scrapy.Spider` is deprecated,
+    use :meth:`~scrapy.Spider.start` instead, or both to maintain support for
+    lower Scrapy versions.
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
+
+-   The ``process_start_requests()`` method of :ref:`spider middlewares
+    <topics-spider-middleware>` is deprecated, use
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` instead,
+    or both to maintain support for lower Scrapy versions.
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
+
+-   The ``__init__`` method of priority queue classes (see
+    :setting:`SCHEDULER_PRIORITY_QUEUE`) should now support a keyword-only
+    ``start_queue_cls`` parameter.
+    (:issue:`6752`)
+
+-   :ref:`Spider middlewares that don't support asynchronous spider output
+    <sync-async-spider-middleware>` are deprecated. The async iterable
+    downgrading feature, needed for using such middlewares with asynchronous
+    callbacks and with other spider middlewares that produce asynchronous
+    iterables, is also deprecated. Please update all such middlewares to
+    support asynchronous spider output.
+    (:issue:`6664`)
+
+-   Functions that were imported from :mod:`w3lib.url` and re-exported in
+    :mod:`scrapy.utils.url` are now deprecated, you should import them from
+    :mod:`w3lib.url` directly. They are:
+
+    - ``scrapy.utils.url.add_or_replace_parameter()``
+
+    - ``scrapy.utils.url.add_or_replace_parameters()``
+
+    - ``scrapy.utils.url.any_to_uri()``
+
+    - ``scrapy.utils.url.canonicalize_url()``
+
+    - ``scrapy.utils.url.file_uri_to_path()``
+
+    - ``scrapy.utils.url.is_url()``
+
+    - ``scrapy.utils.url.parse_data_uri()``
+
+    - ``scrapy.utils.url.parse_url()``
+
+    - ``scrapy.utils.url.path_to_file_uri()``
+
+    - ``scrapy.utils.url.safe_download_url()``
+
+    - ``scrapy.utils.url.safe_url_string()``
+
+    - ``scrapy.utils.url.url_query_cleaner()``
+
+    - ``scrapy.utils.url.url_query_parameter()``
+
+    (:issue:`4577`, :issue:`6583`, :issue:`6586`)
+
+-   HTTP/1.0 support code is deprecated. It was disabled by default and
+    couldn't be used together with HTTP/1.1. If you still need it, you should
+    write your own download handler or copy the code from Scrapy. The
+    deprecations include:
+
+    - ``scrapy.core.downloader.handlers.http10.HTTP10DownloadHandler``
+
+    - ``scrapy.core.downloader.webclient.ScrapyHTTPClientFactory``
+
+    - ``scrapy.core.downloader.webclient.ScrapyHTTPPageGetter``
+
+    - Overriding
+      ``scrapy.core.downloader.contextfactory.ScrapyClientContextFactory.getContext()``
+
+    (:issue:`6634`)
+
+-   The following modules and functions used only in tests are deprecated:
+
+    - the ``scrapy/utils/testproc`` module
+
+    - the ``scrapy/utils/testsite`` module
+
+    - ``scrapy.utils.test.assert_gcs_environ()``
+
+    - ``scrapy.utils.test.get_ftp_content_and_delete()``
+
+    - ``scrapy.utils.test.get_gcs_content_and_delete()``
+
+    - ``scrapy.utils.test.mock_google_cloud_storage()``
+
+    - ``scrapy.utils.test.skip_if_no_boto()``
+
+    If you need to use them in your tests or code, you can copy the code from Scrapy.
+    (:issue:`6696`)
+
+-   ``scrapy.utils.test.TestSpider`` is deprecated. If you need an empty spider
+    class you can use :class:`scrapy.utils.spider.DefaultSpider` or create your
+    own subclass of :class:`scrapy.Spider`.
+    (:issue:`6678`)
+
+-   ``scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware`` is
+    deprecated. It was disabled by default and isn't useful for most of the
+    existing websites.
+    (:issue:`6523`, :issue:`6651`, :issue:`6656`)
+
+-   ``scrapy.utils.url.escape_ajax()`` is deprecated.
+    (:issue:`6523`, :issue:`6651`)
+
+-   ``scrapy.spiders.init.InitSpider`` is deprecated. If you find it useful,
+    you can copy its code from Scrapy.
+    (:issue:`6708`, :issue:`6714`)
+
+-   ``scrapy.utils.versions.scrapy_components_versions()`` is deprecated, use
+    :func:`scrapy.utils.versions.get_versions()` instead.
+    (:issue:`6582`)
+
+-   ``BaseDupeFilter.log()`` is deprecated. It does nothing and shouldn't be
+    called.
+    (:issue:`4151`)
+
+-   Passing the ``spider`` argument to the following methods of
+    :class:`~scrapy.core.scraper.Scraper` is deprecated:
+
+    - ``close_spider()``
+
+    - ``enqueue_scrape()``
+
+    - ``handle_spider_error()``
+
+    - ``handle_spider_output()``
+
+    (:issue:`6764`)
+
+New features
+~~~~~~~~~~~~
+
+-   You can now yield the start requests and items of a spider from the
+    :meth:`~scrapy.Spider.start` spider method and from the
+    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` spider
+    middleware method, both :term:`asynchronous generators <python:asynchronous
+    generator>`.
+
+    This makes it possible to use asynchronous code to generate those start
+    requests and items, e.g. reading them from a queue service or database
+    using an asynchronous client, without workarounds.
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
+
+-   Start requests are now :ref:`scheduled <topics-scheduler>` as soon as
+    possible.
+
+    As a result, their :attr:`~scrapy.Request.priority` is now taken into
+    account as soon as :setting:`CONCURRENT_REQUESTS` is reached.
+    (:issue:`456`, :issue:`3477`, :issue:`4467`, :issue:`5627`, :issue:`6729`)
+
+-   :class:`Crawler.signals <scrapy.signalmanager.SignalManager>` has a new
+    :meth:`~scrapy.signalmanager.SignalManager.wait_for` method.
+    (:issue:`6729`)
+
+-   Added a new :signal:`scheduler_empty` signal.
+    (:issue:`6729`)
+
+-   Added new settings: :setting:`SCHEDULER_START_DISK_QUEUE` and
+    :setting:`SCHEDULER_START_MEMORY_QUEUE`.
+    (:issue:`6729`)
+
+-   Added :class:`~scrapy.spidermiddlewares.start.StartSpiderMiddleware`, which
+    sets :reqmeta:`is_start_request` to ``True`` on :ref:`start requests
+    <start-requests>`.
+    (:issue:`6729`)
+
+-   Exposed a new method of :class:`Crawler.engine
+    <scrapy.core.engine.ExecutionEngine>`:
+    :meth:`~scrapy.core.engine.ExecutionEngine.needs_backout`.
+    (:issue:`6729`)
+
+-   Added the :reqmeta:`allow_offsite` request meta key that can be used
+    instead of the more general :attr:`~scrapy.Request.dont_filter` request
+    attribute to skip processing of the request by
+    :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` (but not
+    by other code that checks :attr:`~scrapy.Request.dont_filter`).
+    (:issue:`3690`, :issue:`6151`, :issue:`6366`)
+
+-   Added an optional base class for spider middlewares,
+    :class:`~scrapy.spidermiddlewares.base.BaseSpiderMiddleware`, which can be
+    helpful for writing :ref:`universal spider middlewares
+    <universal-spider-middleware>` without boilerplate and code duplication.
+    The built-in spider middlewares now inherit from this class.
+    (:issue:`6693`, :issue:`6777`)
+
+-   :ref:`Scrapy add-ons <topics-addons>` can now define a class method called
+    ``update_pre_crawler_settings()`` to update :ref:`pre-crawler settings
+    <pre-crawler-settings>`.
+    (:issue:`6544`, :issue:`6568`)
+
+-   Added :ref:`helpers <priority-dict-helpers>` for modifying :ref:`component
+    priority dictionary <component-priority-dictionaries>` settings.
+    (:issue:`6614`)
+
+-   Responses that use an unknown/unsupported encoding now produce a warning.
+    If Scrapy knows that installing an additional package (such as brotli_)
+    will allow decoding the response, that will be mentioned in the warning.
+    (:issue:`4697`, :issue:`6618`)
+
+-   Added the ``spider_exceptions/count`` stat which tracks the total count of
+    exceptions (tracked also by per-type ``spider_exceptions/*`` stats).
+    (:issue:`6739`, :issue:`6740`)
+
+-   Added the :setting:`DEFAULT_DROPITEM_LOG_LEVEL` setting and the
+    :attr:`scrapy.exceptions.DropItem.log_level` attribute that allow
+    customizing the log level of the message that is logged when an item is
+    dropped.
+    (:issue:`6603`, :issue:`6608`)
+
+-   Added support for the ``-b, --cookie`` curl argument to
+    :meth:`scrapy.Request.from_curl`.
+    (:issue:`6684`)
+
+-   Added the :setting:`LOG_VERSIONS` setting that allows customizing the
+    list of software whose versions are logged when the spider starts.
+    (:issue:`6582`)
+
+-   Added the :setting:`WARN_ON_GENERATOR_RETURN_VALUE` setting that allows
+    disabling run time analysis of callback code used to warn about incorrect
+    ``return`` statements in generator-based callbacks. You may need to disable
+    this setting if this analysis breaks on your callback code.
+    (:issue:`6731`, :issue:`6738`)
+
+Improvements
+~~~~~~~~~~~~
+
+-   Removed or postponed some calls of :func:`itemadapter.is_item` to increase
+    performance.
+    (:issue:`6719`)
+
+-   Improved the error message when running a ``scrapy`` command that requires
+    a project (such as ``scrapy crawl``) outside of a project directory.
+    (:issue:`2349`, :issue:`3426`)
+
+-   Added an empty :setting:`ADDONS` setting to the ``settings.py`` template
+    for new projects.
+    (:issue:`6587`)
+
+Bug fixes
+~~~~~~~~~
+
+-   Yielding an item from :meth:`Spider.start <scrapy.Spider.start>` or from
+    :meth:`SpiderMiddleware.process_start
+    <scrapy.spidermiddlewares.SpiderMiddleware.process_start>` no longer delays
+    the next iteration of starting requests and items by up to 5 seconds.
+    (:issue:`6729`)
+
+-   Fixed calculation of ``items_per_minute`` and ``responses_per_minute``
+    stats.
+    (:issue:`6599`)
+
+-   Fixed an error initializing
+    :class:`scrapy.extensions.feedexport.GCSFeedStorage`.
+    (:issue:`6617`, :issue:`6628`)
+
+-   Fixed an error running ``scrapy bench``.
+    (:issue:`6632`, :issue:`6633`)
+
+-   Fixed duplicated log messages about the reactor and the event loop.
+    (:issue:`6636`, :issue:`6657`)
+
+-   Fixed resolving type annotations of ``SitemapSpider._parse_sitemap()`` at
+    run time, required by tools such as scrapy-poet_.
+    (:issue:`6665`, :issue:`6671`)
+
+    .. _scrapy-poet: https://github.com/scrapinghub/scrapy-poet
+
+-   Calling :func:`scrapy.utils.reactor.is_asyncio_reactor_installed` without
+    an installed reactor now raises an exception instead of installing a
+    reactor.
+    (:issue:`6732`, :issue:`6735`)
+
+-   Restored support for the ``x-gzip`` content encoding.
+    (:issue:`6618`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Documented the setting values set in the default project template.
+    (:issue:`6762`, :issue:`6775`)
+
+-   Improved the :ref:`docs <sync-async-spider-middleware>` about asynchronous
+    iterable support in spider middlewares.
+    (:issue:`6688`)
+
+-   Improved the :ref:`docs <coroutine-deferred-apis>` about using
+    :class:`~twisted.internet.defer.Deferred`-based APIs in coroutine-based
+    code and included a list of such APIs.
+    (:issue:`6677`, :issue:`6734`, :issue:`6776`)
+
+-   Improved the :ref:`contribution docs <topics-contributing>`.
+    (:issue:`6561`, :issue:`6575`)
+
+-   Removed the ``Splash`` recommendation from the :ref:`headless browser
+    <topics-headless-browsing>` suggestion. We no longer recommend using
+    ``Splash`` and recommend using other headless browser solutions instead.
+    (:issue:`6642`, :issue:`6701`)
+
+-   Added the dark mode to the HTML documentation.
+    (:issue:`6653`)
+
+-   Other documentation improvements and fixes.
+    (:issue:`4151`,
+    :issue:`6526`,
+    :issue:`6620`,
+    :issue:`6621`,
+    :issue:`6622`,
+    :issue:`6623`,
+    :issue:`6624`,
+    :issue:`6721`,
+    :issue:`6723`,
+    :issue:`6780`)
+
+Packaging
+~~~~~~~~~
+
+-   Switched from ``setup.py`` to ``pyproject.toml``.
+    (:issue:`6514`, :issue:`6547`)
+
+-   Switched the build backend from setuptools_ to hatchling_.
+    (:issue:`6771`)
+
+    .. _hatchling: https://pypi.org/project/hatchling/
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Replaced most linters with ruff_.
+    (:issue:`6565`,
+    :issue:`6576`,
+    :issue:`6577`,
+    :issue:`6581`,
+    :issue:`6584`,
+    :issue:`6595`,
+    :issue:`6601`,
+    :issue:`6631`)
+
+    .. _ruff: https://docs.astral.sh/ruff/
+
+-   Improved accuracy and performance of collecting test coverage.
+    (:issue:`6255`, :issue:`6610`)
+
+-   Fixed an error that prevented running tests from directories other than the
+    top level source directory.
+    (:issue:`6567`)
+
+-   Reduced the amount of ``mockserver`` calls in tests to improve the overall
+    test run time.
+    (:issue:`6637`, :issue:`6648`)
+
+-   Fixed tests that were running the same test code more than once.
+    (:issue:`6646`, :issue:`6647`, :issue:`6650`)
+
+-   Refactored tests to use more ``pytest`` features instead of ``unittest``
+    ones where possible.
+    (:issue:`6678`,
+    :issue:`6680`,
+    :issue:`6695`,
+    :issue:`6699`,
+    :issue:`6700`,
+    :issue:`6702`,
+    :issue:`6709`,
+    :issue:`6710`,
+    :issue:`6711`,
+    :issue:`6712`,
+    :issue:`6725`)
+
+-   Type hints improvements and fixes.
+    (:issue:`6578`,
+    :issue:`6579`,
+    :issue:`6593`,
+    :issue:`6605`,
+    :issue:`6694`)
+
+-   CI and test improvements and fixes.
+    (:issue:`5360`,
+    :issue:`6271`,
+    :issue:`6547`,
+    :issue:`6560`,
+    :issue:`6602`,
+    :issue:`6607`,
+    :issue:`6609`,
+    :issue:`6613`,
+    :issue:`6619`,
+    :issue:`6626`,
+    :issue:`6679`,
+    :issue:`6703`,
+    :issue:`6704`,
+    :issue:`6716`,
+    :issue:`6720`,
+    :issue:`6722`,
+    :issue:`6724`,
+    :issue:`6741`,
+    :issue:`6743`,
+    :issue:`6766`,
+    :issue:`6770`,
+    :issue:`6772`,
+    :issue:`6773`)
+
+-   Code cleanups.
+    (:issue:`6600`,
+    :issue:`6606`,
+    :issue:`6635`,
+    :issue:`6764`)
+
+
 .. _release-2.12.0:
 
 Scrapy 2.12.0 (2024-11-18)
@@ -12,7 +577,7 @@ Highlights:
 
 -   Dropped support for Python 3.8, added support for Python 3.13
 
--   :meth:`~scrapy.Spider.start_requests` can now yield items
+-   ``scrapy.Spider.start_requests()`` can now yield items
 
 -   Added :class:`~scrapy.http.JsonResponse`
 
@@ -303,8 +868,12 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
--   :meth:`~scrapy.Spider.start_requests` can now yield items.
+-   ``scrapy.Spider.start_requests()`` can now yield items.
     (:issue:`5289`, :issue:`6417`)
+
+    .. note:: Some spider middlewares may need to be updated for Scrapy 2.12
+        support before you can use them in combination with the ability to
+        yield items from ``start_requests()``.
 
 -   Added a new :class:`~scrapy.http.Response` subclass,
     :class:`~scrapy.http.JsonResponse`, for responses with a `JSON MIME type
@@ -601,8 +1170,6 @@ Bug fixes
 -   Restored support for brotlipy_, which had been dropped in Scrapy 2.11.1 in
     favor of brotli_. (:issue:`6261`)
 
-    .. _brotli: https://github.com/google/brotli
-
     .. note:: brotlipy is deprecated, both in Scrapy and upstream. Use brotli
         instead if you can.
 
@@ -795,7 +1362,7 @@ Backward-incompatible changes
     in :meth:`scrapy.Spider.from_crawler`. If you want to access the final
     setting values and the initialized :class:`~scrapy.crawler.Crawler`
     attributes in the spider code as early as possible you can do this in
-    :meth:`~scrapy.Spider.start_requests` or in a handler of the
+    ``scrapy.Spider.start_requests()`` or in a handler of the
     :signal:`engine_started` signal. (:issue:`6038`)
 
 -   The :meth:`TextResponse.json <scrapy.http.TextResponse.json>` method now
@@ -2186,8 +2753,6 @@ Scrapy 2.5.1 (2021-10-05)
     need to upgrade scrapy-splash to a greater version for it to continue to
     work.
 
-.. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
-
 
 .. _release-2.5.0:
 
@@ -3371,7 +3936,7 @@ New features
 
 *   :class:`~scrapy.spiders.Spider` objects now raise an :exc:`AttributeError`
     exception if they do not have a :class:`~scrapy.spiders.Spider.start_urls`
-    attribute nor reimplement :class:`~scrapy.spiders.Spider.start_requests`,
+    attribute nor reimplement ``scrapy.spiders.Spider.start_requests()``,
     but have a ``start_url`` attribute (:issue:`4133`, :issue:`4170`)
 
 *   :class:`~scrapy.exporters.BaseItemExporter` subclasses may now use
@@ -6292,7 +6857,7 @@ Scrapy 0.18.4 (released 2013-10-10)
 
 - IPython refuses to update the namespace. fix #396 (:commit:`3d32c4f`)
 - Fix AlreadyCalledError replacing a request in shell command. closes #407 (:commit:`b1d8919`)
-- Fix start_requests laziness and early hangs (:commit:`89faf52`)
+- Fix ``start_requests()`` laziness and early hangs (:commit:`89faf52`)
 
 Scrapy 0.18.3 (released 2013-10-03)
 -----------------------------------
@@ -6485,7 +7050,7 @@ Scrapy changes:
 - added options ``-o`` and ``-t`` to the :command:`runspider` command
 - documented :doc:`topics/autothrottle` and added to extensions installed by default. You still need to enable it with :setting:`AUTOTHROTTLE_ENABLED`
 - major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backward compatibility is kept on the Stats Collector API and signals.
-- added :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start_requests` method to spider middlewares
+- added a ``process_start_requests()`` method to spider middlewares
 - dropped Signals singleton. Signals should now be accessed through the Crawler.signals attribute. See the signals documentation for more info.
 - dropped Stats Collector singleton. Stats can now be accessed through the Crawler.stats attribute. See the stats collection documentation for more info.
 - documented :ref:`topics-api`
@@ -6548,7 +7113,7 @@ Scrapy 0.14.2
 - fixed bug in MemoryUsage extension: get_engine_status() takes exactly 1 argument (0 given) (:commit:`11133e9`)
 - fixed struct.error on http compression middleware. closes #87 (:commit:`1423140`)
 - ajax crawling wasn't expanding for unicode urls (:commit:`0de3fb4`)
-- Catch start_requests iterator errors. refs #83 (:commit:`454a21d`)
+- Catch ``start_requests()`` iterator errors. refs #83 (:commit:`454a21d`)
 - Speed-up libxml2 XPathSelector (:commit:`2fbd662`)
 - updated versioning doc according to recent changes (:commit:`0a070f5`)
 - scrapyd: fixed documentation link (:commit:`2b4e4c3`)

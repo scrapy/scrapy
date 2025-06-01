@@ -10,19 +10,22 @@ import warnings
 from asyncio import Future
 from collections.abc import Awaitable, Coroutine, Iterable, Iterator
 from functools import wraps
-from types import CoroutineType
-from typing import TYPE_CHECKING, Any, Generic, TypeVar, Union, cast, overload
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast, overload
 
-from twisted.internet import defer
-from twisted.internet.defer import Deferred, DeferredList, ensureDeferred
+from twisted.internet.defer import (
+    Deferred,
+    DeferredList,
+    fail,
+    succeed,
+)
 from twisted.internet.task import Cooperator
 from twisted.python import failure
 
 from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
-from scrapy.utils.reactor import _get_asyncio_event_loop, is_asyncio_reactor_installed
+from scrapy.utils.asyncio import is_asyncio_available
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, AsyncIterator, Callable
+    from collections.abc import AsyncIterator, Callable
 
     from twisted.python.failure import Failure
 
@@ -36,6 +39,9 @@ _T = TypeVar("_T")
 _T2 = TypeVar("_T2")
 
 
+_DEFER_DELAY = 0.1
+
+
 def defer_fail(_failure: Failure) -> Deferred[Any]:
     """Same as twisted.internet.defer.fail but delay calling errback until
     next reactor loop
@@ -46,7 +52,7 @@ def defer_fail(_failure: Failure) -> Deferred[Any]:
     from twisted.internet import reactor
 
     d: Deferred[Any] = Deferred()
-    reactor.callLater(0.1, d.errback, _failure)
+    reactor.callLater(_DEFER_DELAY, d.errback, _failure)
     return d
 
 
@@ -60,7 +66,16 @@ def defer_succeed(result: _T) -> Deferred[_T]:
     from twisted.internet import reactor
 
     d: Deferred[_T] = Deferred()
-    reactor.callLater(0.1, d.callback, result)
+    reactor.callLater(_DEFER_DELAY, d.callback, result)
+    return d
+
+
+def _defer_sleep() -> Deferred[None]:
+    """Like ``defer_succeed`` and ``defer_fail`` but doesn't call any real callbacks."""
+    from twisted.internet import reactor
+
+    d: Deferred[None] = Deferred()
+    reactor.callLater(_DEFER_DELAY, d.callback, None)
     return d
 
 
@@ -177,7 +192,7 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
 
     def __init__(
         self,
-        aiterable: AsyncIterable[_T],
+        aiterable: AsyncIterator[_T],
         callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],
         *callable_args: _P.args,
         **callable_kwargs: _P.kwargs,
@@ -234,7 +249,7 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
 
 
 def parallel_async(
-    async_iterable: AsyncIterable[_T],
+    async_iterable: AsyncIterator[_T],
     count: int,
     callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],
     *args: _P.args,
@@ -299,7 +314,7 @@ def process_parallel(
     """Return a Deferred with the output of all successful calls to the given
     callbacks
     """
-    dfds = [defer.succeed(input).addCallback(x, *a, **kw) for x in callbacks]
+    dfds = [succeed(input).addCallback(x, *a, **kw) for x in callbacks]
     d: Deferred[list[tuple[bool, _T2]]] = DeferredList(
         dfds, fireOnOneErrback=True, consumeErrors=True
     )
@@ -332,13 +347,13 @@ def iter_errback(
 
 
 async def aiter_errback(
-    aiterable: AsyncIterable[_T],
+    aiterable: AsyncIterator[_T],
     errback: Callable[Concatenate[Failure, _P], Any],
     *a: _P.args,
     **kw: _P.kwargs,
-) -> AsyncIterable[_T]:
+) -> AsyncIterator[_T]:
     """Wraps an async iterable calling an errback if an error is caught while
-    iterating it. Similar to scrapy.utils.defer.iter_errback()
+    iterating it. Similar to :func:`scrapy.utils.defer.iter_errback`.
     """
     it = aiterable.__aiter__()
     while True:
@@ -350,34 +365,31 @@ async def aiter_errback(
             errback(failure.Failure(), *a, **kw)
 
 
-_CT = TypeVar("_CT", bound=Union[Awaitable, CoroutineType, Future])
+@overload
+def deferred_from_coro(o: Awaitable[_T]) -> Deferred[_T]: ...
 
 
 @overload
-def deferred_from_coro(o: _CT) -> Deferred: ...
+def deferred_from_coro(o: _T2) -> _T2: ...
 
 
-@overload
-def deferred_from_coro(o: _T) -> _T: ...
-
-
-def deferred_from_coro(o: _T) -> Deferred | _T:
-    """Converts a coroutine into a Deferred, or returns the object as is if it isn't a coroutine"""
+def deferred_from_coro(o: Awaitable[_T] | _T2) -> Deferred[_T] | _T2:
+    """Converts a coroutine or other awaitable object into a Deferred,
+    or returns the object as is if it isn't a coroutine."""
     if isinstance(o, Deferred):
         return o
-    if asyncio.isfuture(o) or inspect.isawaitable(o):
-        if not is_asyncio_reactor_installed():
+    if inspect.isawaitable(o):
+        if not is_asyncio_available():
             # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
             # that use asyncio, e.g. "await asyncio.sleep(1)"
-            return ensureDeferred(cast(Coroutine[Deferred, Any, Any], o))
+            return Deferred.fromCoroutine(cast(Coroutine[Deferred[Any], Any, _T], o))
         # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
-        event_loop = _get_asyncio_event_loop()
-        return Deferred.fromFuture(asyncio.ensure_future(o, loop=event_loop))
+        return Deferred.fromFuture(asyncio.ensure_future(o))
     return o
 
 
 def deferred_f_from_coro_f(
-    coro_f: Callable[_P, Coroutine[Any, Any, _T]],
+    coro_f: Callable[_P, Awaitable[_T]],
 ) -> Callable[_P, Deferred[_T]]:
     """Converts a coroutine function into a function that returns a Deferred.
 
@@ -386,7 +398,7 @@ def deferred_f_from_coro_f(
     """
 
     @wraps(coro_f)
-    def f(*coro_args: _P.args, **coro_kwargs: _P.kwargs) -> Any:
+    def f(*coro_args: _P.args, **coro_kwargs: _P.kwargs) -> Deferred[_T]:
         return deferred_from_coro(coro_f(*coro_args, **coro_kwargs))
 
     return f
@@ -399,15 +411,15 @@ def maybeDeferred_coro(
     try:
         result = f(*args, **kw)
     except:  # noqa: E722  # pylint: disable=bare-except
-        return defer.fail(failure.Failure(captureVars=Deferred.debug))
+        return fail(failure.Failure(captureVars=Deferred.debug))
 
     if isinstance(result, Deferred):
         return result
     if asyncio.isfuture(result) or inspect.isawaitable(result):
         return deferred_from_coro(result)
     if isinstance(result, failure.Failure):
-        return defer.fail(result)
-    return defer.succeed(result)
+        return fail(result)
+    return succeed(result)
 
 
 def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
@@ -415,6 +427,10 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
     .. versionadded:: 2.6.0
 
     Return an :class:`asyncio.Future` object that wraps *d*.
+
+    This function requires
+    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
+    installed.
 
     When :ref:`using the asyncio reactor <install-asyncio>`, you cannot await
     on :class:`~twisted.internet.defer.Deferred` objects from :ref:`Scrapy
@@ -428,8 +444,15 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
                 additional_request = scrapy.Request('https://example.org/price')
                 deferred = self.crawler.engine.download(additional_request)
                 additional_response = await deferred_to_future(deferred)
+
+    .. versionchanged:: VERSION
+        This function no longer installs an asyncio loop if called before the
+        Twisted asyncio reactor is installed. A :exc:`RuntimeError` is raised
+        in this case.
     """
-    return d.asFuture(_get_asyncio_event_loop())
+    if not is_asyncio_available():
+        raise RuntimeError("deferred_to_future() requires AsyncioSelectorReactor.")
+    return d.asFuture(asyncio.get_event_loop())
 
 
 def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
@@ -442,11 +465,11 @@ def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
     What you can await in Scrapy callables defined as coroutines depends on the
     value of :setting:`TWISTED_REACTOR`:
 
-    -   When not using the asyncio reactor, you can only await on
-        :class:`~twisted.internet.defer.Deferred` objects.
-
     -   When :ref:`using the asyncio reactor <install-asyncio>`, you can only
         await on :class:`asyncio.Future` objects.
+
+    -   When not using the asyncio reactor, you can only await on
+        :class:`~twisted.internet.defer.Deferred` objects.
 
     If you want to write code that uses ``Deferred`` objects but works with any
     reactor, use this function on all ``Deferred`` objects::
@@ -458,6 +481,6 @@ def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
                 deferred = self.crawler.engine.download(additional_request)
                 additional_response = await maybe_deferred_to_future(deferred)
     """
-    if not is_asyncio_reactor_installed():
+    if not is_asyncio_available():
         return d
     return deferred_to_future(d)

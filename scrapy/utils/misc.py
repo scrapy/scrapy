@@ -286,6 +286,8 @@ def warn_on_generator_with_return_value(
     Logs a warning if a callable is a generator function and includes
     a 'return' statement with a value different than None
     """
+    if not spider.settings.getbool("WARN_ON_GENERATOR_RETURN_VALUE"):
+        return
     try:
         if is_generator_with_return_value(callable):
             warnings.warn(

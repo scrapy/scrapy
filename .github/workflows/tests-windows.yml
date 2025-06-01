@@ -67,3 +67,7 @@ jobs:
 
     - name: Upload coverage report
       uses: codecov/codecov-action@v5
+
+    - name: Upload test results
+      if: ${{ !cancelled() }}
+      uses: codecov/test-results-action@v1

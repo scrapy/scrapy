@@ -99,18 +99,24 @@ how you :ref:`configure the downloader middlewares
         provided while constructing the crawler, and it is created after the
         arguments given in the :meth:`crawl` method.
 
-    .. method:: crawl(*args, **kwargs)
+    .. automethod:: crawl_async
 
-        Starts the crawler by instantiating its spider class with the given
-        ``args`` and ``kwargs`` arguments, while setting the execution engine in
-        motion. Should be called only once.
+    .. automethod:: crawl
 
-        Returns a deferred that is fired when the crawl is finished.
+    .. automethod:: stop_async
 
     .. automethod:: stop
 
+.. autoclass:: AsyncCrawlerRunner
+   :members:
+
 .. autoclass:: CrawlerRunner
    :members:
+
+.. autoclass:: AsyncCrawlerProcess
+   :show-inheritance:
+   :members:
+   :inherited-members:
 
 .. autoclass:: CrawlerProcess
    :show-inheritance:
@@ -207,6 +213,8 @@ SpiderLoader API
        :param request: queried request
        :type request: :class:`~scrapy.Request` instance
 
+.. autoclass:: DummySpiderLoader
+
 .. _topics-api-signals:
 
 Signals API
@@ -280,3 +288,9 @@ class (which they all inherit from).
 
         Close the given spider. After this is called, no more specific stats
         can be accessed or collected.
+
+Engine API
+==========
+
+.. autoclass:: scrapy.core.engine.ExecutionEngine()
+   :members: needs_backout
