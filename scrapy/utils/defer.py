@@ -22,7 +22,7 @@ from twisted.internet.task import Cooperator
 from twisted.python import failure
 
 from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
-from scrapy.utils.reactor import _get_asyncio_event_loop, is_asyncio_reactor_installed
+from scrapy.utils.asyncio import is_asyncio_available
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
@@ -379,13 +379,12 @@ def deferred_from_coro(o: Awaitable[_T] | _T2) -> Deferred[_T] | _T2:
     if isinstance(o, Deferred):
         return o
     if inspect.isawaitable(o):
-        if not is_asyncio_reactor_installed():
+        if not is_asyncio_available():
             # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
             # that use asyncio, e.g. "await asyncio.sleep(1)"
             return Deferred.fromCoroutine(cast(Coroutine[Deferred[Any], Any, _T], o))
         # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
-        event_loop = _get_asyncio_event_loop()
-        return Deferred.fromFuture(asyncio.ensure_future(o, loop=event_loop))
+        return Deferred.fromFuture(asyncio.ensure_future(o))
     return o
 
 
@@ -429,6 +428,10 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
 
     Return an :class:`asyncio.Future` object that wraps *d*.
 
+    This function requires
+    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
+    installed.
+
     When :ref:`using the asyncio reactor <install-asyncio>`, you cannot await
     on :class:`~twisted.internet.defer.Deferred` objects from :ref:`Scrapy
     callables defined as coroutines <coroutine-support>`, you can only await on
@@ -441,8 +444,15 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
                 additional_request = scrapy.Request('https://example.org/price')
                 deferred = self.crawler.engine.download(additional_request)
                 additional_response = await deferred_to_future(deferred)
+
+    .. versionchanged:: VERSION
+        This function no longer installs an asyncio loop if called before the
+        Twisted asyncio reactor is installed. A :exc:`RuntimeError` is raised
+        in this case.
     """
-    return d.asFuture(_get_asyncio_event_loop())
+    if not is_asyncio_available():
+        raise RuntimeError("deferred_to_future() requires AsyncioSelectorReactor.")
+    return d.asFuture(asyncio.get_event_loop())
 
 
 def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
@@ -471,6 +481,6 @@ def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
                 deferred = self.crawler.engine.download(additional_request)
                 additional_response = await maybe_deferred_to_future(deferred)
     """
-    if not is_asyncio_reactor_installed():
+    if not is_asyncio_available():
         return d
     return deferred_to_future(d)
