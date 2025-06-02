@@ -186,22 +186,22 @@ class LxmlLinkExtractor:
         use_all_tags = tags is True
         use_all_attrs = attrs is True
 
-        tags_set = set() if use_all_tags else set(arg_to_iter(tags))
-        attrs_set = set() if use_all_attrs else set(arg_to_iter(attrs))
+        tags_set = set(arg_to_iter(tags)) if not use_all_tags else True
+        attrs_set = set(arg_to_iter(attrs)) if not use_all_attrs else True
         deny_tags_set = set(arg_to_iter(deny_tags))
         deny_attrs_set = set(arg_to_iter(deny_attrs))
 
-        def tag_checker(tag):
-            return tag not in deny_tags_set
+        def create_checker(allowed, denied):
+            if allowed is True:
+                return lambda x: x not in denied
 
-        if not use_all_tags:
-            tag_checker = partial(operator.contains, tags_set)
+            if denied:
+                return lambda x: x in allowed
 
-        def attr_checker(attr):
-            return attr not in deny_attrs_set
+            return partial(operator.contains, allowed)
 
-        if not use_all_attrs:
-            attr_checker = partial(operator.contains, attrs_set)
+        tag_checker = create_checker(tags_set, deny_tags_set)
+        attr_checker = create_checker(attrs_set, deny_attrs_set)
 
         self.link_extractor = LxmlParserLinkExtractor(
             tag=tag_checker,
