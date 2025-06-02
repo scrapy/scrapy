@@ -161,6 +161,9 @@ extension-pkg-allow-list=[
 enable = [
     "useless-suppression",
 ]
+# Make INFO checks like useless-suppression also cause pylint to return a
+# non-zero exit code.
+fail-on = "I"
 disable = [
     # Ones we want to ignore
     "attribute-defined-outside-init",
