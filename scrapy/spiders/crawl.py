@@ -20,6 +20,7 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.deprecate import method_is_overridden
+from scrapy.utils.python import global_object_name
 from scrapy.utils.spider import iterate_spider_output
 
 if TYPE_CHECKING:
