@@ -16,12 +16,13 @@ if TYPE_CHECKING:
     from asyncio import AbstractEventLoop, AbstractEventLoopPolicy
     from collections.abc import Callable
 
-    from twisted.internet.base import DelayedCall
     from twisted.internet.protocol import ServerFactory
     from twisted.internet.tcp import Port
 
     # typing.ParamSpec requires Python 3.10
     from typing_extensions import ParamSpec
+
+    from scrapy.utils.asyncio import CallLaterResult
 
     _P = ParamSpec("_P")
 
@@ -55,27 +56,27 @@ class CallLaterOnce(Generic[_T]):
         self._func: Callable[_P, _T] = func
         self._a: tuple[Any, ...] = a
         self._kw: dict[str, Any] = kw
-        self._call: DelayedCall | None = None
+        self._call: CallLaterResult | None = None
         self._deferreds: list[Deferred] = []
 
     def schedule(self, delay: float = 0) -> None:
-        from twisted.internet import reactor
+        from scrapy.utils.asyncio import call_later
 
         if self._call is None:
-            self._call = reactor.callLater(delay, self)
+            self._call = call_later(delay, self)
 
     def cancel(self) -> None:
         if self._call:
             self._call.cancel()
 
     def __call__(self) -> _T:
-        from twisted.internet import reactor
+        from scrapy.utils.asyncio import call_later
 
         self._call = None
         result = self._func(*self._a, **self._kw)
 
         for d in self._deferreds:
-            reactor.callLater(0, d.callback, None)
+            call_later(0, d.callback, None)
         self._deferreds = []
 
         return result

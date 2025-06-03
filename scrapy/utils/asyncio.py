@@ -15,10 +15,14 @@ from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
 
 if TYPE_CHECKING:
+    from twisted.internet.base import DelayedCall
+
     # typing.Concatenate and typing.ParamSpec require Python 3.10
-    from typing_extensions import Concatenate, ParamSpec
+    # typing.Self, typing.TypeVarTuple and typing.Unpack require Python 3.11
+    from typing_extensions import Concatenate, ParamSpec, Self, TypeVarTuple, Unpack
 
     _P = ParamSpec("_P")
+    _Ts = TypeVarTuple("_Ts")
 
 
 _T = TypeVar("_T")
@@ -192,3 +196,60 @@ def create_looping_call(
     if is_asyncio_available():
         return AsyncioLoopingCall(func, *args, **kwargs)
     return LoopingCall(func, *args, **kwargs)
+
+
+def call_later(
+    delay: float, func: Callable[[Unpack[_Ts]], object], *args: Unpack[_Ts]
+) -> CallLaterResult:
+    """Schedule a function to be called after a delay.
+
+    This uses either ``loop.call_later()`` or ``reactor.callLater()``, depending
+    on whether asyncio support is available.
+    """
+    if is_asyncio_available():
+        loop = asyncio.get_event_loop()
+        return CallLaterResult.from_asyncio(loop.call_later(delay, func, *args))
+
+    from twisted.internet import reactor
+
+    return CallLaterResult.from_twisted(reactor.callLater(delay, func, *args))
+
+
+class CallLaterResult:
+    """An universal result for :func:`call_later`, wrapping either
+    :class:`asyncio.TimerHandle` or :class:`twisted.internet.base.DelayedCall`.
+
+    The provided API is close to the :class:`asyncio.TimerHandle` one: there is
+    no ``active()`` (as there is no such public API in
+    :class:`asyncio.TimerHandle`) but ``cancel()`` can be called on already
+    called or cancelled instances.
+    """
+
+    _timer_handle: asyncio.TimerHandle | None = None
+    _delayed_call: DelayedCall | None = None
+
+    @classmethod
+    def from_asyncio(cls, timer_handle: asyncio.TimerHandle) -> Self:
+        """Create a CallLaterResult from an asyncio TimerHandle."""
+        o = cls()
+        o._timer_handle = timer_handle
+        return o
+
+    @classmethod
+    def from_twisted(cls, delayed_call: DelayedCall) -> Self:
+        """Create a CallLaterResult from a Twisted DelayedCall."""
+        o = cls()
+        o._delayed_call = delayed_call
+        return o
+
+    def cancel(self) -> None:
+        """Cancel the underlying delayed call.
+
+        Does nothing if the delayed call was already called or cancelled.
+        """
+        if self._timer_handle:
+            self._timer_handle.cancel()
+            self._timer_handle = None
+        elif self._delayed_call and self._delayed_call.active():
+            self._delayed_call.cancel()
+            self._delayed_call = None
