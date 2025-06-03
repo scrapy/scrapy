@@ -388,7 +388,7 @@ class ExecutionEngine:
             return (yield self.download(response_or_request))
         return response_or_request
 
-    async def async_download(self, request: Request) -> Response:
+    async def download_async(self, request: Request) -> Response:
         """Asynchronous version of download() that returns a Response."""
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
@@ -400,7 +400,7 @@ class ExecutionEngine:
             assert self._slot is not None
             self._slot.remove_request(request)
         if isinstance(response_or_request, Request):
-            return await self.async_download(response_or_request)
+            return await self.download_async(response_or_request)
         return response_or_request
 
     @inlineCallbacks
