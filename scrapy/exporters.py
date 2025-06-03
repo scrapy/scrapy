@@ -55,18 +55,7 @@ class BaseItemExporter:
             raise TypeError(f"Unexpected options: {', '.join(options.keys())}")
 
     def _apply_ordered_attrs(self, itemdict: dict, ordered_attrs: list[str]) -> dict:
-        if ordered_attrs:
-            ordered_itemdict = {
-                key: itemdict[key] for key in ordered_attrs if key in itemdict
-            }
-            ordered_itemdict = {
-                key: itemdict[key] for key in ordered_attrs if key in itemdict
-            }
-            for key, value in itemdict.items():
-                if key not in ordered_itemdict:
-                    ordered_itemdict[key] = value
-            return ordered_itemdict
-        return itemdict
+        return {key: itemdict[key] for key in ordered_attrs if key in itemdict}
 
     def export_item(self, item: Any) -> None:
         raise NotImplementedError

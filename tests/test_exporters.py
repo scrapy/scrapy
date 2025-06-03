@@ -701,8 +701,8 @@ EXPORTERS = {
     "jsonlines": JsonLinesItemExporter,
     "xml": XmlItemExporter,
     "csv": CsvItemExporter,
-    "marshal": PythonItemExporter,
-    "pickle": PythonItemExporter,
+    "marshal": MarshalItemExporter,
+    "pickle": PickleItemExporter,
 }
 
 
@@ -719,28 +719,25 @@ class MyOrderedItem(Item):
 def test_exporter_respects_ordered_attrs(exporter_name, exporter_cls):
     buffer = BytesIO()
     exporter_kwargs = {}
+    item = MyOrderedItem(z=1, y=2, x=3)
+    item._ordered_attrs = ["y", "z", "x"]
     if exporter_name in {"marshal", "pickle"}:
-        exporter = exporter_cls(**exporter_kwargs)
+        exporter = exporter_cls(buffer)
         exporter.start_exporting()
-        item = MyOrderedItem(z=1, y=2, x=3)
-        item._ordered_attrs = ["y", "z", "x"]
-        itemdict = exporter.export_item(item)
+        exporter.export_item(item)
         exporter.finish_exporting()
-
-        expected = {"y": 2, "z": 1, "x": 3}
+        buffer.seek(0)
         if exporter_name == "marshal":
-            data = marshal.dumps(itemdict)
-            loaded = marshal.loads(data)
-            assert loaded == expected
-        elif exporter_name == "pickle":
-            data = pickle.dumps(itemdict)
-            loaded = pickle.loads(data)
-            assert loaded == expected
+            loaded = marshal.load(buffer)
+        else:  # pickle
+            loaded = pickle.load(buffer)
+        expected = {"y": 2, "z": 1, "x": 3}
+        # Ensure order matches exactly
+        assert list(loaded.keys()) == ["y", "z", "x"]
+        assert loaded == expected
     else:
         exporter = exporter_cls(buffer, **exporter_kwargs)
         exporter.start_exporting()
-        item = MyOrderedItem(z=1, y=2, x=3)
-        item._ordered_attrs = ["y", "z", "x"]
         exporter.export_item(item)
         exporter.finish_exporting()
         exported = buffer.getvalue().decode().strip()
