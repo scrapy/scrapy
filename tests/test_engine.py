@@ -603,7 +603,7 @@ class TestEngineDownloadAsync(TestEngineBase):
         return self.engine.close()
 
     @defer.inlineCallbacks
-    def test_async_download_success(self):
+    def test_download_async_success(self):
         """Test basic successful async download of a request."""
         # Arrange
         request = Request("http://example.com")
@@ -614,7 +614,7 @@ class TestEngineDownloadAsync(TestEngineBase):
         self.engine._slot.remove_request = Mock()
 
         # Act
-        result = yield deferred_f_from_coro_f(self.engine.async_download)(request)
+        result = yield deferred_f_from_coro_f(self.engine.download_async)(request)
 
         # Assert
         assert result == response
@@ -625,7 +625,7 @@ class TestEngineDownloadAsync(TestEngineBase):
         )
 
     @defer.inlineCallbacks
-    def test_async_download_redirect(self):
+    def test_download_async_redirect(self):
         """Test async download with a redirect request."""
         # Arrange
         original_request = Request("http://example.com")
@@ -642,7 +642,7 @@ class TestEngineDownloadAsync(TestEngineBase):
         self.engine._slot.remove_request = Mock()
 
         # Act
-        result = yield deferred_f_from_coro_f(self.engine.async_download)(
+        result = yield deferred_f_from_coro_f(self.engine.download_async)(
             original_request
         )
 
@@ -657,7 +657,7 @@ class TestEngineDownloadAsync(TestEngineBase):
         )
 
     @defer.inlineCallbacks
-    def test_async_download_no_spider(self):
+    def test_download_async_no_spider(self):
         """Test async download attempt when no spider is available."""
         # Arrange
         request = Request("http://example.com")
@@ -665,11 +665,11 @@ class TestEngineDownloadAsync(TestEngineBase):
 
         # Act & Assert
         with pytest.raises(RuntimeError) as exc_info:
-            yield deferred_f_from_coro_f(self.engine.async_download)(request)
+            yield deferred_f_from_coro_f(self.engine.download_async)(request)
         assert f"No open spider to crawl: {request}" == str(exc_info.value)
 
     @defer.inlineCallbacks
-    def test_async_download_failure(self):
+    def test_download_async_failure(self):
         """Test async download when the downloader raises an exception."""
         # Arrange
         request = Request("http://example.com")
@@ -681,7 +681,7 @@ class TestEngineDownloadAsync(TestEngineBase):
 
         # Act & Assert
         with pytest.raises(RuntimeError) as exc_info:
-            yield deferred_f_from_coro_f(self.engine.async_download)(request)
+            yield deferred_f_from_coro_f(self.engine.download_async)(request)
         assert str(exc_info.value) == "Download failed"
         self.engine._slot.add_request.assert_called_once_with(request)
         self.engine._slot.remove_request.assert_called_once_with(request)
