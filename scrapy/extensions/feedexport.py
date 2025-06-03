@@ -121,7 +121,7 @@ class IFeedStorage(Interface):
         object that will be used for the exporters"""
 
     def store(file):
-        """Store the given file stream"""
+        """Store the given file stream. Can be a regular method or an async method."""
 
 
 class FeedStorageProtocol(Protocol):
@@ -135,8 +135,8 @@ class FeedStorageProtocol(Protocol):
         """Open the storage for the given spider. It must return a file-like
         object that will be used for the exporters"""
 
-    def store(self, file: IO[bytes]) -> Deferred[None] | None:
-        """Store the given file stream"""
+    def store(self, file: IO[bytes]) -> Deferred[None] | None | Coroutine[Any, Any, None]:
+        """Store the given file stream. Can be a regular method or an async method."""
 
 
 @implementer(IFeedStorage)
@@ -553,7 +553,14 @@ class FeedExporter:
             return None
 
         logmsg = f"{slot.format} feed ({slot.itemcount} items) in: {slot.uri}"
-        d: Deferred[None] = maybeDeferred(slot.storage.store, get_file(slot))  # type: ignore[call-overload]
+        result = slot.storage.store(get_file(slot))
+
+        if isinstance(result, Coroutine):
+            # Handle async store method
+            d = Deferred.fromCoroutine(result)
+        else:
+            # Handle regular or deferred store method
+            d = maybeDeferred(result)  # type: ignore[call-overload]
 
         d.addCallback(
             self._handle_store_success, logmsg, spider, type(slot.storage).__name__

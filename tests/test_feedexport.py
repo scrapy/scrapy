@@ -11,6 +11,7 @@ import string
 import sys
 import tempfile
 import warnings
+import asyncio
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from io import BytesIO
@@ -2930,3 +2931,32 @@ class TestURIParamsFeedOption(TestURIParams):
                 uri: options,
             },
         }
+
+    @defer.inlineCallbacks
+    def test_async_store_method(self):
+        @implementer(IFeedStorage)
+        class AsyncStorage:
+            def __init__(self, uri, *, feed_options=None):
+                self.path = file_uri_to_path(uri)
+                self.logger = getLogger()
+
+            def open(self, spider):
+                return tempfile.NamedTemporaryFile(prefix="feed-")
+
+            async def store(self, file):
+                self.logger.info("AsyncStorage.store is called")
+                file.close()
+                # Simulate some async operation
+                await asyncio.sleep(0.1)
+
+        settings = {
+            "FEEDS": {
+                self._random_temp_filename(): {"format": "jsonlines"},
+            },
+            "FEED_STORAGES": {"file": AsyncStorage},
+        }
+
+        with LogCapture() as log:
+            yield self.exported_no_data(settings)
+
+        assert "AsyncStorage.store is called" in str(log)
