@@ -147,8 +147,10 @@ source = [
 ]
 
 [tool.coverage.report]
-# https://github.com/nedbat/coveragepy/issues/831#issuecomment-517778185
-exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "@(abc\\.)?abstractmethod",
+]
 
 [tool.pylint.MASTER]
 persistent = "no"
