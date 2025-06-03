@@ -497,6 +497,8 @@ class TestEngineDownloadSync(TestEngineBase):
         # self.engine.downloader._slot_gc_loop.running = False
 
     def tearDown(self):
+        from twisted.internet import reactor
+
         # Clean up any pending calls
         for c in reactor.getDelayedCalls():
             c.cancel()
@@ -597,6 +599,8 @@ class TestEngineDownloadAsync(TestEngineBase):
         self.engine._slot.inprogress = set()
 
     def tearDown(self):
+        from twisted.internet import reactor
+
         # Clean up any pending calls
         for c in reactor.getDelayedCalls():
             c.cancel()
