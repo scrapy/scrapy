@@ -55,3 +55,7 @@ class TestLink:
     def test_bytes_url(self):
         with pytest.raises(TypeError):
             Link(b"http://www.example.com/\xc2\xa3")
+
+     def test_nofollow_typecheck(self):
+        with pytest.raises(TypeError):
+            Link("http://www.example.com/", nofollow="Not a bool")
