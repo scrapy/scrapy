@@ -136,8 +136,10 @@ class TestAsyncioLoopingCall:
             looping_call.start(0)
         with pytest.raises(ValueError, match="Interval must be greater than 0"):
             looping_call.start(-1)
+        assert not looping_call.running
 
     def test_looping_call_bad_function(self):
-        looping_call = AsyncioLoopingCall(lambda: Deferred())
+        looping_call = AsyncioLoopingCall(Deferred)
         with pytest.raises(TypeError):
             looping_call.start(0.1)
+        assert not looping_call.running
