@@ -3,12 +3,18 @@ from __future__ import annotations
 import asyncio
 import random
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import pytest
+from twisted.internet.defer import Deferred
 from twisted.trial import unittest
 
 from scrapy.utils.asyncgen import as_async_generator
-from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
+from scrapy.utils.asyncio import (
+    AsyncioLoopingCall,
+    _parallel_asyncio,
+    is_asyncio_available,
+)
 from scrapy.utils.defer import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
@@ -97,3 +103,41 @@ class TestParallelAsyncio(unittest.TestCase):
             )
             assert list(range(length)) == sorted(results)
             assert max_parallel_count[0] <= self.CONCURRENT_ITEMS
+
+
+@pytest.mark.only_asyncio
+class TestAsyncioLoopingCall:
+    def test_looping_call(self):
+        func = mock.MagicMock()
+        looping_call = AsyncioLoopingCall(func)
+        looping_call.start(1, now=False)
+        assert looping_call.running
+        looping_call.stop()
+        assert not looping_call.running
+        assert not func.called
+
+    def test_looping_call_now(self):
+        func = mock.MagicMock()
+        looping_call = AsyncioLoopingCall(func)
+        looping_call.start(1)
+        looping_call.stop()
+        assert func.called
+
+    def test_looping_call_already_running(self):
+        looping_call = AsyncioLoopingCall(lambda: None)
+        looping_call.start(1)
+        with pytest.raises(RuntimeError):
+            looping_call.start(1)
+        looping_call.stop()
+
+    def test_looping_call_interval(self):
+        looping_call = AsyncioLoopingCall(lambda: None)
+        with pytest.raises(ValueError, match="Interval must be greater than 0"):
+            looping_call.start(0)
+        with pytest.raises(ValueError, match="Interval must be greater than 0"):
+            looping_call.start(-1)
+
+    def test_looping_call_bad_function(self):
+        looping_call = AsyncioLoopingCall(lambda: Deferred())
+        with pytest.raises(TypeError):
+            looping_call.start(0.1)

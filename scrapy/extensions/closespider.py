@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.asyncio import create_looping_call
 
 if TYPE_CHECKING:
     from twisted.python.failure import Failure
@@ -118,9 +119,7 @@ class CloseSpider:
             task_no_item.stop()
 
     def spider_opened_no_item(self, spider: Spider) -> None:
-        from twisted.internet import task
-
-        self.task_no_item = task.LoopingCall(self._count_items_produced, spider)
+        self.task_no_item = create_looping_call(self._count_items_produced, spider)
         self.task_no_item.start(self.timeout_no_item, now=False)
 
         logger.info(

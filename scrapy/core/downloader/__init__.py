@@ -7,7 +7,6 @@ from datetime import datetime
 from time import time
 from typing import TYPE_CHECKING, Any, cast
 
-from twisted.internet import task
 from twisted.internet.defer import Deferred, inlineCallbacks
 
 from scrapy import Request, Spider, signals
@@ -15,6 +14,7 @@ from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.resolver import dnscache
+from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.defer import (
     deferred_from_coro,
     maybe_deferred_to_future,
@@ -24,6 +24,8 @@ from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
     from collections.abc import Generator
+
+    from twisted.internet.task import LoopingCall
 
     from scrapy.crawler import Crawler
     from scrapy.http import Response
@@ -111,7 +113,9 @@ class Downloader:
         self.middleware: DownloaderMiddlewareManager = (
             DownloaderMiddlewareManager.from_crawler(crawler)
         )
-        self._slot_gc_loop: task.LoopingCall = task.LoopingCall(self._slot_gc)
+        self._slot_gc_loop: AsyncioLoopingCall | LoopingCall = create_looping_call(
+            self._slot_gc
+        )
         self._slot_gc_loop.start(60)
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS", {}
