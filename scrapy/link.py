@@ -32,6 +32,9 @@ class Link:
         if not isinstance(url, str):
             got = url.__class__.__name__
             raise TypeError(f"Link urls must be str objects, got {got}")
+        if not isinstance(nofollow, bool):
+            got = nofollow.__class__.__name__
+            raise TypeError(f"Link nofollow must be bool type, got {got}")
         self.url: str = url
         self.text: str = text
         self.fragment: str = fragment
