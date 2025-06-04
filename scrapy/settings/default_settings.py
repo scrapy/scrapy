@@ -47,8 +47,8 @@ CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 8
 CONCURRENT_REQUESTS_PER_IP = 0
 
-COOKIES_DEBUG = False
 COOKIES_ENABLED = True
+COOKIES_DEBUG = False
 
 DEFAULT_DROPITEM_LOG_LEVEL = "WARNING"
 
@@ -102,7 +102,6 @@ DOWNLOADER_HTTPCLIENTFACTORY = (
 )
 
 DOWNLOADER_MIDDLEWARES = {}
-
 DOWNLOADER_MIDDLEWARES_BASE = {
     # Engine side
     "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
@@ -132,7 +131,6 @@ if sys.platform == "win32":
     EDITOR = "%s -m idlelib.idle"
 
 EXTENSIONS = {}
-
 EXTENSIONS_BASE = {
     "scrapy.extensions.corestats.CoreStats": 0,
     "scrapy.extensions.telnet.TelnetConsole": 0,
@@ -186,10 +184,10 @@ FTP_PASSWORD = "guest"  # noqa: S105
 
 GCS_PROJECT_ID = None
 
+HTTPCACHE_ENABLED = False
 HTTPCACHE_ALWAYS_STORE = False
 HTTPCACHE_DBM_MODULE = "dbm"
 HTTPCACHE_DIR = "httpcache"
-HTTPCACHE_ENABLED = False
 HTTPCACHE_EXPIRATION_SECS = 0
 HTTPCACHE_GZIP = False
 HTTPCACHE_IGNORE_HTTP_CODES = []
@@ -199,20 +197,21 @@ HTTPCACHE_IGNORE_SCHEMES = ["file"]
 HTTPCACHE_POLICY = "scrapy.extensions.httpcache.DummyPolicy"
 HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
-HTTPPROXY_AUTH_ENCODING = "latin-1"
 HTTPPROXY_ENABLED = True
+HTTPPROXY_AUTH_ENCODING = "latin-1"
 
 IMAGES_STORE_GCS_ACL = ""
 IMAGES_STORE_S3_ACL = "private"
 
 ITEM_PIPELINES = {}
 ITEM_PIPELINES_BASE = {}
+
 ITEM_PROCESSOR = "scrapy.pipelines.ItemPipelineManager"
 
 JOBDIR = None
 
-LOG_DATEFORMAT = "%Y-%m-%d %H:%M:%S"
 LOG_ENABLED = True
+LOG_DATEFORMAT = "%Y-%m-%d %H:%M:%S"
 LOG_ENCODING = "utf-8"
 LOG_FILE = None
 LOG_FILE_APPEND = True
@@ -238,15 +237,15 @@ LOGSTATS_INTERVAL = 60.0
 
 MAIL_FROM = "scrapy@localhost"
 MAIL_HOST = "localhost"
-MAIL_PASS = None
 MAIL_PORT = 25
 MAIL_USER = None
+MAIL_PASS = None
 
 MEMDEBUG_ENABLED = False  # enable memory debugging
 MEMDEBUG_NOTIFY = []  # send memory debugging report by mail at engine shutdown
 
-MEMUSAGE_CHECK_INTERVAL_SECONDS = 60.0
 MEMUSAGE_ENABLED = True
+MEMUSAGE_CHECK_INTERVAL_SECONDS = 60.0
 MEMUSAGE_LIMIT_MB = 0
 MEMUSAGE_NOTIFY_MAIL = []
 MEMUSAGE_WARNING_MB = 0
@@ -269,8 +268,8 @@ REDIRECT_ENABLED = True
 REDIRECT_MAX_TIMES = 20  # uses Firefox default setting
 REDIRECT_PRIORITY_ADJUST = +2
 
-REFERRER_POLICY = "scrapy.spidermiddlewares.referer.DefaultReferrerPolicy"
 REFERER_ENABLED = True
+REFERRER_POLICY = "scrapy.spidermiddlewares.referer.DefaultReferrerPolicy"
 
 REQUEST_FINGERPRINTER_CLASS = "scrapy.utils.request.RequestFingerprinter"
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "SENTINEL"
@@ -322,7 +321,6 @@ SPIDER_LOADER_CLASS = "scrapy.spiderloader.SpiderLoader"
 SPIDER_LOADER_WARN_ONLY = False
 
 SPIDER_MIDDLEWARES = {}
-
 SPIDER_MIDDLEWARES_BASE = {
     # Engine side
     "scrapy.spidermiddlewares.start.StartSpiderMiddleware": 25,
@@ -342,9 +340,9 @@ STATSMAILER_RCPTS = []
 
 TELNETCONSOLE_ENABLED = 1
 TELNETCONSOLE_HOST = "127.0.0.1"
-TELNETCONSOLE_PASSWORD = None
 TELNETCONSOLE_PORT = [6023, 6073]
 TELNETCONSOLE_USERNAME = "scrapy"
+TELNETCONSOLE_PASSWORD = None
 
 TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
 
