@@ -14,7 +14,12 @@ from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.resolver import dnscache
-from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
+from scrapy.utils.asyncio import (
+    AsyncioLoopingCall,
+    CallLaterResult,
+    call_later,
+    create_looping_call,
+)
 from scrapy.utils.defer import (
     deferred_from_coro,
     maybe_deferred_to_future,
@@ -50,7 +55,7 @@ class Slot:
         self.queue: deque[tuple[Request, Deferred[Response]]] = deque()
         self.transferring: set[Request] = set()
         self.lastseen: float = 0
-        self.latercall = None
+        self.latercall: CallLaterResult | None = None
 
     def free_transfer_slots(self) -> int:
         return self.concurrency - len(self.transferring)
@@ -61,8 +66,9 @@ class Slot:
         return self.delay
 
     def close(self) -> None:
-        if self.latercall and self.latercall.active():
+        if self.latercall:
             self.latercall.cancel()
+            self.latercall = None
 
     def __repr__(self) -> str:
         cls_name = self.__class__.__name__
@@ -191,9 +197,8 @@ class Downloader:
             slot.active.remove(request)
 
     def _process_queue(self, spider: Spider, slot: Slot) -> None:
-        from twisted.internet import reactor
-
-        if slot.latercall and slot.latercall.active():
+        if slot.latercall:
+            # block processing until slot.latercall is called
             return
 
         # Delay queue processing if a download_delay is configured
@@ -202,9 +207,7 @@ class Downloader:
         if delay:
             penalty = delay - now + slot.lastseen
             if penalty > 0:
-                slot.latercall = reactor.callLater(
-                    penalty, self._process_queue, spider, slot
-                )
+                slot.latercall = call_later(penalty, self._latercall, spider, slot)
                 return
 
         # Process enqueued requests if there are free slots to transfer for this slot
@@ -217,6 +220,10 @@ class Downloader:
             if delay:
                 self._process_queue(spider, slot)
                 break
+
+    def _latercall(self, spider: Spider, slot: Slot) -> None:
+        slot.latercall = None
+        self._process_queue(spider, slot)
 
     async def _download(self, slot: Slot, request: Request, spider: Spider) -> Response:
         # The order is very important for the following logic. Do not change!
