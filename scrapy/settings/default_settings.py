@@ -178,6 +178,8 @@ FEED_URI_PARAMS = None  # a function to extend uri arguments
 FILES_STORE_GCS_ACL = ""
 FILES_STORE_S3_ACL = "private"
 
+FORCE_CRAWLER_PROCESS = False
+
 FTP_PASSIVE_MODE = True
 FTP_USER = "anonymous"
 FTP_PASSWORD = "guest"  # noqa: S105
