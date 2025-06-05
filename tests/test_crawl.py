@@ -5,6 +5,7 @@ import logging
 import unittest
 from ipaddress import IPv4Address
 from socket import gethostbyname
+from typing import Any
 from urllib.parse import urlparse
 
 import pytest
@@ -419,6 +420,8 @@ with multiples lines
 
 
 class TestCrawlSpider(TestCase):
+    mockserver: MockServer
+
     @classmethod
     def setUpClass(cls):
         cls.mockserver = MockServer()
@@ -757,6 +760,34 @@ class TestCrawlSpider(TestCase):
         assert "Spider error processing" in str(log)
 
     @defer.inlineCallbacks
+    def test_spider_errback_item(self):
+        def eb(failure: Failure) -> Any:
+            return {"foo": "bar"}
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/status?n=400"), errback_func=eb
+            )
+        assert "HTTP status code is not handled or not allowed" not in str(log)
+        assert "Spider error processing" not in str(log)
+        assert "'item_scraped_count': 1" in str(log)
+
+    @defer.inlineCallbacks
+    def test_spider_errback_request(self):
+        def eb(failure: Failure) -> Request:
+            return Request(self.mockserver.url("/"))
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/status?n=400"), errback_func=eb
+            )
+        assert "HTTP status code is not handled or not allowed" not in str(log)
+        assert "Spider error processing" not in str(log)
+        assert "Crawled (200)" in str(log)
+
+    @defer.inlineCallbacks
     def test_spider_errback_downloader_error(self):
         failures = []
 
@@ -774,7 +805,7 @@ class TestCrawlSpider(TestCase):
         assert "Spider error processing" not in str(log)
 
     @defer.inlineCallbacks
-    def test_spider_errback_exception_downloader_error(self):
+    def test_spider_errback_downloader_error_exception(self):
         def eb(failure: Failure) -> None:
             raise ValueError("foo")
 
@@ -785,6 +816,34 @@ class TestCrawlSpider(TestCase):
             )
         assert "Error downloading" in str(log)
         assert "Spider error processing" in str(log)
+
+    @defer.inlineCallbacks
+    def test_spider_errback_downloader_error_item(self):
+        def eb(failure: Failure) -> Any:
+            return {"foo": "bar"}
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/drop?abort=1"), errback_func=eb
+            )
+        assert "HTTP status code is not handled or not allowed" not in str(log)
+        assert "Spider error processing" not in str(log)
+        assert "'item_scraped_count': 1" in str(log)
+
+    @defer.inlineCallbacks
+    def test_spider_errback_downloader_error_request(self):
+        def eb(failure: Failure) -> Request:
+            return Request(self.mockserver.url("/"))
+
+        crawler = get_crawler(SingleRequestSpider)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/drop?abort=1"), errback_func=eb
+            )
+        assert "HTTP status code is not handled or not allowed" not in str(log)
+        assert "Spider error processing" not in str(log)
+        assert "Crawled (200)" in str(log)
 
     @defer.inlineCallbacks
     def test_raise_closespider(self):
