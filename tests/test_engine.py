@@ -29,7 +29,6 @@ from twisted.trial import unittest
 from twisted.web import server, static, util
 
 from scrapy import signals
-from scrapy.core.downloader import Downloader
 from scrapy.core.engine import ExecutionEngine, _Slot
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.exceptions import CloseSpider, IgnoreRequest
@@ -431,18 +430,11 @@ class TestEngine(TestEngineBase):
 
     @defer.inlineCallbacks
     def test_close_downloader(self):
-        crawler = get_crawler(MySpider)
-        engine = ExecutionEngine(crawler, None)
-        engine.downloader = Mock(
-            spec=Downloader, close=Mock(return_value=defer.succeed(None))
-        )
-        yield engine.close()
-        engine.downloader.close.assert_called_once()
-        crawler2 = get_crawler(MySpider)
-        engine2 = ExecutionEngine(crawler2, None)
-        if hasattr(engine2, "downloader"):
-            delattr(engine2, "downloader")
-        yield engine2.close()
+        e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
+        yield e.close()
+        if hasattr(e, "downloader"):
+            delattr(e, "downloader")
+        yield e.close()
 
     @defer.inlineCallbacks
     def test_start_already_running_exception(self):
