@@ -95,34 +95,26 @@ def open_in_browser(
 
     body = response.body
     if isinstance(response, HtmlResponse):
-        ext = ".html"
         if b"<base" not in body:
-            _remove_html_comments(body)
+            body = _remove_html_comments(body)
             base_tag = f'<base href="{response.url}">'
 
             # Try to insert after <head> tag first (existing behavior)
-            head_match = re.search(rb"<head(?:[^<>]*?>)", body)
-            if head_match:
+            if re.search(rb"<head[^<>]*?>", body):
                 repl = rf"\0{base_tag}"
-                body = re.sub(rb"<head(?:[^<>]*?>)", to_bytes(repl), body, count=1)
+                body = re.sub(rb"<head[^<>]*?>", to_bytes(repl), body, count=1)
+            # No head tag found, try to insert at beginning of body
+            elif re.search(rb"<body[^<>]*?>", body):
+                repl = rf"\0<head>{base_tag}</head>"
+                body = re.sub(rb"<body[^<>]*?>", to_bytes(repl), body, count=1)
+            # If no body tag, try finding html tag
+            elif re.search(rb"<html[^<>]*?>", body):
+                repl = rf"\0<head>{base_tag}</head>"
+                body = re.sub(rb"<html[^<>]*?>", to_bytes(repl), body, count=1)
             else:
-                # No head tag found, try to insert at beginning of body
-                body_match = re.search(rb"<body(?:[^<>]*?>)", body)
-                if body_match:
-                    repl = rf"\0<head>{base_tag}</head>"
-                    body = re.sub(rb"<body(?:[^<>]*?>)", to_bytes(repl), body, count=1)
-                else:
-                    # If no body tag, try finding html tag
-                    html_match = re.search(rb"<html(?:[^<>]*?>)", body)
-                    if html_match:
-                        repl = rf"\0<head>{base_tag}</head>"
-                        body = re.sub(
-                            rb"<html(?:[^<>]*?>)", to_bytes(repl), body, count=1
-                        )
-                    else:
-                        # As a last resort, prepend to document
-                        body = to_bytes(f"<head>{base_tag}</head>") + body
-            ext = ".html"
+                # As a last resort, prepend to document
+                body = to_bytes(f"<head>{base_tag}</head>") + body
+        ext = ".html"
     elif isinstance(response, TextResponse):
         ext = ".txt"
     else:
