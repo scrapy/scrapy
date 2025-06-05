@@ -436,6 +436,8 @@ class TestEngine(TestEngineBase):
     @defer.inlineCallbacks
     def test_close_without_downloader(self):
         e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
+        if hasattr(e, "downloader") and hasattr(e.downloader, "_slot_gc_loop"):
+            e.downloader._slot_gc_loop.stop()
         delattr(e, "downloader")
         yield e.close()
 
