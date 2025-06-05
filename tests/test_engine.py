@@ -440,6 +440,8 @@ class TestEngine(TestEngineBase):
         engine.downloader.close.assert_called_once()
         crawler2 = get_crawler(MySpider)
         engine2 = ExecutionEngine(crawler2, None)
+        if hasattr(engine2, "downloader"):
+            delattr(engine2, "downloader")
         yield engine2.close()
 
     @defer.inlineCallbacks
