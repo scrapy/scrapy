@@ -433,8 +433,10 @@ class TestEngine(TestEngineBase):
         e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
         yield e.close()
 
-        if hasattr(e, "downloader"):
-            delattr(e, "downloader")
+    @defer.inlineCallbacks
+    def test_close_without_downloader(self):
+        e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
+        delattr(e, "downloader")
         yield e.close()
 
     @defer.inlineCallbacks
