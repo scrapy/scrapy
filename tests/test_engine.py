@@ -438,7 +438,9 @@ class TestEngine(TestEngineBase):
         )
         yield engine.close()
         engine.downloader.close.assert_called_once()
-        yield ExecutionEngine(crawler, None).close()
+        crawler2 = get_crawler(MySpider)
+        engine2 = ExecutionEngine(crawler2, None)
+        yield engine2.close()
 
     @defer.inlineCallbacks
     def test_start_already_running_exception(self):
