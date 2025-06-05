@@ -432,6 +432,7 @@ class TestEngine(TestEngineBase):
     def test_close_downloader(self):
         e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
         yield e.close()
+
         if hasattr(e, "downloader"):
             delattr(e, "downloader")
         yield e.close()
