@@ -116,7 +116,7 @@ class LogFormatter:
         self,
         item: Any,
         exception: BaseException,
-        response: Response | None,
+        response: Response | Failure | None,
         spider: Spider,
     ) -> LogFormatterResult:
         """Logs a message when an item is dropped while it is passing through the item pipeline."""
@@ -137,7 +137,7 @@ class LogFormatter:
         self,
         item: Any,
         exception: BaseException,
-        response: Response | None,
+        response: Response | Failure | None,
         spider: Spider,
     ) -> LogFormatterResult:
         """Logs a message when an item causes an error while it is passing
