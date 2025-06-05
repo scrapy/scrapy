@@ -432,7 +432,7 @@ class TestEngine(TestEngineBase):
     def test_close_downloader(self):
         e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
         yield e.close()
-
+    
     @defer.inlineCallbacks
     def test_start_already_running_exception(self):
         e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
@@ -446,6 +446,20 @@ class TestEngine(TestEngineBase):
             yield self.assertFailure(e.start(), RuntimeError).addBoth(cb)
         finally:
             yield e.stop()
+
+    def test_engine_close_without_downloader(self):
+        """
+        Test that the engine can be closed if the downloader attribute does not exist.
+        This simulates an engine that was never fully started.
+        """
+        e = ExecutionEngine.__new__(ExecutionEngine)  # bypass __init__, so no downloader
+        e.running = False
+        e.spider = None
+        # Ensure that closing the engine does not raise an exception
+        d = e.close()
+        d.addCallback(lambda _: None)
+        return d
+
 
     def test_short_timeout(self):
         args = (
