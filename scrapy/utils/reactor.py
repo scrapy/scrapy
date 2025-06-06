@@ -202,6 +202,11 @@ def is_asyncio_reactor_installed() -> bool:
     """Check whether the installed reactor is :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`.
 
     Raise a :exc:`RuntimeError` if no reactor is installed.
+
+    .. versionchanged:: 2.13
+       In earlier Scrapy versions this function silently installed the default
+       reactor if there was no reactor installed. Now it raises an exception to
+       prevent silent problems in this case.
     """
     if not is_reactor_installed():
         raise RuntimeError(
