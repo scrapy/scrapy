@@ -22,6 +22,7 @@ from unittest.mock import Mock
 from urllib.parse import urlparse
 
 import attr
+import pytest
 from itemadapter import ItemAdapter
 from pydispatch import dispatcher
 from twisted.internet import defer
@@ -432,6 +433,19 @@ class TestEngine(TestEngineBase):
     def test_close_downloader(self):
         e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
         yield e.close()
+
+    def test_close_without_downloader(self):
+        class CustomException(Exception):
+            pass
+
+        class BadDownloader:
+            def __init__(self, crawler):
+                raise CustomException
+
+        with pytest.raises(CustomException):
+            ExecutionEngine(
+                get_crawler(MySpider, {"DOWNLOADER": BadDownloader}), lambda _: None
+            )
 
     @defer.inlineCallbacks
     def test_start_already_running_exception(self):
