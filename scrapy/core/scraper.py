@@ -193,7 +193,7 @@ class Scraper:
             try:
                 # call the spider middlewares and the request callback with the response
                 output = await maybe_deferred_to_future(
-                    self.spidermw.scrape_response(
+                    self.spidermw.scrape_response(  # type: ignore[arg-type]
                         self.call_spider, result, request, self.crawler.spider
                     )
                 )
