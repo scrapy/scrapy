@@ -174,7 +174,8 @@ class ExecutionEngine:
             return self.close_spider(
                 self.spider, reason="shutdown"
             )  # will also close downloader
-        self.downloader.close()
+        if hasattr(self, "downloader"):
+            self.downloader.close()
         return succeed(None)
 
     def pause(self) -> None:
