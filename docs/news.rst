@@ -126,6 +126,15 @@ Backward-incompatible changes
     also enforced for start requests.
     (:issue:`6777`)
 
+-   Calling :func:`scrapy.utils.reactor.is_asyncio_reactor_installed` without
+    an installed reactor now raises an exception instead of installing a
+    reactor. This shouldn't affect normal Scrapy use cases, but it may affect
+    3rd-party test suites that use Scrapy internals such as
+    :class:`~scrapy.crawler.Crawler` and don't install a reactor explicitly. If
+    you are affected by this change, you most likely need to install the
+    reactor before running Scrapy code that expects it to be installed.
+    (:issue:`6732`, :issue:`6735`)
+
 -   The ``from_settings()`` method of
     :class:`~scrapy.spidermiddlewares.urllength.UrlLengthMiddleware`,
     deprecated in Scrapy 2.12.0, is removed earlier than the usual deprecation
