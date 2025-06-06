@@ -95,6 +95,7 @@ reactor after ``MySpider`` has finished running.
     import scrapy
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
+    from scrapy.utils.reactor import install_reactor
 
 
     class MySpider(scrapy.Spider):
@@ -102,6 +103,7 @@ reactor after ``MySpider`` has finished running.
         ...
 
 
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
     configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
     runner = CrawlerRunner()
 
@@ -112,26 +114,26 @@ reactor after ``MySpider`` has finished running.
     d.addBoth(lambda _: reactor.stop())
     reactor.run()  # the script will block here until the crawling is finished
 
-Same example but using a non-default reactor, it's only necessary call
-``install_reactor`` if you are using ``CrawlerRunner`` since ``CrawlerProcess`` already does this automatically.
+Same example but using a different reactor.
 
 .. code-block:: python
 
     import scrapy
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
+    from scrapy.utils.reactor import install_reactor
 
 
     class MySpider(scrapy.Spider):
+        custom_settings = {
+            "TWISTED_REACTOR": "twisted.internet.epollreactor.EPollReactor",
+        }
         # Your spider definition
         ...
 
 
+    install_reactor("twisted.internet.epollreactor.EPollReactor")
     configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
-
-    from scrapy.utils.reactor import install_reactor
-
-    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
     runner = CrawlerRunner()
     d = runner.crawl(MySpider)
 
@@ -184,6 +186,7 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
     from scrapy.utils.project import get_project_settings
+    from scrapy.utils.reactor import install_reactor
 
 
     class MySpider1(scrapy.Spider):
@@ -196,6 +199,7 @@ Same example using :class:`~scrapy.crawler.CrawlerRunner`:
         ...
 
 
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
     configure_logging()
     settings = get_project_settings()
     runner = CrawlerRunner(settings)
@@ -217,6 +221,7 @@ Same example but running the spiders sequentially by chaining the deferreds:
     from scrapy.crawler import CrawlerRunner
     from scrapy.utils.log import configure_logging
     from scrapy.utils.project import get_project_settings
+    from scrapy.utils.reactor import install_reactor
 
 
     class MySpider1(scrapy.Spider):
@@ -229,6 +234,7 @@ Same example but running the spiders sequentially by chaining the deferreds:
         ...
 
 
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
     settings = get_project_settings()
     configure_logging(settings)
     runner = CrawlerRunner(settings)
