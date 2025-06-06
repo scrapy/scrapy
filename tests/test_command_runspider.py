@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 from unittest import skipIf
 
 import pytest
-from twisted.trial import unittest
 
 from tests.test_commands import TestCommandBase
 from tests.test_crawler import ExceptionSpider, NoRequestsSpider
@@ -376,7 +375,7 @@ class TestWindowsRunSpiderCommand(TestRunSpiderCommand):
 
     def setUp(self):
         if platform.system() != "Windows":
-            raise unittest.SkipTest("Windows required for .pyw files")
+            pytest.skip("Windows required for .pyw files")
         return super().setUp()
 
     def test_start_errors(self):
@@ -385,4 +384,4 @@ class TestWindowsRunSpiderCommand(TestRunSpiderCommand):
         assert "badspider.pyw" in log
 
     def test_runspider_unable_to_load(self):
-        raise unittest.SkipTest("Already Tested in 'RunSpiderCommandTest' ")
+        pytest.skip("Already Tested in 'RunSpiderCommandTest' ")

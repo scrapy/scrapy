@@ -9,7 +9,7 @@ from ipaddress import IPv4Address
 from pathlib import Path
 from tempfile import mkdtemp
 from typing import TYPE_CHECKING
-from unittest import mock, skipIf
+from unittest import mock
 from urllib.parse import urlencode
 
 import pytest
@@ -183,7 +183,7 @@ def get_client_certificate(
     return PrivateCertificate.loadPEM(pem)
 
 
-@skipIf(not H2_ENABLED, "HTTP/2 support in Twisted is not enabled")
+@pytest.mark.skipif(not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled")
 class TestHttps2ClientProtocol(TestCase):
     scheme = "https"
     key_file = Path(__file__).parent / "keys" / "localhost.key"

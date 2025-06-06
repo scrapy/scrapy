@@ -440,7 +440,7 @@ class TestFTPBase(unittest.TestCase):
 class TestFTP(TestFTPBase):
     def test_invalid_credentials(self):
         if self.reactor_pytest != "default" and sys.platform == "win32":
-            raise unittest.SkipTest(
+            pytest.skip(
                 "This test produces DirtyReactorAggregateError on Windows with asyncio"
             )
         from twisted.protocols.ftp import ConnectionLost

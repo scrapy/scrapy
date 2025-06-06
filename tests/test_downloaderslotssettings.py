@@ -1,6 +1,6 @@
 import time
 
-from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from scrapy import Request
@@ -62,7 +62,7 @@ class CrawlTestCase(TestCase):
     def setUp(self):
         self.runner = CrawlerRunner()
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_delay(self):
         crawler = get_crawler(DownloaderSlotsSettingsTestSpider)
         yield crawler.crawl(mockserver=self.mockserver)
