@@ -73,7 +73,7 @@ class Shell:
             self.populate_vars()
         if self.code:
             # pylint: disable-next=eval-used
-            print(eval(self.code, globals(), self.vars))  # noqa: S307
+            print(exec(compile(self.code, globals(), self.vars), "<shell>", "eval"))  # noqa: S307
         else:
             # Detect interactive shell setting in scrapy.cfg
             # e.g.: ~/.config/scrapy.cfg or ~/.scrapy.cfg
