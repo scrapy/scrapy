@@ -4,6 +4,7 @@ import pytest
 from pydispatch import dispatcher
 from testfixtures import LogCapture
 from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.python.failure import Failure
 from twisted.trial import unittest
 
@@ -17,7 +18,7 @@ from scrapy.utils.test import get_from_asyncio_queue
 
 
 class TestSendCatchLog(unittest.TestCase):
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_send_catch_log(self):
         test_signal = object()
         handlers_called = set()

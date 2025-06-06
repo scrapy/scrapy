@@ -1,6 +1,6 @@
 import sys
 
-from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial import unittest
 
 import scrapy
@@ -10,13 +10,13 @@ from tests.utils.testproc import ProcessTest
 class TestVersionCommand(ProcessTest, unittest.TestCase):
     command = "version"
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_output(self):
         encoding = sys.stdout.encoding or "utf-8"
         _, out, _ = yield self.execute([])
         assert out.strip().decode(encoding) == f"Scrapy {scrapy.__version__}"
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_verbose_output(self):
         encoding = sys.stdout.encoding or "utf-8"
         _, out, _ = yield self.execute(["-v"])

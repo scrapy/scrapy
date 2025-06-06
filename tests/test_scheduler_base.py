@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from scrapy.core.scheduler import BaseScheduler
@@ -118,7 +119,7 @@ class SimpleSchedulerTest(TestCase, InterfaceCheckMixin):
     def setUp(self):
         self.scheduler = SimpleScheduler()
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_enqueue_dequeue(self):
         open_result = yield self.scheduler.open(Spider("foo"))
         assert open_result == "open"
@@ -147,7 +148,7 @@ class SimpleSchedulerTest(TestCase, InterfaceCheckMixin):
 class MinimalSchedulerCrawlTest(TestCase):
     scheduler_cls = MinimalScheduler
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_crawl(self):
         with MockServer() as mockserver:
             settings = {

@@ -1,6 +1,7 @@
+import pytest
 from twisted.conch.telnet import ITelnetProtocol
 from twisted.cred import credentials
-from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial import unittest
 
 from scrapy.extensions.telnet import TelnetConsole
@@ -21,15 +22,16 @@ class TelnetExtensionTest(unittest.TestCase):
 
         return console, portal
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_bad_credentials(self):
         console, portal = self._get_console_and_portal()
         creds = credentials.UsernamePassword(b"username", b"password")
         d = portal.login(creds, None, ITelnetProtocol)
-        yield self.assertFailure(d, ValueError)
+        with pytest.raises(ValueError, match="Invalid credentials"):
+            yield d
         console.stop_listening()
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_good_credentials(self):
         console, portal = self._get_console_and_portal()
         creds = credentials.UsernamePassword(
@@ -39,7 +41,7 @@ class TelnetExtensionTest(unittest.TestCase):
         yield d
         console.stop_listening()
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_custom_credentials(self):
         settings = {
             "TELNETCONSOLE_USERNAME": "user",

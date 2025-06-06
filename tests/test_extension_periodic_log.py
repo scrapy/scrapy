@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import unittest
 from typing import Any, Callable
 
 from scrapy.extensions.periodic_log import PeriodicLog
@@ -66,7 +65,7 @@ def extension(settings: dict[str, Any] | None = None) -> CustomPeriodicLog:
     return CustomPeriodicLog.from_crawler(crawler)
 
 
-class TestPeriodicLog(unittest.TestCase):
+class TestPeriodicLog:
     def test_extension_enabled(self):
         # Expected that settings for this extension loaded successfully
         # And on certain conditions - extension raising NotConfigured

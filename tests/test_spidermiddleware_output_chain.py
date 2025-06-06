@@ -1,5 +1,5 @@
 from testfixtures import LogCapture
-from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from scrapy import Request, Spider
@@ -308,14 +308,14 @@ class TestSpiderMiddleware(TestCase):
     def tearDownClass(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def crawl_log(self, spider):
         crawler = get_crawler(spider)
         with LogCapture() as log:
             yield crawler.crawl(mockserver=self.mockserver)
         return log
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_recovery(self):
         """
         (0) Recover from an exception in a spider callback. The final item count should be 3
@@ -328,7 +328,7 @@ class TestSpiderMiddleware(TestCase):
         assert str(log).count("Middleware: TabError exception caught") == 1
         assert "'item_scraped_count': 3" in str(log)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_recovery_asyncgen(self):
         """
         Same as test_recovery but with an async callback.
@@ -338,7 +338,7 @@ class TestSpiderMiddleware(TestCase):
         assert str(log).count("Middleware: TabError exception caught") == 1
         assert "'item_scraped_count': 3" in str(log)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_process_spider_input_without_errback(self):
         """
         (1.1) An exception from the process_spider_input chain should be caught by the
@@ -348,7 +348,7 @@ class TestSpiderMiddleware(TestCase):
         assert "Middleware: will raise IndexError" in str(log1)
         assert "Middleware: IndexError exception caught" in str(log1)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_process_spider_input_with_errback(self):
         """
         (1.2) An exception from the process_spider_input chain should not be caught by the
@@ -362,7 +362,7 @@ class TestSpiderMiddleware(TestCase):
         assert "{'from': 'callback'}" not in str(log1)
         assert "'item_scraped_count': 1" in str(log1)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_generator_callback(self):
         """
         (2) An exception from a spider callback (returning a generator) should
@@ -373,7 +373,7 @@ class TestSpiderMiddleware(TestCase):
         assert "Middleware: ImportError exception caught" in str(log2)
         assert "'item_scraped_count': 2" in str(log2)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_async_generator_callback(self):
         """
         Same as test_generator_callback but with an async callback.
@@ -382,7 +382,7 @@ class TestSpiderMiddleware(TestCase):
         assert "Middleware: ImportError exception caught" in str(log2)
         assert "'item_scraped_count': 2" in str(log2)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_generator_callback_right_after_callback(self):
         """
         (2.1) Special case of (2): Exceptions should be caught
@@ -392,7 +392,7 @@ class TestSpiderMiddleware(TestCase):
         assert "Middleware: ImportError exception caught" in str(log21)
         assert "'item_scraped_count': 2" in str(log21)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_not_a_generator_callback(self):
         """
         (3) An exception from a spider callback (returning a list) should
@@ -402,7 +402,7 @@ class TestSpiderMiddleware(TestCase):
         assert "Middleware: ZeroDivisionError exception caught" in str(log3)
         assert "item_scraped_count" not in str(log3)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_not_a_generator_callback_right_after_callback(self):
         """
         (3.1) Special case of (3): Exceptions should be caught
@@ -414,7 +414,7 @@ class TestSpiderMiddleware(TestCase):
         assert "Middleware: ZeroDivisionError exception caught" in str(log31)
         assert "item_scraped_count" not in str(log31)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_generator_output_chain(self):
         """
         (4) An exception from a middleware's process_spider_output method should be sent
@@ -461,7 +461,7 @@ class TestSpiderMiddleware(TestCase):
         assert str(item_recovered) in str(log4)
         assert "parse-second-item" not in str(log4)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_not_a_generator_output_chain(self):
         """
         (5) An exception from a middleware's process_spider_output method should be sent

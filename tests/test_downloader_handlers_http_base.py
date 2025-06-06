@@ -14,7 +14,7 @@ from unittest import mock
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer, error
-from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import inlineCallbacks, maybeDeferred
 from twisted.protocols.policies import WrappingFactory
 from twisted.trial import unittest
 from twisted.web import resource, server, static, util
@@ -186,7 +186,7 @@ class TestHttpBase(unittest.TestCase, ABC):
             self.download_handler_cls, get_crawler()
         )
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def tearDown(self):
         yield self.port.stopListening()
         if hasattr(self.download_handler, "close"):
@@ -229,7 +229,7 @@ class TestHttpBase(unittest.TestCase, ABC):
     async def test_timeout_download_from_spider_nodata_rcvd(self):
         if self.reactor_pytest != "default" and sys.platform == "win32":
             # https://twistedmatrix.com/trac/ticket/10279
-            raise unittest.SkipTest(
+            pytest.skip(
                 "This test produces DirtyReactorAggregateError on Windows with asyncio"
             )
 
@@ -245,7 +245,7 @@ class TestHttpBase(unittest.TestCase, ABC):
     async def test_timeout_download_from_spider_server_hangs(self):
         if self.reactor_pytest != "default" and sys.platform == "win32":
             # https://twistedmatrix.com/trac/ticket/10279
-            raise unittest.SkipTest(
+            pytest.skip(
                 "This test produces DirtyReactorAggregateError on Windows with asyncio"
             )
         # client connects, server send headers and some body bytes but hangs
@@ -531,7 +531,7 @@ class TestSimpleHttpsBase(unittest.TestCase, ABC):
         crawler = get_crawler(settings_dict=settings_dict)
         self.download_handler = build_from_crawler(self.download_handler_cls, crawler)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def tearDown(self):
         yield self.port.stopListening()
         if hasattr(self.download_handler, "close"):
@@ -665,7 +665,7 @@ class TestHttpProxyBase(unittest.TestCase, ABC):
             self.download_handler_cls, get_crawler()
         )
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def tearDown(self):
         yield self.port.stopListening()
         if hasattr(self.download_handler, "close"):

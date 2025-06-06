@@ -4,7 +4,6 @@ Queues that handle requests
 
 import shutil
 import tempfile
-import unittest
 
 import pytest
 import queuelib
@@ -46,7 +45,7 @@ class RequestQueueTestMixin:
 
     def test_one_element_with_peek(self):
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            raise unittest.SkipTest("The queuelib queues do not define peek")
+            pytest.skip("The queuelib queues do not define peek")
         q = self.queue()
         assert len(q) == 0
         assert q.peek() is None
@@ -63,7 +62,7 @@ class RequestQueueTestMixin:
 
     def test_one_element_without_peek(self):
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            raise unittest.SkipTest("The queuelib queues define peek")
+            pytest.skip("The queuelib queues define peek")
         q = self.queue()
         assert len(q) == 0
         assert q.pop() is None
@@ -84,7 +83,7 @@ class RequestQueueTestMixin:
 class FifoQueueMixin(RequestQueueTestMixin):
     def test_fifo_with_peek(self):
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            raise unittest.SkipTest("The queuelib queues do not define peek")
+            pytest.skip("The queuelib queues do not define peek")
         q = self.queue()
         assert len(q) == 0
         assert q.peek() is None
@@ -111,7 +110,7 @@ class FifoQueueMixin(RequestQueueTestMixin):
 
     def test_fifo_without_peek(self):
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            raise unittest.SkipTest("The queuelib queues do not define peek")
+            pytest.skip("The queuelib queues do not define peek")
         q = self.queue()
         assert len(q) == 0
         assert q.pop() is None
@@ -140,7 +139,7 @@ class FifoQueueMixin(RequestQueueTestMixin):
 class LifoQueueMixin(RequestQueueTestMixin):
     def test_lifo_with_peek(self):
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            raise unittest.SkipTest("The queuelib queues do not define peek")
+            pytest.skip("The queuelib queues do not define peek")
         q = self.queue()
         assert len(q) == 0
         assert q.peek() is None
@@ -167,7 +166,7 @@ class LifoQueueMixin(RequestQueueTestMixin):
 
     def test_lifo_without_peek(self):
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            raise unittest.SkipTest("The queuelib queues do not define peek")
+            pytest.skip("The queuelib queues do not define peek")
         q = self.queue()
         assert len(q) == 0
         assert q.pop() is None

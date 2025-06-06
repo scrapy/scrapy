@@ -2,7 +2,7 @@ import logging
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
@@ -272,7 +272,7 @@ class TestShowOrSkipMessages(TestCase):
             },
         }
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_show_messages(self):
         crawler = get_crawler(ItemSpider, self.base_settings)
         with LogCapture() as lc:
@@ -281,7 +281,7 @@ class TestShowOrSkipMessages(TestCase):
         assert "Crawled (200) <GET http://127.0.0.1:" in str(lc)
         assert "Dropped: Ignoring item" in str(lc)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_skip_messages(self):
         settings = self.base_settings.copy()
         settings["LOG_FORMATTER"] = SkipMessagesLogFormatter

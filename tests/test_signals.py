@@ -1,5 +1,5 @@
 import pytest
-from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from scrapy import Request, Spider, signals
@@ -53,7 +53,7 @@ class MockServerTestCase(TestCase):
         self.items.append(item)
 
     @pytest.mark.only_asyncio
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_simple_pipeline(self):
         crawler = get_crawler(ItemSpider)
         crawler.signals.connect(self._on_item_scraped, signals.item_scraped)

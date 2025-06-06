@@ -1,4 +1,4 @@
-from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from scrapy.utils.test import get_crawler
@@ -22,7 +22,7 @@ class TestCloseSpider(TestCase):
     def tearDownClass(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_closespider_itemcount(self):
         close_on = 5
         crawler = get_crawler(ItemSpider, {"CLOSESPIDER_ITEMCOUNT": close_on})
@@ -32,7 +32,7 @@ class TestCloseSpider(TestCase):
         itemcount = crawler.stats.get_value("item_scraped_count")
         assert itemcount >= close_on
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_closespider_pagecount(self):
         close_on = 5
         crawler = get_crawler(FollowAllSpider, {"CLOSESPIDER_PAGECOUNT": close_on})
@@ -42,7 +42,7 @@ class TestCloseSpider(TestCase):
         pagecount = crawler.stats.get_value("response_received_count")
         assert pagecount >= close_on
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_closespider_pagecount_no_item(self):
         close_on = 5
         max_items = 5
@@ -62,7 +62,7 @@ class TestCloseSpider(TestCase):
         itemcount = crawler.stats.get_value("item_scraped_count")
         assert pagecount <= close_on + itemcount
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_closespider_pagecount_no_item_with_pagecount(self):
         close_on_pagecount_no_item = 5
         close_on_pagecount = 20
@@ -79,7 +79,7 @@ class TestCloseSpider(TestCase):
         pagecount = crawler.stats.get_value("response_received_count")
         assert pagecount < close_on_pagecount
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_closespider_errorcount(self):
         close_on = 5
         crawler = get_crawler(ErrorSpider, {"CLOSESPIDER_ERRORCOUNT": close_on})
@@ -91,7 +91,7 @@ class TestCloseSpider(TestCase):
         assert crawler.stats.get_value("spider_exceptions/count") >= close_on
         assert errorcount >= close_on
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_closespider_timeout(self):
         close_on = 0.1
         crawler = get_crawler(FollowAllSpider, {"CLOSESPIDER_TIMEOUT": close_on})
@@ -101,7 +101,7 @@ class TestCloseSpider(TestCase):
         total_seconds = crawler.stats.get_value("elapsed_time_seconds")
         assert total_seconds >= close_on
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_closespider_timeout_no_item(self):
         timeout = 1
         crawler = get_crawler(SlowSpider, {"CLOSESPIDER_TIMEOUT_NO_ITEM": timeout})

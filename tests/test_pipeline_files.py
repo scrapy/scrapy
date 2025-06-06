@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 import attr
 import pytest
 from itemadapter import ItemAdapter
-from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial import unittest
 
 from scrapy.http import Request, Response
@@ -159,7 +159,7 @@ class TestFilesPipeline(unittest.TestCase):
         fullpath = Path(self.tempdir, "some", "image", "key.jpg")
         assert self.pipeline.store._get_filesystem_path(path) == fullpath
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_file_not_expired(self):
         item_url = "http://example.com/file.pdf"
         item = _create_item_with_files(item_url)
@@ -186,7 +186,7 @@ class TestFilesPipeline(unittest.TestCase):
         for p in patchers:
             p.stop()
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_file_expired(self):
         item_url = "http://example.com/file2.pdf"
         item = _create_item_with_files(item_url)
@@ -217,7 +217,7 @@ class TestFilesPipeline(unittest.TestCase):
         for p in patchers:
             p.stop()
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_file_cached(self):
         item_url = "http://example.com/file3.pdf"
         item = _create_item_with_files(item_url)
@@ -537,7 +537,7 @@ class TestFilesPipelineCustomSettings:
 
 @pytest.mark.requires_botocore
 class TestS3FilesStore(unittest.TestCase):
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_persist(self):
         bucket = "mybucket"
         key = "export.csv"
@@ -577,7 +577,7 @@ class TestS3FilesStore(unittest.TestCase):
             # The call to read does not happen with Stubber
             assert buffer.method_calls == [mock.call.seek(0)]
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_stat(self):
         bucket = "mybucket"
         key = "export.csv"
@@ -614,11 +614,11 @@ class TestS3FilesStore(unittest.TestCase):
     "GCS_PROJECT_ID" not in os.environ, reason="GCS_PROJECT_ID not found"
 )
 class TestGCSFilesStore(unittest.TestCase):
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_persist(self):
         uri = os.environ.get("GCS_TEST_FILE_URI")
         if not uri:
-            raise unittest.SkipTest("No GCS URI available for testing")
+            pytest.skip("No GCS URI available for testing")
         data = b"TestGCSFilesStore: \xe2\x98\x83"
         buf = BytesIO(data)
         meta = {"foo": "bar"}
@@ -639,7 +639,7 @@ class TestGCSFilesStore(unittest.TestCase):
         assert blob.content_type == "application/octet-stream"
         assert expected_policy in acl
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_blob_path_consistency(self):
         """Test to make sure that paths used to store files is the same as the one used to get
         already uploaded files.
@@ -647,7 +647,7 @@ class TestGCSFilesStore(unittest.TestCase):
         try:
             import google.cloud.storage  # noqa: F401
         except ModuleNotFoundError:
-            raise unittest.SkipTest("google-cloud-storage is not installed")
+            pytest.skip("google-cloud-storage is not installed")
         with (
             mock.patch("google.cloud.storage"),
             mock.patch("scrapy.pipelines.files.time"),
@@ -666,7 +666,7 @@ class TestGCSFilesStore(unittest.TestCase):
 
 
 class TestFTPFileStore(unittest.TestCase):
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_persist(self):
         data = b"TestFTPFilesStore: \xe2\x98\x83"
         buf = BytesIO(data)

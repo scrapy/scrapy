@@ -1,4 +1,4 @@
-from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from scrapy.signals import request_left_downloader
@@ -34,25 +34,25 @@ class TestCatching(TestCase):
     def tearDownClass(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_success(self):
         crawler = get_crawler(SignalCatcherSpider)
         yield crawler.crawl(self.mockserver.url("/status?n=200"))
         assert crawler.spider.caught_times == 1
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_timeout(self):
         crawler = get_crawler(SignalCatcherSpider, {"DOWNLOAD_TIMEOUT": 0.1})
         yield crawler.crawl(self.mockserver.url("/delay?n=0.2"))
         assert crawler.spider.caught_times == 1
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_disconnect(self):
         crawler = get_crawler(SignalCatcherSpider)
         yield crawler.crawl(self.mockserver.url("/drop"))
         assert crawler.spider.caught_times == 1
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_noconnect(self):
         crawler = get_crawler(SignalCatcherSpider)
         yield crawler.crawl("http://thereisdefinetelynosuchdomain.com")
