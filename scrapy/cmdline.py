@@ -32,7 +32,8 @@ class ScrapyArgumentParser(argparse.ArgumentParser):
     def _parse_optional(
         self, arg_string: str
     ) -> tuple[argparse.Action | None, str, str | None] | None:
-        # if starts with -: it means that it is a parameter not an argument
+        # Support something like ‘-o -:json’, where ‘-:json’ is a value for 
+        # ‘-o’, not another parameter.
         if arg_string[:2] == "-:":
             return None
 
