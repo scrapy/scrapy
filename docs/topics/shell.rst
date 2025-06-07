@@ -253,6 +253,7 @@ Here's an example of how you would call it from your spider:
 
     class MySpider(scrapy.Spider):
         name = "myspider"
+        allowed_domains = ["example.com", "example.org", "example.net"]
         start_urls = [
             "http://example.com",
             "http://example.org",
