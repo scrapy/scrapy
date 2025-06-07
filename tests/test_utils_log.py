@@ -4,7 +4,6 @@ import json
 import logging
 import re
 import sys
-import unittest
 from io import StringIO
 from typing import TYPE_CHECKING, Any
 
@@ -100,20 +99,18 @@ class TestLogCounterHandler:
         assert self.crawler.stats.get_value("log_count/INFO") is None
 
 
-class StreamLoggerTest(unittest.TestCase):
-    def setUp(self):
-        self.stdout = sys.stdout
+class TestStreamLogger:
+    def test_redirect(self):
         logger = logging.getLogger("test")
         logger.setLevel(logging.WARNING)
+        old_stdout = sys.stdout
         sys.stdout = StreamLogger(logger, logging.ERROR)
 
-    def tearDown(self):
-        sys.stdout = self.stdout
-
-    def test_redirect(self):
         with LogCapture() as log:
             print("test log msg")
         log.check(("test", "ERROR", "test log msg"))
+
+        sys.stdout = old_stdout
 
 
 @pytest.mark.parametrize(

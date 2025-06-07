@@ -1,4 +1,3 @@
-import unittest
 import warnings
 
 import pytest
@@ -267,7 +266,7 @@ def create_guess_scheme_t(args):
 
 def create_skipped_scheme_t(args):
     def do_expected(self):
-        raise unittest.SkipTest(args[2])
+        pytest.skip(args[2])
 
     return do_expected
 

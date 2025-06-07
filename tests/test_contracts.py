@@ -1,7 +1,7 @@
 from unittest import TextTestResult
 
 import pytest
-from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.python import failure
 from twisted.trial import unittest
 
@@ -502,7 +502,7 @@ class TestContractsManager(unittest.TestCase):
         assert not self.results.failures
         assert self.results.errors
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_same_url(self):
         class TestSameUrlSpider(Spider):
             name = "test_same_url"

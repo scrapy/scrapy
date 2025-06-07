@@ -12,8 +12,15 @@ from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.asyncio import (
+    AsyncioLoopingCall,
+    CallLaterResult,
+    call_later,
+    create_looping_call,
+)
 
 if TYPE_CHECKING:
+    from twisted.internet.task import LoopingCall
     from twisted.python.failure import Failure
 
     # typing.Self requires Python 3.11
@@ -29,6 +36,12 @@ logger = logging.getLogger(__name__)
 class CloseSpider:
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
+
+        # for CLOSESPIDER_TIMEOUT
+        self.task: CallLaterResult | None = None
+
+        # for CLOSESPIDER_TIMEOUT_NO_ITEM
+        self.task_no_item: AsyncioLoopingCall | LoopingCall | None = None
 
         self.close_on: dict[str, Any] = {
             "timeout": crawler.settings.getfloat("CLOSESPIDER_TIMEOUT"),
@@ -91,14 +104,12 @@ class CloseSpider:
             self.crawler.engine.close_spider(spider, "closespider_pagecount_no_item")
 
     def spider_opened(self, spider: Spider) -> None:
-        from twisted.internet import reactor
-
         assert self.crawler.engine
-        self.task = reactor.callLater(
+        self.task = call_later(
             self.close_on["timeout"],
             self.crawler.engine.close_spider,
             spider,
-            reason="closespider_timeout",
+            "closespider_timeout",
         )
 
     def item_scraped(self, item: Any, spider: Spider) -> None:
@@ -109,18 +120,17 @@ class CloseSpider:
             self.crawler.engine.close_spider(spider, "closespider_itemcount")
 
     def spider_closed(self, spider: Spider) -> None:
-        task = getattr(self, "task", None)
-        if task and task.active():
-            task.cancel()
+        if self.task:
+            self.task.cancel()
+            self.task = None
 
-        task_no_item = getattr(self, "task_no_item", None)
-        if task_no_item and task_no_item.running:
-            task_no_item.stop()
+        if self.task_no_item:
+            if self.task_no_item.running:
+                self.task_no_item.stop()
+            self.task_no_item = None
 
     def spider_opened_no_item(self, spider: Spider) -> None:
-        from twisted.internet import task
-
-        self.task_no_item = task.LoopingCall(self._count_items_produced, spider)
+        self.task_no_item = create_looping_call(self._count_items_produced, spider)
         self.task_no_item.start(self.timeout_no_item, now=False)
 
         logger.info(

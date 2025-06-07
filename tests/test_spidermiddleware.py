@@ -8,6 +8,7 @@ from unittest import mock
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from scrapy.core.spidermw import SpiderMiddlewareManager
@@ -129,7 +130,7 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
         yield {"foo": 2}
         yield {"foo": 3}
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def _get_middleware_result(self, *mw_classes, start_index: int | None = None):
         setting = self._construct_mw_setting(*mw_classes, start_index=start_index)
         self.crawler = get_crawler(
@@ -142,7 +143,7 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
         )
         return result
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def _test_simple_base(
         self, *mw_classes, downgrade: bool = False, start_index: int | None = None
     ):
@@ -159,7 +160,7 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
             ProcessSpiderOutputSimpleMiddleware in mw_classes
         )
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def _test_asyncgen_base(
         self, *mw_classes, downgrade: bool = False, start_index: int | None = None
     ):
@@ -299,7 +300,7 @@ class ProcessSpiderOutputCoroutineMiddleware:
 
 
 class TestProcessSpiderOutputInvalidResult(TestBaseAsyncSpiderMiddleware):
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_non_iterable(self):
         with pytest.raises(
             _InvalidOutput,
@@ -309,7 +310,7 @@ class TestProcessSpiderOutputInvalidResult(TestBaseAsyncSpiderMiddleware):
                 ProcessSpiderOutputNonIterableMiddleware,
             )
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_coroutine(self):
         with pytest.raises(
             _InvalidOutput,
@@ -444,7 +445,7 @@ class TestBuiltinMiddlewareSimple(TestBaseAsyncSpiderMiddleware):
     MW_ASYNCGEN = ProcessSpiderOutputAsyncGenMiddleware
     MW_UNIVERSAL = ProcessSpiderOutputUniversalMiddleware
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def _get_middleware_result(self, *mw_classes, start_index: int | None = None):
         setting = self._construct_mw_setting(*mw_classes, start_index=start_index)
         self.crawler = get_crawler(Spider, {"SPIDER_MIDDLEWARES": setting})
@@ -519,7 +520,7 @@ class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
     def _scrape_func(self, *args, **kwargs):
         1 / 0
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def _test_asyncgen_nodowngrade(self, *mw_classes):
         with pytest.raises(
             _InvalidOutput, match="Async iterable returned from .+ cannot be downgraded"

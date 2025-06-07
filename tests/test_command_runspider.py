@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 from unittest import skipIf
 
 import pytest
-from twisted.trial import unittest
 
 from tests.test_commands import TestCommandBase
 from tests.test_crawler import ExceptionSpider, NoRequestsSpider
@@ -65,8 +64,10 @@ class BadSpider(scrapy.Spider):
     def test_runspider(self):
         log = self.get_log(self.debug_log_spider)
         assert "DEBUG: It Works!" in log
-        assert "INFO: Spider opened" in log
-        assert "INFO: Closing spider (finished)" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            in log
+        )
         assert "INFO: Spider closed (finished)" in log
 
     def test_run_fail_spider(self):
@@ -87,6 +88,17 @@ class BadSpider(scrapy.Spider):
         log = self.get_log(self.debug_log_spider, args=("-s", "LOG_LEVEL=INFO"))
         assert "DEBUG: It Works!" not in log
         assert "INFO: Spider opened" in log
+
+    def test_runspider_default_reactor(self):
+        log = self.get_log(self.debug_log_spider, args=("-s", "TWISTED_REACTOR="))
+        assert "DEBUG: It Works!" in log
+        assert (
+            "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+            not in log
+        )
+        assert "INFO: Spider opened" in log
+        assert "INFO: Closing spider (finished)" in log
+        assert "INFO: Spider closed (finished)" in log
 
     def test_runspider_dnscache_disabled(self):
         # see https://github.com/scrapy/scrapy/issues/2811
@@ -363,7 +375,7 @@ class TestWindowsRunSpiderCommand(TestRunSpiderCommand):
 
     def setUp(self):
         if platform.system() != "Windows":
-            raise unittest.SkipTest("Windows required for .pyw files")
+            pytest.skip("Windows required for .pyw files")
         return super().setUp()
 
     def test_start_errors(self):
@@ -372,4 +384,4 @@ class TestWindowsRunSpiderCommand(TestRunSpiderCommand):
         assert "badspider.pyw" in log
 
     def test_runspider_unable_to_load(self):
-        raise unittest.SkipTest("Already Tested in 'RunSpiderCommandTest' ")
+        pytest.skip("Already Tested in 'RunSpiderCommandTest' ")

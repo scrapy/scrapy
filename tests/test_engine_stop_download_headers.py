@@ -1,5 +1,5 @@
 from testfixtures import LogCapture
-from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 
 from scrapy.exceptions import StopDownload
 from tests.test_engine import (
@@ -19,7 +19,7 @@ class HeadersReceivedCrawlerRun(CrawlerRun):
 
 
 class TestHeadersReceivedEngine(TestEngineBase):
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_crawler(self):
         for spider in (
             MySpider,

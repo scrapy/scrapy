@@ -21,6 +21,7 @@ from scrapy.exceptions import (
     ScrapyDeprecationWarning,
 )
 from scrapy.http import Request, Response
+from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
     _defer_sleep,
     aiter_errback,
@@ -188,6 +189,7 @@ class Scraper:
             )
 
         assert self.crawler.spider
+        output: Iterable[Any] | AsyncIterator[Any]
         if isinstance(result, Response):
             try:
                 # call the spider middlewares and the request callback with the response
@@ -202,7 +204,7 @@ class Scraper:
 
         try:
             # call the request errback with the downloader error
-            await self.call_spider_async(result, request)
+            output = await self.call_spider_async(result, request)
         except Exception as spider_exc:
             # the errback didn't silence the exception
             if not result.check(IgnoreRequest):
@@ -217,6 +219,8 @@ class Scraper:
             if spider_exc is not result.value:
                 # the errback raised a different exception, handle it
                 self.handle_spider_error(Failure(), request, result)
+        else:
+            await self.handle_spider_output_async(output, request, result)
 
     def call_spider(
         self, result: Response | Failure, request: Request, spider: Spider | None = None
@@ -304,7 +308,7 @@ class Scraper:
         self,
         result: Iterable[_T] | AsyncIterator[_T],
         request: Request,
-        response: Response,
+        response: Response | Failure,
         spider: Spider | None = None,
     ) -> Deferred[None]:
         """Pass items/requests produced by a callback to ``_process_spidermw_output()`` in parallel."""
@@ -322,14 +326,24 @@ class Scraper:
         self,
         result: Iterable[_T] | AsyncIterator[_T],
         request: Request,
-        response: Response,
+        response: Response | Failure,
     ) -> None:
         """Pass items/requests produced by a callback to ``_process_spidermw_output()`` in parallel."""
+        it: Iterable[_T] | AsyncIterator[_T]
+        if is_asyncio_available():
+            if isinstance(result, AsyncIterator):
+                it = aiter_errback(result, self.handle_spider_error, request, response)
+            else:
+                it = iter_errback(result, self.handle_spider_error, request, response)
+            await _parallel_asyncio(
+                it, self.concurrent_items, self._process_spidermw_output_async, response
+            )
+            return
         if isinstance(result, AsyncIterator):
-            ait = aiter_errback(result, self.handle_spider_error, request, response)
+            it = aiter_errback(result, self.handle_spider_error, request, response)
             await maybe_deferred_to_future(
                 parallel_async(
-                    ait,
+                    it,
                     self.concurrent_items,
                     self._process_spidermw_output,
                     response,
@@ -346,8 +360,19 @@ class Scraper:
             )
         )
 
-    @deferred_f_from_coro_f
-    async def _process_spidermw_output(self, output: Any, response: Response) -> None:
+    def _process_spidermw_output(
+        self, output: Any, response: Response | Failure
+    ) -> Deferred[None]:
+        """Process each Request/Item (given in the output parameter) returned
+        from the given spider.
+
+        Items are sent to the item pipelines, requests are scheduled.
+        """
+        return deferred_from_coro(self._process_spidermw_output_async(output, response))
+
+    async def _process_spidermw_output_async(
+        self, output: Any, response: Response | Failure
+    ) -> None:
         """Process each Request/Item (given in the output parameter) returned
         from the given spider.
 
@@ -360,7 +385,9 @@ class Scraper:
         if output is not None:
             await self.start_itemproc_async(output, response=response)
 
-    def start_itemproc(self, item: Any, *, response: Response | None) -> Deferred[None]:
+    def start_itemproc(
+        self, item: Any, *, response: Response | Failure | None
+    ) -> Deferred[None]:
         """Send *item* to the item pipelines for processing.
 
         *response* is the source of the item data. If the item does not come
@@ -369,7 +396,7 @@ class Scraper:
         return deferred_from_coro(self.start_itemproc_async(item, response=response))
 
     async def start_itemproc_async(
-        self, item: Any, *, response: Response | None
+        self, item: Any, *, response: Response | Failure | None
     ) -> None:
         """Send *item* to the item pipelines for processing.
 

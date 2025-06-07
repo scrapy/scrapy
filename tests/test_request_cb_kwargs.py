@@ -1,5 +1,5 @@
 from testfixtures import LogCapture
-from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from scrapy.http import Request
@@ -161,7 +161,7 @@ class TestCallbackKeywordArguments(TestCase):
     def tearDownClass(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_callback_kwargs(self):
         crawler = get_crawler(KeywordArgumentsSpider)
         with LogCapture() as log:

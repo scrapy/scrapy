@@ -7,7 +7,7 @@ from collections import deque
 from typing import Any, NamedTuple
 
 import pytest
-from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from scrapy.core.downloader import Downloader
@@ -362,11 +362,11 @@ class TestIntegrationWithDownloaderAwareInMemory(TestCase):
             },
         )
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def tearDown(self):
         yield self.crawler.stop()
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_integration_downloader_aware_priority_queue(self):
         with MockServer() as mockserver:
             url = mockserver.url("/status?n=200", is_secure=False)

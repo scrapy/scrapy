@@ -235,12 +235,10 @@ Disallow: /some/randome/page.html
         self, request: Request, middleware: RobotsTxtMiddleware
     ) -> None:
         spider = None  # not actually used
-        await maybe_deferred_to_future(
-            self.assertFailure(
-                middleware.process_request(request, spider),  # type: ignore[arg-type]
-                IgnoreRequest,
+        with pytest.raises(IgnoreRequest):
+            await maybe_deferred_to_future(
+                maybeDeferred(middleware.process_request, request, spider)  # type: ignore[call-overload]
             )
-        )
 
     def assertRobotsTxtRequested(self, base_url: str) -> None:
         calls = self.crawler.engine.download.call_args_list
