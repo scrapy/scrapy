@@ -34,7 +34,7 @@ class ScrapyArgumentParser(argparse.ArgumentParser):
     ) -> tuple[argparse.Action | None, str, str | None] | None:
         # Support something like ‘-o -:json’, where ‘-:json’ is a value for 
         # ‘-o’, not another parameter.
-        if arg_string[:2] == "-:":
+        if arg_string.startswith("-:"):
             return None
 
         return super()._parse_optional(arg_string)
