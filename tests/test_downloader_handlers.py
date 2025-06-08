@@ -12,6 +12,7 @@ from unittest import mock
 
 import pytest
 from twisted.cred import checkers, credentials, portal
+from twisted.internet.defer import inlineCallbacks
 from twisted.protocols.ftp import FTPFactory, FTPRealm
 from twisted.trial import unittest
 from w3lib.url import path_to_file_uri
@@ -340,9 +341,10 @@ class TestFTPBase(unittest.TestCase):
         self.portNum = self.port.getHost().port
         crawler = get_crawler()
         self.download_handler = build_from_crawler(FTPDownloadHandler, crawler)
-        self.addCleanup(self.port.stopListening)
 
+    @inlineCallbacks
     def tearDown(self):
+        yield self.port.stopListening()
         shutil.rmtree(self.directory)
 
     def _add_test_callbacks(self, deferred, callback=None, errback=None):
@@ -478,9 +480,10 @@ class TestAnonymousFTP(TestFTPBase):
         self.portNum = self.port.getHost().port
         crawler = get_crawler()
         self.download_handler = build_from_crawler(FTPDownloadHandler, crawler)
-        self.addCleanup(self.port.stopListening)
 
+    @inlineCallbacks
     def tearDown(self):
+        yield self.port.stopListening()
         shutil.rmtree(self.directory)
 
 

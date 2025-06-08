@@ -345,7 +345,7 @@ class TestMediaPipeline(TestBaseMediaPipeline):
 
     @inlineCallbacks
     def test_use_media_to_download_result(self):
-        req = Request("http://url", meta={"result": "ITSME", "response": self.fail})
+        req = Request("http://url", meta={"result": "ITSME"})
         item = {"requests": req}
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item["results"] == [(True, "ITSME")]

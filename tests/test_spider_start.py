@@ -18,7 +18,7 @@ ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
 
 
-class MainTestCase(TestCase):
+class TestMain(TestCase):
     async def _test_spider(self, spider, expected_items=None):
         actual_items = []
         expected_items = [] if expected_items is None else expected_items

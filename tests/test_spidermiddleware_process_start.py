@@ -47,7 +47,7 @@ class UniversalSpiderMiddleware:
         raise NotImplementedError
 
 
-# Spiders and spider middlewares for MainTestCase._test_wrap
+# Spiders and spider middlewares for TestMain._test_wrap
 
 
 class ModernWrapSpider(Spider):
@@ -106,7 +106,7 @@ class DeprecatedWrapSpiderMiddleware:
         yield ITEM_C
 
 
-class MainTestCase(TestCase):
+class TestMain(TestCase):
     async def _test(self, spider_middlewares, spider_cls, expected_items):
         actual_items = []
 

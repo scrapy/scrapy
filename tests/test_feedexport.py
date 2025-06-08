@@ -91,33 +91,36 @@ def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
     return (client_mock, bucket_mock, blob_mock)
 
 
-# TODO: replace self.mktemp() and drop the unittest.TestCase base
-class TestFileFeedStorage(unittest.TestCase):
+class TestFileFeedStorage:
+    @staticmethod
+    def get_tmp_path() -> Path:
+        return Path(tempfile.mkdtemp(), "temp").resolve()
+
     def test_store_file_uri(self):
-        path = Path(self.mktemp()).resolve()
+        path = self.get_tmp_path()
         uri = path_to_file_uri(str(path))
         self._assert_stores(FileFeedStorage(uri), path)
 
     def test_store_file_uri_makedirs(self):
-        path = Path(self.mktemp()).resolve() / "more" / "paths" / "file.txt"
+        path = self.get_tmp_path() / "more" / "paths" / "file.txt"
         uri = path_to_file_uri(str(path))
         self._assert_stores(FileFeedStorage(uri), path)
 
     def test_store_direct_path(self):
-        path = Path(self.mktemp()).resolve()
+        path = self.get_tmp_path()
         self._assert_stores(FileFeedStorage(str(path)), path)
 
     def test_store_direct_path_relative(self):
-        path = Path(self.mktemp())
+        path = self.get_tmp_path().relative_to(Path.cwd(), walk_up=True)
         self._assert_stores(FileFeedStorage(str(path)), path)
 
     def test_interface(self):
-        path = self.mktemp()
-        st = FileFeedStorage(path)
+        path = self.get_tmp_path()
+        st = FileFeedStorage(str(path))
         verifyObject(IFeedStorage, st)
 
     def _store(self, feed_options=None) -> Path:
-        path = Path(self.mktemp()).resolve()
+        path = self.get_tmp_path()
         storage = FileFeedStorage(str(path), feed_options=feed_options)
         spider = scrapy.Spider("default")
         file = storage.open(spider)
