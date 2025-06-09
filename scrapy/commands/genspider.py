@@ -153,6 +153,23 @@ class Command(ScrapyCommand):
         assert self.settings is not None
         tvars = self._generate_template_variables(module, name, url, template_name)
         if self.settings.get("NEWSPIDER_MODULE"):
+# Secure template mapping to prevent arbitrary module loading
+ALLOWED_TEMPLATES = {
+    'basic': 'scrapy.templates.spiders.basic',
+    'crawl': 'scrapy.templates.spiders.crawl',
+    'csvfeed': 'scrapy.templates.spiders.csvfeed',
+    'xmlfeed': 'scrapy.templates.spiders.xmlfeed',
+}
+
+def _get_template_module(template_name):
+    """Safely get template module using whitelist approach."""
+    if template_name not in ALLOWED_TEMPLATES:
+        available = ', '.join(ALLOWED_TEMPLATES.keys())
+        raise ValueError(f"Unknown template '{template_name}'. Available templates: {available}")
+    
+    module_path = ALLOWED_TEMPLATES[template_name]
+    return import_module(module_path)
+
             spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])
             assert spiders_module.__file__
             spiders_dir = Path(spiders_module.__file__).parent.resolve()
