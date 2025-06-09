@@ -717,7 +717,6 @@ class TestFeedExportBase(ABC, unittest.TestCase):
         await self.assertExportedMarshal(items, rows, settings)
         await self.assertExportedMultiple(items, rows, settings)
 
-    @abstractmethod
     async def assertExportedCsv(
         self,
         items: Iterable[Any],
@@ -725,52 +724,47 @@ class TestFeedExportBase(ABC, unittest.TestCase):
         rows: Iterable[dict[str, Any]],
         settings: dict[str, Any] | None = None,
     ) -> None:
-        raise NotImplementedError
+        pass
 
-    @abstractmethod
     async def assertExportedJsonLines(
         self,
         items: Iterable[Any],
         rows: Iterable[dict[str, Any]],
         settings: dict[str, Any] | None = None,
     ) -> None:
-        raise NotImplementedError
+        pass
 
-    @abstractmethod
     async def assertExportedXml(
         self,
         items: Iterable[Any],
         rows: Iterable[dict[str, Any]],
         settings: dict[str, Any] | None = None,
     ) -> None:
-        raise NotImplementedError
+        pass
 
-    @abstractmethod
     async def assertExportedMultiple(
         self,
         items: Iterable[Any],
         rows: Iterable[dict[str, Any]],
         settings: dict[str, Any] | None = None,
     ) -> None:
-        raise NotImplementedError
+        pass
 
-    @abstractmethod
     async def assertExportedPickle(
         self,
         items: Iterable[Any],
         rows: Iterable[dict[str, Any]],
         settings: dict[str, Any] | None = None,
     ) -> None:
-        raise NotImplementedError
+        pass
 
-    @abstractmethod
     async def assertExportedMarshal(
         self,
         items: Iterable[Any],
         rows: Iterable[dict[str, Any]],
         settings: dict[str, Any] | None = None,
     ) -> None:
-        raise NotImplementedError
+        pass
 
     @abstractmethod
     async def run_and_export(
