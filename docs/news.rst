@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.13.2:
 
-Scrapy 2.13.2 (unreleased)
+Scrapy 2.13.2 (2025-06-09)
 --------------------------
 
 -   Fixed a bug introduced in Scrapy 2.13.0 that caused results of request
