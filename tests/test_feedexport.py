@@ -718,6 +718,61 @@ class TestFeedExportBase(ABC, unittest.TestCase):
         await self.assertExportedMultiple(items, rows, settings)
 
     @abstractmethod
+    async def assertExportedCsv(
+        self,
+        items: Iterable[Any],
+        header: Iterable[str],
+        rows: Iterable[dict[str, Any]],
+        settings: dict[str, Any] | None = None,
+    ) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def assertExportedJsonLines(
+        self,
+        items: Iterable[Any],
+        rows: Iterable[dict[str, Any]],
+        settings: dict[str, Any] | None = None,
+    ) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def assertExportedXml(
+        self,
+        items: Iterable[Any],
+        rows: Iterable[dict[str, Any]],
+        settings: dict[str, Any] | None = None,
+    ) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def assertExportedMultiple(
+        self,
+        items: Iterable[Any],
+        rows: Iterable[dict[str, Any]],
+        settings: dict[str, Any] | None = None,
+    ) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def assertExportedPickle(
+        self,
+        items: Iterable[Any],
+        rows: Iterable[dict[str, Any]],
+        settings: dict[str, Any] | None = None,
+    ) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def assertExportedMarshal(
+        self,
+        items: Iterable[Any],
+        rows: Iterable[dict[str, Any]],
+        settings: dict[str, Any] | None = None,
+    ) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
     async def run_and_export(
         self, spider_cls: type[Spider], settings: dict[str, Any]
     ) -> dict[str, Any]:
