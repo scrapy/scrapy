@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.13.2:
 
-Scrapy 2.13.2 (YYYY-MM-DD)
+Scrapy 2.13.2 (unreleased)
 --------------------------
 
 -   Fixed a bug introduced in Scrapy 2.13.0 that caused results of request
@@ -29,12 +29,25 @@ Scrapy 2.13.2 (YYYY-MM-DD)
     reactor-related errors with Scrapy 2.13.0 and later.
     (:issue:`6865`)
 
+-   Fixed ``scrapy fetch`` not working with scrapy-poet_.
+    (:issue:`6872`)
+
 -   Fixed an exception produced by :class:`scrapy.core.engine.ExecutionEngine`
     when it's closed before being fully initialized.
     (:issue:`6857`, :issue:`6867`)
 
 -   Improved the README, updated the Scrapy logo in it.
     (:issue:`6831`, :issue:`6833`, :issue:`6839`)
+
+-   Restricted the Twisted version used in tests to below 25.5.0, as some tests
+    fail with 25.5.0.
+    (:issue:`6878`, :issue:`6882`)
+
+-   Updated type hints for Twisted 25.5.0 changes.
+    (:issue:`6882`)
+
+-   Removed the old artwork.
+    (:issue:`6874`)
 
 .. _release-2.13.1:
 
