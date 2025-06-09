@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import csv
 import marshal
-import json
+import pickle
 import pprint
 from collections.abc import Callable, Iterable, Mapping
 from io import BytesIO, TextIOWrapper
@@ -292,7 +292,7 @@ class CsvItemExporter(BaseItemExporter):
             self.csv_writer.writerow(row)
 
 
-class SafePickleItemExporter(BaseItemExporter):
+class PickleItemExporter(BaseItemExporter):
     def __init__(self, file: BytesIO, protocol: int = 4, **kwargs: Any):
         super().__init__(**kwargs)
         self.file: BytesIO = file
@@ -300,7 +300,7 @@ class SafePickleItemExporter(BaseItemExporter):
 
     def export_item(self, item: Any) -> None:
         d = dict(self._get_serialized_fields(item))
-        json.dump(d, self.file, self.protocol)
+        pickle.dump(d, self.file, self.protocol)
 
 
 class MarshalItemExporter(BaseItemExporter):
