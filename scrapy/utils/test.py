@@ -10,7 +10,7 @@ import warnings
 from importlib import import_module
 from pathlib import Path
 from posixpath import split
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 from unittest import TestCase, mock
 
 from twisted.trial.unittest import SkipTest
@@ -211,4 +211,4 @@ def get_web_client_agent_req(url: str) -> Deferred[TxResponse]:
     from twisted.web.client import Agent  # imports twisted.internet.reactor
 
     agent = Agent(reactor)
-    return agent.request(b"GET", url.encode("utf-8"))
+    return cast("Deferred[TxResponse]", agent.request(b"GET", url.encode("utf-8")))
