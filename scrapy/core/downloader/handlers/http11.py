@@ -8,7 +8,7 @@ import re
 from contextlib import suppress
 from io import BytesIO
 from time import time
-from typing import TYPE_CHECKING, Any, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
@@ -27,7 +27,7 @@ from twisted.web.client import (
 from twisted.web.client import Response as TxResponse
 from twisted.web.http import PotentialDataLoss, _DataLoss
 from twisted.web.http_headers import Headers as TxHeaders
-from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS
+from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS, IResponse
 from zope.interface import implementer
 
 from scrapy import Request, Spider, signals
@@ -286,11 +286,11 @@ class TunnelingAgent(Agent):
         key: Any,
         endpoint: TCP4ClientEndpoint,
         method: bytes,
-        parsedURI: bytes,
+        parsedURI: URI,
         headers: TxHeaders | None,
         bodyProducer: IBodyProducer | None,
         requestPath: bytes,
-    ) -> Deferred[TxResponse]:
+    ) -> Deferred[IResponse]:
         # proxy host and port are required for HTTP pool `key`
         # otherwise, same remote host connection request could reuse
         # a cached tunneled connection to a different proxy
@@ -329,14 +329,14 @@ class ScrapyProxyAgent(Agent):
         uri: bytes,
         headers: TxHeaders | None = None,
         bodyProducer: IBodyProducer | None = None,
-    ) -> Deferred[TxResponse]:
+    ) -> Deferred[IResponse]:
         """
         Issue a new request via the configured proxy.
         """
         # Cache *all* connections under the same key, since we are only
         # connecting to a single destination, the proxy:
         return self._requestWithEndpoint(
-            key=("http-proxy", self._proxyURI.host, self._proxyURI.port),
+            key=(b"http-proxy", self._proxyURI.host, self._proxyURI.port),
             endpoint=self._getEndpoint(self._proxyURI),
             method=method,
             parsedURI=URI.fromBytes(uri),
@@ -426,8 +426,11 @@ class ScrapyAgent:
             headers.removeHeader(b"Proxy-Authorization")
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
         start_time = time()
-        d: Deferred[TxResponse] = agent.request(
-            method, to_bytes(url, encoding="ascii"), headers, bodyproducer
+        d: Deferred[IResponse] = agent.request(
+            method,
+            to_bytes(url, encoding="ascii"),
+            headers,
+            cast(IBodyProducer, bodyproducer),
         )
         # set download latency
         d.addCallback(self._cb_latency, request, start_time)
