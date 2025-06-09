@@ -7,7 +7,7 @@ See documentation in docs/topics/request-response.rst
 
 from __future__ import annotations
 
-import xmlrpc.client as xmlrpclib
+import defusedxml.xmlrpc as xmlrpc.client as xmlrpclib
 from typing import Any
 
 import defusedxml.xmlrpc
