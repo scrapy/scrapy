@@ -410,14 +410,14 @@ class TestHttps2ClientProtocol(TestCase):
         )
         await self._check_POST_json_x10(request, Data.JSON_LARGE, Data.EXTRA_LARGE, 200)
 
-    @deferred_f_from_coro_f
-    async def test_invalid_negotiated_protocol(self):
+    @inlineCallbacks
+    def test_invalid_negotiated_protocol(self):
         with mock.patch(
             "scrapy.core.http2.protocol.PROTOCOL_NAME", return_value=b"not-h2"
         ):
             request = Request(url=self.get_url("/status?n=200"))
             with pytest.raises(ResponseFailed):
-                await self.make_request(request)
+                yield self.make_request_dfd(request)
 
     @inlineCallbacks
     def test_cancel_request(self):
@@ -441,15 +441,15 @@ class TestHttps2ClientProtocol(TestCase):
         )
         assert len(re.findall(error_pattern, str(exc_info.value))) == 1
 
-    @deferred_f_from_coro_f
-    async def test_received_dataloss_response(self):
+    @inlineCallbacks
+    def test_received_dataloss_response(self):
         """In case when value of Header Content-Length != len(Received Data)
         ProtocolError is raised"""
         from h2.exceptions import InvalidBodyLengthError
 
         request = Request(url=self.get_url("/dataloss"))
         with pytest.raises(ResponseFailed) as exc_info:
-            await self.make_request(request)
+            yield self.make_request_dfd(request)
         assert len(exc_info.value.reasons) > 0
         assert any(
             isinstance(error, InvalidBodyLengthError)
@@ -619,15 +619,15 @@ class TestHttps2ClientProtocol(TestCase):
         await maybe_deferred_to_future(self.test_GET_small_body())
         await maybe_deferred_to_future(self.test_POST_small_json())
 
-    @deferred_f_from_coro_f
-    async def test_connection_timeout(self):
+    @inlineCallbacks
+    def test_connection_timeout(self):
         request = Request(self.get_url("/timeout"))
 
         # Update the timer to 1s to test connection timeout
         self.client.setTimeout(1)
 
         with pytest.raises(ResponseFailed) as exc_info:
-            await self.make_request(request)
+            yield self.make_request_dfd(request)
 
         for err in exc_info.value.reasons:
             from scrapy.core.http2.protocol import H2ClientProtocol
