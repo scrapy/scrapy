@@ -4,7 +4,7 @@ import json
 import logging
 from ipaddress import IPv4Address
 from socket import gethostbyname
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 import pytest
@@ -14,11 +14,12 @@ from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase
 
-from scrapy import signals
+from scrapy import Spider, signals
 from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import CloseSpider, StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import NON_EXISTING_RESOLVABLE
@@ -55,8 +56,13 @@ from tests.spiders import (
     StartItemSpider,
 )
 
+if TYPE_CHECKING:
+    from scrapy.statscollectors import StatsCollector
+
 
 class TestCrawl(TestCase):
+    mockserver: MockServer
+
     @classmethod
     def setUpClass(cls):
         cls.mockserver = MockServer()
@@ -72,16 +78,17 @@ class TestCrawl(TestCase):
         yield crawler.crawl(mockserver=self.mockserver)
         assert len(crawler.spider.urls_visited) == 11  # 10 + start_url
 
-    @inlineCallbacks
-    def test_fixed_delay(self):
-        yield self._test_delay(total=3, delay=0.2)
+    @deferred_f_from_coro_f
+    async def test_fixed_delay(self):
+        await self._test_delay(total=3, delay=0.2)
 
-    @inlineCallbacks
-    def test_randomized_delay(self):
-        yield self._test_delay(total=3, delay=0.1, randomize=True)
+    @deferred_f_from_coro_f
+    async def test_randomized_delay(self):
+        await self._test_delay(total=3, delay=0.1, randomize=True)
 
-    @inlineCallbacks
-    def _test_delay(self, total, delay, randomize=False):
+    async def _test_delay(
+        self, total: int, delay: float, randomize: bool = False
+    ) -> None:
         crawl_kwargs = {
             "maxlatency": delay * 2,
             "mockserver": self.mockserver,
@@ -91,7 +98,9 @@ class TestCrawl(TestCase):
 
         settings = {"DOWNLOAD_DELAY": delay, "RANDOMIZE_DOWNLOAD_DELAY": randomize}
         crawler = get_crawler(FollowAllSpider, settings)
-        yield crawler.crawl(**crawl_kwargs)
+        await maybe_deferred_to_future(crawler.crawl(**crawl_kwargs))
+        assert crawler.spider
+        assert isinstance(crawler.spider, FollowAllSpider)
         times = crawler.spider.times
         total_time = times[-1] - times[0]
         average = total_time / (len(times) - 1)
@@ -103,7 +112,9 @@ class TestCrawl(TestCase):
         # code above to have any meaning.
         settings["DOWNLOAD_DELAY"] = 0
         crawler = get_crawler(FollowAllSpider, settings)
-        yield crawler.crawl(**crawl_kwargs)
+        await maybe_deferred_to_future(crawler.crawl(**crawl_kwargs))
+        assert crawler.spider
+        assert isinstance(crawler.spider, FollowAllSpider)
         times = crawler.spider.times
         total_time = times[-1] - times[0]
         average = total_time / (len(times) - 1)
@@ -428,8 +439,9 @@ class TestCrawlSpider(TestCase):
     def tearDownClass(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @inlineCallbacks
-    def _run_spider(self, spider_cls):
+    async def _run_spider(
+        self, spider_cls: type[Spider]
+    ) -> tuple[LogCapture, list[Any], StatsCollector]:
         items = []
 
         def _on_item_scraped(item):
@@ -438,9 +450,12 @@ class TestCrawlSpider(TestCase):
         crawler = get_crawler(spider_cls)
         crawler.signals.connect(_on_item_scraped, signals.item_scraped)
         with LogCapture() as log:
-            yield crawler.crawl(
-                self.mockserver.url("/status?n=200"), mockserver=self.mockserver
+            await maybe_deferred_to_future(
+                crawler.crawl(
+                    self.mockserver.url("/status?n=200"), mockserver=self.mockserver
+                )
             )
+        assert crawler.stats
         return log, items, crawler.stats
 
     @inlineCallbacks
@@ -521,9 +536,9 @@ class TestCrawlSpider(TestCase):
         assert "Got response 200" in str(log)
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
-    def test_async_def_asyncio_parse_items_list(self):
-        log, items, _ = yield self._run_spider(AsyncDefAsyncioReturnSpider)
+    @deferred_f_from_coro_f
+    async def test_async_def_asyncio_parse_items_list(self):
+        log, items, _ = await self._run_spider(AsyncDefAsyncioReturnSpider)
         assert "Got response 200" in str(log)
         assert {"id": 1} in items
         assert {"id": 2} in items
@@ -546,17 +561,17 @@ class TestCrawlSpider(TestCase):
         assert {"foo": 42} in items
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
-    def test_async_def_asyncgen_parse(self):
-        log, _, stats = yield self._run_spider(AsyncDefAsyncioGenSpider)
+    @deferred_f_from_coro_f
+    async def test_async_def_asyncgen_parse(self):
+        log, _, stats = await self._run_spider(AsyncDefAsyncioGenSpider)
         assert "Got response 200" in str(log)
         itemcount = stats.get_value("item_scraped_count")
         assert itemcount == 1
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
-    def test_async_def_asyncgen_parse_loop(self):
-        log, items, stats = yield self._run_spider(AsyncDefAsyncioGenLoopSpider)
+    @deferred_f_from_coro_f
+    async def test_async_def_asyncgen_parse_loop(self):
+        log, items, stats = await self._run_spider(AsyncDefAsyncioGenLoopSpider)
         assert "Got response 200" in str(log)
         itemcount = stats.get_value("item_scraped_count")
         assert itemcount == 10
@@ -564,9 +579,9 @@ class TestCrawlSpider(TestCase):
             assert {"foo": i} in items
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
-    def test_async_def_asyncgen_parse_exc(self):
-        log, items, stats = yield self._run_spider(AsyncDefAsyncioGenExcSpider)
+    @deferred_f_from_coro_f
+    async def test_async_def_asyncgen_parse_exc(self):
+        log, items, stats = await self._run_spider(AsyncDefAsyncioGenExcSpider)
         log = str(log)
         assert "Spider error processing" in log
         assert "ValueError" in log
@@ -576,9 +591,9 @@ class TestCrawlSpider(TestCase):
             assert {"foo": i} in items
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
-    def test_async_def_asyncgen_parse_complex(self):
-        _, items, stats = yield self._run_spider(AsyncDefAsyncioGenComplexSpider)
+    @deferred_f_from_coro_f
+    async def test_async_def_asyncgen_parse_complex(self):
+        _, items, stats = await self._run_spider(AsyncDefAsyncioGenComplexSpider)
         itemcount = stats.get_value("item_scraped_count")
         assert itemcount == 156
         # some random items
@@ -588,27 +603,27 @@ class TestCrawlSpider(TestCase):
             assert {"index2": i} in items
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
-    def test_async_def_asyncio_parse_reqs_list(self):
-        log, *_ = yield self._run_spider(AsyncDefAsyncioReqsReturnSpider)
+    @deferred_f_from_coro_f
+    async def test_async_def_asyncio_parse_reqs_list(self):
+        log, *_ = await self._run_spider(AsyncDefAsyncioReqsReturnSpider)
         for req_id in range(3):
             assert f"Got response 200, req_id {req_id}" in str(log)
 
     @pytest.mark.only_not_asyncio
-    @inlineCallbacks
-    def test_async_def_deferred_direct(self):
-        _, items, _ = yield self._run_spider(AsyncDefDeferredDirectSpider)
+    @deferred_f_from_coro_f
+    async def test_async_def_deferred_direct(self):
+        _, items, _ = await self._run_spider(AsyncDefDeferredDirectSpider)
         assert items == [{"code": 200}]
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
-    def test_async_def_deferred_wrapped(self):
-        log, items, _ = yield self._run_spider(AsyncDefDeferredWrappedSpider)
+    @deferred_f_from_coro_f
+    async def test_async_def_deferred_wrapped(self):
+        log, items, _ = await self._run_spider(AsyncDefDeferredWrappedSpider)
         assert items == [{"code": 200}]
 
-    @inlineCallbacks
-    def test_async_def_deferred_maybe_wrapped(self):
-        _, items, _ = yield self._run_spider(AsyncDefDeferredMaybeWrappedSpider)
+    @deferred_f_from_coro_f
+    async def test_async_def_deferred_maybe_wrapped(self):
+        _, items, _ = await self._run_spider(AsyncDefDeferredMaybeWrappedSpider)
         assert items == [{"code": 200}]
 
     @inlineCallbacks
