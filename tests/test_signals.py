@@ -21,7 +21,7 @@ class ItemSpider(Spider):
         return {"index": response.meta["index"]}
 
 
-class MainTestCase(TestCase):
+class TestMain(TestCase):
     @deferred_f_from_coro_f
     async def test_scheduler_empty(self):
         crawler = get_crawler()
@@ -35,7 +35,7 @@ class MainTestCase(TestCase):
         assert len(calls) >= 1
 
 
-class MockServerTestCase(TestCase):
+class TestMockServer(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mockserver = MockServer()

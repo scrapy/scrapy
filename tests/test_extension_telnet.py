@@ -8,7 +8,7 @@ from scrapy.extensions.telnet import TelnetConsole
 from scrapy.utils.test import get_crawler
 
 
-class TelnetExtensionTest(unittest.TestCase):
+class TestTelnetExtension(unittest.TestCase):
     def _get_console_and_portal(self, settings=None):
         crawler = get_crawler(settings_dict=settings)
         console = TelnetConsole(crawler)

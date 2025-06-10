@@ -91,52 +91,53 @@ def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
     return (client_mock, bucket_mock, blob_mock)
 
 
-# TODO: replace self.mktemp() and drop the unittest.TestCase base
-class TestFileFeedStorage(unittest.TestCase):
-    def test_store_file_uri(self):
-        path = Path(self.mktemp()).resolve()
+class TestFileFeedStorage:
+    def test_store_file_uri(self, tmp_path):
+        path = tmp_path / "file.txt"
         uri = path_to_file_uri(str(path))
         self._assert_stores(FileFeedStorage(uri), path)
 
-    def test_store_file_uri_makedirs(self):
-        path = Path(self.mktemp()).resolve() / "more" / "paths" / "file.txt"
+    def test_store_file_uri_makedirs(self, tmp_path):
+        path = tmp_path / "more" / "paths" / "file.txt"
         uri = path_to_file_uri(str(path))
         self._assert_stores(FileFeedStorage(uri), path)
 
-    def test_store_direct_path(self):
-        path = Path(self.mktemp()).resolve()
+    def test_store_direct_path(self, tmp_path):
+        path = tmp_path / "file.txt"
         self._assert_stores(FileFeedStorage(str(path)), path)
 
-    def test_store_direct_path_relative(self):
-        path = Path(self.mktemp())
+    def test_store_direct_path_relative(self, tmp_path):
+        path = (tmp_path / "foo" / "bar").relative_to(Path.cwd())
         self._assert_stores(FileFeedStorage(str(path)), path)
 
-    def test_interface(self):
-        path = self.mktemp()
-        st = FileFeedStorage(path)
+    def test_interface(self, tmp_path):
+        path = tmp_path / "file.txt"
+        st = FileFeedStorage(str(path))
         verifyObject(IFeedStorage, st)
 
-    def _store(self, feed_options=None) -> Path:
-        path = Path(self.mktemp()).resolve()
+    @staticmethod
+    def _store(path: Path, feed_options: dict[str, Any] | None = None) -> None:
         storage = FileFeedStorage(str(path), feed_options=feed_options)
         spider = scrapy.Spider("default")
         file = storage.open(spider)
         file.write(b"content")
         storage.store(file)
-        return path
 
-    def test_append(self):
-        path = self._store()
+    def test_append(self, tmp_path):
+        path = tmp_path / "file.txt"
+        self._store(path)
         self._assert_stores(FileFeedStorage(str(path)), path, b"contentcontent")
 
-    def test_overwrite(self):
-        path = self._store({"overwrite": True})
+    def test_overwrite(self, tmp_path):
+        path = tmp_path / "file.txt"
+        self._store(path, {"overwrite": True})
         self._assert_stores(
             FileFeedStorage(str(path), feed_options={"overwrite": True}), path
         )
 
+    @staticmethod
     def _assert_stores(
-        self, storage: FileFeedStorage, path: Path, expected_content: bytes = b"content"
+        storage: FileFeedStorage, path: Path, expected_content: bytes = b"content"
     ) -> None:
         spider = scrapy.Spider("default")
         file = storage.open(spider)

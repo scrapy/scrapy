@@ -163,23 +163,25 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
         assert json.loads(response.text)["headers"][header] == [value1, value2]
 
 
-class Https2WrongHostnameTestCase(H2DownloadHandlerMixin, TestHttpsWrongHostnameBase):
+class TestHttps2WrongHostname(H2DownloadHandlerMixin, TestHttpsWrongHostnameBase):
     pass
 
 
-class Https2InvalidDNSId(H2DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
+class TestHttps2InvalidDNSId(H2DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
     pass
 
 
-class Https2InvalidDNSPattern(H2DownloadHandlerMixin, TestHttpsInvalidDNSPatternBase):
+class TestHttps2InvalidDNSPattern(
+    H2DownloadHandlerMixin, TestHttpsInvalidDNSPatternBase
+):
     pass
 
 
-class Https2CustomCiphers(H2DownloadHandlerMixin, TestHttpsCustomCiphersBase):
+class TestHttps2CustomCiphers(H2DownloadHandlerMixin, TestHttpsCustomCiphersBase):
     pass
 
 
-class Http2MockServerTestCase(TestHttpMockServerBase):
+class TestHttp2MockServer(TestHttpMockServerBase):
     """HTTP 2.0 test case with MockServer"""
 
     @property
@@ -193,7 +195,7 @@ class Http2MockServerTestCase(TestHttpMockServerBase):
     is_secure = True
 
 
-class Https2ProxyTestCase(H2DownloadHandlerMixin, TestHttpProxyBase):
+class TestHttps2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
     # only used for HTTPS tests
     keyfile = "keys/localhost.key"
     certfile = "keys/localhost.crt"

@@ -247,10 +247,8 @@ Disallow: /some/randome/page.html
         assert request.callback == NO_CALLBACK
 
 
+@pytest.mark.skipif(not rerp_available(), reason="Rerp parser is not installed")
 class TestRobotsTxtMiddlewareWithRerp(TestRobotsTxtMiddleware):
-    if not rerp_available():
-        skip = "Rerp parser is not installed"
-
     def setUp(self):
         super().setUp()
         self.crawler.settings.set(

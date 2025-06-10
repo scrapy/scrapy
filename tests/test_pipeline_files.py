@@ -3,6 +3,7 @@ import os
 import random
 import time
 import warnings
+from abc import ABC, abstractmethod
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -265,7 +266,12 @@ class TestFilesPipeline(unittest.TestCase):
         assert file_path(request, item=item) == "full/path-to-store-file"
 
 
-class FilesPipelineTestCaseFieldsMixin:
+class TestFilesPipelineFieldsMixin(ABC):
+    @property
+    @abstractmethod
+    def item_class(self) -> Any:
+        raise NotImplementedError
+
     def test_item_fields_default(self, tmp_path):
         url = "http://www.example.com/files/1.txt"
         item = self.item_class(name="item1", file_urls=[url])
@@ -302,7 +308,7 @@ class FilesPipelineTestCaseFieldsMixin:
         assert isinstance(item, self.item_class)
 
 
-class TestFilesPipelineFieldsDict(FilesPipelineTestCaseFieldsMixin):
+class TestFilesPipelineFieldsDict(TestFilesPipelineFieldsMixin):
     item_class = dict
 
 
@@ -316,7 +322,7 @@ class FilesPipelineTestItem(Item):
     custom_files = Field()
 
 
-class TestFilesPipelineFieldsItem(FilesPipelineTestCaseFieldsMixin):
+class TestFilesPipelineFieldsItem(TestFilesPipelineFieldsMixin):
     item_class = FilesPipelineTestItem
 
 
@@ -331,7 +337,7 @@ class FilesPipelineTestDataClass:
     custom_files: list = dataclasses.field(default_factory=list)
 
 
-class TestFilesPipelineFieldsDataClass(FilesPipelineTestCaseFieldsMixin):
+class TestFilesPipelineFieldsDataClass(TestFilesPipelineFieldsMixin):
     item_class = FilesPipelineTestDataClass
 
 
@@ -346,7 +352,7 @@ class FilesPipelineTestAttrsItem:
     custom_files: list[dict[str, str]] = attr.ib(default=list)
 
 
-class TestFilesPipelineFieldsAttrsItem(FilesPipelineTestCaseFieldsMixin):
+class TestFilesPipelineFieldsAttrsItem(TestFilesPipelineFieldsMixin):
     item_class = FilesPipelineTestAttrsItem
 
 

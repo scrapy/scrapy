@@ -5,6 +5,7 @@ from pathlib import Path
 from tempfile import mkdtemp
 from typing import TYPE_CHECKING, Any
 
+import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
@@ -218,18 +219,20 @@ class TestFileDownloadCrawl(TestCase):
         assert "ZeroDivisionError" in str(log)
 
 
-skip_pillow: str | None
+pillow_available: bool
 try:
     from PIL import Image  # noqa: F401
 except ImportError:
-    skip_pillow = "Missing Python Imaging Library, install https://pypi.org/pypi/Pillow"
+    pillow_available = False
 else:
-    skip_pillow = None
+    pillow_available = True
 
 
-class ImageDownloadCrawlTestCase(TestFileDownloadCrawl):
-    skip = skip_pillow
-
+@pytest.mark.skipif(
+    not pillow_available,
+    reason="Missing Python Imaging Library, install https://pypi.org/pypi/Pillow",
+)
+class TestImageDownloadCrawl(TestFileDownloadCrawl):
     pipeline_class = "scrapy.pipelines.images.ImagesPipeline"
     store_setting_key = "IMAGES_STORE"
     media_key = "images"
