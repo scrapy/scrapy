@@ -5,6 +5,7 @@ import csv
 import gzip
 import json
 import lzma
+import os
 import random
 import shutil
 import string
@@ -107,8 +108,13 @@ class TestFileFeedStorage:
         self._assert_stores(FileFeedStorage(str(path)), path)
 
     def test_store_direct_path_relative(self, tmp_path):
-        path = (tmp_path / "foo" / "bar").relative_to(Path.cwd())
-        self._assert_stores(FileFeedStorage(str(path)), path)
+        old_cwd = Path.cwd()
+        try:
+            os.chdir(tmp_path)
+            path = Path("foo", "bar")
+            self._assert_stores(FileFeedStorage(str(path)), path)
+        finally:
+            os.chdir(old_cwd)
 
     def test_interface(self, tmp_path):
         path = tmp_path / "file.txt"

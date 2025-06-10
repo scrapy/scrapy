@@ -46,12 +46,6 @@ if not H2_ENABLED:
     )
 
 
-@pytest.fixture
-def chdir(tmpdir):
-    """Change to pytest-provided temporary directory"""
-    tmpdir.chdir()
-
-
 def pytest_addoption(parser):
     parser.addoption(
         "--reactor",

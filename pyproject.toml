@@ -224,7 +224,6 @@ disable = [
 
 [tool.pytest.ini_options]
 xfail_strict = true
-usefixtures = "chdir"
 python_files = ["test_*.py", "test_*/__init__.py"]
 addopts = [
     "--assert=plain",
