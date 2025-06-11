@@ -1,29 +1,15 @@
-import sys
-
-from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
-
 import scrapy
-from tests.utils.testproc import ProcessTest
+from tests.test_commands import TestProjectBase
 
 
-class TestVersionCommand(ProcessTest, unittest.TestCase):
-    command = "version"
-
-    @inlineCallbacks
+class TestVersionCommand(TestProjectBase):
     def test_output(self):
-        encoding = sys.stdout.encoding or "utf-8"
-        _, out, _ = yield self.execute([])
-        assert out.strip().decode(encoding) == f"Scrapy {scrapy.__version__}"
+        _, out, _ = self.proc("version")
+        assert out.strip() == f"Scrapy {scrapy.__version__}"
 
-    @inlineCallbacks
     def test_verbose_output(self):
-        encoding = sys.stdout.encoding or "utf-8"
-        _, out, _ = yield self.execute(["-v"])
-        headers = [
-            line.partition(":")[0].strip()
-            for line in out.strip().decode(encoding).splitlines()
-        ]
+        _, out, _ = self.proc("version", "-v")
+        headers = [line.partition(":")[0].strip() for line in out.strip().splitlines()]
         assert headers == [
             "Scrapy",
             "lxml",

@@ -7,7 +7,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory, mkdtemp
 from typing import TYPE_CHECKING
-from unittest import skipIf
 
 import pytest
 
@@ -58,7 +57,7 @@ class BadSpider(scrapy.Spider):
             return self.proc("runspider", fname, *args)
 
     def get_log(self, code, name=None, args=()):
-        p, stdout, stderr = self.runspider(code, name, args=args)
+        _, _, stderr = self.runspider(code, name, args=args)
         return stderr
 
     def test_runspider(self):
@@ -288,7 +287,7 @@ class MySpider(scrapy.Spider):
         log = self.get_log(spider_code, args=args)
         assert "[myspider] DEBUG: FEEDS: {'stdout:': {'format': 'json'}}" in log
 
-    @skipIf(platform.system() == "Windows", reason="Linux only")
+    @pytest.mark.skipif(platform.system() == "Windows", reason="Linux only")
     def test_absolute_path_linux(self):
         spider_code = """
 import scrapy
@@ -317,7 +316,7 @@ class MySpider(scrapy.Spider):
             in log
         )
 
-    @skipIf(platform.system() != "Windows", reason="Windows only")
+    @pytest.mark.skipif(platform.system() != "Windows", reason="Windows only")
     def test_absolute_path_windows(self):
         spider_code = """
 import scrapy
@@ -370,13 +369,11 @@ class MySpider(scrapy.Spider):
         assert "The value of FOO is 42" in log
 
 
+@pytest.mark.skipif(
+    platform.system() != "Windows", reason="Windows required for .pyw files"
+)
 class TestWindowsRunSpiderCommand(TestRunSpiderCommand):
     spider_filename = "myspider.pyw"
-
-    def setUp(self):
-        if platform.system() != "Windows":
-            pytest.skip("Windows required for .pyw files")
-        return super().setUp()
 
     def test_start_errors(self):
         log = self.get_log(self.badspider, name="badspider.pyw")
@@ -384,4 +381,4 @@ class TestWindowsRunSpiderCommand(TestRunSpiderCommand):
         assert "badspider.pyw" in log
 
     def test_runspider_unable_to_load(self):
-        pytest.skip("Already Tested in 'RunSpiderCommandTest' ")
+        pytest.skip("Already Tested in 'RunSpiderCommandTest'")
