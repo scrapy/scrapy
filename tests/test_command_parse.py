@@ -341,7 +341,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
             "dummy",
             self.mockserver.url("/html"),
         )
-        assert re.search(r"# Scraped Items  -+\n\[\]", out)
+        assert re.search(r"# Scraped Items  -+\r?\n\[\]", out)
         assert "Cannot find callback" in stderr
 
     def test_crawlspider_matching_rule_callback_set(self):
@@ -371,7 +371,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         _, out, stderr = self.proc(
             "parse", "--spider", self.spider_name, "-r", self.mockserver.url("/html")
         )
-        assert re.search(r"# Scraped Items  -+\n\[\]", out)
+        assert re.search(r"# Scraped Items  -+\r?\n\[\]", out)
         assert "No CrawlSpider rules found" in stderr
 
     def test_crawlspider_missing_callback(self):
@@ -382,7 +382,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
             "-r",
             self.mockserver.url("/html"),
         )
-        assert re.search(r"# Scraped Items  -+\n\[\]", out)
+        assert re.search(r"# Scraped Items  -+\r?\n\[\]", out)
 
     def test_crawlspider_no_matching_rule(self):
         """The requested URL has no matching rule, so no items should be scraped"""
@@ -393,7 +393,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
             "-r",
             self.mockserver.url("/enc-gb18030"),
         )
-        assert re.search(r"# Scraped Items  -+\n\[\]", out)
+        assert re.search(r"# Scraped Items  -+\r?\n\[\]", out)
         assert "Cannot find a rule that matches" in stderr
 
     def test_crawlspider_not_exists_with_not_matched_url(self):
