@@ -121,7 +121,7 @@ class TestCommandBase(TestProjectBase):
     def setup_method(self):
         super().setup_method()
         self.call("startproject", self.project_name)
-        self.cwd = Path(self.temp_path, self.project_name)
+        self.cwd = self.proj_path
         self.env["SCRAPY_SETTINGS_MODULE"] = f"{self.project_name}.settings"
 
 
@@ -361,6 +361,19 @@ Unknown command: abc
             with mock.patch("sys.stdout", new=StringIO()) as out:
                 _print_unknown_command_msg(Settings(), cmdname, inproject)
                 assert out.getvalue().strip() == message.strip()
+
+
+class TestProjectSubdir(TestProjectBase):
+    """Test that commands work in a subdirectory of the project."""
+
+    def setup_method(self):
+        super().setup_method()
+        self.call("startproject", self.project_name)
+        self.cwd = self.proj_path / "subdir"
+        self.cwd.mkdir(exist_ok=True)
+
+    def test_list(self):
+        assert self.call("list") == 0
 
 
 class TestBenchCommand(TestCommandBase):
