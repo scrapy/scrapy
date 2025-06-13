@@ -12,6 +12,8 @@ def _py_files(folder):
 
 
 collect_ignore = [
+    # may need extra deps
+    "docs/_ext",
     # not a test, but looks like a test
     "scrapy/utils/testproc.py",
     "scrapy/utils/testsite.py",
