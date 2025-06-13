@@ -524,21 +524,20 @@ class TestFilesPipelineCustomSettings:
             expected_value = settings.get(settings_attr)
             assert getattr(pipeline_cls, pipe_inst_attr) == expected_value
 
-    def test_file_pipeline_using_pathlike_objects(self):
+    def test_file_pipeline_using_pathlike_objects(self, tmp_path):
         class CustomFilesPipelineWithPathLikeDir(FilesPipeline):
             def file_path(self, request, response=None, info=None, *, item=None):
                 return Path("subdir") / Path(request.url).name
 
         pipeline = CustomFilesPipelineWithPathLikeDir.from_crawler(
-            get_crawler(None, {"FILES_STORE": Path("./Temp")})
+            get_crawler(None, {"FILES_STORE": tmp_path})
         )
         request = Request("http://example.com/image01.jpg")
         assert pipeline.file_path(request) == Path("subdir/image01.jpg")
 
-    def test_files_store_constructor_with_pathlike_object(self):
-        path = Path("./FileDir")
-        fs_store = FSFilesStore(path)
-        assert fs_store.basedir == str(path)
+    def test_files_store_constructor_with_pathlike_object(self, tmp_path):
+        fs_store = FSFilesStore(tmp_path)
+        assert fs_store.basedir == str(tmp_path)
 
 
 @pytest.mark.requires_botocore

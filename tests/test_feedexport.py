@@ -242,24 +242,22 @@ class TestBlockingFeedStorage:
     def test_default_temp_dir(self):
         b = BlockingFeedStorage()
 
-        tmp = b.open(self.get_test_spider())
-        tmp_path = Path(tmp.name).parent
-        assert str(tmp_path) == tempfile.gettempdir()
+        storage_file = b.open(self.get_test_spider())
+        storage_dir = Path(storage_file.name).parent
+        assert str(storage_dir) == tempfile.gettempdir()
 
-    def test_temp_file(self):
+    def test_temp_file(self, tmp_path):
         b = BlockingFeedStorage()
 
-        tests_path = Path(__file__).resolve().parent
-        spider = self.get_test_spider({"FEED_TEMPDIR": str(tests_path)})
-        tmp = b.open(spider)
-        tmp_path = Path(tmp.name).parent
-        assert tmp_path == tests_path
+        spider = self.get_test_spider({"FEED_TEMPDIR": str(tmp_path)})
+        storage_file = b.open(spider)
+        storage_dir = Path(storage_file.name).parent
+        assert storage_dir == tmp_path
 
-    def test_invalid_folder(self):
+    def test_invalid_folder(self, tmp_path):
         b = BlockingFeedStorage()
 
-        tests_path = Path(__file__).resolve().parent
-        invalid_path = tests_path / "invalid_path"
+        invalid_path = tmp_path / "invalid_path"
         spider = self.get_test_spider({"FEED_TEMPDIR": str(invalid_path)})
 
         with pytest.raises(OSError, match="Not a Directory:"):
