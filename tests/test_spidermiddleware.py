@@ -17,7 +17,6 @@ from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.defer import (
     deferred_f_from_coro_f,
-    deferred_from_coro,
     maybe_deferred_to_future,
 )
 from scrapy.utils.test import get_crawler
@@ -129,25 +128,22 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
         yield {"foo": 2}
         yield {"foo": 3}
 
-    @defer.inlineCallbacks
-    def _get_middleware_result(self, *mw_classes, start_index: int | None = None):
+    async def _get_middleware_result(self, *mw_classes, start_index: int | None = None):
         setting = self._construct_mw_setting(*mw_classes, start_index=start_index)
         self.crawler = get_crawler(
             Spider, {"SPIDER_MIDDLEWARES_BASE": {}, "SPIDER_MIDDLEWARES": setting}
         )
         self.spider = self.crawler._create_spider("foo")
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
-        result = yield self.mwman.scrape_response(
+        return await self.mwman.scrape_response_async(
             self._scrape_func, self.response, self.request, self.spider
         )
-        return result
 
-    @defer.inlineCallbacks
-    def _test_simple_base(
+    async def _test_simple_base(
         self, *mw_classes, downgrade: bool = False, start_index: int | None = None
     ):
         with LogCapture() as log:
-            result = yield self._get_middleware_result(
+            result = await self._get_middleware_result(
                 *mw_classes, start_index=start_index
             )
         assert isinstance(result, Iterable)
@@ -159,16 +155,15 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
             ProcessSpiderOutputSimpleMiddleware in mw_classes
         )
 
-    @defer.inlineCallbacks
-    def _test_asyncgen_base(
+    async def _test_asyncgen_base(
         self, *mw_classes, downgrade: bool = False, start_index: int | None = None
     ):
         with LogCapture() as log:
-            result = yield self._get_middleware_result(
+            result = await self._get_middleware_result(
                 *mw_classes, start_index=start_index
             )
         assert isinstance(result, AsyncIterator)
-        result_list = yield deferred_from_coro(collect_asyncgen(result))
+        result_list = await collect_asyncgen(result)
         assert len(result_list) == self.RESULT_COUNT
         assert isinstance(result_list[0], self.ITEM_TYPE)
         assert ("downgraded to a non-async" in str(log)) == downgrade
@@ -221,41 +216,50 @@ class TestProcessSpiderOutputSimple(TestBaseAsyncSpiderMiddleware):
     MW_ASYNCGEN = ProcessSpiderOutputAsyncGenMiddleware
     MW_UNIVERSAL = ProcessSpiderOutputUniversalMiddleware
 
-    def test_simple(self):
+    @deferred_f_from_coro_f
+    async def test_simple(self):
         """Simple mw"""
-        return self._test_simple_base(self.MW_SIMPLE)
+        await self._test_simple_base(self.MW_SIMPLE)
 
-    def test_asyncgen(self):
+    @deferred_f_from_coro_f
+    async def test_asyncgen(self):
         """Asyncgen mw; upgrade"""
-        return self._test_asyncgen_base(self.MW_ASYNCGEN)
+        await self._test_asyncgen_base(self.MW_ASYNCGEN)
 
-    def test_simple_asyncgen(self):
+    @deferred_f_from_coro_f
+    async def test_simple_asyncgen(self):
         """Simple mw -> asyncgen mw; upgrade"""
-        return self._test_asyncgen_base(self.MW_ASYNCGEN, self.MW_SIMPLE)
+        await self._test_asyncgen_base(self.MW_ASYNCGEN, self.MW_SIMPLE)
 
-    def test_asyncgen_simple(self):
+    @deferred_f_from_coro_f
+    async def test_asyncgen_simple(self):
         """Asyncgen mw -> simple mw; upgrade then downgrade"""
-        return self._test_simple_base(self.MW_SIMPLE, self.MW_ASYNCGEN, downgrade=True)
+        await self._test_simple_base(self.MW_SIMPLE, self.MW_ASYNCGEN, downgrade=True)
 
-    def test_universal(self):
+    @deferred_f_from_coro_f
+    async def test_universal(self):
         """Universal mw"""
-        return self._test_simple_base(self.MW_UNIVERSAL)
+        await self._test_simple_base(self.MW_UNIVERSAL)
 
-    def test_universal_simple(self):
+    @deferred_f_from_coro_f
+    async def test_universal_simple(self):
         """Universal mw -> simple mw"""
-        return self._test_simple_base(self.MW_SIMPLE, self.MW_UNIVERSAL)
+        await self._test_simple_base(self.MW_SIMPLE, self.MW_UNIVERSAL)
 
-    def test_simple_universal(self):
+    @deferred_f_from_coro_f
+    async def test_simple_universal(self):
         """Simple mw -> universal mw"""
-        return self._test_simple_base(self.MW_UNIVERSAL, self.MW_SIMPLE)
+        await self._test_simple_base(self.MW_UNIVERSAL, self.MW_SIMPLE)
 
-    def test_universal_asyncgen(self):
+    @deferred_f_from_coro_f
+    async def test_universal_asyncgen(self):
         """Universal mw -> asyncgen mw; upgrade"""
-        return self._test_asyncgen_base(self.MW_ASYNCGEN, self.MW_UNIVERSAL)
+        await self._test_asyncgen_base(self.MW_ASYNCGEN, self.MW_UNIVERSAL)
 
-    def test_asyncgen_universal(self):
+    @deferred_f_from_coro_f
+    async def test_asyncgen_universal(self):
         """Asyncgen mw -> universal mw; upgrade"""
-        return self._test_asyncgen_base(self.MW_UNIVERSAL, self.MW_ASYNCGEN)
+        await self._test_asyncgen_base(self.MW_UNIVERSAL, self.MW_ASYNCGEN)
 
 
 class TestProcessSpiderOutputAsyncGen(TestProcessSpiderOutputSimple):
@@ -265,27 +269,30 @@ class TestProcessSpiderOutputAsyncGen(TestProcessSpiderOutputSimple):
         for item in super()._scrape_func():
             yield item
 
-    def test_simple(self):
+    @deferred_f_from_coro_f
+    async def test_simple(self):
         """Simple mw; downgrade"""
-        return self._test_simple_base(self.MW_SIMPLE, downgrade=True)
+        await self._test_simple_base(self.MW_SIMPLE, downgrade=True)
 
-    def test_simple_asyncgen(self):
+    @deferred_f_from_coro_f
+    async def test_simple_asyncgen(self):
         """Simple mw -> asyncgen mw; downgrade then upgrade"""
-        return self._test_asyncgen_base(
-            self.MW_ASYNCGEN, self.MW_SIMPLE, downgrade=True
-        )
+        await self._test_asyncgen_base(self.MW_ASYNCGEN, self.MW_SIMPLE, downgrade=True)
 
-    def test_universal(self):
+    @deferred_f_from_coro_f
+    async def test_universal(self):
         """Universal mw"""
-        return self._test_asyncgen_base(self.MW_UNIVERSAL)
+        await self._test_asyncgen_base(self.MW_UNIVERSAL)
 
-    def test_universal_simple(self):
+    @deferred_f_from_coro_f
+    async def test_universal_simple(self):
         """Universal mw -> simple mw; downgrade"""
-        return self._test_simple_base(self.MW_SIMPLE, self.MW_UNIVERSAL, downgrade=True)
+        await self._test_simple_base(self.MW_SIMPLE, self.MW_UNIVERSAL, downgrade=True)
 
-    def test_simple_universal(self):
+    @deferred_f_from_coro_f
+    async def test_simple_universal(self):
         """Simple mw -> universal mw; downgrade"""
-        return self._test_simple_base(self.MW_UNIVERSAL, self.MW_SIMPLE, downgrade=True)
+        await self._test_simple_base(self.MW_UNIVERSAL, self.MW_SIMPLE, downgrade=True)
 
 
 class ProcessSpiderOutputNonIterableMiddleware:
@@ -299,25 +306,21 @@ class ProcessSpiderOutputCoroutineMiddleware:
 
 
 class TestProcessSpiderOutputInvalidResult(TestBaseAsyncSpiderMiddleware):
-    @defer.inlineCallbacks
-    def test_non_iterable(self):
+    @deferred_f_from_coro_f
+    async def test_non_iterable(self):
         with pytest.raises(
             _InvalidOutput,
             match=r"\.process_spider_output must return an iterable, got <class 'NoneType'>",
         ):
-            yield self._get_middleware_result(
-                ProcessSpiderOutputNonIterableMiddleware,
-            )
+            await self._get_middleware_result(ProcessSpiderOutputNonIterableMiddleware)
 
-    @defer.inlineCallbacks
-    def test_coroutine(self):
+    @deferred_f_from_coro_f
+    async def test_coroutine(self):
         with pytest.raises(
             _InvalidOutput,
             match=r"\.process_spider_output must be an asynchronous generator",
         ):
-            yield self._get_middleware_result(
-                ProcessSpiderOutputCoroutineMiddleware,
-            )
+            await self._get_middleware_result(ProcessSpiderOutputCoroutineMiddleware)
 
 
 class ProcessStartSimpleMiddleware:
@@ -444,39 +447,44 @@ class TestBuiltinMiddlewareSimple(TestBaseAsyncSpiderMiddleware):
     MW_ASYNCGEN = ProcessSpiderOutputAsyncGenMiddleware
     MW_UNIVERSAL = ProcessSpiderOutputUniversalMiddleware
 
-    @defer.inlineCallbacks
-    def _get_middleware_result(self, *mw_classes, start_index: int | None = None):
+    async def _get_middleware_result(self, *mw_classes, start_index: int | None = None):
         setting = self._construct_mw_setting(*mw_classes, start_index=start_index)
         self.crawler = get_crawler(Spider, {"SPIDER_MIDDLEWARES": setting})
         self.spider = self.crawler._create_spider("foo")
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
-        result = yield self.mwman.scrape_response(
+        return await self.mwman.scrape_response_async(
             self._scrape_func, self.response, self.request, self.spider
         )
-        return result
 
-    def test_just_builtin(self):
-        return self._test_simple_base()
+    @deferred_f_from_coro_f
+    async def test_just_builtin(self):
+        await self._test_simple_base()
 
-    def test_builtin_simple(self):
-        return self._test_simple_base(self.MW_SIMPLE, start_index=1000)
+    @deferred_f_from_coro_f
+    async def test_builtin_simple(self):
+        await self._test_simple_base(self.MW_SIMPLE, start_index=1000)
 
-    def test_builtin_async(self):
+    @deferred_f_from_coro_f
+    async def test_builtin_async(self):
         """Upgrade"""
-        return self._test_asyncgen_base(self.MW_ASYNCGEN, start_index=1000)
+        await self._test_asyncgen_base(self.MW_ASYNCGEN, start_index=1000)
 
-    def test_builtin_universal(self):
-        return self._test_simple_base(self.MW_UNIVERSAL, start_index=1000)
+    @deferred_f_from_coro_f
+    async def test_builtin_universal(self):
+        await self._test_simple_base(self.MW_UNIVERSAL, start_index=1000)
 
-    def test_simple_builtin(self):
-        return self._test_simple_base(self.MW_SIMPLE)
+    @deferred_f_from_coro_f
+    async def test_simple_builtin(self):
+        await self._test_simple_base(self.MW_SIMPLE)
 
-    def test_async_builtin(self):
+    @deferred_f_from_coro_f
+    async def test_async_builtin(self):
         """Upgrade"""
-        return self._test_asyncgen_base(self.MW_ASYNCGEN)
+        await self._test_asyncgen_base(self.MW_ASYNCGEN)
 
-    def test_universal_builtin(self):
-        return self._test_simple_base(self.MW_UNIVERSAL)
+    @deferred_f_from_coro_f
+    async def test_universal_builtin(self):
+        await self._test_simple_base(self.MW_UNIVERSAL)
 
 
 class TestBuiltinMiddlewareAsyncGen(TestBuiltinMiddlewareSimple):
@@ -484,28 +492,35 @@ class TestBuiltinMiddlewareAsyncGen(TestBuiltinMiddlewareSimple):
         for item in super()._scrape_func():
             yield item
 
-    def test_just_builtin(self):
-        return self._test_asyncgen_base()
+    @deferred_f_from_coro_f
+    async def test_just_builtin(self):
+        await self._test_asyncgen_base()
 
-    def test_builtin_simple(self):
+    @deferred_f_from_coro_f
+    async def test_builtin_simple(self):
         """Downgrade"""
-        return self._test_simple_base(self.MW_SIMPLE, downgrade=True, start_index=1000)
+        await self._test_simple_base(self.MW_SIMPLE, downgrade=True, start_index=1000)
 
-    def test_builtin_async(self):
-        return self._test_asyncgen_base(self.MW_ASYNCGEN, start_index=1000)
+    @deferred_f_from_coro_f
+    async def test_builtin_async(self):
+        await self._test_asyncgen_base(self.MW_ASYNCGEN, start_index=1000)
 
-    def test_builtin_universal(self):
-        return self._test_asyncgen_base(self.MW_UNIVERSAL, start_index=1000)
+    @deferred_f_from_coro_f
+    async def test_builtin_universal(self):
+        await self._test_asyncgen_base(self.MW_UNIVERSAL, start_index=1000)
 
-    def test_simple_builtin(self):
+    @deferred_f_from_coro_f
+    async def test_simple_builtin(self):
         """Downgrade"""
-        return self._test_simple_base(self.MW_SIMPLE, downgrade=True)
+        await self._test_simple_base(self.MW_SIMPLE, downgrade=True)
 
-    def test_async_builtin(self):
-        return self._test_asyncgen_base(self.MW_ASYNCGEN)
+    @deferred_f_from_coro_f
+    async def test_async_builtin(self):
+        await self._test_asyncgen_base(self.MW_ASYNCGEN)
 
-    def test_universal_builtin(self):
-        return self._test_asyncgen_base(self.MW_UNIVERSAL)
+    @deferred_f_from_coro_f
+    async def test_universal_builtin(self):
+        await self._test_asyncgen_base(self.MW_UNIVERSAL)
 
 
 class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
@@ -519,33 +534,38 @@ class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
     def _scrape_func(self, *args, **kwargs):
         1 / 0
 
-    @defer.inlineCallbacks
-    def _test_asyncgen_nodowngrade(self, *mw_classes):
+    async def _test_asyncgen_nodowngrade(self, *mw_classes):
         with pytest.raises(
             _InvalidOutput, match="Async iterable returned from .+ cannot be downgraded"
         ):
-            yield self._get_middleware_result(*mw_classes)
+            await self._get_middleware_result(*mw_classes)
 
-    def test_exc_simple(self):
+    @deferred_f_from_coro_f
+    async def test_exc_simple(self):
         """Simple exc mw"""
-        return self._test_simple_base(self.MW_EXC_SIMPLE)
+        await self._test_simple_base(self.MW_EXC_SIMPLE)
 
-    def test_exc_async(self):
+    @deferred_f_from_coro_f
+    async def test_exc_async(self):
         """Async exc mw"""
-        return self._test_asyncgen_base(self.MW_EXC_ASYNCGEN)
+        await self._test_asyncgen_base(self.MW_EXC_ASYNCGEN)
 
-    def test_exc_simple_simple(self):
+    @deferred_f_from_coro_f
+    async def test_exc_simple_simple(self):
         """Simple exc mw -> simple output mw"""
-        return self._test_simple_base(self.MW_SIMPLE, self.MW_EXC_SIMPLE)
+        await self._test_simple_base(self.MW_SIMPLE, self.MW_EXC_SIMPLE)
 
-    def test_exc_async_async(self):
+    @deferred_f_from_coro_f
+    async def test_exc_async_async(self):
         """Async exc mw -> async output mw"""
-        return self._test_asyncgen_base(self.MW_ASYNCGEN, self.MW_EXC_ASYNCGEN)
+        await self._test_asyncgen_base(self.MW_ASYNCGEN, self.MW_EXC_ASYNCGEN)
 
-    def test_exc_simple_async(self):
+    @deferred_f_from_coro_f
+    async def test_exc_simple_async(self):
         """Simple exc mw -> async output mw; upgrade"""
-        return self._test_asyncgen_base(self.MW_ASYNCGEN, self.MW_EXC_SIMPLE)
+        await self._test_asyncgen_base(self.MW_ASYNCGEN, self.MW_EXC_SIMPLE)
 
-    def test_exc_async_simple(self):
+    @deferred_f_from_coro_f
+    async def test_exc_async_simple(self):
         """Async exc mw -> simple output mw; cannot work as downgrading is not supported"""
-        return self._test_asyncgen_nodowngrade(self.MW_SIMPLE, self.MW_EXC_ASYNCGEN)
+        await self._test_asyncgen_nodowngrade(self.MW_SIMPLE, self.MW_EXC_ASYNCGEN)

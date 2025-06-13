@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from scrapy.core.scheduler import BaseScheduler
@@ -114,11 +115,11 @@ class TestMinimalScheduler(InterfaceCheckMixin):
         assert not self.scheduler.has_pending_requests()
 
 
-class SimpleSchedulerTest(TestCase, InterfaceCheckMixin):
+class TestSimpleScheduler(TestCase, InterfaceCheckMixin):
     def setUp(self):
         self.scheduler = SimpleScheduler()
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_enqueue_dequeue(self):
         open_result = yield self.scheduler.open(Spider("foo"))
         assert open_result == "open"
@@ -144,10 +145,10 @@ class SimpleSchedulerTest(TestCase, InterfaceCheckMixin):
         assert close_result == "close"
 
 
-class MinimalSchedulerCrawlTest(TestCase):
+class TestMinimalSchedulerCrawl(TestCase):
     scheduler_cls = MinimalScheduler
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_crawl(self):
         with MockServer() as mockserver:
             settings = {
@@ -161,5 +162,5 @@ class MinimalSchedulerCrawlTest(TestCase):
             assert f"'item_scraped_count': {len(PATHS)}" in str(log)
 
 
-class SimpleSchedulerCrawlTest(MinimalSchedulerCrawlTest):
+class TestSimpleSchedulerCrawl(TestMinimalSchedulerCrawl):
     scheduler_cls = SimpleScheduler

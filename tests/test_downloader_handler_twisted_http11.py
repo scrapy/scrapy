@@ -39,23 +39,21 @@ class TestSimpleHttps(HTTP11DownloadHandlerMixin, TestSimpleHttpsBase):
     pass
 
 
-class Https11WrongHostnameTestCase(
-    HTTP11DownloadHandlerMixin, TestHttpsWrongHostnameBase
-):
+class TestHttps11WrongHostname(HTTP11DownloadHandlerMixin, TestHttpsWrongHostnameBase):
     pass
 
 
-class Https11InvalidDNSId(HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
+class TestHttps11InvalidDNSId(HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
     pass
 
 
-class Https11InvalidDNSPattern(
+class TestHttps11InvalidDNSPattern(
     HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSPatternBase
 ):
     pass
 
 
-class Https11CustomCiphers(HTTP11DownloadHandlerMixin, TestHttpsCustomCiphersBase):
+class TestHttps11CustomCiphers(HTTP11DownloadHandlerMixin, TestHttpsCustomCiphersBase):
     pass
 
 

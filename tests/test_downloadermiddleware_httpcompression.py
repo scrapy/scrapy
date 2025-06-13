@@ -2,7 +2,6 @@ from gzip import GzipFile
 from io import BytesIO
 from logging import WARNING
 from pathlib import Path
-from unittest import SkipTest
 
 import pytest
 from testfixtures import LogCapture
@@ -130,7 +129,7 @@ class TestHttpCompression:
             except ImportError:
                 import brotlicffi  # noqa: F401
         except ImportError:
-            raise SkipTest("no brotli")
+            pytest.skip("no brotli")
         response = self._getresponse("br")
         request = response.request
         assert response.headers["Content-Encoding"] == b"br"
@@ -146,11 +145,11 @@ class TestHttpCompression:
             try:
                 import brotli  # noqa: F401
 
-                raise SkipTest("Requires not having brotli support")
+                pytest.skip("Requires not having brotli support")
             except ImportError:
                 import brotlicffi  # noqa: F401
 
-                raise SkipTest("Requires not having brotli support")
+                pytest.skip("Requires not having brotli support")
         except ImportError:
             pass
         response = self._getresponse("br")
@@ -180,7 +179,7 @@ class TestHttpCompression:
         try:
             import zstandard  # noqa: F401
         except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+            pytest.skip("no zstd support (zstandard)")
         raw_content = None
         for check_key in FORMAT:
             if not check_key.startswith("zstd-"):
@@ -201,7 +200,7 @@ class TestHttpCompression:
         try:
             import zstandard  # noqa: F401
 
-            raise SkipTest("Requires not having zstandard support")
+            pytest.skip("Requires not having zstandard support")
         except ImportError:
             pass
         response = self._getresponse("zstd-static-content-size")
@@ -520,7 +519,7 @@ class TestHttpCompression:
             except ImportError:
                 import brotlicffi  # noqa: F401
         except ImportError:
-            raise SkipTest("no brotli")
+            pytest.skip("no brotli")
         self._test_compression_bomb_setting("br")
 
     def test_compression_bomb_setting_deflate(self):
@@ -533,7 +532,7 @@ class TestHttpCompression:
         try:
             import zstandard  # noqa: F401
         except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+            pytest.skip("no zstd support (zstandard)")
         self._test_compression_bomb_setting("zstd")
 
     def _test_compression_bomb_spider_attr(self, compression_id):
@@ -556,7 +555,7 @@ class TestHttpCompression:
             except ImportError:
                 import brotlicffi  # noqa: F401
         except ImportError:
-            raise SkipTest("no brotli")
+            pytest.skip("no brotli")
         self._test_compression_bomb_spider_attr("br")
 
     def test_compression_bomb_spider_attr_deflate(self):
@@ -569,7 +568,7 @@ class TestHttpCompression:
         try:
             import zstandard  # noqa: F401
         except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+            pytest.skip("no zstd support (zstandard)")
         self._test_compression_bomb_spider_attr("zstd")
 
     def _test_compression_bomb_request_meta(self, compression_id):
@@ -590,7 +589,7 @@ class TestHttpCompression:
             except ImportError:
                 import brotlicffi  # noqa: F401
         except ImportError:
-            raise SkipTest("no brotli")
+            pytest.skip("no brotli")
         self._test_compression_bomb_request_meta("br")
 
     def test_compression_bomb_request_meta_deflate(self):
@@ -603,7 +602,7 @@ class TestHttpCompression:
         try:
             import zstandard  # noqa: F401
         except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+            pytest.skip("no zstd support (zstandard)")
         self._test_compression_bomb_request_meta("zstd")
 
     def _test_download_warnsize_setting(self, compression_id):
@@ -639,7 +638,7 @@ class TestHttpCompression:
             except ImportError:
                 import brotlicffi  # noqa: F401
         except ImportError:
-            raise SkipTest("no brotli")
+            pytest.skip("no brotli")
         self._test_download_warnsize_setting("br")
 
     def test_download_warnsize_setting_deflate(self):
@@ -652,7 +651,7 @@ class TestHttpCompression:
         try:
             import zstandard  # noqa: F401
         except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+            pytest.skip("no zstd support (zstandard)")
         self._test_download_warnsize_setting("zstd")
 
     def _test_download_warnsize_spider_attr(self, compression_id):
@@ -690,7 +689,7 @@ class TestHttpCompression:
             except ImportError:
                 import brotlicffi  # noqa: F401
         except ImportError:
-            raise SkipTest("no brotli")
+            pytest.skip("no brotli")
         self._test_download_warnsize_spider_attr("br")
 
     def test_download_warnsize_spider_attr_deflate(self):
@@ -703,7 +702,7 @@ class TestHttpCompression:
         try:
             import zstandard  # noqa: F401
         except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+            pytest.skip("no zstd support (zstandard)")
         self._test_download_warnsize_spider_attr("zstd")
 
     def _test_download_warnsize_request_meta(self, compression_id):
@@ -739,7 +738,7 @@ class TestHttpCompression:
             except ImportError:
                 import brotlicffi  # noqa: F401
         except ImportError:
-            raise SkipTest("no brotli")
+            pytest.skip("no brotli")
         self._test_download_warnsize_request_meta("br")
 
     def test_download_warnsize_request_meta_deflate(self):
@@ -752,5 +751,5 @@ class TestHttpCompression:
         try:
             import zstandard  # noqa: F401
         except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+            pytest.skip("no zstd support (zstandard)")
         self._test_download_warnsize_request_meta("zstd")

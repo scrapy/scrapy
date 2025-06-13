@@ -1,8 +1,7 @@
 import asyncio
 
 import pytest
-from twisted.internet import defer
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.trial import unittest
 
 from scrapy import Request, Spider, signals
@@ -100,33 +99,33 @@ class TestPipeline(unittest.TestCase):
         self.items = []
         return crawler
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_simple_pipeline(self):
         crawler = self._create_crawler(SimplePipeline)
         yield crawler.crawl(mockserver=self.mockserver)
         assert len(self.items) == 1
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_deferred_pipeline(self):
         crawler = self._create_crawler(DeferredPipeline)
         yield crawler.crawl(mockserver=self.mockserver)
         assert len(self.items) == 1
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_asyncdef_pipeline(self):
         crawler = self._create_crawler(AsyncDefPipeline)
         yield crawler.crawl(mockserver=self.mockserver)
         assert len(self.items) == 1
 
     @pytest.mark.only_asyncio
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_asyncdef_asyncio_pipeline(self):
         crawler = self._create_crawler(AsyncDefAsyncioPipeline)
         yield crawler.crawl(mockserver=self.mockserver)
         assert len(self.items) == 1
 
     @pytest.mark.only_not_asyncio
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_asyncdef_not_asyncio_pipeline(self):
         crawler = self._create_crawler(AsyncDefNotAsyncioPipeline)
         yield crawler.crawl(mockserver=self.mockserver)

@@ -2,7 +2,7 @@ import logging
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet import defer
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 
 from scrapy.http import Request, Response
@@ -182,7 +182,7 @@ class TestHttpErrorMiddlewareIntegrational(TestCase):
     def tearDownClass(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_middleware_works(self):
         crawler = get_crawler(_HttpErrorSpider)
         yield crawler.crawl(mockserver=self.mockserver)
@@ -196,7 +196,7 @@ class TestHttpErrorMiddlewareIntegrational(TestCase):
         assert get_value("httperror/response_ignored_status_count/402") == 1
         assert get_value("httperror/response_ignored_status_count/500") == 1
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_logging(self):
         crawler = get_crawler(_HttpErrorSpider)
         with LogCapture() as log:
@@ -210,7 +210,7 @@ class TestHttpErrorMiddlewareIntegrational(TestCase):
         assert "Ignoring response <200" not in str(log)
         assert "Ignoring response <402" not in str(log)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_logging_level(self):
         # HttpError logs ignored responses with level INFO
         crawler = get_crawler(_HttpErrorSpider)

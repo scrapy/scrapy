@@ -13,13 +13,16 @@ from traceback import format_exc
 from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
-from twisted.internet.task import LoopingCall
 from twisted.python.failure import Failure
 
 from scrapy import signals
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
+from scrapy.utils.asyncio import (
+    AsyncioLoopingCall,
+    create_looping_call,
+)
 from scrapy.utils.defer import (
     deferred_f_from_coro_f,
     deferred_from_coro,
@@ -31,6 +34,8 @@ from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable, Generator
+
+    from twisted.internet.task import LoopingCall
 
     from scrapy.core.downloader import Downloader
     from scrapy.core.scheduler import BaseScheduler
@@ -56,7 +61,9 @@ class _Slot:
         self.close_if_idle: bool = close_if_idle
         self.nextcall: CallLaterOnce[None] = nextcall
         self.scheduler: BaseScheduler = scheduler
-        self.heartbeat: LoopingCall = LoopingCall(nextcall.schedule)
+        self.heartbeat: AsyncioLoopingCall | LoopingCall = create_looping_call(
+            nextcall.schedule
+        )
 
     def add_request(self, request: Request) -> None:
         self.inprogress.add(request)
@@ -167,7 +174,8 @@ class ExecutionEngine:
             return self.close_spider(
                 self.spider, reason="shutdown"
             )  # will also close downloader
-        self.downloader.close()
+        if hasattr(self, "downloader"):
+            self.downloader.close()
         return succeed(None)
 
     def pause(self) -> None:

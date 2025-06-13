@@ -4,7 +4,6 @@ import marshal
 import pickle
 import re
 import tempfile
-import unittest
 from datetime import datetime
 from io import BytesIO
 from typing import Any
@@ -662,7 +661,7 @@ class TestCustomExporterItem:
 
     def setup_method(self):
         if self.item_class is None:
-            raise unittest.SkipTest("item class is None")
+            pytest.skip("item class is None")
 
     def test_exporter_custom_serializer(self):
         class CustomItemExporter(BaseItemExporter):
