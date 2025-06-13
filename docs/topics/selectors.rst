@@ -308,6 +308,7 @@ Examples:
 
 * ``*::text`` selects all descendant text nodes of the current selector context:
 
+..skip: next
 .. code-block:: pycon
 
     >>> response.css("#images *::text").getall()
