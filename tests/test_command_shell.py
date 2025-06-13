@@ -5,140 +5,137 @@ from pathlib import Path
 
 import pytest
 from pexpect.popen_spawn import PopenSpawn
-from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
 
 from scrapy.utils.reactor import _asyncio_reactor_path
 from tests import NON_EXISTING_RESOLVABLE, tests_datadir
 from tests.mockserver import MockServer
-from tests.utils.testproc import ProcessTest
-from tests.utils.testsite import SiteTest
+from tests.test_commands import TestProjectBase
 
 
-class TestShellCommand(ProcessTest, SiteTest, unittest.TestCase):
-    command = "shell"
+class TestShellCommand(TestProjectBase):
+    @classmethod
+    def setup_class(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
 
-    @inlineCallbacks
+    @classmethod
+    def teardown_class(cls):
+        cls.mockserver.__exit__(None, None, None)
+
     def test_empty(self):
-        _, out, _ = yield self.execute(["-c", "item"])
-        assert b"{}" in out
+        _, out, _ = self.proc("shell", "-c", "item")
+        assert "{}" in out
 
-    @inlineCallbacks
     def test_response_body(self):
-        _, out, _ = yield self.execute([self.url("/text"), "-c", "response.body"])
-        assert b"Works" in out
+        _, out, _ = self.proc(
+            "shell", self.mockserver.url("/text"), "-c", "response.body"
+        )
+        assert "Works" in out
 
-    @inlineCallbacks
     def test_response_type_text(self):
-        _, out, _ = yield self.execute([self.url("/text"), "-c", "type(response)"])
-        assert b"TextResponse" in out
+        _, out, _ = self.proc(
+            "shell", self.mockserver.url("/text"), "-c", "type(response)"
+        )
+        assert "TextResponse" in out
 
-    @inlineCallbacks
     def test_response_type_html(self):
-        _, out, _ = yield self.execute([self.url("/html"), "-c", "type(response)"])
-        assert b"HtmlResponse" in out
+        _, out, _ = self.proc(
+            "shell", self.mockserver.url("/html"), "-c", "type(response)"
+        )
+        assert "HtmlResponse" in out
 
-    @inlineCallbacks
     def test_response_selector_html(self):
         xpath = "response.xpath(\"//p[@class='one']/text()\").get()"
-        _, out, _ = yield self.execute([self.url("/html"), "-c", xpath])
-        assert out.strip() == b"Works"
+        _, out, _ = self.proc("shell", self.mockserver.url("/html"), "-c", xpath)
+        assert out.strip() == "Works"
 
-    @inlineCallbacks
     def test_response_encoding_gb18030(self):
-        _, out, _ = yield self.execute(
-            [self.url("/enc-gb18030"), "-c", "response.encoding"]
+        _, out, _ = self.proc(
+            "shell", self.mockserver.url("/enc-gb18030"), "-c", "response.encoding"
         )
-        assert out.strip() == b"gb18030"
+        assert out.strip() == "gb18030"
 
-    @inlineCallbacks
     def test_redirect(self):
-        _, out, _ = yield self.execute([self.url("/redirect"), "-c", "response.url"])
-        assert out.strip().endswith(b"/redirected")
+        _, out, _ = self.proc(
+            "shell", self.mockserver.url("/redirect"), "-c", "response.url"
+        )
+        assert out.strip().endswith("/redirected")
 
-    @inlineCallbacks
     def test_redirect_follow_302(self):
-        _, out, _ = yield self.execute(
-            [self.url("/redirect-no-meta-refresh"), "-c", "response.status"]
+        _, out, _ = self.proc(
+            "shell",
+            self.mockserver.url("/redirect-no-meta-refresh"),
+            "-c",
+            "response.status",
         )
-        assert out.strip().endswith(b"200")
+        assert out.strip().endswith("200")
 
-    @inlineCallbacks
     def test_redirect_not_follow_302(self):
-        _, out, _ = yield self.execute(
-            [
-                "--no-redirect",
-                self.url("/redirect-no-meta-refresh"),
-                "-c",
-                "response.status",
-            ]
+        _, out, _ = self.proc(
+            "shell",
+            "--no-redirect",
+            self.mockserver.url("/redirect-no-meta-refresh"),
+            "-c",
+            "response.status",
         )
-        assert out.strip().endswith(b"302")
+        assert out.strip().endswith("302")
 
-    @inlineCallbacks
     def test_fetch_redirect_follow_302(self):
         """Test that calling ``fetch(url)`` follows HTTP redirects by default."""
-        url = self.url("/redirect-no-meta-refresh")
+        url = self.mockserver.url("/redirect-no-meta-refresh")
         code = f"fetch('{url}')"
-        errcode, out, errout = yield self.execute(["-c", code])
-        assert errcode == 0, out
-        assert b"Redirecting (302)" in errout
-        assert b"Crawled (200)" in errout
+        p, out, errout = self.proc("shell", "-c", code)
+        assert p.returncode == 0, out
+        assert "Redirecting (302)" in errout
+        assert "Crawled (200)" in errout
 
-    @inlineCallbacks
     def test_fetch_redirect_not_follow_302(self):
         """Test that calling ``fetch(url, redirect=False)`` disables automatic redirects."""
-        url = self.url("/redirect-no-meta-refresh")
+        url = self.mockserver.url("/redirect-no-meta-refresh")
         code = f"fetch('{url}', redirect=False)"
-        errcode, out, errout = yield self.execute(["-c", code])
-        assert errcode == 0, out
-        assert b"Crawled (302)" in errout
+        p, out, errout = self.proc("shell", "-c", code)
+        assert p.returncode == 0, out
+        assert "Crawled (302)" in errout
 
-    @inlineCallbacks
     def test_request_replace(self):
-        url = self.url("/text")
+        url = self.mockserver.url("/text")
         code = f"fetch('{url}') or fetch(response.request.replace(method='POST'))"
-        errcode, out, _ = yield self.execute(["-c", code])
-        assert errcode == 0, out
+        p, out, _ = self.proc("shell", "-c", code)
+        assert p.returncode == 0, out
 
-    @inlineCallbacks
     def test_scrapy_import(self):
-        url = self.url("/text")
+        url = self.mockserver.url("/text")
         code = f"fetch(scrapy.Request('{url}'))"
-        errcode, out, _ = yield self.execute(["-c", code])
-        assert errcode == 0, out
+        p, out, _ = self.proc("shell", "-c", code)
+        assert p.returncode == 0, out
 
-    @inlineCallbacks
     def test_local_file(self):
         filepath = Path(tests_datadir, "test_site", "index.html")
-        _, out, _ = yield self.execute([str(filepath), "-c", "item"])
-        assert b"{}" in out
+        _, out, _ = self.proc("shell", str(filepath), "-c", "item")
+        assert "{}" in out
 
-    @inlineCallbacks
     def test_local_nofile(self):
         filepath = "file:///tests/sample_data/test_site/nothinghere.html"
-        errcode, out, err = yield self.execute(
-            [filepath, "-c", "item"], check_code=False
-        )
-        assert errcode == 1, out or err
-        assert b"No such file or directory" in err
+        p, out, err = self.proc("shell", filepath, "-c", "item")
+        assert p.returncode == 1, out or err
+        assert "No such file or directory" in err
 
-    @inlineCallbacks
     def test_dns_failures(self):
         if NON_EXISTING_RESOLVABLE:
             pytest.skip("Non-existing hosts are resolvable")
         url = "www.somedomainthatdoesntexi.st"
-        errcode, out, err = yield self.execute([url, "-c", "item"], check_code=False)
-        assert errcode == 1, out or err
-        assert b"DNS lookup failed" in err
+        p, out, err = self.proc("shell", url, "-c", "item")
+        assert p.returncode == 1, out or err
+        assert "DNS lookup failed" in err
 
-    @inlineCallbacks
     def test_shell_fetch_async(self):
-        url = self.url("/html")
+        url = self.mockserver.url("/html")
         code = f"fetch('{url}')"
-        args = ["-c", code, "--set", f"TWISTED_REACTOR={_asyncio_reactor_path}"]
-        _, _, err = yield self.execute(args, check_code=True)
-        assert b"RuntimeError: There is no current event loop in thread" not in err
+        p, _, err = self.proc(
+            "shell", "-c", code, "--set", f"TWISTED_REACTOR={_asyncio_reactor_path}"
+        )
+        assert p.returncode == 0, err
+        assert "RuntimeError: There is no current event loop in thread" not in err
 
 
 class TestInteractiveShell:
