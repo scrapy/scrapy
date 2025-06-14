@@ -264,12 +264,32 @@ class TestBaseSettings:
             "TEST_STR": "value",
             "TEST_DICT1": {"key1": "val1", "ke2": 3},
             "TEST_DICT2": '{"key1": "val1", "ke2": 3}',
+            "TEST_DICTORLIST1": {"key1": "val1"},
+            "TEST_DICTORLIST2": ["one", "two"],
+            "TEST_DICTORLIST3": '{"key1": "val1"}',
+            "TEST_DICTORLIST4": '["one", "two"]',
+            "TEST_DICTORLIST5": "one,two",
+            "TEST_DICTORLIST6": 123,
+            "TEST_DICTORLIST7": "123",
         }
         settings = self.settings
         settings.attributes = {
             key: SettingsAttribute(value, 0)
             for key, value in test_configuration.items()
         }
+
+        assert settings.getdictorlist("TEST_DICTORLIST1") == {"key1": "val1"}
+        assert settings.getdictorlist("TEST_DICTORLIST2") == ["one", "two"]
+        assert settings.getdictorlist("TEST_DICTORLIST3") == {"key1": "val1"}
+        assert settings.getdictorlist("TEST_DICTORLIST4") == ["one", "two"]
+        assert settings.getdictorlist("TEST_DICTORLIST5") == ["one", "two"]
+
+        with pytest.raises(ValueError, match="Value must be a dict or list, got int"):
+            settings.getdictorlist("TEST_DICTORLIST6")
+        with pytest.raises(
+            ValueError, match="JSON value must be a dict or list, got int"
+        ):
+            settings.getdictorlist("TEST_DICTORLIST7")
 
         assert settings.getbool("TEST_ENABLED1")
         assert settings.getbool("TEST_ENABLED2")
