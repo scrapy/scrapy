@@ -27,7 +27,7 @@ async def sleep(seconds: float = 0.001) -> None:
     await maybe_deferred_to_future(deferred)
 
 
-class MainTestCase(TestCase):
+class TestMain(TestCase):
     @deferred_f_from_coro_f
     async def test_sleep(self):
         """Neither asynchronous sleeps on Spider.start() nor the equivalent on
@@ -119,7 +119,7 @@ class MainTestCase(TestCase):
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
 
-class RequestSendOrderTestCase(TestCase):
+class TestRequestSendOrder(TestCase):
     seconds = 0.1  # increase if flaky
 
     @classmethod

@@ -49,7 +49,7 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         self.times[slot].append(time.time())
 
 
-class CrawlTestCase(TestCase):
+class TestCrawl(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mockserver = MockServer()

@@ -226,6 +226,11 @@ def is_asyncio_reactor_installed() -> bool:
     asyncio features, so the code that that doesn't directly require a Twisted
     reactor should use :func:`scrapy.utils.asyncio.is_asyncio_available`
     instead of this function.
+
+    .. versionchanged:: 2.13
+       In earlier Scrapy versions this function silently installed the default
+       reactor if there was no reactor installed. Now it raises an exception to
+       prevent silent problems in this case.
     """
     if not is_reactor_installed():
         raise RuntimeError(

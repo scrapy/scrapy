@@ -15,6 +15,54 @@ Backward-incompatible changes
     ``True`` when running Scrapy via :ref:`its command-line tool
     <topics-commands-crawlerprocess>` to avoid a reactor mismatch exception.
 
+
+.. _release-2.13.2:
+
+Scrapy 2.13.2 (2025-06-09)
+--------------------------
+
+-   Fixed a bug introduced in Scrapy 2.13.0 that caused results of request
+    errbacks to be ignored when the errback was called because of a downloader
+    error.
+    (:issue:`6861`, :issue:`6863`)
+
+-   Added a note about the behavior change of
+    :func:`scrapy.utils.reactor.is_asyncio_reactor_installed` to its docs and
+    to the "Backward-incompatible changes" section of :ref:`the Scrapy 2.13.0
+    release notes <release-2.13.0>`.
+    (:issue:`6866`)
+
+-   Improved the message in the exception raised by
+    :func:`scrapy.utils.test.get_reactor_settings` when there is no reactor
+    installed.
+    (:issue:`6866`)
+
+-   Updated the :class:`scrapy.crawler.CrawlerRunner` examples in
+    :ref:`topics-practices` to install the reactor explicitly, to fix
+    reactor-related errors with Scrapy 2.13.0 and later.
+    (:issue:`6865`)
+
+-   Fixed ``scrapy fetch`` not working with scrapy-poet_.
+    (:issue:`6872`)
+
+-   Fixed an exception produced by :class:`scrapy.core.engine.ExecutionEngine`
+    when it's closed before being fully initialized.
+    (:issue:`6857`, :issue:`6867`)
+
+-   Improved the README, updated the Scrapy logo in it.
+    (:issue:`6831`, :issue:`6833`, :issue:`6839`)
+
+-   Restricted the Twisted version used in tests to below 25.5.0, as some tests
+    fail with 25.5.0.
+    (:issue:`6878`, :issue:`6882`)
+
+-   Updated type hints for Twisted 25.5.0 changes.
+    (:issue:`6882`)
+
+-   Removed the old artwork.
+    (:issue:`6874`)
+
+
 .. _release-2.13.1:
 
 Scrapy 2.13.1 (2025-05-28)
@@ -137,6 +185,15 @@ Backward-incompatible changes
 -   The URL length limit, set by the :setting:`URLLENGTH_LIMIT` setting, is now
     also enforced for start requests.
     (:issue:`6777`)
+
+-   Calling :func:`scrapy.utils.reactor.is_asyncio_reactor_installed` without
+    an installed reactor now raises an exception instead of installing a
+    reactor. This shouldn't affect normal Scrapy use cases, but it may affect
+    3rd-party test suites that use Scrapy internals such as
+    :class:`~scrapy.crawler.Crawler` and don't install a reactor explicitly. If
+    you are affected by this change, you most likely need to install the
+    reactor before running Scrapy code that expects it to be installed.
+    (:issue:`6732`, :issue:`6735`)
 
 -   The ``from_settings()`` method of
     :class:`~scrapy.spidermiddlewares.urllength.UrlLengthMiddleware`,

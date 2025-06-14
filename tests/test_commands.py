@@ -10,10 +10,8 @@ from pathlib import Path
 from shutil import rmtree
 from tempfile import TemporaryFile, mkdtemp
 from threading import Timer
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest import mock
-
-from twisted.trial import unittest
 
 import scrapy
 from scrapy.cmdline import _pop_command_name, _print_unknown_command_msg
@@ -61,28 +59,30 @@ class TestCommandSettings:
         )
 
 
-class TestProjectBase(unittest.TestCase):
+class TestProjectBase:
     project_name = "testproject"
 
-    def setUp(self):
+    def setup_method(self):
         self.temp_path = mkdtemp()
         self.cwd = self.temp_path
         self.proj_path = Path(self.temp_path, self.project_name)
         self.proj_mod_path = self.proj_path / self.project_name
         self.env = get_testenv()
 
-    def tearDown(self):
+    def teardown_method(self):
         rmtree(self.temp_path)
 
-    def call(self, *new_args, **kwargs):
+    def call(self, *args: str, **popen_kwargs: Any) -> int:
         with TemporaryFile() as out:
-            args = (sys.executable, "-m", "scrapy.cmdline", *new_args)
+            args = (sys.executable, "-m", "scrapy.cmdline", *args)
             return subprocess.call(
-                args, stdout=out, stderr=out, cwd=self.cwd, env=self.env, **kwargs
+                args, stdout=out, stderr=out, cwd=self.cwd, env=self.env, **popen_kwargs
             )
 
-    def proc(self, *new_args, **popen_kwargs):
-        args = (sys.executable, "-m", "scrapy.cmdline", *new_args)
+    def proc(
+        self, *args: str, **popen_kwargs: Any
+    ) -> tuple[subprocess.Popen[bytes], str, str]:
+        args = (sys.executable, "-m", "scrapy.cmdline", *args)
         p = subprocess.Popen(
             args,
             cwd=popen_kwargs.pop("cwd", self.cwd),
@@ -118,10 +118,10 @@ class TestProjectBase(unittest.TestCase):
 
 
 class TestCommandBase(TestProjectBase):
-    def setUp(self):
-        super().setUp()
+    def setup_method(self):
+        super().setup_method()
         self.call("startproject", self.project_name)
-        self.cwd = Path(self.temp_path, self.project_name)
+        self.cwd = self.proj_path
         self.env["SCRAPY_SETTINGS_MODULE"] = f"{self.project_name}.settings"
 
 
@@ -136,8 +136,8 @@ class TestCommandCrawlerProcess(TestCommandBase):
         "Type of self.crawler_process: <class 'scrapy.crawler.AsyncCrawlerProcess'>"
     )
 
-    def setUp(self):
-        super().setUp()
+    def setup_method(self):
+        super().setup_method()
         (self.cwd / self.project_name / "commands").mkdir(exist_ok=True)
         (self.cwd / self.project_name / "commands" / "__init__.py").touch()
         (self.cwd / self.project_name / "commands" / f"{self.name}.py").write_text("""
@@ -363,6 +363,19 @@ Unknown command: abc
                 assert out.getvalue().strip() == message.strip()
 
 
+class TestProjectSubdir(TestProjectBase):
+    """Test that commands work in a subdirectory of the project."""
+
+    def setup_method(self):
+        super().setup_method()
+        self.call("startproject", self.project_name)
+        self.cwd = self.proj_path / "subdir"
+        self.cwd.mkdir(exist_ok=True)
+
+    def test_list(self):
+        assert self.call("list") == 0
+
+
 class TestBenchCommand(TestCommandBase):
     def test_run(self):
         _, _, log = self.proc(
@@ -389,8 +402,8 @@ class TestViewCommand(TestCommandBase):
 
 
 class TestHelpMessage(TestCommandBase):
-    def setUp(self):
-        super().setUp()
+    def setup_method(self):
+        super().setup_method()
         self.commands = [
             "parse",
             "startproject",

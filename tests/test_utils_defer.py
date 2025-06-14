@@ -92,10 +92,10 @@ class TestDeferUtils(unittest.TestCase):
         x = yield process_parallel([cb1, cb2, cb3], "res", "v1", "v2")
         assert x == ["(cb1 res v1 v2)", "(cb2 res v1 v2)", "(cb3 res v1 v2)"]
 
+    @inlineCallbacks
     def test_process_parallel_failure(self):
-        d = process_parallel([cb1, cb_fail, cb3], "res", "v1", "v2")
-        self.failUnlessFailure(d, TypeError)
-        return d
+        with pytest.raises(TypeError):
+            yield process_parallel([cb1, cb_fail, cb3], "res", "v1", "v2")
 
 
 class TestIterErrback:

@@ -18,11 +18,12 @@ from twisted.internet.task import deferLater
 from twisted.names import dns, error
 from twisted.names.server import DNSServerFactory
 from twisted.web import resource, server
-from twisted.web.server import NOT_DONE_YET, GzipEncoderFactory, Site
-from twisted.web.static import File
-from twisted.web.util import redirectTo
+from twisted.web.server import NOT_DONE_YET, Site
+from twisted.web.static import Data, File
+from twisted.web.util import Redirect, redirectTo
 
 from scrapy.utils.python import to_bytes, to_unicode
+from tests import tests_datadir
 
 if TYPE_CHECKING:
     from twisted.internet.protocol import ServerFactory
@@ -245,6 +246,14 @@ class ArbitraryLengthPayloadResource(LeafResource):
         return request.content.read()
 
 
+class NoMetaRefreshRedirect(Redirect):
+    def render(self, request: server.Request) -> bytes:
+        content = Redirect.render(self, request)
+        return content.replace(
+            b'http-equiv="refresh"', b'http-no-equiv="do-not-refresh-me"'
+        )
+
+
 class Root(resource.Resource):
     def __init__(self):
         resource.Resource.__init__(self)
@@ -256,18 +265,26 @@ class Root(resource.Resource):
         self.putChild(b"raw", Raw())
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
-        self.putChild(
-            b"xpayload",
-            resource.EncodingResourceWrapper(PayloadResource(), [GzipEncoderFactory()]),
-        )
         self.putChild(b"alpayload", ArbitraryLengthPayloadResource())
-        try:
-            from tests import tests_datadir
-
-            self.putChild(b"files", File(str(Path(tests_datadir, "test_site/files/"))))
-        except Exception:
-            pass
+        self.putChild(b"files", File(str(Path(tests_datadir, "test_site/files/"))))
         self.putChild(b"redirect-to", RedirectTo())
+        self.putChild(b"text", Data(b"Works", "text/plain"))
+        self.putChild(
+            b"html",
+            Data(
+                b"<body><p class='one'>Works</p><p class='two'>World</p></body>",
+                "text/html",
+            ),
+        )
+        self.putChild(
+            b"enc-gb18030",
+            Data(b"<p>gb18030 encoding</p>", "text/html; charset=gb18030"),
+        )
+        self.putChild(b"redirect", Redirect(b"/redirected"))
+        self.putChild(
+            b"redirect-no-meta-refresh", NoMetaRefreshRedirect(b"/redirected")
+        )
+        self.putChild(b"redirected", Data(b"Redirected here", "text/plain"))
 
     def getChild(self, name, request):
         return self

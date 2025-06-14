@@ -234,35 +234,31 @@ class TestWebClient(unittest.TestCase):
     def getURL(self, path):
         return f"http://127.0.0.1:{self.portno}/{path}"
 
+    @inlineCallbacks
     def testPayload(self):
         s = "0123456789" * 10
-        return getPage(self.getURL("payload"), body=s).addCallback(
-            self.assertEqual, to_bytes(s)
-        )
+        body = yield getPage(self.getURL("payload"), body=s)
+        assert body == to_bytes(s)
 
+    @inlineCallbacks
     def testHostHeader(self):
         # if we pass Host header explicitly, it should be used, otherwise
         # it should extract from url
-        return defer.gatherResults(
-            [
-                getPage(self.getURL("host")).addCallback(
-                    self.assertEqual, to_bytes(f"127.0.0.1:{self.portno}")
-                ),
-                getPage(
-                    self.getURL("host"), headers={"Host": "www.example.com"}
-                ).addCallback(self.assertEqual, to_bytes("www.example.com")),
-            ]
-        )
+        body = yield getPage(self.getURL("host"))
+        assert body == to_bytes(f"127.0.0.1:{self.portno}")
+        body = yield getPage(self.getURL("host"), headers={"Host": "www.example.com"})
+        assert body == to_bytes("www.example.com")
 
+    @inlineCallbacks
     def test_getPage(self):
         """
         L{client.getPage} returns a L{Deferred} which is called back with
         the body of the response if the default method B{GET} is used.
         """
-        d = getPage(self.getURL("file"))
-        d.addCallback(self.assertEqual, b"0123456789")
-        return d
+        body = yield getPage(self.getURL("file"))
+        assert body == b"0123456789"
 
+    @inlineCallbacks
     def test_getPageHead(self):
         """
         L{client.getPage} returns a L{Deferred} which is called back with
@@ -273,22 +269,20 @@ class TestWebClient(unittest.TestCase):
         def _getPage(method):
             return getPage(self.getURL("file"), method=method)
 
-        return defer.gatherResults(
-            [
-                _getPage("head").addCallback(self.assertEqual, b""),
-                _getPage("HEAD").addCallback(self.assertEqual, b""),
-            ]
-        )
+        body = yield _getPage("head")
+        assert body == b""
+        body = yield _getPage("HEAD")
+        assert body == b""
 
+    @inlineCallbacks
     def test_timeoutNotTriggering(self):
         """
         When a non-zero timeout is passed to L{getPage} and the page is
         retrieved before the timeout period elapses, the L{Deferred} is
         called back with the contents of the page.
         """
-        d = getPage(self.getURL("host"), timeout=100)
-        d.addCallback(self.assertEqual, to_bytes(f"127.0.0.1:{self.portno}"))
-        return d
+        body = yield getPage(self.getURL("host"), timeout=100)
+        assert body == to_bytes(f"127.0.0.1:{self.portno}")
 
     @inlineCallbacks
     def test_timeoutTriggering(self):
@@ -307,12 +301,12 @@ class TestWebClient(unittest.TestCase):
         if connected:
             connected[0].transport.loseConnection()
 
+    @inlineCallbacks
     def testNotFound(self):
-        return getPage(self.getURL("notsuchfile")).addCallback(self._cbNoSuchFile)
+        body = yield getPage(self.getURL("notsuchfile"))
+        assert b"404 - No Such Resource" in body
 
-    def _cbNoSuchFile(self, pageData):
-        assert b"404 - No Such Resource" in pageData
-
+    @inlineCallbacks
     def testFactoryInfo(self):
         from twisted.internet import reactor
 
@@ -320,63 +314,60 @@ class TestWebClient(unittest.TestCase):
         parsed = urlparse(url)
         factory = client.ScrapyHTTPClientFactory(Request(url))
         reactor.connectTCP(parsed.hostname, parsed.port, factory)
-        return factory.deferred.addCallback(self._cbFactoryInfo, factory)
-
-    def _cbFactoryInfo(self, ignoredResult, factory):
+        yield factory.deferred
         assert factory.status == b"200"
         assert factory.version.startswith(b"HTTP/")
         assert factory.message == b"OK"
         assert factory.response_headers[b"content-length"] == b"10"
 
+    @inlineCallbacks
     def testRedirect(self):
-        return getPage(self.getURL("redirect")).addCallback(self._cbRedirect)
-
-    def _cbRedirect(self, pageData):
+        body = yield getPage(self.getURL("redirect"))
         assert (
-            pageData
+            body
             == b'\n<html>\n    <head>\n        <meta http-equiv="refresh" content="0;URL=/file">\n'
             b'    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
             b'<a href="/file">click here</a>\n    </body>\n</html>\n'
         )
 
+    @inlineCallbacks
     def test_encoding(self):
         """Test that non-standart body encoding matches
         Content-Encoding header"""
-        body = b"\xd0\x81\xd1\x8e\xd0\xaf"
-        dfd = getPage(
-            self.getURL("encoding"), body=body, response_transform=lambda r: r
+        original_body = b"\xd0\x81\xd1\x8e\xd0\xaf"
+        response = yield getPage(
+            self.getURL("encoding"), body=original_body, response_transform=lambda r: r
         )
-        return dfd.addCallback(self._check_Encoding, body)
-
-    def _check_Encoding(self, response, original_body):
         content_encoding = to_unicode(response.headers[b"Content-Encoding"])
         assert content_encoding == EncodingResource.out_encoding
         assert response.body.decode(content_encoding) == to_unicode(original_body)
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class WebClientSSLTestCase(TestContextFactoryBase):
+class TestWebClientSSL(TestContextFactoryBase):
+    @inlineCallbacks
     def testPayload(self):
         s = "0123456789" * 10
-        return getPage(self.getURL("payload"), body=s).addCallback(
-            self.assertEqual, to_bytes(s)
-        )
+        body = yield getPage(self.getURL("payload"), body=s)
+        assert body == to_bytes(s)
 
 
-class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
+class TestWebClientCustomCiphersSSL(TestWebClientSSL):
     # we try to use a cipher that is not enabled by default in OpenSSL
     custom_ciphers = "CAMELLIA256-SHA"
     context_factory = ssl_context_factory(cipher_string=custom_ciphers)
 
+    @inlineCallbacks
     def testPayload(self):
         s = "0123456789" * 10
         crawler = get_crawler(
             settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": self.custom_ciphers}
         )
         client_context_factory = build_from_crawler(ScrapyClientContextFactory, crawler)
-        return getPage(
+        body = yield getPage(
             self.getURL("payload"), body=s, contextFactory=client_context_factory
-        ).addCallback(self.assertEqual, to_bytes(s))
+        )
+        assert body == to_bytes(s)
 
     @inlineCallbacks
     def testPayloadDisabledCipher(self):

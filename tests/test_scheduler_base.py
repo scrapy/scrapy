@@ -115,7 +115,7 @@ class TestMinimalScheduler(InterfaceCheckMixin):
         assert not self.scheduler.has_pending_requests()
 
 
-class SimpleSchedulerTest(TestCase, InterfaceCheckMixin):
+class TestSimpleScheduler(TestCase, InterfaceCheckMixin):
     def setUp(self):
         self.scheduler = SimpleScheduler()
 
@@ -145,7 +145,7 @@ class SimpleSchedulerTest(TestCase, InterfaceCheckMixin):
         assert close_result == "close"
 
 
-class MinimalSchedulerCrawlTest(TestCase):
+class TestMinimalSchedulerCrawl(TestCase):
     scheduler_cls = MinimalScheduler
 
     @inlineCallbacks
@@ -162,5 +162,5 @@ class MinimalSchedulerCrawlTest(TestCase):
             assert f"'item_scraped_count': {len(PATHS)}" in str(log)
 
 
-class SimpleSchedulerCrawlTest(MinimalSchedulerCrawlTest):
+class TestSimpleSchedulerCrawl(TestMinimalSchedulerCrawl):
     scheduler_cls = SimpleScheduler

@@ -10,7 +10,7 @@ import warnings
 from importlib import import_module
 from pathlib import Path
 from posixpath import split
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 from unittest import TestCase, mock
 
 from twisted.trial.unittest import SkipTest
@@ -18,7 +18,7 @@ from twisted.trial.unittest import SkipTest
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.deprecate import create_deprecated_class
-from scrapy.utils.reactor import is_asyncio_reactor_installed
+from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
 from scrapy.utils.spider import DefaultSpider
 
 if TYPE_CHECKING:
@@ -117,6 +117,11 @@ def get_reactor_settings() -> dict[str, Any]:
     settings, so tests that run the crawler in the current process may need to
     pass a correct ``"TWISTED_REACTOR"`` setting value when creating it.
     """
+    if not is_reactor_installed():
+        raise RuntimeError(
+            "get_reactor_settings() called without an installed reactor,"
+            " you may need to install a reactor explicitly when running your tests."
+        )
     settings: dict[str, Any] = {}
     if not is_asyncio_reactor_installed():
         settings["TWISTED_REACTOR"] = None
@@ -211,4 +216,4 @@ def get_web_client_agent_req(url: str) -> Deferred[TxResponse]:
     from twisted.web.client import Agent  # imports twisted.internet.reactor
 
     agent = Agent(reactor)
-    return agent.request(b"GET", url.encode("utf-8"))
+    return cast("Deferred[TxResponse]", agent.request(b"GET", url.encode("utf-8")))
