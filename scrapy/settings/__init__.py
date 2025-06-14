@@ -289,7 +289,6 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
                 return value_loaded
             except ValueError:
                 return value.split(",")
-
         if isinstance(value, tuple):
             return list(value)
         if not isinstance(value, (dict, list)):
