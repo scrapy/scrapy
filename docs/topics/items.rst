@@ -214,6 +214,8 @@ the :attr:`~scrapy.Item.fields` attribute.
 Working with Item objects
 -------------------------
 
+.. skip: start
+
 Here are some examples of common tasks performed with items, using the
 ``Product`` item :ref:`declared above  <topics-items-declaring>`. You will
 notice the API is very similar to the :class:`dict` API.
@@ -374,6 +376,8 @@ appending more values, or changing existing values, like this:
 
 That adds (or replaces) the ``serializer`` metadata key for the ``name`` field,
 keeping all the previously existing metadata values.
+
+.. skip: end
 
 
 .. _supporting-item-types:

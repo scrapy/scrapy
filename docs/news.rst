@@ -4454,6 +4454,8 @@ Highlights:
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. skip: start
+
 *   Python 3.4 is no longer supported, and some of the minimum requirements of
     Scrapy have also changed:
 
@@ -4493,6 +4495,8 @@ Backward-incompatible changes
 
     (:issue:`3804`, :issue:`3819`, :issue:`3897`, :issue:`3976`, :issue:`3998`,
     :issue:`4036`)
+
+.. skip: end
 
 See also :ref:`1.8-deprecation-removals` below.
 

@@ -111,6 +111,8 @@ you may use `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_.
 Handling different response formats
 ===================================
 
+.. skip: start
+
 Once you have a response with the desired data, how you extract the desired
 data from it depends on the type of response:
 
@@ -157,10 +159,14 @@ data from it depends on the type of response:
     Otherwise, you might need to convert the SVG code into a raster image, and
     :ref:`handle that raster image <topics-parsing-images>`.
 
+.. skip: end
+
 .. _topics-parsing-javascript:
 
 Parsing JavaScript code
 =======================
+
+.. skip: start
 
 If the desired data is hardcoded in JavaScript, you first need to get the
 JavaScript code:
@@ -220,6 +226,8 @@ data from it:
         >>> selector.css('var[name="data"]').get()
         '<var name="data"><object><property name="field"><string>value</string></property></object></var>'
 
+.. skip: end
+
 .. _topics-headless-browsing:
 
 Using a headless browser
@@ -242,6 +250,7 @@ it is possible to integrate ``asyncio``-based libraries which handle headless br
 One such library is `playwright-python`_ (an official Python port of `playwright`_).
 The following is a simple snippet to illustrate its usage within a Scrapy spider:
 
+.. skip: next
 .. code-block:: python
 
     import scrapy
