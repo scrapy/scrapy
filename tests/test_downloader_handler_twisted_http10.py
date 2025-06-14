@@ -39,8 +39,10 @@ class TestHttps10(TestHttp10):
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestHttp10Proxy(HTTP10DownloadHandlerMixin, TestHttpProxyBase):
-    def test_download_with_proxy_https_timeout(self):
+    @deferred_f_from_coro_f
+    async def test_download_with_proxy_https_timeout(self):
         pytest.skip("Not implemented")
 
-    def test_download_with_proxy_without_http_scheme(self):
+    @deferred_f_from_coro_f
+    async def test_download_with_proxy_without_http_scheme(self):
         pytest.skip("Not implemented")

@@ -29,19 +29,24 @@ if TYPE_CHECKING:
 
 
 class TestMustbeDeferred(unittest.TestCase):
-    def test_success_function(self) -> Deferred[list[int]]:
+    @inlineCallbacks
+    def test_success_function(self) -> Generator[Deferred[Any], Any, None]:
         steps: list[int] = []
 
         def _append(v: int) -> list[int]:
             steps.append(v)
             return steps
 
-        dfd = mustbe_deferred(_append, 1)
-        dfd.addCallback(self.assertEqual, [1, 2])  # it is [1] with maybeDeferred
-        steps.append(2)  # add another value, that should be caught by assertEqual
-        return dfd
+        def _assert(v: list[int]) -> None:
+            assert v == [1, 2]  # it is [1] with maybeDeferred
 
-    def test_unfired_deferred(self) -> Deferred[list[int]]:
+        dfd = mustbe_deferred(_append, 1)
+        dfd.addCallback(_assert)
+        steps.append(2)  # add another value, that should be caught by assertEqual
+        yield dfd
+
+    @inlineCallbacks
+    def test_unfired_deferred(self) -> Generator[Deferred[Any], Any, None]:
         steps: list[int] = []
 
         def _append(v: int) -> Deferred[list[int]]:
@@ -52,10 +57,13 @@ class TestMustbeDeferred(unittest.TestCase):
             reactor.callLater(0, dfd.callback, steps)
             return dfd
 
+        def _assert(v: list[int]) -> None:
+            assert v == [1, 2]
+
         dfd = mustbe_deferred(_append, 1)
-        dfd.addCallback(self.assertEqual, [1, 2])  # it is [1] with maybeDeferred
+        dfd.addCallback(_assert)
         steps.append(2)  # add another value, that should be caught by assertEqual
-        return dfd
+        yield dfd
 
 
 def cb1(value, arg1, arg2):
