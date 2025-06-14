@@ -287,7 +287,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
                         f"JSON value must be a dict or list, got {type(value_loaded).__name__}"
                     )
                 return value_loaded
-            except ValueError:
+            except json.JSONDecodeError:
                 return value.split(",")
         if isinstance(value, tuple):
             return list(value)
