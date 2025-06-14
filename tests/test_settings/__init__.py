@@ -398,6 +398,13 @@ class TestBaseSettings:
         assert frozencopy.frozen
         assert frozencopy is not self.settings
 
+    def test_getdictorlist(self):
+        self.settings.set("INVALID", 123)
+        with pytest.raises(
+            ValueError, match="value for setting must be a dict or list"
+        ):
+            self.settings.getdictorlist("INVALID")
+
 
 class TestSettings:
     def setup_method(self):
