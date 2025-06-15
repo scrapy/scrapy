@@ -78,7 +78,7 @@ class PeriodicLog:
             )
 
         ext_timing_enabled: bool = crawler.settings.getbool(
-            "PERIODIC_LOG_TIMING_ENABLED", False
+            "PERIODIC_LOG_TIMING_ENABLED"
         )
         if not (ext_stats or ext_delta or ext_timing_enabled):
             raise NotConfigured

@@ -43,7 +43,7 @@ class AjaxCrawlMiddleware:
         # middleware parses first 4k. 4k turns out to be insufficient
         # for this middleware, and parsing 100k could be slow.
         # We use something in between (32K) by default.
-        self.lookup_bytes: int = settings.getint("AJAXCRAWL_MAXSIZE", 32768)
+        self.lookup_bytes: int = settings.getint("AJAXCRAWL_MAXSIZE")
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
