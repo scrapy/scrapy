@@ -240,7 +240,7 @@ class TestBaseSettings:
         with pytest.raises(KeyError):
             del settings["notkey"]
 
-    def test_get(self):
+    def test_get_bool(self):
         test_configuration = {
             "TEST_ENABLED1": "1",
             "TEST_ENABLED2": True,
@@ -254,16 +254,99 @@ class TestBaseSettings:
             "TEST_DISABLED4": "False",
             "TEST_DISABLED5": "false",
             "TEST_DISABLED_WRONG": "off",
+        }
+        settings = self.settings
+        settings.attributes = {
+            key: SettingsAttribute(value, 0)
+            for key, value in test_configuration.items()
+        }
+
+        assert settings.getbool("TEST_ENABLED1")
+        assert settings.getbool("TEST_ENABLED2")
+        assert settings.getbool("TEST_ENABLED3")
+        assert settings.getbool("TEST_ENABLED4")
+        assert settings.getbool("TEST_ENABLED5")
+        assert not settings.getbool("TEST_ENABLEDx")
+        assert settings.getbool("TEST_ENABLEDx", True)
+        assert not settings.getbool("TEST_DISABLED1")
+        assert not settings.getbool("TEST_DISABLED2")
+        assert not settings.getbool("TEST_DISABLED3")
+        assert not settings.getbool("TEST_DISABLED4")
+        assert not settings.getbool("TEST_DISABLED5")
+
+        with pytest.raises(
+            ValueError, match="Supported values for boolean settings are"
+        ):
+            settings.getbool("TEST_ENABLED_WRONG")
+        with pytest.raises(
+            ValueError, match="Supported values for boolean settings are"
+        ):
+            settings.getbool("TEST_DISABLED_WRONG")
+
+    def test_get_numeric(self):
+        test_configuration = {
             "TEST_INT1": 123,
             "TEST_INT2": "123",
             "TEST_FLOAT1": 123.45,
             "TEST_FLOAT2": "123.45",
+        }
+        settings = self.settings
+        settings.attributes = {
+            key: SettingsAttribute(value, 0)
+            for key, value in test_configuration.items()
+        }
+
+        assert settings.getint("TEST_INT1") == 123
+        assert settings.getint("TEST_INT2") == 123
+        assert settings.getint("TEST_INTx") == 0
+        assert settings.getint("TEST_INTx", 45) == 45
+        assert settings.getfloat("TEST_FLOAT1") == 123.45
+        assert settings.getfloat("TEST_FLOAT2") == 123.45
+        assert settings.getfloat("TEST_FLOATx") == 0.0
+        assert settings.getfloat("TEST_FLOATx", 55.0) == 55.0
+
+    def test_get_list(self):
+        test_configuration = {
             "TEST_LIST1": ["one", "two"],
             "TEST_LIST2": "one,two",
             "TEST_LIST3": "",
-            "TEST_STR": "value",
+        }
+        settings = self.settings
+        settings.attributes = {
+            key: SettingsAttribute(value, 0)
+            for key, value in test_configuration.items()
+        }
+
+        assert settings.getlist("TEST_LIST1") == ["one", "two"]
+        assert settings.getlist("TEST_LIST2") == ["one", "two"]
+        assert settings.getlist("TEST_LIST3") == []
+        assert settings.getlist("TEST_LISTx") == []
+        assert settings.getlist("TEST_LISTx", ["default"]) == ["default"]
+
+    def test_get_dict(self):
+        test_configuration = {
             "TEST_DICT1": {"key1": "val1", "ke2": 3},
             "TEST_DICT2": '{"key1": "val1", "ke2": 3}',
+            "TEST_LIST1": ["one", "two"],
+        }
+        settings = self.settings
+        settings.attributes = {
+            key: SettingsAttribute(value, 0)
+            for key, value in test_configuration.items()
+        }
+
+        assert settings.getdict("TEST_DICT1") == {"key1": "val1", "ke2": 3}
+        assert settings.getdict("TEST_DICT2") == {"key1": "val1", "ke2": 3}
+        assert settings.getdict("TEST_DICT3") == {}
+        assert settings.getdict("TEST_DICT3", {"key1": 5}) == {"key1": 5}
+        with pytest.raises(
+            ValueError,
+            match="dictionary update sequence element #0 has length 3; 2 is required|sequence of pairs expected",
+        ):
+            settings.getdict("TEST_LIST1")
+
+    def test_get_dictorlist(self):
+        test_configuration = {
             "TEST_DICTORLIST1": {"key1": "val1"},
             "TEST_DICTORLIST2": ["one", "two"],
             "TEST_DICTORLIST3": '{"key1": "val1"}',
@@ -291,53 +374,21 @@ class TestBaseSettings:
         ):
             settings.getdictorlist("TEST_DICTORLIST7")
 
-        assert settings.getbool("TEST_ENABLED1")
-        assert settings.getbool("TEST_ENABLED2")
-        assert settings.getbool("TEST_ENABLED3")
-        assert settings.getbool("TEST_ENABLED4")
-        assert settings.getbool("TEST_ENABLED5")
-        assert not settings.getbool("TEST_ENABLEDx")
-        assert settings.getbool("TEST_ENABLEDx", True)
-        assert not settings.getbool("TEST_DISABLED1")
-        assert not settings.getbool("TEST_DISABLED2")
-        assert not settings.getbool("TEST_DISABLED3")
-        assert not settings.getbool("TEST_DISABLED4")
-        assert not settings.getbool("TEST_DISABLED5")
-        assert settings.getint("TEST_INT1") == 123
-        assert settings.getint("TEST_INT2") == 123
-        assert settings.getint("TEST_INTx") == 0
-        assert settings.getint("TEST_INTx", 45) == 45
-        assert settings.getfloat("TEST_FLOAT1") == 123.45
-        assert settings.getfloat("TEST_FLOAT2") == 123.45
-        assert settings.getfloat("TEST_FLOATx") == 0.0
-        assert settings.getfloat("TEST_FLOATx", 55.0) == 55.0
-        assert settings.getlist("TEST_LIST1") == ["one", "two"]
-        assert settings.getlist("TEST_LIST2") == ["one", "two"]
-        assert settings.getlist("TEST_LIST3") == []
-        assert settings.getlist("TEST_LISTx") == []
-        assert settings.getlist("TEST_LISTx", ["default"]) == ["default"]
+    def test_get_basic(self):
+        test_configuration = {
+            "TEST_STR": "value",
+        }
+        settings = self.settings
+        settings.attributes = {
+            key: SettingsAttribute(value, 0)
+            for key, value in test_configuration.items()
+        }
+
         assert settings["TEST_STR"] == "value"
         assert settings.get("TEST_STR") == "value"
         assert settings["TEST_STRx"] is None
         assert settings.get("TEST_STRx") is None
         assert settings.get("TEST_STRx", "default") == "default"
-        assert settings.getdict("TEST_DICT1") == {"key1": "val1", "ke2": 3}
-        assert settings.getdict("TEST_DICT2") == {"key1": "val1", "ke2": 3}
-        assert settings.getdict("TEST_DICT3") == {}
-        assert settings.getdict("TEST_DICT3", {"key1": 5}) == {"key1": 5}
-        with pytest.raises(
-            ValueError,
-            match="dictionary update sequence element #0 has length 3; 2 is required|sequence of pairs expected",
-        ):
-            settings.getdict("TEST_LIST1")
-        with pytest.raises(
-            ValueError, match="Supported values for boolean settings are"
-        ):
-            settings.getbool("TEST_ENABLED_WRONG")
-        with pytest.raises(
-            ValueError, match="Supported values for boolean settings are"
-        ):
-            settings.getbool("TEST_DISABLED_WRONG")
 
     def test_getpriority(self):
         settings = BaseSettings({"key": "value"}, priority=99)
