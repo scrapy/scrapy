@@ -398,6 +398,83 @@ class TestBaseSettings:
         assert frozencopy.frozen
         assert frozencopy is not self.settings
 
+    def test_getdictorlist_with_dict(self):
+        """Test getdictorlist with a dict value."""
+        test_dict = {"key": "value", "key2": "value2"}
+        self.settings.set("TEST_DICT", test_dict)
+        result = self.settings.getdictorlist("TEST_DICT")
+        assert result == test_dict
+        assert result is not test_dict  # Should be a copy
+
+    def test_getdictorlist_with_list(self):
+        """Test getdictorlist with a list value."""
+        test_list = ["item1", "item2", "item3"]
+        self.settings.set("TEST_LIST", test_list)
+        result = self.settings.getdictorlist("TEST_LIST")
+        assert result == test_list
+        assert result is not test_list  # Should be a copy
+
+    def test_getdictorlist_with_tuple(self):
+        """Test getdictorlist with a tuple value."""
+        test_tuple = ("item1", "item2", "item3")
+        self.settings.set("TEST_TUPLE", test_tuple)
+        result = self.settings.getdictorlist("TEST_TUPLE")
+        assert result == ["item1", "item2", "item3"]
+        assert isinstance(result, list)
+
+    def test_getdictorlist_with_json_string_dict(self):
+        """Test getdictorlist with a JSON string representing a dict."""
+        json_string = '{"key": "value", "key2": "value2"}'
+        self.settings.set("TEST_JSON_DICT", json_string)
+        result = self.settings.getdictorlist("TEST_JSON_DICT")
+        assert result == {"key": "value", "key2": "value2"}
+
+    def test_getdictorlist_with_json_string_list(self):
+        """Test getdictorlist with a JSON string representing a list."""
+        json_string = '["item1", "item2", "item3"]'
+        self.settings.set("TEST_JSON_LIST", json_string)
+        result = self.settings.getdictorlist("TEST_JSON_LIST")
+        assert result == ["item1", "item2", "item3"]
+
+    def test_getdictorlist_with_comma_separated_string(self):
+        """Test getdictorlist with a comma-separated string."""
+        csv_string = "item1,item2,item3"
+        self.settings.set("TEST_CSV", csv_string)
+        result = self.settings.getdictorlist("TEST_CSV")
+        assert result == ["item1", "item2", "item3"]
+
+    def test_getdictorlist_with_none_value(self):
+        """Test getdictorlist with None value returns empty dict."""
+        self.settings.set("TEST_NONE", None)
+        result = self.settings.getdictorlist("TEST_NONE")
+        assert result == {}
+
+    def test_getdictorlist_with_default(self):
+        """Test getdictorlist with default value when setting doesn't exist."""
+        default_value = {"default": "value"}
+        result = self.settings.getdictorlist("NONEXISTENT_SETTING", default_value)
+        assert result == default_value
+
+    def test_getdictorlist_invalid_json_string_raises_valueerror(self):
+        """Test that getdictorlist raises ValueError for JSON strings that don't parse to dict/list."""
+        # JSON string that parses to a string (not dict or list)
+        json_string = '"just_a_string"'
+        self.settings.set("TEST_INVALID_JSON", json_string)
+        with pytest.raises(
+            ValueError, match="JSON-loaded setting value must be a dict or list"
+        ):
+            self.settings.getdictorlist("TEST_INVALID_JSON")
+
+    def test_getdictorlist_invalid_type_raises_valueerror(self):
+        """Test that getdictorlist raises ValueError for invalid data types."""
+        # Set a value that's not dict, list, tuple, or string
+        invalid_value = 12345
+        self.settings.set("TEST_INVALID_TYPE", invalid_value)
+        with pytest.raises(
+            ValueError, match="Setting value must be a dict, list, or tuple"
+        ):
+            self.settings.getdictorlist("TEST_INVALID_TYPE")
+
 
 class TestSettings:
     def setup_method(self):
@@ -522,9 +599,9 @@ def test_add_to_list(before, name, item, after):
     settings.add_to_list(name, item)
     expected_priority = settings.getpriority(name) or 0
     expected_settings = BaseSettings(after, priority=expected_priority)
-    assert settings == expected_settings, (
-        f"{settings[name]=} != {expected_settings[name]=}"
-    )
+    assert (
+        settings == expected_settings
+    ), f"{settings[name]=} != {expected_settings[name]=}"
     assert settings.getpriority(name) == expected_settings.getpriority(name)
 
 
@@ -553,9 +630,9 @@ def test_remove_from_list(before, name, item, after):
     settings.remove_from_list(name, item)
     expected_priority = settings.getpriority(name) or 0
     expected_settings = BaseSettings(after, priority=expected_priority)
-    assert settings == expected_settings, (
-        f"{settings[name]=} != {expected_settings[name]=}"
-    )
+    assert (
+        settings == expected_settings
+    ), f"{settings[name]=} != {expected_settings[name]=}"
     assert settings.getpriority(name) == expected_settings.getpriority(name)
 
 
@@ -941,9 +1018,9 @@ def test_set_in_component_priority_dict(before, name, cls, priority, after):
     settings.set_in_component_priority_dict(name, cls, priority)
     expected_settings = BaseSettings(after, priority=expected_priority)
     assert settings == expected_settings
-    assert settings.getpriority(name) == expected_settings.getpriority(name), (
-        f"{settings.getpriority(name)=} != {expected_settings.getpriority(name)=}"
-    )
+    assert settings.getpriority(name) == expected_settings.getpriority(
+        name
+    ), f"{settings.getpriority(name)=} != {expected_settings.getpriority(name)=}"
 
 
 @pytest.mark.parametrize(
