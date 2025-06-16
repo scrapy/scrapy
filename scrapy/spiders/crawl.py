@@ -213,7 +213,5 @@ class CrawlSpider(Spider):
     @classmethod
     def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
         spider = super().from_crawler(crawler, *args, **kwargs)
-        spider._follow_links = crawler.settings.getbool(
-            "CRAWLSPIDER_FOLLOW_LINKS", True
-        )
+        spider._follow_links = crawler.settings.getbool("CRAWLSPIDER_FOLLOW_LINKS")
         return spider

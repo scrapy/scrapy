@@ -124,7 +124,7 @@ class Downloader:
         )
         self._slot_gc_loop.start(60)
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
-            "DOWNLOAD_SLOTS", {}
+            "DOWNLOAD_SLOTS"
         )
 
     @inlineCallbacks
