@@ -2,8 +2,7 @@
 Queues that handle requests
 """
 
-import shutil
-import tempfile
+from pathlib import Path
 
 import pytest
 import queuelib
@@ -23,30 +22,17 @@ from scrapy.utils.test import get_crawler
 
 class TestBaseQueue:
     def setup_method(self):
-        self.tmpdir = tempfile.mkdtemp(prefix="scrapy-queue-tests-")
-        self.qpath = self.tempfilename()
-        self.qdir = tempfile.mkdtemp()
         self.crawler = get_crawler(Spider)
-
-    def teardown_method(self):
-        shutil.rmtree(self.tmpdir)
-
-    def tempfilename(self):
-        with tempfile.NamedTemporaryFile(dir=self.tmpdir) as nf:
-            return nf.name
-
-    def mkdtemp(self):
-        return tempfile.mkdtemp(dir=self.tmpdir)
 
 
 class RequestQueueTestMixin:
-    def queue(self):
+    def queue(self, base_path: Path):
         raise NotImplementedError
 
-    def test_one_element_with_peek(self):
+    def test_one_element_with_peek(self, tmp_path):
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             pytest.skip("The queuelib queues do not define peek")
-        q = self.queue()
+        q = self.queue(tmp_path)
         assert len(q) == 0
         assert q.peek() is None
         assert q.pop() is None
@@ -60,10 +46,10 @@ class RequestQueueTestMixin:
         assert q.pop() is None
         q.close()
 
-    def test_one_element_without_peek(self):
+    def test_one_element_without_peek(self, tmp_path):
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             pytest.skip("The queuelib queues define peek")
-        q = self.queue()
+        q = self.queue(tmp_path)
         assert len(q) == 0
         assert q.pop() is None
         req = Request("http://www.example.com")
@@ -81,10 +67,10 @@ class RequestQueueTestMixin:
 
 
 class FifoQueueMixin(RequestQueueTestMixin):
-    def test_fifo_with_peek(self):
+    def test_fifo_with_peek(self, tmp_path):
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             pytest.skip("The queuelib queues do not define peek")
-        q = self.queue()
+        q = self.queue(tmp_path)
         assert len(q) == 0
         assert q.peek() is None
         assert q.pop() is None
@@ -108,10 +94,10 @@ class FifoQueueMixin(RequestQueueTestMixin):
         assert q.pop() is None
         q.close()
 
-    def test_fifo_without_peek(self):
+    def test_fifo_without_peek(self, tmp_path):
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            pytest.skip("The queuelib queues do not define peek")
-        q = self.queue()
+            pytest.skip("The queuelib queues define peek")
+        q = self.queue(tmp_path)
         assert len(q) == 0
         assert q.pop() is None
         req1 = Request("http://www.example.com/1")
@@ -137,10 +123,10 @@ class FifoQueueMixin(RequestQueueTestMixin):
 
 
 class LifoQueueMixin(RequestQueueTestMixin):
-    def test_lifo_with_peek(self):
+    def test_lifo_with_peek(self, tmp_path):
         if not hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
             pytest.skip("The queuelib queues do not define peek")
-        q = self.queue()
+        q = self.queue(tmp_path)
         assert len(q) == 0
         assert q.peek() is None
         assert q.pop() is None
@@ -164,10 +150,10 @@ class LifoQueueMixin(RequestQueueTestMixin):
         assert q.pop() is None
         q.close()
 
-    def test_lifo_without_peek(self):
+    def test_lifo_without_peek(self, tmp_path):
         if hasattr(queuelib.queue.FifoMemoryQueue, "peek"):
-            pytest.skip("The queuelib queues do not define peek")
-        q = self.queue()
+            pytest.skip("The queuelib queues define peek")
+        q = self.queue(tmp_path)
         assert len(q) == 0
         assert q.pop() is None
         req1 = Request("http://www.example.com/1")
@@ -193,34 +179,38 @@ class LifoQueueMixin(RequestQueueTestMixin):
 
 
 class TestPickleFifoDiskQueueRequest(FifoQueueMixin, TestBaseQueue):
-    def queue(self):
-        return PickleFifoDiskQueue.from_crawler(crawler=self.crawler, key="pickle/fifo")
+    def queue(self, base_path):
+        return PickleFifoDiskQueue.from_crawler(
+            crawler=self.crawler, key=str(base_path / "pickle" / "fifo")
+        )
 
 
 class TestPickleLifoDiskQueueRequest(LifoQueueMixin, TestBaseQueue):
-    def queue(self):
-        return PickleLifoDiskQueue.from_crawler(crawler=self.crawler, key="pickle/lifo")
+    def queue(self, base_path):
+        return PickleLifoDiskQueue.from_crawler(
+            crawler=self.crawler, key=str(base_path / "pickle" / "lifo")
+        )
 
 
 class TestMarshalFifoDiskQueueRequest(FifoQueueMixin, TestBaseQueue):
-    def queue(self):
+    def queue(self, base_path):
         return MarshalFifoDiskQueue.from_crawler(
-            crawler=self.crawler, key="marshal/fifo"
+            crawler=self.crawler, key=str(base_path / "marshal" / "fifo")
         )
 
 
 class TestMarshalLifoDiskQueueRequest(LifoQueueMixin, TestBaseQueue):
-    def queue(self):
+    def queue(self, base_path):
         return MarshalLifoDiskQueue.from_crawler(
-            crawler=self.crawler, key="marshal/lifo"
+            crawler=self.crawler, key=str(base_path / "marshal" / "lifo")
         )
 
 
 class TestFifoMemoryQueueRequest(FifoQueueMixin, TestBaseQueue):
-    def queue(self):
+    def queue(self, base_path):
         return FifoMemoryQueue.from_crawler(crawler=self.crawler)
 
 
 class TestLifoMemoryQueueRequest(LifoQueueMixin, TestBaseQueue):
-    def queue(self):
+    def queue(self, base_path):
         return LifoMemoryQueue.from_crawler(crawler=self.crawler)

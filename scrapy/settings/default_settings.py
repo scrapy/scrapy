@@ -20,6 +20,7 @@ from pathlib import Path
 ADDONS = {}
 
 AJAXCRAWL_ENABLED = False
+AJAXCRAWL_MAXSIZE = 32768
 
 ASYNCIO_EVENT_LOOP = None
 
@@ -48,6 +49,8 @@ CONCURRENT_REQUESTS_PER_IP = 0
 
 COOKIES_ENABLED = True
 COOKIES_DEBUG = False
+
+CRAWLSPIDER_FOLLOW_LINKS = True
 
 DEFAULT_DROPITEM_LOG_LEVEL = "WARNING"
 
@@ -158,6 +161,7 @@ FEED_EXPORTERS_BASE = {
     "marshal": "scrapy.exporters.MarshalItemExporter",
     "pickle": "scrapy.exporters.PickleItemExporter",
 }
+FEED_FORMAT = "jsonlines"
 FEED_STORE_EMPTY = True
 FEED_STORAGES = {}
 FEED_STORAGES_BASE = {

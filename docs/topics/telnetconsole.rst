@@ -97,6 +97,8 @@ convenience:
 Telnet console usage examples
 =============================
 
+.. skip: start
+
 Here are some example tasks you can do with the telnet console:
 
 View engine status
@@ -145,6 +147,8 @@ To stop::
     telnet localhost 6023
     >>> engine.stop()
     Connection closed by foreign host.
+
+.. skip: end
 
 Telnet Console signals
 ======================

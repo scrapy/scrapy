@@ -42,6 +42,8 @@ attribute. Here is an example of an extension that access stats:
         def from_crawler(cls, crawler):
             return cls(crawler.stats)
 
+.. skip: start
+
 Set stat value:
 
 .. code-block:: python
@@ -79,6 +81,8 @@ Get all stats:
 
     >>> stats.get_stats()
     {'custom_count': 1, 'start_time': datetime.datetime(2009, 7, 14, 21, 47, 28, 977139)}
+
+.. skip: end
 
 Available Stats Collectors
 ==========================
