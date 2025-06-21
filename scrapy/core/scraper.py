@@ -140,7 +140,6 @@ class Scraper:
 
     def _check_if_closing(self) -> None:
         assert self.slot is not None  # typing
-        assert self.crawler.spider
         if self.slot.closing and self.slot.is_idle():
             assert self.crawler.spider
             self.slot.closing.callback(self.crawler.spider)

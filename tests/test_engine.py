@@ -25,6 +25,7 @@ import attr
 import pytest
 from itemadapter import ItemAdapter
 from pydispatch import dispatcher
+from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks
 from twisted.trial import unittest
@@ -451,11 +452,31 @@ class TestEngine(TestEngineBase):
     @inlineCallbacks
     def test_start_already_running_exception(self):
         e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
-        yield e.open_spider(MySpider(), [])
+        yield e.open_spider(MySpider())
         e.start()
         with pytest.raises(RuntimeError, match="Engine already running"):
             yield e.start()
         yield e.stop()
+
+    @inlineCallbacks
+    def test_start_request_processing_exception(self):
+        class BadRequestFingerprinter:
+            def fingerprint(self, request):
+                raise ValueError  # to make Scheduler.enqueue_request() fail
+
+        class SimpleSpider(Spider):
+            name = "simple"
+
+            async def start(self):
+                yield Request("data:,")
+
+        crawler = get_crawler(
+            SimpleSpider, {"REQUEST_FINGERPRINTER_CLASS": BadRequestFingerprinter}
+        )
+        with LogCapture() as log:
+            yield crawler.crawl()
+        assert "Error while processing requests from start()" in str(log)
+        assert "Spider closed (shutdown)" in str(log)
 
     def test_short_timeout(self):
         args = (

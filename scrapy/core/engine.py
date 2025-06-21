@@ -217,17 +217,25 @@ class ExecutionEngine:
         # Starts the processing of scheduled requests, as well as a periodic
         # call to that processing method for scenarios where the scheduler
         # reports having pending requests but returns none.
-        assert self._slot is not None  # typing
-        self._slot.nextcall.schedule()
-        self._slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
+        try:
+            assert self._slot is not None  # typing
+            self._slot.nextcall.schedule()
+            self._slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
 
-        while self._start and self.spider:
-            await self._process_start_next()
-            if not self.needs_backout():
-                # Give room for the outcome of self._process_start_next() to be
-                # processed before continuing with the next iteration.
-                self._slot.nextcall.schedule()
-                await self._slot.nextcall.wait()
+            while self._start and self.spider:
+                await self._process_start_next()
+                if not self.needs_backout():
+                    # Give room for the outcome of self._process_start_next() to be
+                    # processed before continuing with the next iteration.
+                    self._slot.nextcall.schedule()
+                    await self._slot.nextcall.wait()
+        except Exception:
+            logger.error(
+                "Error while processing requests from start()",
+                exc_info=True,
+                extra={"spider": self.spider},
+            )
+            await maybe_deferred_to_future(self.stop())
 
     def _start_scheduled_requests(self) -> None:
         if self._slot is None or self._slot.closing is not None or self.paused:
