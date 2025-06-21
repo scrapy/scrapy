@@ -155,11 +155,10 @@ class TestFileFeedStorage:
         finally:
             path.unlink()
 
-    def test_preserves_windows_path_without_file_scheme(self, tmp_path):
+    def test_preserves_windows_path_without_file_scheme(self):
         path = r"C:\Users\user\Desktop\test.txt"
-        expected_path = "C:\\Users\\user\\Desktop\\test.txt"
         storage = FileFeedStorage(path)
-        assert storage.path == expected_path
+        assert storage.path == path
 
 
 class TestFTPFeedStorage(unittest.TestCase):
