@@ -251,6 +251,8 @@ class Scraper:
             warn_on_generator_with_return_value(self.crawler.spider, callback)
             output = callback(result, **result.request.cb_kwargs)
         else:  # result is a Failure
+            # this cast allows static type checkers to recognize the dynamically
+            # added `request` attribute without altering the runtime behavior.
             result = cast(FailureWithRequest, result)
             result.request = request
             if not request.errback:
