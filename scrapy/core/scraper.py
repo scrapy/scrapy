@@ -7,7 +7,7 @@ import logging
 import warnings
 from collections import deque
 from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks, maybeDeferred
 from twisted.python.failure import Failure
@@ -50,6 +50,10 @@ logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
 QueueTuple = tuple[Union[Response, Failure], Request, Deferred[None]]
+
+
+class FailureWithRequest(Failure):
+    request: Request
 
 
 class Slot:
@@ -247,8 +251,8 @@ class Scraper:
             warn_on_generator_with_return_value(self.crawler.spider, callback)
             output = callback(result, **result.request.cb_kwargs)
         else:  # result is a Failure
-            # TODO: properly type adding this attribute to a Failure
-            result.request = request  # type: ignore[attr-defined]
+            result = cast(FailureWithRequest, result)
+            result.request = request
             if not request.errback:
                 result.raiseException()
             warn_on_generator_with_return_value(self.crawler.spider, request.errback)
