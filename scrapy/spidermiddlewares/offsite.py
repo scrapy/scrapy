@@ -130,7 +130,13 @@ def parse_allowed_domains(domains):
         if "://" in domain:
             u = urlparse(domain)
             if u.hostname:
-                parsed.append((u.scheme, u.hostname, u.port or (443 if u.scheme == "https" else 80)))
+                parsed.append(
+                    (
+                        u.scheme,
+                        u.hostname,
+                        u.port or (443 if u.scheme == "https" else 80),
+                    )
+                )
         else:
             parsed.append((None, domain, None))
     return parsed
