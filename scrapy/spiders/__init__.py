@@ -41,6 +41,16 @@ class Spider(object_ref):
     name: str
     custom_settings: dict[_SettingsKeyT, Any] | None = None
 
+    #: Whether to strictly enforce the Web Origin Concept (RFC 6454) when
+    #: checking allowed_domains. If True, treats scheme, host, and port as part of
+    #: the origin identity, and distinguishes subdomains from parent domains.
+    #: allowed_domains can include full URLs (e.g., "https://example.com") and
+    #: wildcard domains (e.g., "*.example.com").
+    strict_origins: bool = False
+
+        #: Whether to strictly enforce same-origin policy (considering scheme and port)
+        strict_origins: bool = False
+
     #: Start URLs. See :meth:`start`.
     start_urls: list[str]
 

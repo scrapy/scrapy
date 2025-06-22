@@ -40,19 +40,74 @@ if TYPE_CHECKING:
 UrlT = Union[str, bytes, ParseResult]
 
 
-def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
-    """Return True if the url belongs to any of the given domains"""
-    host = _parse_url(url).netloc.lower()
+    def url_is_from_any_domain(url: UrlT, domains: Iterable[str], strict: bool = False) -> bool:
+    """Return True if the url belongs to any of the given domains
+
+    When strict=True, follows the Web Origin Concept (RFC 6454) and considers
+    scheme, host, and port when matching domains. Domains can be specified as:
+    - Standard domain: example.com (matches example.com and any subdomain)
+    - Full URL: http://example.com (matches exact scheme+host+port)
+    - Wildcard domain: *.example.com (matches subdomains but not the parent domain)
+    """
+    parsed_url = _parse_url(url)
+    host = parsed_url.netloc.lower()
+    url_scheme = parsed_url.scheme.lower()
+
     if not host:
         return False
-    domains = [d.lower() for d in domains]
-    return any((host == d) or (host.endswith(f".{d}")) for d in domains)
+
+    for domain in domains:
+        if not domain:
+            continue
+
+        domain = domain.lower()
+
+        # Handle URL-like domains with scheme (http://example.com)
+        if '://' in domain:
+            domain_parts = urlparse(domain)
+            domain_scheme = domain_parts.scheme
+            domain_host = domain_parts.netloc
+
+            # In strict mode, require scheme and netloc to match exactly
+            if strict:
+                if domain_scheme and url_scheme != domain_scheme:
+                    continue
+                if host == domain_host:
+                    return True
+            # In non-strict mode, extract hostname and proceed with normal domain matching
+            else:
+                domain = domain_parts.netloc
+                if not domain:
+                    continue
+
+        # Handle wildcard domains (*.example.com)
+        elif domain.startswith('*.'):
+            parent_domain = domain[2:]
+            # In strict mode, wildcards don't match the parent domain
+            if strict:
+                if host.endswith('.' + parent_domain) and host != parent_domain:
+                    return True
+            # In non-strict mode, wildcards also match the parent domain
+            else:
+                if host == parent_domain or host.endswith('.' + parent_domain):
+                    return True
+
+        # Standard domain matching
+        elif (host == domain) or (host.endswith('.' + domain)):
+            return True
+
+    return False
 
 
-def url_is_from_spider(url: UrlT, spider: type[Spider]) -> bool:
-    """Return True if the url belongs to the given spider"""
+    def url_is_from_spider(url: UrlT, spider: Spider) -> bool:
+    """Return True if the url belongs to the given spider
+
+    If spider.strict_origins is True, this will use strict origin checking
+    according to RFC 6454 (considering scheme, host, and port).
+    """
+    strict = getattr(spider, "strict_origins", False)
     return url_is_from_any_domain(
-        url, [spider.name, *getattr(spider, "allowed_domains", [])]
+        url, [spider.name, *getattr(spider, "allowed_domains", [])], strict=strict
     )
 
 
