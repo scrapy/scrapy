@@ -48,9 +48,6 @@ class Spider(object_ref):
     #: wildcard domains (e.g., "*.example.com").
     strict_origins: bool = False
 
-        #: Whether to strictly enforce same-origin policy (considering scheme and port)
-        strict_origins: bool = False
-
     #: Start URLs. See :meth:`start`.
     start_urls: list[str]
 

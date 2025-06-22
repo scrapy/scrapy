@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 UrlT = Union[str, bytes, ParseResult]
 
 
-    def url_is_from_any_domain(url: UrlT, domains: Iterable[str], strict: bool = False) -> bool:
+def url_is_from_any_domain(url: UrlT, domains: Iterable[str], strict: bool = False) -> bool:
     """Return True if the url belongs to any of the given domains
 
     When strict=True, follows the Web Origin Concept (RFC 6454) and considers
@@ -99,7 +99,7 @@ UrlT = Union[str, bytes, ParseResult]
     return False
 
 
-    def url_is_from_spider(url: UrlT, spider: Spider) -> bool:
+def url_is_from_spider(url: UrlT, spider: Spider) -> bool:
     """Return True if the url belongs to the given spider
 
     If spider.strict_origins is True, this will use strict origin checking

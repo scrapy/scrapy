@@ -10,6 +10,7 @@ import logging
 import re
 import warnings
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 from scrapy import Spider, signals
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -118,3 +119,36 @@ class URLWarning(Warning):
 
 class PortWarning(Warning):
     pass
+
+
+def parse_allowed_domains(domains):
+    """Parse allowed_domains into a list of (scheme, host, port) or just host."""
+    parsed = []
+    for domain in domains:
+        if not domain:
+            continue
+        if "://" in domain:
+            u = urlparse(domain)
+            if u.hostname:
+                parsed.append((u.scheme, u.hostname, u.port or (443 if u.scheme == "https" else 80)))
+        else:
+            parsed.append((None, domain, None))
+    return parsed
+
+
+def is_url_allowed(url, allowed_domains):
+    """Check if a URL is allowed based on allowed_domains (RFC 6454)."""
+    u = urlparse(url)
+    scheme = u.scheme
+    host = u.hostname
+    port = u.port or (443 if scheme == "https" else 80)
+    for entry in allowed_domains:
+        if entry[0] is not None:
+            # Full origin: scheme, host, port must match
+            if (scheme, host, port) == entry:
+                return True
+        else:
+            # Plain domain: host must match exactly (no subdomains)
+            if host == entry[1]:
+                return True
+    return False
