@@ -23,6 +23,8 @@ if TYPE_CHECKING:
 
 
 class ScrapyCommand:
+    """Base class for all Scrapy commands."""
+
     requires_project: bool = False
     requires_crawler_process: bool = True
     crawler_process: CrawlerProcessBase | None = None  # set in scrapy.cmdline

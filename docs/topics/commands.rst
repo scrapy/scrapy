@@ -629,25 +629,74 @@ Custom project commands
 =======================
 
 You can also add your custom project commands by using the
-:setting:`COMMANDS_MODULE` setting. See the Scrapy commands in
-`scrapy/commands`_ for examples on how to implement your commands.
+:setting:`COMMANDS_MODULE` setting. This allows you to create project-specific
+commands that are automatically discovered and made available through the
+``scrapy`` command-line tool.
 
-.. _scrapy/commands: https://github.com/scrapy/scrapy/tree/master/scrapy/commands
-.. setting:: COMMANDS_MODULE
+Creating custom commands
+------------------------
 
-COMMANDS_MODULE
----------------
+To create a custom command, inherit from the :class:`~scrapy.commands.ScrapyCommand` class
+and implement the required methods. This allows you to extend Scrapy's command-line
+interface with your own functionality, such as project-specific utilities, data
+processing tools, or deployment helpers.
 
-Default: ``''`` (empty string)
+When you create a custom command, you define its behavior by setting class attributes
+and overriding specific methods. Here's what you need to know:
 
-A module to use for looking up custom Scrapy commands. This is used to add custom
-commands for your Scrapy project.
+**Attributes you can set:**
 
-Example:
+* ``requires_project`` (bool): If True, the command requires a Scrapy project to be present (default: False)
+* ``requires_crawler_process`` (bool): If True, the command requires a crawler process to be available (default: True)
+* ``default_settings`` (dict): Default settings to use for this command instead of global defaults (default: {})
+* ``exitcode`` (int): Exit code to return when command completes (default: 0)
+
+**Methods you must override:**
+
+* :meth:`~scrapy.commands.ScrapyCommand.syntax`: Return command syntax (preferably one-line, without command name)
+* :meth:`~scrapy.commands.ScrapyCommand.short_desc`: Return a short description of the command
+* :meth:`~scrapy.commands.ScrapyCommand.run`: Main entry point for command execution (must implement)
+
+**Methods you can override:**
+
+* :meth:`~scrapy.commands.ScrapyCommand.long_desc`: Return a detailed description (can contain newlines)
+* :meth:`~scrapy.commands.ScrapyCommand.help`: Return extensive help text (can contain newlines)
+* :meth:`~scrapy.commands.ScrapyCommand.add_options`: Add command-specific options to argument parser
+* :meth:`~scrapy.commands.ScrapyCommand.process_options`: Process parsed command-line options
+
+**Example custom command:**
 
 .. code-block:: python
 
-    COMMANDS_MODULE = "mybot.commands"
+    from scrapy.commands import ScrapyCommand
+    import argparse
+
+
+    class MyCustomCommand(ScrapyCommand):
+        requires_project = True
+
+        def syntax(self):
+            return "[options] <spider_name>"
+
+        def short_desc(self):
+            return "Run my custom command"
+
+        def add_options(self, parser):
+            super().add_options(parser)
+            parser.add_argument("--my-option", help="My custom option")
+
+        def run(self, args, opts):
+            # Command implementation here
+            spider_name = args[0] if args else None
+            print(f"Running custom command for spider: {spider_name}")
+
+For real examples, see the built-in Scrapy commands in the `scrapy/commands`_ directory.
+
+.. _scrapy/commands: https://github.com/scrapy/scrapy/tree/master/scrapy/commands
+
+.. autoclass:: scrapy.commands.ScrapyCommand
+   :members:
+   :undoc-members:
 
 .. _Deploying your project: https://scrapyd.readthedocs.io/en/latest/deploy.html
 
@@ -674,3 +723,19 @@ The following example adds ``my_command`` command:
           ],
       },
   )
+
+.. setting:: COMMANDS_MODULE
+
+COMMANDS_MODULE
+---------------
+
+Default: ``''`` (empty string)
+
+A module to use for looking up custom Scrapy commands. This is used to add custom
+commands for your Scrapy project.
+
+Example:
+
+.. code-block:: python
+
+    COMMANDS_MODULE = "mybot.commands"
