@@ -185,7 +185,7 @@ class StdoutFeedStorage:
 @implementer(IFeedStorage)
 class FileFeedStorage:
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
-        self.path: str = file_uri_to_path(uri)
+        self.path: str = file_uri_to_path(uri) if uri.startswith("file://") else uri
         feed_options = feed_options or {}
         self.write_mode: OpenBinaryMode = (
             "wb" if feed_options.get("overwrite", False) else "ab"
