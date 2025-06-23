@@ -7,12 +7,13 @@ For more information see docs/topics/architecture.rst
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from time import time
 from traceback import format_exc
 from typing import TYPE_CHECKING, Any, cast
 
-from twisted.internet.defer import Deferred, inlineCallbacks, succeed
+from twisted.internet.defer import CancelledError, Deferred, inlineCallbacks, succeed
 from twisted.python.failure import Failure
 
 from scrapy import signals
@@ -108,6 +109,8 @@ class ExecutionEngine:
         )
         self.start_time: float | None = None
         self._start: AsyncIterator[Any] | None = None
+        self._closewait: Deferred[None] | None = None
+        self._start_request_processing_dfd: Deferred[None] | None = None
         downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         try:
             self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
@@ -139,9 +142,9 @@ class ExecutionEngine:
         self.start_time = time()
         await self.signals.send_catch_log_async(signal=signals.engine_started)
         self.running = True
-        self._closewait: Deferred[None] = Deferred()
+        self._closewait = Deferred()
         if _start_request_processing:
-            self._start_request_processing()
+            self._start_request_processing_dfd = self._start_request_processing()
         await maybe_deferred_to_future(self._closewait)
 
     def stop(self) -> Deferred[None]:
@@ -150,12 +153,16 @@ class ExecutionEngine:
         @deferred_f_from_coro_f
         async def _finish_stopping_engine(_: Any) -> None:
             await self.signals.send_catch_log_async(signal=signals.engine_stopped)
-            self._closewait.callback(None)
+            if self._closewait:
+                self._closewait.callback(None)
 
         if not self.running:
             raise RuntimeError("Engine not running")
 
         self.running = False
+        if self._start_request_processing_dfd is not None:
+            self._start_request_processing_dfd.cancel()
+            self._start_request_processing_dfd = None
         dfd = (
             self.close_spider(self.spider, reason="shutdown")
             if self.spider is not None
@@ -217,17 +224,30 @@ class ExecutionEngine:
         # Starts the processing of scheduled requests, as well as a periodic
         # call to that processing method for scenarios where the scheduler
         # reports having pending requests but returns none.
-        assert self._slot is not None  # typing
-        self._slot.nextcall.schedule()
-        self._slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
+        try:
+            assert self._slot is not None  # typing
+            self._slot.nextcall.schedule()
+            self._slot.heartbeat.start(self._SLOT_HEARTBEAT_INTERVAL)
 
-        while self._start and self.spider:
-            await self._process_start_next()
-            if not self.needs_backout():
-                # Give room for the outcome of self._process_start_next() to be
-                # processed before continuing with the next iteration.
-                self._slot.nextcall.schedule()
-                await self._slot.nextcall.wait()
+            while self._start and self.spider:
+                await self._process_start_next()
+                if not self.needs_backout():
+                    # Give room for the outcome of self._process_start_next() to be
+                    # processed before continuing with the next iteration.
+                    self._slot.nextcall.schedule()
+                    await self._slot.nextcall.wait()
+        except (asyncio.exceptions.CancelledError, CancelledError):
+            # self.stop() has cancelled us, nothing to do
+            return
+        except Exception:
+            # an error happened, log it and stop the engine
+            self._start_request_processing_dfd = None
+            logger.error(
+                "Error while processing requests from start()",
+                exc_info=True,
+                extra={"spider": self.spider},
+            )
+            await maybe_deferred_to_future(self.stop())
 
     def _start_scheduled_requests(self) -> None:
         if self._slot is None or self._slot.closing is not None or self.paused:
