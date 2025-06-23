@@ -1,5 +1,6 @@
 import copy
 import warnings
+from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, MutableMapping
 
 import pytest
@@ -16,7 +17,12 @@ from scrapy.utils.datatypes import (
 from scrapy.utils.python import garbage_collect
 
 
-class CaseInsensitiveDictBase:
+class TestCaseInsensitiveDictBase(ABC):
+    @property
+    @abstractmethod
+    def dict_class(self) -> type[MutableMapping]:
+        raise NotImplementedError
+
     def test_init_dict(self):
         seq = {"red": 1, "black": 3}
         d = self.dict_class(seq)
@@ -199,7 +205,7 @@ class CaseInsensitiveDictBase:
         assert h1.get("header1") == h3.get("HEADER1")
 
 
-class TestCaseInsensitiveDict(CaseInsensitiveDictBase):
+class TestCaseInsensitiveDict(TestCaseInsensitiveDictBase):
     dict_class = CaseInsensitiveDict
 
     def test_repr(self):
@@ -216,7 +222,7 @@ class TestCaseInsensitiveDict(CaseInsensitiveDictBase):
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class TestCaselessDict(CaseInsensitiveDictBase):
+class TestCaselessDict(TestCaseInsensitiveDictBase):
     dict_class = CaselessDict
 
     def test_deprecation_message(self):

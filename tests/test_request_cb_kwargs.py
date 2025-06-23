@@ -150,8 +150,6 @@ class KeywordArgumentsSpider(MockServerSpider):
 
 
 class TestCallbackKeywordArguments(TestCase):
-    maxDiff = None
-
     @classmethod
     def setUpClass(cls):
         cls.mockserver = MockServer()

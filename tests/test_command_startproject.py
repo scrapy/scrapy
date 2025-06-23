@@ -106,8 +106,6 @@ def get_permissions_dict(
 
 
 class TestStartprojectTemplates(TestProjectBase):
-    maxDiff = None
-
     def setup_method(self):
         super().setup_method()
         self.tmpl = str(Path(self.temp_path, "templates"))
