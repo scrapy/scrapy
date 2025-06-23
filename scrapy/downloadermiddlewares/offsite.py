@@ -59,6 +59,12 @@ class OffsiteMiddleware:
         raise IgnoreRequest
 
     def should_follow(self, request: Request, spider: Spider) -> bool:
+        # If strict_origins is enabled, use url_is_from_spider
+        if getattr(self, "strict_origins", False):
+            from scrapy.utils.url import url_is_from_spider
+            return url_is_from_spider(request.url, spider)
+
+        # Otherwise use the standard regex approach
         regex = self.host_regex
         # hostname can be None for wrong urls (like javascript links)
         host = urlparse_cached(request).hostname or ""
@@ -69,6 +75,13 @@ class OffsiteMiddleware:
         allowed_domains = getattr(spider, "allowed_domains", None)
         if not allowed_domains:
             return re.compile("")  # allow all by default
+
+        # If strict_origins is enabled, don't use regex but defer to should_follow
+        self.strict_origins = getattr(spider, "strict_origins", False)
+        if self.strict_origins:
+            # Return a pattern that won't match anything so we always go through should_follow
+            return re.compile(r"^$")
+
         url_pattern = re.compile(r"^https?://.*$")
         port_pattern = re.compile(r":\d+$")
         domains = []
