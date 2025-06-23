@@ -155,6 +155,11 @@ class TestFileFeedStorage:
         finally:
             path.unlink()
 
+    def test_preserves_windows_path_without_file_scheme(self):
+        path = r"C:\Users\user\Desktop\test.txt"
+        storage = FileFeedStorage(path)
+        assert storage.path == path
+
 
 class TestFTPFeedStorage(unittest.TestCase):
     def get_test_spider(self, settings=None):
