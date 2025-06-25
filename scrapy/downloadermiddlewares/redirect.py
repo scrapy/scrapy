@@ -109,7 +109,10 @@ class BaseRedirectMiddleware:
                 *request.meta.get("redirect_reasons", []),
                 reason,
             ]
-            redirected.dont_filter = request.dont_filter
+            # MODIFICATION: Do not propagate dont_filter=True if it was set by
+            # the RetryMiddleware for a temporary retry. This is indicated by
+            # the _retry_dont_filter meta key.
+            redirected.dont_filter = request.dont_filter and not request.meta.get('_retry_dont_filter')
             redirected.priority = request.priority + self.priority_adjust
             logger.debug(
                 "Redirecting (%(reason)s) to %(redirected)s from %(request)s",
