@@ -112,7 +112,7 @@ class MainTestCase(TestCase):
         with LogCapture(level=ERROR) as log:
             await maybe_deferred_to_future(crawler.crawl())
 
-        assert not log.records, f"{log.records=}"
+        assert not log.records
         finish_reason = crawler.stats.get_value("finish_reason")
         assert finish_reason == "shutdown", f"{finish_reason=}"
         expected_urls = []
