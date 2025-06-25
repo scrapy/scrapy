@@ -9,9 +9,10 @@ from io import StringIO
 from pathlib import Path
 from shutil import rmtree
 from tempfile import TemporaryFile, mkdtemp
-from threading import Timer
 from typing import TYPE_CHECKING, Any
 from unittest import mock
+
+import pytest
 
 import scrapy
 from scrapy.cmdline import _pop_command_name, _print_unknown_command_msg
@@ -100,17 +101,12 @@ class TestProjectBase:
             **popen_kwargs,
         )
 
-        def kill_proc():
+        try:
+            stdout, stderr = p.communicate(timeout=15)
+        except subprocess.TimeoutExpired:
             p.kill()
             p.communicate()
-            raise AssertionError("Command took too much time to complete")
-
-        timer = Timer(15, kill_proc)
-        try:
-            timer.start()
-            stdout, stderr = p.communicate()
-        finally:
-            timer.cancel()
+            pytest.fail("Command took too much time to complete")
 
         return p, to_unicode(stdout), to_unicode(stderr)
 
