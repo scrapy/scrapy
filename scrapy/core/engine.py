@@ -266,10 +266,10 @@ class ExecutionEngine:
 
         See :ref:`start-requests-lazy` for an example.
         """
-        assert self._slot is not None  # typing
         assert self.scraper.slot is not None  # typing
         return (
             not self.running
+            or not self._slot
             or bool(self._slot.closing)
             or self.downloader.needs_backout()
             or self.scraper.slot.needs_backout()
