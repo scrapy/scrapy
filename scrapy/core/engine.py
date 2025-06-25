@@ -266,10 +266,10 @@ class ExecutionEngine:
 
         See :ref:`start-requests-lazy` for an example.
         """
-        assert self._slot is not None  # typing
         assert self.scraper.slot is not None  # typing
         return (
             not self.running
+            or not self._slot
             or bool(self._slot.closing)
             or self.downloader.needs_backout()
             or self.scraper.slot.needs_backout()
@@ -530,10 +530,16 @@ class ExecutionEngine:
             )
         )
 
-        dfd.addBoth(lambda _: setattr(self, "slot", None))
+        def unassign_slot(_: Any) -> None:
+            self._slot = None
+
+        dfd.addBoth(unassign_slot)
         dfd.addErrback(log_failure("Error while unassigning slot"))
 
-        dfd.addBoth(lambda _: setattr(self, "spider", None))
+        def unassign_spider(_: Any) -> None:
+            self.spider = None
+
+        dfd.addBoth(unassign_spider)
         dfd.addErrback(log_failure("Error while unassigning spider"))
 
         dfd.addBoth(lambda _: self._spider_closed_callback(spider))
