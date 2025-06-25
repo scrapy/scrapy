@@ -510,8 +510,8 @@ class TestEngine(TestEngineBase):
             timer.cancel()
 
         stderr_str = stderr.decode("utf-8")
-        assert "AttributeError" not in stderr_str
-        assert "AssertionError" not in stderr_str
+        assert "AttributeError" not in stderr_str, stderr_str
+        assert "AssertionError" not in stderr_str, stderr_str
 
 
 def test_request_scheduled_signal(caplog):
