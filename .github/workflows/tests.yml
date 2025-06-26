@@ -19,75 +19,60 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
-        # includes only cases where toxenv is not py
+        toxenv: [py]
+
         include:
           - os: ubuntu-latest
             python-version: "3.13"
-            env:
-              TOXENV: default-reactor
+            toxenv: default-reactor
           - os: ubuntu-latest
             python-version: pypy3.10
-            env:
-              TOXENV: pypy3
+            toxenv: pypy3
           - os: ubuntu-latest
             python-version: pypy3.11
-            env:
-              TOXENV: pypy3
+            toxenv: pypy3
 
           # ubuntu pinned deps
           - os: ubuntu-latest
             python-version: "3.9.21"
-            env:
-              TOXENV: pinned
+            toxenv: pinned
           - os: ubuntu-latest
             python-version: "3.9.21"
-            env:
-              TOXENV: default-reactor-pinned
+            toxenv: default-reactor-pinned
           - os: ubuntu-latest
             python-version: pypy3.10
-            env:
-              TOXENV: pypy3-pinned
+            toxenv: pypy3-pinned
           - os: ubuntu-latest
             python-version: "3.9.21"
-            env:
-              TOXENV: extra-deps-pinned
+            toxenv: extra-deps-pinned
           - os: ubuntu-latest
             python-version: "3.9.21"
-            env:
-              TOXENV: botocore-pinned
+            toxenv: botocore-pinned
 
           - os: ubuntu-latest
             python-version: "3.13"
-            env:
-              TOXENV: extra-deps
+            toxenv: extra-deps
           - os: ubuntu-latest
             python-version: pypy3.11
-            env:
-              TOXENV: pypy3-extra-deps
+            toxenv: pypy3-extra-deps
           - os: ubuntu-latest
             python-version: "3.13"
-            env:
-              TOXENV: botocore
-
+            toxenv: botocore
 
           - os: windows-latest
             python-version: "3.13"
-            env:
-              TOXENV: default-reactor
+            toxenv: default-reactor
 
           # windows pinned deps
           - os: windows-latest
             python-version: "3.9.13"
-            env:
-              TOXENV: pinned
+            toxenv: pinned
           - os: windows-latest
             python-version: "3.9.13"
-            env:
-              TOXENV: extra-deps-pinned
+            toxenv: extra-deps-pinned
           - os: windows-latest
             python-version: "3.13"
-            env:
-              TOXENV: extra-deps
+            toxenv: extra-deps
 
     steps:
       - uses: actions/checkout@v4
@@ -98,8 +83,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install system libraries
-        # matrix.env.TOXENV may be null now, as we only include cases where toxenv is not py
-        if: matrix.os == 'ubuntu-latest' && (contains(matrix.python-version, 'pypy') || contains(matrix.env.TOXENV || '', 'pinned'))
+        if: matrix.os == 'ubuntu-latest' && (contains(matrix.python-version, 'pypy') || contains(matrix.toxenv, 'pinned'))
         run: |
           sudo apt-get update
           sudo apt-get install libxml2-dev libxslt-dev
@@ -113,7 +97,7 @@ jobs:
       - name: Run tests (others)
         if: matrix.os != 'macos-latest'
         env:
-          TOXENV: ${{ matrix.env.TOXENV || 'py' }}
+          TOXENV: ${{ matrix.toxenv }}
         run: |
           pip install -U tox
           tox
