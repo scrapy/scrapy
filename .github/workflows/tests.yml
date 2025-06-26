@@ -106,8 +106,6 @@ jobs:
 
       - name: Run tests (macOS)
         if: matrix.os == 'macos-latest'
-        env:
-          TOXENV: ${{ matrix.env.TOXENV || 'py' }}
         run: |
           pip install -U tox
           tox -e py
