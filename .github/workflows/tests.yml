@@ -1,0 +1,128 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - master
+      - '[0-9]+.[0-9]+'
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        # includes only cases where toxenv is not py
+        include:
+          - os: ubuntu-latest
+            python-version: "3.13"
+            env:
+              TOXENV: default-reactor
+          - os: ubuntu-latest
+            python-version: pypy3.10
+            env:
+              TOXENV: pypy3
+          - os: ubuntu-latest
+            python-version: pypy3.11
+            env:
+              TOXENV: pypy3
+
+          # ubuntu pinned deps
+          - os: ubuntu-latest
+            python-version: "3.9.21"
+            env:
+              TOXENV: pinned
+          - os: ubuntu-latest
+            python-version: "3.9.21"
+            env:
+              TOXENV: default-reactor-pinned
+          - os: ubuntu-latest
+            python-version: pypy3.10
+            env:
+              TOXENV: pypy3-pinned
+          - os: ubuntu-latest
+            python-version: "3.9.21"
+            env:
+              TOXENV: extra-deps-pinned
+          - os: ubuntu-latest
+            python-version: "3.9.21"
+            env:
+              TOXENV: botocore-pinned
+
+          - os: ubuntu-latest
+            python-version: "3.13"
+            env:
+              TOXENV: extra-deps
+          - os: ubuntu-latest
+            python-version: pypy3.11
+            env:
+              TOXENV: pypy3-extra-deps
+          - os: ubuntu-latest
+            python-version: "3.13"
+            env:
+              TOXENV: botocore
+
+
+          - os: windows-latest
+            python-version: "3.13"
+            env:
+              TOXENV: default-reactor
+
+          # windows pinned deps
+          - os: windows-latest
+            python-version: "3.9.13"
+            env:
+              TOXENV: pinned
+          - os: windows-latest
+            python-version: "3.9.13"
+            env:
+              TOXENV: extra-deps-pinned
+          - os: windows-latest
+            python-version: "3.13"
+            env:
+              TOXENV: extra-deps
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system libraries
+        # matrix.env.TOXENV may be null now, as we only include cases where toxenv is not py
+        if: matrix.os == 'ubuntu-latest' && (contains(matrix.python-version, 'pypy') || contains(matrix.env.TOXENV || '', 'pinned'))
+        run: |
+          sudo apt-get update
+          sudo apt-get install libxml2-dev libxslt-dev
+
+      - name: Run tests (macOS)
+        if: matrix.os == 'macos-latest'
+        env:
+          TOXENV: ${{ matrix.env.TOXENV || 'py' }}
+        run: |
+          pip install -U tox
+          tox -e py
+
+      - name: Run tests (others)
+        if: matrix.os != 'macos-latest'
+        env:
+          TOXENV: ${{ matrix.env.TOXENV || 'py' }}
+        run: |
+          pip install -U tox
+          tox
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v5
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
