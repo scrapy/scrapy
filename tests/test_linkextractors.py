@@ -152,7 +152,7 @@ class Base:
         def test_nofollow(self):
             """Test the extractor's behaviour for links with rel='nofollow'"""
 
-            html = b"""<html><head><title>Page title<title>
+            html = b"""<html><head><title>Page title</title></head>
             <body>
             <div class='links'>
             <p><a href="/about.html">About us</a></p>
@@ -232,7 +232,7 @@ class Base:
 
         def test_restrict_xpaths_encoding(self):
             """Test restrict_xpaths with encodings"""
-            html = b"""<html><head><title>Page title<title>
+            html = b"""<html><head><title>Page title</title></head>
             <body><p><a href="item/12.html">Item 12</a></p>
             <div class='links'>
             <p><a href="/about.html">About us\xa3</a></p>
@@ -378,7 +378,7 @@ class Base:
             ]
 
         def test_base_url_with_restrict_xpaths(self):
-            html = b"""<html><head><title>Page title<title><base href="http://otherdomain.com/base/" />
+            html = b"""<html><head><title>Page title</title><base href="http://otherdomain.com/base/" /></head>
             <body><p><a href="item/12.html">Item 12</a></p>
             </body></html>"""
             response = HtmlResponse("http://example.org/somepage/index.html", body=html)
