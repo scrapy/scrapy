@@ -234,7 +234,7 @@ class TestCSVFeedSpider(TestSpider):
 
 
 class TestCrawlSpider(TestSpider):
-    test_body = b"""<html><head><title>Page title<title>
+    test_body = b"""<html><head><title>Page title</title></head>
     <body>
     <p><a href="item/12.html">Item 12</a></p>
     <div class='links'>
