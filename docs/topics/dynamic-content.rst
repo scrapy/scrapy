@@ -86,7 +86,7 @@ method and URL. However, you may also need to reproduce the body, headers and
 form parameters (see :class:`~scrapy.FormRequest`) of that request.
 
 As all major browsers allow to export the requests in curl_ format, Scrapy
-incorporates the method :meth:`~scrapy.Request.from_curl()` to generate an equivalent
+incorporates the method :meth:`~scrapy.Request.from_curl` to generate an equivalent
 :class:`~scrapy.Request` from a cURL command. To get more information
 visit :ref:`request from curl <requests-from-curl>` inside the network
 tool section.

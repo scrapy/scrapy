@@ -15,3 +15,7 @@ repos:
   rev: v5.0.0
   hooks:
   - id: trailing-whitespace
+- repo: https://github.com/sphinx-contrib/sphinx-lint
+  rev: v1.0.0
+  hooks:
+    - id: sphinx-lint

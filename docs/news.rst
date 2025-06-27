@@ -340,7 +340,7 @@ Deprecations
     (:issue:`6708`, :issue:`6714`)
 
 -   ``scrapy.utils.versions.scrapy_components_versions()`` is deprecated, use
-    :func:`scrapy.utils.versions.get_versions()` instead.
+    :func:`scrapy.utils.versions.get_versions` instead.
     (:issue:`6582`)
 
 -   ``BaseDupeFilter.log()`` is deprecated. It does nothing and shouldn't be
@@ -1786,7 +1786,7 @@ Bug fixes
     (:issue:`5914`, :issue:`5917`)
 
 -   Fixed an error breaking user handling of send failures in
-    :meth:`scrapy.mail.MailSender.send()`. (:issue:`1611`, :issue:`5880`)
+    :meth:`scrapy.mail.MailSender.send`. (:issue:`1611`, :issue:`5880`)
 
 Documentation
 ~~~~~~~~~~~~~
@@ -5336,7 +5336,7 @@ Docs
 - Added missing bullet point for the ``AUTOTHROTTLE_TARGET_CONCURRENCY``
   setting. (:issue:`2756`)
 - Update Contributing docs, document new support channels
-  (:issue:`2762`, issue:`3038`)
+  (:issue:`2762`, :issue:`3038`)
 - Include references to Scrapy subreddit in the docs
 - Fix broken links; use ``https://`` for external links
   (:issue:`2978`, :issue:`2982`, :issue:`2958`)

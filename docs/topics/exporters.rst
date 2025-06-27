@@ -116,10 +116,10 @@ Example:
 2. Overriding the serialize_field() method
 ------------------------------------------
 
-You can also override the :meth:`~BaseItemExporter.serialize_field()` method to
+You can also override the :meth:`~BaseItemExporter.serialize_field` method to
 customize how your field value will be exported.
 
-Make sure you call the base class :meth:`~BaseItemExporter.serialize_field()` method
+Make sure you call the base class :meth:`~BaseItemExporter.serialize_field` method
 after your custom code.
 
 Example:
