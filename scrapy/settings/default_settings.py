@@ -541,7 +541,7 @@ def __getattr__(name: str):
         from scrapy.exceptions import ScrapyDeprecationWarning
 
         warnings.warn(
-            "The scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_IP attribute is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead.",
+            "The scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_IP attribute is deprecated, use scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_DOMAIN instead.",
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
