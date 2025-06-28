@@ -11,6 +11,7 @@ import logging
 import re
 import sys
 import warnings
+from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
@@ -140,7 +141,7 @@ class FeedStorageProtocol(Protocol):
 
 
 @implementer(IFeedStorage)
-class BlockingFeedStorage:
+class BlockingFeedStorage(ABC):
     def open(self, spider: Spider) -> IO[bytes]:
         path = spider.crawler.settings["FEED_TEMPDIR"]
         if path and not Path(path).is_dir():
@@ -151,6 +152,7 @@ class BlockingFeedStorage:
     def store(self, file: IO[bytes]) -> Deferred[None] | None:
         return deferToThread(self._store_in_thread, file)
 
+    @abstractmethod
     def _store_in_thread(self, file: IO[bytes]) -> None:
         raise NotImplementedError
 

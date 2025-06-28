@@ -15,6 +15,35 @@ Backward-incompatible changes
     ``True`` when running Scrapy via :ref:`its command-line tool
     <topics-commands-crawlerprocess>` to avoid a reactor mismatch exception.
 
+-   The classes listed below are now :term:`abstract base classes <abstract
+    base class>`. They cannot be instantiated directly and their subclasses
+    need to override the abstract methods listed below to be able to be
+    instantiated. If you previously instantiated these classes directly, you
+    will now need to subclass them and provide trivial (e.g. empty)
+    implementations for the abstract methods.
+
+    - :class:`scrapy.commands.ScrapyCommand`
+
+        - :meth:`~scrapy.commands.ScrapyCommand.run`
+
+        - :meth:`~scrapy.commands.ScrapyCommand.short_desc`
+
+    - :class:`scrapy.exporters.BaseItemExporter`
+
+        - :meth:`~scrapy.exporters.BaseItemExporter.export_item`
+
+    - :class:`scrapy.extensions.feedexport.BlockingFeedStorage`
+
+        - :meth:`~scrapy.extensions.feedexport.BlockingFeedStorage._store_in_thread`
+
+    - :class:`scrapy.middleware.MiddlewareManager`
+
+        - :meth:`~scrapy.middleware.MiddlewareManager._get_mwlist_from_settings`
+
+    - :class:`scrapy.spidermiddlewares.referer.ReferrerPolicy`
+
+        - :meth:`~scrapy.spidermiddlewares.referer.ReferrerPolicy.referrer`
+
 
 .. _release-2.13.2:
 

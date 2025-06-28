@@ -25,9 +25,20 @@ if TYPE_CHECKING:
     import os
 
 
+class EmptyCommand(ScrapyCommand):
+    def syntax(self) -> str:
+        return ""
+
+    def short_desc(self) -> str:
+        return ""
+
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
+        pass
+
+
 class TestCommandSettings:
     def setup_method(self):
-        self.command = ScrapyCommand()
+        self.command = EmptyCommand()
         self.command.settings = Settings()
         self.parser = argparse.ArgumentParser(
             formatter_class=ScrapyHelpFormatter, conflict_handler="resolve"

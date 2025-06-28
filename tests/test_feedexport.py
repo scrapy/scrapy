@@ -18,7 +18,7 @@ from io import BytesIO
 from logging import getLogger
 from pathlib import Path
 from string import ascii_letters, digits
-from typing import TYPE_CHECKING, Any
+from typing import IO, TYPE_CHECKING, Any
 from unittest import mock
 from urllib.parse import quote, urljoin
 from urllib.request import pathname2url
@@ -236,6 +236,11 @@ class TestFTPFeedStorage(unittest.TestCase):
         assert st.password == string.punctuation
 
 
+class MyBlockingFeedStorage(BlockingFeedStorage):
+    def _store_in_thread(self, file: IO[bytes]) -> None:
+        return
+
+
 class TestBlockingFeedStorage:
     def get_test_spider(self, settings=None):
         class TestSpider(scrapy.Spider):
@@ -245,14 +250,14 @@ class TestBlockingFeedStorage:
         return TestSpider.from_crawler(crawler)
 
     def test_default_temp_dir(self):
-        b = BlockingFeedStorage()
+        b = MyBlockingFeedStorage()
 
         storage_file = b.open(self.get_test_spider())
         storage_dir = Path(storage_file.name).parent
         assert str(storage_dir) == tempfile.gettempdir()
 
     def test_temp_file(self, tmp_path):
-        b = BlockingFeedStorage()
+        b = MyBlockingFeedStorage()
 
         spider = self.get_test_spider({"FEED_TEMPDIR": str(tmp_path)})
         storage_file = b.open(spider)
@@ -260,7 +265,7 @@ class TestBlockingFeedStorage:
         assert storage_dir == tmp_path
 
     def test_invalid_folder(self, tmp_path):
-        b = BlockingFeedStorage()
+        b = MyBlockingFeedStorage()
 
         invalid_path = tmp_path / "invalid_path"
         spider = self.get_test_spider({"FEED_TEMPDIR": str(invalid_path)})
