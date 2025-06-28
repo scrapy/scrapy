@@ -41,6 +41,15 @@ class CustomFieldItem(Item):
     age = Field(serializer=custom_serializer)
 
 
+class UnorderedAttributesItem(Item):
+    z = Field()
+    y = Field()
+    x = Field()
+    c = Field()
+    b = Field()
+    a = Field()
+
+
 @dataclasses.dataclass
 class MyDataClass:
     name: str
@@ -684,3 +693,75 @@ class TestCustomExporterItem:
 
 class TestCustomExporterDataclass(TestCustomExporterItem):
     item_class = MyDataClass
+
+
+EXPORTERS = {
+    "json": JsonItemExporter,
+    "jsonlines": JsonLinesItemExporter,
+    "xml": XmlItemExporter,
+    "csv": CsvItemExporter,
+    "marshal": MarshalItemExporter,
+    "pickle": PickleItemExporter,
+}
+
+
+class MyOrderedItem(Item):
+    z = Field()
+    y = Field()
+    x = Field()
+
+
+@pytest.mark.parametrize(
+    ("exporter_name", "exporter_cls"),
+    list(EXPORTERS.items()),
+)
+def test_exporter_respects_ordered_attrs(exporter_name, exporter_cls):
+    buffer = BytesIO()
+    exporter_kwargs = {}
+    item = MyOrderedItem(z=1, y=2, x=3)
+    item._ordered_attrs = ["y", "z", "x"]
+    if exporter_name in {"marshal", "pickle"}:
+        exporter = exporter_cls(buffer)
+        exporter.start_exporting()
+        exporter.export_item(item)
+        exporter.finish_exporting()
+        buffer.seek(0)
+        if exporter_name == "marshal":
+            loaded = marshal.load(buffer)
+        else:  # pickle
+            loaded = pickle.load(buffer)
+        expected = {"y": 2, "z": 1, "x": 3}
+        # Ensure order matches exactly
+        assert list(loaded.keys()) == ["y", "z", "x"]
+        assert loaded == expected
+    else:
+        exporter = exporter_cls(buffer, **exporter_kwargs)
+        exporter.start_exporting()
+        exporter.export_item(item)
+        exporter.finish_exporting()
+        exported = buffer.getvalue().decode().strip()
+        if exporter_name == "csv":
+            expected = "y,z,x\r\n2,1,3\r\n"
+            exported = buffer.getvalue().decode()
+            assert exported == expected
+        elif exporter_name == "xml":
+            expected = (
+                '<?xml version="1.0" encoding="utf-8"?>\n'
+                "<items>\n"
+                "  <item>\n"
+                "    <y>2</y>\n"
+                "    <z>1</z>\n"
+                "    <x>3</x>\n"
+                "  </item>\n"
+                "</items>"
+            )
+            # Some exporters have extra whitespace, so normalize a bit
+            exported_clean = "".join(exported.split())
+            expected_clean = "".join(expected.split())
+            assert exported_clean == expected_clean
+        elif exporter_name == "json":
+            s = exported.replace(" ", "")
+            assert s.startswith('[{"y":2,"z":1,"x":3}]')
+        elif exporter_name == "jsonlines":
+            s = exported.replace(" ", "")
+            assert s.startswith('{"y":2,"z":1,"x":3}')
