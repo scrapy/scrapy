@@ -412,5 +412,5 @@ class TestDeprecateConcurrentRequestsPerIPSetting:
         assert len(logged_warnings) == 1
         assert (
             str(logged_warnings[0].message)
-            == "CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead."
+            == "The CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead."
         )
