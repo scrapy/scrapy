@@ -135,6 +135,9 @@ class ExecutionEngine:
         await maybe_deferred_to_future(
             self.signals.send_catch_log_deferred(signal=signals.engine_started)
         )
+        if _start_request_processing and self.spider is None:
+            # require an opened spider when not run in scrapy shell
+            return
         self.running = True
         self._closewait = Deferred()
         if _start_request_processing:
@@ -541,5 +544,6 @@ class ExecutionEngine:
         dfd.addErrback(log_failure("Error while unassigning spider"))
 
         dfd.addBoth(lambda _: self._spider_closed_callback(spider))
+        dfd.addErrback(log_failure("Error running spider_closed_callback"))
 
         return dfd
