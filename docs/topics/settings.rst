@@ -502,47 +502,6 @@ Default: ``100``
 Maximum number of concurrent items (per response) to process in parallel in
 :ref:`item pipelines <topics-item-pipeline>`.
 
-.. setting:: CONCURRENT_REQUESTS
-
-CONCURRENT_REQUESTS
--------------------
-
-Default: ``16``
-
-The maximum number of concurrent (i.e. simultaneous) requests that will be
-performed by the Scrapy downloader.
-
-.. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
-
-CONCURRENT_REQUESTS_PER_DOMAIN
-------------------------------
-
-Default: ``8``
-
-The maximum number of concurrent (i.e. simultaneous) requests that will be
-performed to any single domain.
-
-See also: :ref:`topics-autothrottle` and its
-:setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` option.
-
-
-.. setting:: CONCURRENT_REQUESTS_PER_IP
-
-CONCURRENT_REQUESTS_PER_IP
---------------------------
-
-Default: ``0``
-
-The maximum number of concurrent (i.e. simultaneous) requests that will be
-performed to any single IP. If non-zero, the
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting is ignored, and this one is
-used instead. In other words, concurrency limits will be applied per IP, not
-per domain.
-
-This setting also affects :setting:`DOWNLOAD_DELAY` and
-:ref:`topics-autothrottle`: if :setting:`CONCURRENT_REQUESTS_PER_IP`
-is non-zero, download delay is enforced per IP, not per domain.
-
 .. setting:: DEFAULT_DROPITEM_LOG_LEVEL
 
 DEFAULT_DROPITEM_LOG_LEVEL
