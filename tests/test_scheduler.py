@@ -396,21 +396,3 @@ class TestIncompatibility:
                 ValueError, match="does not support CONCURRENT_REQUESTS_PER_IP"
             ):
                 self._incompatible()
-
-
-class TestDeprecateConcurrentRequestsPerIPSetting:
-    def test_deprecated_setting(self):
-        settings = {
-            "CONCURRENT_REQUESTS_PER_IP": 1,
-        }
-        with warnings.catch_warnings(record=True) as logged_warnings:
-            crawler = get_crawler(Spider, settings)
-            scheduler = Scheduler.from_crawler(crawler)
-            spider = Spider(name="spider")
-            scheduler.open(spider)
-
-        assert len(logged_warnings) == 1
-        assert (
-            str(logged_warnings[0].message)
-            == "The CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead."
-        )

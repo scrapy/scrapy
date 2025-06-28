@@ -16,7 +16,7 @@ def test_deprecated_twisted_version():
 def test_deprecated_concurrent_requests_per_ip_attribute():
     with warnings.catch_warnings(record=True) as warns:
         from scrapy.settings.default_settings import (
-            CONCURRENT_REQUESTS_PER_IP,  # pylint: disable=no-name-in-module
+            CONCURRENT_REQUESTS_PER_IP,
         )
 
         assert CONCURRENT_REQUESTS_PER_IP is not None

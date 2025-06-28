@@ -149,7 +149,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         :param default: the value to return if no setting is found
         :type default: object
         """
-        if name == "CONCURRENT_REQUESTS_PER_IP" and self[name] != 0:
+        if name == "CONCURRENT_REQUESTS_PER_IP" and (self[name] or default) != 0:
             warnings.warn(
                 "The CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead.",
                 ScrapyDeprecationWarning,
