@@ -517,7 +517,7 @@ performed by the Scrapy downloader.
 CONCURRENT_REQUESTS_PER_DOMAIN
 ------------------------------
 
-Default: ``8``
+Default: ``1`` (:ref:`fallback <default-settings>`: ``8``)
 
 The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed to any single domain.
@@ -869,7 +869,7 @@ Whether to enable downloader stats collection.
 DOWNLOAD_DELAY
 --------------
 
-Default: ``0``
+Default: ``1`` (:ref:`fallback <default-settings>`: ``0``)
 
 Minimum seconds to wait between 2 consecutive requests to the same domain.
 
