@@ -1233,6 +1233,17 @@ Security bug fixes
 
     .. _defusedxml: https://github.com/tiran/defusedxml
 
+Deprecations
+~~~~~~~~~~~~
+
+-   ``scrapy.spidermiddlewares.offsite.OffsiteMiddleware`` (a spider
+    middleware) is now deprecated and not enabled by default. The new
+    downloader middleware with the same functionality,
+    :class:`scrapy.downloadermiddlewares.offsite.OffsiteMiddleware`, is enabled
+    instead.
+    (:issue:`2241`, :issue:`6358`)
+
+
 Bug fixes
 ~~~~~~~~~
 
