@@ -15,10 +15,7 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
-from scrapy.utils.defer import (
-    deferred_f_from_coro_f,
-    maybe_deferred_to_future,
-)
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
 
@@ -118,7 +115,9 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
     RESULT_COUNT = 3  # to simplify checks, let everything return 3 objects
 
     @staticmethod
-    def _construct_mw_setting(*mw_classes, start_index: int | None = None):
+    def _construct_mw_setting(
+        *mw_classes: type[Any], start_index: int | None = None
+    ) -> dict[type[Any], int]:
         if start_index is None:
             start_index = 10
         return {i: c for c, i in enumerate(mw_classes, start=start_index)}
@@ -128,7 +127,9 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
         yield {"foo": 2}
         yield {"foo": 3}
 
-    async def _get_middleware_result(self, *mw_classes, start_index: int | None = None):
+    async def _get_middleware_result(
+        self, *mw_classes: type[Any], start_index: int | None = None
+    ) -> Any:
         setting = self._construct_mw_setting(*mw_classes, start_index=start_index)
         self.crawler = get_crawler(
             Spider, {"SPIDER_MIDDLEWARES_BASE": {}, "SPIDER_MIDDLEWARES": setting}
@@ -140,8 +141,11 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
         )
 
     async def _test_simple_base(
-        self, *mw_classes, downgrade: bool = False, start_index: int | None = None
-    ):
+        self,
+        *mw_classes: type[Any],
+        downgrade: bool = False,
+        start_index: int | None = None,
+    ) -> None:
         with LogCapture() as log:
             result = await self._get_middleware_result(
                 *mw_classes, start_index=start_index
@@ -156,8 +160,11 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
         )
 
     async def _test_asyncgen_base(
-        self, *mw_classes, downgrade: bool = False, start_index: int | None = None
-    ):
+        self,
+        *mw_classes: type[Any],
+        downgrade: bool = False,
+        start_index: int | None = None,
+    ) -> None:
         with LogCapture() as log:
             result = await self._get_middleware_result(
                 *mw_classes, start_index=start_index
@@ -335,7 +342,9 @@ class TestProcessStartSimple(TestBaseAsyncSpiderMiddleware):
     ITEM_TYPE = (Request, dict)
     MW_SIMPLE = ProcessStartSimpleMiddleware
 
-    async def _get_processed_start(self, *mw_classes):
+    async def _get_processed_start(
+        self, *mw_classes: type[Any]
+    ) -> AsyncIterator[Any] | None:
         class TestSpider(Spider):
             name = "test"
 
@@ -384,61 +393,65 @@ class UniversalMiddlewareBothAsync:
 
 
 class TestUniversalMiddlewareManager:
-    def setup_method(self):
-        self.mwman = SpiderMiddlewareManager()
+    @pytest.fixture
+    def mwman(self) -> SpiderMiddlewareManager:
+        return SpiderMiddlewareManager()
 
-    def test_simple_mw(self):
+    def test_simple_mw(self, mwman: SpiderMiddlewareManager) -> None:
         mw = ProcessSpiderOutputSimpleMiddleware()
-        self.mwman._add_middleware(mw)
+        mwman._add_middleware(mw)
         assert (
-            self.mwman.methods["process_spider_output"][0] == mw.process_spider_output  # pylint: disable=comparison-with-callable
+            mwman.methods["process_spider_output"][0] == mw.process_spider_output  # pylint: disable=comparison-with-callable
         )
 
-    def test_async_mw(self):
+    def test_async_mw(self, mwman: SpiderMiddlewareManager) -> None:
         mw = ProcessSpiderOutputAsyncGenMiddleware()
-        self.mwman._add_middleware(mw)
+        mwman._add_middleware(mw)
         assert (
-            self.mwman.methods["process_spider_output"][0] == mw.process_spider_output  # pylint: disable=comparison-with-callable
+            mwman.methods["process_spider_output"][0] == mw.process_spider_output  # pylint: disable=comparison-with-callable
         )
 
-    def test_universal_mw(self):
+    def test_universal_mw(self, mwman: SpiderMiddlewareManager) -> None:
         mw = ProcessSpiderOutputUniversalMiddleware()
-        self.mwman._add_middleware(mw)
-        assert self.mwman.methods["process_spider_output"][0] == (
+        mwman._add_middleware(mw)
+        assert mwman.methods["process_spider_output"][0] == (
             mw.process_spider_output,
             mw.process_spider_output_async,
         )
 
-    def test_universal_mw_no_sync(self):
-        with LogCapture() as log:
-            self.mwman._add_middleware(UniversalMiddlewareNoSync())
+    def test_universal_mw_no_sync(
+        self, mwman: SpiderMiddlewareManager, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        mwman._add_middleware(UniversalMiddlewareNoSync())
         assert (
             "UniversalMiddlewareNoSync has process_spider_output_async"
-            " without process_spider_output" in str(log)
+            " without process_spider_output" in caplog.text
         )
-        assert self.mwman.methods["process_spider_output"][0] is None
+        assert mwman.methods["process_spider_output"][0] is None
 
-    def test_universal_mw_both_sync(self):
+    def test_universal_mw_both_sync(
+        self, mwman: SpiderMiddlewareManager, caplog: pytest.LogCaptureFixture
+    ) -> None:
         mw = UniversalMiddlewareBothSync()
-        with LogCapture() as log:
-            self.mwman._add_middleware(mw)
+        mwman._add_middleware(mw)
         assert (
             "UniversalMiddlewareBothSync.process_spider_output_async "
-            "is not an async generator function" in str(log)
+            "is not an async generator function" in caplog.text
         )
         assert (
-            self.mwman.methods["process_spider_output"][0] == mw.process_spider_output  # pylint: disable=comparison-with-callable
+            mwman.methods["process_spider_output"][0] == mw.process_spider_output  # pylint: disable=comparison-with-callable
         )
 
-    def test_universal_mw_both_async(self):
-        with LogCapture() as log:
-            self.mwman._add_middleware(UniversalMiddlewareBothAsync())
+    def test_universal_mw_both_async(
+        self, mwman: SpiderMiddlewareManager, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        mwman._add_middleware(UniversalMiddlewareBothAsync())
         assert (
             "UniversalMiddlewareBothAsync.process_spider_output "
             "is an async generator function while process_spider_output_async exists"
-            in str(log)
+            in caplog.text
         )
-        assert self.mwman.methods["process_spider_output"][0] is None
+        assert mwman.methods["process_spider_output"][0] is None
 
 
 class TestBuiltinMiddlewareSimple(TestBaseAsyncSpiderMiddleware):
@@ -447,7 +460,9 @@ class TestBuiltinMiddlewareSimple(TestBaseAsyncSpiderMiddleware):
     MW_ASYNCGEN = ProcessSpiderOutputAsyncGenMiddleware
     MW_UNIVERSAL = ProcessSpiderOutputUniversalMiddleware
 
-    async def _get_middleware_result(self, *mw_classes, start_index: int | None = None):
+    async def _get_middleware_result(
+        self, *mw_classes: type[Any], start_index: int | None = None
+    ) -> Any:
         setting = self._construct_mw_setting(*mw_classes, start_index=start_index)
         self.crawler = get_crawler(Spider, {"SPIDER_MIDDLEWARES": setting})
         self.spider = self.crawler._create_spider("foo")
@@ -534,7 +549,7 @@ class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
     def _scrape_func(self, *args, **kwargs):
         1 / 0
 
-    async def _test_asyncgen_nodowngrade(self, *mw_classes):
+    async def _test_asyncgen_nodowngrade(self, *mw_classes: type[Any]) -> None:
         with pytest.raises(
             _InvalidOutput, match="Async iterable returned from .+ cannot be downgraded"
         ):
