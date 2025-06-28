@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 import tempfile
+import warnings
 from abc import ABC, abstractmethod
 from collections import deque
 from typing import Any, NamedTuple
@@ -389,7 +390,27 @@ class TestIncompatibility:
         scheduler.open(spider)
 
     def test_incompatibility(self):
-        with pytest.raises(
-            ValueError, match="does not support CONCURRENT_REQUESTS_PER_IP"
-        ):
-            self._incompatible()
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            with pytest.raises(
+                ValueError, match="does not support CONCURRENT_REQUESTS_PER_IP"
+            ):
+                self._incompatible()
+
+
+class TestDeprecateConcurrentRequestsPerIPSetting:
+    def test_deprecated_setting(self):
+        settings = {
+            "CONCURRENT_REQUESTS_PER_IP": 1,
+        }
+        with warnings.catch_warnings(record=True) as logged_warnings:
+            crawler = get_crawler(Spider, settings)
+            scheduler = Scheduler.from_crawler(crawler)
+            spider = Spider(name="spider")
+            scheduler.open(spider)
+
+        assert len(logged_warnings) == 1
+        assert (
+            str(logged_warnings[0].message)
+            == "CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead."
+        )

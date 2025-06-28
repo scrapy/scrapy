@@ -282,6 +282,12 @@ class Scheduler(BaseScheduler):
         :param crawler: The crawler object corresponding to the current crawl.
         :type crawler: :class:`scrapy.crawler.Crawler`
         """
+        if crawler.settings.getint("CONCURRENT_REQUESTS_PER_IP") != 0:
+            warn(
+                "CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         self.df: BaseDupeFilter = dupefilter
         self.dqdir: str | None = self._dqdir(jobdir)
         self.pqclass: type[ScrapyPriorityQueue] | None = pqclass
