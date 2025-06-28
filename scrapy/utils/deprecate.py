@@ -150,6 +150,9 @@ def update_classpath(path: Any) -> Any: ...
 
 def update_classpath(path: Any) -> Any:
     """Update a deprecated path from an object with its new location"""
+    # If path is a class, convert to module.name string
+    if hasattr(path, "__module__") and hasattr(path, "__name__"):
+        path = f"{path.__module__}.{path.__name__}"
     for prefix, replacement in DEPRECATION_RULES:
         if isinstance(path, str) and path.startswith(prefix):
             new_path = path.replace(prefix, replacement, 1)
