@@ -47,9 +47,9 @@ class TestRequestQueueBase(ABC):
         if not test_peek and HAVE_PEEK:
             pytest.skip("The queuelib queues define peek")
         assert len(q) == 0
-        assert q.peek() is None
         if test_peek:
-            assert q.pop() is None
+            assert q.peek() is None
+        assert q.pop() is None
         req = Request("http://www.example.com")
         q.push(req)
         assert len(q) == 1
@@ -57,6 +57,12 @@ class TestRequestQueueBase(ABC):
             result = q.peek()
             assert result is not None
             assert result.url == req.url
+        else:
+            with pytest.raises(
+                NotImplementedError,
+                match="The underlying queue class does not implement 'peek'",
+            ):
+                q.peek()
         result = q.pop()
         assert result is not None
         assert result.url == req.url
