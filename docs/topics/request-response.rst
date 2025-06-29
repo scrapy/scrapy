@@ -652,6 +652,7 @@ Those are:
 * :reqmeta:`redirect_reasons`
 * :reqmeta:`redirect_urls`
 * :reqmeta:`referrer_policy`
+* :reqmeta:`throttling_scopes`
 
 .. reqmeta:: bindaddress
 

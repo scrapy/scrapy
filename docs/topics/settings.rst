@@ -823,49 +823,6 @@ Default: ``True``
 
 Whether to enable downloader stats collection.
 
-.. setting:: DOWNLOAD_DELAY
-
-DOWNLOAD_DELAY
---------------
-
-Default: ``0``
-
-Minimum seconds to wait between 2 consecutive requests to the same domain.
-
-Use :setting:`DOWNLOAD_DELAY` to throttle your crawling speed, to avoid hitting
-servers too hard.
-
-Decimal numbers are supported. For example, to send a maximum of 4 requests
-every 10 seconds::
-
-    DOWNLOAD_DELAY = 2.5
-
-This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
-setting, which is enabled by default.
-
-When :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, delays are enforced
-per IP address instead of per domain.
-
-Note that :setting:`DOWNLOAD_DELAY` can lower the effective per-domain
-concurrency below :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. If the response
-time of a domain is lower than :setting:`DOWNLOAD_DELAY`, the effective
-concurrency for that domain is 1. When testing throttling configurations, it
-usually makes sense to lower :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` first,
-and only increase :setting:`DOWNLOAD_DELAY` once
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` is 1 but a higher throttling is
-desired.
-
-.. _spider-download_delay-attribute:
-
-.. note::
-
-    This delay can be set per spider using :attr:`download_delay` spider attribute.
-
-It is also possible to change this setting per domain, although it requires
-non-trivial code. See the implementation of the :ref:`AutoThrottle
-<topics-autothrottle>` extension for an example.
-
-
 .. setting:: DOWNLOAD_HANDLERS
 
 DOWNLOAD_HANDLERS
@@ -949,30 +906,6 @@ The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
 .. _frame size: https://datatracker.ietf.org/doc/html/rfc7540#section-4.2
 .. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
 .. _server pushes: https://datatracker.ietf.org/doc/html/rfc7540#section-8.2
-
-.. setting:: DOWNLOAD_SLOTS
-
-DOWNLOAD_SLOTS
---------------
-
-Default: ``{}``
-
-Allows to define concurrency/delay parameters on per slot (domain) basis:
-
-    .. code-block:: python
-
-        DOWNLOAD_SLOTS = {
-            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "randomize_delay": False},
-            "books.toscrape.com": {"delay": 3, "randomize_delay": False},
-        }
-
-.. note::
-
-    For other downloader slots default settings values will be used:
-
-    -   :setting:`DOWNLOAD_DELAY`: ``delay``
-    -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
-    -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
 
 
 .. setting:: DOWNLOAD_TIMEOUT
