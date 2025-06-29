@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlparse
 
 import pytest
@@ -34,6 +34,11 @@ from scrapy.spidermiddlewares.referer import (
 from scrapy.spiders import Spider
 
 
+@pytest.fixture
+def spider() -> Spider:
+    return Spider("foo")
+
+
 class TestRefererMiddleware:
     req_meta: dict[str, Any] = {}
     resp_headers: dict[str, str] = {}
@@ -42,22 +47,22 @@ class TestRefererMiddleware:
         ("http://scrapytest.org", "http://scrapytest.org/", b"http://scrapytest.org"),
     ]
 
-    def setup_method(self):
-        self.spider = Spider("foo")
+    @pytest.fixture
+    def mw(self) -> RefererMiddleware:
         settings = Settings(self.settings)
-        self.mw = RefererMiddleware(settings)
+        return RefererMiddleware(settings)
 
-    def get_request(self, target):
+    def get_request(self, target: str) -> Request:
         return Request(target, meta=self.req_meta)
 
-    def get_response(self, origin):
+    def get_response(self, origin: str) -> Response:
         return Response(origin, headers=self.resp_headers)
 
-    def test(self):
+    def test(self, mw: RefererMiddleware, spider: Spider) -> None:
         for origin, target, referrer in self.scenarii:
             response = self.get_response(origin)
             request = self.get_request(target)
-            out = list(self.mw.process_spider_output(response, [request], self.spider))
+            out = list(mw.process_spider_output(response, [request], spider))
             assert out[0].headers.get("Referer") == referrer
 
 
@@ -1002,13 +1007,22 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
         ),
     ]
 
-    def setup_method(self):
-        self.spider = Spider("foo")
+    @pytest.fixture
+    def referrermw(self) -> RefererMiddleware:
         settings = Settings(self.settings)
-        self.referrermw = RefererMiddleware(settings)
-        self.redirectmw = RedirectMiddleware(settings)
+        return RefererMiddleware(settings)
 
-    def test(self):
+    @pytest.fixture
+    def redirectmw(self) -> RedirectMiddleware:
+        settings = Settings(self.settings)
+        return RedirectMiddleware(settings)
+
+    def test(  # type: ignore[override]
+        self,
+        referrermw: RefererMiddleware,
+        redirectmw: RedirectMiddleware,
+        spider: Spider,
+    ) -> None:
         for (
             parent,
             target,
@@ -1019,19 +1033,17 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
             response = self.get_response(parent)
             request = self.get_request(target)
 
-            out = list(
-                self.referrermw.process_spider_output(response, [request], self.spider)
-            )
+            out = list(referrermw.process_spider_output(response, [request], spider))
             assert out[0].headers.get("Referer") == init_referrer
 
             for status, url in redirections:
                 response = Response(
                     request.url, headers={"Location": url}, status=status
                 )
-                request = self.redirectmw.process_response(
-                    request, response, self.spider
+                request = cast(
+                    Request, redirectmw.process_response(request, response, spider)
                 )
-                self.referrermw.request_scheduled(request, self.spider)
+                referrermw.request_scheduled(request, spider)
 
             assert isinstance(request, Request)
             assert request.headers.get("Referer") == final_referrer
