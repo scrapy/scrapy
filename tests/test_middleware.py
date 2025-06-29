@@ -39,6 +39,8 @@ class MOff:
 
 
 class MyMiddlewareManager(MiddlewareManager):
+    component_name = "my"
+
     @classmethod
     def _get_mwlist_from_settings(cls, settings):
         return [M1, MOff, M3]
@@ -65,7 +67,7 @@ class TestMiddlewareManager:
 
     def test_enabled(self):
         m1, m2, m3 = M1(), M2(), M3()
-        mwman = MiddlewareManager(m1, m2, m3)
+        mwman = MyMiddlewareManager(m1, m2, m3)
         assert mwman.middlewares == (m1, m2, m3)
 
     def test_enabled_from_settings(self):

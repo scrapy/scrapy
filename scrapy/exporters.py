@@ -8,6 +8,7 @@ import csv
 import marshal
 import pickle
 import pprint
+from abc import ABC, abstractmethod
 from collections.abc import Callable, Iterable, Mapping
 from io import BytesIO, TextIOWrapper
 from typing import TYPE_CHECKING, Any
@@ -35,7 +36,7 @@ __all__ = [
 ]
 
 
-class BaseItemExporter:
+class BaseItemExporter(ABC):
     def __init__(self, *, dont_fail: bool = False, **kwargs: Any):
         self._kwargs: dict[str, Any] = kwargs
         self._configure(kwargs, dont_fail=dont_fail)
@@ -54,6 +55,7 @@ class BaseItemExporter:
         if not dont_fail and options:
             raise TypeError(f"Unexpected options: {', '.join(options.keys())}")
 
+    @abstractmethod
     def export_item(self, item: Any) -> None:
         raise NotImplementedError
 
@@ -63,10 +65,10 @@ class BaseItemExporter:
         serializer: Callable[[Any], Any] = field.get("serializer", lambda x: x)
         return serializer(value)
 
-    def start_exporting(self) -> None:
+    def start_exporting(self) -> None:  # noqa: B027
         pass
 
-    def finish_exporting(self) -> None:
+    def finish_exporting(self) -> None:  # noqa: B027
         pass
 
     def _get_serialized_fields(

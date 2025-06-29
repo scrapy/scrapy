@@ -6,6 +6,7 @@ originated it.
 from __future__ import annotations
 
 import warnings
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, cast
 from urllib.parse import urlparse
 
@@ -45,10 +46,13 @@ POLICY_UNSAFE_URL = "unsafe-url"
 POLICY_SCRAPY_DEFAULT = "scrapy-default"
 
 
-class ReferrerPolicy:
+class ReferrerPolicy(ABC):
+    """Abstract base class for referrer policies."""
+
     NOREFERRER_SCHEMES: tuple[str, ...] = LOCAL_SCHEMES
     name: str
 
+    @abstractmethod
     def referrer(self, response_url: str, request_url: str) -> str | None:
         raise NotImplementedError
 

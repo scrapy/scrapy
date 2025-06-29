@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import pprint
 import warnings
+from abc import ABC, abstractmethod
 from collections import defaultdict, deque
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
@@ -32,10 +33,10 @@ _T = TypeVar("_T")
 _T2 = TypeVar("_T2")
 
 
-class MiddlewareManager:
+class MiddlewareManager(ABC):
     """Base class for implementing middleware managers"""
 
-    component_name = "foo middleware"
+    component_name: str
 
     def __init__(self, *middlewares: Any) -> None:
         self.middlewares = middlewares
@@ -48,6 +49,7 @@ class MiddlewareManager:
             self._add_middleware(mw)
 
     @classmethod
+    @abstractmethod
     def _get_mwlist_from_settings(cls, settings: Settings) -> list[Any]:
         raise NotImplementedError
 
