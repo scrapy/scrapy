@@ -225,15 +225,22 @@ def get_func_args(func: Callable[..., Any], stripself: bool = False) -> list[str
         return args
 
     if isinstance(func, partial):
+        # Parameters that have already been supplied by the functools.partial
+        # wrapper should not be returned.  Collect them using ``bind_partial``
+        # which honours the function signature and correctly maps supplied
+        # positional arguments to their corresponding parameter names.
         partial_args = func.args
-        partial_kw = func.keywords
+        partial_kw = func.keywords or {}
 
-        for name, param in sig.parameters.items():
-            if param.name in partial_args:
-                continue
-            if partial_kw and param.name in partial_kw:
-                continue
-            args.append(name)
+        try:
+            bound = sig.bind_partial(*partial_args, **partial_kw)
+        except TypeError:
+            # If binding fails, fall back to previous (best-effort) behaviour.
+            bound = inspect.Signature().bind_partial()
+
+        for name in sig.parameters:
+            if name not in bound.arguments:
+                args.append(name)
     else:
         args = list(sig.parameters)
 
