@@ -26,9 +26,6 @@ if TYPE_CHECKING:
 
 
 class EmptyCommand(ScrapyCommand):
-    def syntax(self) -> str:
-        return ""
-
     def short_desc(self) -> str:
         return ""
 
