@@ -969,10 +969,9 @@ New features
     :meth:`~scrapy.crawler.Crawler.get_spider_middleware`.
     (:issue:`6181`)
 
--   Slot delay updates by the :ref:`AutoThrottle extension
-    <topics-autothrottle>` based on response latencies can now be disabled for
-    specific requests via the :reqmeta:`autothrottle_dont_adjust_delay` meta
-    key.
+-   Slot delay updates by the ``scrapy.extensions.throttle.AutoThrottle``
+    extension based on response latencies can now be disabled for specific
+    requests via the ``autothrottle_dont_adjust_delay`` meta key.
     (:issue:`6246`, :issue:`6527`)
 
 -   If :setting:`SPIDER_LOADER_WARN_ONLY` is set to ``True``,
@@ -4943,8 +4942,7 @@ The following deprecated APIs have been removed (:issue:`3578`):
 
 *   From :class:`~scrapy.spiders.Spider` (and subclasses):
 
-    *   ``DOWNLOAD_DELAY`` (use :ref:`download_delay
-        <spider-download_delay-attribute>`)
+    *   ``DOWNLOAD_DELAY`` (use ``download_delay``)
 
     *   ``set_crawler`` (use :meth:`~scrapy.spiders.Spider.from_crawler`)
 
@@ -7121,7 +7119,7 @@ Scrapy changes:
 
 - added :ref:`topics-contracts`, a mechanism for testing spiders in a formal/reproducible way
 - added options ``-o`` and ``-t`` to the :command:`runspider` command
-- documented :doc:`topics/autothrottle` and added to extensions installed by default. You still need to enable it with :setting:`AUTOTHROTTLE_ENABLED`
+- documented ``scrapy.extensions.throttle.AutoThrottle`` and added to extensions installed by default. You still need to enable it with :setting:`AUTOTHROTTLE_ENABLED`
 - major Stats Collection refactoring: removed separation of global/per-spider stats, removed stats-related signals (``stats_spider_opened``, etc). Stats are much simpler now, backward compatibility is kept on the Stats Collector API and signals.
 - added a ``process_start_requests()`` method to spider middlewares
 - dropped Signals singleton. Signals should now be accessed through the Crawler.signals attribute. See the signals documentation for more info.

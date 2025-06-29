@@ -502,6 +502,17 @@ Default: ``100``
 Maximum number of concurrent items (per response) to process in parallel in
 :ref:`item pipelines <topics-item-pipeline>`.
 
+.. setting:: CONCURRENT_REQUESTS
+
+CONCURRENT_REQUESTS
+-------------------
+
+Default: ``16``
+
+Maximum number of total concurrent requests allowed.
+
+.. seealso:: :ref:`throttling`
+
 .. setting:: DEFAULT_DROPITEM_LOG_LEVEL
 
 DEFAULT_DROPITEM_LOG_LEVEL
@@ -1128,7 +1139,6 @@ Default:
         "scrapy.extensions.feedexport.FeedExporter": 0,
         "scrapy.extensions.logstats.LogStats": 0,
         "scrapy.extensions.spiderstate.SpiderState": 0,
-        "scrapy.extensions.throttle.AutoThrottle": 0,
     }
 
 A dict containing the extensions available by default in Scrapy, and their
@@ -1508,26 +1518,6 @@ Module where to create new spiders using the :command:`genspider` command.
 Example::
 
     NEWSPIDER_MODULE = 'mybot.spiders_dev'
-
-.. setting:: RANDOMIZE_DOWNLOAD_DELAY
-
-RANDOMIZE_DOWNLOAD_DELAY
-------------------------
-
-Default: ``True``
-
-If enabled, Scrapy will wait a random amount of time (between 0.5 * :setting:`DOWNLOAD_DELAY` and 1.5 * :setting:`DOWNLOAD_DELAY`) while fetching requests from the same
-website.
-
-This randomization decreases the chance of the crawler being detected (and
-subsequently blocked) by sites which analyze requests looking for statistically
-significant similarities in the time between their requests.
-
-The randomization policy is the same used by `wget`_ ``--random-wait`` option.
-
-If :setting:`DOWNLOAD_DELAY` is zero (default) this option has no effect.
-
-.. _wget: https://www.gnu.org/software/wget/manual/wget.html
 
 .. setting:: REACTOR_THREADPOOL_MAXSIZE
 

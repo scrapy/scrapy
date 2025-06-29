@@ -4,89 +4,101 @@
 Throttling
 ==========
 
-Sending too many requests too quickly can `overload websites`_. To avoid that,
-you must throttle_ your requests. Scrapy can :ref:`throttle requests
-<basic-throttling>`, :ref:`handle backoff <backoff>`, and much more.
+Sending too many requests too quickly can `overwhelm websites`_.
+:ref:`Throttling <basic-throttling>` and :ref:`backoff <backoff>` aim to
+prevent that.
 
-.. _overload websites: https://en.wikipedia.org/wiki/Denial-of-service_attack
-.. _throttle: https://en.wikipedia.org/wiki/Bandwidth_throttling
+.. _overwhelm websites: https://en.wikipedia.org/wiki/Denial-of-service_attack
 
 .. _basic-throttling:
 
 Concurrency and delay
 =====================
 
-Use the following :ref:`settings <topics-settings>` to configure the default
-throttling for each :ref:`throttling scope <throttling-scopes>`:
+Requests are throttled on a **per-domain basis** by default [1]_. This allows
+efficient crawling of multiple sites simultaneously.
 
--   .. setting:: THROTTLING_CONCURRENCY
+Each domain and subdomain is treated separately: requests to
+``books.toscrape.com`` and ``quotes.toscrape.com`` each have their own
+throttling limits, as do ``toscrape.com`` and ``books.toscrape.com``.
 
-    **THROTTLING_CONCURRENCY** (default: ``1``)
+The main throttling :ref:`settings <topics-settings>` are:
 
-    The maximum number of concurrent requests.
+-   .. setting:: CONCURRENT_REQUESTS_PER_DOMAIN
 
--   .. setting:: THROTTLING_DELAY
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (default: ``1``)
 
-    **THROTTLING_DELAY** (default: ``1.0``)
+    Maximum number of simultaneous requests per domain.
 
-    The minimum seconds to wait between consecutive requests.
+    It defines a number of “slots” per domain. Each slot can send 1 request at
+    a time: it sends a request, waits for the response, then sends the next
+    request, and so on.
 
--   .. setting:: THROTTLING_JITTER
+-   .. setting:: DOWNLOAD_DELAY
 
-    **THROTTLING_JITTER** (default: ``0.5``, i.e. ±50%)
+    :setting:`DOWNLOAD_DELAY` (default: ``1.0``)
 
-    Randomize delays by this factor, i.e. the final delay is a random value
-    between ``delay*(1-jitter)`` and ``delay*(1+jitter)``.
+    Minimum seconds between any two requests to the same domain.
 
-    It can be set to a 2-item list with low and high factors, e.g.
-    ``[-0.1, 0.3]`` to randomize delays between ``delay*0.9`` and
-    ``delay*1.3``.
+    Even if you have multiple slots, requests to the same domain cannot be sent
+    more frequently than this delay.
+
+-   .. setting:: DOWNLOAD_DELAY_PER_SLOT
+
+    :setting:`DOWNLOAD_DELAY_PER_SLOT` (default: ``1.0``)
+
+    Minimum seconds between requests in the same slot.
+
+    If a slot sends a request and receives its response before this delay has
+    elapsed, it must wait before sending the next request. The wait time is
+    measured from when the previous request was sent.
+
+For example, with ``CONCURRENT_REQUESTS_PER_DOMAIN = 2``, ``DOWNLOAD_DELAY = 0.3``,
+and ``DOWNLOAD_DELAY_PER_SLOT = 1.0``, sending 3 requests to the same domain
+would result in:
+
+.. code-block:: text
+
+    T=0.0s: Request 1 sent (slot 1)
+    T=0.3s: Request 2 sent (slot 2, respects same-domain delay)
+    T=0.6s: Request 3 must wait (same-domain delay satisfied, but slot 1 needs 1.0s)
+    T=1.0s: Request 3 sent (slot 1 can now be reused)
+
+When configuring these settings, note that:
+
+-   :setting:`CONCURRENT_REQUESTS` caps ``CONCURRENT_REQUESTS_PER_DOMAIN``.
+
+-   If ``DOWNLOAD_DELAY`` ≥ response time, concurrency is effectively ``1``.
+    This happens because all slots must wait for the delay between requests,
+    preventing them from sending requests simultaneously.
+
+.. [1] You can :ref:`customize <throttling-scopes>` how requests are grouped
+    for throttling, but domain-based throttling works well in most cases. For
+    more complex domain grouping strategies, see
+    :ref:`alternative-domain-throttling`.
+
 
 .. setting:: THROTTLING_SCOPES
+.. _per-domain-throttling:
 
-Use **THROTTLING_SCOPES** (default: ``{}``) to override these values for
-specific throttling scopes:
+Per-domain throttling
+=====================
 
-    .. code-block:: python
+The :setting:`THROTTLING_SCOPES` setting allows you to customize throttling behavior
+for specific domains [1]_.
 
-        THROTTLING_SCOPES = {
-            "books.toscrape.com": {"concurrency": 16, "delay": 0.0},
-            "example.com": {"jitter": 0.2},
-        }
+Its default value allows faster crawling of the testing website using during
+the :ref:`tutorial <intro-tutorial>` while maintaining conservative defaults
+for other domains:
 
-:setting:`THROTTLING_SCOPES` can also :ref:`override backoff settings
-<scope-backoff>`.
+.. code-block:: python
 
-When setting these values, note that:
+    THROTTLING_SCOPES = {
+        "quotes.toscrape.com": {"concurrency": 16, "delay": 0.0},
+    }
 
--   :setting:`CONCURRENT_REQUESTS` effectively caps concurrency for any
-    throttling scope.
-
--   When higher than response time, delay effectively limits concurrency to
-    ``1``.
-
-
-.. _crawl-delay:
-
-Crawl-Delay directive
----------------------
-
-`Crawl-Delay <https://en.wikipedia.org/wiki/Robots.txt#Crawl-delay_directive>`__
-is a non-standard ``robots.txt`` directive that indicates a number of seconds to
-wait between requests.
-
-.. setting:: THROTTLING_ROBOTSTXT_OBEY
-.. setting:: THROTTLING_ROBOTSTXT_MAX_DELAY
-
-If :setting:`ROBOTSTXT_OBEY` and **THROTTLING_ROBOTSTXT_OBEY** are
-``True`` (default), valid ``Crawl-Delay`` directives override
-:setting:`THROTTLING_CONCURRENCY` and :setting:`THROTTLING_DELAY`. Concurrency
-is set to ``1`` and delay is set to the value of ``Crawl-Delay``, capped at
-**THROTTLING_ROBOTSTXT_MAX_DELAY** (default: ``60.0``).
-
-If :setting:`THROTTLING_SCOPES` defines a different concurrency or delay, it
-will be respected, but a warning will be logged about the discrepancy with
-``Crawl-Delay``. Set ``ignore_robots_txt`` to ``True`` to silence this warning.
+Additional keys like ``"jitter"`` and ``"backoff"`` can be used here and are
+covered later on.
 
 
 .. _backoff:
@@ -94,136 +106,148 @@ will be respected, but a warning will be logged about the discrepancy with
 Backoff
 =======
 
-When a response or network error warrants backoff, `exponential backoff`_ is
-used to reduce request rate.
+When servers respond with rate limiting errors (like HTTP 429) or network
+timeouts occur, request rate is automatically reduced using `exponential
+backoff`_.
 
 .. _exponential backoff: https://en.wikipedia.org/wiki/Exponential_backoff
 
-In such cases, every new request with the same throttling scope is sent with
-its delay multiplied by some factor (up to some maximum) or set to some minimum
-value (if it was lower), until a request gets a response that does not require
-backoff. Once a response that does not require backoff is received, the delay
-is gradually reduced back to its original value.
-
-The following settings control backoff behavior:
+The key settings are:
 
 -   .. setting:: BACKOFF_HTTP_CODES
 
-    **BACKOFF_HTTP_CODES** (default: ``[429, 502, 503, 504, 520, 521, 522, 523, 524]``)
+    :setting:`BACKOFF_HTTP_CODES` (default: ``[429, 502, 503, 504, 520, 521, 522, 523, 524]``)
 
-    HTTP response status codes that warrant backoff.
+    HTTP status codes that trigger backoff.
 
-    Usually, all codes here should be in :setting:`RETRY_HTTP_CODES` as well,
-    but not all codes in :setting:`RETRY_HTTP_CODES` need to be here: some bad
-    responses may require a retry without backoff.
+-   .. setting:: BACKOFF_DELAY_FACTOR
 
--   .. setting:: BACKOFF_EXCEPTIONS
+    :setting:`BACKOFF_DELAY_FACTOR` (default: ``2.0``)
 
-    **BACKOFF_EXCEPTIONS**
-
-    Default:
-
-    .. code-block:: python
-
-        [
-            "twisted.internet.defer.TimeoutError",
-            "twisted.internet.error.TimeoutError",
-            "twisted.internet.error.TCPTimedOutError",
-            "twisted.web.client.ResponseFailed",
-        ]
-
-    Exception classes that warrant backoff. Strings are interpreted as import
-    paths.
-
-    Usually, all exceptions here should be in :setting:`RETRY_EXCEPTIONS` as
-    well, but not all exceptions in :setting:`RETRY_EXCEPTIONS` need to be
-    here: some errors may require a retry without backoff.
-
--   .. setting:: BACKOFF_FACTOR
-
-    **BACKOFF_FACTOR** (default: ``2.0``)
-
-    The factor by which the delay is multiplied for each new request sent to a
-    given throttling scope during backoff.
+    Each backoff multiplies delay by this factor (2x, 4x, 8x, etc.).
 
 -   .. setting:: BACKOFF_MAX_DELAY
 
-    **BACKOFF_MAX_DELAY** (default: ``300.0``)
+    :setting:`BACKOFF_MAX_DELAY` (default: ``300.0``)
 
-    The maximum delay that can be applied during backoff. If the delay exceeds
-    this value, it will be capped at this value.
+    Maximum delay cap to prevent excessively long waits.
 
--   .. setting:: BACKOFF_MIN_DELAY
 
-    **BACKOFF_MIN_DELAY** (default: ``1.0``)
+.. _rampup:
 
-    The minimum delay that can be applied during backoff. If the delay is less
-    than this value, it will be set to this value. Must be higher than ``0.0``.
+Rampup
+======
 
--   .. setting:: BACKOFF_JITTER
-
-    **BACKOFF_JITTER** (default: ``0.1``)
-
-    Overrides :setting:`THROTTLING_JITTER` during backoff.
-
-When a throttling scope is configured with a **concurrency higher than 1**,
-backoff is handled separately per concurrency slot. If at some point all
-concurrency slots reach the maximum backoff delay, a “concurrency backoff”
-starts, controlled by the following setting:
-
--   .. setting:: BACKOFF_CONCURRENCY_DECREASE_FACTOR
-
-    **BACKOFF_CONCURRENCY_DECREASE_FACTOR** (default: ``0.5``)
-
-    The factor by which the concurrency is decreased during concurrency
-    backoff.
-
-.. _scope-backoff:
-
-Backoff settings can be overridden per throttling scope using
-:setting:`THROTTLING_SCOPES`:
+When using APIs that charge per request, like web scraping APIs, you often want
+to maximize throughput while staying within rate limits. To do that, set
+``"rampup"`` to ``True`` in :setting:`THROTTLING_SCOPES`:
 
 .. code-block:: python
+    :caption: ``settings.py``
 
-    {
-        "example.com": {
-            "backoff": {
-                "http_codes": [429, 503],
-                "exceptions": ["builtins.IOError"],
-                "factor": 1.2,
-                "max_delay": 180.0,
-                "min_delay": 5.0,
-                "jitter": [0.01, 0.33],
-                "concurrency_decrease_factor": 0.8,
-            }
+    THROTTLING_SCOPES = {
+        "api.toscrape.com": {
+            "rampup": True,
         },
     }
 
+Rampup increases concurrency or lowers delay as needed based on the following
+setting:
+
+-   .. setting:: RAMPUP_BACKOFF_TARGET
+
+    :setting:`RAMPUP_BACKOFF_TARGET` (default: ``1``)
+
+    Target number of backoff responses per rampup window, indicating optimal
+    throughput. Can be a range like ``[1, 3]``.
+
 
 .. _retry-after:
+.. _rate-limiting-headers:
 
 Rate limiting headers
----------------------
+=====================
 
-The `Retry-After
+Servers may include `Retry-After
 <https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Retry-After>`__
-and the `RateLimit-Reset
+or `RateLimit-Reset
 <https://www.ietf.org/archive/id/draft-polli-ratelimit-headers-02.html#name-ratelimit-reset>`__
-HTTP response headers indicate how long to wait before making a follow-up
-request.
-
-They are taken into account during :ref:`backoff <backoff>`: their value is
-read (the highest if both headers are present), capped at
-:setting:`BACKOFF_MAX_DELAY`, and used as a minimum delay, i.e. it is used if
-higher than the current delay but ignored if lower.
+headers to indicate when you should make your next request. These headers are
+respected automatically during :ref:`backoff <backoff>`, using their values as
+minimum delays (capped at :setting:`BACKOFF_MAX_DELAY`).
 
 .. seealso:: :setting:`REDIRECT_MAX_DELAY`
 
 
+.. _crawl-delay:
+
+robots.txt
+==========
+
+`Crawl-Delay <https://en.wikipedia.org/wiki/Robots.txt#Crawl-delay_directive>`__
+is a non-standard ``robots.txt`` directive that indicates a number of seconds
+to wait between requests.
+
+.. setting:: THROTTLING_ROBOTSTXT_OBEY
+.. setting:: THROTTLING_ROBOTSTXT_MAX_DELAY
+
+If :setting:`ROBOTSTXT_OBEY` and :setting:`THROTTLING_ROBOTSTXT_OBEY` are
+``True`` (default), valid ``Crawl-Delay`` directives override
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and :setting:`DOWNLOAD_DELAY`. Concurrency
+is set to ``1`` and delay is set to the value of ``Crawl-Delay``, capped at
+:setting:`THROTTLING_ROBOTSTXT_MAX_DELAY` (default: ``60.0``).
+
+If :setting:`THROTTLING_SCOPES` defines a different concurrency or delay, it
+will be respected, but a warning will be logged about the discrepancy with
+``Crawl-Delay``. Set ``ignore_robots_txt`` to ``True`` to silence this warning.
+
+
+.. _per-request-throttling:
+
+Per-request throttling
+======================
+
+Sometimes you need different throttling behavior for individual requests or for
+request groups that are not tied to a specific domain.
+
+For example, you might want to throttle API endpoints differently than web
+pages on the same domain, group requests by content type (images vs HTML), or
+apply different throttling based on request priority.
+
+.. reqmeta:: throttling_scopes
+
+Use the ``throttling_scopes`` request metadata to assign requests to custom
+throttling groups:
+
+.. code-block:: python
+
+    Request("https://api.example/", meta={"throttling_scopes": "api"})
+
+You can also assign multiple throttling groups to a single request:
+
+.. code-block:: python
+
+    Request("https://api.example/users", meta={"throttling_scopes": {"api", "users"}})
+
+You can then use the :setting:`THROTTLING_SCOPES` setting to customize
+throttling for such requests:
+
+.. code-block:: python
+    :caption: ``settings.py``
+
+    THROTTLING_SCOPES = {
+        "api": {"concurrency": 2},
+        "users": {"delay": 5.0},
+    }
+
+.. note:: These custom throttling groups persist through redirects. For
+    redirect-aware throttling assignment, see :ref:`custom-throttling-scopes`.
+
+
 .. _throttling-scopes:
 
-Scopes
-======
+Throttling scopes
+=================
 
 Throttling scopes represent aspects of requests that can be throttled
 independently.
@@ -232,27 +256,6 @@ independently.
     For future reference, the “throttling scope” name was taken from
     https://www.ietf.org/archive/id/draft-polli-ratelimit-headers-02.html#section-1.4-4.4
 
-.. _default-throttling-scopes:
-
-Default throttling scopes
---------------------------
-
-By default, each request has a single throttling scope representing the domain
-or subdomain of the target URL. That is, when you set the concurrency or delay
-of a throttling scope, it applies to all requests made to that domain or
-subdomain.
-
-For example, https://books.toscrape.com and
-https://books.toscrape.com/catalogue/page-2.html both get a
-``books.toscrape.com`` throttling scope.
-
-Note however that subdomains are treated as separate throttling scopes by
-default. For example, https://toscrape.com gets a ``toscrape.com`` throttling
-scope, and ``books.toscrape.com`` and ``toscrape.com`` are considered
-unrelated throttling scopes. If you want to change this behavior, see
-:ref:`alternative-domain-throttling`.
-
-
 .. _custom-throttling-scopes:
 
 Customizing throttling scopes
@@ -260,24 +263,9 @@ Customizing throttling scopes
 
 There are 2 ways to customize throttling scopes.
 
-.. reqmeta:: throttling_scopes
-
-For simple use cases, you can use the ``throttling_scopes`` request metadata
-key:
-
-.. code-block:: python
-
-    Request("https://example.com/", meta={"throttling_scopes": "foo"})
-    Request("https://example.com/", meta={"throttling_scopes": {"foo", "bar"}})
-    Request("https://example.com/", meta={"throttling_scopes": {"foo": 1.0, "bar": 2.5}})
-
-.. note:: Throttling scopes set through request metadata remain through the
-    request lifetime, e.g. throught redirects, even if those change the request
-    URL.
-
 .. setting:: THROTTLING_MANAGER
 
-For anything else, set **THROTTLING_MANAGER** (default:
+For anything else, set :setting:`THROTTLING_MANAGER` (default:
 :class:`~scrapy.throttling.ThrottlingManager`) to a :ref:`component
 <topics-components>` that implements the
 :class:`~scrapy.throttling.ThrottlingManagerProtocol` protocol (or its import
@@ -289,41 +277,92 @@ path as a string):
     THROTTLING_MANAGER = "myproject.throttling.MyThrottlingManager"
 
 
+.. _multi-throttling-scopes:
+
+Handling of multiple throttling scopes
+--------------------------------------
+
+When a request has multiple throttling scopes, it is not sent until all of its
+throttling scopes allow it.
+
+
 .. _throttling-quotas:
 
-Quotas
-======
+Throttling quotas
+-----------------
 
 When different requests can consume different amounts of a throttling scope,
-you can express this using quotas.
+you can express this using **throttling quotas**.
 
-In the :reqmeta:`throttling_scopes` request metadata key and in the
-:meth:`~scrapy.throttling.ThrottlingManagerProtocol.get_scopes` method you use
-a :class:`dict` structure where keys are throttling scopes and values are
-:class:`float` that indicate the amount of a scope that the request is expected
-to consume (it does not need to be exact).
+.. setting:: THROTTLING_WINDOW
 
-By default, those values are ignored. However, if a call to
-:meth:`~scrapy.throttling.ThrottlingManagerProtocol.get_response_throttling` or
-:meth:`~scrapy.throttling.ThrottlingManagerProtocol.get_exception_throttling`
-reports available quotas for one or more throttling scopes, request quotas will
-start being tracked and determine which requests can be sent and which cannot.
+Use the :setting:`THROTTLING_WINDOW` setting (default: ``60.0``) or the ``"window"``
+key in the :setting:`THROTTLING_SCOPES` setting to define the time window after
+which throttling quotas are reset.
 
-In fact, everything else being equal,
-:class:`~scrapy.pqueues.ScrapyPriorityQueue` prioritizes requests that consume
-a higher portion of the available quota, to minimize the risk of those
-requests getting stuck.
+Then use the :setting:`THROTTLING_SCOPES` setting to define the throttling
+quotas for each throttling scope:
+
+.. code-block:: python
+    :caption: ``settings.py``
+
+    THROTTLING_SCOPES = {
+        "api.toscrape.com": {
+            "quota": 500.0,
+        },
+    }
+
+Then, in the :reqmeta:`throttling_scopes` request metadata key or in the return
+value of the :meth:`~scrapy.throttling.ThrottlingManagerProtocol.get_scopes`
+method, define a :class:`dict` where keys are throttling scopes and values are
+:class:`float` values that indicate the expected quota consumption (it does not
+need to be exact).
+
+Everything else being equal, :class:`~scrapy.pqueues.ScrapyPriorityQueue` will
+prioritize requests that consume a higher portion of the available throttling
+quota, to minimize the risk of those requests getting stuck.
 
 
-API
-===
+.. _custom-throttling-scope-managers:
 
-.. autoclass:: scrapy.throttling.ThrottlingManagerProtocol
-    :members:
-    :member-order: bysource
+Customizing throttling scope managers
+-------------------------------------
 
-.. autoclass:: scrapy.throttling.ThrottlingManager
+.. setting:: THROTTLING_SCOPE_MANAGER
 
+The :setting:`THROTTLING_SCOPE_MANAGER` setting (default:
+:class:`~scrapy.throttling.ThrottlingScopeManager`) is a :ref:`component
+<topics-components>` that implements the
+:class:`~scrapy.throttling.ThrottlingScopeManagerProtocol` (or its import path
+as a string):
+
+.. code-block:: python
+    :caption: ``settings.py``
+
+    THROTTLING_SCOPE_MANAGER = "myproject.throttling.MyThrottlingScopeManager"
+
+For each throttling scope, an instance of this class is created to manage any
+gradual :ref:`backoff <backoff>` or :ref:`rampup <rampup>` required at run
+time.
+
+You can implement your own throttling scope manager if you wish to change the
+backoff or rampup behavior beyond what settings allow.
+
+You can also define a custom throttling scope manager for a specific throttling
+scope by setting the ``"manager"`` key in the :setting:`THROTTLING_SCOPES`
+setting:
+
+.. code-block:: python
+    :caption: ``settings.py``
+
+    THROTTLING_SCOPES = {
+        "api.toscrape.com": {
+            "manager": "myproject.throttling.MyThrottlingScopeManager",
+        },
+    }
+
+
+.. _throttling-examples:
 
 Examples
 ========
@@ -334,8 +373,7 @@ Alternative domain throttling
 -----------------------------
 
 If you are not happy with the :ref:`default throttling scope behavior
-<default-throttling-scopes>` with regards to domains and subdomains, you can
-change it.
+<basic-throttling>` with regards to domains and subdomains, you can change it.
 
 Alternative approaches include:
 
@@ -415,505 +453,327 @@ Alternative approaches include:
     at the same time, because that would sum 40 concurrency, and
     ``toscrape.com`` requests are limited to 32.
 
+.. _endpoints-throttling:
 
+Endpoint-specific throttling
+----------------------------
 
+To apply different throttling settings to different endpoints of the same
+domain and not enforce any common throttling, effectively treating them as
+different domains:
 
-
-
-
-
-
-
-
-Requests can be assigned 1 or more throttling scopes, each with a value.
-
-
-
-This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
-setting, which is enabled by default.
-
-When :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, delays are enforced
-per IP address instead of per domain.
-
-Note that :setting:`DOWNLOAD_DELAY` can lower the effective per-domain
-concurrency below :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. If the response
-time of a domain is lower than :setting:`DOWNLOAD_DELAY`, the effective
-concurrency for that domain is 1. When testing throttling configurations, it
-usually makes sense to lower :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` first,
-and only increase :setting:`DOWNLOAD_DELAY` once
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` is 1 but a higher throttling is
-desired.
-
-.. _spider-download_delay-attribute:
-
-.. note::
-
-    This delay can be set per spider using :attr:`download_delay` spider attribute.
-
-It is also possible to change this setting per domain, although it requires
-non-trivial code. See the implementation of the :ref:`AutoThrottle
-<topics-autothrottle>` extension for an example.
-
-..
-    TODO: Add a section about the handling of subdomains. By default, Scrapy
-    should treat subdomains as separate slots, but it should be easy to change
-    that behavior for specific domains, maybe with some new setting.
-
-Throttling scopes
-==================
-
-..
-    TODO: Cover what they are, what their default values are, how to change
-    them easily on a per-request base.
-
-
-Settings
-========
-
-
-.. setting:: DOWNLOAD_SLOTS
-
-DOWNLOAD_SLOTS
---------------
-
-Default: ``{}``
-
-Allows to define concurrency/delay parameters on per slot (domain) basis:
+-   Implement a :ref:`throttling manager <custom-throttling-scopes>` that sets
+    endpoint-specific throttling scopes for that domain:
 
     .. code-block:: python
 
-        DOWNLOAD_SLOTS = {
-            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "randomize_delay": False},
-            "books.toscrape.com": {"delay": 3, "randomize_delay": False},
+        from scrapy.throttling import ThrottlingManager, scope_cache
+        from scrapy.utils.httpobj import urlparse_cached
+
+
+        class MyThrottlingManager(ThrottlingManager):
+            @scope_cache
+            async def get_scopes(self, request):
+                parsed_url = urlparse_cached(request)
+                if parsed_url.netloc != "api.toscrape.com":
+                    return await super().get_scopes(request)
+                return f"{parsed_url.netloc}{parsed_url.path}"
+
+-   Use the :setting:`THROTTLING_SCOPES` setting to set different throttling
+    settings per endpoint:
+
+    .. code-block:: python
+        :caption: ``settings.py``
+
+        THROTTLING_SCOPES = {
+            "api.toscrape.com/fast-endpoint": {"concurrency": 1000, "delay": 0.08},
+            "api.toscrape.com/slow-endpoint": {"delay": 5.0},
         }
 
-.. note::
 
-    For other downloader slots default settings values will be used:
+.. _web-scraping-api-throttling:
 
-    -   :setting:`DOWNLOAD_DELAY`: ``delay``
-    -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
-    -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
-
-
-
-Global Request Limits
-======================
-
-The simplest form of throttling is limiting the total number of concurrent requests across your entire spider.
-
-CONCURRENT_REQUESTS
--------------------
-
-The :setting:`CONCURRENT_REQUESTS` setting controls the maximum number of requests that can be processed simultaneously across all domains:
-
-.. code-block:: python
-
-    # settings.py
-    CONCURRENT_REQUESTS = 16  # Default value
-
-This is a global limit that affects all requests regardless of their target domain. Setting it to a lower value will make your spider more conservative and polite, but slower. Setting it higher will make requests faster but may overwhelm servers or your own network connection.
-
-**When to use**: This is your first line of defense against sending too many requests at once. Good default values are typically between 8-32 depending on your needs and the target servers' capacity.
-
-Per-Domain Request Limits
-==========================
-
-More sophisticated throttling involves limiting requests on a per-domain basis, which is usually more appropriate since different servers have different capacities.
-
-CONCURRENT_REQUESTS_PER_DOMAIN
--------------------------------
-
-The :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting limits concurrent requests to each individual domain:
-
-.. code-block:: python
-
-    # settings.py
-    CONCURRENT_REQUESTS_PER_DOMAIN = 8  # Default value
-
-This means that even if you have :setting:`CONCURRENT_REQUESTS` set to 32, no single domain will receive more than 8 concurrent requests. This prevents one fast-responding domain from monopolizing all your concurrent request slots.
-
-**Example**: If you're scraping both ``example.com`` and ``other-site.com``, each domain will be limited to 8 concurrent requests, allowing a total of up to 16 concurrent requests (but still subject to the global :setting:`CONCURRENT_REQUESTS` limit).
-
-CONCURRENT_REQUESTS_PER_IP
+Web scraping API throttling
 ---------------------------
 
-Similar to per-domain limits, :setting:`CONCURRENT_REQUESTS_PER_IP` limits concurrent requests per IP address:
+Imagine you are sending requests to a web scraping API, e.g. to avoid bans.
+Unless that API provides a Scrapy plugin to make it easier to use, you may want
+to:
 
-.. code-block:: python
+-   Use the :setting:`THROTTLING_SCOPES` setting to increase concurrency for
+    API requests. For example:
 
-    # settings.py
-    CONCURRENT_REQUESTS_PER_IP = 1  # Default value
+    .. code-block:: python
+        :caption: ``settings.py``
 
-This is useful when multiple domains resolve to the same IP address (common with CDNs or shared hosting). The IP-based limit takes precedence over the domain-based limit when they conflict.
+        THROTTLING_SCOPES = {
+            "api.toscrape.com": {"concurrency": 1000, "delay": 0.08},
+        }
 
-DOWNLOAD_DELAY
---------------
+-   Implement a :ref:`throttling manager <custom-throttling-scopes>` that:
 
-While concurrency limits control how many requests are sent simultaneously, :setting:`DOWNLOAD_DELAY` controls the time delay between requests to the same domain:
+    -   Adds a throttling scope for the URL being scraped.
 
-.. code-block:: python
+        For example, if you request
+        ``https://api.toscrape.com/?url=https://example.com``, by default it
+        will get a ``api.toscrape.com`` throttling scope, but it should also
+        get the ``example.com`` throttling scope:
 
-    # settings.py
-    DOWNLOAD_DELAY = 3  # Wait 3 seconds between requests to the same domain
+        .. code-block:: python
 
-This setting introduces a delay between consecutive requests to the same domain/slot. It's applied per-domain, so requests to different domains are not affected by each other's delays.
+            from urllib.parse import urlparse
 
-The delay can be randomized using :setting:`RANDOMIZE_DOWNLOAD_DELAY`:
+            from scrapy.throttling import add_scope, ThrottlingManager, scope_cache
+            from scrapy.utils.httpobj import urlparse_cached
+            from w3lib.url import url_query_parameter
 
-.. code-block:: python
 
-    # settings.py
-    DOWNLOAD_DELAY = 3
-    RANDOMIZE_DOWNLOAD_DELAY = True  # Default
-    # This will use delays between 1.5 and 4.5 seconds (0.5 * DOWNLOAD_DELAY to 1.5 * DOWNLOAD_DELAY)
+            class MyThrottlingManager(ThrottlingManager):
+                @scope_cache
+                async def get_scopes(self, request):
+                    scopes = await super().get_scopes(request)
+                    if urlparse_cached(request).netloc != "api.toscrape.com":
+                        return scopes
+                    target_url = url_query_parameter(request.url, "url")
+                    if not target_url:
+                        return scopes
+                    target_domain = urlparse(target_url).netloc
+                    return add_scope(scopes, target_domain)
 
-**When to use**: Download delays are particularly useful for websites that are sensitive to request frequency but can handle multiple concurrent connections. They're also helpful for mimicking human-like browsing patterns.
+    -   Can differentiate between exhaustion of the target website and
+        exhaustion of the API itself. For example:
 
-**Note**: A global download delay doesn't make sense because it would unnecessarily slow down requests to different domains. The per-domain approach allows you to be respectful to each server individually while maintaining overall efficiency.
+        .. code-block:: python
 
-Custom Download Slots
-======================
+            from scrapy.throttling import ThrottlingManager
+            from scrapy.utils.httpobj import urlparse_cached
 
-For more advanced scenarios, you can customize how requests are grouped for throttling purposes using download slots.
 
-Understanding Download Slots
------------------------------
+            class MyThrottlingManager(ThrottlingManager):
+                async def get_response_backoff(self, response):
+                    if (
+                        urlparse_cached(response.request).netloc != "api.toscrape.com"
+                        or response.status != 200
+                    ):
+                        return await super().get_response_backoff(response)
+                    upstream_status_code = int(
+                        response.headers.get("X-Upstream-Status-Code", b"200")
+                    )
+                    upstream_response = response.__class__(
+                        response.url,
+                        status=upstream_status_code,
+                        headers=response.headers,
+                        body=response.body,
+                    )
+                    return await super().get_response_backoff(upstream_response)
 
-By default, Scrapy groups requests by their domain name for throttling purposes. Each domain gets its own "download slot" with its own concurrency limits and delays. However, you can customize this grouping:
 
-.. code-block:: python
+.. _cost-smoothing-throttling:
 
-    # In your spider
-    def start_requests(self):
-        # Default: requests to example.com go to "example.com" slot
-        yield scrapy.Request("https://example.com/page1")
-        yield scrapy.Request("https://example.com/page2")
-
-        # Custom: group these requests differently
-        yield scrapy.Request(
-            "https://api.example.com/fast", meta={"download_slot": "api_fast"}
-        )
-        yield scrapy.Request(
-            "https://api.example.com/slow", meta={"download_slot": "api_slow"}
-        )
-
-Per-Slot Configuration
+Cost-capped throttling
 ----------------------
 
-You can configure different throttling settings for different slots using :setting:`DOWNLOAD_SLOTS`:
+Imagine you are using an API that charges different requests differently, e.g.
+based on the features used, and you want to limit how much you spend per time
+window (:setting:`BACKOFF_WINDOW`). You can use :ref:`throttling quotas
+<throttling-quotas>` for that:
 
-.. code-block:: python
+-   Implement a :ref:`throttling manager <custom-throttling-scopes>` that:
 
-    # settings.py
-    DOWNLOAD_SLOTS = {
-        "api_fast": {
-            "concurrency": 1,
-            "delay": 0.5,
-        },
-        "api_slow": {
-            "concurrency": 1,
-            "delay": 5.0,
-        },
-        "images": {
-            "concurrency": 8,
-            "delay": 0,
-        },
-    }
+    -   Sets a ``cost`` throttling scope on each request to some estimation based
+        e.g. on request URL parameters:
 
-**Use cases**:
-- Different API endpoints with different rate limits
-- Separating expensive operations (like browser rendering) from cheap ones
-- Treating different subdomains with different politeness levels
-- Grouping requests by authentication context
+        .. code-block:: python
 
-Advanced Throttling System
-===========================
+            from scrapy.utils.httpobj import urlparse_cached
+            from scrapy.throttling import ThrottlingManager, scope_cache
 
-For complex scraping scenarios that require fine-grained control over throttling, Scrapy provides an advanced throttling scope system that goes beyond simple per-domain limits.
 
-Throttling Buckets
-------------------
+            class MyThrottlingManager(ThrottlingManager):
+                @scope_cache
+                async def get_scopes(self, request):
+                    scopes = await super().get_scopes(request)
+                    parsed_url = urlparse_cached(request)
+                    if parsed_url.netloc != "api.toscrape.com":
+                        return scopes
+                    return add_scope(scopes, "cost", estimate_request_cost(request))
 
-The new throttling system introduces the concept of "throttling scopes" - resources that requests consume and that can become temporarily unavailable when limits are exceeded. Unlike download slots, a single request can require multiple scopes, enabling multi-dimensional throttling.
+    -   Reports the actual cost during response parsing:
 
-Enabling Throttling Buckets
-----------------------------
+        .. code-block:: python
 
-.. code-block:: python
+            from scrapy.throttling import ThrottlingManager
 
-    # settings.py
-    THROTTLING_ENABLED = True
-    THROTTLING_MANAGER = "scrapy.throttling.DefaultBucketManager"
 
-Basic Bucket Usage
-------------------
+            class MyThrottlingManager(ThrottlingManager):
+                async def get_response_backoff(self, response):
+                    scopes = await super().get_response_backoff(response)
+                    if "cost" not in scopes:
+                        return scopes
+                    actual_cost = float(response.headers.get("X-Actual-Cost", b"0"))
+                    return update_scope_backoff(scopes, "cost", consumed_quota=actual_cost)
 
-The simplest scope configuration replicates domain-based throttling:
+-   Use the :setting:`THROTTLING_SCOPES` setting to set a maximum cost per time
+    window:
 
-.. code-block:: python
+    .. code-block:: python
+        :caption: ``settings.py``
 
-    # Custom scope manager
-    class MyBucketManager:
-        def get_request_scopes(self, request, spider):
-            domain = urlparse(request.url).netloc
-            return {domain: 1.0}  # Consume 1 unit of the domain scope
+        THROTTLING_SCOPES = {
+            "cost": {"quota": 100.0},
+        }
 
-        def process_response(self, response, request, spider):
-            if response.status == 429:  # Too Many Requests
-                domain = urlparse(request.url).netloc
-                # Throttle this domain for 60 seconds
-                self.throttle_scope(domain, delay=60)
+    This will allow you to spend up to 100.0 units of cost per time window
+    (default: 60 seconds) before throttling kicks in.
 
-Multi-Dimensional Throttling
------------------------------
 
-The real power comes from using multiple scopes per request:
+.. _throttling-settings:
 
-.. code-block:: python
+Additional settings
+===================
+-   .. setting:: BACKOFF_EXCEPTIONS
 
-    def get_request_scopes(self, request, spider):
-        scopes = {}
+    :setting:`BACKOFF_EXCEPTIONS`
 
-        # Domain-based throttling
-        domain = urlparse(request.url).netloc
-        scopes[domain] = 1.0
+    Default:
 
-        # API feature-based throttling
-        if "browser=true" in request.url:
-            scopes["browser_rendering"] = 1.0
+    .. code-block:: python
 
-        if "extract=true" in request.url:
-            scopes["ai_extraction"] = 5.0  # More expensive
+        [
+            "twisted.internet.defer.TimeoutError",
+            "twisted.internet.error.TimeoutError",
+            "twisted.internet.error.TCPTimedOutError",
+            "twisted.web.client.ResponseFailed",
+        ]
 
-        # Geographic throttling
-        if "region=eu" in request.url:
-            scopes["eu_datacenter"] = 1.0
+    Exception classes that trigger backoff. Strings are interpreted as import
+    paths.
 
-        return scopes
+    .. seealso:: :setting:`RETRY_EXCEPTIONS`
 
-Cost-Based Throttling
----------------------
+-   .. setting:: BACKOFF_JITTER
 
-Some APIs charge different amounts for different operations. The scope system supports fractional consumption:
+    :setting:`BACKOFF_JITTER` (default: ``0.1``)
 
-.. code-block:: python
+    Overrides :setting:`RANDOMIZE_DOWNLOAD_DELAY` during backoff.
 
-    def get_request_scopes(self, request, spider):
-        scopes = {"api_credits": 1.0}  # Default cost
+-   .. setting:: BACKOFF_MIN_DELAY
 
-        if "operation=expensive" in request.url:
-            scopes["api_credits"] = 10.0  # Costs 10x more
+    :setting:`BACKOFF_MIN_DELAY` (default: ``1.0``)
 
-        return scopes
+    Minimum delay during :ref:`backoff <backoff>`.
 
+-   .. setting:: BACKOFF_WINDOW
 
-    def process_response(self, response, request, spider):
-        # Update actual consumption based on response
-        if "X-Actual-Cost" in response.headers:
-            actual_cost = float(response.headers["X-Actual-Cost"])
-            # Could update scope consumption here for better accuracy
+    :setting:`BACKOFF_WINDOW` (default: ``60.0``)
 
-Responding to Server Signals
------------------------------
+    During :ref:`backoff <backoff>`, after a non-backoff response is received,
+    do not take the next step in backoff reduction until this amount of time
+    has passed and no new backoff feedback has been received.
 
-The scope system can respond intelligently to server throttling signals:
+    The number of seconds that need to pass since the last non-backoff response
+    without any other for the backoff to move towards the original throttling
+    configuration.
 
-.. code-block:: python
+-   .. setting:: DELAYED_REQUESTS_WARN_THRESHOLD
 
-    def process_response(self, response, request, spider):
-        if response.status == 429:
-            # Check for Retry-After header
-            retry_after = response.headers.get("Retry-After")
-            if retry_after:
-                delay = int(retry_after)
-            else:
-                delay = 60  # Default backoff
+    :setting:`DELAYED_REQUESTS_WARN_THRESHOLD` (default: ``500``)
 
-            # Determine which scope to throttle based on response
-            if "rate limit exceeded for API key" in response.text:
-                self.throttle_scope("api_key_global", delay=delay)
-            elif "too many requests to this endpoint" in response.text:
-                endpoint = self._extract_endpoint(request.url)
-                self.throttle_scope(f"endpoint_{endpoint}", delay=delay)
+    While throttled, requests in the :ref:`scheduler <topics-scheduler>` remain
+    in the scheduler.
 
-        elif response.status == 503:
-            # Service unavailable - throttle the entire domain
-            domain = urlparse(request.url).netloc
-            self.throttle_scope(domain, delay=300)  # 5 minutes
+    However, requests sent with :meth:`engine.download()
+    <scrapy.core.engine.ExecutionEngine.download>` bypass the scheduler. This
+    includes requests sent by some built-in :ref:`components
+    <topics-components>` and :ref:`inline requests <inline-requests>`.
 
-Configuration
--------------
+    When such requests are throttled, they are paused and kept in memory, along
+    with any run time context from the code that is sending them. If they
+    accumulate, they can become a memory issue that may require you to rethink
+    your throttling parameters or crawl strategy.
 
-The throttling system provides several configuration options:
+    :setting:`DELAYED_REQUESTS_WARN_THRESHOLD` defines a threshold for such
+    requests. The first time that this many such requests are being throttled
+    at the same time, a warning is issued.
 
-.. code-block:: python
+-   .. setting:: RANDOMIZE_DOWNLOAD_DELAY
 
-    # settings.py
-    THROTTLING_ENABLED = True
-    THROTTLING_MANAGER = "myproject.throttling.CustomBucketManager"
+    :setting:`RANDOMIZE_DOWNLOAD_DELAY` (default: ``True``)
 
-    # Maximum number of delayed requests to keep in memory
-    THROTTLING_MAX_DELAYED_REQUESTS = 1000
+    Randomize delays by this factor, e.g. if ``0.2`` randomize delays between
+    ``delay*0.8`` and ``delay*1.2``.
 
-    # Warn when delayed requests exceed this threshold
-    THROTTLING_DELAYED_REQUESTS_WARN_THRESHOLD = 500
+    It can be set to a 2-item list with low and high factors, e.g.
+    ``[-0.1, 0.3]`` to randomize delays between ``delay*0.9`` and
+    ``delay*1.3``.
 
-Integration with Direct Downloads
----------------------------------
+    If ``True``, ``0.5`` (i.e. ±50%) is used as the randomization factor. If
+    ``False``, no randomization is applied.
 
-The throttling system also works with direct downloads made via ``crawler.engine.download()``:
 
-.. code-block:: python
+.. _throttling-api:
 
-    # In a pipeline or extension
-    @inlineCallbacks
-    def process_item(self, item, spider):
-        # This request will respect throttling scopes
-        request = scrapy.Request(item["image_url"])
-        response = yield spider.crawler.engine.download(request)
-        # Process response...
+API
+===
 
-Best Practices
-==============
+.. autoclass:: scrapy.throttling.ThrottlingManagerProtocol
+    :members:
+    :member-order: bysource
 
-Choosing the Right Approach
-----------------------------
+.. autoclass:: scrapy.throttling.ThrottlingManager
+    :members: get_response_delay
 
-1. **Start Simple**: Begin with :setting:`CONCURRENT_REQUESTS` and :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
-2. **Add Delays When Needed**: Use :setting:`DOWNLOAD_DELAY` for frequency-sensitive sites
-3. **Use Custom Slots for Special Cases**: When different parts of a site need different treatment
-4. **Advanced Buckets for Complex APIs**: When dealing with modern APIs with sophisticated rate limiting
+.. autoclass:: scrapy.throttling.ThrottlingScopeManagerProtocol
+    :members:
+    :member-order: bysource
 
-Respectful Scraping
--------------------
+.. autoclass:: scrapy.throttling.ThrottlingScopeManager
 
-- Always check ``robots.txt`` and respect ``Crawl-delay`` directives
-- Monitor server response times and adjust settings if you're causing delays
-- Watch for 429, 503, and other error responses that indicate you're going too fast
-- Consider the server's perspective: your efficiency shouldn't come at their expense
+.. autofunction:: scrapy.throttling.scope_cache
+.. autofunction:: scrapy.throttling.add_scope
+.. autofunction:: scrapy.throttling.update_scope_backoff
 
-Common Patterns
----------------
 
-**E-commerce Site**:
 
-.. code-block:: python
-
-    CONCURRENT_REQUESTS_PER_DOMAIN = 2
-    DOWNLOAD_DELAY = 1
-    RANDOMIZE_DOWNLOAD_DELAY = True
-
-**REST API**:
-
-.. code-block:: python
-
-    # Use throttling scopes to respect API rate limits
-    THROTTLING_ENABLED = True
-    CONCURRENT_REQUESTS_PER_DOMAIN = 5
-
-**Mixed Content (API + Web)**:
-
-.. code-block:: python
-
-    DOWNLOAD_SLOTS = {
-        "api": {"concurrency": 10, "delay": 0.1},
-        "web": {"concurrency": 2, "delay": 2.0},
-    }
-
-Monitoring and Debugging
-========================
-
-Scrapy provides several ways to monitor your throttling:
-
-.. code-block:: python
-
-    # Enable autothrottle debugging (for legacy autothrottle extension only)
-    AUTOTHROTTLE_DEBUG = True
-
-    # Monitor stats
-    # Check spider.crawler.stats for throttling-related statistics
-
-.. warning::
-    The AutoThrottle extension is deprecated and not recommended for new projects. It uses a simplistic latency-based approach that doesn't align with modern server throttling patterns. Use the throttling scope system instead.
-
-Settings Reference
-==================
-
-Global Settings
----------------
-
-RANDOMIZE_DOWNLOAD_DELAY
-
-**Default**: ``True``
-
-If enabled, Scrapy will wait a random amount of time (between 0.5 * and 1.5 * ``DOWNLOAD_DELAY``) while fetching requests from the same domain.
-
-Slot Settings
--------------
-
-DOWNLOAD_SLOTS
-
-**Default**: ``{}``
-
-A dictionary containing the download slots and their settings. Each slot can have the following settings:
-
-* ``concurrency`` - Maximum concurrent requests for this slot
-* ``delay`` - Download delay for this slot (in seconds)
-
-Advanced Throttling Settings
-----------------------------
-
-.. setting:: THROTTLING_ENABLED
-
-**Default**: ``False``
-
-Enable the advanced throttling scope system.
-
-.. setting:: THROTTLING_MAX_DELAYED_REQUESTS
-
-**Default**: ``1000``
-
-Maximum number of delayed requests to keep in memory.
-
-.. setting:: THROTTLING_DELAYED_REQUESTS_WARN_THRESHOLD
-
-**Default**: ``500``
-
-Warn when the number of delayed requests exceeds this threshold.
 
 
 
 ..
-    TODO: Provide real-life examples of throttling configurations, including
-    exception and error response handling, throttling based on responses,
-    delay adjustment geared towards rate limits optimization, querying of
-    external resources for throttling decisions, etc.
+        When a throttling scope is configured with a **concurrency higher than 1**,
+        backoff is handled separately per slot. If at some point all
+        slots reach the maximum backoff delay, a “concurrency backoff”
+        starts, controlled by the following setting:
 
+        -   .. setting:: BACKOFF_CONCURRENCY_DECREASE_FACTOR
 
+            :setting:`BACKOFF_CONCURRENCY_FACTOR` (default: ``0.5``)
 
+            The factor by which the concurrency is decreased during concurrency
+            backoff.
 
--   .. setting:: CONCURRENT_REQUESTS
+    .. _scope-backoff:
 
-    ``CONCURRENT_REQUESTS`` (default: ``16``): The maximum number of total
-    concurrent requests.
+    Backoff settings can be overridden per throttling scope using
+    :setting:`THROTTLING_SCOPES`:
+
+    .. code-block:: python
+
+        {
+            "example.com": {
+                "backoff": {
+                    "http_codes": [429, 503],
+                    "exceptions": ["builtins.IOError"],
+                    "delay_factor": 1.2,
+                    "max_delay": 180.0,
+                    "min_delay": 5.0,
+                    "jitter": [0.01, 0.33],
+                    "concurrency_factor": 0.8,
+                }
+            },
+        }
 
 ..
-    TODO: Since this setting is more about limiting spider-side resources than
-    throttling, maybe it does not need to be covered in this page.
-
-
-..
-    Implement a signal that can be emitted to change the throttling config of
-    a specific throttling scope.
-
-
-..
-    TODO: Explain how things work, for every setting/parameter, when a request
-    is assigned multiple scopes.
-
-..
-    TODO: Explain how scope units work, and give usage examples.
+    TODO: Continue from here
 
 ..
     TODO: Support backoff in THROTTLING_SCOPES having a cls key with a class
@@ -924,3 +784,275 @@ Warn when the number of delayed requests exceeds this threshold.
 ..
     TODO: Make sure that the API is flexible enough to support scrapy-zyte-api
     use cases.
+
+..
+    TODO: Try to figure out the implementation for the entire feature, and how
+    that may affect the user-facing API.
+
+..
+    TODO: Think about:
+    - How backoff state is handled.
+    - Implement a setting that allows customizing the backoff window, which
+      should be 60.0 seconds by default, and should be overridable per scope.
+    - How backoff could be fine-tuned to deal with scenarios where it is
+      ping-poning between 2 states, and it should be possible to go for an
+      in-between state that allows maximizing throughtput while still
+      minimizing backoff feedback (backoff response or exception), aiming for a
+      single backoff feedback per backoff window.
+
+..
+    TODO: Figure out the interaction APIs between components when we have:
+    - The scheduler using the throttling manager to decide whether a request
+      can be sent or not, and to sort requests.
+
+..
+    TODO: Review all related issues and PRs, including those about multiple
+    slots, about per-request delays, and about politeness, and make sure every
+    scenario is covered here.
+
+..
+    TODO: See if there is any info from the old autothrottle docs worth
+    keeping:
+
+    .. _topics-autothrottle:
+
+    ======================
+    AutoThrottle extension
+    ======================
+
+    This is an extension for automatically throttling crawling speed based on load
+    of both the Scrapy server and the website you are crawling.
+
+    Design goals
+    ============
+
+    1. be nicer to sites instead of using default download delay of zero
+    2. automatically adjust Scrapy to the optimum crawling speed, so the user
+    doesn't have to tune the download delays to find the optimum one.
+    The user only needs to specify the maximum concurrent requests
+    it allows, and the extension does the rest.
+
+    .. _autothrottle-algorithm:
+
+    How it works
+    ============
+
+    Scrapy allows defining the concurrency and delay of different download slots,
+    e.g. through the :setting:`DOWNLOAD_SLOTS` setting. By default requests are
+    assigned to slots based on their URL domain, although it is possible to
+    customize the download slot of any request.
+
+    The AutoThrottle extension adjusts the delay of each download slot dynamically,
+    to make your spider send :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` concurrent
+    requests on average to each remote website.
+
+    It uses download latency to compute the delays. The main idea is the
+    following: if a server needs ``latency`` seconds to respond, a client
+    should send a request each ``latency/N`` seconds to have ``N`` requests
+    processed in parallel.
+
+    Instead of adjusting the delays one can just set a small fixed
+    download delay and impose hard limits on concurrency using
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
+    :setting:`CONCURRENT_REQUESTS_PER_IP` options. It will provide a similar
+    effect, but there are some important differences:
+
+    * because the download delay is small there will be occasional bursts
+    of requests;
+    * often non-200 (error) responses can be returned faster than regular
+    responses, so with a small download delay and a hard concurrency limit
+    crawler will be sending requests to server faster when server starts to
+    return errors. But this is an opposite of what crawler should do - in case
+    of errors it makes more sense to slow down: these errors may be caused by
+    the high request rate.
+
+    AutoThrottle doesn't have these issues.
+
+    Throttling algorithm
+    ====================
+
+    AutoThrottle algorithm adjusts download delays based on the following rules:
+
+    1. spiders always start with a download delay of
+    :setting:`AUTOTHROTTLE_START_DELAY`;
+    2. when a response is received, the target download delay is calculated as
+    ``latency / N`` where ``latency`` is a latency of the response,
+    and ``N`` is :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY`.
+    3. download delay for next requests is set to the average of previous
+    download delay and the target download delay;
+    4. latencies of non-200 responses are not allowed to decrease the delay;
+    5. download delay can't become less than :setting:`DOWNLOAD_DELAY` or greater
+    than :setting:`AUTOTHROTTLE_MAX_DELAY`
+
+    .. note:: The AutoThrottle extension honours the standard Scrapy settings for
+    concurrency and delay. This means that it will respect
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
+    :setting:`CONCURRENT_REQUESTS_PER_IP` options and
+    never set a download delay lower than :setting:`DOWNLOAD_DELAY`.
+
+    .. _download-latency:
+
+    In Scrapy, the download latency is measured as the time elapsed between
+    establishing the TCP connection and receiving the HTTP headers.
+
+    Note that these latencies are very hard to measure accurately in a cooperative
+    multitasking environment because Scrapy may be busy processing a spider
+    callback, for example, and unable to attend downloads. However, these latencies
+    should still give a reasonable estimate of how busy Scrapy (and ultimately, the
+    server) is, and this extension builds on that premise.
+
+    .. reqmeta:: autothrottle_dont_adjust_delay
+
+    Prevent specific requests from triggering slot delay adjustments
+    ================================================================
+
+    AutoThrottle adjusts the delay of download slots based on the latencies of
+    responses that belong to that download slot. The only exceptions are non-200
+    responses, which are only taken into account to increase that delay, but
+    ignored if they would decrease that delay.
+
+    You can also set the ``autothrottle_dont_adjust_delay`` request metadata key to
+    ``True`` in any request to prevent its response latency from impacting the
+    delay of its download slot:
+
+    .. code-block:: python
+
+        from scrapy import Request
+
+        Request("https://example.com", meta={"autothrottle_dont_adjust_delay": True})
+
+    Note, however, that AutoThrottle still determines the starting delay of every
+    download slot by setting the ``download_delay`` attribute on the running
+    spider. If you want AutoThrottle not to impact a download slot at all, in
+    addition to setting this meta key in all requests that use that download slot,
+    you might want to set a custom value for the ``delay`` attribute of that
+    download slot, e.g. using :setting:`DOWNLOAD_SLOTS`.
+
+    Settings
+    ========
+
+    The settings used to control the AutoThrottle extension are:
+
+    * :setting:`AUTOTHROTTLE_ENABLED`
+    * :setting:`AUTOTHROTTLE_START_DELAY`
+    * :setting:`AUTOTHROTTLE_MAX_DELAY`
+    * :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY`
+    * :setting:`AUTOTHROTTLE_DEBUG`
+    * :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
+    * :setting:`CONCURRENT_REQUESTS_PER_IP`
+    * :setting:`DOWNLOAD_DELAY`
+
+    For more information see :ref:`autothrottle-algorithm`.
+
+    .. setting:: AUTOTHROTTLE_ENABLED
+
+    AUTOTHROTTLE_ENABLED
+    ~~~~~~~~~~~~~~~~~~~~
+
+    Default: ``False``
+
+    Enables the AutoThrottle extension.
+
+    .. setting:: AUTOTHROTTLE_START_DELAY
+
+    AUTOTHROTTLE_START_DELAY
+    ~~~~~~~~~~~~~~~~~~~~~~~~
+
+    Default: ``5.0``
+
+    The initial download delay (in seconds).
+
+    .. setting:: AUTOTHROTTLE_MAX_DELAY
+
+    AUTOTHROTTLE_MAX_DELAY
+    ~~~~~~~~~~~~~~~~~~~~~~
+
+    Default: ``60.0``
+
+    The maximum download delay (in seconds) to be set in case of high latencies.
+
+    .. setting:: AUTOTHROTTLE_TARGET_CONCURRENCY
+
+    AUTOTHROTTLE_TARGET_CONCURRENCY
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    Default: ``1.0``
+
+    Average number of requests Scrapy should be sending in parallel to remote
+    websites. It must be higher than ``0.0``.
+
+    By default, AutoThrottle adjusts the delay to send a single
+    concurrent request to each of the remote websites. Set this option to
+    a higher value (e.g. ``2.0``) to increase the throughput and the load on remote
+    servers. A lower ``AUTOTHROTTLE_TARGET_CONCURRENCY`` value
+    (e.g. ``0.5``) makes the crawler more conservative and polite.
+
+    Note that :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
+    and :setting:`CONCURRENT_REQUESTS_PER_IP` options are still respected
+    when AutoThrottle extension is enabled. This means that if
+    ``AUTOTHROTTLE_TARGET_CONCURRENCY`` is set to a value higher than
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
+    :setting:`CONCURRENT_REQUESTS_PER_IP`, the crawler won't reach this number
+    of concurrent requests.
+
+    At every given time point Scrapy can be sending more or less concurrent
+    requests than ``AUTOTHROTTLE_TARGET_CONCURRENCY``; it is a suggested
+    value the crawler tries to approach, not a hard limit.
+
+    .. setting:: AUTOTHROTTLE_DEBUG
+
+    AUTOTHROTTLE_DEBUG
+    ~~~~~~~~~~~~~~~~~~
+
+    Default: ``False``
+
+    Enable AutoThrottle debug mode which will display stats on every response
+    received, so you can see how the throttling parameters are being adjusted in
+    real time.
+
+..
+    TODO: Figure out how to properly deprecate AutoThrottle settings, API and
+    keep its presence in the list of enabled extensions without that triggering
+    a deprecation warning.
+
+..
+    TODO: Avoid so much code duplication in add_scope and update_scope_backoff.
+
+..
+    TODO: Describe in detail the backoff algorithm, with steps, etc., and also
+    covering how it tries to maintain a sweet spot avoiding
+
+..
+    TODO: Define typed dicts for all dicts supported by settings, e.g. for
+    THROTTLING_SCOPES.
+
+..
+    TODO: Provide an example implementation of a custom throttling scope
+    manager based on the current implementation of scrapy-zyte-api retrying
+    policy.
+
+..
+    TODO: If get_scopes reports expected quotas, treat those as actual
+    consumptions at run time, and then handle the actual consumptions reported
+    in get_response_backoff by reporting the difference.
+
+    e.g. if a request is expected to consume 2.0 quota, lower the available
+    quota in the current window by 2.0. If the response then reports that 2.5
+    was actually consumed, then report 0.5 as the difference, to be also
+    substracted from the current window.
+
+..
+    TODO: Implement some kind of system to free scope-related memory if a given
+    scope is not used for a while?
+
+..
+    TODO: Think about tracking effective concurrency and delays, and reporting
+    to users when their custom settings are not effective for a significant
+    period of time.
+
+..
+    TODO: Provide a complete list of keys that THROTTLING_SCOPES supports.
+
+..
+    TODO: Update news.rst with all the changes, but only once everything else
+    has been written. Make sure to include the new REDIRECT_MAX_DELAY setting.

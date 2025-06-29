@@ -629,7 +629,6 @@ are some special keys recognized by Scrapy and its built-in extensions.
 Those are:
 
 * :reqmeta:`allow_offsite`
-* :reqmeta:`autothrottle_dont_adjust_delay`
 * :reqmeta:`bindaddress`
 * :reqmeta:`cookiejar`
 * :reqmeta:`dont_cache`

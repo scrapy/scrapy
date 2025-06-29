@@ -47,6 +47,7 @@ if TYPE_CHECKING:
 
     from scrapy.logformatter import LogFormatter
     from scrapy.statscollectors import StatsCollector
+    from scrapy.throttling import ThrottlingManagerProtocol
     from scrapy.utils.request import RequestFingerprinterProtocol
 
 
@@ -84,6 +85,7 @@ class Crawler:
         self.stats: StatsCollector | None = None
         self.logformatter: LogFormatter | None = None
         self.request_fingerprinter: RequestFingerprinterProtocol | None = None
+        self.throttler: ThrottlingManagerProtocol | None = None
         self.spider: Spider | None = None
         self.engine: ExecutionEngine | None = None
 
@@ -111,6 +113,10 @@ class Crawler:
 
         self.request_fingerprinter = build_from_crawler(
             load_object(self.settings["REQUEST_FINGERPRINTER_CLASS"]),
+            self,
+        )
+        self.throttler = build_from_crawler(
+            load_object(self.settings["THROTTLING_MANAGER"]),
             self,
         )
 

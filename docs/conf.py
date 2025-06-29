@@ -34,6 +34,7 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
+    "sphinx_reredirects",
     "sphinx_rtd_dark_mode",
 ]
 
@@ -136,6 +137,12 @@ coverage_ignore_pyobjects = [
     r"^scrapy\.linkextractors\.lxmlhtml\.LxmlParserLinkExtractor",
 ]
 
+# -- Options for the autodoc extension ----------------------------------------
+autodoc_type_aliases = {
+    "BackoffData": "BackoffData",
+    "GetScopesMethod": "GetScopesMethod",
+    "RequestScopes": "RequestScopes",
+}
 
 # -- Options for the InterSphinx extension -----------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#configuration
@@ -156,6 +163,11 @@ intersphinx_mapping = {
     "w3lib": ("https://w3lib.readthedocs.io/en/latest", None),
 }
 intersphinx_disabled_reftypes: Sequence[str] = []
+
+# -- sphinx-reredirects -------------------------------------------------------
+redirects = {
+    "topics/autothrottle": "throttling.html",
+}
 
 
 # -- Options for sphinx-hoverxref extension ----------------------------------

@@ -161,12 +161,11 @@ Solving specific problems
    topics/leaks
    topics/media-pipeline
    topics/deploy
-   topics/autothrottle
+   topics/throttling
    topics/benchmarking
    topics/jobs
    topics/coroutines
    topics/asyncio
-   topics/throttling
 
 :doc:`faq`
     Get answers to most frequently asked questions.
@@ -198,8 +197,9 @@ Solving specific problems
 :doc:`topics/deploy`
     Deploying your Scrapy spiders and run them in a remote server.
 
-:doc:`topics/autothrottle`
-    Adjust crawl rate dynamically based on load.
+:doc:`topics/throttling`
+    Control request throttling to avoid overloading websites and comply with
+    rate limits.
 
 :doc:`topics/benchmarking`
     Check how Scrapy performs on your hardware.
@@ -212,10 +212,6 @@ Solving specific problems
 
 :doc:`topics/asyncio`
     Use :mod:`asyncio` and :mod:`asyncio`-powered libraries.
-
-:doc:`topics/throttling`
-    Control request throttling to avoid overloading websites and comply with
-    rate limits.
 
 .. _extending-scrapy:
 
