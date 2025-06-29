@@ -1,6 +1,7 @@
 # pylint: disable=unsubscriptable-object,unsupported-membership-test,use-implicit-booleaness-not-comparison
 # (too many false positives)
 
+import warnings
 from unittest import mock
 
 import pytest
@@ -557,6 +558,17 @@ def test_remove_from_list(before, name, item, after):
         f"{settings[name]=} != {expected_settings[name]=}"
     )
     assert settings.getpriority(name) == expected_settings.getpriority(name)
+
+
+def test_deprecated_concurrent_requests_per_ip_setting():
+    with warnings.catch_warnings(record=True) as warns:
+        settings = Settings({"CONCURRENT_REQUESTS_PER_IP": 1})
+        settings.get("CONCURRENT_REQUESTS_PER_IP")
+
+    assert (
+        str(warns[0].message)
+        == "The CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead."
+    )
 
 
 class Component1:

@@ -37,8 +37,7 @@ processed in parallel.
 
 Instead of adjusting the delays one can just set a small fixed
 download delay and impose hard limits on concurrency using
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
-:setting:`CONCURRENT_REQUESTS_PER_IP` options. It will provide a similar
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. It will provide a similar
 effect, but there are some important differences:
 
 * because the download delay is small there will be occasional bursts
@@ -71,7 +70,6 @@ AutoThrottle algorithm adjusts download delays based on the following rules:
 .. note:: The AutoThrottle extension honours the standard Scrapy settings for
    concurrency and delay. This means that it will respect
    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` and
-   :setting:`CONCURRENT_REQUESTS_PER_IP` options and
    never set a download delay lower than :setting:`DOWNLOAD_DELAY`.
 
 .. _download-latency:
@@ -123,7 +121,6 @@ The settings used to control the AutoThrottle extension are:
 * :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY`
 * :setting:`AUTOTHROTTLE_DEBUG`
 * :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
-* :setting:`CONCURRENT_REQUESTS_PER_IP`
 * :setting:`DOWNLOAD_DELAY`
 
 For more information see :ref:`autothrottle-algorithm`.
@@ -171,12 +168,10 @@ a higher value (e.g. ``2.0``) to increase the throughput and the load on remote
 servers. A lower ``AUTOTHROTTLE_TARGET_CONCURRENCY`` value
 (e.g. ``0.5``) makes the crawler more conservative and polite.
 
-Note that :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`
-and :setting:`CONCURRENT_REQUESTS_PER_IP` options are still respected
+Note that :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` is still respected
 when AutoThrottle extension is enabled. This means that if
 ``AUTOTHROTTLE_TARGET_CONCURRENCY`` is set to a value higher than
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
-:setting:`CONCURRENT_REQUESTS_PER_IP`, the crawler won't reach this number
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`, the crawler won't reach this number
 of concurrent requests.
 
 At every given time point Scrapy can be sending more or less concurrent
