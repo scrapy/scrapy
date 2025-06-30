@@ -354,7 +354,7 @@ Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
 Acceptable values for REFERRER_POLICY
 *************************************
 
-- either a path to a ``scrapy.spidermiddlewares.referer.ReferrerPolicy``
+- either a path to a :class:`scrapy.spidermiddlewares.referer.ReferrerPolicy`
   subclass — a custom policy or one of the built-in ones (see classes below),
 - or one or more comma-separated standard W3C-defined string values,
 - or the special ``"scrapy-default"``.
@@ -372,6 +372,8 @@ String value                             Class name (as a string)
 `"strict-origin-when-cross-origin"`_     :class:`scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy`
 `"unsafe-url"`_                          :class:`scrapy.spidermiddlewares.referer.UnsafeUrlPolicy`
 =======================================  ========================================================================
+
+.. autoclass:: ReferrerPolicy
 
 .. autoclass:: DefaultReferrerPolicy
 .. warning::

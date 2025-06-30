@@ -4,6 +4,7 @@ import marshal
 import pickle
 import re
 import tempfile
+from abc import ABC, abstractmethod
 from datetime import datetime
 from io import BytesIO
 from typing import Any
@@ -53,7 +54,7 @@ class CustomFieldDataclass:
     age: int = dataclasses.field(metadata={"serializer": custom_serializer})
 
 
-class TestBaseItemExporter:
+class TestBaseItemExporter(ABC):
     item_class: type = MyItem
     custom_field_item_class: type = CustomFieldItem
 
@@ -62,10 +63,11 @@ class TestBaseItemExporter:
         self.output = BytesIO()
         self.ie = self._get_exporter()
 
-    def _get_exporter(self, **kwargs):
-        return BaseItemExporter(**kwargs)
+    @abstractmethod
+    def _get_exporter(self, **kwargs) -> BaseItemExporter:
+        raise NotImplementedError
 
-    def _check_output(self):
+    def _check_output(self):  # noqa: B027
         pass
 
     def _assert_expected_item(self, exported_dict):
@@ -83,11 +85,7 @@ class TestBaseItemExporter:
 
     def assertItemExportWorks(self, item):
         self.ie.start_exporting()
-        try:
-            self.ie.export_item(item)
-        except NotImplementedError:
-            if self.ie.__class__ is not BaseItemExporter:
-                raise
+        self.ie.export_item(item)
         self.ie.finish_exporting()
         # Delete the item exporter object, so that if it causes the output
         # file handle to be closed, which should not be the case, follow-up
@@ -130,11 +128,6 @@ class TestBaseItemExporter:
             == "John\xa3"
         )
         assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) == "24"
-
-
-class TestBaseItemExporterDataclass(TestBaseItemExporter):
-    item_class = MyDataClass
-    custom_field_item_class = CustomFieldDataclass
 
 
 class TestPythonItemExporter(TestBaseItemExporter):
@@ -669,6 +662,9 @@ class TestCustomExporterItem:
                 if name == "age":
                     return str(int(value) + 1)
                 return super().serialize_field(field, name, value)
+
+            def export_item(self, item: Any) -> None:
+                pass
 
         i = self.item_class(name="John", age="22")
         a = ItemAdapter(i)

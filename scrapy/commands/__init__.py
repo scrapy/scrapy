@@ -7,6 +7,7 @@ from __future__ import annotations
 import argparse
 import builtins
 import os
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
     from scrapy.settings import Settings
 
 
-class ScrapyCommand:
+class ScrapyCommand(ABC):
     requires_project: bool = False
     requires_crawler_process: bool = True
     crawler_process: CrawlerProcessBase | None = None  # set in scrapy.cmdline
@@ -46,6 +47,7 @@ class ScrapyCommand:
         """
         return ""
 
+    @abstractmethod
     def short_desc(self) -> str:
         """
         A short description of the command
@@ -128,6 +130,7 @@ class ScrapyCommand:
         if opts.pdb:
             failure.startDebugMode()
 
+    @abstractmethod
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         """
         Entry point for running commands

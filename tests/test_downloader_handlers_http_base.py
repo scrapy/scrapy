@@ -419,34 +419,35 @@ class TestHttp11Base(TestHttpBase):
         response = await self.download_request(request, Spider("foo"))
         assert response.body == b"chunked content\n"
 
-    @deferred_f_from_coro_f
-    async def test_download_broken_content_cause_data_loss(
-        self, url: str = "broken"
-    ) -> None:
+    async def _test_download_cause_data_loss(self, url: str) -> None:
         # TODO: this one checks for Twisted-specific exceptions
         request = Request(self.getURL(url))
         with pytest.raises(ResponseFailed) as exc_info:
             await self.download_request(request, Spider("foo"))
         assert any(r.check(_DataLoss) for r in exc_info.value.reasons)
 
-    def test_download_broken_chunked_content_cause_data_loss(self):
-        return self.test_download_broken_content_cause_data_loss("broken-chunked")
+    @deferred_f_from_coro_f
+    async def test_download_broken_content_cause_data_loss(self) -> None:
+        await self._test_download_cause_data_loss("broken")
 
     @deferred_f_from_coro_f
-    async def test_download_broken_content_allow_data_loss(
-        self, url: str = "broken"
-    ) -> None:
+    async def test_download_broken_chunked_content_cause_data_loss(self):
+        await self._test_download_cause_data_loss("broken-chunked")
+
+    async def _test_download_allow_data_loss(self, url: str) -> None:
         request = Request(self.getURL(url), meta={"download_fail_on_dataloss": False})
         response = await self.download_request(request, Spider("foo"))
         assert response.flags == ["dataloss"]
 
-    def test_download_broken_chunked_content_allow_data_loss(self):
-        return self.test_download_broken_content_allow_data_loss("broken-chunked")
+    @deferred_f_from_coro_f
+    async def test_download_broken_content_allow_data_loss(self) -> None:
+        await self._test_download_allow_data_loss("broken")
 
     @deferred_f_from_coro_f
-    async def test_download_broken_content_allow_data_loss_via_setting(
-        self, url: str = "broken"
-    ) -> None:
+    async def test_download_broken_chunked_content_allow_data_loss(self):
+        await self._test_download_allow_data_loss("broken-chunked")
+
+    async def _test_download_allow_data_loss_via_setting(self, url: str) -> None:
         crawler = get_crawler(settings_dict={"DOWNLOAD_FAIL_ON_DATALOSS": False})
         download_handler = build_from_crawler(self.download_handler_cls, crawler)
         request = Request(self.getURL(url))
@@ -455,10 +456,13 @@ class TestHttp11Base(TestHttpBase):
         )
         assert response.flags == ["dataloss"]
 
-    def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
-        return self.test_download_broken_content_allow_data_loss_via_setting(
-            "broken-chunked"
-        )
+    @deferred_f_from_coro_f
+    async def test_download_broken_content_allow_data_loss_via_setting(self):
+        await self._test_download_allow_data_loss_via_setting("broken-chunked")
+
+    @deferred_f_from_coro_f
+    async def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
+        await self._test_download_allow_data_loss_via_setting("broken-chunked")
 
     @deferred_f_from_coro_f
     async def test_protocol(self):
