@@ -518,19 +518,12 @@ class TestEngineDownloadSync(TestEngineBase):
         super().setUp()
         self.crawler = get_crawler(MySpider)
         self.engine = ExecutionEngine(self.crawler, lambda _: None)
+        self.engine.downloader.close()
         self.engine.downloader = Mock()
         self.engine._slot = Mock()
         self.engine._slot.inprogress = set()
 
-    def tearDown(self):
-        from twisted.internet import reactor
-
-        # Clean up any pending calls
-        for c in reactor.getDelayedCalls():
-            c.cancel()
-        return self.engine.close()
-
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_download_success(self):
         """Test basic successful download of a request."""
         # Arrange
@@ -552,7 +545,7 @@ class TestEngineDownloadSync(TestEngineBase):
             request, self.engine.spider
         )
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_download_redirect(self):
         """Test download with a redirect request."""
         # Arrange
@@ -582,7 +575,7 @@ class TestEngineDownloadSync(TestEngineBase):
             [call(original_request), call(redirect_request)]
         )
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_download_no_spider(self):
         """Test download attempt when no spider is available."""
         # Arrange
@@ -594,7 +587,7 @@ class TestEngineDownloadSync(TestEngineBase):
             yield self.engine.download(request)
         assert "No open spider to crawl" in str(exc_info.value)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_download_failure(self):
         """Test download when the downloader raises an exception."""
         # Arrange
@@ -620,17 +613,10 @@ class TestEngineDownloadAsync(TestEngineBase):
         super().setUp()
         self.crawler = get_crawler(MySpider)
         self.engine = ExecutionEngine(self.crawler, lambda _: None)
+        self.engine.downloader.close()
         self.engine.downloader = Mock()
         self.engine._slot = Mock()
         self.engine._slot.inprogress = set()
-
-    def tearDown(self):
-        from twisted.internet import reactor
-
-        # Clean up any pending calls
-        for c in reactor.getDelayedCalls():
-            c.cancel()
-        return self.engine.close()
 
     @deferred_f_from_coro_f
     async def test_download_async_success(self):
