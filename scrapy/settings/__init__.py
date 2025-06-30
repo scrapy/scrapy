@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import copy
 import json
+import warnings
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 from importlib import import_module
 from pprint import pformat
 from typing import TYPE_CHECKING, Any, Union, cast
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import default_settings
 from scrapy.utils.misc import load_object
 
@@ -147,6 +149,15 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         :param default: the value to return if no setting is found
         :type default: object
         """
+        if name == "CONCURRENT_REQUESTS_PER_IP" and (
+            isinstance(self[name], int) and self[name] != 0
+        ):
+            warnings.warn(
+                "The CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+
         return self[name] if self[name] is not None else default
 
     def getbool(self, name: _SettingsKeyT, default: bool = False) -> bool:
