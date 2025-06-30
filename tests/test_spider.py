@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import gzip
 import warnings
 from io import BytesIO
@@ -531,7 +533,7 @@ class TestSitemapSpider(TestSpider):
     g.close()
     GZBODY = f.getvalue()
 
-    def assertSitemapBody(self, response, body):
+    def assertSitemapBody(self, response: Response, body: bytes | None) -> None:
         crawler = get_crawler()
         spider = self.spider_class.from_crawler(crawler, "example.com")
         assert spider._get_sitemap_body(response) == body
