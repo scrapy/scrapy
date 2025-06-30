@@ -67,8 +67,7 @@ class TestBaseItemExporter(ABC):
     def _get_exporter(self, **kwargs) -> BaseItemExporter:
         raise NotImplementedError
 
-    @abstractmethod
-    def _check_output(self):
+    def _check_output(self):  # noqa: B027
         pass
 
     def _assert_expected_item(self, exported_dict):
@@ -129,11 +128,6 @@ class TestBaseItemExporter(ABC):
             == "John\xa3"
         )
         assert ie.serialize_field(a.get_field_meta("age"), "age", a["age"]) == "24"
-
-
-class TestBaseItemExporterDataclass(TestBaseItemExporter):
-    item_class = MyDataClass
-    custom_field_item_class = CustomFieldDataclass
 
 
 class TestPythonItemExporter(TestBaseItemExporter):
