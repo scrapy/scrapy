@@ -347,58 +347,55 @@ class TestFTPBase(unittest.TestCase):
         yield self.port.stopListening()
         shutil.rmtree(self.directory)
 
-    def _add_test_callbacks(self, deferred, callback=None, errback=None):
-        def _clean(data):
-            self.download_handler.client.transport.loseConnection()
-            return data
+    async def download_request(self, request: Request) -> Response:
+        return await maybe_deferred_to_future(
+            self.download_handler.download_request(request, None)
+        )
 
-        deferred.addCallback(_clean)
-        if callback:
-            deferred.addCallback(callback)
-        if errback:
-            deferred.addErrback(errback)
-        return deferred
+    def _lose_connection(self):
+        self.download_handler.client.transport.loseConnection()
 
-    def test_ftp_download_success(self):
+    @deferred_f_from_coro_f
+    async def test_ftp_download_success(self):
         request = Request(
             url=f"ftp://127.0.0.1:{self.portNum}/file.txt", meta=self.req_meta
         )
-        d = self.download_handler.download_request(request, None)
-
-        def _test(r):
+        try:
+            r = await self.download_request(request)
             assert r.status == 200
             assert r.body == b"I have the power!"
             assert r.headers == {b"Local Filename": [b""], b"Size": [b"17"]}
             assert r.protocol is None
+        finally:
+            self._lose_connection()
 
-        return self._add_test_callbacks(d, _test)
-
-    def test_ftp_download_path_with_spaces(self):
+    @deferred_f_from_coro_f
+    async def test_ftp_download_path_with_spaces(self):
         request = Request(
             url=f"ftp://127.0.0.1:{self.portNum}/file with spaces.txt",
             meta=self.req_meta,
         )
-        d = self.download_handler.download_request(request, None)
-
-        def _test(r):
+        try:
+            r = await self.download_request(request)
             assert r.status == 200
             assert r.body == b"Moooooooooo power!"
             assert r.headers == {b"Local Filename": [b""], b"Size": [b"18"]}
+        finally:
+            self._lose_connection()
 
-        return self._add_test_callbacks(d, _test)
-
-    def test_ftp_download_nonexistent(self):
+    @deferred_f_from_coro_f
+    async def test_ftp_download_nonexistent(self):
         request = Request(
             url=f"ftp://127.0.0.1:{self.portNum}/nonexistent.txt", meta=self.req_meta
         )
-        d = self.download_handler.download_request(request, None)
-
-        def _test(r):
+        try:
+            r = await self.download_request(request)
             assert r.status == 404
+        finally:
+            self._lose_connection()
 
-        return self._add_test_callbacks(d, _test)
-
-    def test_ftp_local_filename(self):
+    @deferred_f_from_coro_f
+    async def test_ftp_local_filename(self):
         f, local_fname = mkstemp()
         fname_bytes = to_bytes(local_fname)
         local_fname = Path(local_fname)
@@ -406,41 +403,42 @@ class TestFTPBase(unittest.TestCase):
         meta = {"ftp_local_filename": fname_bytes}
         meta.update(self.req_meta)
         request = Request(url=f"ftp://127.0.0.1:{self.portNum}/file.txt", meta=meta)
-        d = self.download_handler.download_request(request, None)
-
-        def _test(r):
+        try:
+            r = await self.download_request(request)
             assert r.body == fname_bytes
             assert r.headers == {b"Local Filename": [fname_bytes], b"Size": [b"17"]}
             assert local_fname.exists()
             assert local_fname.read_bytes() == b"I have the power!"
             local_fname.unlink()
+        finally:
+            self._lose_connection()
 
-        return self._add_test_callbacks(d, _test)
-
-    def _test_response_class(self, filename, response_class):
+    async def _test_response_class(self, filename: str, response_class: type[Response]):
         f, local_fname = mkstemp()
-        local_fname = Path(local_fname)
+        local_fname_path = Path(local_fname)
         os.close(f)
         meta = {}
         meta.update(self.req_meta)
         request = Request(url=f"ftp://127.0.0.1:{self.portNum}/{filename}", meta=meta)
-        d = self.download_handler.download_request(request, None)
-
-        def _test(r):
+        try:
+            r = await self.download_request(request)
             assert type(r) is response_class  # pylint: disable=unidiomatic-typecheck
-            local_fname.unlink()
+            local_fname_path.unlink()
+        finally:
+            self._lose_connection()
 
-        return self._add_test_callbacks(d, _test)
+    @deferred_f_from_coro_f
+    async def test_response_class_from_url(self):
+        await self._test_response_class("file.txt", TextResponse)
 
-    def test_response_class_from_url(self):
-        return self._test_response_class("file.txt", TextResponse)
-
-    def test_response_class_from_body(self):
-        return self._test_response_class("html-file-without-extension", HtmlResponse)
+    @deferred_f_from_coro_f
+    async def test_response_class_from_body(self):
+        await self._test_response_class("html-file-without-extension", HtmlResponse)
 
 
 class TestFTP(TestFTPBase):
-    def test_invalid_credentials(self):
+    @deferred_f_from_coro_f
+    async def test_invalid_credentials(self):
         if self.reactor_pytest != "default" and sys.platform == "win32":
             pytest.skip(
                 "This test produces DirtyReactorAggregateError on Windows with asyncio"
@@ -450,12 +448,11 @@ class TestFTP(TestFTPBase):
         meta = dict(self.req_meta)
         meta.update({"ftp_password": "invalid"})
         request = Request(url=f"ftp://127.0.0.1:{self.portNum}/file.txt", meta=meta)
-        d = self.download_handler.download_request(request, None)
-
-        def _test(r):
-            assert r.type == ConnectionLost
-
-        return self._add_test_callbacks(d, errback=_test)
+        try:
+            with pytest.raises(ConnectionLost):
+                await self.download_request(request)
+        finally:
+            self._lose_connection()
 
 
 class TestAnonymousFTP(TestFTPBase):

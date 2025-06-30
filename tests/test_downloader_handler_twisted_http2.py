@@ -89,22 +89,13 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
         with pytest.raises(SchemeNotSupported):
             await self.download_request(request, Spider("foo"))
 
-    def test_download_broken_content_cause_data_loss(self, url="broken"):
+    async def _test_download_cause_data_loss(self, url: str) -> None:
         pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
-    def test_download_broken_chunked_content_cause_data_loss(self):
+    async def _test_download_allow_data_loss(self, url: str) -> None:
         pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
-    def test_download_broken_content_allow_data_loss(self, url="broken"):
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_broken_chunked_content_allow_data_loss(self):
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_broken_content_allow_data_loss_via_setting(self, url="broken"):
-        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
-
-    def test_download_broken_chunked_content_allow_data_loss_via_setting(self):
+    async def _test_download_allow_data_loss_via_setting(self, url: str) -> None:
         pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
     @deferred_f_from_coro_f
