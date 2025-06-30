@@ -189,7 +189,6 @@ __all__ = [
     "URLLENGTH_LIMIT",
     "USER_AGENT",
     "WARN_ON_GENERATOR_RETURN_VALUE",
-    "Path",
 ]
 
 ADDONS = {}
