@@ -112,7 +112,8 @@ class TestMain(TestCase):
         with LogCapture(level=ERROR) as log:
             await maybe_deferred_to_future(crawler.crawl())
 
-        assert not log.records
+        assert len(log.records) == 1
+        assert log.records[0].msg == "Error running spider_closed_callback"
         finish_reason = crawler.stats.get_value("finish_reason")
         assert finish_reason == "shutdown", f"{finish_reason=}"
         expected_urls = []
