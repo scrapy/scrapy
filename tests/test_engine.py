@@ -17,7 +17,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from logging import DEBUG
 from pathlib import Path
-from threading import Timer
 from unittest.mock import Mock
 from urllib.parse import urlparse
 
@@ -495,17 +494,12 @@ class TestEngine(TestEngineBase):
             stderr=subprocess.PIPE,
         )
 
-        def kill_proc():
+        try:
+            _, stderr = p.communicate(timeout=3)
+        except subprocess.TimeoutExpired:
             p.kill()
             p.communicate()
-            raise AssertionError("Command took too much time to complete")
-
-        timer = Timer(15, kill_proc)
-        try:
-            timer.start()
-            _, stderr = p.communicate()
-        finally:
-            timer.cancel()
+            pytest.fail("Command took too much time to complete")
 
         stderr_str = stderr.decode("utf-8")
         assert "AttributeError" not in stderr_str, stderr_str
