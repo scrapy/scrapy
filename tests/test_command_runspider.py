@@ -112,6 +112,11 @@ class MySpider(scrapy.Spider):
     name = 'myspider'
     start_urls = ['http://localhost:12345']
 
+    custom_settings = {
+        "ROBOTSTXT_OBEY": False,
+        "RETRY_ENABLED": False,
+    }
+
     def parse(self, response):
         return {'test': 'value'}
 """

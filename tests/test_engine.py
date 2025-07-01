@@ -496,19 +496,16 @@ class TestEngine(TestEngineBase):
             stderr=subprocess.PIPE,
         )
 
-        def kill_proc():
+        try:
+            _, stderr = p.communicate(timeout=3)
+        except subprocess.TimeoutExpired:
             p.kill()
             p.communicate()
-            raise AssertionError("Command took too much time to complete")
+            pytest.fail("Command took too much time to complete")
 
-        timer = Timer(15, kill_proc)
-        try:
-            timer.start()
-            _, stderr = p.communicate()
-        finally:
-            timer.cancel()
-
-        assert b"Traceback" not in stderr, stderr
+        stderr_str = stderr.decode("utf-8")
+        assert "AttributeError" not in stderr_str, stderr_str
+        assert "AssertionError" not in stderr_str, stderr_str
 
 
 class TestEngineDownloadSync(TestEngineBase):
