@@ -8,10 +8,10 @@ Release notes
 Scrapy 2.13.3 (unreleased)
 --------------------------
 
--   Changed the values for the :setting:`DOWNLOAD_DELAY` (to ``1``) and
-    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (to ``1``) in the default project
-    template.
-    (:issue:`6918`, :issue:`6923`)
+-   Changed the values for :setting:`DOWNLOAD_DELAY` (from ``0`` to ``1``) and
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (from ``8`` to ``1``) in the
+    default project template.
+    (:issue:`6597`, :issue:`6918`, :issue:`6923`)
 
 -   Improved :class:`scrapy.core.engine.ExecutionEngine` logic related to
     initialization and exception handling, fixing several cases where the
@@ -21,7 +21,7 @@ Scrapy 2.13.3 (unreleased)
 
 -   Fixed a Windows issue with :ref:`feed exports <topics-feed-exports>` using
     :class:`scrapy.extensions.feedexport.FileFeedStorage` that caused the file
-    to be created on a wrong drive.
+    to be created on the wrong drive.
     (:issue:`6894`, :issue:`6897`)
 
 -   Allowed running tests with Twisted 25.5.0+ again. Pytest 8.4.1+ is now
