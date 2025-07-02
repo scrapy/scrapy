@@ -45,6 +45,48 @@ Backward-incompatible changes
         - :meth:`~scrapy.spidermiddlewares.referer.ReferrerPolicy.referrer`
 
 
+.. _release-2.13.3:
+
+Scrapy 2.13.3 (2025-07-02)
+--------------------------
+
+-   Changed the values for :setting:`DOWNLOAD_DELAY` (from ``0`` to ``1``) and
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (from ``8`` to ``1``) in the
+    default project template.
+    (:issue:`6597`, :issue:`6918`, :issue:`6923`)
+
+-   Improved :class:`scrapy.core.engine.ExecutionEngine` logic related to
+    initialization and exception handling, fixing several cases where the
+    spider would crash, hang or log an unhandled exception.
+    (:issue:`6783`, :issue:`6784`, :issue:`6900`, :issue:`6908`, :issue:`6910`,
+    :issue:`6911`)
+
+-   Fixed a Windows issue with :ref:`feed exports <topics-feed-exports>` using
+    :class:`scrapy.extensions.feedexport.FileFeedStorage` that caused the file
+    to be created on the wrong drive.
+    (:issue:`6894`, :issue:`6897`)
+
+-   Allowed running tests with Twisted 25.5.0+ again. Pytest 8.4.1+ is now
+    required for running tests in non-pinned envs as support for the new
+    Twisted version was added in that version.
+    (:issue:`6893`)
+
+-   Fixed running tests with lxml 6.0.0+.
+    (:issue:`6919`)
+
+-   Added a deprecation notice for
+    ``scrapy.spidermiddlewares.offsite.OffsiteMiddleware`` to :ref:`the Scrapy
+    2.11.2 release notes <release-2.11.2>`.
+    (:issue:`6926`)
+
+-   Updated :ref:`contribution docs <topics-contributing>` to refer to ruff_
+    instead of black_.
+    (:issue:`6903`)
+
+-   Added ``.venv/`` and ``.vscode/`` to ``.gitignore``.
+    (:issue:`6901`, :issue:`6907`)
+
+
 .. _release-2.13.2:
 
 Scrapy 2.13.2 (2025-06-09)
