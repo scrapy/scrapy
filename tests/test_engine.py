@@ -17,7 +17,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from logging import DEBUG
 from pathlib import Path
-from threading import Timer
 from unittest.mock import Mock, call
 from urllib.parse import urlparse
 
