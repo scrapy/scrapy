@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.13.3:
 
-Scrapy 2.13.3 (unreleased)
+Scrapy 2.13.3 (2025-07-02)
 --------------------------
 
 -   Changed the values for :setting:`DOWNLOAD_DELAY` (from ``0`` to ``1``) and
