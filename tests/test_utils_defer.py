@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestMustbeDeferred(unittest.TestCase):
     @inlineCallbacks
     def test_success_function(self) -> Generator[Deferred[Any], Any, None]:

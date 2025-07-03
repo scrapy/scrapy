@@ -562,7 +562,7 @@ class FilesPipeline(MediaPipeline):
 
     def media_to_download(
         self, request: Request, info: MediaPipeline.SpiderInfo, *, item: Any = None
-    ) -> Deferred[FileInfo | None]:
+    ) -> Deferred[FileInfo | None] | None:
         def _onsuccess(result: StatInfo) -> FileInfo | None:
             if not result:
                 return None  # returning None force download

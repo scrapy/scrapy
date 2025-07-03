@@ -21,8 +21,8 @@ from twisted.internet.defer import (
 from twisted.internet.task import Cooperator
 from twisted.python import failure
 
-from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
-from scrapy.utils.asyncio import is_asyncio_available
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.asyncio import call_later, is_asyncio_available
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
@@ -49,6 +49,13 @@ def defer_fail(_failure: Failure) -> Deferred[Any]:
     It delays by 100ms so reactor has a chance to go through readers and writers
     before attending pending delayed calls, so do not set delay to zero.
     """
+    warnings.warn(
+        "scrapy.utils.defer.defer_fail() is deprecated, use"
+        " twisted.internet.defer.fail(), plus an explicit sleep if needed.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+
     from twisted.internet import reactor
 
     d: Deferred[Any] = Deferred()
@@ -63,6 +70,13 @@ def defer_succeed(result: _T) -> Deferred[_T]:
     It delays by 100ms so reactor has a chance to go through readers and writers
     before attending pending delayed calls, so do not set delay to zero.
     """
+    warnings.warn(
+        "scrapy.utils.defer.defer_succeed() is deprecated, use"
+        " twisted.internet.defer.succeed(), plus an explicit sleep if needed.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+
     from twisted.internet import reactor
 
     d: Deferred[_T] = Deferred()
@@ -71,20 +85,44 @@ def defer_succeed(result: _T) -> Deferred[_T]:
 
 
 def _defer_sleep() -> Deferred[None]:
-    """Like ``defer_succeed`` and ``defer_fail`` but doesn't call any real callbacks."""
-    from twisted.internet import reactor
-
+    """Delay by _DEFER_DELAY so reactor has a chance to go through readers and writers
+    before attending pending delayed calls, so do not set delay to zero.
+    """
     d: Deferred[None] = Deferred()
-    reactor.callLater(_DEFER_DELAY, d.callback, None)
+    call_later(_DEFER_DELAY, d.callback, None)
     return d
 
 
+async def _defer_sleep_async() -> None:
+    """Delay by _DEFER_DELAY so reactor has a chance to go through readers and writers
+    before attending pending delayed calls, so do not set delay to zero.
+    """
+    if is_asyncio_available():
+        await asyncio.sleep(_DEFER_DELAY)
+    else:
+        await _defer_sleep()
+
+
 def defer_result(result: Any) -> Deferred[Any]:
+    warnings.warn(
+        "scrapy.utils.defer.defer_result() is deprecated, use"
+        " twisted.internet.defer.success() and twisted.internet.defer.fail(),"
+        " plus an explicit sleep if needed, or explicit reactor.callLater().",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+
     if isinstance(result, Deferred):
         return result
+
+    from twisted.internet import reactor
+
+    d: Deferred[Any] = Deferred()
     if isinstance(result, failure.Failure):
-        return defer_fail(result)
-    return defer_succeed(result)
+        reactor.callLater(_DEFER_DELAY, d.errback, result)
+    else:
+        reactor.callLater(_DEFER_DELAY, d.callback, result)
+    return d
 
 
 @overload
@@ -95,35 +133,29 @@ def mustbe_deferred(
 
 @overload
 def mustbe_deferred(
-    f: Callable[_P, Coroutine[Deferred[Any], Any, _T]],
-    *args: _P.args,
-    **kw: _P.kwargs,
-) -> Deferred[_T]: ...
-
-
-@overload
-def mustbe_deferred(
     f: Callable[_P, _T], *args: _P.args, **kw: _P.kwargs
 ) -> Deferred[_T]: ...
 
 
 def mustbe_deferred(
-    f: Callable[_P, Deferred[_T] | Coroutine[Deferred[Any], Any, _T] | _T],
+    f: Callable[_P, Deferred[_T] | _T],
     *args: _P.args,
     **kw: _P.kwargs,
 ) -> Deferred[_T]:
     """Same as twisted.internet.defer.maybeDeferred, but delay calling
     callback/errback to next reactor loop
     """
+    warnings.warn(
+        "scrapy.utils.defer.mustbe_deferred() is deprecated, use"
+        " twisted.internet.defer.maybeDeferred(), with an explicit sleep if needed.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    result: _T | Deferred[_T] | Failure
     try:
         result = f(*args, **kw)
-    # FIXME: Hack to avoid introspecting tracebacks. This to speed up
-    # processing of IgnoreRequest errors which are, by far, the most common
-    # exception in Scrapy - see #125
-    except IgnoreRequest as e:
-        return defer_fail(failure.Failure(e))
     except Exception:
-        return defer_fail(failure.Failure())
+        result = failure.Failure()
     return defer_result(result)
 
 

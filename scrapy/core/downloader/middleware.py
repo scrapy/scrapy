@@ -15,7 +15,7 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.defer import deferred_from_coro, mustbe_deferred
+from scrapy.utils.defer import _defer_sleep, deferred_from_coro
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -110,8 +110,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             raise exception
 
         try:
-            result: Response | Request = yield mustbe_deferred(process_request, request)
+            result: Response | Request = yield process_request(request)
         except Exception as ex:
+            yield _defer_sleep()
             # either returns a request or response (which we pass to process_response())
             # or reraises the exception
             result = yield process_exception(ex)
