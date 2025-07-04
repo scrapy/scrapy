@@ -7,7 +7,6 @@ import sys
 from typing import TYPE_CHECKING, TypeVar
 
 import pytest
-from twisted.trial import unittest
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import aiter_errback, deferred_f_from_coro_f
@@ -41,7 +40,7 @@ def test_mutablechain():
     assert list(m) == list(range(2, 13))
 
 
-class TestMutableAsyncChain(unittest.TestCase):
+class TestMutableAsyncChain:
     @staticmethod
     async def g1():
         for i in range(3):

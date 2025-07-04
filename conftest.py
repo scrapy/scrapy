@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 from twisted.web.http import H2_ENABLED
 
-from scrapy.utils.reactor import install_reactor
 from tests.keys import generate_keys
 
 
@@ -48,12 +47,12 @@ if not H2_ENABLED:
     )
 
 
-def pytest_addoption(parser):
-    parser.addoption(
-        "--reactor",
-        default="asyncio",
-        choices=["default", "asyncio"],
-    )
+# def pytest_addoption(parser):
+#     parser.addoption(
+#         "--reactor",
+#         default="asyncio",
+#         choices=["default", "asyncio"],
+#     )
 
 
 @pytest.fixture(scope="class")
@@ -116,12 +115,12 @@ def requires_boto3(request):
         pytest.skip("boto3 is not installed")
 
 
-def pytest_configure(config):
-    if config.getoption("--reactor") != "default":
-        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
-    else:
-        # install the reactor explicitly
-        from twisted.internet import reactor  # noqa: F401
+# def pytest_configure(config):
+#     if config.getoption("--reactor") != "default":
+#         install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+#     else:
+#         # install the reactor explicitly
+#         from twisted.internet import reactor
 
 
 # Generate localhost certificate files, needed by some tests

@@ -27,7 +27,6 @@ from pydispatch import dispatcher
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
 from twisted.web import server, static, util
 
 from scrapy import signals
@@ -246,7 +245,7 @@ class CrawlerRun:
         self.signals_caught[sig] = signalargs
 
 
-class TestEngineBase(unittest.TestCase):
+class TestEngineBase:
     @staticmethod
     def _assert_visited_urls(run: CrawlerRun) -> None:
         must_be_visited = [

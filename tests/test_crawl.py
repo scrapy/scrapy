@@ -12,7 +12,6 @@ from testfixtures import LogCapture
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase
 
 from scrapy import Spider, signals
 from scrapy.crawler import CrawlerRunner
@@ -60,16 +59,16 @@ if TYPE_CHECKING:
     from scrapy.statscollectors import StatsCollector
 
 
-class TestCrawl(TestCase):
+class TestCrawl:
     mockserver: MockServer
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
     @inlineCallbacks
@@ -427,16 +426,16 @@ with multiples lines
         assert "Got response 200" in str(log)
 
 
-class TestCrawlSpider(TestCase):
+class TestCrawlSpider:
     mockserver: MockServer
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
     async def _run_spider(

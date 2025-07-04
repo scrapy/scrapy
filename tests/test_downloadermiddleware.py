@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import asynccontextmanager
 from gzip import BadGzipFile
 from unittest import mock
 
 import pytest
-from twisted.internet.defer import Deferred, inlineCallbacks, succeed
-from twisted.trial.unittest import TestCase
+from twisted.internet.defer import Deferred, succeed
 
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
 from scrapy.exceptions import _InvalidOutput
@@ -17,23 +17,26 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 
 
-class TestManagerBase(TestCase):
+class TestManagerBase:
     settings_dict = None
 
-    @inlineCallbacks
-    def setUp(self):
-        self.crawler = get_crawler(Spider, self.settings_dict)
-        self.spider = self.crawler._create_spider("foo")
-        self.mwman = DownloaderMiddlewareManager.from_crawler(self.crawler)
-        self.crawler.engine = self.crawler._create_engine()
-        yield self.crawler.engine.open_spider(self.spider)
+    # should be a fixture but async fixtures that use Futures are problematic with pytest-twisted
+    @asynccontextmanager
+    async def get_mwman_and_spider(self):
+        crawler = get_crawler(Spider, self.settings_dict)
+        spider = crawler._create_spider("foo")
+        mwman = DownloaderMiddlewareManager.from_crawler(crawler)
+        crawler.engine = crawler._create_engine()
+        await crawler.engine.open_spider_async(spider)
+        yield mwman, spider
+        await maybe_deferred_to_future(crawler.engine.close_spider(spider))
 
-    @inlineCallbacks
-    def tearDown(self):
-        yield self.crawler.engine.close_spider(self.spider)
-
+    @staticmethod
     async def _download(
-        self, request: Request, response: Response | None = None
+        mwman: DownloaderMiddlewareManager,
+        spider: Spider,
+        request: Request,
+        response: Response | None = None,
     ) -> Response | Request:
         """Executes downloader mw manager's download method and returns
         the result (Request or Response) or raises exception in case of
@@ -46,7 +49,7 @@ class TestManagerBase(TestCase):
             return succeed(response)
 
         return await maybe_deferred_to_future(
-            self.mwman.download(download_func, request, self.spider)
+            mwman.download(download_func, request, spider)
         )
 
 
@@ -57,7 +60,8 @@ class TestDefaults(TestManagerBase):
     async def test_request_response(self):
         req = Request("http://example.com/index.html")
         resp = Response(req.url, status=200)
-        ret = await self._download(req, resp)
+        async with self.get_mwman_and_spider() as (mwman, spider):
+            ret = await self._download(mwman, spider, req, resp)
         assert isinstance(ret, Response), "Non-response returned"
 
     @deferred_f_from_coro_f
@@ -86,7 +90,8 @@ class TestDefaults(TestManagerBase):
                 "Location": "http://example.com/login",
             },
         )
-        ret = await self._download(req, resp)
+        async with self.get_mwman_and_spider() as (mwman, spider):
+            ret = await self._download(mwman, spider, req, resp)
         assert isinstance(ret, Request), f"Not redirected: {ret!r}"
         assert to_bytes(ret.url) == resp.headers["Location"], (
             "Not redirected to location header"
@@ -108,7 +113,8 @@ class TestDefaults(TestManagerBase):
             },
         )
         with pytest.raises(BadGzipFile):
-            await self._download(req, resp)
+            async with self.get_mwman_and_spider() as (mwman, spider):
+                await self._download(mwman, spider, req, resp)
 
 
 class TestResponseFromProcessRequest(TestManagerBase):
@@ -116,19 +122,19 @@ class TestResponseFromProcessRequest(TestManagerBase):
 
     @deferred_f_from_coro_f
     async def test_download_func_not_called(self):
+        req = Request("http://example.com/index.html")
         resp = Response("http://example.com/index.html")
+        download_func = mock.MagicMock()
 
         class ResponseMiddleware:
             def process_request(self, request, spider):
                 return resp
 
-        self.mwman._add_middleware(ResponseMiddleware())
-
-        req = Request("http://example.com/index.html")
-        download_func = mock.MagicMock()
-        result = await maybe_deferred_to_future(
-            self.mwman.download(download_func, req, self.spider)
-        )
+        async with self.get_mwman_and_spider() as (mwman, spider):
+            mwman._add_middleware(ResponseMiddleware())
+            result = await maybe_deferred_to_future(
+                mwman.download(download_func, req, spider)
+            )
         assert result is resp
         assert not download_func.called
 
@@ -138,6 +144,7 @@ class TestResponseFromProcessException(TestManagerBase):
 
     @deferred_f_from_coro_f
     async def test_process_response_called(self):
+        req = Request("http://example.com/index.html")
         resp = Response("http://example.com/index.html")
         calls = []
 
@@ -153,12 +160,11 @@ class TestResponseFromProcessException(TestManagerBase):
                 calls.append("process_exception")
                 return resp
 
-        self.mwman._add_middleware(ResponseMiddleware())
-
-        req = Request("http://example.com/index.html")
-        result = await maybe_deferred_to_future(
-            self.mwman.download(download_func, req, self.spider)
-        )
+        async with self.get_mwman_and_spider() as (mwman, spider):
+            mwman._add_middleware(ResponseMiddleware())
+            result = await maybe_deferred_to_future(
+                mwman.download(download_func, req, spider)
+            )
         assert result is resp
         assert calls == [
             "process_exception",
@@ -176,9 +182,10 @@ class TestInvalidOutput(TestManagerBase):
             def process_request(self, request, spider):
                 return 1
 
-        self.mwman._add_middleware(InvalidProcessRequestMiddleware())
-        with pytest.raises(_InvalidOutput):
-            await self._download(req)
+        async with self.get_mwman_and_spider() as (mwman, spider):
+            mwman._add_middleware(InvalidProcessRequestMiddleware())
+            with pytest.raises(_InvalidOutput):
+                await self._download(mwman, spider, req)
 
     @deferred_f_from_coro_f
     async def test_invalid_process_response(self):
@@ -189,9 +196,10 @@ class TestInvalidOutput(TestManagerBase):
             def process_response(self, request, response, spider):
                 return 1
 
-        self.mwman._add_middleware(InvalidProcessResponseMiddleware())
-        with pytest.raises(_InvalidOutput):
-            await self._download(req)
+        async with self.get_mwman_and_spider() as (mwman, spider):
+            mwman._add_middleware(InvalidProcessResponseMiddleware())
+            with pytest.raises(_InvalidOutput):
+                await self._download(mwman, spider, req)
 
     @deferred_f_from_coro_f
     async def test_invalid_process_exception(self):
@@ -205,9 +213,10 @@ class TestInvalidOutput(TestManagerBase):
             def process_exception(self, request, exception, spider):
                 return 1
 
-        self.mwman._add_middleware(InvalidProcessExceptionMiddleware())
-        with pytest.raises(_InvalidOutput):
-            await self._download(req)
+        async with self.get_mwman_and_spider() as (mwman, spider):
+            mwman._add_middleware(InvalidProcessExceptionMiddleware())
+            with pytest.raises(_InvalidOutput):
+                await self._download(mwman, spider, req)
 
 
 class TestMiddlewareUsingDeferreds(TestManagerBase):
@@ -215,7 +224,9 @@ class TestMiddlewareUsingDeferreds(TestManagerBase):
 
     @deferred_f_from_coro_f
     async def test_deferred(self):
+        req = Request("http://example.com/index.html")
         resp = Response("http://example.com/index.html")
+        download_func = mock.MagicMock()
 
         class DeferredMiddleware:
             def cb(self, result):
@@ -227,12 +238,11 @@ class TestMiddlewareUsingDeferreds(TestManagerBase):
                 d.callback(resp)
                 return d
 
-        self.mwman._add_middleware(DeferredMiddleware())
-        req = Request("http://example.com/index.html")
-        download_func = mock.MagicMock()
-        result = await maybe_deferred_to_future(
-            self.mwman.download(download_func, req, self.spider)
-        )
+        async with self.get_mwman_and_spider() as (mwman, spider):
+            mwman._add_middleware(DeferredMiddleware())
+            result = await maybe_deferred_to_future(
+                mwman.download(download_func, req, spider)
+            )
         assert result is resp
         assert not download_func.called
 
@@ -243,37 +253,39 @@ class TestMiddlewareUsingCoro(TestManagerBase):
 
     @deferred_f_from_coro_f
     async def test_asyncdef(self):
+        req = Request("http://example.com/index.html")
         resp = Response("http://example.com/index.html")
+        download_func = mock.MagicMock()
 
         class CoroMiddleware:
             async def process_request(self, request, spider):
                 await succeed(42)
                 return resp
 
-        self.mwman._add_middleware(CoroMiddleware())
-        req = Request("http://example.com/index.html")
-        download_func = mock.MagicMock()
-        result = await maybe_deferred_to_future(
-            self.mwman.download(download_func, req, self.spider)
-        )
+        async with self.get_mwman_and_spider() as (mwman, spider):
+            mwman._add_middleware(CoroMiddleware())
+            result = await maybe_deferred_to_future(
+                mwman.download(download_func, req, spider)
+            )
         assert result is resp
         assert not download_func.called
 
     @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
     async def test_asyncdef_asyncio(self):
+        req = Request("http://example.com/index.html")
         resp = Response("http://example.com/index.html")
+        download_func = mock.MagicMock()
 
         class CoroMiddleware:
             async def process_request(self, request, spider):
                 await asyncio.sleep(0.1)
                 return await get_from_asyncio_queue(resp)
 
-        self.mwman._add_middleware(CoroMiddleware())
-        req = Request("http://example.com/index.html")
-        download_func = mock.MagicMock()
-        result = await maybe_deferred_to_future(
-            self.mwman.download(download_func, req, self.spider)
-        )
+        async with self.get_mwman_and_spider() as (mwman, spider):
+            mwman._add_middleware(CoroMiddleware())
+            result = await maybe_deferred_to_future(
+                mwman.download(download_func, req, spider)
+            )
         assert result is resp
         assert not download_func.called

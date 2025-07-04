@@ -14,7 +14,6 @@ import pytest
 from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
 from twisted.internet.defer import Deferred, inlineCallbacks
-from twisted.trial import unittest
 from w3lib import __version__ as w3lib_version
 from zope.interface.exceptions import MultipleInvalid
 
@@ -48,7 +47,7 @@ def get_raw_crawler(spidercls=None, settings_dict=None):
     return Crawler(spidercls or DefaultSpider, settings)
 
 
-class TestBaseCrawler(unittest.TestCase):
+class TestBaseCrawler:
     def assertOptionIsDefault(self, settings, key):
         assert isinstance(settings, Settings)
         assert settings[key] == getattr(default_settings, key)
@@ -649,7 +648,7 @@ class NoRequestsSpider(scrapy.Spider):
 
 
 @pytest.mark.usefixtures("reactor_pytest")
-class TestCrawlerRunnerHasSpider(unittest.TestCase):
+class TestCrawlerRunnerHasSpider:
     @staticmethod
     def _runner():
         return CrawlerRunner(get_reactor_settings())
@@ -760,7 +759,7 @@ class ScriptRunnerMixin(ABC):
         return stderr.decode("utf-8")
 
 
-class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin, unittest.TestCase):
+class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     """Common tests between CrawlerProcess and AsyncCrawlerProcess,
     with the same file names and expectations.
     """

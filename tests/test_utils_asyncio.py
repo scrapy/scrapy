@@ -7,7 +7,6 @@ from unittest import mock
 
 import pytest
 from twisted.internet.defer import Deferred
-from twisted.trial import unittest
 
 from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import (
@@ -29,7 +28,7 @@ class TestAsyncio:
 
 
 @pytest.mark.only_asyncio
-class TestParallelAsyncio(unittest.TestCase):
+class TestParallelAsyncio:
     """Test for scrapy.utils.asyncio.parallel_asyncio(), based on tests.test_utils_defer.TestParallelAsync."""
 
     CONCURRENT_ITEMS = 50
