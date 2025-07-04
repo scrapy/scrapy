@@ -503,6 +503,21 @@ class TestSettings:
         ):
             settings.pop("OTHER_DUMMY_CONFIG")
 
+    def test_getdictorlist(self):
+        self.settings.set("INVALID", 123)
+        with pytest.raises(
+            ValueError, match="value for setting must be a dict or list"
+        ):
+            self.settings.getdictorlist("INVALID")
+
+        self.settings.set("INVALID_json", '{key": "rdb"}')
+        assert self.settings.getdictorlist("INVALID_json") == ['{key": "rdb"}']
+
+        self.settings.set("INVALID_string", "abc,rdb")
+        assert self.settings.getdictorlist("INVALID_string") == ["abc", "rdb"]
+
+        assert self.settings.getdictorlist("SOME_MISSING_KEY") == {}
+
 
 @pytest.mark.parametrize(
     ("before", "name", "item", "after"),
