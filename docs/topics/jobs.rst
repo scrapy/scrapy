@@ -22,10 +22,60 @@ Job directory
 
 To enable persistence support you just need to define a *job directory* through
 the ``JOBDIR`` setting. This directory will be for storing all required data to
-keep the state of a single job (i.e. a spider run).  It's important to note that
+keep the state of a single job (i.e. a spider run). It's important to note that
 this directory must not be shared by different spiders, or even different
 jobs/runs of the same spider, as it's meant to be used for storing the state of
 a *single* job.
+
+File Structure and Breakdown
+============================
+
+Once `JOBDIR` is enabled, Scrapy creates and maintains several important files in the job directory to track crawl progress and ensure resumption after interruption.
+
+The typical directory structure looks like this:
+
+.. code-block:: text
+
+    crawls/somespider-1/
+    ├── requests.queue
+    ├── active.json
+    ├── requests.seen
+    ├── spider.state
+    └── info.json
+
+requests.queue
+--------------
+
+- This file stores requests that have been scheduled but not yet processed by the crawler.
+- Requests are serialized using `pickle` and saved in a binary format across multiple queue files (`q00000`, `q00001`, etc.).
+- This ensures that pending requests persist between spider runs.
+
+active.json
+-----------
+
+- Contains metadata about the scheduler’s state and priority queue mappings.
+- Scrapy uses this file to reload queue priorities and resume crawling from the point of interruption.
+- If missing or corrupted, Scrapy may lose track of queued requests.
+
+requests.seen
+-------------
+
+- A record of SHA1 fingerprints of URLs that have already been processed.
+- This prevents the spider from crawling the same URLs multiple times.
+- Scrapy appends to this file as URLs are processed.
+
+spider.state
+------------
+
+- A pickled dictionary storing the internal state of the spider.
+- Spiders can save custom data (like item counts or flags) during crawling.
+- The data in `spider.state` is automatically loaded when the spider resumes.
+
+info.json
+---------
+
+- Metadata about the request queue, including the queue size, chunk details, and offsets.
+- Used by Scrapy to manage the queue's integrity and ensure correct loading of queued requests.
 
 How to use it
 =============
@@ -64,6 +114,16 @@ Persistence gotchas
 
 There are a few things to keep in mind if you want to be able to use the Scrapy
 persistence support:
+
+Graceful Shutdown
+-----------------
+- Always shut down spiders cleanly to ensure that all files, especially `active.json` and `requests.queue`, are properly saved.
+- Abrupt termination can lead to missing or corrupted files, potentially preventing the spider from resuming correctly.
+
+Recovering from Corruption
+--------------------------
+- If files inside `JOBDIR` are corrupted or missing, delete the problematic files and restart the spider.
+- Alternatively, start a fresh crawl by removing the entire `JOBDIR` directory.
 
 Cookies expiration
 ------------------
