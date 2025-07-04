@@ -23,9 +23,9 @@ from scrapy.middleware import MiddlewareManager
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import (
+    _defer_sleep_async,
     deferred_from_coro,
     maybe_deferred_to_future,
-    mustbe_deferred,
 )
 from scrapy.utils.python import MutableAsyncChain, MutableChain, global_object_name
 
@@ -390,12 +390,11 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
         try:
             it: Iterable[_T] | AsyncIterator[_T] = await maybe_deferred_to_future(
-                mustbe_deferred(
-                    self._process_spider_input, scrape_func, response, request, spider
-                )
+                self._process_spider_input(scrape_func, response, request, spider)
             )
             return await process_callback_output(it)
         except Exception as ex:
+            await _defer_sleep_async()
             return process_spider_exception(ex)
 
     async def process_start(self, spider: Spider) -> AsyncIterator[Any] | None:

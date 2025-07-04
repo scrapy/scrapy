@@ -23,7 +23,7 @@ from scrapy.exceptions import (
 from scrapy.http import Request, Response
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
-    _defer_sleep,
+    _defer_sleep_async,
     aiter_errback,
     deferred_f_from_coro_f,
     deferred_from_coro,
@@ -236,7 +236,7 @@ class Scraper:
         self, result: Response | Failure, request: Request
     ) -> Iterable[Any] | AsyncIterator[Any]:
         """Call the request callback or errback with the response or failure."""
-        await maybe_deferred_to_future(_defer_sleep())
+        await _defer_sleep_async()
         assert self.crawler.spider
         if isinstance(result, Response):
             if getattr(result, "request", None) is None:
