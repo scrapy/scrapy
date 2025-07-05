@@ -376,11 +376,11 @@ class FeedSlot:
         self,
         storage: FeedStorageProtocol,
         uri: str,
-        format: str,
+        format: str,  # noqa: A002
         store_empty: bool,
         batch_id: int,
         uri_template: str,
-        filter: ItemFilter,
+        filter: ItemFilter,  # noqa: A002
         feed_options: dict[str, Any],
         spider: Spider,
         exporters: dict[str, type[BaseItemExporter]],
@@ -422,7 +422,7 @@ class FeedSlot:
                 )
             self.exporter = self._get_exporter(
                 file=self.file,
-                format=self.feed_options["format"],
+                format_=self.feed_options["format"],
                 fields_to_export=self.feed_options["fields"],
                 encoding=self.feed_options["encoding"],
                 indent=self.feed_options["indent"],
@@ -436,10 +436,10 @@ class FeedSlot:
             self._exporting = True
 
     def _get_exporter(
-        self, file: IO[bytes], format: str, *args: Any, **kwargs: Any
+        self, file: IO[bytes], format_: str, *args: Any, **kwargs: Any
     ) -> BaseItemExporter:
         return build_from_crawler(
-            self.exporters[format], self.crawler, file, *args, **kwargs
+            self.exporters[format_], self.crawler, file, *args, **kwargs
         )
 
     def finish_exporting(self) -> None:
@@ -670,10 +670,10 @@ class FeedExporter:
                 d[k] = load_object(v)
         return d
 
-    def _exporter_supported(self, format: str) -> bool:
-        if format in self.exporters:
+    def _exporter_supported(self, format_: str) -> bool:
+        if format_ in self.exporters:
             return True
-        logger.error("Unknown feed format: %(format)s", {"format": format})
+        logger.error("Unknown feed format: %(format)s", {"format": format_})
         return False
 
     def _settings_are_valid(self) -> bool:

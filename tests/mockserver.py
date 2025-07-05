@@ -29,11 +29,11 @@ if TYPE_CHECKING:
     from twisted.internet.protocol import ServerFactory
 
 
-def getarg(request, name, default=None, type=None):
+def getarg(request, name, default=None, type_=None):
     if name in request.args:
         value = request.args[name][0]
-        if type is not None:
-            value = type(value)
+        if type_ is not None:
+            value = type_(value)
         return value
     return default
 
@@ -129,11 +129,11 @@ class LeafResource(resource.Resource):
 
 class Follow(LeafResource):
     def render(self, request):
-        total = getarg(request, b"total", 100, type=int)
-        show = getarg(request, b"show", 1, type=int)
+        total = getarg(request, b"total", 100, type_=int)
+        show = getarg(request, b"show", 1, type_=int)
         order = getarg(request, b"order", b"desc")
-        maxlatency = getarg(request, b"maxlatency", 0, type=float)
-        n = getarg(request, b"n", total, type=int)
+        maxlatency = getarg(request, b"maxlatency", 0, type_=float)
+        n = getarg(request, b"n", total, type_=int)
         if order == b"rand":
             nlist = [random.randint(1, total) for _ in range(show)]
         else:  # order == "desc"
@@ -157,8 +157,8 @@ class Follow(LeafResource):
 
 class Delay(LeafResource):
     def render_GET(self, request):
-        n = getarg(request, b"n", 1, type=float)
-        b = getarg(request, b"b", 1, type=int)
+        n = getarg(request, b"n", 1, type_=float)
+        b = getarg(request, b"b", 1, type_=int)
         if b:
             # send headers now and delay body
             request.write("")
@@ -172,7 +172,7 @@ class Delay(LeafResource):
 
 class Status(LeafResource):
     def render_GET(self, request):
-        n = getarg(request, b"n", 200, type=int)
+        n = getarg(request, b"n", 200, type_=int)
         request.setResponseCode(n)
         return b""
 
@@ -229,7 +229,7 @@ class Partial(LeafResource):
 
 class Drop(Partial):
     def _delayedRender(self, request):
-        abort = getarg(request, b"abort", 0, type=int)
+        abort = getarg(request, b"abort", 0, type_=int)
         request.write(b"this connection will be dropped\n")
         tr = request.channel.transport
         try:

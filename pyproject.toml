@@ -213,7 +213,6 @@ disable = [
     "keyword-arg-before-vararg",
     "pointless-statement",
     "raise-missing-from",
-    "unbalanced-tuple-unpacking",
     "unnecessary-dunder-call",
     "used-before-assignment",
 ]
@@ -234,10 +233,16 @@ filterwarnings = [
 
 [tool.ruff.lint]
 extend-select = [
+    # flake8-builtins
+    "A",
+    # flake8-async
+    "ASYNC",
     # flake8-bugbear
     "B",
     # flake8-comprehensions
     "C4",
+    # flake8-commas
+    "COM",
     # pydocstyle
     "D",
     # flake8-future-annotations
@@ -296,6 +301,8 @@ extend-select = [
 ignore = [
     # Ones we want to ignore
 
+    # Trailing comma missing
+    "COM812",
     # Missing docstring in public module
     "D100",
     # Missing docstring in public class
