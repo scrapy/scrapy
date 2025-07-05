@@ -18,6 +18,7 @@ from twisted.internet.testing import StringTransport
 from twisted.protocols.policies import WrappingFactory
 from twisted.trial import unittest
 from twisted.web import resource, server, static, util
+from twisted.web.client import _makeGetterFactory
 
 from scrapy.core.downloader import webclient as client
 from scrapy.core.downloader.contextfactory import (
@@ -50,8 +51,6 @@ def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
         )
         f.deferred.addCallback(response_transform or (lambda r: r.body))
         return f
-
-    from twisted.web.client import _makeGetterFactory
 
     return _makeGetterFactory(
         to_bytes(url),

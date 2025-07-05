@@ -162,7 +162,7 @@ class Downloader:
 
     def get_slot_key(self, request: Request) -> str:
         if self.DOWNLOAD_SLOT in request.meta:
-            return cast(str, request.meta[self.DOWNLOAD_SLOT])
+            return cast("str", request.meta[self.DOWNLOAD_SLOT])
 
         key = urlparse_cached(request).hostname or ""
         if self.ip_concurrency:

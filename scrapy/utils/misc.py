@@ -9,7 +9,6 @@ import os
 import re
 import warnings
 from collections import deque
-from collections.abc import Iterable
 from contextlib import contextmanager
 from functools import partial
 from importlib import import_module
@@ -21,7 +20,7 @@ from scrapy.item import Item
 from scrapy.utils.datatypes import LocalWeakReferencedCache
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterable, Iterator
     from types import ModuleType
 
     from scrapy import Spider
@@ -41,7 +40,7 @@ def arg_to_iter(arg: Any) -> Iterable[Any]:
     if arg is None:
         return []
     if not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, "__iter__"):
-        return cast(Iterable[Any], arg)
+        return cast("Iterable[Any]", arg)
     return [arg]
 
 
@@ -202,7 +201,7 @@ def build_from_crawler(
         method_name = "__new__"
     if instance is None:
         raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
-    return cast(T, instance)
+    return cast("T", instance)
 
 
 @contextmanager

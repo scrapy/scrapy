@@ -24,7 +24,7 @@ def test_iterate_spider_output():
 
 
 def test_iter_spider_classes():
-    import tests.test_utils_spider  # noqa: PLW0406  # pylint: disable=import-self
+    import tests.test_utils_spider  # noqa: PLW0406,PLC0415  # pylint: disable=import-self
 
     it = iter_spider_classes(tests.test_utils_spider)
     assert set(it) == {MySpider1, MySpider2}

@@ -414,7 +414,7 @@ def deferred_from_coro(o: Awaitable[_T] | _T2) -> Deferred[_T] | _T2:
         if not is_asyncio_available():
             # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
             # that use asyncio, e.g. "await asyncio.sleep(1)"
-            return Deferred.fromCoroutine(cast(Coroutine[Deferred[Any], Any, _T], o))
+            return Deferred.fromCoroutine(cast("Coroutine[Deferred[Any], Any, _T]", o))
         # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
         return Deferred.fromFuture(asyncio.ensure_future(o))
     return o

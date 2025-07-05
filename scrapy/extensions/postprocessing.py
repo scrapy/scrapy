@@ -142,7 +142,7 @@ class PostProcessingManager(IOBase):
         :return: returns number of bytes written
         :rtype: int
         """
-        return cast(int, self.head_plugin.write(data))
+        return cast("int", self.head_plugin.write(data))
 
     def tell(self) -> int:
         return self.file.tell()

@@ -5,6 +5,7 @@ import time
 import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime
+from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
 from posixpath import split
@@ -40,7 +41,7 @@ from .test_pipeline_media import _mocked_download_func
 def get_gcs_content_and_delete(
     bucket: Any, path: str
 ) -> tuple[bytes, list[dict[str, str]], Any]:
-    from google.cloud import storage
+    from google.cloud import storage  # noqa: PLC0415
 
     client = storage.Client(project=os.environ.get("GCS_PROJECT_ID"))
     bucket = client.get_bucket(bucket)
@@ -59,8 +60,6 @@ def get_ftp_content_and_delete(
     password: str,
     use_active_mode: bool = False,
 ) -> bytes:
-    from ftplib import FTP
-
     ftp = FTP()
     ftp.connect(host, port)
     ftp.login(username, password)
@@ -553,7 +552,7 @@ class TestS3FilesStore(unittest.TestCase):
         content_type = "image/png"
 
         store = S3FilesStore(uri)
-        from botocore.stub import Stubber
+        from botocore.stub import Stubber  # noqa: PLC0415
 
         with Stubber(store.s3_client) as stub:
             stub.add_response(
@@ -591,7 +590,7 @@ class TestS3FilesStore(unittest.TestCase):
         last_modified = datetime(2019, 12, 1)
 
         store = S3FilesStore(uri)
-        from botocore.stub import Stubber
+        from botocore.stub import Stubber  # noqa: PLC0415
 
         with Stubber(store.s3_client) as stub:
             stub.add_response(
@@ -650,7 +649,7 @@ class TestGCSFilesStore(unittest.TestCase):
         already uploaded files.
         """
         try:
-            import google.cloud.storage  # noqa: F401
+            import google.cloud.storage  # noqa: F401,PLC0415
         except ModuleNotFoundError:
             pytest.skip("google-cloud-storage is not installed")
         with (

@@ -74,7 +74,7 @@ class TestProxyConnect(TestCase):
 
     def setUp(self):
         try:
-            import mitmproxy  # noqa: F401
+            import mitmproxy  # noqa: F401,PLC0415
         except ImportError:
             pytest.skip("mitmproxy is not installed")
 

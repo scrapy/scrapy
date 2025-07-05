@@ -526,10 +526,10 @@ class TestCrawlerLogging:
         crawler = get_crawler(MySpider)
         assert get_scrapy_root_handler().level == logging.INFO
         info_count = crawler.stats.get_value("log_count/INFO")
-        logging.debug("debug message")
-        logging.info("info message")
-        logging.warning("warning message")
-        logging.error("error message")
+        logging.debug("debug message")  # noqa: LOG015
+        logging.info("info message")  # noqa: LOG015
+        logging.warning("warning message")  # noqa: LOG015
+        logging.error("error message")  # noqa: LOG015
 
         logged = log_file.read_text(encoding="utf-8")
 
@@ -556,7 +556,7 @@ class TestCrawlerLogging:
 
         configure_logging()
         get_crawler(MySpider)
-        logging.debug("debug message")
+        logging.debug("debug message")  # noqa: LOG015
 
         logged = log_file.read_text(encoding="utf-8")
 

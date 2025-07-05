@@ -243,7 +243,7 @@ class TestHttps2ClientProtocol(TestCase):
 
         self.conn_closed_deferred = Deferred()
 
-        from scrapy.core.http2.protocol import H2ClientFactory
+        from scrapy.core.http2.protocol import H2ClientFactory  # noqa: PLC0415
 
         h2_client_factory = H2ClientFactory(uri, Settings(), self.conn_closed_deferred)
         client_endpoint = SSL4ClientEndpoint(
@@ -445,7 +445,7 @@ class TestHttps2ClientProtocol(TestCase):
     def test_received_dataloss_response(self):
         """In case when value of Header Content-Length != len(Received Data)
         ProtocolError is raised"""
-        from h2.exceptions import InvalidBodyLengthError
+        from h2.exceptions import InvalidBodyLengthError  # noqa: PLC0415
 
         request = Request(url=self.get_url("/dataloss"))
         with pytest.raises(ResponseFailed) as exc_info:
@@ -525,7 +525,7 @@ class TestHttps2ClientProtocol(TestCase):
         def assert_inactive_stream(failure):
             assert failure.check(ResponseFailed) is not None
 
-            from scrapy.core.http2.stream import InactiveStreamClosed
+            from scrapy.core.http2.stream import InactiveStreamClosed  # noqa: PLC0415
 
             assert any(
                 isinstance(e, InactiveStreamClosed) for e in failure.value.reasons
@@ -593,7 +593,7 @@ class TestHttps2ClientProtocol(TestCase):
         assert str(response.ip_address) == "127.0.0.1"
 
     async def _check_invalid_netloc(self, url: str) -> None:
-        from scrapy.core.http2.stream import InvalidHostname
+        from scrapy.core.http2.stream import InvalidHostname  # noqa: PLC0415
 
         request = Request(url)
         with pytest.raises(InvalidHostname) as exc_info:
@@ -630,7 +630,7 @@ class TestHttps2ClientProtocol(TestCase):
             yield self.make_request_dfd(request)
 
         for err in exc_info.value.reasons:
-            from scrapy.core.http2.protocol import H2ClientProtocol
+            from scrapy.core.http2.protocol import H2ClientProtocol  # noqa: PLC0415
 
             if isinstance(err, TimeoutError):
                 assert (

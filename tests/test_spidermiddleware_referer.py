@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlparse
 
 import pytest
@@ -32,6 +32,9 @@ from scrapy.spidermiddlewares.referer import (
     UnsafeUrlPolicy,
 )
 from scrapy.spiders import Spider
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 @pytest.fixture
@@ -971,7 +974,7 @@ class TestPolicyHeaderPrecedence004(
 
 class TestReferrerOnRedirect(TestRefererMiddleware):
     settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.UnsafeUrlPolicy"}
-    scenarii: list[
+    scenarii: Sequence[
         tuple[str, str, tuple[tuple[int, str], ...], bytes | None, bytes | None]
     ] = [  # type: ignore[assignment]
         (
@@ -1041,7 +1044,7 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
                     request.url, headers={"Location": url}, status=status
                 )
                 request = cast(
-                    Request, redirectmw.process_response(request, response, spider)
+                    "Request", redirectmw.process_response(request, response, spider)
                 )
                 referrermw.request_scheduled(request, spider)
 

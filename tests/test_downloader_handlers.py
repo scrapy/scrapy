@@ -13,7 +13,7 @@ from unittest import mock
 import pytest
 from twisted.cred import checkers, credentials, portal
 from twisted.internet.defer import inlineCallbacks
-from twisted.protocols.ftp import FTPFactory, FTPRealm
+from twisted.protocols.ftp import ConnectionLost, FTPFactory, FTPRealm
 from twisted.trial import unittest
 from w3lib.url import path_to_file_uri
 
@@ -184,7 +184,7 @@ class TestS3:
     @contextlib.contextmanager
     def _mocked_date(self, date):
         try:
-            import botocore.auth  # noqa: F401
+            import botocore.auth  # noqa: F401,PLC0415
         except ImportError:
             yield
         else:
@@ -443,7 +443,6 @@ class TestFTP(TestFTPBase):
             pytest.skip(
                 "This test produces DirtyReactorAggregateError on Windows with asyncio"
             )
-        from twisted.protocols.ftp import ConnectionLost
 
         meta = dict(self.req_meta)
         meta.update({"ftp_password": "invalid"})

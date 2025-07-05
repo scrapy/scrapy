@@ -107,10 +107,6 @@ module = "scrapy.settings.default_settings"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = "itemadapter"
-implicit_reexport = true
-
-[[tool.mypy.overrides]]
 module = "twisted"
 implicit_reexport = true
 

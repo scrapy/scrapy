@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import gzip
+import re
 import warnings
+from datetime import datetime
 from io import BytesIO
 from logging import ERROR, WARNING
 from pathlib import Path
@@ -297,8 +299,6 @@ class TestCrawlSpider(TestSpider):
         )
 
         class _CrawlSpider(self.spider_class):
-            import re
-
             name = "test"
             allowed_domains = ["example.org"]
             rules = (Rule(LinkExtractor(), process_links="filter_process_links"),)
@@ -635,8 +635,6 @@ Sitemap: /sitemap-relative-url.xml
 
         class FilteredSitemapSpider(self.spider_class):
             def sitemap_filter(self, entries):
-                from datetime import datetime
-
                 for entry in entries:
                     date_time = datetime.strptime(entry["lastmod"], "%Y-%m-%d")
                     if date_time.year > 2008:
@@ -706,8 +704,6 @@ Sitemap: /sitemap-relative-url.xml
 
         class FilteredSitemapSpider(self.spider_class):
             def sitemap_filter(self, entries):
-                from datetime import datetime
-
                 for entry in entries:
                     date_time = datetime.strptime(
                         entry["lastmod"].split("T")[0], "%Y-%m-%d"

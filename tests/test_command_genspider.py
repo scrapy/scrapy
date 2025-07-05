@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import pytest
+
 from tests.test_commands import TestCommandBase, TestProjectBase
 
 
@@ -15,7 +17,16 @@ class TestGenspiderCommand(TestCommandBase):
         assert self.call("genspider", "test_name", "test.com") == 0
         assert Path(self.proj_mod_path, "spiders", "test_name.py").exists()
 
-    def test_template(self, tplname="crawl"):
+    @pytest.mark.parametrize(
+        "tplname",
+        [
+            "basic",
+            "crawl",
+            "xmlfeed",
+            "csvfeed",
+        ],
+    )
+    def test_template(self, tplname: str) -> None:
         args = [f"--template={tplname}"] if tplname else []
         spname = "test_spider"
         spmodule = f"{self.project_name}.spiders.{spname}"
@@ -35,15 +46,6 @@ class TestGenspiderCommand(TestCommandBase):
         )
         assert modify_time_after == modify_time_before
 
-    def test_template_basic(self):
-        self.test_template("basic")
-
-    def test_template_csvfeed(self):
-        self.test_template("csvfeed")
-
-    def test_template_xmlfeed(self):
-        self.test_template("xmlfeed")
-
     def test_list(self):
         assert self.call("genspider", "--list") == 0
 
@@ -57,7 +59,8 @@ class TestGenspiderCommand(TestCommandBase):
             self.proj_mod_path, "spiders", f"{self.project_name}.py"
         ).exists()
 
-    def test_same_filename_as_existing_spider(self, force=False):
+    @pytest.mark.parametrize("force", [True, False])
+    def test_same_filename_as_existing_spider(self, force: bool) -> None:
         file_name = "example"
         file_path = Path(self.proj_mod_path, "spiders", f"{file_name}.py")
         assert self.call("genspider", file_name, "example.com") == 0
@@ -90,83 +93,60 @@ class TestGenspiderCommand(TestCommandBase):
             file_contents_after = file_path.read_text(encoding="utf-8")
             assert file_contents_after == file_contents_before
 
-    def test_same_filename_as_existing_spider_force(self):
-        self.test_same_filename_as_existing_spider(force=True)
-
-    def test_url(self, url="test.com", domain="test.com"):
+    @pytest.mark.parametrize(
+        ("url", "domain"),
+        [
+            ("test.com", "test.com"),
+            ("https://test.com", "test.com"),
+        ],
+    )
+    def test_url(self, url: str, domain: str) -> None:
         assert self.call("genspider", "--force", "test_name", url) == 0
-        assert (
-            self.find_in_file(
-                Path(self.proj_mod_path, "spiders", "test_name.py"),
-                r"allowed_domains\s*=\s*\[['\"](.+)['\"]\]",
-            ).group(1)
-            == domain
+        m = self.find_in_file(
+            self.proj_mod_path / "spiders" / "test_name.py",
+            r"allowed_domains\s*=\s*\[['\"](.+)['\"]\]",
         )
-        assert (
-            self.find_in_file(
-                Path(self.proj_mod_path, "spiders", "test_name.py"),
-                r"start_urls\s*=\s*\[['\"](.+)['\"]\]",
-            ).group(1)
-            == f"https://{domain}"
+        assert m is not None
+        assert m.group(1) == domain
+        m = self.find_in_file(
+            self.proj_mod_path / "spiders" / "test_name.py",
+            r"start_urls\s*=\s*\[['\"](.+)['\"]\]",
         )
+        assert m is not None
+        assert m.group(1) == f"https://{domain}"
 
-    def test_url_schema(self):
-        self.test_url("https://test.com", "test.com")
-
-    def test_template_start_urls(
-        self, url="test.com", expected="https://test.com", template="basic"
-    ):
+    @pytest.mark.parametrize(
+        ("url", "expected", "template"),
+        [
+            # basic
+            ("https://test.com", "https://test.com", "basic"),
+            ("http://test.com", "http://test.com", "basic"),
+            ("http://test.com/other/path", "http://test.com/other/path", "basic"),
+            ("test.com/other/path", "https://test.com/other/path", "basic"),
+            # crawl
+            ("https://test.com", "https://test.com", "crawl"),
+            ("http://test.com", "http://test.com", "crawl"),
+            ("http://test.com/other/path", "http://test.com/other/path", "crawl"),
+            ("test.com/other/path", "https://test.com/other/path", "crawl"),
+            ("test.com", "https://test.com", "crawl"),
+            # xmlfeed
+            ("https://test.com/feed.xml", "https://test.com/feed.xml", "xmlfeed"),
+            ("http://test.com/feed.xml", "http://test.com/feed.xml", "xmlfeed"),
+            ("test.com/feed.xml", "https://test.com/feed.xml", "xmlfeed"),
+            # csvfeed
+            ("https://test.com/feed.csv", "https://test.com/feed.csv", "csvfeed"),
+            ("http://test.com/feed.xml", "http://test.com/feed.xml", "csvfeed"),
+            ("test.com/feed.csv", "https://test.com/feed.csv", "csvfeed"),
+        ],
+    )
+    def test_template_start_urls(self, url: str, expected: str, template: str) -> None:
         assert self.call("genspider", "-t", template, "--force", "test_name", url) == 0
-        assert (
-            self.find_in_file(
-                Path(self.proj_mod_path, "spiders", "test_name.py"),
-                r"start_urls\s*=\s*\[['\"](.+)['\"]\]",
-            ).group(1)
-            == expected
+        m = self.find_in_file(
+            self.proj_mod_path / "spiders" / "test_name.py",
+            r"start_urls\s*=\s*\[['\"](.+)['\"]\]",
         )
-
-    def test_genspider_basic_start_urls(self):
-        self.test_template_start_urls("https://test.com", "https://test.com", "basic")
-        self.test_template_start_urls("http://test.com", "http://test.com", "basic")
-        self.test_template_start_urls(
-            "http://test.com/other/path", "http://test.com/other/path", "basic"
-        )
-        self.test_template_start_urls(
-            "test.com/other/path", "https://test.com/other/path", "basic"
-        )
-
-    def test_genspider_crawl_start_urls(self):
-        self.test_template_start_urls("https://test.com", "https://test.com", "crawl")
-        self.test_template_start_urls("http://test.com", "http://test.com", "crawl")
-        self.test_template_start_urls(
-            "http://test.com/other/path", "http://test.com/other/path", "crawl"
-        )
-        self.test_template_start_urls(
-            "test.com/other/path", "https://test.com/other/path", "crawl"
-        )
-        self.test_template_start_urls("test.com", "https://test.com", "crawl")
-
-    def test_genspider_xmlfeed_start_urls(self):
-        self.test_template_start_urls(
-            "https://test.com/feed.xml", "https://test.com/feed.xml", "xmlfeed"
-        )
-        self.test_template_start_urls(
-            "http://test.com/feed.xml", "http://test.com/feed.xml", "xmlfeed"
-        )
-        self.test_template_start_urls(
-            "test.com/feed.xml", "https://test.com/feed.xml", "xmlfeed"
-        )
-
-    def test_genspider_csvfeed_start_urls(self):
-        self.test_template_start_urls(
-            "https://test.com/feed.csv", "https://test.com/feed.csv", "csvfeed"
-        )
-        self.test_template_start_urls(
-            "http://test.com/feed.xml", "http://test.com/feed.xml", "csvfeed"
-        )
-        self.test_template_start_urls(
-            "test.com/feed.csv", "https://test.com/feed.csv", "csvfeed"
-        )
+        assert m is not None
+        assert m.group(1) == expected
 
 
 class TestGenspiderStandaloneCommand(TestProjectBase):
@@ -174,7 +154,8 @@ class TestGenspiderStandaloneCommand(TestProjectBase):
         self.call("genspider", "example", "example.com")
         assert Path(self.temp_path, "example.py").exists()
 
-    def test_same_name_as_existing_file(self, force=False):
+    @pytest.mark.parametrize("force", [True, False])
+    def test_same_name_as_existing_file(self, force: bool) -> None:
         file_name = "example"
         file_path = Path(self.temp_path, file_name + ".py")
         p, out, err = self.proc("genspider", file_name, "example.com")
@@ -203,6 +184,3 @@ class TestGenspiderStandaloneCommand(TestProjectBase):
             assert modify_time_after == modify_time_before
             file_contents_after = file_path.read_text(encoding="utf-8")
             assert file_contents_after == file_contents_before
-
-    def test_same_name_as_existing_file_force(self):
-        self.test_same_name_as_existing_file(force=True)

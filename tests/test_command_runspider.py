@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import inspect
 import platform
 import sys
@@ -204,8 +205,6 @@ class MySpider(scrapy.Spider):
                 "TWISTED_REACTOR=twisted.internet.asyncioreactor.AsyncioSelectorReactor",
             ],
         )
-        import asyncio
-
         if sys.platform != "win32":
             loop = asyncio.new_event_loop()
         else:
