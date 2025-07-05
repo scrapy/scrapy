@@ -6,7 +6,6 @@ import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
-from twisted.trial import unittest
 
 from scrapy import signals
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -43,11 +42,11 @@ class UserDefinedPipeline(MediaPipeline):
         return ""
 
 
-class TestBaseMediaPipeline(unittest.TestCase):
+class TestBaseMediaPipeline:
     pipeline_class = UserDefinedPipeline
     settings = None
 
-    def setUp(self):
+    def setup_method(self):
         spider_cls = Spider
         self.spider = spider_cls("media.com")
         crawler = get_crawler(spider_cls, self.settings)
@@ -57,7 +56,7 @@ class TestBaseMediaPipeline(unittest.TestCase):
         self.info = self.pipe.spiderinfo
         self.fingerprint = crawler.request_fingerprinter.fingerprint
 
-    def tearDown(self):
+    def teardown_method(self):
         for name, signal in vars(signals).items():
             if not name.startswith("_"):
                 disconnect_all(signal)
@@ -550,13 +549,13 @@ class MediaFailedFailurePipeline(MockedMediaPipeline):
         return failure  # deprecated
 
 
-class TestMediaFailedFailure(unittest.TestCase):
+class TestMediaFailedFailure:
     """Test that media_failed() can return a failure instead of raising."""
 
     pipeline_class = MediaFailedFailurePipeline
     settings = None
 
-    def setUp(self):
+    def setup_method(self):
         spider_cls = Spider
         self.spider = spider_cls("media.com")
         crawler = get_crawler(spider_cls, self.settings)
@@ -566,7 +565,7 @@ class TestMediaFailedFailure(unittest.TestCase):
         self.info = self.pipe.spiderinfo
         self.fingerprint = crawler.request_fingerprinter.fingerprint
 
-    def tearDown(self):
+    def teardown_method(self):
         for name, signal in vars(signals).items():
             if not name.startswith("_"):
                 disconnect_all(signal)

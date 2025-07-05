@@ -31,7 +31,6 @@ from packaging.version import Version
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
 from w3lib.url import file_uri_to_path, path_to_file_uri
 from zope.interface import implementer
 from zope.interface.verify import verifyObject
@@ -164,7 +163,7 @@ class TestFileFeedStorage:
         assert storage.path == path
 
 
-class TestFTPFeedStorage(unittest.TestCase):
+class TestFTPFeedStorage:
     def get_test_spider(self, settings=None):
         class TestSpider(scrapy.Spider):
             name = "test_spider"
@@ -278,7 +277,7 @@ class TestBlockingFeedStorage:
 
 
 @pytest.mark.requires_boto3
-class TestS3FeedStorage(unittest.TestCase):
+class TestS3FeedStorage:
     def test_parse_credentials(self):
         aws_credentials = {
             "AWS_ACCESS_KEY_ID": "settings_key",
@@ -507,7 +506,7 @@ class TestS3FeedStorage(unittest.TestCase):
         assert "S3 does not support appending to files" in str(log)
 
 
-class TestGCSFeedStorage(unittest.TestCase):
+class TestGCSFeedStorage:
     def test_parse_settings(self):
         try:
             from google.cloud.storage import Client  # noqa: F401,PLC0415
@@ -661,7 +660,7 @@ class LogOnStoreFileStorage:
         file.close()
 
 
-class TestFeedExportBase(ABC, unittest.TestCase):
+class TestFeedExportBase(ABC):
     mockserver: MockServer
 
     class MyItem(scrapy.Item):
@@ -679,18 +678,18 @@ class TestFeedExportBase(ABC, unittest.TestCase):
         return Path(self.temp_dir, inter_dir, filename)
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    def setUp(self):
+    def setup_method(self):
         self.temp_dir = tempfile.mkdtemp()
 
-    def tearDown(self):
+    def teardown_method(self):
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     async def exported_data(

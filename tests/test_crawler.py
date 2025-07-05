@@ -7,6 +7,7 @@ import subprocess
 import sys
 import warnings
 from abc import ABC, abstractmethod
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +15,6 @@ import pytest
 from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
 from twisted.internet.defer import Deferred, inlineCallbacks
-from twisted.trial import unittest
 from w3lib import __version__ as w3lib_version
 from zope.interface.exceptions import MultipleInvalid
 
@@ -48,7 +48,7 @@ def get_raw_crawler(spidercls=None, settings_dict=None):
     return Crawler(spidercls or DefaultSpider, settings)
 
 
-class TestBaseCrawler(unittest.TestCase):
+class TestBaseCrawler:
     def assertOptionIsDefault(self, settings, key):
         assert isinstance(settings, Settings)
         assert settings[key] == getattr(default_settings, key)
@@ -648,8 +648,7 @@ class NoRequestsSpider(scrapy.Spider):
         yield
 
 
-@pytest.mark.usefixtures("reactor_pytest")
-class TestCrawlerRunnerHasSpider(unittest.TestCase):
+class TestCrawlerRunnerHasSpider:
     @staticmethod
     def _runner():
         return CrawlerRunner(get_reactor_settings())
@@ -700,8 +699,10 @@ class TestCrawlerRunnerHasSpider(unittest.TestCase):
         assert runner.bootstrap_failed
 
     @inlineCallbacks
-    def test_crawler_runner_asyncio_enabled_true(self):
-        if self.reactor_pytest == "default":
+    def test_crawler_runner_asyncio_enabled_true(
+        self, reactor_pytest: str
+    ) -> Generator[Deferred[Any], Any, None]:
+        if reactor_pytest != "asyncio":
             runner = CrawlerRunner(
                 settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
@@ -760,7 +761,7 @@ class ScriptRunnerMixin(ABC):
         return stderr.decode("utf-8")
 
 
-class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin, unittest.TestCase):
+class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     """Common tests between CrawlerProcess and AsyncCrawlerProcess,
     with the same file names and expectations.
     """

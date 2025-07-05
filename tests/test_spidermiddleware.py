@@ -8,7 +8,6 @@ from unittest import mock
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.trial.unittest import TestCase
 
 from scrapy.core.spidermw import SpiderMiddlewareManager
 from scrapy.exceptions import _InvalidOutput
@@ -22,8 +21,8 @@ if TYPE_CHECKING:
     from twisted.python.failure import Failure
 
 
-class TestSpiderMiddleware(TestCase):
-    def setUp(self):
+class TestSpiderMiddleware:
+    def setup_method(self):
         self.request = Request("http://example.com/index.html")
         self.response = Response(self.request.url, request=self.request)
         self.crawler = get_crawler(Spider, {"SPIDER_MIDDLEWARES_BASE": {}})

@@ -1,5 +1,3 @@
-from twisted.trial.unittest import TestCase
-
 from scrapy.http import Request
 from scrapy.spidermiddlewares.start import StartSpiderMiddleware
 from scrapy.spiders import Spider
@@ -8,7 +6,7 @@ from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 
 
-class TestMiddleware(TestCase):
+class TestMiddleware:
     @deferred_f_from_coro_f
     async def test_async(self):
         crawler = get_crawler(Spider)

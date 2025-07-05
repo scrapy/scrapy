@@ -1,5 +1,4 @@
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import TestCase
 
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
@@ -12,14 +11,14 @@ from tests.spiders import (
 )
 
 
-class TestCloseSpider(TestCase):
+class TestCloseSpider:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
     @inlineCallbacks

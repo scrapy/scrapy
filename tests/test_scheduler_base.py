@@ -6,7 +6,6 @@ import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import TestCase
 
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.http import Request
@@ -115,8 +114,8 @@ class TestMinimalScheduler(InterfaceCheckMixin):
         assert not self.scheduler.has_pending_requests()
 
 
-class TestSimpleScheduler(TestCase, InterfaceCheckMixin):
-    def setUp(self):
+class TestSimpleScheduler(InterfaceCheckMixin):
+    def setup_method(self):
         self.scheduler = SimpleScheduler()
 
     @inlineCallbacks
@@ -145,7 +144,7 @@ class TestSimpleScheduler(TestCase, InterfaceCheckMixin):
         assert close_result == "close"
 
 
-class TestMinimalSchedulerCrawl(TestCase):
+class TestMinimalSchedulerCrawl:
     scheduler_cls = MinimalScheduler
 
     @inlineCallbacks

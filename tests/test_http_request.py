@@ -1466,12 +1466,6 @@ class TestJsonRequest(TestRequest):
         b"Accept": [b"application/json, text/javascript, */*; q=0.01"],
     }
 
-    def setup_method(self):
-        warnings.simplefilter("always")
-
-    def teardown_method(self):
-        warnings.resetwarnings()
-
     def test_data(self):
         r1 = self.request_class(url="http://www.example.com/")
         assert r1.body == b""

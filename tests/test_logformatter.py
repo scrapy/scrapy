@@ -4,7 +4,6 @@ import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import inlineCallbacks
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase
 
 from scrapy.exceptions import DropItem
 from scrapy.http import Request, Response
@@ -254,17 +253,17 @@ class DropSomeItemsPipeline:
         self.drop = True
 
 
-class TestShowOrSkipMessages(TestCase):
+class TestShowOrSkipMessages:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    def setUp(self):
+    def setup_method(self):
         self.base_settings = {
             "LOG_LEVEL": "DEBUG",
             "ITEM_PIPELINES": {

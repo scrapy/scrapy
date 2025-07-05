@@ -3,7 +3,6 @@ from unittest import TextTestResult
 import pytest
 from twisted.internet.defer import inlineCallbacks
 from twisted.python import failure
-from twisted.trial import unittest
 
 from scrapy import FormRequest
 from scrapy.contracts import Contract, ContractsManager
@@ -247,7 +246,7 @@ class InheritsDemoSpider(DemoSpider):
     name = "inherits_demo_spider"
 
 
-class TestContractsManager(unittest.TestCase):
+class TestContractsManager:
     contracts = [
         UrlContract,
         CallbackKeywordArgumentsContract,
@@ -259,7 +258,7 @@ class TestContractsManager(unittest.TestCase):
         CustomFailContract,
     ]
 
-    def setUp(self):
+    def setup_method(self):
         self.conman = ContractsManager(self.contracts)
         self.results = TextTestResult(stream=None, descriptions=False, verbosity=0)
 

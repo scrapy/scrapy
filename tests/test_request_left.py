@@ -1,5 +1,4 @@
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import TestCase
 
 from scrapy.signals import request_left_downloader
 from scrapy.spiders import Spider
@@ -24,14 +23,14 @@ class SignalCatcherSpider(Spider):
         self.caught_times += 1
 
 
-class TestCatching(TestCase):
+class TestCatching:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
     @inlineCallbacks

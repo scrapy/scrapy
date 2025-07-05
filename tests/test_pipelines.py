@@ -2,7 +2,6 @@ import asyncio
 
 import pytest
 from twisted.internet.defer import Deferred, inlineCallbacks
-from twisted.trial import unittest
 
 from scrapy import Request, Spider, signals
 from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
@@ -75,14 +74,14 @@ class ItemSpider(Spider):
         return {"field": 42}
 
 
-class TestPipeline(unittest.TestCase):
+class TestPipeline:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
     def _on_item_scraped(self, item):
