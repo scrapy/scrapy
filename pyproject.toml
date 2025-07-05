@@ -390,6 +390,9 @@ banned-module-level-imports = [
     "twisted.internet.reactor",
 ]
 
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
+
 [tool.ruff.lint.per-file-ignores]
 # Circular import workarounds
 "scrapy/linkextractors/__init__.py" = ["E402"]

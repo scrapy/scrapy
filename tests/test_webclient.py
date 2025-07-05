@@ -21,9 +21,7 @@ from twisted.web import resource, server, static, util
 from twisted.web.client import _makeGetterFactory
 
 from scrapy.core.downloader import webclient as client
-from scrapy.core.downloader.contextfactory import (
-    ScrapyClientContextFactory,
-)
+from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
 from scrapy.http import Headers, Request
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes, to_unicode

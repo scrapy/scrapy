@@ -21,10 +21,7 @@ from scrapy.core.scheduler import BaseScheduler
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.utils.asyncio import (
-    AsyncioLoopingCall,
-    create_looping_call,
-)
+from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.defer import (
     deferred_f_from_coro_f,
     deferred_from_coro,

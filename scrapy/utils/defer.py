@@ -12,12 +12,7 @@ from collections.abc import Awaitable, Coroutine, Iterable, Iterator
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast, overload
 
-from twisted.internet.defer import (
-    Deferred,
-    DeferredList,
-    fail,
-    succeed,
-)
+from twisted.internet.defer import Deferred, DeferredList, fail, succeed
 from twisted.internet.task import Cooperator
 from twisted.python import failure
 
