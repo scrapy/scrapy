@@ -6,7 +6,7 @@ import re
 import string
 from ipaddress import IPv4Address
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, cast
 from unittest import mock
 from urllib.parse import urlencode
 
@@ -194,7 +194,7 @@ class TestHttps2ClientProtocol:
     certificate_file = Path(__file__).parent / "keys" / "localhost.crt"
 
     @pytest.fixture
-    def site(self, tmp_path: Path) -> Site:
+    def site(self, tmp_path):
         r = File(str(tmp_path))
         r.putChild(b"get-data-html-small", GetDataHtmlSmall())
         r.putChild(b"get-data-html-large", GetDataHtmlLarge())
@@ -460,7 +460,7 @@ class TestHttps2ClientProtocol:
         request = Request(url=self.get_url(server_port, "/get-data-html-large"))
         d = make_request_dfd(client, request)
         d.cancel()
-        response = yield d
+        response = cast("Response", (yield d))
         assert response.status == 499
         assert response.request == request
 
@@ -620,6 +620,7 @@ class TestHttps2ClientProtocol:
 
         # Close the connection now to fire all the extra 10 requests errback
         # with InactiveStreamClosed
+        assert client.transport
         client.transport.loseConnection()
 
         yield DeferredList(d_list, consumeErrors=True, fireOnOneErrback=True)
@@ -627,7 +628,7 @@ class TestHttps2ClientProtocol:
     @deferred_f_from_coro_f
     async def test_invalid_request_type(self, client: H2ClientProtocol):
         with pytest.raises(TypeError):
-            await make_request(client, "https://InvalidDataTypePassed.com")
+            await make_request(client, "https://InvalidDataTypePassed.com")  # type: ignore[arg-type]
 
     @deferred_f_from_coro_f
     async def test_query_parameters(
@@ -750,6 +751,6 @@ class TestHttps2ClientProtocol:
         response_headers = json.loads(str(response.body, "utf-8"))
         assert isinstance(response_headers, dict)
         for k, v in request.headers.items():
-            k, v = str(k, "utf-8"), str(v[0], "utf-8")
-            assert k in response_headers
-            assert v == response_headers[k]
+            k_decoded, v_decoded = str(k, "utf-8"), str(v[0], "utf-8")
+            assert k_decoded in response_headers
+            assert v_decoded == response_headers[k_decoded]

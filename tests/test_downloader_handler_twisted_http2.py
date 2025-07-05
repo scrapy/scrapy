@@ -72,7 +72,7 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
         with mock.patch("scrapy.core.http2.stream.logger") as logger:
             request = Request(self.getURL(server_port, "largechunkedfile"))
 
-            def check(logger):
+            def check(logger: mock.Mock) -> None:
                 logger.error.assert_called_once_with(mock.ANY)
 
             with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
@@ -83,7 +83,7 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
             # As the error message is logged in the dataReceived callback, we
             # have to give a bit of time to the reactor to process the queue
             # after closing the connection.
-            d = defer.Deferred()
+            d: defer.Deferred[mock.Mock] = defer.Deferred()
             d.addCallback(check)
             reactor.callLater(0.1, d.callback, logger)
             await maybe_deferred_to_future(d)
@@ -96,13 +96,13 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
         with pytest.raises(SchemeNotSupported):
             await download_request(download_handler, request)
 
-    def test_download_cause_data_loss(self) -> None:
+    def test_download_cause_data_loss(self) -> None:  # type: ignore[override]
         pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
-    def test_download_allow_data_loss(self) -> None:
+    def test_download_allow_data_loss(self) -> None:  # type: ignore[override]
         pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
-    def test_download_allow_data_loss_via_setting(self) -> None:
+    def test_download_allow_data_loss_via_setting(self) -> None:  # type: ignore[override]
         pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
     @deferred_f_from_coro_f

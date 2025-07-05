@@ -7,6 +7,7 @@ import os
 import sys
 from pathlib import Path
 from tempfile import mkdtemp, mkstemp
+from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
@@ -24,11 +25,14 @@ from scrapy.exceptions import NotConfigured
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.http.response.text import TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
+
+if TYPE_CHECKING:
+    from scrapy.spiders import Spider
 
 
 class DummyDH:
@@ -110,7 +114,7 @@ class TestFile:
     async def test_download(self):
         request = Request(path_to_file_uri(self.tmpname))
         assert request.url.upper().endswith("%5E")
-        response = await self.download_request(request, Spider("foo"))
+        response = await self.download_request(request, DefaultSpider())
         assert response.url == request.url
         assert response.status == 200
         assert response.body == b"0123456789"
@@ -121,7 +125,7 @@ class TestFile:
         request = Request(path_to_file_uri(mkdtemp()))
         # the specific exception differs between platforms
         with pytest.raises(OSError):  # noqa: PT011
-            await self.download_request(request, Spider("foo"))
+            await self.download_request(request, DefaultSpider())
 
 
 class HttpDownloadHandlerMock:
@@ -143,7 +147,7 @@ class TestS3Anon:
             # anon=True, # implicit
         )
         self.download_request = self.s3reqh.download_request
-        self.spider = Spider("foo")
+        self.spider = DefaultSpider()
 
     def test_anon_request(self):
         req = Request("s3://aws-publicdatasets/")
@@ -174,7 +178,7 @@ class TestS3:
             httpdownloadhandler=HttpDownloadHandlerMock,
         )
         self.download_request = s3reqh.download_request
-        self.spider = Spider("foo")
+        self.spider = DefaultSpider()
 
     @contextlib.contextmanager
     def _mocked_date(self, date):
@@ -319,7 +323,7 @@ class TestFTPBase:
         for filename, content in self.test_files:
             (userdir / filename).write_bytes(content)
 
-    def _get_factory(self, root: Path) -> FTPFactory:
+    def _get_factory(self, root):
         realm = FTPRealm(anonymousRoot=str(root), userHome=str(root))
         p = portal.Portal(realm)
         users_checker = checkers.InMemoryUsernamePasswordDatabaseDontUse()
@@ -353,7 +357,9 @@ class TestFTPBase:
     async def download_request(
         self, dh: FTPDownloadHandler, request: Request
     ) -> Response:
-        return await maybe_deferred_to_future(dh.download_request(request, None))
+        return await maybe_deferred_to_future(
+            dh.download_request(request, DefaultSpider())
+        )
 
     @deferred_f_from_coro_f
     async def test_ftp_download_success(self, server_url, dh):
@@ -448,7 +454,7 @@ class TestAnonymousFTP(TestFTPBase):
         for filename, content in self.test_files:
             (root / filename).write_bytes(content)
 
-    def _get_factory(self, tmp_path: Path) -> FTPFactory:
+    def _get_factory(self, tmp_path):
         realm = FTPRealm(anonymousRoot=str(tmp_path))
         p = portal.Portal(realm)
         p.registerChecker(checkers.AllowAnonymousAccess(), credentials.IAnonymous)
@@ -459,7 +465,7 @@ class TestDataURI:
     def setup_method(self):
         crawler = get_crawler()
         self.download_handler = build_from_crawler(DataURIDownloadHandler, crawler)
-        self.spider = Spider("foo")
+        self.spider = DefaultSpider()
 
     async def download_request(self, request: Request, spider: Spider) -> Response:
         return await maybe_deferred_to_future(

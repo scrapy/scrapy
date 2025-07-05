@@ -160,7 +160,7 @@ class TestHttpBase(ABC):
         raise NotImplementedError
 
     @pytest.fixture
-    def site(self, tmp_path: Path) -> server.Site:
+    def site(self, tmp_path):
         (tmp_path / "file").write_bytes(b"0123456789")
         r = static.File(str(tmp_path))
         r.putChild(b"redirect", util.Redirect(b"/file"))
@@ -434,7 +434,7 @@ class TestHttp11Base(TestHttpBase):
         with mock.patch("scrapy.core.downloader.handlers.http11.logger") as logger:
             request = Request(self.getURL(server_port, "largechunkedfile"))
 
-            def check(logger):
+            def check(logger: mock.Mock) -> None:
                 logger.warning.assert_called_once_with(mock.ANY, mock.ANY)
 
             with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
@@ -445,7 +445,7 @@ class TestHttp11Base(TestHttpBase):
             # As the error message is logged in the dataReceived callback, we
             # have to give a bit of time to the reactor to process the queue
             # after closing the connection.
-            d = defer.Deferred()
+            d: defer.Deferred[mock.Mock] = defer.Deferred()
             d.addCallback(check)
             reactor.callLater(0.1, d.callback, logger)
             await maybe_deferred_to_future(d)
@@ -518,7 +518,7 @@ class TestHttp11Base(TestHttpBase):
         download_handler = build_from_crawler(self.download_handler_cls, crawler)
         request = Request(self.getURL(server_port, url))
         response = await maybe_deferred_to_future(
-            download_handler.download_request(request, Spider("foo"))
+            download_handler.download_request(request, DefaultSpider())
         )
         assert response.flags == ["dataloss"]
 
@@ -549,7 +549,7 @@ class TestHttps11Base(TestHttp11Base):
             with LogCapture() as log_capture:
                 request = Request(self.getURL(server_port, "file"))
                 response = await maybe_deferred_to_future(
-                    download_handler.download_request(request, Spider("foo"))
+                    download_handler.download_request(request, DefaultSpider())
                 )
                 assert response.body == b"0123456789"
                 log_capture.check_present(
