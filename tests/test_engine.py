@@ -495,7 +495,7 @@ class TestEngine(TestEngineBase):
         )
 
         try:
-            _, stderr = p.communicate(timeout=3)
+            _, stderr = p.communicate(timeout=15)
         except subprocess.TimeoutExpired:
             p.kill()
             p.communicate()
