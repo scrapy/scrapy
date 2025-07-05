@@ -37,12 +37,6 @@ from tests import get_testdata, tests_datadir
 class TestSpider:
     spider_class = Spider
 
-    def setup_method(self):
-        warnings.simplefilter("always")
-
-    def teardown_method(self):
-        warnings.resetwarnings()
-
     def test_base_spider(self):
         spider = self.spider_class("example.com")
         assert spider.name == "example.com"
