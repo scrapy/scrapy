@@ -372,18 +372,23 @@ class ExecutionEngine:
                 signals.request_dropped, request=request, spider=self.spider
             )
 
-    @inlineCallbacks
-    def download(self, request: Request) -> Generator[Deferred[Any], Any, Response]:
+    def download(self, request: Request) -> Deferred[Response]:
         """Return a Deferred which fires with a Response as result, only downloader middlewares are applied"""
+        return deferred_from_coro(self.download_async(request))
+
+    async def download_async(self, request: Request) -> Response:
+        """Asynchronous version of download() that returns a Response."""
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
         try:
-            response_or_request = yield self._download(request)
+            response_or_request = await maybe_deferred_to_future(
+                self._download(request)
+            )
         finally:
             assert self._slot is not None
             self._slot.remove_request(request)
         if isinstance(response_or_request, Request):
-            return (yield self.download(response_or_request))
+            return await self.download_async(response_or_request)
         return response_or_request
 
     @inlineCallbacks
