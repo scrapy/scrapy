@@ -13,7 +13,7 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
-    from asyncio import AbstractEventLoop, AbstractEventLoopPolicy
+    from asyncio import AbstractEventLoop
     from collections.abc import Callable
 
     from twisted.internet.protocol import ServerFactory
@@ -100,17 +100,12 @@ def set_asyncio_event_loop_policy() -> None:
     so we restrict their use to the absolutely essential case.
     This should only be used to install the reactor.
     """
-    _get_asyncio_event_loop_policy()
-
-
-def _get_asyncio_event_loop_policy() -> AbstractEventLoopPolicy:
     policy = asyncio.get_event_loop_policy()
     if sys.platform == "win32" and not isinstance(
         policy, asyncio.WindowsSelectorEventLoopPolicy
     ):
         policy = asyncio.WindowsSelectorEventLoopPolicy()
         asyncio.set_event_loop_policy(policy)
-    return policy
 
 
 def install_reactor(reactor_path: str, event_loop_path: str | None = None) -> None:

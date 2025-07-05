@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from twisted.web.http import H2_ENABLED
 
+from scrapy.utils.reactor import set_asyncio_event_loop_policy
 from tests.keys import generate_keys
 
 
@@ -107,12 +108,11 @@ def requires_boto3(request):
         pytest.skip("boto3 is not installed")
 
 
-# def pytest_configure(config):
-#     if config.getoption("--reactor") != "default":
-#         install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
-#     else:
-#         # install the reactor explicitly
-#         from twisted.internet import reactor
+def pytest_configure(config):
+    if config.getoption("--reactor") == "asyncio":
+        # Needed on Windows to switch from proactor to selector for Twisted reactor compatibility.
+        # If we decide to run tests with both, we will need to add a new option and check it here.
+        set_asyncio_event_loop_policy()
 
 
 # Generate localhost certificate files, needed by some tests
