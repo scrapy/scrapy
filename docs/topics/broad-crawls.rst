@@ -39,6 +39,8 @@ you need to keep in mind when using Scrapy for doing broad crawls, along with
 concrete suggestions of Scrapy settings to tune in order to achieve an
 efficient broad crawl.
 
+.. _broad-crawls-scheduler-priority-queue:
+
 .. _broad-crawls-concurrency:
 
 Increase concurrency
