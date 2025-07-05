@@ -354,8 +354,10 @@ class TestFTPBase:
 
         yield dh
 
-        assert dh.client.transport
-        dh.client.transport.loseConnection()
+        # if the test was skipped, there will be no client attribute
+        if hasattr(dh, "client"):
+            assert dh.client.transport
+            dh.client.transport.loseConnection()
 
     async def download_request(
         self, dh: FTPDownloadHandler, request: Request
