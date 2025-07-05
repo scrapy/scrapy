@@ -4,7 +4,7 @@ import shutil
 import warnings
 from pathlib import Path
 from tempfile import mkdtemp
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import OpenSSL.SSL
 import pytest
@@ -14,7 +14,6 @@ from twisted.trial import unittest
 from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
 from twisted.web.client import Response as TxResponse
-from twisted.web.iweb import IBodyProducer
 
 from scrapy.core.downloader import Slot
 from scrapy.core.downloader.contextfactory import (
@@ -28,6 +27,9 @@ from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
 from tests.mockserver import PayloadResource, ssl_context_factory
+
+if TYPE_CHECKING:
+    from twisted.web.iweb import IBodyProducer
 
 
 class TestSlot:
@@ -78,12 +80,12 @@ class TestContextFactoryBase(unittest.TestCase):
         agent = Agent(reactor, contextFactory=client_context_factory)
         body_producer = _RequestBodyProducer(body.encode()) if body else None
         response: TxResponse = cast(
-            TxResponse,
+            "TxResponse",
             await maybe_deferred_to_future(
                 agent.request(
                     b"GET",
                     url.encode(),
-                    bodyProducer=cast(IBodyProducer, body_producer),
+                    bodyProducer=cast("IBodyProducer", body_producer),
                 )
             ),
         )

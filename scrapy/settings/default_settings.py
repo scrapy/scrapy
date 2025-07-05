@@ -535,9 +535,9 @@ WARN_ON_GENERATOR_RETURN_VALUE = True
 
 def __getattr__(name: str):
     if name == "CONCURRENT_REQUESTS_PER_IP":
-        import warnings
+        import warnings  # noqa: PLC0415
 
-        from scrapy.exceptions import ScrapyDeprecationWarning
+        from scrapy.exceptions import ScrapyDeprecationWarning  # noqa: PLC0415
 
         warnings.warn(
             "The scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_IP attribute is deprecated, use scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_DOMAIN instead.",

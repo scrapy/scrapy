@@ -1441,7 +1441,7 @@ class TestXmlRpcRequest(TestRequest):
         )
         assert r.method == "POST"
         assert r.encoding == kwargs.get("encoding", "utf-8")
-        assert r.dont_filter, True
+        assert r.dont_filter
 
     def test_xmlrpc_dumps(self):
         self._test_request(params=("value",))

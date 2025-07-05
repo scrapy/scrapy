@@ -138,7 +138,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         spider: Spider,
     ) -> Deferred[Iterable[_T] | AsyncIterator[_T]]:
         for method in self.methods["process_spider_input"]:
-            method = cast(Callable, method)
+            method = cast("Callable", method)
             try:
                 result = method(response=response, spider=spider)
                 if result is not None:
@@ -166,7 +166,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 yield from iterable
             except Exception as ex:
                 exception_result = cast(
-                    Union[Failure, MutableChain[_T]],
+                    "Union[Failure, MutableChain[_T]]",
                     self._process_spider_exception(
                         response, spider, ex, exception_processor_index
                     ),
@@ -182,7 +182,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     yield r
             except Exception as ex:
                 exception_result = cast(
-                    Union[Failure, MutableAsyncChain[_T]],
+                    "Union[Failure, MutableAsyncChain[_T]]",
                     self._process_spider_exception(
                         response, spider, ex, exception_processor_index
                     ),
@@ -212,7 +212,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         for method_index, method in enumerate(method_list, start=start_index):
             if method is None:
                 continue
-            method = cast(Callable, method)
+            method = cast("Callable", method)
             result = method(response=response, exception=exception, spider=spider)
             if _isiterable(result):
                 # stop exception handling by handing control over to the
@@ -227,7 +227,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 if dfd.called:
                     # the result is available immediately if _process_spider_output didn't do downgrading
                     return cast(
-                        Union[MutableChain[_T], MutableAsyncChain[_T]], dfd.result
+                        "Union[MutableChain[_T], MutableAsyncChain[_T]]", dfd.result
                     )
                 # we forbid waiting here because otherwise we would need to return a deferred from
                 # _process_spider_exception too, which complicates the architecture

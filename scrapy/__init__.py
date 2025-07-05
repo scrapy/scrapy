@@ -31,11 +31,11 @@ version_info = tuple(int(v) if v.isdigit() else v for v in __version__.split("."
 
 def __getattr__(name: str):
     if name == "twisted_version":
-        import warnings  # pylint: disable=reimported
+        import warnings  # noqa: PLC0415  # pylint: disable=reimported
 
-        from twisted import version as _txv
+        from twisted import version as _txv  # noqa: PLC0415
 
-        from scrapy.exceptions import ScrapyDeprecationWarning
+        from scrapy.exceptions import ScrapyDeprecationWarning  # noqa: PLC0415
 
         warnings.warn(
             "The scrapy.twisted_version attribute is deprecated, use twisted.version instead",

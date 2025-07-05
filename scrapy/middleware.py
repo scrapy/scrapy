@@ -63,7 +63,7 @@ class MiddlewareManager(ABC):
             method_name = "__new__"
         if instance is None:
             raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
-        return cast(_T, instance)
+        return cast("_T", instance)
 
     @classmethod
     def from_settings(cls, settings: Settings, crawler: Crawler | None = None) -> Self:

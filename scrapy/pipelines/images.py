@@ -63,7 +63,7 @@ class ImagesPipeline(FilesPipeline):
         crawler: Crawler | None = None,
     ):
         try:
-            from PIL import Image
+            from PIL import Image  # noqa: PLC0415
 
             self._Image = Image
         except ImportError:

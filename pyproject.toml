@@ -107,10 +107,6 @@ module = "scrapy.settings.default_settings"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = "itemadapter"
-implicit_reexport = true
-
-[[tool.mypy.overrides]]
 module = "twisted"
 implicit_reexport = true
 
@@ -393,6 +389,9 @@ ignore = [
 banned-module-level-imports = [
     "twisted.internet.reactor",
 ]
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
 
 [tool.ruff.lint.per-file-ignores]
 # Circular import workarounds

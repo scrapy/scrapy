@@ -17,13 +17,11 @@ from twisted.internet.defer import CancelledError, Deferred, inlineCallbacks, su
 from twisted.python.failure import Failure
 
 from scrapy import signals
+from scrapy.core.scheduler import BaseScheduler
 from scrapy.core.scraper import Scraper
 from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
-from scrapy.utils.asyncio import (
-    AsyncioLoopingCall,
-    create_looping_call,
-)
+from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.defer import (
     deferred_f_from_coro_f,
     deferred_from_coro,
@@ -39,7 +37,6 @@ if TYPE_CHECKING:
     from twisted.internet.task import LoopingCall
 
     from scrapy.core.downloader import Downloader
-    from scrapy.core.scheduler import BaseScheduler
     from scrapy.crawler import Crawler
     from scrapy.logformatter import LogFormatter
     from scrapy.settings import BaseSettings, Settings
@@ -123,8 +120,6 @@ class ExecutionEngine:
             raise
 
     def _get_scheduler_class(self, settings: BaseSettings) -> type[BaseScheduler]:
-        from scrapy.core.scheduler import BaseScheduler
-
         scheduler_cls: type[BaseScheduler] = load_object(settings["SCHEDULER"])
         if not issubclass(scheduler_cls, BaseScheduler):
             raise TypeError(
@@ -506,7 +501,7 @@ class ExecutionEngine:
         dfd.addErrback(log_failure("Scraper close failure"))
 
         if hasattr(self._slot.scheduler, "close"):
-            dfd.addBoth(lambda _: cast(_Slot, self._slot).scheduler.close(reason))
+            dfd.addBoth(lambda _: cast("_Slot", self._slot).scheduler.close(reason))
             dfd.addErrback(log_failure("Scheduler close failure"))
 
         dfd.addBoth(

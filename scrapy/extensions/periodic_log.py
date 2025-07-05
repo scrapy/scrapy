@@ -6,10 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.asyncio import (
-    AsyncioLoopingCall,
-    create_looping_call,
-)
+from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 if TYPE_CHECKING:

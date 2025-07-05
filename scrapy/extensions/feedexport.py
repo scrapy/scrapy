@@ -218,7 +218,7 @@ class S3FeedStorage(BlockingFeedStorage):
         region_name: str | None = None,
     ):
         try:
-            import boto3.session
+            import boto3.session  # noqa: PLC0415
         except ImportError:
             raise NotConfigured("missing boto3 library")
         u = urlparse(uri)
@@ -317,7 +317,7 @@ class GCSFeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
-        from google.cloud.storage import Client
+        from google.cloud.storage import Client  # noqa: PLC0415
 
         client = Client(project=self.project_id)
         bucket = client.get_bucket(self.bucket_name)
@@ -413,7 +413,7 @@ class FeedSlot:
             self.file = self.storage.open(self.spider)
             if "postprocessing" in self.feed_options:
                 self.file = cast(
-                    IO[bytes],
+                    "IO[bytes]",
                     PostProcessingManager(
                         self.feed_options["postprocessing"],
                         self.file,
@@ -662,7 +662,7 @@ class FeedExporter:
 
     def _load_components(self, setting_prefix: str) -> dict[str, Any]:
         conf = without_none_values(
-            cast(dict[str, str], self.settings.getwithbase(setting_prefix))
+            cast("dict[str, str]", self.settings.getwithbase(setting_prefix))
         )
         d = {}
         for k, v in conf.items():

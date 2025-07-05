@@ -9,7 +9,7 @@ from io import StringIO
 from pathlib import Path
 from shutil import rmtree
 from tempfile import TemporaryFile, mkdtemp
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -21,9 +21,6 @@ from scrapy.settings import Settings
 from scrapy.utils.python import to_unicode
 from scrapy.utils.reactor import _asyncio_reactor_path
 from scrapy.utils.test import get_testenv
-
-if TYPE_CHECKING:
-    import os
 
 
 class EmptyCommand(ScrapyCommand):
@@ -110,10 +107,11 @@ class TestProjectBase:
 
         return p, to_unicode(stdout), to_unicode(stderr)
 
-    def find_in_file(self, filename: str | os.PathLike, regex) -> re.Match | None:
+    @staticmethod
+    def find_in_file(filename: Path, regex: str) -> re.Match | None:
         """Find first pattern occurrence in file"""
         pattern = re.compile(regex)
-        with Path(filename).open("r", encoding="utf-8") as f:
+        with filename.open("r", encoding="utf-8") as f:
             for line in f:
                 match = pattern.search(line)
                 if match is not None:

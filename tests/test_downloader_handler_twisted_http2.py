@@ -15,10 +15,7 @@ from twisted.web.http import H2_ENABLED
 
 from scrapy.http import Request
 from scrapy.spiders import Spider
-from scrapy.utils.defer import (
-    deferred_f_from_coro_f,
-    maybe_deferred_to_future,
-)
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
 from tests.mockserver import ssl_context_factory
@@ -46,7 +43,9 @@ class H2DownloadHandlerMixin:
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         # the import can fail when H2_ENABLED is False
-        from scrapy.core.downloader.handlers.http2 import H2DownloadHandler
+        from scrapy.core.downloader.handlers.http2 import (  # noqa: PLC0415
+            H2DownloadHandler,
+        )
 
         return H2DownloadHandler
 

@@ -1,4 +1,5 @@
 import warnings
+from importlib import import_module
 
 import pytest
 
@@ -460,8 +461,6 @@ def test_deprecated_imports_from_w3lib(obj_name: str) -> None:
     with warnings.catch_warnings(record=True) as warns:
         obj_type = "attribute" if obj_name == "_safe_chars" else "function"
         message = f"The scrapy.utils.url.{obj_name} {obj_type} is deprecated, use w3lib.url.{obj_name} instead."
-
-        from importlib import import_module
 
         getattr(import_module("scrapy.utils.url"), obj_name)
 
