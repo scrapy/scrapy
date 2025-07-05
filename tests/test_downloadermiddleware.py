@@ -247,7 +247,6 @@ class TestMiddlewareUsingDeferreds(TestManagerBase):
         assert not download_func.called
 
 
-@pytest.mark.usefixtures("reactor_pytest")
 class TestMiddlewareUsingCoro(TestManagerBase):
     """Middlewares using asyncio coroutines should work"""
 

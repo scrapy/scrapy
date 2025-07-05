@@ -7,6 +7,7 @@ import subprocess
 import sys
 import warnings
 from abc import ABC, abstractmethod
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
@@ -647,7 +648,6 @@ class NoRequestsSpider(scrapy.Spider):
         yield
 
 
-@pytest.mark.usefixtures("reactor_pytest")
 class TestCrawlerRunnerHasSpider:
     @staticmethod
     def _runner():
@@ -699,8 +699,10 @@ class TestCrawlerRunnerHasSpider:
         assert runner.bootstrap_failed
 
     @inlineCallbacks
-    def test_crawler_runner_asyncio_enabled_true(self):
-        if self.reactor_pytest == "default":
+    def test_crawler_runner_asyncio_enabled_true(
+        self, reactor_pytest: str
+    ) -> Generator[Deferred[Any], Any, None]:
+        if reactor_pytest != "asyncio":
             runner = CrawlerRunner(
                 settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",

@@ -12,11 +12,10 @@ from scrapy.utils.reactor import (
 )
 
 
-@pytest.mark.usefixtures("reactor_pytest")
 class TestAsyncio:
-    def test_is_asyncio_reactor_installed(self):
+    def test_is_asyncio_reactor_installed(self, reactor_pytest: str) -> None:
         # the result should depend only on the pytest --reactor argument
-        assert is_asyncio_reactor_installed() == (self.reactor_pytest != "default")
+        assert is_asyncio_reactor_installed() == (reactor_pytest == "asyncio")
 
     def test_install_asyncio_reactor(self):
         from twisted.internet import reactor as original_reactor

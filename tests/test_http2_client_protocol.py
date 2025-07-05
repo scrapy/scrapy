@@ -445,7 +445,7 @@ class TestHttps2ClientProtocol:
     @inlineCallbacks
     def test_invalid_negotiated_protocol(
         self, server_port: int, client: H2ClientProtocol
-    ) -> Generator[Deferred[Any], None, None]:
+    ) -> Generator[Deferred[Any], Any, None]:
         with mock.patch(
             "scrapy.core.http2.protocol.PROTOCOL_NAME", return_value=b"not-h2"
         ):
@@ -456,7 +456,7 @@ class TestHttps2ClientProtocol:
     @inlineCallbacks
     def test_cancel_request(
         self, server_port: int, client: H2ClientProtocol
-    ) -> Generator[Deferred[Any], None, None]:
+    ) -> Generator[Deferred[Any], Any, None]:
         request = Request(url=self.get_url(server_port, "/get-data-html-large"))
         d = make_request_dfd(client, request)
         d.cancel()
@@ -483,7 +483,7 @@ class TestHttps2ClientProtocol:
     @inlineCallbacks
     def test_received_dataloss_response(
         self, server_port: int, client: H2ClientProtocol
-    ) -> Generator[Deferred[Any], None, None]:
+    ) -> Generator[Deferred[Any], Any, None]:
         """In case when value of Header Content-Length != len(Received Data)
         ProtocolError is raised"""
         from h2.exceptions import InvalidBodyLengthError  # noqa: PLC0415
@@ -586,7 +586,7 @@ class TestHttps2ClientProtocol:
     @inlineCallbacks
     def test_inactive_stream(
         self, server_port: int, client: H2ClientProtocol
-    ) -> Generator[Deferred[Any], None, None]:
+    ) -> Generator[Deferred[Any], Any, None]:
         """Here we send 110 requests considering the MAX_CONCURRENT_STREAMS
         by default is 100. After sending the first 100 requests we close the
         connection."""
@@ -715,7 +715,7 @@ class TestHttps2ClientProtocol:
     @inlineCallbacks
     def test_connection_timeout(
         self, server_port: int, client: H2ClientProtocol
-    ) -> Generator[Deferred[Any], None, None]:
+    ) -> Generator[Deferred[Any], Any, None]:
         request = Request(self.get_url(server_port, "/timeout"))
 
         # Update the timer to 1s to test connection timeout

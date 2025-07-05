@@ -246,9 +246,12 @@ class TestHttpBase(ABC):
 
     @deferred_f_from_coro_f
     async def test_timeout_download_from_spider_nodata_rcvd(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self,
+        server_port: int,
+        download_handler: DownloadHandlerProtocol,
+        reactor_pytest: str,
     ) -> None:
-        if self.reactor_pytest != "default" and sys.platform == "win32":
+        if reactor_pytest == "asyncio" and sys.platform == "win32":
             # https://twistedmatrix.com/trac/ticket/10279
             pytest.skip(
                 "This test produces DirtyReactorAggregateError on Windows with asyncio"
@@ -263,9 +266,12 @@ class TestHttpBase(ABC):
 
     @deferred_f_from_coro_f
     async def test_timeout_download_from_spider_server_hangs(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self,
+        server_port: int,
+        download_handler: DownloadHandlerProtocol,
+        reactor_pytest: str,
     ) -> None:
-        if self.reactor_pytest != "default" and sys.platform == "win32":
+        if reactor_pytest == "asyncio" and sys.platform == "win32":
             # https://twistedmatrix.com/trac/ticket/10279
             pytest.skip(
                 "This test produces DirtyReactorAggregateError on Windows with asyncio"

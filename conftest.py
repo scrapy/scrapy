@@ -48,18 +48,14 @@ if not H2_ENABLED:
     )
 
 
-@pytest.fixture(scope="class")
-def reactor_pytest(request):
-    if not request.cls:
-        # doctests
-        return None
-    request.cls.reactor_pytest = request.config.getoption("--reactor")
-    return request.cls.reactor_pytest
+@pytest.fixture(scope="session")
+def reactor_pytest(request) -> str:
+    return request.config.getoption("--reactor")
 
 
 @pytest.fixture(autouse=True)
 def only_asyncio(request, reactor_pytest):
-    if request.node.get_closest_marker("only_asyncio") and reactor_pytest == "default":
+    if request.node.get_closest_marker("only_asyncio") and reactor_pytest != "asyncio":
         pytest.skip("This test is only run without --reactor=default")
 
 
@@ -67,7 +63,7 @@ def only_asyncio(request, reactor_pytest):
 def only_not_asyncio(request, reactor_pytest):
     if (
         request.node.get_closest_marker("only_not_asyncio")
-        and reactor_pytest != "default"
+        and reactor_pytest == "asyncio"
     ):
         pytest.skip("This test is only run with --reactor=default")
 

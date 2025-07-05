@@ -74,7 +74,6 @@ class TestSendCatchLogDeferred2(TestSendCatchLogDeferred):
         return d
 
 
-@pytest.mark.usefixtures("reactor_pytest")
 class TestSendCatchLogDeferredAsyncDef(TestSendCatchLogDeferred):
     async def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
@@ -108,7 +107,6 @@ class TestSendCatchLogAsync2(TestSendCatchLogAsync):
         return d
 
 
-@pytest.mark.usefixtures("reactor_pytest")
 class TestSendCatchLogAsyncAsyncDef(TestSendCatchLogAsync):
     async def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
