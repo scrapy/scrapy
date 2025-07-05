@@ -16,10 +16,7 @@ from typing import TYPE_CHECKING
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.mail import MailSender
-from scrapy.utils.asyncio import (
-    AsyncioLoopingCall,
-    create_looping_call,
-)
+from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.engine import get_engine_status
 
 if TYPE_CHECKING:

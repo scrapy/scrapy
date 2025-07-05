@@ -5,7 +5,9 @@ import csv
 import gzip
 import json
 import lzma
+import marshal
 import os
+import pickle
 import random
 import shutil
 import string
@@ -25,6 +27,7 @@ from urllib.request import pathname2url
 
 import lxml.etree
 import pytest
+from packaging.version import Version
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks
@@ -78,7 +81,7 @@ def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
     """Creates autospec mocks for google-cloud-storage Client, Bucket and Blob
     classes and set their proper return values.
     """
-    from google.cloud.storage import Blob, Bucket, Client
+    from google.cloud.storage import Blob, Bucket, Client  # noqa: PLC0415
 
     client_mock = mock.create_autospec(Client)
 
@@ -506,7 +509,7 @@ class TestS3FeedStorage:
 class TestGCSFeedStorage:
     def test_parse_settings(self):
         try:
-            from google.cloud.storage import Client  # noqa: F401
+            from google.cloud.storage import Client  # noqa: F401,PLC0415
         except ImportError:
             pytest.skip("GCSFeedStorage requires google-cloud-storage")
 
@@ -520,7 +523,7 @@ class TestGCSFeedStorage:
 
     def test_parse_empty_acl(self):
         try:
-            from google.cloud.storage import Client  # noqa: F401
+            from google.cloud.storage import Client  # noqa: F401,PLC0415
         except ImportError:
             pytest.skip("GCSFeedStorage requires google-cloud-storage")
 
@@ -537,7 +540,7 @@ class TestGCSFeedStorage:
     @deferred_f_from_coro_f
     async def test_store(self):
         try:
-            from google.cloud.storage import Client  # noqa: F401
+            from google.cloud.storage import Client  # noqa: F401,PLC0415
         except ImportError:
             pytest.skip("GCSFeedStorage requires google-cloud-storage")
 
@@ -975,7 +978,6 @@ class TestFeedExport(TestFeedExportBase):
         )
         data = await self.exported_data(items, settings)
         expected = [{k: v for k, v in row.items() if v} for row in rows]
-        import pickle
 
         result = self._load_until_eof(data["pickle"], load_func=pickle.load)
         assert result == expected
@@ -996,7 +998,6 @@ class TestFeedExport(TestFeedExportBase):
         )
         data = await self.exported_data(items, settings)
         expected = [{k: v for k, v in row.items() if v} for row in rows]
-        import marshal
 
         result = self._load_until_eof(data["marshal"], load_func=marshal.load)
         assert result == expected
@@ -2299,9 +2300,6 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
 
     @deferred_f_from_coro_f
     async def test_exports_compatibility_with_postproc(self):
-        import marshal
-        import pickle
-
         filename_to_expected = {
             self._named_tempfile("csv"): b"foo\r\nbar\r\n",
             self._named_tempfile("json"): b'[\n{"foo": "bar"}\n]',
@@ -2483,7 +2481,6 @@ class TestBatchDeliveries(TestFeedExportBase):
         batch_size = Settings(settings).getint("FEED_EXPORT_BATCH_ITEM_COUNT")
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = await self.exported_data(items, settings)
-        import pickle
 
         for batch in data["pickle"]:
             got_batch = self._load_until_eof(batch, load_func=pickle.load)
@@ -2504,7 +2501,6 @@ class TestBatchDeliveries(TestFeedExportBase):
         batch_size = Settings(settings).getint("FEED_EXPORT_BATCH_ITEM_COUNT")
         rows = [{k: v for k, v in row.items() if v} for row in rows]
         data = await self.exported_data(items, settings)
-        import marshal
 
         for batch in data["marshal"]:
             got_batch = self._load_until_eof(batch, load_func=marshal.load)
@@ -2713,9 +2709,8 @@ class TestBatchDeliveries(TestFeedExportBase):
             stubs = []
 
             def open(self, *args, **kwargs):
-                from botocore import __version__ as botocore_version
-                from botocore.stub import ANY, Stubber
-                from packaging.version import Version
+                from botocore import __version__ as botocore_version  # noqa: PLC0415
+                from botocore.stub import ANY, Stubber  # noqa: PLC0415
 
                 expected_params = {
                     "Body": ANY,
@@ -2911,10 +2906,9 @@ class TestURIParams(ABC):
                 match="The `FEED_URI` and `FEED_FORMAT` settings have been deprecated",
             ):
                 crawler = get_crawler(settings_dict=settings)
-                feed_exporter = FeedExporter.from_crawler(crawler)
         else:
             crawler = get_crawler(settings_dict=settings)
-            feed_exporter = FeedExporter.from_crawler(crawler)
+        feed_exporter = crawler.get_extension(FeedExporter)
         return crawler, feed_exporter
 
     def test_default(self):

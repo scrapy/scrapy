@@ -8,11 +8,11 @@ from twisted.internet.error import (
     ConnectError,
     ConnectionDone,
     ConnectionLost,
-    ConnectionRefusedError,
     DNSLookupError,
     TCPTimedOutError,
-    TimeoutError,
 )
+from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
+from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.web.client import ResponseFailed
 
 from scrapy import signals
@@ -34,9 +34,9 @@ if TYPE_CHECKING:
 class HttpCacheMiddleware:
     DOWNLOAD_EXCEPTIONS = (
         defer.TimeoutError,
-        TimeoutError,
+        TxTimeoutError,
         DNSLookupError,
-        ConnectionRefusedError,
+        TxConnectionRefusedError,
         ConnectionDone,
         ConnectError,
         ConnectionLost,

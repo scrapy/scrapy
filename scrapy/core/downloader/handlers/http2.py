@@ -4,7 +4,7 @@ from time import time
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
-from twisted.internet.error import TimeoutError
+from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.web.client import URI
 
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
@@ -127,4 +127,4 @@ class ScrapyH2Agent:
             return response
 
         url = urldefrag(request.url)[0]
-        raise TimeoutError(f"Getting {url} took longer than {timeout} seconds.")
+        raise TxTimeoutError(f"Getting {url} took longer than {timeout} seconds.")

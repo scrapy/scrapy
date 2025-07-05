@@ -56,7 +56,7 @@ class Command(ScrapyCommand):
             help="do not handle HTTP 3xx status codes and print response as-is",
         )
 
-    def update_vars(self, vars: dict[str, Any]) -> None:
+    def update_vars(self, vars: dict[str, Any]) -> None:  # noqa: A002
         """You can use this function to update the Scrapy objects that will be
         available in the shell
         """

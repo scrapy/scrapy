@@ -109,7 +109,7 @@ class TestLogFormatter:
         assert logkws["level"] == unsupported_value
 
         with pytest.raises(TypeError):
-            logging.log(logkws["level"], "message")
+            logging.log(logkws["level"], "message")  # noqa: LOG015
 
     def test_dropitem_custom_log_level(self):
         item = {}

@@ -161,7 +161,7 @@ class WrappedRequest:
         HTML document, and the user had no option to approve the automatic
         fetching of the image, this should be true.
         """
-        return cast(bool, self.request.meta.get("is_unverifiable", False))
+        return cast("bool", self.request.meta.get("is_unverifiable", False))
 
     @property
     def full_url(self) -> str:
@@ -181,7 +181,7 @@ class WrappedRequest:
 
     @property
     def origin_req_host(self) -> str:
-        return cast(str, urlparse_cached(self.request).hostname)
+        return cast("str", urlparse_cached(self.request).hostname)
 
     def has_header(self, name: str) -> bool:
         return name in self.request.headers

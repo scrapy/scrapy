@@ -91,7 +91,8 @@ def open_in_browser(
             if "item name" not in response.body:
                 open_in_browser(response)
     """
-    from scrapy.http import HtmlResponse, TextResponse
+    # circular imports
+    from scrapy.http import HtmlResponse, TextResponse  # noqa: PLC0415
 
     # XXX: this implementation is a bit dirty and could be improved
     body = response.body

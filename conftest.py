@@ -84,7 +84,7 @@ def requires_uvloop(request):
     if not request.node.get_closest_marker("requires_uvloop"):
         return
     try:
-        import uvloop
+        import uvloop  # noqa: PLC0415
 
         del uvloop
     except ImportError:
@@ -96,7 +96,7 @@ def requires_botocore(request):
     if not request.node.get_closest_marker("requires_botocore"):
         return
     try:
-        import botocore
+        import botocore  # noqa: PLC0415
 
         del botocore
     except ImportError:
@@ -108,7 +108,7 @@ def requires_boto3(request):
     if not request.node.get_closest_marker("requires_boto3"):
         return
     try:
-        import boto3
+        import boto3  # noqa: PLC0415
 
         del boto3
     except ImportError:

@@ -69,19 +69,19 @@ class Headers(CaselessDict):
 
     def __getitem__(self, key: AnyStr) -> bytes | None:
         try:
-            return cast(list[bytes], super().__getitem__(key))[-1]
+            return cast("list[bytes]", super().__getitem__(key))[-1]
         except IndexError:
             return None
 
     def get(self, key: AnyStr, def_val: Any = None) -> bytes | None:
         try:
-            return cast(list[bytes], super().get(key, def_val))[-1]
+            return cast("list[bytes]", super().get(key, def_val))[-1]
         except IndexError:
             return None
 
     def getlist(self, key: AnyStr, def_val: Any = None) -> list[bytes]:
         try:
-            return cast(list[bytes], super().__getitem__(key))
+            return cast("list[bytes]", super().__getitem__(key))
         except KeyError:
             if def_val is not None:
                 return self.normvalue(def_val)

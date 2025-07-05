@@ -14,11 +14,10 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.testing import StringTransport
 from twisted.protocols.policies import WrappingFactory
 from twisted.web import resource, server, static, util
+from twisted.web.client import _makeGetterFactory
 
 from scrapy.core.downloader import webclient as client
-from scrapy.core.downloader.contextfactory import (
-    ScrapyClientContextFactory,
-)
+from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
 from scrapy.http import Headers, Request
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes, to_unicode
@@ -46,8 +45,6 @@ def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
         )
         f.deferred.addCallback(response_transform or (lambda r: r.body))
         return f
-
-    from twisted.web.client import _makeGetterFactory
 
     return _makeGetterFactory(
         to_bytes(url),

@@ -12,12 +12,7 @@ from collections.abc import Awaitable, Coroutine, Iterable, Iterator
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast, overload
 
-from twisted.internet.defer import (
-    Deferred,
-    DeferredList,
-    fail,
-    succeed,
-)
+from twisted.internet.defer import Deferred, DeferredList, fail, succeed
 from twisted.internet.task import Cooperator
 from twisted.python import failure
 
@@ -162,7 +157,7 @@ def mustbe_deferred(
 def parallel(
     iterable: Iterable[_T],
     count: int,
-    callable: Callable[Concatenate[_T, _P], _T2],
+    callable: Callable[Concatenate[_T, _P], _T2],  # noqa: A002
     *args: _P.args,
     **named: _P.kwargs,
 ) -> Deferred[list[tuple[bool, Iterator[_T2]]]]:
@@ -225,12 +220,12 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
     def __init__(
         self,
         aiterable: AsyncIterator[_T],
-        callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],
+        callable_: Callable[Concatenate[_T, _P], Deferred[Any] | None],
         *callable_args: _P.args,
         **callable_kwargs: _P.kwargs,
     ):
         self.aiterator: AsyncIterator[_T] = aiterable.__aiter__()
-        self.callable: Callable[Concatenate[_T, _P], Deferred[Any] | None] = callable
+        self.callable: Callable[Concatenate[_T, _P], Deferred[Any] | None] = callable_
         self.callable_args: tuple[Any, ...] = callable_args
         self.callable_kwargs: dict[str, Any] = callable_kwargs
         self.finished: bool = False
@@ -283,7 +278,7 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
 def parallel_async(
     async_iterable: AsyncIterator[_T],
     count: int,
-    callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],
+    callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],  # noqa: A002
     *args: _P.args,
     **named: _P.kwargs,
 ) -> Deferred[list[tuple[bool, Iterator[Deferred[Any]]]]]:
@@ -300,7 +295,7 @@ def parallel_async(
 
 def process_chain(
     callbacks: Iterable[Callable[Concatenate[_T, _P], _T]],
-    input: _T,
+    input: _T,  # noqa: A002
     *a: _P.args,
     **kw: _P.kwargs,
 ) -> Deferred[_T]:
@@ -315,7 +310,7 @@ def process_chain(
 def process_chain_both(
     callbacks: Iterable[Callable[Concatenate[_T, _P], Any]],
     errbacks: Iterable[Callable[Concatenate[Failure, _P], Any]],
-    input: Any,
+    input: Any,  # noqa: A002
     *a: _P.args,
     **kw: _P.kwargs,
 ) -> Deferred:
@@ -339,7 +334,7 @@ def process_chain_both(
 
 def process_parallel(
     callbacks: Iterable[Callable[Concatenate[_T, _P], _T2]],
-    input: _T,
+    input: _T,  # noqa: A002
     *a: _P.args,
     **kw: _P.kwargs,
 ) -> Deferred[list[_T2]]:
@@ -414,7 +409,7 @@ def deferred_from_coro(o: Awaitable[_T] | _T2) -> Deferred[_T] | _T2:
         if not is_asyncio_available():
             # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
             # that use asyncio, e.g. "await asyncio.sleep(1)"
-            return Deferred.fromCoroutine(cast(Coroutine[Deferred[Any], Any, _T], o))
+            return Deferred.fromCoroutine(cast("Coroutine[Deferred[Any], Any, _T]", o))
         # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
         return Deferred.fromFuture(asyncio.ensure_future(o))
     return o

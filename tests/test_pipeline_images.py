@@ -502,8 +502,8 @@ class TestImagesPipelineCustomSettings:
             assert getattr(pipeline_cls, pipe_attr.lower()) == expected_value
 
 
-def _create_image(format, *a, **kw):
+def _create_image(format_, *a, **kw):
     buf = io.BytesIO()
-    Image.new(*a, **kw).save(buf, format)
+    Image.new(*a, **kw).save(buf, format_)
     buf.seek(0)
     return Image.open(buf), buf

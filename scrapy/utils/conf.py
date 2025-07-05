@@ -153,7 +153,7 @@ def feed_process_params_from_cli(
     suitable to be used as the FEEDS setting.
     """
     valid_output_formats: Iterable[str] = without_none_values(
-        cast(dict[str, str], settings.getwithbase("FEED_EXPORTERS"))
+        cast("dict[str, str]", settings.getwithbase("FEED_EXPORTERS"))
     ).keys()
 
     def check_valid_format(output_format: str) -> None:

@@ -231,11 +231,11 @@ class TestXmliterBase(ABC):
             "<products><product>one</product><product>two</product></products>"
         )
 
-        iter = self.xmliter(body, "product")
-        next(iter)
-        next(iter)
+        my_iter = self.xmliter(body, "product")
+        next(my_iter)
+        next(my_iter)
         with pytest.raises(StopIteration):
-            next(iter)
+            next(my_iter)
 
     def test_xmliter_objtype_exception(self):
         i = self.xmliter(42, "product")
@@ -473,13 +473,13 @@ class TestUtilsCsv:
         body = get_testdata("feeds", "feed-sample3.csv")
 
         response = TextResponse(url="http://example.com/", body=body)
-        iter = csviter(response)
-        next(iter)
-        next(iter)
-        next(iter)
-        next(iter)
+        my_iter = csviter(response)
+        next(my_iter)
+        next(my_iter)
+        next(my_iter)
+        next(my_iter)
         with pytest.raises(StopIteration):
-            next(iter)
+            next(my_iter)
 
     def test_csviter_encoding(self):
         body1 = get_testdata("feeds", "feed-sample4.csv")

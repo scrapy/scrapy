@@ -12,7 +12,7 @@ from unittest import mock
 import pytest
 from pytest_twisted import async_yield_fixture
 from twisted.cred import checkers, credentials, portal
-from twisted.protocols.ftp import FTPFactory, FTPRealm
+from twisted.protocols.ftp import ConnectionLost, FTPFactory, FTPRealm
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers import DownloadHandlers
@@ -25,10 +25,7 @@ from scrapy.http import HtmlResponse, Request, Response
 from scrapy.http.response.text import TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.spiders import Spider
-from scrapy.utils.defer import (
-    deferred_f_from_coro_f,
-    maybe_deferred_to_future,
-)
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
@@ -182,7 +179,7 @@ class TestS3:
     @contextlib.contextmanager
     def _mocked_date(self, date):
         try:
-            import botocore.auth  # noqa: F401
+            import botocore.auth  # noqa: F401,PLC0415
         except ImportError:
             yield
         else:
@@ -435,7 +432,6 @@ class TestFTP(TestFTPBase):
             pytest.skip(
                 "This test produces DirtyReactorAggregateError on Windows with asyncio"
             )
-        from twisted.protocols.ftp import ConnectionLost
 
         meta = dict(self.req_meta)
         meta.update({"ftp_password": "invalid"})

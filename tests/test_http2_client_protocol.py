@@ -19,7 +19,7 @@ from twisted.internet.defer import (
     inlineCallbacks,
 )
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
-from twisted.internet.error import TimeoutError
+from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.internet.ssl import Certificate, PrivateCertificate, optionsForClientTLS
 from twisted.web.client import URI, ResponseFailed
 from twisted.web.http import H2_ENABLED
@@ -239,7 +239,7 @@ class TestHttps2ClientProtocol:
     ) -> AsyncGenerator[H2ClientProtocol]:
         from twisted.internet import reactor
 
-        from scrapy.core.http2.protocol import H2ClientFactory
+        from scrapy.core.http2.protocol import H2ClientFactory  # noqa: PLC0415
 
         client_options = optionsForClientTLS(
             hostname=self.host,
@@ -486,7 +486,7 @@ class TestHttps2ClientProtocol:
     ) -> Generator[Deferred[Any], None, None]:
         """In case when value of Header Content-Length != len(Received Data)
         ProtocolError is raised"""
-        from h2.exceptions import InvalidBodyLengthError
+        from h2.exceptions import InvalidBodyLengthError  # noqa: PLC0415
 
         request = Request(url=self.get_url(server_port, "/dataloss"))
         with pytest.raises(ResponseFailed) as exc_info:
@@ -595,7 +595,7 @@ class TestHttps2ClientProtocol:
         def assert_inactive_stream(failure):
             assert failure.check(ResponseFailed) is not None
 
-            from scrapy.core.http2.stream import InactiveStreamClosed
+            from scrapy.core.http2.stream import InactiveStreamClosed  # noqa: PLC0415
 
             assert any(
                 isinstance(e, InactiveStreamClosed) for e in failure.value.reasons
@@ -679,7 +679,7 @@ class TestHttps2ClientProtocol:
 
     @staticmethod
     async def _check_invalid_netloc(client: H2ClientProtocol, url: str) -> None:
-        from scrapy.core.http2.stream import InvalidHostname
+        from scrapy.core.http2.stream import InvalidHostname  # noqa: PLC0415
 
         request = Request(url)
         with pytest.raises(InvalidHostname) as exc_info:
@@ -724,9 +724,9 @@ class TestHttps2ClientProtocol:
             yield make_request_dfd(client, request)
 
         for err in exc_info.value.reasons:
-            from scrapy.core.http2.protocol import H2ClientProtocol
+            from scrapy.core.http2.protocol import H2ClientProtocol  # noqa: PLC0415
 
-            if isinstance(err, TimeoutError):
+            if isinstance(err, TxTimeoutError):
                 assert (
                     f"Connection was IDLE for more than {H2ClientProtocol.IDLE_TIMEOUT}s"
                     in str(err)
