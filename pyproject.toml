@@ -218,6 +218,9 @@ disable = [
 ]
 
 [tool.pytest.ini_options]
+addopts = [
+    "--reactor=asyncio",
+]
 xfail_strict = true
 python_files = ["test_*.py", "test_*/__init__.py"]
 markers = [

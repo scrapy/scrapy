@@ -47,14 +47,6 @@ if not H2_ENABLED:
     )
 
 
-# def pytest_addoption(parser):
-#     parser.addoption(
-#         "--reactor",
-#         default="asyncio",
-#         choices=["default", "asyncio"],
-#     )
-
-
 @pytest.fixture(scope="class")
 def reactor_pytest(request):
     if not request.cls:
