@@ -241,7 +241,7 @@ def walk_callable(node: ast.AST) -> Iterable[ast.AST]:
 _generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
 
 
-def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:
+def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:  # noqa: A002
     """
     Returns True if a callable is a generator function which includes a
     'return' statement with a value different than None, False otherwise
@@ -279,7 +279,8 @@ def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:
 
 
 def warn_on_generator_with_return_value(
-    spider: Spider, callable: Callable[..., Any]
+    spider: Spider,
+    callable: Callable[..., Any],  # noqa: A002
 ) -> None:
     """
     Logs a warning if a callable is a generator function and includes

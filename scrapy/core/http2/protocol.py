@@ -21,7 +21,7 @@ from h2.events import (
     WindowUpdated,
 )
 from h2.exceptions import FrameTooLargeError, H2Error
-from twisted.internet.error import TimeoutError
+from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.internet.interfaces import (
     IAddress,
     IHandshakeListener,
@@ -322,7 +322,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self._write_to_transport()
 
         self._lose_connection_with_error(
-            [TimeoutError(f"Connection was IDLE for more than {self.IDLE_TIMEOUT}s")]
+            [TxTimeoutError(f"Connection was IDLE for more than {self.IDLE_TIMEOUT}s")]
         )
 
     def connectionLost(self, reason: Failure = connectionDone) -> None:

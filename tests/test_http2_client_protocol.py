@@ -20,7 +20,7 @@ from twisted.internet.defer import (
     inlineCallbacks,
 )
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
-from twisted.internet.error import TimeoutError
+from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.internet.ssl import Certificate, PrivateCertificate, optionsForClientTLS
 from twisted.trial.unittest import TestCase
 from twisted.web.client import URI, ResponseFailed
@@ -632,7 +632,7 @@ class TestHttps2ClientProtocol(TestCase):
         for err in exc_info.value.reasons:
             from scrapy.core.http2.protocol import H2ClientProtocol  # noqa: PLC0415
 
-            if isinstance(err, TimeoutError):
+            if isinstance(err, TxTimeoutError):
                 assert (
                     f"Connection was IDLE for more than {H2ClientProtocol.IDLE_TIMEOUT}s"
                     in str(err)

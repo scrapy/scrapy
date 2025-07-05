@@ -10,6 +10,8 @@ from twisted.internet.error import (
     DNSLookupError,
     TCPTimedOutError,
 )
+from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
+from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.web.client import ResponseFailed
 
 from scrapy.downloadermiddlewares.retry import RetryMiddleware, get_retry_request
@@ -91,12 +93,12 @@ class TestRetry:
             ConnectError,
             ConnectionDone,
             ConnectionLost,
-            ConnectionRefusedError,
+            TxConnectionRefusedError,
             defer.TimeoutError,
             DNSLookupError,
             ResponseFailed,
             TCPTimedOutError,
-            TimeoutError,
+            TxTimeoutError,
         ]
 
         for exc in exceptions:
