@@ -100,3 +100,47 @@ def test_params():
         assert getattr(expected, param) == getattr(actual, param), (
             f"Slot.{param}: {getattr(expected, param)!r} != {getattr(actual, param)!r}"
         )
+
+
+class TestNoneSlotHandling(TestCase):
+    """Test specific cases for None slot handling with different priority queues."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.mockserver.__exit__(None, None, None)
+
+    def setUp(self):
+        self.runner = CrawlerRunner()
+
+    @inlineCallbacks
+    def _test_none_slot_with_priority_queue(self, priority_queue_class):
+        crawler = get_crawler(
+            DownloaderSlotsSettingsTestSpider,
+            settings_dict={"SCHEDULER_PRIORITY_QUEUE": priority_queue_class},
+        )
+        yield crawler.crawl(mockserver=self.mockserver)
+
+        assert hasattr(crawler.spider, "times")
+        assert None in crawler.spider.times
+        assert len(crawler.spider.times[None]) == 2  # two requests for None slot
+
+        stats = crawler.stats
+        assert stats.get_value("spider_exceptions", 0) == 0
+        assert stats.get_value("downloader/exception_count", 0) == 0
+
+    @inlineCallbacks
+    def test_none_slot_with_scrapy_priority_queue(self):
+        yield self._test_none_slot_with_priority_queue(
+            "scrapy.pqueues.ScrapyPriorityQueue"
+        )
+
+    @inlineCallbacks
+    def test_none_slot_with_downloader_aware_priority_queue(self):
+        yield self._test_none_slot_with_priority_queue(
+            "scrapy.pqueues.DownloaderAwarePriorityQueue"
+        )
