@@ -1,6 +1,5 @@
 from testfixtures import LogCapture
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import TestCase
 
 from scrapy import Request, signals
 from scrapy.http.response import Response
@@ -56,14 +55,14 @@ class AlternativeCallbacksMiddleware:
         return response.replace(request=new_request)
 
 
-class TestCrawl(TestCase):
+class TestCrawl:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
     @inlineCallbacks

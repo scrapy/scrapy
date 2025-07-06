@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from twisted.web.http import H2_ENABLED
 
-from scrapy.utils.reactor import install_reactor
+from scrapy.utils.reactor import set_asyncio_event_loop_policy
 from tests.keys import generate_keys
 
 
@@ -48,36 +48,24 @@ if not H2_ENABLED:
     )
 
 
-def pytest_addoption(parser):
-    parser.addoption(
-        "--reactor",
-        default="asyncio",
-        choices=["default", "asyncio"],
-    )
-
-
-@pytest.fixture(scope="class")
-def reactor_pytest(request):
-    if not request.cls:
-        # doctests
-        return None
-    request.cls.reactor_pytest = request.config.getoption("--reactor")
-    return request.cls.reactor_pytest
+@pytest.fixture(scope="session")
+def reactor_pytest(request) -> str:
+    return request.config.getoption("--reactor")
 
 
 @pytest.fixture(autouse=True)
 def only_asyncio(request, reactor_pytest):
-    if request.node.get_closest_marker("only_asyncio") and reactor_pytest == "default":
-        pytest.skip("This test is only run without --reactor=default")
+    if request.node.get_closest_marker("only_asyncio") and reactor_pytest != "asyncio":
+        pytest.skip("This test is only run with --reactor=asyncio")
 
 
 @pytest.fixture(autouse=True)
 def only_not_asyncio(request, reactor_pytest):
     if (
         request.node.get_closest_marker("only_not_asyncio")
-        and reactor_pytest != "default"
+        and reactor_pytest == "asyncio"
     ):
-        pytest.skip("This test is only run with --reactor=default")
+        pytest.skip("This test is only run without --reactor=asyncio")
 
 
 @pytest.fixture(autouse=True)
@@ -117,11 +105,10 @@ def requires_boto3(request):
 
 
 def pytest_configure(config):
-    if config.getoption("--reactor") != "default":
-        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
-    else:
-        # install the reactor explicitly
-        from twisted.internet import reactor  # noqa: F401
+    if config.getoption("--reactor") == "asyncio":
+        # Needed on Windows to switch from proactor to selector for Twisted reactor compatibility.
+        # If we decide to run tests with both, we will need to add a new option and check it here.
+        set_asyncio_event_loop_policy()
 
 
 # Generate localhost certificate files, needed by some tests

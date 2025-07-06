@@ -5,7 +5,6 @@ import logging
 import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import TestCase
 
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
@@ -205,14 +204,14 @@ class TestHttpErrorMiddlewareHandleAll:
         mw.process_spider_input(res402, spider)
 
 
-class TestHttpErrorMiddlewareIntegrational(TestCase):
+class TestHttpErrorMiddlewareIntegrational:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
     @inlineCallbacks

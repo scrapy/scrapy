@@ -7,7 +7,6 @@ from unittest import mock
 
 import pytest
 from twisted.internet.defer import Deferred
-from twisted.trial import unittest
 
 from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.asyncio import (
@@ -21,15 +20,14 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
 
-@pytest.mark.usefixtures("reactor_pytest")
 class TestAsyncio:
-    def test_is_asyncio_available(self):
+    def test_is_asyncio_available(self, reactor_pytest: str) -> None:
         # the result should depend only on the pytest --reactor argument
-        assert is_asyncio_available() == (self.reactor_pytest != "default")
+        assert is_asyncio_available() == (reactor_pytest == "asyncio")
 
 
 @pytest.mark.only_asyncio
-class TestParallelAsyncio(unittest.TestCase):
+class TestParallelAsyncio:
     """Test for scrapy.utils.asyncio.parallel_asyncio(), based on tests.test_utils_defer.TestParallelAsync."""
 
     CONCURRENT_ITEMS = 50

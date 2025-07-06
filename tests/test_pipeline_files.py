@@ -19,7 +19,6 @@ import attr
 import pytest
 from itemadapter import ItemAdapter
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
 
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
@@ -75,8 +74,8 @@ def get_ftp_content_and_delete(
     return b"".join(ftp_data)
 
 
-class TestFilesPipeline(unittest.TestCase):
-    def setUp(self):
+class TestFilesPipeline:
+    def setup_method(self):
         self.tempdir = mkdtemp()
         settings_dict = {"FILES_STORE": self.tempdir}
         crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
@@ -84,7 +83,7 @@ class TestFilesPipeline(unittest.TestCase):
         self.pipeline.download_func = _mocked_download_func
         self.pipeline.open_spider(None)
 
-    def tearDown(self):
+    def teardown_method(self):
         rmtree(self.tempdir)
 
     def test_file_path(self):
@@ -538,7 +537,7 @@ class TestFilesPipelineCustomSettings:
 
 
 @pytest.mark.requires_botocore
-class TestS3FilesStore(unittest.TestCase):
+class TestS3FilesStore:
     @inlineCallbacks
     def test_persist(self):
         bucket = "mybucket"
@@ -615,7 +614,7 @@ class TestS3FilesStore(unittest.TestCase):
 @pytest.mark.skipif(
     "GCS_PROJECT_ID" not in os.environ, reason="GCS_PROJECT_ID not found"
 )
-class TestGCSFilesStore(unittest.TestCase):
+class TestGCSFilesStore:
     @inlineCallbacks
     def test_persist(self):
         uri = os.environ.get("GCS_TEST_FILE_URI")
@@ -667,7 +666,7 @@ class TestGCSFilesStore(unittest.TestCase):
             store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
-class TestFTPFileStore(unittest.TestCase):
+class TestFTPFileStore:
     @inlineCallbacks
     def test_persist(self):
         data = b"TestFTPFilesStore: \xe2\x98\x83"

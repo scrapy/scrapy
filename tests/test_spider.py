@@ -13,7 +13,6 @@ from unittest import mock
 import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
 from w3lib.url import safe_url_string
 
 from scrapy import signals
@@ -35,14 +34,8 @@ from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import get_testdata, tests_datadir
 
 
-class TestSpider(unittest.TestCase):
+class TestSpider:
     spider_class = Spider
-
-    def setUp(self):
-        warnings.simplefilter("always")
-
-    def tearDown(self):
-        warnings.resetwarnings()
 
     def test_base_spider(self):
         spider = self.spider_class("example.com")

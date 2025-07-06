@@ -7,7 +7,6 @@ import pytest
 from twisted.internet import error
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.python import failure
-from twisted.trial import unittest
 
 from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
 from scrapy.downloadermiddlewares.robotstxt import logger as mw_module_logger
@@ -22,13 +21,13 @@ if TYPE_CHECKING:
     from scrapy.crawler import Crawler
 
 
-class TestRobotsTxtMiddleware(unittest.TestCase):
-    def setUp(self):
+class TestRobotsTxtMiddleware:
+    def setup_method(self):
         self.crawler = mock.MagicMock()
         self.crawler.settings = Settings()
         self.crawler.engine.download = mock.MagicMock()
 
-    def tearDown(self):
+    def teardown_method(self):
         del self.crawler
 
     def test_robotstxt_settings(self):
@@ -249,8 +248,8 @@ Disallow: /some/randome/page.html
 
 @pytest.mark.skipif(not rerp_available(), reason="Rerp parser is not installed")
 class TestRobotsTxtMiddlewareWithRerp(TestRobotsTxtMiddleware):
-    def setUp(self):
-        super().setUp()
+    def setup_method(self):
+        super().setup_method()
         self.crawler.settings.set(
             "ROBOTSTXT_PARSER", "scrapy.robotstxt.RerpRobotParser"
         )
