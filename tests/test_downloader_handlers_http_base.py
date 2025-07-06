@@ -357,7 +357,15 @@ class TestHttpBase(ABC):
         response = await download_request(download_handler, request)
         assert response.headers[b"content-length"] == b"10"
 
-    async def _test_response_class(
+    @pytest.mark.parametrize(
+        ("filename", "body", "response_class"),
+        [
+            ("foo.html", b"", HtmlResponse),
+            ("foo", b"<!DOCTYPE html>\n<title>.</title>", HtmlResponse),
+        ],
+    )
+    @deferred_f_from_coro_f
+    async def test_response_class(
         self,
         filename: str,
         body: bytes,
@@ -368,26 +376,6 @@ class TestHttpBase(ABC):
         request = Request(self.getURL(server_port, filename), body=body)
         response = await download_request(download_handler, request)
         assert type(response) is response_class  # pylint: disable=unidiomatic-typecheck
-
-    @deferred_f_from_coro_f
-    async def test_response_class_from_url(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
-    ) -> None:
-        await self._test_response_class(
-            "foo.html", b"", HtmlResponse, server_port, download_handler
-        )
-
-    @deferred_f_from_coro_f
-    async def test_response_class_from_body(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
-    ) -> None:
-        await self._test_response_class(
-            "foo",
-            b"<!DOCTYPE html>\n<title>.</title>",
-            HtmlResponse,
-            server_port,
-            download_handler,
-        )
 
     @deferred_f_from_coro_f
     async def test_get_duplicate_header(
@@ -532,9 +520,14 @@ class TestHttp11Base(TestHttpBase):
         crawler = get_crawler(settings_dict={"DOWNLOAD_FAIL_ON_DATALOSS": False})
         download_handler = build_from_crawler(self.download_handler_cls, crawler)
         request = Request(self.getURL(server_port, url))
-        response = await maybe_deferred_to_future(
-            download_handler.download_request(request, DefaultSpider())
-        )
+        try:
+            response = await maybe_deferred_to_future(
+                download_handler.download_request(request, DefaultSpider())
+            )
+        finally:
+            d = download_handler.close()  # type: ignore[attr-defined]
+            if d is not None:
+                await maybe_deferred_to_future(d)
         assert response.flags == ["dataloss"]
 
     @deferred_f_from_coro_f

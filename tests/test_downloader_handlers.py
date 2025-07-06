@@ -357,9 +357,8 @@ class TestFTPBase:
             assert dh.client.transport
             dh.client.transport.loseConnection()
 
-    async def download_request(
-        self, dh: FTPDownloadHandler, request: Request
-    ) -> Response:
+    @staticmethod
+    async def download_request(dh: FTPDownloadHandler, request: Request) -> Response:
         return await maybe_deferred_to_future(
             dh.download_request(request, DefaultSpider())
         )
@@ -414,12 +413,20 @@ class TestFTPBase:
         assert local_path.read_bytes() == b"I have the power!"
         local_path.unlink()
 
-    async def _test_response_class(
+    @pytest.mark.parametrize(
+        ("filename", "response_class"),
+        [
+            ("file.txt", TextResponse),
+            ("html-file-without-extension", HtmlResponse),
+        ],
+    )
+    @deferred_f_from_coro_f
+    async def test_response_class(
         self,
-        server_url: str,
-        dh: FTPDownloadHandler,
         filename: str,
         response_class: type[Response],
+        server_url: str,
+        dh: FTPDownloadHandler,
     ) -> None:
         f, local_fname = mkstemp()
         local_fname_path = Path(local_fname)
@@ -430,20 +437,6 @@ class TestFTPBase:
         r = await self.download_request(dh, request)
         assert type(r) is response_class  # pylint: disable=unidiomatic-typecheck
         local_fname_path.unlink()
-
-    @deferred_f_from_coro_f
-    async def test_response_class_from_url(
-        self, server_url: str, dh: FTPDownloadHandler
-    ) -> None:
-        await self._test_response_class(server_url, dh, "file.txt", TextResponse)
-
-    @deferred_f_from_coro_f
-    async def test_response_class_from_body(
-        self, server_url: str, dh: FTPDownloadHandler
-    ) -> None:
-        await self._test_response_class(
-            server_url, dh, "html-file-without-extension", HtmlResponse
-        )
 
 
 class TestFTP(TestFTPBase):
