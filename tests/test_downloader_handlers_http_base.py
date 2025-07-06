@@ -12,7 +12,6 @@ import pytest
 from pytest_twisted import async_yield_fixture
 from testfixtures import LogCapture
 from twisted.internet import defer, error
-from twisted.internet.defer import maybeDeferred
 from twisted.protocols.policies import WrappingFactory
 from twisted.web import resource, server, static, util
 from twisted.web._newclient import ResponseFailed
@@ -146,6 +145,17 @@ async def download_request(
     )
 
 
+async def close_dh(dh: DownloadHandlerProtocol) -> None:
+    # needed because the interface of close() is not clearly defined
+    if not hasattr(dh, "close"):
+        return
+    c = dh.close()
+    if c is None:
+        return
+    # covers coroutines and Deferreds; won't work if close() uses Futures inside
+    await c
+
+
 class TestHttpBase(ABC):
     scheme = "http"
     host = "localhost"
@@ -206,8 +216,7 @@ class TestHttpBase(ABC):
 
         yield dh
 
-        if hasattr(dh, "close") and (c := dh.close()) is not None:  # FIXME
-            await c
+        await close_dh(dh)
 
     def getURL(self, portno: int, path: str) -> str:
         return f"{self.scheme}://{self.host}:{portno}/{path}"
@@ -562,7 +571,9 @@ class TestHttps11Base(TestHttp11Base):
                     ("scrapy.core.downloader.tls", "DEBUG", self.tls_log_message)
                 )
         finally:
-            await maybe_deferred_to_future(maybeDeferred(download_handler.close))
+            d = download_handler.close()  # type: ignore[attr-defined]
+            if d is not None:
+                await maybe_deferred_to_future(d)
 
 
 class TestSimpleHttpsBase(ABC):
@@ -609,8 +620,7 @@ class TestSimpleHttpsBase(ABC):
 
         yield dh
 
-        if hasattr(dh, "close") and (c := dh.close()) is not None:  # FIXME
-            await c
+        await close_dh(dh)
 
     def getURL(self, portno: int, path: str) -> str:
         return f"https://{self.host}:{portno}/{path}"
@@ -743,8 +753,7 @@ class TestHttpProxyBase(ABC):
 
         yield dh
 
-        if hasattr(dh, "close") and (c := dh.close()) is not None:  # FIXME
-            await c
+        await close_dh(dh)
 
     def getURL(self, portno: int, path: str) -> str:
         return f"{self.scheme}://{self.host}:{portno}/{path}"

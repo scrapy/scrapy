@@ -34,8 +34,6 @@ from scrapy.utils.test import get_crawler
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
 
-    from scrapy.spiders import Spider
-
 
 class DummyDH:
     lazy = False
@@ -107,16 +105,16 @@ class TestFile:
         os.close(self.fd)
         Path(self.tmpname).unlink()
 
-    async def download_request(self, request: Request, spider: Spider) -> Response:
+    async def download_request(self, request: Request) -> Response:
         return await maybe_deferred_to_future(
-            self.download_handler.download_request(request, spider)
+            self.download_handler.download_request(request, DefaultSpider())
         )
 
     @deferred_f_from_coro_f
     async def test_download(self):
         request = Request(path_to_file_uri(self.tmpname))
         assert request.url.upper().endswith("%5E")
-        response = await self.download_request(request, DefaultSpider())
+        response = await self.download_request(request)
         assert response.url == request.url
         assert response.status == 200
         assert response.body == b"0123456789"
@@ -127,7 +125,7 @@ class TestFile:
         request = Request(path_to_file_uri(mkdtemp()))
         # the specific exception differs between platforms
         with pytest.raises(OSError):  # noqa: PT011
-            await self.download_request(request, DefaultSpider())
+            await self.download_request(request)
 
 
 class HttpDownloadHandlerMock:
@@ -484,25 +482,24 @@ class TestDataURI:
     def setup_method(self):
         crawler = get_crawler()
         self.download_handler = build_from_crawler(DataURIDownloadHandler, crawler)
-        self.spider = DefaultSpider()
 
-    async def download_request(self, request: Request, spider: Spider) -> Response:
+    async def download_request(self, request: Request) -> Response:
         return await maybe_deferred_to_future(
-            self.download_handler.download_request(request, spider)
+            self.download_handler.download_request(request, DefaultSpider())
         )
 
     @deferred_f_from_coro_f
     async def test_response_attrs(self):
         uri = "data:,A%20brief%20note"
         request = Request(uri)
-        response = await self.download_request(request, self.spider)
+        response = await self.download_request(request)
         assert response.url == uri
         assert not response.headers
 
     @deferred_f_from_coro_f
     async def test_default_mediatype_encoding(self):
         request = Request("data:,A%20brief%20note")
-        response = await self.download_request(request, self.spider)
+        response = await self.download_request(request)
         assert response.text == "A brief note"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
         assert response.encoding == "US-ASCII"
@@ -510,7 +507,7 @@ class TestDataURI:
     @deferred_f_from_coro_f
     async def test_default_mediatype(self):
         request = Request("data:;charset=iso-8859-7,%be%d3%be")
-        response = await self.download_request(request, self.spider)
+        response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
         assert response.encoding == "iso-8859-7"
@@ -518,7 +515,7 @@ class TestDataURI:
     @deferred_f_from_coro_f
     async def test_text_charset(self):
         request = Request("data:text/plain;charset=iso-8859-7,%be%d3%be")
-        response = await self.download_request(request, self.spider)
+        response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert response.body == b"\xbe\xd3\xbe"
         assert response.encoding == "iso-8859-7"
@@ -530,7 +527,7 @@ class TestDataURI:
             "charset=utf-8;bar=%22foo;%5C%22 foo ;/,%22"
             ",%CE%8E%CE%A3%CE%8E"
         )
-        response = await self.download_request(request, self.spider)
+        response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
         assert response.encoding == "utf-8"
@@ -538,11 +535,11 @@ class TestDataURI:
     @deferred_f_from_coro_f
     async def test_base64(self):
         request = Request("data:text/plain;base64,SGVsbG8sIHdvcmxkLg%3D%3D")
-        response = await self.download_request(request, self.spider)
+        response = await self.download_request(request)
         assert response.text == "Hello, world."
 
     @deferred_f_from_coro_f
     async def test_protocol(self):
         request = Request("data:,")
-        response = await self.download_request(request, self.spider)
+        response = await self.download_request(request)
         assert response.protocol is None

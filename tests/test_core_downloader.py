@@ -95,7 +95,7 @@ class TestContextFactoryBase:
 
 class TestContextFactory(TestContextFactoryBase):
     @deferred_f_from_coro_f
-    async def testPayload(self, server_url):
+    async def testPayload(self, server_url: str) -> None:
         s = "0123456789" * 10
         crawler = get_crawler()
         settings = Settings()
@@ -133,7 +133,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         assert body == to_bytes(s)
 
     @deferred_f_from_coro_f
-    async def test_setting_default(self, server_url):
+    async def test_setting_default(self, server_url: str) -> None:
         crawler = get_crawler()
         settings = Settings()
         client_context_factory = load_context_factory_from_settings(settings, crawler)
@@ -153,7 +153,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
             load_context_factory_from_settings(settings, crawler)
 
     @deferred_f_from_coro_f
-    async def test_setting_explicit(self, server_url):
+    async def test_setting_explicit(self, server_url: str) -> None:
         crawler = get_crawler()
         settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": "TLSv1.2"})
         client_context_factory = load_context_factory_from_settings(settings, crawler)
@@ -161,7 +161,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         await self._assert_factory_works(server_url, client_context_factory)
 
     @deferred_f_from_coro_f
-    async def test_direct_from_crawler(self, server_url):
+    async def test_direct_from_crawler(self, server_url: str) -> None:
         # the setting is ignored
         crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_METHOD": "bad"})
         client_context_factory = build_from_crawler(ScrapyClientContextFactory, crawler)
@@ -169,7 +169,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         await self._assert_factory_works(server_url, client_context_factory)
 
     @deferred_f_from_coro_f
-    async def test_direct_init(self, server_url):
+    async def test_direct_init(self, server_url: str) -> None:
         client_context_factory = ScrapyClientContextFactory(OpenSSL.SSL.TLSv1_2_METHOD)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)

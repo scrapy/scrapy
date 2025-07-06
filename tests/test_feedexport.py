@@ -734,7 +734,7 @@ class TestFeedExportBase(ABC):
         await self.assertExportedMarshal(items, rows, settings)
         await self.assertExportedMultiple(items, rows, settings)
 
-    async def assertExportedCsv(
+    async def assertExportedCsv(  # noqa: B027
         self,
         items: Iterable[Any],
         header: Iterable[str],
@@ -743,7 +743,7 @@ class TestFeedExportBase(ABC):
     ) -> None:
         pass
 
-    async def assertExportedJsonLines(
+    async def assertExportedJsonLines(  # noqa: B027
         self,
         items: Iterable[Any],
         rows: Iterable[dict[str, Any]],
@@ -751,7 +751,7 @@ class TestFeedExportBase(ABC):
     ) -> None:
         pass
 
-    async def assertExportedXml(
+    async def assertExportedXml(  # noqa: B027
         self,
         items: Iterable[Any],
         rows: Iterable[dict[str, Any]],
@@ -759,7 +759,7 @@ class TestFeedExportBase(ABC):
     ) -> None:
         pass
 
-    async def assertExportedMultiple(
+    async def assertExportedMultiple(  # noqa: B027
         self,
         items: Iterable[Any],
         rows: Iterable[dict[str, Any]],
@@ -767,7 +767,7 @@ class TestFeedExportBase(ABC):
     ) -> None:
         pass
 
-    async def assertExportedPickle(
+    async def assertExportedPickle(  # noqa: B027
         self,
         items: Iterable[Any],
         rows: Iterable[dict[str, Any]],
@@ -775,7 +775,7 @@ class TestFeedExportBase(ABC):
     ) -> None:
         pass
 
-    async def assertExportedMarshal(
+    async def assertExportedMarshal(  # noqa: B027
         self,
         items: Iterable[Any],
         rows: Iterable[dict[str, Any]],
