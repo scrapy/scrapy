@@ -319,7 +319,7 @@ class MediaPipeline(ABC):
         info: SpiderInfo,
         *,
         item: Any = None,
-    ) -> FileInfo:
+    ) -> Deferred:
         """Handler for success downloads"""
         raise NotImplementedError
 
