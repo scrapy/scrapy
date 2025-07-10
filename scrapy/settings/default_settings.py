@@ -531,8 +531,6 @@ URLLENGTH_LIMIT = 2083
 USER_AGENT = f"Scrapy/{import_module('scrapy').__version__} (+https://scrapy.org)"
 
 WARN_ON_GENERATOR_RETURN_VALUE = True
-
-
 def __getattr__(name: str):
     if name == "CONCURRENT_REQUESTS_PER_IP":
         import warnings  # noqa: PLC0415
@@ -547,3 +545,9 @@ def __getattr__(name: str):
         return 0
 
     raise AttributeError
+
+# To use the HTTPX-based download handler, uncomment and adjust the following:
+# DOWNLOAD_HANDLERS = {
+#     'http': 'scrapy.core.downloader.handlers.httpx.HTTPXDownloadHandler',
+#     'https': 'scrapy.core.downloader.handlers.httpx.HTTPXDownloadHandler',
+# }
