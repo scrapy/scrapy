@@ -23,6 +23,7 @@ dependencies = [
     "tldextract",
     "w3lib>=1.17.0",
     "zope.interface>=5.1.0",
+    "httpx>=0.24.0",
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
