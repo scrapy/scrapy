@@ -1739,10 +1739,10 @@ Type of in-memory queue used by the scheduler. Other available type is:
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
 
-Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
+Default: ``'scrapy.pqueues.DownloaderAwarePriorityQueue'``
 
 Type of priority queue used by the scheduler. Another available type is
-``scrapy.pqueues.DownloaderAwarePriorityQueue``.
+``scrapy.pqueues.ScrapyPriorityQueue``.
 ``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
 ``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
 domains in parallel.
