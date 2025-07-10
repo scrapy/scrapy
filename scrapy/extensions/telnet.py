@@ -12,7 +12,7 @@ import os
 import pprint
 from typing import TYPE_CHECKING, Any
 
-from twisted.conch import manhole, telnet
+from twisted.conch import telnet
 from twisted.conch.insults import insults
 from twisted.internet import protocol
 
@@ -87,6 +87,8 @@ class TelnetConsole(protocol.ServerFactory):
                     and credentials.checkPassword(self.password.encode("utf8"))
                 ):
                     raise ValueError("Invalid credentials")
+
+                from twisted.conch import manhole
 
                 protocol = telnet.TelnetBootstrapProtocol(
                     insults.ServerProtocol, manhole.Manhole, self._get_telnet_vars()

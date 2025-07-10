@@ -13,7 +13,6 @@ from unittest import mock
 import pytest
 from pytest_twisted import async_yield_fixture
 from twisted.cred import checkers, credentials, portal
-from twisted.protocols.ftp import ConnectionLost, FTPFactory, FTPRealm
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers import DownloadHandlers
@@ -324,6 +323,8 @@ class TestFTPBase:
             (userdir / filename).write_bytes(content)
 
     def _get_factory(self, root):
+        from twisted.protocols.ftp import FTPFactory, FTPRealm
+
         realm = FTPRealm(anonymousRoot=str(root), userHome=str(root))
         p = portal.Portal(realm)
         users_checker = checkers.InMemoryUsernamePasswordDatabaseDontUse()
@@ -449,6 +450,8 @@ class TestFTP(TestFTPBase):
                 "This test produces DirtyReactorAggregateError on Windows with asyncio"
             )
 
+        from twisted.protocols.ftp import ConnectionLost
+
         meta = dict(self.req_meta)
         meta.update({"ftp_password": "invalid"})
         request = Request(url=server_url + "file.txt", meta=meta)
@@ -465,6 +468,8 @@ class TestAnonymousFTP(TestFTPBase):
             (root / filename).write_bytes(content)
 
     def _get_factory(self, tmp_path):
+        from twisted.protocols.ftp import FTPFactory, FTPRealm
+
         realm = FTPRealm(anonymousRoot=str(tmp_path))
         p = portal.Portal(realm)
         p.registerChecker(checkers.AllowAnonymousAccess(), credentials.IAnonymous)
