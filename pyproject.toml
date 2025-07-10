@@ -398,6 +398,10 @@ ignore = [
 [tool.ruff.lint.flake8-tidy-imports]
 banned-module-level-imports = [
     "twisted.internet.reactor",
+    # indirectly imports twisted.conch.insults.helper which imports twisted.internet.reactor
+    "twisted.conch.manhole",
+    # directly imports twisted.internet.reactor
+    "twisted.protocols.ftp",
 ]
 
 [tool.ruff.lint.isort]
