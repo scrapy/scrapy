@@ -98,12 +98,10 @@ def send_catch_log_deferred(
         )
         d.addErrback(logerror, receiver)
         # TODO https://pylint.readthedocs.io/en/latest/user_guide/messages/warning/cell-var-from-loop.html
-        d2: Deferred[tuple[TypingAny, TypingAny]] = d.addBoth(
-            lambda result: (
-                receiver,  # pylint: disable=cell-var-from-loop  # noqa: B023
-                result,
-            )
-        )
+        def _make_result_tuple(res, recv=receiver):
+            return (recv, res)
+
+        d2: Deferred[tuple[TypingAny, TypingAny]] = d.addBoth(_make_result_tuple)
         dfds.append(d2)
 
     results = yield DeferredList(dfds)
