@@ -402,6 +402,15 @@ class TestBaseSettings:
         assert frozencopy.frozen
         assert frozencopy is not self.settings
 
+    def test_getwithbase_class_object_replacement(self):
+        s = BaseSettings({
+            "TEST_BASE": BaseSettings({"tests.test_settings.Component1": 300}, "project"),
+            "TEST": BaseSettings({"tests.test_settings.Component2": 100}, "default"),
+        })
+        s["TEST"].set(Component1, None, "cmdline")
+        merged = s.getwithbase("TEST")
+        assert "tests.test_settings.Component1" not in merged
+
 
 class TestSettings:
     def setup_method(self):
