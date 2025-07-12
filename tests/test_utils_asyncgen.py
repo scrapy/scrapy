@@ -1,5 +1,5 @@
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
-from scrapy.utils.defer import deferred_f_from_coro_f
+from tests.utils.decorators import deferred_f_from_coro_f
 
 
 class TestAsyncgenUtils:

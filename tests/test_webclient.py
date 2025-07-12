@@ -33,6 +33,8 @@ from tests.mockserver import (
 )
 from tests.test_core_downloader import TestContextFactoryBase
 
+pytestmark = pytest.mark.requires_reactor
+
 
 def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
     """Adapted version of twisted.web.client.getPage"""

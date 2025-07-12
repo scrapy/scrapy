@@ -4,7 +4,6 @@ import logging
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
@@ -13,6 +12,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 from tests.spiders import MockServerSpider
+from tests.utils.decorators import inlineCallbacks
 
 
 class _HttpErrorSpider(MockServerSpider):

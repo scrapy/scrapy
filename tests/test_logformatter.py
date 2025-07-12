@@ -2,7 +2,6 @@ import logging
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy.exceptions import DropItem
@@ -13,6 +12,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 from tests.spiders import ItemSpider
+from tests.utils.decorators import inlineCallbacks
 
 
 class CustomItem(Item):

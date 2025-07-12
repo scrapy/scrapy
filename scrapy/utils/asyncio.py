@@ -59,9 +59,18 @@ def is_asyncio_available() -> bool:
     objects.
     """
     if not is_reactor_installed():
-        raise RuntimeError(
-            "is_asyncio_available() called without an installed reactor."
-        )
+        # try:
+        #     asyncio.get_event_loop()
+        # except RuntimeError:
+        #     return False
+        # return True
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError as ex:
+            raise RuntimeError(
+                "is_asyncio_available() called without an installed reactor or running asyncio event loop."
+            ) from ex
+        return True
 
     return is_asyncio_reactor_installed()
 

@@ -1,5 +1,4 @@
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.exceptions import StopDownload
 from tests.test_engine import (
@@ -10,6 +9,7 @@ from tests.test_engine import (
     MySpider,
     TestEngineBase,
 )
+from tests.utils.decorators import inlineCallbacks
 
 
 class BytesReceivedCrawlerRun(CrawlerRun):

@@ -2,13 +2,14 @@ import itertools
 from typing import Any
 from unittest.mock import patch
 
-from twisted.internet.defer import inlineCallbacks
+import pytest
 
 from scrapy import Spider
 from scrapy.crawler import Crawler, CrawlerRunner
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.test import get_crawler, get_reactor_settings
+from tests.utils.decorators import inlineCallbacks
 
 
 class SimpleAddon:
@@ -127,6 +128,7 @@ class TestAddonManager:
         crawler = runner.create_crawler(Spider)
         assert crawler.settings.getint("KEY") == 20
 
+    @pytest.mark.requires_reactor  # TODO use a different setting in the test
     def test_fallback_workflow(self):
         FALLBACK_SETTING = "MY_FALLBACK_DOWNLOAD_HANDLER"
 

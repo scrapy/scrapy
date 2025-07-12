@@ -19,11 +19,7 @@ from twisted.web.http import _DataLoss
 
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
 from scrapy.spiders import Spider
-from scrapy.utils.defer import (
-    deferred_f_from_coro_f,
-    deferred_from_coro,
-    maybe_deferred_to_future,
-)
+from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.spider import DefaultSpider
@@ -39,6 +35,7 @@ from tests.mockserver import (
     ssl_context_factory,
 )
 from tests.spiders import SingleRequestSpider
+from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator

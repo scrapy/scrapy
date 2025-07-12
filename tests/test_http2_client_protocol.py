@@ -43,6 +43,14 @@ if TYPE_CHECKING:
     from scrapy.core.http2.protocol import H2ClientProtocol
 
 
+pytestmark = [
+    pytest.mark.requires_reactor,
+    pytest.mark.skipif(
+        not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
+    ),
+]
+
+
 def generate_random_string(size: int) -> str:
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=size))
 
@@ -186,7 +194,6 @@ async def make_request(client: H2ClientProtocol, request: Request) -> Response:
     return await maybe_deferred_to_future(make_request_dfd(client, request))
 
 
-@pytest.mark.skipif(not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled")
 class TestHttps2ClientProtocol:
     scheme = "https"
     host = "localhost"

@@ -26,7 +26,6 @@ from itemadapter import ItemAdapter
 from pydispatch import dispatcher
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.internet.defer import inlineCallbacks
 from twisted.web import server, static, util
 
 from scrapy import signals
@@ -41,6 +40,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
 from tests import get_testdata, tests_datadir
+from tests.utils.decorators import inlineCallbacks
 
 
 class MyItem(Item):
@@ -505,6 +505,7 @@ class TestEngine(TestEngineBase):
         assert "AssertionError" not in stderr_str, stderr_str
 
 
+@pytest.mark.requires_reactor  # needs a reactor or an event loop for Downloader._slot_gc_loop
 def test_request_scheduled_signal(caplog):
     class TestScheduler(BaseScheduler):
         def __init__(self):

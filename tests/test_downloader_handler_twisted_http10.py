@@ -19,6 +19,9 @@ if TYPE_CHECKING:
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
 
 
+pytestmark = pytest.mark.requires_reactor
+
+
 class HTTP10DownloadHandlerMixin:
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:

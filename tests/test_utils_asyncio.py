@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 
 class TestAsyncio:
+    @pytest.mark.requires_reactor  # needs a reactor or an event loop for is_asyncio_available()
     def test_is_asyncio_available(self, reactor_pytest: str) -> None:
         # the result should depend only on the pytest --reactor argument
         assert is_asyncio_available() == (reactor_pytest == "asyncio")

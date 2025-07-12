@@ -35,6 +35,9 @@ jobs:
         - python-version: "3.13"
           env:
             TOXENV: default-reactor
+        - python-version: "3.13"
+          env:
+            TOXENV: no-reactor
         - python-version: pypy3.10
           env:
             TOXENV: pypy3
@@ -49,6 +52,9 @@ jobs:
         - python-version: "3.9.21"
           env:
             TOXENV: default-reactor-pinned
+        - python-version: "3.9.21"
+          env:
+            TOXENV: no-reactor-pinned
         - python-version: pypy3.10
           env:
             TOXENV: pypy3-pinned

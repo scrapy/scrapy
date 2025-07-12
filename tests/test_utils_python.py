@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, TypeVar
 import pytest
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
-from scrapy.utils.defer import aiter_errback, deferred_f_from_coro_f
+from scrapy.utils.defer import aiter_errback
 from scrapy.utils.python import (
     MutableAsyncChain,
     MutableChain,
@@ -21,6 +21,7 @@ from scrapy.utils.python import (
     to_unicode,
     without_none_values,
 )
+from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping

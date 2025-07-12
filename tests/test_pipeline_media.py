@@ -4,7 +4,7 @@ import warnings
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 
 from scrapy import signals
@@ -17,6 +17,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import inlineCallbacks
 
 
 def _mocked_download_func(request, info):

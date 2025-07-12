@@ -9,7 +9,6 @@ from urllib.parse import urlencode, urlparse
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 
@@ -18,7 +17,7 @@ from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import CloseSpider, StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.engine import format_engine_status, get_engine_status
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler, get_reactor_settings
@@ -55,6 +54,7 @@ from tests.spiders import (
     StartGoodAndBadOutput,
     StartItemSpider,
 )
+from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
 
 if TYPE_CHECKING:
     from scrapy.statscollectors import StatsCollector

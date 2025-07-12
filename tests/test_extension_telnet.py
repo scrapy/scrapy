@@ -1,10 +1,10 @@
 import pytest
 from twisted.conch.telnet import ITelnetProtocol
 from twisted.cred import credentials
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.extensions.telnet import TelnetConsole
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import inlineCallbacks
 
 
 class TestTelnetExtension:

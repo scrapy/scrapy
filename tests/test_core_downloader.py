@@ -18,11 +18,12 @@ from scrapy.core.downloader.contextfactory import (
 )
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
 from scrapy.settings import Settings
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
 from tests.mockserver import PayloadResource, ssl_context_factory
+from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred

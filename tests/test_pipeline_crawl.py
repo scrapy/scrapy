@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 from w3lib.url import add_or_replace_parameter
 
 from scrapy import Spider, signals
@@ -15,6 +14,7 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
 from tests.spiders import SimpleSpider
+from tests.utils.decorators import inlineCallbacks
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
