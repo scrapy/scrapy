@@ -36,9 +36,12 @@ if TYPE_CHECKING:
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
 
 
-pytestmark = pytest.mark.skipif(
-    not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
-)
+pytestmark = [
+    pytest.mark.requires_reactor,
+    pytest.mark.skipif(
+        not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
+    ),
+]
 
 
 class H2DownloadHandlerMixin:

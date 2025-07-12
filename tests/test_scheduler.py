@@ -8,7 +8,6 @@ from collections import deque
 from typing import Any, NamedTuple
 
 import pytest
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import BaseScheduler, Scheduler
@@ -19,6 +18,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockServer
+from tests.utils.decorators import inlineCallbacks
 
 
 class MemoryScheduler(BaseScheduler):

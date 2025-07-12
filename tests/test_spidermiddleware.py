@@ -14,8 +14,9 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
     from twisted.python.failure import Failure

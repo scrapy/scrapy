@@ -49,6 +49,7 @@ You can usually fix the issue by moving those offending module-level Twisted
 imports to the method or function definitions where they are used. For example,
 if you have something like:
 
+.. skip: next
 .. code-block:: python
 
     from twisted.internet import reactor

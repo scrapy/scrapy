@@ -14,7 +14,7 @@ from typing import Any
 import pytest
 from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred
 from w3lib import __version__ as w3lib_version
 from zope.interface.exceptions import MultipleInvalid
 
@@ -30,11 +30,12 @@ from scrapy.crawler import (
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
-from scrapy.utils.defer import deferred_f_from_coro_f, deferred_from_coro
+from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests.mockserver import MockServer, get_mockserver_env
+from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
 
 BASE_SETTINGS: dict[str, Any] = {}
 
