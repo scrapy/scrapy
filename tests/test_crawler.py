@@ -30,6 +30,7 @@ from scrapy.crawler import (
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
+from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_f_from_coro_f, deferred_from_coro
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
@@ -932,8 +933,6 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
 
     @inlineCallbacks
     def test_shutdown_forced(self):
-        from twisted.internet import reactor
-
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
         args = self.get_script_args("sleeping.py", "10")
         p = PopenSpawn(args, timeout=5)
@@ -943,7 +942,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         p.expect_exact("shutting down gracefully")
         # sending the second signal too fast often causes problems
         d = Deferred()
-        reactor.callLater(0.01, d.callback, None)
+        call_later(0.01, d.callback, None)
         yield d
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")
