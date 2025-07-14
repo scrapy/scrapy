@@ -2,11 +2,11 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 2.13.x     | :white_check_mark: |
-| < 2.13.x   | :x:                |
+| Version   | Supported |
+|-----------|-----------|
+| 2.13.x    | ✅        |
+| < 2.13.x  | ❌        |
 
 ## Reporting a Vulnerability
 
-Please report the vulnerability using https://github.com/scrapy/scrapy/security/advisories/new.
+If you discover a security vulnerability in Scrapy, please [report](https://github.com/scrapy/scrapy/security/advisories/new) it responsibly using GitHub's advisory system.
