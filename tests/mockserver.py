@@ -266,7 +266,7 @@ class Root(resource.Resource):
         self.putChild(b"echo", Echo())
         self.putChild(b"payload", PayloadResource())
         self.putChild(b"alpayload", ArbitraryLengthPayloadResource())
-        self.putChild(b"files", File(str(Path(tests_datadir, "test_site/files/"))))
+        self.putChild(b"static", File(str(Path(tests_datadir, "test_site/"))))
         self.putChild(b"redirect-to", RedirectTo())
         self.putChild(b"text", Data(b"Works", "text/plain"))
         self.putChild(
@@ -285,6 +285,8 @@ class Root(resource.Resource):
             b"redirect-no-meta-refresh", NoMetaRefreshRedirect(b"/redirected")
         )
         self.putChild(b"redirected", Data(b"Redirected here", "text/plain"))
+        numbers = [str(x).encode("utf8") for x in range(2**18)]
+        self.putChild(b"numbers", Data(b"".join(numbers), "text/plain"))
 
     def getChild(self, name, request):
         return self

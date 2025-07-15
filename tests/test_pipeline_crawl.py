@@ -149,7 +149,7 @@ class TestFileDownloadCrawl:
         crawler = self._create_crawler(MediaDownloadSpider)
         with LogCapture() as log:
             yield crawler.crawl(
-                self.mockserver.url("/files/images/"),
+                self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
             )
@@ -160,7 +160,7 @@ class TestFileDownloadCrawl:
         crawler = self._create_crawler(BrokenLinksMediaDownloadSpider)
         with LogCapture() as log:
             yield crawler.crawl(
-                self.mockserver.url("/files/images/"),
+                self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
             )
@@ -171,7 +171,7 @@ class TestFileDownloadCrawl:
         crawler = self._create_crawler(RedirectedMediaDownloadSpider)
         with LogCapture() as log:
             yield crawler.crawl(
-                self.mockserver.url("/files/images/"),
+                self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
                 mockserver=self.mockserver,
@@ -187,7 +187,7 @@ class TestFileDownloadCrawl:
         crawler = self._create_crawler(RedirectedMediaDownloadSpider, settings)
         with LogCapture() as log:
             yield crawler.crawl(
-                self.mockserver.url("/files/images/"),
+                self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
                 mockserver=self.mockserver,
@@ -210,7 +210,7 @@ class TestFileDownloadCrawl:
         crawler = self._create_crawler(MediaDownloadSpider, settings)
         with LogCapture() as log:
             yield crawler.crawl(
-                self.mockserver.url("/files/images/"),
+                self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
                 mockserver=self.mockserver,

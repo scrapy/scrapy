@@ -1,10 +1,17 @@
+from __future__ import annotations
+
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from twisted.web.http import H2_ENABLED
 
 from scrapy.utils.reactor import set_asyncio_event_loop_policy
 from tests.keys import generate_keys
+from tests.mockserver import MockServer
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 def _py_files(folder):
@@ -46,6 +53,12 @@ if not H2_ENABLED:
             *_py_files("scrapy/core/http2"),
         )
     )
+
+
+@pytest.fixture(scope="session")
+def mockserver() -> Generator[MockServer]:
+    with MockServer() as mockserver:
+        yield mockserver
 
 
 @pytest.fixture(scope="session")
