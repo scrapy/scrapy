@@ -209,13 +209,16 @@ class TestImagesPipeline:
         assert converted.mode == "RGB"
         assert converted.getcolors() == [(10000, (205, 230, 255))]
 
-    @pytest.mark.parametrize("bad_type", [
-        "http://example.com/file.jpg",
-        ("http://example.com/file.jpg",),
-        {"url": "http://example.com/file.jpg"},
-        123,
-        None,
-    ])
+    @pytest.mark.parametrize(
+        "bad_type",
+        [
+            "http://example.com/file.jpg",
+            ("http://example.com/file.jpg",),
+            {"url": "http://example.com/file.jpg"},
+            123,
+            None,
+        ],
+    )
     def test_rejects_non_list_image_urls(self, tmp_path, bad_type):
         pipeline = ImagesPipeline.from_crawler(
             get_crawler(None, {"IMAGES_STORE": str(tmp_path)})
