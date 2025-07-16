@@ -257,7 +257,7 @@ class TestFilesPipeline:
         file_path = CustomFilesPipeline.from_crawler(
             get_crawler(None, {"FILES_STORE": self.tempdir})
         ).file_path
-        item = ItemWithFiles()
+        item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
         assert file_path(request, item=item) == "full/path-to-store-file"
 
