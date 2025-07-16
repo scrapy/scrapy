@@ -704,6 +704,10 @@ class FilesPipeline(MediaPipeline):
         self, item: Any, info: MediaPipeline.SpiderInfo
     ) -> list[Request]:
         urls = ItemAdapter(item).get(self.files_urls_field, [])
+        if not isinstance(urls, list):
+            raise TypeError(
+                f"{self.files_urls_field} must be a list of URLs, got {type(urls).__name__}. "
+            )
         return [Request(u, callback=NO_CALLBACK) for u in urls]
 
     def file_downloaded(
