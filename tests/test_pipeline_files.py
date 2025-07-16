@@ -257,9 +257,26 @@ class TestFilesPipeline:
         file_path = CustomFilesPipeline.from_crawler(
             get_crawler(None, {"FILES_STORE": self.tempdir})
         ).file_path
-        item = {"path": "path-to-store-file"}
+        item = ItemWithFiles()
         request = Request("http://example.com")
         assert file_path(request, item=item) == "full/path-to-store-file"
+
+    @pytest.mark.parametrize("bad_type", [
+        "http://example.com/file.pdf",
+        ("http://example.com/file.pdf",),
+        {"url": "http://example.com/file.pdf"},
+        123,
+        None,
+    ])
+    def test_rejects_non_list_file_urls(self, tmp_path, bad_type):
+        pipeline = FilesPipeline.from_crawler(
+            get_crawler(None, {"FILES_STORE": str(tmp_path)})
+        )
+        item = ItemWithFiles()
+        item["file_urls"] = bad_type
+
+        with pytest.raises(TypeError, match="file_urls must be a list of URLs"):
+            list(pipeline.get_media_requests(item, None))
 
 
 class TestFilesPipelineFieldsMixin(ABC):
