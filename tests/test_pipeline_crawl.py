@@ -13,7 +13,7 @@ from w3lib.url import add_or_replace_parameter
 from scrapy import Spider, signals
 from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import SimpleSpider
 
 if TYPE_CHECKING:

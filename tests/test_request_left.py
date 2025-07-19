@@ -3,7 +3,7 @@ from twisted.internet.defer import inlineCallbacks
 from scrapy.signals import request_left_downloader
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 
 
 class SignalCatcherSpider(Spider):

@@ -4,7 +4,7 @@ from twisted.internet.defer import inlineCallbacks
 from scrapy import Request, Spider, signals
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 
 
 class ItemSpider(Spider):

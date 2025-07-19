@@ -16,7 +16,7 @@ from tests.test_engine import (
 )
 
 if TYPE_CHECKING:
-    from tests.mockserver import MockServer
+    from tests.mockserver.http import MockServer
 
 
 class HeadersReceivedCrawlerRun(CrawlerRun):

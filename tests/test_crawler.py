@@ -34,7 +34,8 @@ from scrapy.utils.defer import deferred_f_from_coro_f, deferred_from_coro
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
-from tests.mockserver import MockServer, get_mockserver_env
+from tests.mockserver.http import MockServer
+from tests.utils import get_script_run_env
 
 BASE_SETTINGS: dict[str, Any] = {}
 
@@ -753,7 +754,7 @@ class ScriptRunnerMixin(ABC):
         args = self.get_script_args(script_name, *script_args)
         p = subprocess.Popen(
             args,
-            env=get_mockserver_env(),
+            env=get_script_run_env(),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )

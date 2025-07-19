@@ -22,15 +22,15 @@ from scrapy.http import Headers, Request
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.test import get_crawler
-from tests.mockserver import (
+from tests.mockserver.http_resources import (
     BrokenDownloadResource,
     ErrorResource,
     ForeverTakingResource,
     HostHeaderResource,
     NoLengthResource,
     PayloadResource,
-    ssl_context_factory,
 )
+from tests.mockserver.utils import ssl_context_factory
 from tests.test_core_downloader import TestContextFactoryBase
 
 

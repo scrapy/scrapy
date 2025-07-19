@@ -22,7 +22,8 @@ from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler
-from tests.mockserver import PayloadResource, ssl_context_factory
+from tests.mockserver.http_resources import PayloadResource
+from tests.mockserver.utils import ssl_context_factory
 
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred

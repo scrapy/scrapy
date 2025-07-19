@@ -35,7 +35,8 @@ from scrapy.utils.defer import (
     deferred_from_coro,
     maybe_deferred_to_future,
 )
-from tests.mockserver import LeafResource, Status, ssl_context_factory
+from tests.mockserver.http_resources import LeafResource, Status
+from tests.mockserver.utils import ssl_context_factory
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Coroutine, Generator

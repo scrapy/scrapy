@@ -29,15 +29,15 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
-from tests.mockserver import (
+from tests.mockserver.http import MockServer
+from tests.mockserver.http_resources import (
     Echo,
     ForeverTakingResource,
     HostHeaderResource,
-    MockServer,
     NoLengthResource,
     PayloadResource,
-    ssl_context_factory,
 )
+from tests.mockserver.utils import ssl_context_factory
 from tests.spiders import SingleRequestSpider
 
 if TYPE_CHECKING:

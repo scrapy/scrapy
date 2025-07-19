@@ -1,6 +1,8 @@
 # ruff: noqa: E402
 
 from scrapy.utils.reactor import install_reactor
+from tests.mockserver.dns import MockDNSServer
+from tests.mockserver.http import MockServer
 
 install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
 
@@ -15,7 +17,6 @@ from scrapy import Request, Spider
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import configure_logging
-from tests.mockserver import MockDNSServer, MockServer
 
 
 # https://stackoverflow.com/a/32784190

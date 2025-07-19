@@ -10,9 +10,8 @@ from twisted.internet.defer import Deferred
 from scrapy import Request, Spider, signals
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
-
-from .mockserver import MockServer
-from .test_scheduler import MemoryScheduler
+from tests.mockserver.http import MockServer
+from tests.test_scheduler import MemoryScheduler
 
 if TYPE_CHECKING:
     from scrapy.http import Response

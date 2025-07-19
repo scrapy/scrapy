@@ -40,7 +40,7 @@ from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
 from tests import get_testdata
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 
 
 class MyItem(Item):

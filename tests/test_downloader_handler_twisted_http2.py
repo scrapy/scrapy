@@ -17,7 +17,7 @@ from twisted.web.http import H2_ENABLED
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
-from tests.mockserver import ssl_context_factory
+from tests.mockserver.utils import ssl_context_factory
 from tests.test_downloader_handlers_http_base import (
     TestHttpMockServerBase,
     TestHttpProxyBase,
