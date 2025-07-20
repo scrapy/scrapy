@@ -191,7 +191,7 @@ class Request(object_ref):
         self.cookies: CookiesT = cookies or {}
         preserve_case = False
         if meta and isinstance(meta, dict):
-            preserve_case = meta.get("KEEP_LOWERCASE_HEADERS", False)
+            preserve_case = bool(meta.get("KEEP_LOWERCASE_HEADERS")) if meta else False
         self.headers: Headers = Headers(
             headers or {}, encoding=encoding, preserve_case=preserve_case
         )
