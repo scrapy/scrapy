@@ -189,7 +189,9 @@ class Request(object_ref):
         self.errback: Callable[[Failure], Any] | None = errback
 
         self.cookies: CookiesT = cookies or {}
-        preserve_case = meta.get("KEEP_LOWERCASE_HEADERS")
+        preserve_case = False
+        if meta and isinstance(meta, dict):
+            preserve_case = meta.get("KEEP_LOWERCASE_HEADERS", False)
         self.headers: Headers = Headers(
             headers or {}, encoding=encoding, preserve_case=preserve_case
         )
