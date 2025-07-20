@@ -189,7 +189,10 @@ class Request(object_ref):
         self.errback: Callable[[Failure], Any] | None = errback
 
         self.cookies: CookiesT = cookies or {}
-        self.headers: Headers = Headers(headers or {}, encoding=encoding)
+        preserve_case = meta.get("KEEP_LOWERCASE_HEADERS")
+        self.headers: Headers = Headers(
+            headers or {}, encoding=encoding, preserve_case=preserve_case
+        )
 
         #: Whether this request may be filtered out by :ref:`components
         #: <topics-components>` that support filtering out requests (``False``,
