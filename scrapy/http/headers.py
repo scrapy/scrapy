@@ -27,8 +27,10 @@ class Headers(CaselessDict):
         self,
         seq: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None = None,
         encoding: str = "utf-8",
+        preserve_case: bool = False,
     ):
         self.encoding: str = encoding
+        self.preserve_case: bool = preserve_case
         super().__init__(seq)
 
     def update(  # type: ignore[override]
@@ -42,6 +44,8 @@ class Headers(CaselessDict):
 
     def normkey(self, key: AnyStr) -> bytes:  # type: ignore[override]
         """Normalize key to bytes"""
+        if self.preserve_case:
+            return self._tobytes(key)
         return self._tobytes(key.title())
 
     def normvalue(self, value: _RawValueT | Iterable[_RawValueT]) -> list[bytes]:
