@@ -38,19 +38,6 @@ class ForeverTakingResource(resource.Resource):
         return server.NOT_DONE_YET
 
 
-class ErrorResource(resource.Resource):
-    def render(self, request):
-        request.setResponseCode(401)
-        if request.args.get(b"showlength"):
-            request.setHeader(b"content-length", b"0")
-        return b""
-
-
-class NoLengthResource(resource.Resource):
-    def render(self, request):
-        return b"nolength"
-
-
 class HostHeaderResource(resource.Resource):
     """
     A testing resource which renders itself as the value of the host header
@@ -74,14 +61,6 @@ class PayloadResource(resource.Resource):
         if len(data) != 100 or int(contentLength) != 100:
             return b"ERROR"
         return data
-
-
-class BrokenDownloadResource(resource.Resource):
-    def render(self, request):
-        # only sends 3 bytes even though it claims to send 5
-        request.setHeader(b"content-length", b"5")
-        request.write(b"abc")
-        return b""
 
 
 class LeafResource(resource.Resource):

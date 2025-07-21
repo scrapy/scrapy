@@ -33,7 +33,6 @@ from tests.mockserver.http_resources import (
     Echo,
     ForeverTakingResource,
     HostHeaderResource,
-    NoLengthResource,
     PayloadResource,
 )
 from tests.mockserver.utils import ssl_context_factory
@@ -171,7 +170,6 @@ class TestHttpBase(ABC):
         r.putChild(b"redirect", util.Redirect(b"/file"))
         r.putChild(b"wait", ForeverTakingResource())
         r.putChild(b"hang-after-headers", ForeverTakingResource(write=True))
-        r.putChild(b"nolength", NoLengthResource())
         r.putChild(b"host", HostHeaderResource())
         r.putChild(b"payload", PayloadResource())
         r.putChild(b"broken", BrokenDownloadResource())

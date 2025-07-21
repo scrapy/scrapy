@@ -23,11 +23,8 @@ from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http_resources import (
-    BrokenDownloadResource,
-    ErrorResource,
     ForeverTakingResource,
     HostHeaderResource,
-    NoLengthResource,
     PayloadResource,
 )
 from tests.mockserver.utils import ssl_context_factory
@@ -193,6 +190,27 @@ class EncodingResource(resource.Resource):
         body = to_unicode(request.content.read())
         request.setHeader(b"content-encoding", self.out_encoding)
         return body.encode(self.out_encoding)
+
+
+class BrokenDownloadResource(resource.Resource):
+    def render(self, request):
+        # only sends 3 bytes even though it claims to send 5
+        request.setHeader(b"content-length", b"5")
+        request.write(b"abc")
+        return b""
+
+
+class ErrorResource(resource.Resource):
+    def render(self, request):
+        request.setResponseCode(401)
+        if request.args.get(b"showlength"):
+            request.setHeader(b"content-length", b"0")
+        return b""
+
+
+class NoLengthResource(resource.Resource):
+    def render(self, request):
+        return b"nolength"
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
