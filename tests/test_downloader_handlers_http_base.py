@@ -12,7 +12,6 @@ import pytest
 from pytest_twisted import async_yield_fixture
 from testfixtures import LogCapture
 from twisted.internet import defer, error
-from twisted.protocols.policies import WrappingFactory
 from twisted.web import resource, server, static, util
 from twisted.web._newclient import ResponseFailed
 from twisted.web.http import _DataLoss
@@ -194,8 +193,6 @@ class TestHttpBase(ABC):
         from twisted.internet import reactor
 
         if self.scheme == "https":
-            # Using WrappingFactory do not enable HTTP/2 failing all the
-            # tests with H2DownloadHandler
             port = reactor.listenSSL(
                 0,
                 site,
@@ -203,8 +200,7 @@ class TestHttpBase(ABC):
                 interface=self.host,
             )
         else:
-            wrapper = WrappingFactory(site)
-            port = reactor.listenTCP(0, wrapper, interface=self.host)
+            port = reactor.listenTCP(0, site, interface=self.host)
 
         yield port.getHost().port
 
@@ -733,8 +729,7 @@ class TestHttpProxyBase(ABC):
         from twisted.internet import reactor
 
         site = server.Site(UriResource(), timeout=None)
-        wrapper = WrappingFactory(site)
-        port = reactor.listenTCP(0, wrapper, interface=self.host)
+        port = reactor.listenTCP(0, site, interface=self.host)
 
         yield port.getHost().port
 

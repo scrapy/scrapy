@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any, cast
 import OpenSSL.SSL
 import pytest
 from pytest_twisted import async_yield_fixture
-from twisted.protocols.policies import WrappingFactory
 from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
 from twisted.web.client import Response as TxResponse
@@ -45,8 +44,7 @@ class TestContextFactoryBase:
         r = static.File(str(tmp_path))
         r.putChild(b"payload", PayloadResource())
         site = server.Site(r, timeout=None)
-        wrapper = WrappingFactory(site)
-        port = self._listen(wrapper)
+        port = self._listen(site)
         portno = port.getHost().port
 
         yield f"https://127.0.0.1:{portno}/"
