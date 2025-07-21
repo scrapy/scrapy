@@ -159,10 +159,6 @@ class TestHttpBase(ABC):
     scheme = "http"
     host = "localhost"
 
-    # only used for HTTPS tests
-    keyfile = "keys/localhost.key"
-    certfile = "keys/localhost.crt"
-
     @property
     @abstractmethod
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
@@ -196,7 +192,7 @@ class TestHttpBase(ABC):
             port = reactor.listenSSL(
                 0,
                 site,
-                ssl_context_factory(self.keyfile, self.certfile),
+                ssl_context_factory(),
                 interface=self.host,
             )
         else:
