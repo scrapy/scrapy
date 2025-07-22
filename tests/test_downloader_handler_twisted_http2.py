@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
+    from tests.mockserver.http import MockServer
 
 
 pytestmark = pytest.mark.skipif(
@@ -57,20 +58,24 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
 
     @deferred_f_from_coro_f
     async def test_protocol(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
     ) -> None:
-        request = Request(self.getURL(server_port, "host"), method="GET")
+        request = Request(
+            mockserver.url("/host", is_secure=self.is_secure), method="GET"
+        )
         response = await download_request(download_handler, request)
         assert response.protocol == "h2"
 
     @deferred_f_from_coro_f
     async def test_download_with_maxsize_very_large_file(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
     ) -> None:
         from twisted.internet import reactor
 
         with mock.patch("scrapy.core.http2.stream.logger") as logger:
-            request = Request(self.getURL(server_port, "largechunkedfile"))
+            request = Request(
+                mockserver.url("/largechunkedfile", is_secure=self.is_secure)
+            )
 
             def check(logger: mock.Mock) -> None:
                 logger.error.assert_called_once_with(mock.ANY)
@@ -107,30 +112,34 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
 
     @deferred_f_from_coro_f
     async def test_concurrent_requests_same_domain(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
     ) -> None:
-        request1 = Request(self.getURL(server_port, "file"))
+        request1 = Request(mockserver.url("/text", is_secure=self.is_secure))
         response1 = await download_request(download_handler, request1)
-        assert response1.body == b"0123456789"
+        assert response1.body == b"Works"
 
-        request2 = Request(self.getURL(server_port, "echo"), method="POST")
+        request2 = Request(
+            mockserver.url("/echo", is_secure=self.is_secure), method="POST"
+        )
         response2 = await download_request(download_handler, request2)
         assert response2.headers["Content-Length"] == b"79"
 
     @pytest.mark.xfail(reason="https://github.com/python-hyper/h2/issues/1247")
     @deferred_f_from_coro_f
     async def test_connect_request(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
     ) -> None:
-        request = Request(self.getURL(server_port, "file"), method="CONNECT")
+        request = Request(
+            mockserver.url("/file", is_secure=self.is_secure), method="CONNECT"
+        )
         response = await download_request(download_handler, request)
         assert response.body == b""
 
     @deferred_f_from_coro_f
     async def test_custom_content_length_good(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
     ) -> None:
-        request = Request(self.getURL(server_port, "contentlength"))
+        request = Request(mockserver.url("/contentlength", is_secure=self.is_secure))
         custom_content_length = str(len(request.body))
         request.headers["Content-Length"] = custom_content_length
         response = await download_request(download_handler, request)
@@ -138,9 +147,9 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
 
     @deferred_f_from_coro_f
     async def test_custom_content_length_bad(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
     ) -> None:
-        request = Request(self.getURL(server_port, "contentlength"))
+        request = Request(mockserver.url("/contentlength", is_secure=self.is_secure))
         actual_content_length = str(len(request.body))
         bad_content_length = str(len(request.body) + 1)
         request.headers["Content-Length"] = bad_content_length
@@ -159,9 +168,9 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
 
     @deferred_f_from_coro_f
     async def test_duplicate_header(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
     ) -> None:
-        request = Request(self.getURL(server_port, "echo"))
+        request = Request(mockserver.url("/echo", is_secure=self.is_secure))
         header, value1, value2 = "Custom-Header", "foo", "bar"
         request.headers.appendlist(header, value1)
         request.headers.appendlist(header, value2)

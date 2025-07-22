@@ -15,10 +15,19 @@ from tests.utils import get_script_run_env
 
 from .http_resources import (
     ArbitraryLengthPayloadResource,
+    BrokenChunkedResource,
+    BrokenDownloadResource,
+    ChunkedResource,
+    ContentLengthHeaderResource,
     Delay,
     Drop,
+    DuplicateHeaderResource,
     Echo,
+    EmptyContentTypeHeaderResource,
     Follow,
+    ForeverTakingResource,
+    HostHeaderResource,
+    LargeChunkedFileResource,
     NoMetaRefreshRedirect,
     Partial,
     PayloadResource,
@@ -62,6 +71,16 @@ class Root(resource.Resource):
         self.putChild(b"redirected", Data(b"Redirected here", "text/plain"))
         numbers = [str(x).encode("utf8") for x in range(2**18)]
         self.putChild(b"numbers", Data(b"".join(numbers), "text/plain"))
+        self.putChild(b"wait", ForeverTakingResource())
+        self.putChild(b"hang-after-headers", ForeverTakingResource(write=True))
+        self.putChild(b"host", HostHeaderResource())
+        self.putChild(b"broken", BrokenDownloadResource())
+        self.putChild(b"chunked", ChunkedResource())
+        self.putChild(b"broken-chunked", BrokenChunkedResource())
+        self.putChild(b"contentlength", ContentLengthHeaderResource())
+        self.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
+        self.putChild(b"largechunkedfile", LargeChunkedFileResource())
+        self.putChild(b"duplicate-header", DuplicateHeaderResource())
 
     def getChild(self, name, request):
         return self
@@ -91,8 +110,11 @@ class MockServer:
         self.proc.kill()
         self.proc.communicate()
 
+    def port(self, is_secure: bool = False) -> int:
+        return self.https_port if is_secure else self.http_port
+
     def url(self, path: str, is_secure: bool = False) -> str:
-        port = self.https_port if is_secure else self.http_port
+        port = self.port(is_secure)
         scheme = "https" if is_secure else "http"
         return f"{scheme}://{self.host}:{port}{path}"
 

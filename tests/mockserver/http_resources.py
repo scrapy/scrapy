@@ -21,6 +21,13 @@ def getarg(request, name, default=None, type_=None):
     return default
 
 
+def close_connection(request):
+    # We have to force a disconnection for HTTP/1.1 clients. Otherwise
+    # client keeps the connection open waiting for more data.
+    request.channel.loseConnection()
+    request.finish()
+
+
 # most of the following resources are copied from twisted.web.test.test_webclient
 class ForeverTakingResource(resource.Resource):
     """
@@ -204,3 +211,84 @@ class NoMetaRefreshRedirect(Redirect):
         return content.replace(
             b'http-equiv="refresh"', b'http-no-equiv="do-not-refresh-me"'
         )
+
+
+class ContentLengthHeaderResource(resource.Resource):
+    """
+    A testing resource which renders itself as the value of the Content-Length
+    header from the request.
+    """
+
+    def render(self, request):
+        return request.requestHeaders.getRawHeaders(b"content-length")[0]
+
+
+class ChunkedResource(resource.Resource):
+    def render(self, request):
+        from twisted.internet import reactor
+
+        def response():
+            request.write(b"chunked ")
+            request.write(b"content\n")
+            request.finish()
+
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
+class BrokenChunkedResource(resource.Resource):
+    def render(self, request):
+        from twisted.internet import reactor
+
+        def response():
+            request.write(b"chunked ")
+            request.write(b"content\n")
+            # Disable terminating chunk on finish.
+            request.chunked = False
+            close_connection(request)
+
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
+class BrokenDownloadResource(resource.Resource):
+    def render(self, request):
+        from twisted.internet import reactor
+
+        def response():
+            request.setHeader(b"Content-Length", b"20")
+            request.write(b"partial")
+            close_connection(request)
+
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
+class EmptyContentTypeHeaderResource(resource.Resource):
+    """
+    A testing resource which renders itself as the value of request body
+    without content-type header in response.
+    """
+
+    def render(self, request):
+        request.setHeader("content-type", "")
+        return request.content.read()
+
+
+class LargeChunkedFileResource(resource.Resource):
+    def render(self, request):
+        from twisted.internet import reactor
+
+        def response():
+            for i in range(1024):
+                request.write(b"x" * 1024)
+            request.finish()
+
+        reactor.callLater(0, response)
+        return server.NOT_DONE_YET
+
+
+class DuplicateHeaderResource(resource.Resource):
+    def render(self, request):
+        request.responseHeaders.setRawHeaders(b"Set-Cookie", [b"a=b", b"c=d"])
+        return b""
