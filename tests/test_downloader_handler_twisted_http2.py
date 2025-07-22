@@ -19,13 +19,13 @@ from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from tests.mockserver.utils import ssl_context_factory
 from tests.test_downloader_handlers_http_base import (
-    TestHttpMockServerBase,
     TestHttpProxyBase,
     TestHttps11Base,
     TestHttpsCustomCiphersBase,
     TestHttpsInvalidDNSIdBase,
     TestHttpsInvalidDNSPatternBase,
     TestHttpsWrongHostnameBase,
+    TestHttpWithCrawlerBase,
     UriResource,
     download_request,
 )
@@ -196,7 +196,7 @@ class TestHttps2CustomCiphers(H2DownloadHandlerMixin, TestHttpsCustomCiphersBase
     pass
 
 
-class TestHttp2MockServer(TestHttpMockServerBase):
+class TestHttp2WithCrawler(TestHttpWithCrawlerBase):
     """HTTP 2.0 test case with MockServer"""
 
     @property

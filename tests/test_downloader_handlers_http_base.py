@@ -27,7 +27,6 @@ from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
-from tests.mockserver.http import MockServer
 from tests.mockserver.simple_https import SimpleMockServer
 from tests.spiders import SingleRequestSpider
 
@@ -35,6 +34,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
 
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
+    from tests.mockserver.http import MockServer
 
 
 async def download_request(
@@ -528,9 +528,7 @@ class TestHttpsCustomCiphersBase(TestSimpleHttpsBase):
     cipher_string = "CAMELLIA256-SHA"
 
 
-class TestHttpMockServerBase(ABC):
-    """HTTP 1.1 test case with MockServer"""
-
+class TestHttpWithCrawlerBase(ABC):
     @property
     @abstractmethod
     def settings_dict(self) -> dict[str, Any] | None:
@@ -538,42 +536,35 @@ class TestHttpMockServerBase(ABC):
 
     is_secure = False
 
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
     @deferred_f_from_coro_f
-    async def test_download_with_content_length(self):
+    async def test_download_with_content_length(self, mockserver: MockServer) -> None:
         crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         # http://localhost:8998/partial set Content-Length to 1024, use download_maxsize= 1000 to avoid
         # download it
         await maybe_deferred_to_future(
             crawler.crawl(
                 seed=Request(
-                    url=self.mockserver.url("/partial", is_secure=self.is_secure),
+                    url=mockserver.url("/partial", is_secure=self.is_secure),
                     meta={"download_maxsize": 1000},
                 )
             )
         )
-        failure = crawler.spider.meta["failure"]
+        assert crawler.spider
+        failure = crawler.spider.meta["failure"]  # type: ignore[attr-defined]
         assert isinstance(failure.value, defer.CancelledError)
 
     @deferred_f_from_coro_f
-    async def test_download(self):
+    async def test_download(self, mockserver: MockServer) -> None:
         crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         await maybe_deferred_to_future(
             crawler.crawl(
-                seed=Request(url=self.mockserver.url("", is_secure=self.is_secure))
+                seed=Request(url=mockserver.url("", is_secure=self.is_secure))
             )
         )
-        failure = crawler.spider.meta.get("failure")
+        assert crawler.spider
+        failure = crawler.spider.meta.get("failure")  # type: ignore[attr-defined]
         assert failure is None
-        reason = crawler.spider.meta["close_reason"]
+        reason = crawler.spider.meta["close_reason"]  # type: ignore[attr-defined]
         assert reason == "finished"
 
 
