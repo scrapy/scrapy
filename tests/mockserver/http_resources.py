@@ -292,3 +292,18 @@ class DuplicateHeaderResource(resource.Resource):
     def render(self, request):
         request.responseHeaders.setRawHeaders(b"Set-Cookie", [b"a=b", b"c=d"])
         return b""
+
+
+class UriResource(resource.Resource):
+    """Return the full uri that was requested"""
+
+    def getChild(self, path, request):
+        return self
+
+    def render(self, request):
+        # Note: this is an ugly hack for CONNECT request timeout test.
+        #       Returning some data here fail SSL/TLS handshake
+        # ToDo: implement proper HTTPS proxy tests, not faking them.
+        if request.method != b"CONNECT":
+            return request.uri
+        return b""

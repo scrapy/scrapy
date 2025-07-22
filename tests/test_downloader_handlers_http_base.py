@@ -12,7 +12,6 @@ import pytest
 from pytest_twisted import async_yield_fixture
 from testfixtures import LogCapture
 from twisted.internet import defer, error
-from twisted.web import resource, server
 from twisted.web._newclient import ResponseFailed
 from twisted.web.http import _DataLoss
 
@@ -27,6 +26,7 @@ from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
+from tests.mockserver.proxy_echo import ProxyEchoMockServer
 from tests.mockserver.simple_https import SimpleMockServer
 from tests.spiders import SingleRequestSpider
 
@@ -568,24 +568,8 @@ class TestHttpWithCrawlerBase(ABC):
         assert reason == "finished"
 
 
-class UriResource(resource.Resource):
-    """Return the full uri that was requested"""
-
-    def getChild(self, path, request):
-        return self
-
-    def render(self, request):
-        # Note: this is an ugly hack for CONNECT request timeout test.
-        #       Returning some data here fail SSL/TLS handshake
-        # ToDo: implement proper HTTPS proxy tests, not faking them.
-        if request.method != b"CONNECT":
-            return request.uri
-        return b""
-
-
 class TestHttpProxyBase(ABC):
-    scheme = "http"
-    host = "127.0.0.1"
+    is_secure = False
     expected_http_proxy_request_body = b"http://example.com"
 
     @property
@@ -593,16 +577,10 @@ class TestHttpProxyBase(ABC):
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         raise NotImplementedError
 
-    @async_yield_fixture
-    async def server_port(self) -> AsyncGenerator[int]:
-        from twisted.internet import reactor
-
-        site = server.Site(UriResource(), timeout=None)
-        port = reactor.listenTCP(0, site, interface=self.host)
-
-        yield port.getHost().port
-
-        await port.stopListening()
+    @pytest.fixture(scope="session")
+    def proxy_mockserver(self) -> Generator[ProxyEchoMockServer]:
+        with ProxyEchoMockServer() as proxy:
+            yield proxy
 
     @async_yield_fixture
     async def download_handler(self) -> AsyncGenerator[DownloadHandlerProtocol]:
@@ -612,14 +590,13 @@ class TestHttpProxyBase(ABC):
 
         await close_dh(dh)
 
-    def getURL(self, portno: int, path: str) -> str:
-        return f"{self.scheme}://{self.host}:{portno}/{path}"
-
     @deferred_f_from_coro_f
     async def test_download_with_proxy(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self,
+        proxy_mockserver: ProxyEchoMockServer,
+        download_handler: DownloadHandlerProtocol,
     ) -> None:
-        http_proxy = self.getURL(server_port, "")
+        http_proxy = proxy_mockserver.url("", is_secure=self.is_secure)
         request = Request("http://example.com", meta={"proxy": http_proxy})
         response = await download_request(download_handler, request)
         assert response.status == 200
@@ -628,9 +605,13 @@ class TestHttpProxyBase(ABC):
 
     @deferred_f_from_coro_f
     async def test_download_without_proxy(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self,
+        proxy_mockserver: ProxyEchoMockServer,
+        download_handler: DownloadHandlerProtocol,
     ) -> None:
-        request = Request(self.getURL(server_port, "path/to/resource"))
+        request = Request(
+            proxy_mockserver.url("/path/to/resource", is_secure=self.is_secure)
+        )
         response = await download_request(download_handler, request)
         assert response.status == 200
         assert response.url == request.url
@@ -638,11 +619,13 @@ class TestHttpProxyBase(ABC):
 
     @deferred_f_from_coro_f
     async def test_download_with_proxy_https_timeout(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self,
+        proxy_mockserver: ProxyEchoMockServer,
+        download_handler: DownloadHandlerProtocol,
     ) -> None:
         if NON_EXISTING_RESOLVABLE:
             pytest.skip("Non-existing hosts are resolvable")
-        http_proxy = self.getURL(server_port, "")
+        http_proxy = proxy_mockserver.url("", is_secure=self.is_secure)
         domain = "https://no-such-domain.nosuch"
         request = Request(domain, meta={"proxy": http_proxy, "download_timeout": 0.2})
         with pytest.raises(error.TimeoutError) as exc_info:
@@ -651,9 +634,11 @@ class TestHttpProxyBase(ABC):
 
     @deferred_f_from_coro_f
     async def test_download_with_proxy_without_http_scheme(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self,
+        proxy_mockserver: ProxyEchoMockServer,
+        download_handler: DownloadHandlerProtocol,
     ) -> None:
-        http_proxy = self.getURL(server_port, "").replace("http://", "")
+        http_proxy = f"{proxy_mockserver.host}:{proxy_mockserver.port()}"
         request = Request("http://example.com", meta={"proxy": http_proxy})
         response = await download_request(download_handler, request)
         assert response.status == 200

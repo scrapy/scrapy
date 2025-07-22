@@ -7,17 +7,14 @@ from typing import TYPE_CHECKING, Any
 from unittest import mock
 
 import pytest
-from pytest_twisted import async_yield_fixture
 from testfixtures import LogCapture
 from twisted.internet import defer, error
-from twisted.web import server
 from twisted.web.error import SchemeNotSupported
 from twisted.web.http import H2_ENABLED
 
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
-from tests.mockserver.utils import ssl_context_factory
 from tests.test_downloader_handlers_http_base import (
     TestHttpProxyBase,
     TestHttps11Base,
@@ -26,15 +23,13 @@ from tests.test_downloader_handlers_http_base import (
     TestHttpsInvalidDNSPatternBase,
     TestHttpsWrongHostnameBase,
     TestHttpWithCrawlerBase,
-    UriResource,
     download_request,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
-
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
     from tests.mockserver.http import MockServer
+    from tests.mockserver.proxy_echo import ProxyEchoMockServer
 
 
 pytestmark = pytest.mark.skipif(
@@ -211,35 +206,31 @@ class TestHttp2WithCrawler(TestHttpWithCrawlerBase):
 
 
 class TestHttps2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
-    # only used for HTTPS tests
-    keyfile = "keys/localhost.key"
-    certfile = "keys/localhost.crt"
-    scheme = "https"
+    is_secure = True
     expected_http_proxy_request_body = b"/"
-
-    @async_yield_fixture
-    async def server_port(self) -> AsyncGenerator[int]:
-        from twisted.internet import reactor
-
-        site = server.Site(UriResource(), timeout=None)
-        port = reactor.listenSSL(
-            0,
-            site,
-            ssl_context_factory(self.keyfile, self.certfile),
-            interface=self.host,
-        )
-
-        yield port.getHost().port
-
-        await port.stopListening()
 
     @deferred_f_from_coro_f
     async def test_download_with_proxy_https_timeout(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self,
+        proxy_mockserver: ProxyEchoMockServer,
+        download_handler: DownloadHandlerProtocol,
     ) -> None:
         with pytest.raises(NotImplementedError):
             await maybe_deferred_to_future(
                 super().test_download_with_proxy_https_timeout(
-                    server_port, download_handler
+                    proxy_mockserver, download_handler
+                )
+            )
+
+    @deferred_f_from_coro_f
+    async def test_download_with_proxy_without_http_scheme(
+        self,
+        proxy_mockserver: ProxyEchoMockServer,
+        download_handler: DownloadHandlerProtocol,
+    ) -> None:
+        with pytest.raises(SchemeNotSupported):
+            await maybe_deferred_to_future(
+                super().test_download_with_proxy_without_http_scheme(
+                    proxy_mockserver, download_handler
                 )
             )
