@@ -12,7 +12,7 @@ import pytest
 from pytest_twisted import async_yield_fixture
 from testfixtures import LogCapture
 from twisted.internet import defer, error
-from twisted.web import resource, server, static
+from twisted.web import resource, server
 from twisted.web._newclient import ResponseFailed
 from twisted.web.http import _DataLoss
 
@@ -28,12 +28,11 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
 from tests.mockserver.http import MockServer
-from tests.mockserver.utils import ssl_context_factory
+from tests.mockserver.simple_https import SimpleMockServer
 from tests.spiders import SingleRequestSpider
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
-    from pathlib import Path
+    from collections.abc import AsyncGenerator, Generator
 
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
 
@@ -463,30 +462,22 @@ class TestSimpleHttpsBase(ABC):
     host = "localhost"
     cipher_string: str | None = None
 
+    @pytest.fixture(scope="class")
+    def simple_mockserver(self) -> Generator[SimpleMockServer]:
+        with SimpleMockServer(
+            self.keyfile, self.certfile, self.cipher_string
+        ) as simple_mockserver:
+            yield simple_mockserver
+
+    @pytest.fixture(scope="class")
+    def url(self, simple_mockserver: SimpleMockServer) -> str:
+        # need to use self.host instead of what mockserver returns
+        return f"https://{self.host}:{simple_mockserver.port}/file"
+
     @property
     @abstractmethod
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         raise NotImplementedError
-
-    @async_yield_fixture
-    async def server_port(self, tmp_path: Path) -> AsyncGenerator[int]:
-        from twisted.internet import reactor
-
-        (tmp_path / "file").write_bytes(b"0123456789")
-        r = static.File(str(tmp_path))
-        site = server.Site(r, timeout=None)
-        port = reactor.listenSSL(
-            0,
-            site,
-            ssl_context_factory(
-                self.keyfile, self.certfile, cipher_string=self.cipher_string
-            ),
-            interface=self.host,
-        )
-
-        yield port.getHost().port
-
-        await port.stopListening()
 
     @async_yield_fixture
     async def download_handler(self) -> AsyncGenerator[DownloadHandlerProtocol]:
@@ -501,14 +492,11 @@ class TestSimpleHttpsBase(ABC):
 
         await close_dh(dh)
 
-    def getURL(self, portno: int, path: str) -> str:
-        return f"https://{self.host}:{portno}/{path}"
-
     @deferred_f_from_coro_f
     async def test_download(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self, url: str, download_handler: DownloadHandlerProtocol
     ) -> None:
-        request = Request(self.getURL(server_port, "file"))
+        request = Request(url)
         response = await download_request(download_handler, request)
         assert response.body == b"0123456789"
 
