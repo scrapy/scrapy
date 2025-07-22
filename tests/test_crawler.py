@@ -831,14 +831,14 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "Spider closed (finished)" in log
         assert "twisted.internet.error.DNSLookupError" not in log
 
-    def test_caching_hostname_resolver_finite_execution(self):
-        with MockServer() as mock_server:
-            http_address = mock_server.http_address.replace("0.0.0.0", "127.0.0.1")
-            log = self.run_script("caching_hostname_resolver.py", http_address)
-            assert "Spider closed (finished)" in log
-            assert "ERROR: Error downloading" not in log
-            assert "TimeoutError" not in log
-            assert "twisted.internet.error.DNSLookupError" not in log
+    def test_caching_hostname_resolver_finite_execution(
+        self, mockserver: MockServer
+    ) -> None:
+        log = self.run_script("caching_hostname_resolver.py", mockserver.url("/"))
+        assert "Spider closed (finished)" in log
+        assert "ERROR: Error downloading" not in log
+        assert "TimeoutError" not in log
+        assert "twisted.internet.error.DNSLookupError" not in log
 
     def test_twisted_reactor_asyncio(self):
         log = self.run_script("twisted_reactor_asyncio.py")

@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from subprocess import PIPE, Popen
+from urllib.parse import urlparse
 
 from twisted.web import resource
 from twisted.web.server import Site
@@ -79,19 +80,21 @@ class MockServer:
         http_address = self.proc.stdout.readline().strip().decode("ascii")
         https_address = self.proc.stdout.readline().strip().decode("ascii")
 
-        self.http_address = http_address
-        self.https_address = https_address
-
+        http_parsed = urlparse(http_address)
+        https_parsed = urlparse(https_address)
+        self.host = "127.0.0.1"
+        self.http_port = http_parsed.port
+        self.https_port = https_parsed.port
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.proc.kill()
         self.proc.communicate()
 
-    def url(self, path, is_secure=False):
-        host = self.https_address if is_secure else self.http_address
-        host = host.replace("0.0.0.0", "127.0.0.1")
-        return host + path
+    def url(self, path: str, is_secure: bool = False) -> str:
+        port = self.https_port if is_secure else self.http_port
+        scheme = "https" if is_secure else "http"
+        return f"{scheme}://{self.host}:{port}{path}"
 
 
 def main() -> None:
