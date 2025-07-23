@@ -312,7 +312,13 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         if not isinstance(name, str):
             raise ValueError(f"Base setting key must be a string, got {name}")
         compbs = BaseSettings()
-        compbs.update(self[name + "_BASE"])
+        base_settings = self[name + "_BASE"]
+        component_priority_dict = self[name]
+        for cls in tuple(base_settings):
+            for cls_or_path in tuple(component_priority_dict):
+                if load_object(cls_or_path) == load_object(cls):
+                    del base_settings[cls]
+        compbs.update(base_settings)
         compbs.update(self[name])
         return compbs
 
