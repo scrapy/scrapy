@@ -541,3 +541,10 @@ class TestDataURI:
         request = Request("data:,")
         response = await self.download_request(request)
         assert response.protocol is None
+
+    from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
+    def test_http_handler_initialization():
+        crawler = get_crawler()
+        handler = HTTPDownloadHandler(crawler.settings)
+        assert handler is not None
+
