@@ -472,7 +472,7 @@ class TestSimpleHttpsBase(ABC):
     @pytest.fixture(scope="class")
     def url(self, simple_mockserver: SimpleMockServer) -> str:
         # need to use self.host instead of what mockserver returns
-        return f"https://{self.host}:{simple_mockserver.port}/file"
+        return f"https://{self.host}:{simple_mockserver.port(is_secure=True)}/file"
 
     @property
     @abstractmethod
