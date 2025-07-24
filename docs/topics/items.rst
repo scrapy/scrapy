@@ -145,6 +145,8 @@ Example:
 Pydantic objects
 ----------------
 
+.. versionadded:: 2.2
+
 `Pydantic <https://docs.pydantic.dev/>`_ models allow the defining of item classes with field names,
 so that :ref:`item exporters <topics-exporters>` can export all fields by
 default even if the first scraped object does not have values for all of them.
@@ -153,12 +155,11 @@ Additionally, ``pydantic`` items also allow you to:
 
 * define the type and default value of each defined field with runtime type validation.
 
-* define custom field metadata through :func:`pydantic.Field`, which can be used to
-  :ref:`customize serialization <topics-exporters-field-serialization>`.
+* define custom field metadata through `pydantic.Field <https://docs.pydantic.dev/latest/concepts/fields/>`_, which can be used to :ref:`customize serialization <topics-exporters-field-serialization>`.
 
 * benefit from automatic data validation and conversion based on type annotations.
 
-In order to use this type, the :doc:`pydantic package <pydantic:index>` needs to be installed.
+In order to use this type, the `pydantic package <https://docs.pydantic.dev/>`_ needs to be installed.
 
 Example:
 
