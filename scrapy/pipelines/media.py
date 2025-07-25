@@ -22,7 +22,7 @@ from scrapy.http.request import NO_CALLBACK, Request
 from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.datatypes import SequenceExclude
-from scrapy.utils.defer import _DEFER_DELAY, _defer_sleep
+from scrapy.utils.defer import _DEFER_DELAY, _defer_sleep, deferred_from_coro
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import get_func_args, global_object_name
@@ -246,7 +246,9 @@ class MediaPipeline(ABC):
             else:
                 self._modify_media_request(request)
                 assert self.crawler.engine
-                response = yield self.crawler.engine.download(request)
+                response = yield deferred_from_coro(
+                    self.crawler.engine.download_async(request)
+                )
             return self.media_downloaded(response, request, info, item=item)
         except Exception:
             failure = self.media_failed(Failure(), request, info)
