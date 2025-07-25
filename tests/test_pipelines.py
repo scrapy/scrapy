@@ -4,6 +4,7 @@ import pytest
 from twisted.internet.defer import Deferred, inlineCallbacks
 
 from scrapy import Request, Spider, signals
+from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.mockserver.http import MockServer
@@ -30,9 +31,7 @@ class DeferredPipeline:
 class AsyncDefPipeline:
     async def process_item(self, item, spider):
         d = Deferred()
-        from twisted.internet import reactor
-
-        reactor.callLater(0, d.callback, None)
+        call_later(0, d.callback, None)
         await maybe_deferred_to_future(d)
         item["pipeline_passed"] = True
         return item
@@ -41,9 +40,8 @@ class AsyncDefPipeline:
 class AsyncDefAsyncioPipeline:
     async def process_item(self, item, spider):
         d = Deferred()
-        from twisted.internet import reactor
-
-        reactor.callLater(0, d.callback, None)
+        loop = asyncio.get_event_loop()
+        loop.call_later(0, d.callback, None)
         await deferred_to_future(d)
         await asyncio.sleep(0.2)
         item["pipeline_passed"] = await get_from_asyncio_queue(True)

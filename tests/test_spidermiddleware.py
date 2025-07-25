@@ -14,6 +14,7 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
+from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 
@@ -220,9 +221,7 @@ class ProcessSpiderExceptionAsyncIteratorMiddleware:
     async def process_spider_exception(self, response, exception, spider):
         yield {"foo": 1}
         d = defer.Deferred()
-        from twisted.internet import reactor
-
-        reactor.callLater(0, d.callback, None)
+        call_later(0, d.callback, None)
         await maybe_deferred_to_future(d)
         yield {"foo": 2}
         yield {"foo": 3}

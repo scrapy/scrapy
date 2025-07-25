@@ -2003,6 +2003,7 @@ reactor is installed.
 
 In order to use the reactor installed by Scrapy:
 
+.. skip: next
 .. code-block:: python
 
     import scrapy
