@@ -53,7 +53,8 @@ from scrapy.settings import Settings
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockFTPServer, MockServer
+from tests.mockserver.ftp import MockFTPServer
+from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
 from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
 

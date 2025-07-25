@@ -6,6 +6,7 @@ from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.python.failure import Failure
 
+from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.signal import (
     send_catch_log,
@@ -65,12 +66,10 @@ class TestSendCatchLogDeferred(TestSendCatchLog):
 
 class TestSendCatchLogDeferred2(TestSendCatchLogDeferred):
     def ok_handler(self, arg, handlers_called):
-        from twisted.internet import reactor
-
         handlers_called.add(self.ok_handler)
         assert arg == "test"
         d = defer.Deferred()
-        reactor.callLater(0, d.callback, "OK")
+        call_later(0, d.callback, "OK")
         return d
 
 
@@ -98,12 +97,10 @@ class TestSendCatchLogAsync(TestSendCatchLog):
 
 class TestSendCatchLogAsync2(TestSendCatchLogAsync):
     def ok_handler(self, arg, handlers_called):
-        from twisted.internet import reactor
-
         handlers_called.add(self.ok_handler)
         assert arg == "test"
         d = defer.Deferred()
-        reactor.callLater(0, d.callback, "OK")
+        call_later(0, d.callback, "OK")
         return d
 
 

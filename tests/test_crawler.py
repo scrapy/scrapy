@@ -30,11 +30,13 @@ from scrapy.crawler import (
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
+from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
-from tests.mockserver import MockServer, get_mockserver_env
+from tests.mockserver.http import MockServer
+from tests.utils import get_script_run_env
 from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
 
 BASE_SETTINGS: dict[str, Any] = {}
@@ -754,7 +756,7 @@ class ScriptRunnerMixin(ABC):
         args = self.get_script_args(script_name, *script_args)
         p = subprocess.Popen(
             args,
-            env=get_mockserver_env(),
+            env=get_script_run_env(),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -831,14 +833,14 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "Spider closed (finished)" in log
         assert "twisted.internet.error.DNSLookupError" not in log
 
-    def test_caching_hostname_resolver_finite_execution(self):
-        with MockServer() as mock_server:
-            http_address = mock_server.http_address.replace("0.0.0.0", "127.0.0.1")
-            log = self.run_script("caching_hostname_resolver.py", http_address)
-            assert "Spider closed (finished)" in log
-            assert "ERROR: Error downloading" not in log
-            assert "TimeoutError" not in log
-            assert "twisted.internet.error.DNSLookupError" not in log
+    def test_caching_hostname_resolver_finite_execution(
+        self, mockserver: MockServer
+    ) -> None:
+        log = self.run_script("caching_hostname_resolver.py", mockserver.url("/"))
+        assert "Spider closed (finished)" in log
+        assert "ERROR: Error downloading" not in log
+        assert "TimeoutError" not in log
+        assert "twisted.internet.error.DNSLookupError" not in log
 
     def test_twisted_reactor_asyncio(self):
         log = self.run_script("twisted_reactor_asyncio.py")
@@ -932,8 +934,6 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
 
     @inlineCallbacks
     def test_shutdown_forced(self):
-        from twisted.internet import reactor
-
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
         args = self.get_script_args("sleeping.py", "10")
         p = PopenSpawn(args, timeout=5)
@@ -943,7 +943,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         p.expect_exact("shutting down gracefully")
         # sending the second signal too fast often causes problems
         d = Deferred()
-        reactor.callLater(0.01, d.callback, None)
+        call_later(0.01, d.callback, None)
         yield d
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")

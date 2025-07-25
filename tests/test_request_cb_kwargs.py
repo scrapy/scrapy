@@ -2,7 +2,7 @@ from testfixtures import LogCapture
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import MockServerSpider
 from tests.utils.decorators import inlineCallbacks
 

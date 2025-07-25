@@ -17,6 +17,7 @@ from tests.test_downloader_handlers_http_base import (
 
 if TYPE_CHECKING:
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
+    from tests.mockserver.http import MockServer
 
 
 pytestmark = pytest.mark.requires_reactor
@@ -34,15 +35,17 @@ class TestHttp10(HTTP10DownloadHandlerMixin, TestHttpBase):
 
     @deferred_f_from_coro_f
     async def test_protocol(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
+        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
     ) -> None:
-        request = Request(self.getURL(server_port, "host"), method="GET")
+        request = Request(
+            mockserver.url("/host", is_secure=self.is_secure), method="GET"
+        )
         response = await download_request(download_handler, request)
         assert response.protocol == "HTTP/1.0"
 
 
 class TestHttps10(TestHttp10):
-    scheme = "https"
+    is_secure = True
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")

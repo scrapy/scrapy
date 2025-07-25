@@ -3,7 +3,7 @@ from testfixtures import LogCapture
 from scrapy import Request, Spider
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.utils.decorators import deferred_f_from_coro_f
 
 

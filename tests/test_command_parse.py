@@ -4,7 +4,7 @@ from pathlib import Path
 
 from scrapy.commands import parse
 from scrapy.settings import Settings
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.test_commands import TestCommandBase
 
 

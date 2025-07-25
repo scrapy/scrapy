@@ -1,5 +1,5 @@
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import (
     ErrorSpider,
     FollowAllSpider,

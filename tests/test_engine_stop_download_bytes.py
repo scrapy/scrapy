@@ -1,6 +1,11 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from testfixtures import LogCapture
 
 from scrapy.exceptions import StopDownload
+from scrapy.utils.defer import deferred_f_from_coro_f
 from tests.test_engine import (
     AttrsItemsSpider,
     CrawlerRun,
@@ -9,7 +14,9 @@ from tests.test_engine import (
     MySpider,
     TestEngineBase,
 )
-from tests.utils.decorators import inlineCallbacks
+
+if TYPE_CHECKING:
+    from tests.mockserver.http import MockServer
 
 
 class BytesReceivedCrawlerRun(CrawlerRun):
@@ -19,8 +26,8 @@ class BytesReceivedCrawlerRun(CrawlerRun):
 
 
 class TestBytesReceivedEngine(TestEngineBase):
-    @inlineCallbacks
-    def test_crawler(self):
+    @deferred_f_from_coro_f
+    async def test_crawler(self, mockserver: MockServer) -> None:
         for spider in (
             MySpider,
             DictItemsSpider,
@@ -29,12 +36,12 @@ class TestBytesReceivedEngine(TestEngineBase):
         ):
             run = BytesReceivedCrawlerRun(spider)
             with LogCapture() as log:
-                yield run.run()
+                await run.run(mockserver)
                 log.check_present(
                     (
                         "scrapy.core.downloader.handlers.http11",
                         "DEBUG",
-                        f"Download stopped for <GET http://localhost:{run.portno}/redirected> "
+                        f"Download stopped for <GET {mockserver.url('/redirected')}> "
                         "from signal handler BytesReceivedCrawlerRun.bytes_received",
                     )
                 )
@@ -42,7 +49,7 @@ class TestBytesReceivedEngine(TestEngineBase):
                     (
                         "scrapy.core.downloader.handlers.http11",
                         "DEBUG",
-                        f"Download stopped for <GET http://localhost:{run.portno}/> "
+                        f"Download stopped for <GET {mockserver.url('/static/')}> "
                         "from signal handler BytesReceivedCrawlerRun.bytes_received",
                     )
                 )
@@ -50,7 +57,7 @@ class TestBytesReceivedEngine(TestEngineBase):
                     (
                         "scrapy.core.downloader.handlers.http11",
                         "DEBUG",
-                        f"Download stopped for <GET http://localhost:{run.portno}/numbers> "
+                        f"Download stopped for <GET {mockserver.url('/numbers')}> "
                         "from signal handler BytesReceivedCrawlerRun.bytes_received",
                     )
                 )

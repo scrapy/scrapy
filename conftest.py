@@ -1,11 +1,18 @@
+from __future__ import annotations
+
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from twisted.web.http import H2_ENABLED
 
 from scrapy.utils.reactor import set_asyncio_event_loop_policy
 from tests.keys import generate_keys
+from tests.mockserver.http import MockServer
 from tests.utils.reactorless import install_reactor_import_hook
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 def _py_files(folder):
@@ -58,6 +65,12 @@ def pytest_addoption(parser, pluginmanager):
         default="none",
         choices=["asyncio", "default", "none"],
     )
+
+
+@pytest.fixture(scope="session")
+def mockserver() -> Generator[MockServer]:
+    with MockServer() as mockserver:
+        yield mockserver
 
 
 @pytest.fixture(scope="session")

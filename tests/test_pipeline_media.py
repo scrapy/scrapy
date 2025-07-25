@@ -14,6 +14,7 @@ from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.spiders import Spider
+from scrapy.utils.asyncio import call_later
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
@@ -338,10 +339,8 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         rsp1 = Response("http://url")
 
         def rsp1_func():
-            from twisted.internet import reactor
-
             dfd = Deferred().addCallback(_check_downloading)
-            reactor.callLater(0.1, dfd.callback, rsp1)
+            call_later(0.1, dfd.callback, rsp1)
             return dfd
 
         def rsp2_func():

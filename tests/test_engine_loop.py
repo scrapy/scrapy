@@ -10,10 +10,9 @@ from twisted.internet.defer import Deferred
 from scrapy import Request, Spider, signals
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
-
-from .mockserver import MockServer
-from .test_scheduler import MemoryScheduler
-from .utils.decorators import deferred_f_from_coro_f
+from tests.mockserver.http import MockServer
+from tests.test_scheduler import MemoryScheduler
+from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
     from scrapy.http import Response
@@ -140,7 +139,6 @@ class TestRequestSendOrder:
     def get_num(self, request_or_response: Request | Response):
         return int(request_or_response.url.rsplit("&", maxsplit=1)[1])
 
-    @deferred_f_from_coro_f
     async def _test_request_order(
         self,
         start_nums,
@@ -220,14 +218,12 @@ class TestRequestSendOrder:
             return
             yield
 
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=nums,
-                settings={"CONCURRENT_REQUESTS": 1},
-                response_seconds=response_seconds,
-                start_fn=start,
-                parse_fn=parse,
-            )
+        await self._test_request_order(
+            start_nums=nums,
+            settings={"CONCURRENT_REQUESTS": 1},
+            response_seconds=response_seconds,
+            start_fn=start,
+            parse_fn=parse,
         )
 
     @deferred_f_from_coro_f
@@ -262,17 +258,15 @@ class TestRequestSendOrder:
             return
             yield
 
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=nums,
-                settings={
-                    "CONCURRENT_REQUESTS": 1,
-                    "SCHEDULER_START_MEMORY_QUEUE": "scrapy.squeues.LifoMemoryQueue",
-                },
-                response_seconds=response_seconds,
-                start_fn=start,
-                parse_fn=parse,
-            )
+        await self._test_request_order(
+            start_nums=nums,
+            settings={
+                "CONCURRENT_REQUESTS": 1,
+                "SCHEDULER_START_MEMORY_QUEUE": "scrapy.squeues.LifoMemoryQueue",
+            },
+            response_seconds=response_seconds,
+            start_fn=start,
+            parse_fn=parse,
         )
 
     @deferred_f_from_coro_f
@@ -322,17 +316,15 @@ class TestRequestSendOrder:
             return
             yield
 
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=nums,
-                settings={
-                    "CONCURRENT_REQUESTS": 1,
-                    "SCHEDULER_START_MEMORY_QUEUE": None,
-                },
-                response_seconds=response_seconds,
-                start_fn=start,
-                parse_fn=parse,
-            )
+        await self._test_request_order(
+            start_nums=nums,
+            settings={
+                "CONCURRENT_REQUESTS": 1,
+                "SCHEDULER_START_MEMORY_QUEUE": None,
+            },
+            response_seconds=response_seconds,
+            start_fn=start,
+            parse_fn=parse,
         )
 
     # Examples from the “Start requests” section of the documentation about
@@ -352,14 +344,12 @@ class TestRequestSendOrder:
                 request = self.request(num, response_seconds, download_slots)
                 yield request
 
-        await maybe_deferred_to_future(
-            self._test_request_order(
-                start_nums=start_nums,
-                cb_nums=cb_nums,
-                settings={
-                    "CONCURRENT_REQUESTS": 1,
-                },
-                response_seconds=response_seconds,
-                start_fn=start,
-            )
+        await self._test_request_order(
+            start_nums=start_nums,
+            cb_nums=cb_nums,
+            settings={
+                "CONCURRENT_REQUESTS": 1,
+            },
+            response_seconds=response_seconds,
+            start_fn=start,
         )

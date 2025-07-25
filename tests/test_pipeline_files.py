@@ -29,7 +29,7 @@ from scrapy.pipelines.files import (
     S3FilesStore,
 )
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockFTPServer
+from tests.mockserver.ftp import MockFTPServer
 from tests.utils.decorators import inlineCallbacks
 
 from .test_pipeline_media import _mocked_download_func
@@ -260,6 +260,26 @@ class TestFilesPipeline:
         item = {"path": "path-to-store-file"}
         request = Request("http://example.com")
         assert file_path(request, item=item) == "full/path-to-store-file"
+
+    @pytest.mark.parametrize(
+        "bad_type",
+        [
+            "http://example.com/file.pdf",
+            ("http://example.com/file.pdf",),
+            {"url": "http://example.com/file.pdf"},
+            123,
+            None,
+        ],
+    )
+    def test_rejects_non_list_file_urls(self, tmp_path, bad_type):
+        pipeline = FilesPipeline.from_crawler(
+            get_crawler(None, {"FILES_STORE": str(tmp_path)})
+        )
+        item = ItemWithFiles()
+        item["file_urls"] = bad_type
+
+        with pytest.raises(TypeError, match="file_urls must be a list of URLs"):
+            list(pipeline.get_media_requests(item, None))
 
 
 class TestFilesPipelineFieldsMixin(ABC):
