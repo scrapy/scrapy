@@ -25,7 +25,7 @@ class TestRobotsTxtMiddleware:
     def setup_method(self):
         self.crawler = mock.MagicMock()
         self.crawler.settings = Settings()
-        self.crawler.engine.download = mock.MagicMock()
+        self.crawler.engine.download_async = mock.AsyncMock()
 
     def teardown_method(self):
         del self.crawler
@@ -58,7 +58,7 @@ Disallow: /some/randome/page.html
             reactor.callFromThread(deferred.callback, response)
             return deferred
 
-        crawler.engine.download.side_effect = return_response
+        crawler.engine.download_async.side_effect = return_response
         return crawler
 
     @deferred_f_from_coro_f
@@ -109,7 +109,7 @@ Disallow: /some/randome/page.html
             reactor.callFromThread(deferred.callback, response)
             return deferred
 
-        crawler.engine.download.side_effect = return_response
+        crawler.engine.download_async.side_effect = return_response
         return crawler
 
     @deferred_f_from_coro_f
@@ -133,7 +133,7 @@ Disallow: /some/randome/page.html
             reactor.callFromThread(deferred.callback, response)
             return deferred
 
-        crawler.engine.download.side_effect = return_response
+        crawler.engine.download_async.side_effect = return_response
         return crawler
 
     @deferred_f_from_coro_f
@@ -156,7 +156,7 @@ Disallow: /some/randome/page.html
             reactor.callFromThread(deferred.errback, failure.Failure(err))
             return deferred
 
-        self.crawler.engine.download.side_effect = return_failure
+        self.crawler.engine.download_async.side_effect = return_failure
 
         middleware = RobotsTxtMiddleware(self.crawler)
         middleware._logerror = mock.MagicMock(side_effect=middleware._logerror)
@@ -175,7 +175,7 @@ Disallow: /some/randome/page.html
             deferred.errback(failure.Failure(err))
             return deferred
 
-        self.crawler.engine.download.side_effect = immediate_failure
+        self.crawler.engine.download_async.side_effect = immediate_failure
 
         middleware = RobotsTxtMiddleware(self.crawler)
         await self.assertNotIgnored(Request("http://site.local"), middleware)
@@ -191,7 +191,7 @@ Disallow: /some/randome/page.html
             reactor.callFromThread(deferred.errback, failure.Failure(IgnoreRequest()))
             return deferred
 
-        self.crawler.engine.download.side_effect = ignore_request
+        self.crawler.engine.download_async.side_effect = ignore_request
 
         middleware = RobotsTxtMiddleware(self.crawler)
         mw_module_logger.error = mock.MagicMock()
@@ -240,7 +240,7 @@ Disallow: /some/randome/page.html
             )
 
     def assertRobotsTxtRequested(self, base_url: str) -> None:
-        calls = self.crawler.engine.download.call_args_list
+        calls = self.crawler.engine.download_async.call_args_list
         request = calls[0][0][0]
         assert request.url == f"{base_url}/robots.txt"
         assert request.callback == NO_CALLBACK
