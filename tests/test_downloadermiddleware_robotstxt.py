@@ -14,8 +14,9 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from tests.test_robotstxt_interface import rerp_available
+from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler

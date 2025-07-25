@@ -1,13 +1,14 @@
 import asyncio
 
 import pytest
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred
 
 from scrapy import Request, Spider, signals
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.mockserver.http import MockServer
+from tests.utils.decorators import inlineCallbacks
 
 
 class SimplePipeline:

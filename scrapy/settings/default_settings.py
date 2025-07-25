@@ -532,6 +532,8 @@ USER_AGENT = f"Scrapy/{import_module('scrapy').__version__} (+https://scrapy.org
 
 WARN_ON_GENERATOR_RETURN_VALUE = True
 
+_USE_REACTOR = True
+
 
 def __getattr__(name: str):
     if name == "CONCURRENT_REQUESTS_PER_IP":

@@ -5,7 +5,6 @@ from urllib.parse import urljoin
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.http import Request
@@ -14,6 +13,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.request import fingerprint
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
+from tests.utils.decorators import inlineCallbacks
 
 PATHS = ["/a", "/b", "/c"]
 URLS = [urljoin("https://example.org", p) for p in PATHS]
