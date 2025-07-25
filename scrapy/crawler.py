@@ -8,11 +8,7 @@ import signal
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from twisted.internet.defer import (
-    Deferred,
-    DeferredList,
-    inlineCallbacks,
-)
+from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 
 from scrapy import Spider, signals
 from scrapy.addons import AddonManager

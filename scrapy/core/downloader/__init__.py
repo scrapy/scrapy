@@ -21,9 +21,9 @@ from scrapy.utils.asyncio import (
     create_looping_call,
 )
 from scrapy.utils.defer import (
+    _defer_sleep_async,
     deferred_from_coro,
     maybe_deferred_to_future,
-    mustbe_deferred,
 )
 from scrapy.utils.httpobj import urlparse_cached
 
@@ -162,7 +162,7 @@ class Downloader:
 
     def get_slot_key(self, request: Request) -> str:
         if self.DOWNLOAD_SLOT in request.meta:
-            return cast(str, request.meta[self.DOWNLOAD_SLOT])
+            return cast("str", request.meta[self.DOWNLOAD_SLOT])
 
         key = urlparse_cached(request).hostname or ""
         if self.ip_concurrency:
@@ -231,7 +231,7 @@ class Downloader:
         try:
             # 1. Download the response
             response: Response = await maybe_deferred_to_future(
-                mustbe_deferred(self.handlers.download_request, request, spider)
+                self.handlers.download_request(request, spider)
             )
             # 2. Notify response_downloaded listeners about the recent download
             # before querying queue for next request
@@ -242,6 +242,9 @@ class Downloader:
                 spider=spider,
             )
             return response
+        except Exception:
+            await _defer_sleep_async()
+            raise
         finally:
             # 3. After response arrives, remove the request from transferring
             # state to free up the transferring slot so it can be used by the

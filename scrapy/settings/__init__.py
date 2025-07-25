@@ -336,7 +336,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         stored.
         """
         if len(self) > 0:
-            return max(cast(int, self.getpriority(name)) for name in self)
+            return max(cast("int", self.getpriority(name)) for name in self)
         return get_settings_priority("default")
 
     def replace_in_component_priority_dict(
@@ -519,11 +519,11 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """
         self._assert_mutability()
         if isinstance(values, str):
-            values = cast(dict[_SettingsKeyT, Any], json.loads(values))
+            values = cast("dict[_SettingsKeyT, Any]", json.loads(values))
         if values is not None:
             if isinstance(values, BaseSettings):
                 for name, value in values.items():
-                    self.set(name, value, cast(int, values.getpriority(name)))
+                    self.set(name, value, cast("int", values.getpriority(name)))
             else:
                 for name, value in values.items():
                     self.set(name, value, priority)
@@ -533,7 +533,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
             raise KeyError(name)
         self._assert_mutability()
         priority = get_settings_priority(priority)
-        if priority >= cast(int, self.getpriority(name)):
+        if priority >= cast("int", self.getpriority(name)):
             del self.attributes[name]
 
     def __delitem__(self, name: _SettingsKeyT) -> None:

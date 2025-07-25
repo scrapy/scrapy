@@ -16,6 +16,7 @@ from twisted.internet import defer, threads
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
+import scrapy
 from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
@@ -164,8 +165,6 @@ class Shell:
         request: Request | None = None,
         spider: Spider | None = None,
     ) -> None:
-        import scrapy
-
         self.vars["scrapy"] = scrapy
         self.vars["crawler"] = self.crawler
         self.vars["item"] = self.item_class()

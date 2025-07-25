@@ -223,7 +223,8 @@ class MailSender:
     def _create_sender_factory(
         self, to_addrs: list[str], msg: IO[bytes], d: Deferred[Any]
     ) -> ESMTPSenderFactory:
-        from twisted.mail.smtp import ESMTPSenderFactory
+        # imports twisted.internet.reactor
+        from twisted.mail.smtp import ESMTPSenderFactory  # noqa: PLC0415
 
         factory_keywords: dict[str, Any] = {
             "heloFallback": True,

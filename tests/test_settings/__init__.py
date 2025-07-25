@@ -6,6 +6,7 @@ from unittest import mock
 
 import pytest
 
+from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.settings import (
     SETTINGS_PRIORITIES,
     BaseSettings,
@@ -13,6 +14,8 @@ from scrapy.settings import (
     SettingsAttribute,
     get_settings_priority,
 )
+from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
 
 from . import default_settings
 
@@ -447,10 +450,6 @@ class TestSettings:
         assert mydict["key"] == "val"
 
     def test_passing_objects_as_values(self):
-        from scrapy.core.downloader.handlers.file import FileDownloadHandler
-        from scrapy.utils.misc import build_from_crawler
-        from scrapy.utils.test import get_crawler
-
         class TestPipeline:
             def process_item(self, i, s):
                 return i

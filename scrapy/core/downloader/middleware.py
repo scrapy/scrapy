@@ -6,7 +6,6 @@ See documentation in docs/topics/downloader-middleware.rst
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -15,10 +14,10 @@ from scrapy.exceptions import _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.defer import deferred_from_coro, mustbe_deferred
+from scrapy.utils.defer import _defer_sleep, deferred_from_coro
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
 
     from scrapy import Spider
     from scrapy.settings import BaseSettings
@@ -51,7 +50,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             request: Request,
         ) -> Generator[Deferred[Any], Any, Response | Request]:
             for method in self.methods["process_request"]:
-                method = cast(Callable, method)
+                method = cast("Callable", method)
                 response = yield deferred_from_coro(
                     method(request=request, spider=spider)
                 )
@@ -76,7 +75,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 return response
 
             for method in self.methods["process_response"]:
-                method = cast(Callable, method)
+                method = cast("Callable", method)
                 response = yield deferred_from_coro(
                     method(request=request, response=response, spider=spider)
                 )
@@ -94,7 +93,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             exception: Exception,
         ) -> Generator[Deferred[Any], Any, Response | Request]:
             for method in self.methods["process_exception"]:
-                method = cast(Callable, method)
+                method = cast("Callable", method)
                 response = yield deferred_from_coro(
                     method(request=request, exception=exception, spider=spider)
                 )
@@ -110,8 +109,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             raise exception
 
         try:
-            result: Response | Request = yield mustbe_deferred(process_request, request)
+            result: Response | Request = yield process_request(request)
         except Exception as ex:
+            yield _defer_sleep()
             # either returns a request or response (which we pass to process_response())
             # or reraises the exception
             result = yield process_exception(ex)

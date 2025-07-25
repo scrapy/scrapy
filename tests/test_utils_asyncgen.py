@@ -1,10 +1,8 @@
-from twisted.trial import unittest
-
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import deferred_f_from_coro_f
 
 
-class TestAsyncgenUtils(unittest.TestCase):
+class TestAsyncgenUtils:
     @deferred_f_from_coro_f
     async def test_as_async_generator(self):
         ag = as_async_generator(range(42))

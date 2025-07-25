@@ -1,10 +1,9 @@
 from testfixtures import LogCapture
-from twisted.trial.unittest import TestCase
 
 from scrapy import Request, Spider
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 
 
 class LogExceptionMiddleware:
@@ -298,16 +297,16 @@ class NotGeneratorOutputChainSpider(Spider):
 
 
 # ================================================================================
-class TestSpiderMiddleware(TestCase):
+class TestSpiderMiddleware:
     mockserver: MockServer
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
     async def crawl_log(self, spider: type[Spider]) -> LogCapture:

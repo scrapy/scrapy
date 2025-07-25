@@ -10,6 +10,7 @@ import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Response, TextResponse
 from scrapy.linkextractors import LinkExtractor
+from scrapy.utils.test import get_testenv
 
 if TYPE_CHECKING:
     import argparse
@@ -35,8 +36,6 @@ class Command(ScrapyCommand):
 
 class _BenchServer:
     def __enter__(self) -> None:
-        from scrapy.utils.test import get_testenv
-
         pargs = [sys.executable, "-u", "-m", "scrapy.utils.benchserver"]
         self.proc = subprocess.Popen(  # noqa: S603
             pargs, stdout=subprocess.PIPE, env=get_testenv()

@@ -202,6 +202,6 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
         redirected = self._redirect_request_using_get(request, url)
         if urlparse_cached(redirected).scheme not in {"http", "https"}:
             return response
-        if cast(float, interval) < self._maxdelay:
+        if cast("float", interval) < self._maxdelay:
             return self._redirect(redirected, request, spider, "meta refresh")
         return response

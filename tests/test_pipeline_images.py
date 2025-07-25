@@ -209,6 +209,26 @@ class TestImagesPipeline:
         assert converted.mode == "RGB"
         assert converted.getcolors() == [(10000, (205, 230, 255))]
 
+    @pytest.mark.parametrize(
+        "bad_type",
+        [
+            "http://example.com/file.jpg",
+            ("http://example.com/file.jpg",),
+            {"url": "http://example.com/file.jpg"},
+            123,
+            None,
+        ],
+    )
+    def test_rejects_non_list_image_urls(self, tmp_path, bad_type):
+        pipeline = ImagesPipeline.from_crawler(
+            get_crawler(None, {"IMAGES_STORE": str(tmp_path)})
+        )
+        item = ImagesPipelineTestItem()
+        item["image_urls"] = bad_type
+
+        with pytest.raises(TypeError, match="image_urls must be a list of URLs"):
+            list(pipeline.get_media_requests(item, None))
+
 
 class TestImagesPipelineFieldsMixin(ABC):
     @property
@@ -502,8 +522,8 @@ class TestImagesPipelineCustomSettings:
             assert getattr(pipeline_cls, pipe_attr.lower()) == expected_value
 
 
-def _create_image(format, *a, **kw):
+def _create_image(format_, *a, **kw):
     buf = io.BytesIO()
-    Image.new(*a, **kw).save(buf, format)
+    Image.new(*a, **kw).save(buf, format_)
     buf.seek(0)
     return Image.open(buf), buf

@@ -71,12 +71,12 @@ class LxmlParserLinkExtractor:
         self.scan_tag: Callable[[str], bool] = (
             tag
             if callable(tag)
-            else cast(Callable[[str], bool], partial(operator.eq, tag))
+            else cast("Callable[[str], bool]", partial(operator.eq, tag))
         )
         self.scan_attr: Callable[[str], bool] = (
             attr
             if callable(attr)
-            else cast(Callable[[str], bool], partial(operator.eq, attr))
+            else cast("Callable[[str], bool]", partial(operator.eq, attr))
         )
         self.process_attr: Callable[[Any], Any] = (
             process if callable(process) else _identity
@@ -84,7 +84,7 @@ class LxmlParserLinkExtractor:
         self.unique: bool = unique
         self.strip: bool = strip
         self.link_key: Callable[[Link], str] = (
-            cast(Callable[[Link], str], operator.attrgetter("url"))
+            cast("Callable[[Link], str]", operator.attrgetter("url"))
             if canonicalized
             else _canonicalize_link_url
         )

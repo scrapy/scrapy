@@ -6,7 +6,6 @@ from typing import Any
 
 import pytest
 from testfixtures import LogCapture
-from twisted.trial.unittest import TestCase
 
 from scrapy import Spider, signals
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -21,7 +20,7 @@ ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
 
 
-class TestMain(TestCase):
+class TestMain:
     async def _test_spider(
         self, spider: type[Spider], expected_items: list[Any] | None = None
     ) -> None:

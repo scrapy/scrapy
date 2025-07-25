@@ -1,3 +1,4 @@
+import builtins
 from io import StringIO
 from unittest import mock
 
@@ -74,14 +75,12 @@ def test_pformat_windows(isatty, version, terminal_processing):
 def test_pformat_no_pygments(isatty):
     isatty.return_value = True
 
-    import builtins
-
     real_import = builtins.__import__
 
-    def mock_import(name, globals, locals, fromlist, level):
+    def mock_import(name, globals_, locals_, fromlist, level):
         if "pygments" in name:
             raise ImportError
-        return real_import(name, globals, locals, fromlist, level)
+        return real_import(name, globals_, locals_, fromlist, level)
 
     builtins.__import__ = mock_import
     assert pformat(value) == plain_string

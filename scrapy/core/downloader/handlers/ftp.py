@@ -37,7 +37,6 @@ from typing import TYPE_CHECKING, Any, BinaryIO
 from urllib.parse import unquote
 
 from twisted.internet.protocol import ClientCreator, Protocol
-from twisted.protocols.ftp import CommandFailed, FTPClient
 
 from scrapy.http import Response
 from scrapy.responsetypes import responsetypes
@@ -46,6 +45,7 @@ from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
+    from twisted.protocols.ftp import FTPClient
     from twisted.python.failure import Failure
 
     # typing.Self requires Python 3.11
@@ -101,6 +101,7 @@ class FTPDownloadHandler:
 
     def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         from twisted.internet import reactor
+        from twisted.protocols.ftp import FTPClient
 
         parsed_url = urlparse_cached(request)
         user = request.meta.get("ftp_user", self.default_user)
@@ -138,6 +139,8 @@ class FTPDownloadHandler:
         return respcls(url=request.url, status=200, body=body, headers=headers)  # type: ignore[arg-type]
 
     def _failed(self, result: Failure, request: Request) -> Response:
+        from twisted.protocols.ftp import CommandFailed
+
         message = result.getErrorMessage()
         if result.type == CommandFailed:
             m = _CODE_RE.search(message)
