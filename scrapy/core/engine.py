@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import warnings
 from time import time
 from traceback import format_exc
 from typing import TYPE_CHECKING, Any, cast
@@ -19,7 +20,12 @@ from twisted.python.failure import Failure
 from scrapy import signals
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.core.scraper import Scraper
-from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
+from scrapy.exceptions import (
+    CloseSpider,
+    DontCloseSpider,
+    IgnoreRequest,
+    ScrapyDeprecationWarning,
+)
 from scrapy.http import Request, Response
 from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.defer import (
@@ -374,6 +380,11 @@ class ExecutionEngine:
 
     def download(self, request: Request) -> Deferred[Response]:
         """Return a Deferred which fires with a Response as result, only downloader middlewares are applied"""
+        warnings.warn(
+            "ExecutionEngine.download() is deprecated, use download_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return deferred_from_coro(self.download_async(request))
 
     async def download_async(self, request: Request) -> Response:

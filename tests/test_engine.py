@@ -573,6 +573,7 @@ class TestEngineDownloadAsync:
         engine._slot.remove_request.assert_called_once_with(request)
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestEngineDownload(TestEngineDownloadAsync):
     """Test cases for ExecutionEngine.download()."""
 
