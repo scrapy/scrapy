@@ -4,7 +4,7 @@ from twisted.internet.defer import inlineCallbacks
 from scrapy import Request, signals
 from scrapy.http.response import Response
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import SingleRequestSpider
 
 OVERRIDDEN_URL = "https://example.org"

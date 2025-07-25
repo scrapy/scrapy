@@ -8,7 +8,7 @@ from pexpect.popen_spawn import PopenSpawn
 
 from scrapy.utils.reactor import _asyncio_reactor_path
 from tests import NON_EXISTING_RESOLVABLE, tests_datadir
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.test_commands import TestProjectBase
 
 

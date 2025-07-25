@@ -30,7 +30,7 @@ from scrapy.pipelines.files import (
     S3FilesStore,
 )
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockFTPServer
+from tests.mockserver.ftp import MockFTPServer
 
 from .test_pipeline_media import _mocked_download_func
 

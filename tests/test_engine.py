@@ -16,7 +16,6 @@ import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from logging import DEBUG
-from pathlib import Path
 from unittest.mock import Mock
 from urllib.parse import urlparse
 
@@ -27,7 +26,6 @@ from pydispatch import dispatcher
 from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks
-from twisted.web import server, static, util
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine, _Slot
@@ -38,9 +36,11 @@ from scrapy.item import Field, Item
 from scrapy.linkextractors import LinkExtractor
 from scrapy.signals import request_scheduled
 from scrapy.spiders import Spider
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
-from tests import get_testdata, tests_datadir
+from tests import get_testdata
+from tests.mockserver.http import MockServer
 
 
 class MyItem(Item):
@@ -65,7 +65,6 @@ class DataClassItem:
 
 class MySpider(Spider):
     name = "scrapytest.org"
-    allowed_domains = ["scrapytest.org", "localhost"]
 
     itemurl_re = re.compile(r"item\d+.html")
     name_re = re.compile(r"<h1>(.*?)</h1>", re.MULTILINE)
@@ -130,25 +129,6 @@ class ChangeCloseReasonSpider(MySpider):
         raise CloseSpider(reason="custom_reason")
 
 
-def start_test_site(debug=False):
-    from twisted.internet import reactor
-
-    root_dir = Path(tests_datadir, "test_site")
-    r = static.File(str(root_dir))
-    r.putChild(b"redirect", util.Redirect(b"/redirected"))
-    r.putChild(b"redirected", static.Data(b"Redirected here", "text/plain"))
-    numbers = [str(x).encode("utf8") for x in range(2**18)]
-    r.putChild(b"numbers", static.Data(b"".join(numbers), "text/plain"))
-
-    port = reactor.listenTCP(0, server.Site(r), interface="127.0.0.1")
-    if debug:
-        print(
-            f"Test server running at http://localhost:{port.getHost().port}/ "
-            "- hit Ctrl-C to finish."
-        )
-    return port
-
-
 class CrawlerRun:
     """A class to run the crawler and keep track of events occurred"""
 
@@ -164,12 +144,11 @@ class CrawlerRun:
         self.signals_caught = {}
         self.spider_class = spider_class
 
-    def run(self):
-        self.port = start_test_site()
-        self.portno = self.port.getHost().port
+    async def run(self, mockserver: MockServer) -> None:
+        self.mockserver = mockserver
 
         start_urls = [
-            self.geturl("/"),
+            self.geturl("/static/"),
             self.geturl("/redirect"),
             self.geturl("/redirect"),  # duplicate
             self.geturl("/numbers"),
@@ -194,20 +173,19 @@ class CrawlerRun:
         )
         self.crawler.crawl(start_urls=start_urls)
 
-        self.deferred = defer.Deferred()
+        self.deferred: defer.Deferred[None] = defer.Deferred()
         dispatcher.connect(self.stop, signals.engine_stopped)
-        return self.deferred
+        await maybe_deferred_to_future(self.deferred)
 
     def stop(self):
-        self.port.stopListening()  # FIXME: wait for this Deferred
         for name, signal in vars(signals).items():
             if not name.startswith("_"):
                 disconnect_all(signal)
         self.deferred.callback(None)
         return self.crawler.stop()
 
-    def geturl(self, path):
-        return f"http://localhost:{self.portno}{path}"
+    def geturl(self, path: str) -> str:
+        return self.mockserver.url(path)
 
     def getpath(self, url):
         u = urlparse(url)
@@ -249,12 +227,12 @@ class TestEngineBase:
     @staticmethod
     def _assert_visited_urls(run: CrawlerRun) -> None:
         must_be_visited = [
-            "/",
+            "/static/",
             "/redirect",
             "/redirected",
-            "/item1.html",
-            "/item2.html",
-            "/item999.html",
+            "/static/item1.html",
+            "/static/item2.html",
+            "/static/item999.html",
         ]
         urls_visited = {rp[0].url for rp in run.respplug}
         urls_expected = {run.geturl(p) for p in must_be_visited}
@@ -266,7 +244,11 @@ class TestEngineBase:
     def _assert_scheduled_requests(run: CrawlerRun, count: int) -> None:
         assert len(run.reqplug) == count
 
-        paths_expected = ["/item999.html", "/item2.html", "/item1.html"]
+        paths_expected = [
+            "/static/item999.html",
+            "/static/item2.html",
+            "/static/item1.html",
+        ]
 
         urls_requested = {rq[0].url for rq in run.reqplug}
         urls_expected = {run.geturl(p) for p in paths_expected}
@@ -288,7 +270,7 @@ class TestEngineBase:
         assert len(run.reqreached) == count
 
         for response, _ in run.respplug:
-            if run.getpath(response.url) == "/item999.html":
+            if run.getpath(response.url) == "/static/item999.html":
                 assert response.status == 404
             if run.getpath(response.url) == "/redirect":
                 assert response.status == 302
@@ -334,11 +316,11 @@ class TestEngineBase:
         assert len(run.bytes) == 9
         for request, data in run.bytes.items():
             joined_data = b"".join(data)
-            if run.getpath(request.url) == "/":
+            if run.getpath(request.url) == "/static/":
                 assert joined_data == get_testdata("test_site", "index.html")
-            elif run.getpath(request.url) == "/item1.html":
+            elif run.getpath(request.url) == "/static/item1.html":
                 assert joined_data == get_testdata("test_site", "item1.html")
-            elif run.getpath(request.url) == "/item2.html":
+            elif run.getpath(request.url) == "/static/item2.html":
                 assert joined_data == get_testdata("test_site", "item2.html")
             elif run.getpath(request.url) == "/redirected":
                 assert joined_data == b"Redirected here"
@@ -353,7 +335,7 @@ class TestEngineBase:
                     b"    </body>\n"
                     b"</html>\n"
                 )
-            elif run.getpath(request.url) == "/tem999.html":
+            elif run.getpath(request.url) == "/static/item999.html":
                 assert (
                     joined_data == b"\n<html>\n"
                     b"  <head><title>404 - No Such Resource</title></head>\n"
@@ -390,8 +372,8 @@ class TestEngineBase:
 
 
 class TestEngine(TestEngineBase):
-    @inlineCallbacks
-    def test_crawler(self):
+    @deferred_f_from_coro_f
+    async def test_crawler(self, mockserver: MockServer) -> None:
         for spider in (
             MySpider,
             DictItemsSpider,
@@ -399,7 +381,7 @@ class TestEngine(TestEngineBase):
             DataClassItemsSpider,
         ):
             run = CrawlerRun(spider)
-            yield run.run()
+            await run.run(mockserver)
             self._assert_visited_urls(run)
             self._assert_scheduled_requests(run, count=9)
             self._assert_downloaded_responses(run, count=9)
@@ -407,23 +389,25 @@ class TestEngine(TestEngineBase):
             self._assert_signals_caught(run)
             self._assert_bytes_received(run)
 
-    @inlineCallbacks
-    def test_crawler_dupefilter(self):
+    @deferred_f_from_coro_f
+    async def test_crawler_dupefilter(self, mockserver: MockServer) -> None:
         run = CrawlerRun(DupeFilterSpider)
-        yield run.run()
+        await run.run(mockserver)
         self._assert_scheduled_requests(run, count=8)
         self._assert_dropped_requests(run)
 
-    @inlineCallbacks
-    def test_crawler_itemerror(self):
+    @deferred_f_from_coro_f
+    async def test_crawler_itemerror(self, mockserver: MockServer) -> None:
         run = CrawlerRun(ItemZeroDivisionErrorSpider)
-        yield run.run()
+        await run.run(mockserver)
         self._assert_items_error(run)
 
-    @inlineCallbacks
-    def test_crawler_change_close_reason_on_idle(self):
+    @deferred_f_from_coro_f
+    async def test_crawler_change_close_reason_on_idle(
+        self, mockserver: MockServer
+    ) -> None:
         run = CrawlerRun(ChangeCloseReasonSpider)
-        yield run.run()
+        await run.run(mockserver)
         assert {
             "spider": run.crawler.spider,
             "reason": "custom_reason",
@@ -539,11 +523,3 @@ def test_request_scheduled_signal(caplog):
         f"{scheduler.enqueued!r} != [{keep_request!r}]"
     )
     crawler.signals.disconnect(signal_handler, request_scheduled)
-
-
-if __name__ == "__main__":
-    from twisted.internet import reactor  # pylint: disable=ungrouped-imports
-
-    if len(sys.argv) > 1 and sys.argv[1] == "runserver":
-        start_test_site(debug=True)
-        reactor.run()
