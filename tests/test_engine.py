@@ -489,137 +489,41 @@ class TestEngine(TestEngineBase):
         assert "AssertionError" not in stderr_str, stderr_str
 
 
-class TestEngineDownloadSync(TestEngineBase):
-    """Test cases for the synchronous download method of ExecutionEngine."""
+class TestEngineDownloadAsync:
+    """Test cases for ExecutionEngine.download_async()."""
 
-    def setUp(self):
-        super().setUp()
-        self.crawler = get_crawler(MySpider)
-        self.engine = ExecutionEngine(self.crawler, lambda _: None)
-        self.engine.downloader.close()
-        self.engine.downloader = Mock()
-        self.engine._slot = Mock()
-        self.engine._slot.inprogress = set()
+    @pytest.fixture
+    def engine(self) -> ExecutionEngine:
+        crawler = get_crawler(MySpider)
+        engine = ExecutionEngine(crawler, lambda _: None)
+        engine.downloader.close()
+        engine.downloader = Mock()
+        engine._slot = Mock()
+        engine._slot.inprogress = set()
+        return engine
 
-    @inlineCallbacks
-    def test_download_success(self):
-        """Test basic successful download of a request."""
-        # Arrange
-        request = Request("http://example.com")
-        response = Response("http://example.com", body=b"test body")
-        self.engine.spider = Mock()
-        self.engine.downloader.fetch.return_value = defer.succeed(response)
-        self.engine._slot.add_request = Mock()
-        self.engine._slot.remove_request = Mock()
-
-        # Act
-        result = yield self.engine.download(request)
-
-        # Assert
-        assert result == response
-        self.engine._slot.add_request.assert_called_once_with(request)
-        self.engine._slot.remove_request.assert_called_once_with(request)
-        self.engine.downloader.fetch.assert_called_once_with(
-            request, self.engine.spider
-        )
-
-    @inlineCallbacks
-    def test_download_redirect(self):
-        """Test download with a redirect request."""
-        # Arrange
-        original_request = Request("http://example.com")
-        redirect_request = Request("http://example.com/redirect")
-        final_response = Response("http://example.com/redirect", body=b"redirected")
-
-        # First call returns redirect request, second call returns final response
-        self.engine.downloader.fetch.side_effect = [
-            defer.succeed(redirect_request),
-            defer.succeed(final_response),
-        ]
-        self.engine.spider = Mock()
-        self.engine._slot.add_request = Mock()
-        self.engine._slot.remove_request = Mock()
-
-        # Act
-        result = yield self.engine.download(original_request)
-
-        # Assert
-        assert result == final_response
-        assert self.engine.downloader.fetch.call_count == 2
-        self.engine._slot.add_request.assert_has_calls(
-            [call(original_request), call(redirect_request)]
-        )
-        self.engine._slot.remove_request.assert_has_calls(
-            [call(original_request), call(redirect_request)]
-        )
-
-    @inlineCallbacks
-    def test_download_no_spider(self):
-        """Test download attempt when no spider is available."""
-        # Arrange
-        request = Request("http://example.com")
-        self.engine.spider = None
-
-        # Act & Assert
-        with pytest.raises(RuntimeError) as exc_info:
-            yield self.engine.download(request)
-        assert "No open spider to crawl" in str(exc_info.value)
-
-    @inlineCallbacks
-    def test_download_failure(self):
-        """Test download when the downloader raises an exception."""
-        # Arrange
-        request = Request("http://example.com")
-        error = RuntimeError("Download failed")
-        self.engine.spider = Mock()
-        self.engine.downloader.fetch.return_value = defer.fail(error)
-        self.engine._slot.add_request = Mock()
-        self.engine._slot.remove_request = Mock()
-
-        # Act & Assert
-        with pytest.raises(RuntimeError) as exc_info:
-            yield self.engine.download(request)
-        assert str(exc_info.value) == "Download failed"
-        self.engine._slot.add_request.assert_called_once_with(request)
-        self.engine._slot.remove_request.assert_called_once_with(request)
-
-
-class TestEngineDownloadAsync(TestEngineBase):
-    """Test cases for the asynchronous download method of ExecutionEngine."""
-
-    def setUp(self):
-        super().setUp()
-        self.crawler = get_crawler(MySpider)
-        self.engine = ExecutionEngine(self.crawler, lambda _: None)
-        self.engine.downloader.close()
-        self.engine.downloader = Mock()
-        self.engine._slot = Mock()
-        self.engine._slot.inprogress = set()
+    @staticmethod
+    async def _download(engine: ExecutionEngine, request: Request) -> Response:
+        return await engine.download_async(request)
 
     @deferred_f_from_coro_f
-    async def test_download_async_success(self):
+    async def test_download_async_success(self, engine):
         """Test basic successful async download of a request."""
-        # Arrange
         request = Request("http://example.com")
         response = Response("http://example.com", body=b"test body")
-        self.engine.spider = Mock()
-        self.engine.downloader.fetch.return_value = defer.succeed(response)
-        self.engine._slot.add_request = Mock()
-        self.engine._slot.remove_request = Mock()
+        engine.spider = Mock()
+        engine.downloader.fetch.return_value = defer.succeed(response)
+        engine._slot.add_request = Mock()
+        engine._slot.remove_request = Mock()
 
-        # Act
-        result = await self.engine.download_async(request)
-
-        # Assert
+        result = await self._download(engine, request)
         assert result == response
-        self.engine._slot.add_request.assert_called_once_with(request)
-        self.engine._slot.remove_request.assert_called_once_with(request)
-        self.engine.downloader.fetch.assert_called_once_with(
-            request, self.engine.spider
-        )
+        engine._slot.add_request.assert_called_once_with(request)
+        engine._slot.remove_request.assert_called_once_with(request)
+        engine.downloader.fetch.assert_called_once_with(request, engine.spider)
 
     @deferred_f_from_coro_f
-    async def test_download_async_redirect(self):
+    async def test_download_async_redirect(self, engine):
         """Test async download with a redirect request."""
         # Arrange
         original_request = Request("http://example.com")
@@ -627,56 +531,54 @@ class TestEngineDownloadAsync(TestEngineBase):
         final_response = Response("http://example.com/redirect", body=b"redirected")
 
         # First call returns redirect request, second call returns final response
-        self.engine.downloader.fetch.side_effect = [
+        engine.downloader.fetch.side_effect = [
             defer.succeed(redirect_request),
             defer.succeed(final_response),
         ]
-        self.engine.spider = Mock()
-        self.engine._slot.add_request = Mock()
-        self.engine._slot.remove_request = Mock()
+        engine.spider = Mock()
+        engine._slot.add_request = Mock()
+        engine._slot.remove_request = Mock()
 
-        # Act
-        result = await self.engine.download_async(original_request)
-
-        # Assert
+        result = await self._download(engine, original_request)
         assert result == final_response
-        assert self.engine.downloader.fetch.call_count == 2
-        self.engine._slot.add_request.assert_has_calls(
+        assert engine.downloader.fetch.call_count == 2
+        engine._slot.add_request.assert_has_calls(
             [call(original_request), call(redirect_request)]
         )
-        self.engine._slot.remove_request.assert_has_calls(
+        engine._slot.remove_request.assert_has_calls(
             [call(original_request), call(redirect_request)]
         )
 
     @deferred_f_from_coro_f
-    async def test_download_async_no_spider(self):
+    async def test_download_async_no_spider(self, engine):
         """Test async download attempt when no spider is available."""
-        # Arrange
         request = Request("http://example.com")
-        self.engine.spider = None
-
-        # Act & Assert
-        with pytest.raises(RuntimeError) as exc_info:
-            await self.engine.download_async(request)
-        assert f"No open spider to crawl: {request}" == str(exc_info.value)
+        engine.spider = None
+        with pytest.raises(RuntimeError, match="No open spider to crawl:"):
+            await self._download(engine, request)
 
     @deferred_f_from_coro_f
-    async def test_download_async_failure(self):
+    async def test_download_async_failure(self, engine):
         """Test async download when the downloader raises an exception."""
-        # Arrange
         request = Request("http://example.com")
         error = RuntimeError("Download failed")
-        self.engine.spider = Mock()
-        self.engine.downloader.fetch.return_value = defer.fail(error)
-        self.engine._slot.add_request = Mock()
-        self.engine._slot.remove_request = Mock()
+        engine.spider = Mock()
+        engine.downloader.fetch.return_value = defer.fail(error)
+        engine._slot.add_request = Mock()
+        engine._slot.remove_request = Mock()
 
-        # Act & Assert
-        with pytest.raises(RuntimeError) as exc_info:
-            await self.engine.download_async(request)
-        assert str(exc_info.value) == "Download failed"
-        self.engine._slot.add_request.assert_called_once_with(request)
-        self.engine._slot.remove_request.assert_called_once_with(request)
+        with pytest.raises(RuntimeError, match="Download failed"):
+            await self._download(engine, request)
+        engine._slot.add_request.assert_called_once_with(request)
+        engine._slot.remove_request.assert_called_once_with(request)
+
+
+class TestEngineDownload(TestEngineDownloadAsync):
+    """Test cases for ExecutionEngine.download()."""
+
+    @staticmethod
+    async def _download(engine: ExecutionEngine, request: Request) -> Response:
+        return await maybe_deferred_to_future(engine.download(request))
 
 
 def test_request_scheduled_signal(caplog):
