@@ -20,6 +20,7 @@ import pytest
 from itemadapter import ItemAdapter
 from twisted.internet.defer import inlineCallbacks
 
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import (
@@ -29,6 +30,7 @@ from scrapy.pipelines.files import (
     GCSFilesStore,
     S3FilesStore,
 )
+from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler
 from tests.mockserver import MockFTPServer
 
@@ -802,3 +804,11 @@ class TestBuildFromCrawler:
             assert len(w) == 0
             assert pipe.store
             assert pipe._from_crawler_called
+
+
+@pytest.mark.parametrize("store_value", [None, ""])
+def test_files_pipeline_raises_notconfigured_when_files_store_invalid(store_value):
+    settings = Settings({"FILES_STORE": store_value})
+    crawler = get_crawler(settings_dict=settings)
+    with pytest.raises(NotConfigured, match="FILES_STORE setting must be set"):
+        FilesPipeline.from_crawler(crawler)
