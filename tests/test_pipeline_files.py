@@ -806,9 +806,18 @@ class TestBuildFromCrawler:
             assert pipe._from_crawler_called
 
 
-@pytest.mark.parametrize("store_value", [None, ""])
-def test_files_pipeline_raises_notconfigured_when_files_store_invalid(store_value):
-    settings = Settings({"FILES_STORE": store_value})
-    crawler = get_crawler(settings_dict=settings)
+@pytest.mark.parametrize("store", [None, ""])
+def test_files_pipeline_raises_notconfigured_when_files_store_invalid(
+    monkeypatch, store
+):
+    settings = Settings()
+
+    if store is None:
+        monkeypatch.delenv("IMAGES_STORE", raising=False)
+    else:
+        monkeypatch.setenv("IMAGES_STORE", store)
+
+    settings.set("FILES_STORE", store)
+
     with pytest.raises(NotConfigured):
-        FilesPipeline.from_crawler(crawler)
+        FilesPipeline.from_settings(settings)
