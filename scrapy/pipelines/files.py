@@ -450,9 +450,27 @@ class FilesPipeline(MediaPipeline):
         *,
         crawler: Crawler | None = None,
     ):
+        if store_uri is None:
+            setting_name = (
+                "IMAGES_STORE"
+                if self.__class__.__name__ == "ImagesPipeline"
+                else "FILES_STORE"
+            )
+            raise NotConfigured(
+                f"{setting_name} setting must be set to a valid path (not None) "
+                f"to enable {self.__class__.__name__}."
+            )
         store_uri = _to_string(store_uri)
         if not store_uri:
-            raise NotConfigured
+            setting_name = (
+                "IMAGES_STORE"
+                if self.__class__.__name__ == "ImagesPipeline"
+                else "FILES_STORE"
+            )
+            raise NotConfigured(
+                f"{setting_name} setting must be set to a valid path (not empty) "
+                f"to enable {self.__class__.__name__}."
+            )
 
         if crawler is not None:
             if settings is not None:
@@ -516,16 +534,6 @@ class FilesPipeline(MediaPipeline):
     def _from_settings(cls, settings: Settings, crawler: Crawler | None) -> Self:
         cls._update_stores(settings)
         store_uri = settings["FILES_STORE"]
-        if store_uri is None or (
-            isinstance(store_uri, str) and store_uri.strip() == ""
-        ):
-            setting_name = (
-                "IMAGES_STORE" if cls.__name__ == "ImagesPipeline" else "FILES_STORE"
-            )
-            raise NotConfigured(
-                f"{setting_name} setting must be set to a valid path (not None or empty) "
-                f"to enable {cls.__name__}."
-            )
         if "crawler" in get_func_args(cls.__init__):
             o = cls(store_uri, crawler=crawler)
         else:
