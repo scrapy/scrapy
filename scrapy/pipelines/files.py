@@ -450,9 +450,27 @@ class FilesPipeline(MediaPipeline):
         *,
         crawler: Crawler | None = None,
     ):
+        if store_uri is None:
+            setting_name = (
+                "IMAGES_STORE"
+                if self.__class__.__name__ == "ImagesPipeline"
+                else "FILES_STORE"
+            )
+            raise NotConfigured(
+                f"{setting_name} setting must be set to a valid path (not None) "
+                f"to enable {self.__class__.__name__}."
+            )
         store_uri = _to_string(store_uri)
         if not store_uri:
-            raise NotConfigured
+            setting_name = (
+                "IMAGES_STORE"
+                if self.__class__.__name__ == "ImagesPipeline"
+                else "FILES_STORE"
+            )
+            raise NotConfigured(
+                f"{setting_name} setting must be set to a valid path (not empty) "
+                f"to enable {self.__class__.__name__}."
+            )
 
         if crawler is not None:
             if settings is not None:
