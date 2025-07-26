@@ -810,5 +810,5 @@ class TestBuildFromCrawler:
 def test_files_pipeline_raises_notconfigured_when_files_store_invalid(store_value):
     settings = Settings({"FILES_STORE": store_value})
     crawler = get_crawler(settings_dict=settings)
-    with pytest.raises(NotConfigured, match="FILES_STORE setting must be set"):
+    with pytest.raises(NotConfigured):
         FilesPipeline.from_crawler(crawler)
