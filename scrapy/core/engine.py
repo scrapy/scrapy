@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import warnings
 from time import time
 from traceback import format_exc
 from typing import TYPE_CHECKING, Any, cast
@@ -19,7 +20,12 @@ from twisted.python.failure import Failure
 from scrapy import signals
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.core.scraper import Scraper
-from scrapy.exceptions import CloseSpider, DontCloseSpider, IgnoreRequest
+from scrapy.exceptions import (
+    CloseSpider,
+    DontCloseSpider,
+    IgnoreRequest,
+    ScrapyDeprecationWarning,
+)
 from scrapy.http import Request, Response
 from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.defer import (
@@ -372,18 +378,28 @@ class ExecutionEngine:
                 signals.request_dropped, request=request, spider=self.spider
             )
 
-    @inlineCallbacks
-    def download(self, request: Request) -> Generator[Deferred[Any], Any, Response]:
+    def download(self, request: Request) -> Deferred[Response]:
         """Return a Deferred which fires with a Response as result, only downloader middlewares are applied"""
+        warnings.warn(
+            "ExecutionEngine.download() is deprecated, use download_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return deferred_from_coro(self.download_async(request))
+
+    async def download_async(self, request: Request) -> Response:
+        """Asynchronous version of download() that returns a Response."""
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
         try:
-            response_or_request = yield self._download(request)
+            response_or_request = await maybe_deferred_to_future(
+                self._download(request)
+            )
         finally:
             assert self._slot is not None
             self._slot.remove_request(request)
         if isinstance(response_or_request, Request):
-            return (yield self.download(response_or_request))
+            return await self.download_async(response_or_request)
         return response_or_request
 
     @inlineCallbacks

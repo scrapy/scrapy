@@ -14,6 +14,7 @@ from twisted.internet.defer import Deferred, maybeDeferred
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
+from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import load_object
@@ -105,7 +106,7 @@ class RobotsTxtMiddleware:
             )
             assert self.crawler.engine
             assert self.crawler.stats
-            dfd = self.crawler.engine.download(robotsreq)
+            dfd = deferred_from_coro(self.crawler.engine.download_async(robotsreq))
             dfd.addCallback(self._parse_robots, netloc, spider)
             dfd.addErrback(self._logerror, robotsreq, spider)
             dfd.addErrback(self._robots_error, netloc)
