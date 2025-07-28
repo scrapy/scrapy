@@ -450,8 +450,7 @@ class FilesPipeline(MediaPipeline):
         *,
         crawler: Crawler | None = None,
     ):
-        store_uri = _to_string(store_uri)
-        if not store_uri:
+        if not (store_uri and (store_uri := _to_string(store_uri))):
             setting_name = (
                 "IMAGES_STORE"
                 if self.__class__.__name__ == "ImagesPipeline"

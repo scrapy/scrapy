@@ -809,7 +809,8 @@ class TestBuildFromCrawler:
 @pytest.mark.parametrize("store", [None, ""])
 def test_files_pipeline_raises_notconfigured_when_files_store_invalid(store):
     settings = Settings()
-    settings.set("FILES_STORE", store)
-
+    settings.clear()
+    settings.set("FILES_STORE", store, priority="cmdline")
+    print(f"Test: FILES_STORE: {settings.get('FILES_STORE')}")
     with pytest.raises(NotConfigured):
         FilesPipeline.from_settings(settings)
