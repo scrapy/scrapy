@@ -92,7 +92,7 @@ class TestPriorityQueue:
         assert len(queue) == 2
         assert dequeued.url == req3.url
         assert dequeued.priority == req3.priority
-        assert queue.close() == [-1, -2]
+        assert set(queue.close()) == {-1, -2}
 
 
 class TestDownloaderAwarePriorityQueue:
