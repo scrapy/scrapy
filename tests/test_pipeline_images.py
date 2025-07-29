@@ -169,7 +169,7 @@ class TestImagesPipeline:
 
         path, new_im, new_buf = next(get_images_gen)
         assert path == "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
-        assert orig_im == new_im
+        assert orig_im.copy() == new_im
         assert buf.getvalue() == new_buf.getvalue()
 
         thumb_path, thumb_img, thumb_buf = next(get_images_gen)
