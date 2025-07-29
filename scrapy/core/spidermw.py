@@ -33,6 +33,7 @@ from scrapy.utils.python import MutableAsyncChain, MutableChain, global_object_n
 if TYPE_CHECKING:
     from collections.abc import Generator
 
+    from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
 
 
@@ -57,12 +58,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
     def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
         return build_component_list(settings.getwithbase("SPIDER_MIDDLEWARES"))
 
-    def __init__(self, *middlewares: Any) -> None:
+    def __init__(self, *middlewares: Any, crawler: Crawler | None = None) -> None:
         self._check_deprecated_process_start_requests_use(middlewares)
-        super().__init__(*middlewares)
+        super().__init__(*middlewares, crawler=crawler)
 
     def _check_deprecated_process_start_requests_use(
-        self, middlewares: tuple[Any]
+        self, middlewares: tuple[Any, ...]
     ) -> None:
         deprecated_middlewares = [
             middleware

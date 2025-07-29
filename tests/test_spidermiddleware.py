@@ -21,6 +21,8 @@ from scrapy.utils.test import get_crawler
 if TYPE_CHECKING:
     from twisted.python.failure import Failure
 
+    from scrapy.crawler import Crawler
+
 
 class TestSpiderMiddleware:
     def setup_method(self):
@@ -404,8 +406,12 @@ class UniversalMiddlewareBothAsync:
 
 class TestUniversalMiddlewareManager:
     @pytest.fixture
-    def mwman(self) -> SpiderMiddlewareManager:
-        return SpiderMiddlewareManager()
+    def crawler(self) -> Crawler:
+        return get_crawler(Spider)
+
+    @pytest.fixture
+    def mwman(self, crawler: Crawler) -> SpiderMiddlewareManager:
+        return SpiderMiddlewareManager.from_crawler(crawler)
 
     def test_simple_mw(self, mwman: SpiderMiddlewareManager) -> None:
         mw = ProcessSpiderOutputSimpleMiddleware()

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.defer import process_chain, process_parallel
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -38,8 +39,17 @@ class MiddlewareManager(ABC):
 
     component_name: str
 
-    def __init__(self, *middlewares: Any) -> None:
-        self.middlewares = middlewares
+    def __init__(self, *middlewares: Any, crawler: Crawler | None = None) -> None:
+        self.crawler: Crawler | None = crawler
+        if crawler is None:
+            warnings.warn(
+                f"MiddlewareManager.__init__() was called without the crawler argument"
+                f" when creating {global_object_name(self.__class__)}."
+                f" This is deprecated and the argument will be required in future Scrapy versions.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        self.middlewares: tuple[Any, ...] = middlewares
         # Only process_spider_output and process_spider_exception can be None.
         # Only process_spider_output can be a tuple, and only until _async compatibility methods are removed.
         self.methods: dict[str, deque[Callable | tuple[Callable, Callable] | None]] = (
@@ -108,7 +118,7 @@ class MiddlewareManager(ABC):
             },
             extra={"crawler": crawler},
         )
-        return cls(*middlewares)
+        return cls(*middlewares, crawler=crawler)
 
     def _add_middleware(self, mw: Any) -> None:
         if hasattr(mw, "open_spider"):
