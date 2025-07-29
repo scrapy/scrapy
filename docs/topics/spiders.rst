@@ -364,9 +364,14 @@ used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
 
+scrapy-spider-metadata params
+-----------------------------
+
 Another alternative to pass spider arguments is the library `scrapy-spider-metadata`_.
+
 This allows for Scrapy spiders to define, validate, document and pre-process
 their arguments as pydantic models.
+
 The example shows how to define typed parameters where a string argument
 is automatically converted to an integer:
 
@@ -979,7 +984,7 @@ Combine SitemapSpider with other sources of urls:
         def parse_other(self, response):
             pass  # ... scrape other here ...
 
-.. _scrapy-spider-metadata: https://pypi.org/project/scrapy-spider-metadata/
+.. _scrapy-spider-metadata: https://scrapy-spider-metadata.readthedocs.io/en/latest/params.html
 .. _Sitemaps: https://www.sitemaps.org/index.html
 .. _Sitemap index files: https://www.sitemaps.org/protocol.html#index
 .. _robots.txt: https://www.robotstxt.org/
