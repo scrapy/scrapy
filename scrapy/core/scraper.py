@@ -314,12 +314,11 @@ class Scraper:
         spider: Spider | None = None,
     ) -> Deferred[None]:
         """Pass items/requests produced by a callback to ``_process_spidermw_output()`` in parallel."""
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to Scraper.handle_spider_output() is deprecated.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
+        warnings.warn(
+            "Scraper.handle_spider_output() is deprecated, use handle_spider_output_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return deferred_from_coro(
             self.handle_spider_output_async(result, request, response)
         )
@@ -395,6 +394,11 @@ class Scraper:
         *response* is the source of the item data. If the item does not come
         from response data, e.g. it was hard-coded, set it to ``None``.
         """
+        warnings.warn(
+            "Scraper.start_itemproc() is deprecated, use start_itemproc_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return deferred_from_coro(self.start_itemproc_async(item, response=response))
 
     async def start_itemproc_async(

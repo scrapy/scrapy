@@ -31,7 +31,7 @@ class TestSpiderMiddleware:
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
 
     async def _scrape_response(self) -> Any:
-        """Execute spider mw manager's scrape_response method and return the result.
+        """Execute spider mw manager's scrape_response_async method and return the result.
         Raise exception in case of failure.
         """
 
@@ -41,10 +41,8 @@ class TestSpiderMiddleware:
             it = mock.MagicMock()
             return defer.succeed(it)
 
-        return await maybe_deferred_to_future(
-            self.mwman.scrape_response(
-                scrape_func, self.response, self.request, self.spider
-            )
+        return await self.mwman.scrape_response_async(
+            scrape_func, self.response, self.request, self.spider
         )
 
 

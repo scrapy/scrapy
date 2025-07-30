@@ -10,6 +10,7 @@ module with the ``runserver`` argument::
     python test_engine.py runserver
 """
 
+import asyncio
 import re
 import subprocess
 import sys
@@ -36,8 +37,14 @@ from scrapy.item import Field, Item
 from scrapy.linkextractors import LinkExtractor
 from scrapy.signals import request_scheduled
 from scrapy.spiders import Spider
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import (
+    deferred_f_from_coro_f,
+    deferred_from_coro,
+    deferred_to_future,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.signal import disconnect_all
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests import get_testdata
 from tests.mockserver.http import MockServer
@@ -433,12 +440,21 @@ class TestEngine(TestEngineBase):
 
     @inlineCallbacks
     def test_start_already_running_exception(self):
-        e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
-        yield e.open_spider(MySpider())
-        e.start()
+        e = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+        yield deferred_from_coro(e.open_spider_async(DefaultSpider()))
+        deferred_from_coro(e.start_async())
         with pytest.raises(RuntimeError, match="Engine already running"):
-            yield e.start()
+            yield deferred_from_coro(e.start_async())
         yield e.stop()
+
+    @pytest.mark.only_asyncio
+    @deferred_f_from_coro_f
+    async def test_start_already_running_exception_asyncio(self):
+        e = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+        await e.open_spider_async(DefaultSpider())
+        with pytest.raises(RuntimeError, match="Engine already running"):
+            await asyncio.gather(e.start_async(), e.start_async())
+        await deferred_to_future(e.stop())
 
     @inlineCallbacks
     def test_start_request_processing_exception(self):

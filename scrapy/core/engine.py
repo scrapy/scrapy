@@ -135,9 +135,14 @@ class ExecutionEngine:
         return scheduler_cls
 
     def start(self, _start_request_processing=True) -> Deferred[None]:
+        warnings.warn(
+            "ExecutionEngine.start() is deprecated, use start_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return deferred_from_coro(self.start_async(_start_request_processing))
 
-    async def start_async(self, _start_request_processing=True) -> None:
+    async def start_async(self, _start_request_processing: bool = True) -> None:
         if self.running:
             raise RuntimeError("Engine already running")
         self.start_time = time()
@@ -218,7 +223,9 @@ class ExecutionEngine:
             if isinstance(item_or_request, Request):
                 self.crawl(item_or_request)
             else:
-                self.scraper.start_itemproc(item_or_request, response=None)
+                deferred_from_coro(
+                    self.scraper.start_itemproc_async(item_or_request, response=None)
+                )
                 self._slot.nextcall.schedule()
 
     @deferred_f_from_coro_f
@@ -438,6 +445,11 @@ class ExecutionEngine:
             self._slot.nextcall.schedule()
 
     def open_spider(self, spider: Spider, close_if_idle: bool = True) -> Deferred[None]:
+        warnings.warn(
+            "ExecutionEngine.open_spider() is deprecated, use open_spider_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return deferred_from_coro(
             self.open_spider_async(spider, close_if_idle=close_if_idle)
         )

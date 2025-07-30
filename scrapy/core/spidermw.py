@@ -367,6 +367,11 @@ class SpiderMiddlewareManager(MiddlewareManager):
         request: Request,
         spider: Spider,
     ) -> Deferred[MutableChain[_T] | MutableAsyncChain[_T]]:
+        warn(
+            "SpiderMiddlewareManager.scrape_response() is deprecated, use scrape_response_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return deferred_from_coro(
             self.scrape_response_async(scrape_func, response, request, spider)
         )

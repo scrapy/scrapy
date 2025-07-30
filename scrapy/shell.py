@@ -25,7 +25,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.conf import get_config
 from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
 from scrapy.utils.response import open_in_browser
@@ -126,9 +126,7 @@ class Shell:
 
         self.crawler.spider = spider
         assert self.crawler.engine
-        await maybe_deferred_to_future(
-            self.crawler.engine.open_spider(spider, close_if_idle=False)
-        )
+        await self.crawler.engine.open_spider_async(spider, close_if_idle=False)
         self.crawler.engine._start_request_processing()
         self.spider = spider
 

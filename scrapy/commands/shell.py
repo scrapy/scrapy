@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
 from scrapy.shell import Shell
+from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 from scrapy.utils.url import guess_scheme
 
@@ -84,7 +85,7 @@ class Command(ScrapyCommand):
         crawler._apply_settings()
         # The Shell class needs a persistent engine in the crawler
         crawler.engine = crawler._create_engine()
-        crawler.engine.start(_start_request_processing=False)
+        deferred_from_coro(crawler.engine.start_async(_start_request_processing=False))
 
         self._start_crawler_thread()
 
