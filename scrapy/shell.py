@@ -205,7 +205,7 @@ class Shell:
         b.append("  shelp()           Shell help (print this help)")
         b.append("  view(response)    View response in a browser")
 
-        return "\n".join(f"[s] {line}" for line in b)
+        return "\n".join(f"[s] {line}" for line in b) + "\n"
 
     def _is_relevant(self, value: Any) -> bool:
         return isinstance(value, self.relevant_classes) or is_item(value)
