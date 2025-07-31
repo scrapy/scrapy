@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import AsyncIterator, Callable, Iterable
-from inspect import isasyncgenfunction, iscoroutine
+from inspect import isasyncgen, isasyncgenfunction, iscoroutine, isgenerator
 from itertools import islice
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
 from warnings import warn
@@ -17,7 +17,7 @@ from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import Request, Spider
-from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
+from scrapy.exceptions import ScrapyDeprecationWarning, ScrapyUsageError, _InvalidOutput
 from scrapy.http import Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
@@ -400,15 +400,26 @@ class SpiderMiddlewareManager(MiddlewareManager):
     async def process_start(self, spider: Spider) -> AsyncIterator[Any] | None:
         self._check_deprecated_start_requests_use(spider)
         if self._use_start_requests:
-            sync_start = iter(spider.start_requests())
+            requests = spider.start_requests()
+            if not isgenerator(requests):
+                raise ScrapyUsageError(
+                    f"{spider.name}.start_requests() must be a generator function. "
+                    f"Use `yield`, not `return`."
+                )
+            sync_start = iter(requests)
             sync_start = await maybe_deferred_to_future(
                 self._process_chain("process_start_requests", sync_start, spider)
             )
             start: AsyncIterator[Any] = as_async_generator(sync_start)
         else:
-            start = spider.start()
+            start_result = spider.start()
+            if not (isgenerator(start_result) or isasyncgen(start_result)):
+                raise ScrapyUsageError(
+                    f"{spider.name}.start() must be a generator function. "
+                    f"Use `yield`, not `return`."
+                )
             start = await maybe_deferred_to_future(
-                self._process_chain("process_start", start)
+                self._process_chain("process_start", start_result)
             )
         return start
 

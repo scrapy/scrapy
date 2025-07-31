@@ -10,7 +10,7 @@ from testfixtures import LogCapture
 from twisted.internet import defer
 
 from scrapy.core.spidermw import SpiderMiddlewareManager
-from scrapy.exceptions import _InvalidOutput
+from scrapy.exceptions import ScrapyUsageError, _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
@@ -596,3 +596,54 @@ class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
     async def test_exc_async_simple(self):
         """Async exc mw -> simple output mw; cannot work as downgrading is not supported"""
         await self._test_asyncgen_nodowngrade(self.MW_SIMPLE, self.MW_EXC_ASYNCGEN)
+
+
+class TestStartRequestsReturnsList(TestSpiderMiddleware):
+    @deferred_f_from_coro_f
+    async def test_start_requests_returns_list(self):
+        class StartRequestsReturnsListSpider(Spider):
+            name = "start_requests_returns_list"
+
+            def start_requests(self):
+                return [Request("http://example.com")]
+
+        self.crawler = get_crawler(
+            StartRequestsReturnsListSpider,
+            {
+                "SPIDER_MIDDLEWARES_BASE": {},
+                "SPIDER_MIDDLEWARES": {
+                    "scrapy.spidermiddlewares.start.StartSpiderMiddleware": 100
+                },
+            },
+        )
+        self.spider = self.crawler._create_spider("start_requests_returns_list")
+        self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
+        self.mwman._use_start_requests = True
+        with pytest.raises(ScrapyUsageError) as excinfo:
+            await self.mwman.process_start(self.spider)
+        assert "must be a generator function" in str(excinfo.value)
+
+
+class TestStartReturnsList(TestSpiderMiddleware):
+    @deferred_f_from_coro_f
+    async def test_start_returns_list(self):
+        class StartReturnsListSpider(Spider):
+            name = "start_returns_list"
+
+            def start(self):
+                return [Request("http://example.com")]
+
+        self.crawler = get_crawler(
+            StartReturnsListSpider,
+            {
+                "SPIDER_MIDDLEWARES_BASE": {},
+                "SPIDER_MIDDLEWARES": {
+                    "scrapy.spidermiddlewares.start.StartSpiderMiddleware": 100
+                },
+            },
+        )
+        self.spider = self.crawler._create_spider("start_returns_list")
+        self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
+        with pytest.raises(ScrapyUsageError) as excinfo:
+            await self.mwman.process_start(self.spider)
+        assert "must be a generator function" in str(excinfo.value)

@@ -88,3 +88,7 @@ class ScrapyDeprecationWarning(Warning):
 
 class ContractFail(AssertionError):
     """Error raised in case of a failing contract"""
+
+
+class ScrapyUsageError(UsageError):
+    """To indicate a usage error in Scrapy"""
