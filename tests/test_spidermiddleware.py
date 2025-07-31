@@ -134,10 +134,10 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
         yield {"foo": 2}
         yield {"foo": 3}
 
-    def _scrape_func(
+    async def _scrape_func(
         self, response: Response | Failure, request: Request
-    ) -> defer.Deferred[Iterable[Any] | AsyncIterator[Any]]:
-        return defer.succeed(self._callback())
+    ) -> Iterable[Any] | AsyncIterator[Any]:
+        return self._callback()
 
     async def _get_middleware_result(
         self, *mw_classes: type[Any], start_index: int | None = None

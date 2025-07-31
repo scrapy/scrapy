@@ -193,7 +193,7 @@ class Scraper:
             try:
                 # call the spider middlewares and the request callback with the response
                 output = await self.spidermw.scrape_response_async(
-                    self.call_spider, result, request, self.crawler.spider
+                    self.call_spider_async, result, request, self.crawler.spider
                 )
             except Exception:
                 self.handle_spider_error(Failure(), request, result)
@@ -224,12 +224,11 @@ class Scraper:
     def call_spider(
         self, result: Response | Failure, request: Request, spider: Spider | None = None
     ) -> Deferred[Iterable[Any] | AsyncIterator[Any]]:
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to Scraper.call_spider() is deprecated.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
+        warnings.warn(
+            "Scraper.call_spider() is deprecated, use call_spider_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return deferred_from_coro(self.call_spider_async(result, request))
 
     async def call_spider_async(
