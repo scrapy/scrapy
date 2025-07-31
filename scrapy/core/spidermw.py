@@ -7,7 +7,8 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterator, Callable, Iterable
+from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
+from functools import wraps
 from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice
 from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
@@ -41,7 +42,7 @@ logger = logging.getLogger(__name__)
 _T = TypeVar("_T")
 ScrapeFunc = Callable[
     [Union[Response, Failure], Request],
-    Deferred[Union[Iterable[_T], AsyncIterator[_T]]],
+    Coroutine[Any, Any, Union[Iterable[_T], AsyncIterator[_T]]],
 ]
 
 
@@ -130,13 +131,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
         process_spider_exception = getattr(mw, "process_spider_exception", None)
         self.methods["process_spider_exception"].appendleft(process_spider_exception)
 
-    def _process_spider_input(
+    async def _process_spider_input(
         self,
         scrape_func: ScrapeFunc[_T],
         response: Response,
         request: Request,
         spider: Spider,
-    ) -> Deferred[Iterable[_T] | AsyncIterator[_T]]:
+    ) -> Iterable[_T] | AsyncIterator[_T]:
         for method in self.methods["process_spider_input"]:
             method = cast("Callable", method)
             try:
@@ -150,8 +151,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
             except _InvalidOutput:
                 raise
             except Exception:
-                return scrape_func(Failure(), request)
-        return scrape_func(response, request)
+                return await scrape_func(Failure(), request)
+        return await scrape_func(response, request)
 
     def _evaluate_iterable(
         self,
@@ -362,13 +363,28 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     def scrape_response(
         self,
-        scrape_func: ScrapeFunc[_T],
+        scrape_func: Callable[
+            [Response | Failure, Request],
+            Deferred[Iterable[_T] | AsyncIterator[_T]],
+        ],
         response: Response,
         request: Request,
         spider: Spider,
     ) -> Deferred[MutableChain[_T] | MutableAsyncChain[_T]]:
+        warn(
+            "SpiderMiddlewareManager.scrape_response() is deprecated, use scrape_response_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+
+        @wraps(scrape_func)
+        async def scrape_func_wrapped(
+            response: Response | Failure, request: Request
+        ) -> Iterable[_T] | AsyncIterator[_T]:
+            return await maybe_deferred_to_future(scrape_func(response, request))
+
         return deferred_from_coro(
-            self.scrape_response_async(scrape_func, response, request, spider)
+            self.scrape_response_async(scrape_func_wrapped, response, request, spider)
         )
 
     async def scrape_response_async(
@@ -389,8 +405,8 @@ class SpiderMiddlewareManager(MiddlewareManager):
             return self._process_spider_exception(response, spider, exception)
 
         try:
-            it: Iterable[_T] | AsyncIterator[_T] = await maybe_deferred_to_future(
-                self._process_spider_input(scrape_func, response, request, spider)
+            it: Iterable[_T] | AsyncIterator[_T] = await self._process_spider_input(
+                scrape_func, response, request, spider
             )
             return await process_callback_output(it)
         except Exception as ex:
