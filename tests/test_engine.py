@@ -38,6 +38,7 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.signals import request_scheduled
 from scrapy.spiders import Spider
 from scrapy.utils.defer import (
+    _schedule_coro,
     deferred_f_from_coro_f,
     deferred_from_coro,
     deferred_to_future,
@@ -442,7 +443,7 @@ class TestEngine(TestEngineBase):
     def test_start_already_running_exception(self):
         e = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
         yield deferred_from_coro(e.open_spider_async(DefaultSpider()))
-        deferred_from_coro(e.start_async())
+        _schedule_coro(e.start_async())
         with pytest.raises(RuntimeError, match="Engine already running"):
             yield deferred_from_coro(e.start_async())
         yield e.stop()

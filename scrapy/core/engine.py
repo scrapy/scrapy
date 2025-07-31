@@ -29,6 +29,7 @@ from scrapy.exceptions import (
 from scrapy.http import Request, Response
 from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.defer import (
+    _schedule_coro,
     deferred_f_from_coro_f,
     deferred_from_coro,
     maybe_deferred_to_future,
@@ -223,7 +224,7 @@ class ExecutionEngine:
             if isinstance(item_or_request, Request):
                 self.crawl(item_or_request)
             else:
-                deferred_from_coro(
+                _schedule_coro(
                     self.scraper.start_itemproc_async(item_or_request, response=None)
                 )
                 self._slot.nextcall.schedule()

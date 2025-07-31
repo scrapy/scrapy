@@ -511,3 +511,18 @@ def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
     if not is_asyncio_available():
         return d
     return deferred_to_future(d)
+
+
+def _schedule_coro(coro: Coroutine[Any, Any, Any]) -> None:
+    """Schedule the coroutine as a task or a Deferred.
+
+    This doesn't store the reference to the task/Deferred, so a better
+    alternative is calling :func:`scrapy.utils.defer.deferred_from_coro`,
+    keeping the result, and adding proper exception handling (e.g. errbacks) to
+    it.
+    """
+    if not is_asyncio_available():
+        Deferred.fromCoroutine(coro)
+        return
+    loop = asyncio.get_event_loop()
+    loop.create_task(coro)  # noqa: RUF006
