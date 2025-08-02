@@ -444,7 +444,7 @@ class TestEngine(TestEngineBase):
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
         e = ExecutionEngine(crawler, lambda _: None)
-        yield deferred_from_coro(e.open_spider_async(DefaultSpider()))
+        yield deferred_from_coro(e.open_spider_async())
         _schedule_coro(e.start_async())
         with pytest.raises(RuntimeError, match="Engine already running"):
             yield deferred_from_coro(e.start_async())
@@ -456,7 +456,7 @@ class TestEngine(TestEngineBase):
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
         e = ExecutionEngine(crawler, lambda _: None)
-        await e.open_spider_async(DefaultSpider())
+        await e.open_spider_async()
         with pytest.raises(RuntimeError, match="Engine already running"):
             await asyncio.gather(e.start_async(), e.start_async())
         await deferred_to_future(e.stop())

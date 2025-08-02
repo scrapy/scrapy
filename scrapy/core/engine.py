@@ -451,30 +451,28 @@ class ExecutionEngine:
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        return deferred_from_coro(
-            self.open_spider_async(spider, close_if_idle=close_if_idle)
-        )
+        return deferred_from_coro(self.open_spider_async(close_if_idle=close_if_idle))
 
-    async def open_spider_async(
-        self,
-        spider: Spider,
-        *,
-        close_if_idle: bool = True,
-    ) -> None:
+    async def open_spider_async(self, *, close_if_idle: bool = True) -> None:
+        assert self.crawler.spider
         if self._slot is not None:
-            raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
-        logger.info("Spider opened", extra={"spider": spider})
-        self.spider = spider
+            raise RuntimeError(
+                f"No free spider slot when opening {self.crawler.spider.name!r}"
+            )
+        logger.info("Spider opened", extra={"spider": self.crawler.spider})
+        self.spider = self.crawler.spider
         nextcall = CallLaterOnce(self._start_scheduled_requests)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
         self._slot = _Slot(close_if_idle, nextcall, scheduler)
         self._start = await self.scraper.spidermw.process_start()
-        if hasattr(scheduler, "open") and (d := scheduler.open(spider)):
+        if hasattr(scheduler, "open") and (d := scheduler.open(self.crawler.spider)):
             await maybe_deferred_to_future(d)
-        await maybe_deferred_to_future(self.scraper.open_spider(spider))
+        await maybe_deferred_to_future(self.scraper.open_spider(self.crawler.spider))
         assert self.crawler.stats
-        self.crawler.stats.open_spider(spider)
-        await self.signals.send_catch_log_async(signals.spider_opened, spider=spider)
+        self.crawler.stats.open_spider(self.crawler.spider)
+        await self.signals.send_catch_log_async(
+            signals.spider_opened, spider=self.crawler.spider
+        )
 
     def _spider_idle(self) -> None:
         """

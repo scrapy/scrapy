@@ -31,7 +31,7 @@ class TestManagerBase:
         crawler.spider = crawler._create_spider("foo")
         mwman = DownloaderMiddlewareManager.from_crawler(crawler)
         crawler.engine = crawler._create_engine()
-        await crawler.engine.open_spider_async(crawler.spider)
+        await crawler.engine.open_spider_async()
         yield mwman
         await maybe_deferred_to_future(crawler.engine.close_spider(crawler.spider))
 
