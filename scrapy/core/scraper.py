@@ -187,13 +187,12 @@ class Scraper:
                 f"Incorrect type: expected Response or Failure, got {type(result)}: {result!r}"
             )
 
-        assert self.crawler.spider
         output: Iterable[Any] | AsyncIterator[Any]
         if isinstance(result, Response):
             try:
                 # call the spider middlewares and the request callback with the response
                 output = await self.spidermw.scrape_response_async(
-                    self.call_spider_async, result, request, self.crawler.spider
+                    self.call_spider_async, result, request
                 )
             except Exception:
                 self.handle_spider_error(Failure(), request, result)
@@ -206,6 +205,7 @@ class Scraper:
             output = await self.call_spider_async(result, request)
         except Exception as spider_exc:
             # the errback didn't silence the exception
+            assert self.crawler.spider
             if not result.check(IgnoreRequest):
                 logkws = self.logformatter.download_error(
                     result, request, self.crawler.spider
@@ -412,6 +412,7 @@ class Scraper:
         assert self.crawler.spider is not None  # typing
         self.slot.itemproc_size += 1
         try:
+            # we would like to drop the spider argument but self.itemproc is pluggable
             output = await maybe_deferred_to_future(
                 self.itemproc.process_item(item, self.crawler.spider)
             )

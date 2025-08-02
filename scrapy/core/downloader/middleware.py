@@ -43,7 +43,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         self,
         download_func: Callable[[Request, Spider], Deferred[Response]],
         request: Request,
-        spider: Spider,
+        spider: Spider | None = None,
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         @inlineCallbacks
         def process_request(
@@ -52,7 +52,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             for method in self.methods["process_request"]:
                 method = cast("Callable", method)
                 response = yield deferred_from_coro(
-                    method(request=request, spider=spider)
+                    method(request=request, spider=self._spider)
                 )
                 if response is not None and not isinstance(
                     response, (Response, Request)
@@ -63,7 +63,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     )
                 if response:
                     return response
-            return (yield download_func(request, spider))
+            return (yield download_func(request, self._spider))
 
         @inlineCallbacks
         def process_response(
@@ -77,7 +77,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             for method in self.methods["process_response"]:
                 method = cast("Callable", method)
                 response = yield deferred_from_coro(
-                    method(request=request, response=response, spider=spider)
+                    method(request=request, response=response, spider=self._spider)
                 )
                 if not isinstance(response, (Response, Request)):
                     raise _InvalidOutput(
@@ -95,7 +95,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             for method in self.methods["process_exception"]:
                 method = cast("Callable", method)
                 response = yield deferred_from_coro(
-                    method(request=request, exception=exception, spider=spider)
+                    method(request=request, exception=exception, spider=self._spider)
                 )
                 if response is not None and not isinstance(
                     response, (Response, Request)
@@ -108,6 +108,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     return response
             raise exception
 
+        if spider:
+            self._warn_spider_arg("download")
+            self._set_compat_spider(spider)
         try:
             result: Response | Request = yield process_request(request)
         except Exception as ex:

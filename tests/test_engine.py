@@ -441,7 +441,9 @@ class TestEngine(TestEngineBase):
 
     @inlineCallbacks
     def test_start_already_running_exception(self):
-        e = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+        crawler = get_crawler(DefaultSpider)
+        crawler.spider = crawler._create_spider()
+        e = ExecutionEngine(crawler, lambda _: None)
         yield deferred_from_coro(e.open_spider_async(DefaultSpider()))
         _schedule_coro(e.start_async())
         with pytest.raises(RuntimeError, match="Engine already running"):
@@ -451,7 +453,9 @@ class TestEngine(TestEngineBase):
     @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
     async def test_start_already_running_exception_asyncio(self):
-        e = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
+        crawler = get_crawler(DefaultSpider)
+        crawler.spider = crawler._create_spider()
+        e = ExecutionEngine(crawler, lambda _: None)
         await e.open_spider_async(DefaultSpider())
         with pytest.raises(RuntimeError, match="Engine already running"):
             await asyncio.gather(e.start_async(), e.start_async())
@@ -542,7 +546,6 @@ class TestEngineDownloadAsync:
     @deferred_f_from_coro_f
     async def test_download_async_redirect(self, engine):
         """Test async download with a redirect request."""
-        # Arrange
         original_request = Request("http://example.com")
         redirect_request = Request("http://example.com/redirect")
         final_response = Response("http://example.com/redirect", body=b"redirected")

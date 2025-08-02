@@ -129,13 +129,11 @@ class Downloader:
 
     @inlineCallbacks
     def fetch(
-        self, request: Request, spider: Spider
+        self, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
         try:
-            return (
-                yield self.middleware.download(self._enqueue_request, request, spider)
-            )
+            return (yield self.middleware.download(self._enqueue_request, request))
         finally:
             self.active.remove(request)
 

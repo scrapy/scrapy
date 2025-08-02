@@ -29,7 +29,7 @@ class TestSpiderMiddleware:
         self.request = Request("http://example.com/index.html")
         self.response = Response(self.request.url, request=self.request)
         self.crawler = get_crawler(Spider, {"SPIDER_MIDDLEWARES_BASE": {}})
-        self.spider = self.crawler._create_spider("foo")
+        self.crawler.spider = self.crawler._create_spider("foo")
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
 
     async def _scrape_response(self) -> Any:
@@ -44,7 +44,7 @@ class TestSpiderMiddleware:
             return defer.succeed(it)
 
         return await self.mwman.scrape_response_async(
-            scrape_func, self.response, self.request, self.spider
+            scrape_func, self.response, self.request
         )
 
 
@@ -148,10 +148,10 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
         self.crawler = get_crawler(
             Spider, {"SPIDER_MIDDLEWARES_BASE": {}, "SPIDER_MIDDLEWARES": setting}
         )
-        self.spider = self.crawler._create_spider("foo")
+        self.crawler.spider = self.crawler._create_spider("foo")
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
         return await self.mwman.scrape_response_async(
-            self._scrape_func, self.response, self.request, self.spider
+            self._scrape_func, self.response, self.request
         )
 
     async def _test_simple_base(
@@ -369,9 +369,9 @@ class TestProcessStartSimple(TestBaseAsyncSpiderMiddleware):
         self.crawler = get_crawler(
             TestSpider, {"SPIDER_MIDDLEWARES_BASE": {}, "SPIDER_MIDDLEWARES": setting}
         )
-        self.spider = self.crawler._create_spider()
+        self.crawler.spider = self.crawler._create_spider()
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
-        return await self.mwman.process_start(self.spider)
+        return await self.mwman.process_start()
 
     @deferred_f_from_coro_f
     async def test_simple(self):
@@ -481,10 +481,10 @@ class TestBuiltinMiddlewareSimple(TestBaseAsyncSpiderMiddleware):
     ) -> Any:
         setting = self._construct_mw_setting(*mw_classes, start_index=start_index)
         self.crawler = get_crawler(Spider, {"SPIDER_MIDDLEWARES": setting})
-        self.spider = self.crawler._create_spider("foo")
+        self.crawler.spider = self.crawler._create_spider("foo")
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
         return await self.mwman.scrape_response_async(
-            self._scrape_func, self.response, self.request, self.spider
+            self._scrape_func, self.response, self.request
         )
 
     @deferred_f_from_coro_f

@@ -419,6 +419,7 @@ class ExecutionEngine:
 
         self._slot.add_request(request)
         try:
+            # we would like to drop the spider argument but self.downloader is pluggable
             result: Response | Request = yield self.downloader.fetch(
                 request, self.spider
             )
@@ -429,7 +430,6 @@ class ExecutionEngine:
             if isinstance(result, Response):
                 if result.request is None:
                     result.request = request
-                assert self.spider is not None
                 logkws = self.logformatter.crawled(result.request, result, self.spider)
                 if logkws is not None:
                     logger.log(
@@ -468,7 +468,7 @@ class ExecutionEngine:
         nextcall = CallLaterOnce(self._start_scheduled_requests)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
         self._slot = _Slot(close_if_idle, nextcall, scheduler)
-        self._start = await self.scraper.spidermw.process_start(spider)
+        self._start = await self.scraper.spidermw.process_start()
         if hasattr(scheduler, "open") and (d := scheduler.open(spider)):
             await maybe_deferred_to_future(d)
         await maybe_deferred_to_future(self.scraper.open_spider(spider))
