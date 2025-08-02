@@ -113,13 +113,24 @@ class Scraper:
         self.logformatter: LogFormatter = crawler.logformatter
 
     @deferred_f_from_coro_f
-    async def open_spider(self, spider: Spider) -> None:
-        """Open the given spider for scraping and allocate resources for it"""
+    async def open_spider(self, spider: Spider | None = None) -> None:
+        """Open the spider for scraping and allocate resources for it"""
+        if spider is not None:
+            warnings.warn(
+                "Passing a 'spider' argument to Scraper.open_spider() is deprecated.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+
         self.slot = Slot(self.crawler.settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE"))
-        await maybe_deferred_to_future(self.itemproc.open_spider(spider))
+        if not self.crawler.spider:
+            raise RuntimeError(
+                "Scraper.open_spider() called before Crawler.spider is set."
+            )
+        await maybe_deferred_to_future(self.itemproc.open_spider(self.crawler.spider))
 
     def close_spider(self, spider: Spider | None = None) -> Deferred[Spider]:
-        """Close a spider being scraped and release its resources"""
+        """Close the spider being scraped and release its resources"""
         if spider is not None:
             warnings.warn(
                 "Passing a 'spider' argument to Scraper.close_spider() is deprecated.",

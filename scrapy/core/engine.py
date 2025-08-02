@@ -467,7 +467,7 @@ class ExecutionEngine:
         self._start = await self.scraper.spidermw.process_start()
         if hasattr(scheduler, "open") and (d := scheduler.open(self.crawler.spider)):
             await maybe_deferred_to_future(d)
-        await maybe_deferred_to_future(self.scraper.open_spider(self.crawler.spider))
+        await maybe_deferred_to_future(self.scraper.open_spider())
         assert self.crawler.stats
         self.crawler.stats.open_spider(self.crawler.spider)
         await self.signals.send_catch_log_async(
