@@ -16,7 +16,7 @@ from scrapy.http import Request, Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import _defer_sleep, deferred_from_coro
-from scrapy.utils.python import get_func_args
+from scrapy.utils.deprecate import argument_is_required
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -47,7 +47,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         request: Request,
         spider: Spider | None = None,
     ) -> Generator[Deferred[Any], Any, Response | Request]:
-        if "spider" in get_func_args(download_func):
+        if argument_is_required(download_func, "spider"):
             warnings.warn(
                 "The spider argument of download_func is deprecated"
                 " and will not be passed in the future Scrapy versions.",

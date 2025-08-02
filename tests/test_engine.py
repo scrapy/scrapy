@@ -541,7 +541,7 @@ class TestEngineDownloadAsync:
         assert result == response
         engine._slot.add_request.assert_called_once_with(request)
         engine._slot.remove_request.assert_called_once_with(request)
-        engine.downloader.fetch.assert_called_once_with(request, engine.spider)
+        engine.downloader.fetch.assert_called_once_with(request)
 
     @deferred_f_from_coro_f
     async def test_download_async_redirect(self, engine):

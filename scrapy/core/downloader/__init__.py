@@ -132,6 +132,12 @@ class Downloader:
     def fetch(
         self, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, Response | Request]:
+        if spider is not None:
+            warnings.warn(
+                "Passing a 'spider' argument to Downloader.fetch() is deprecated.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         self.active.add(request)
         try:
             return (yield self.middleware.download(self._enqueue_request, request))
