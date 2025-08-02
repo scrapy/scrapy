@@ -78,8 +78,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     return response
             if need_spider_arg:
                 return (yield download_func(request, self._spider))  # type: ignore[call-arg]
-            else:
-                return (yield download_func(request))
+            return (yield download_func(request))
 
         @inlineCallbacks
         def process_response(
