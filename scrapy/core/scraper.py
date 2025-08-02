@@ -32,8 +32,10 @@ from scrapy.utils.defer import (
     parallel,
     parallel_async,
 )
+from scrapy.utils.deprecate import argument_is_required
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
+from scrapy.utils.python import global_object_name
 from scrapy.utils.spider import iterate_spider_output
 
 if TYPE_CHECKING:
@@ -106,6 +108,16 @@ class Scraper:
             crawler.settings["ITEM_PROCESSOR"]
         )
         self.itemproc: ItemPipelineManager = itemproc_cls.from_crawler(crawler)
+        self._itemproc_process_item_needs_spider: bool = argument_is_required(
+            self.itemproc.process_item, "spider"
+        )
+        if self._itemproc_process_item_needs_spider:
+            warnings.warn(
+                f"The process_item() method of {global_object_name(itemproc_cls)} requires a spider argument,"
+                f" this is deprecated and the argument will not be passed in the future Scrapy versions.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         self.concurrent_items: int = crawler.settings.getint("CONCURRENT_ITEMS")
         self.crawler: Crawler = crawler
         self.signals: SignalManager = crawler.signals
@@ -423,10 +435,11 @@ class Scraper:
         assert self.crawler.spider is not None  # typing
         self.slot.itemproc_size += 1
         try:
-            # we would like to drop the spider argument but self.itemproc is pluggable
-            output = await maybe_deferred_to_future(
-                self.itemproc.process_item(item, self.crawler.spider)
-            )
+            if self._itemproc_process_item_needs_spider:
+                d = self.itemproc.process_item(item, self.crawler.spider)
+            else:
+                d = self.itemproc.process_item(item)
+            output = await maybe_deferred_to_future(d)
         except DropItem as ex:
             logkws = self.logformatter.dropped(item, ex, response, self.crawler.spider)
             if logkws is not None:
