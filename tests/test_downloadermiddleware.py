@@ -48,7 +48,7 @@ class TestManagerBase:
         if not response:
             response = Response(request.url)
 
-        def download_func(request: Request, spider: Spider) -> Deferred[Response]:
+        def download_func(request: Request) -> Deferred[Response]:
             return succeed(response)
 
         return await maybe_deferred_to_future(mwman.download(download_func, request))
@@ -147,7 +147,7 @@ class TestResponseFromProcessException(TestManagerBase):
         resp = Response("http://example.com/index.html")
         calls = []
 
-        def download_func(request, spider):
+        def download_func(request):
             raise ValueError("test")
 
         class ResponseMiddleware:

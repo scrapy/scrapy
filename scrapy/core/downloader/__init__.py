@@ -182,7 +182,7 @@ class Downloader:
 
     @inlineCallbacks
     def _enqueue_request(
-        self, request: Request, spider: Spider
+        self, request: Request
     ) -> Generator[Deferred[Any], Any, Response]:
         key, slot = self._get_slot(request)
         request.meta[self.DOWNLOAD_SLOT] = key

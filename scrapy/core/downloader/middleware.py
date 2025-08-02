@@ -6,15 +6,17 @@ See documentation in docs/topics/downloader-middleware.rst
 
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 
-from scrapy.exceptions import _InvalidOutput
+from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
 from scrapy.utils.defer import _defer_sleep, deferred_from_coro
+from scrapy.utils.python import get_func_args
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -41,10 +43,21 @@ class DownloaderMiddlewareManager(MiddlewareManager):
     @inlineCallbacks
     def download(
         self,
-        download_func: Callable[[Request, Spider], Deferred[Response]],
+        download_func: Callable[[Request], Deferred[Response]],
         request: Request,
         spider: Spider | None = None,
     ) -> Generator[Deferred[Any], Any, Response | Request]:
+        if "spider" in get_func_args(download_func):
+            warnings.warn(
+                "The spider argument of download_func is deprecated"
+                " and will not be passed in the future Scrapy versions.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            need_spider_arg = True
+        else:
+            need_spider_arg = False
+
         @inlineCallbacks
         def process_request(
             request: Request,
@@ -63,7 +76,10 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     )
                 if response:
                     return response
-            return (yield download_func(request, self._spider))
+            if need_spider_arg:
+                return (yield download_func(request, self._spider))  # type: ignore[call-arg]
+            else:
+                return (yield download_func(request))
 
         @inlineCallbacks
         def process_response(
