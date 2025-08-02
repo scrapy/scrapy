@@ -129,7 +129,7 @@ class Scraper:
             )
         await maybe_deferred_to_future(self.itemproc.open_spider(self.crawler.spider))
 
-    def close_spider(self, spider: Spider | None = None) -> Deferred[Spider]:
+    def close_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
         """Close the spider being scraped and release its resources"""
         if spider is not None:
             warnings.warn(
@@ -141,9 +141,9 @@ class Scraper:
         if self.slot is None:
             raise RuntimeError("Scraper slot not assigned")
         self.slot.closing = Deferred()
-        self.slot.closing.addCallback(self.itemproc.close_spider)
+        d = self.slot.closing.addCallback(self.itemproc.close_spider)
         self._check_if_closing()
-        return self.slot.closing
+        return d
 
     def is_idle(self) -> bool:
         """Return True if there isn't any more spiders to process"""
