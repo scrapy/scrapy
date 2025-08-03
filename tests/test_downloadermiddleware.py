@@ -10,7 +10,7 @@ import pytest
 from twisted.internet.defer import Deferred, succeed
 
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.exceptions import _InvalidOutput
+from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
@@ -279,3 +279,39 @@ class TestMiddlewareUsingCoro(TestManagerBase):
             result = await maybe_deferred_to_future(mwman.download(download_func, req))
         assert result is resp
         assert not download_func.called
+
+
+class TestDownloadDeprecated(TestManagerBase):
+    @deferred_f_from_coro_f
+    async def test_download_func_spider_arg(self):
+        req = Request("http://example.com/index.html")
+        resp = Response(req.url, status=200)
+
+        def download_func(request: Request, spider: Spider) -> Deferred[Response]:
+            return succeed(resp)
+
+        async with self.get_mwman() as mwman:
+            with pytest.warns(
+                ScrapyDeprecationWarning,
+                match="The spider argument of download_func is deprecated",
+            ):
+                ret = await maybe_deferred_to_future(mwman.download(download_func, req))
+        assert isinstance(ret, Response)
+
+    @deferred_f_from_coro_f
+    async def test_mwman_download_spider_arg(self):
+        req = Request("http://example.com/index.html")
+        resp = Response(req.url, status=200)
+
+        def download_func(request: Request) -> Deferred[Response]:
+            return succeed(resp)
+
+        async with self.get_mwman() as mwman:
+            with pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"Passing a spider argument to DownloaderMiddlewareManager.download\(\) is deprecated",
+            ):
+                ret = await maybe_deferred_to_future(
+                    mwman.download(download_func, req, mwman.crawler.spider)
+                )
+        assert isinstance(ret, Response)
