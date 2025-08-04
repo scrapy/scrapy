@@ -179,14 +179,12 @@ class MiddlewareManager(ABC):
         return process_chain(methods, obj, *args)
 
     def open_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
-        # TODO add open_spider_async(), deprecate this one
         if spider:
             self._warn_spider_arg("open_spider")
             self._set_compat_spider(spider)
         return self._process_parallel("open_spider", self._spider)
 
     def close_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
-        # TODO add close_spider_async(), deprecate this one
         if spider:
             self._warn_spider_arg("close_spider")
             self._set_compat_spider(spider)
