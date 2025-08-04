@@ -12,7 +12,7 @@ import logging
 import warnings
 from time import time
 from traceback import format_exc
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import CancelledError, Deferred, inlineCallbacks, succeed
 from twisted.python.failure import Failure
@@ -501,75 +501,73 @@ class ExecutionEngine:
             assert isinstance(ex, CloseSpider)  # typing
             self.close_spider(self.spider, reason=ex.reason)
 
-    def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred[None]:
+    @inlineCallbacks
+    def close_spider(
+        self, spider: Spider, reason: str = "cancelled"
+    ) -> Generator[Deferred[Any], Any, None]:
         """Close (cancel) spider and clear all its outstanding requests"""
         if self._slot is None:
             raise RuntimeError("Engine slot not assigned")
 
         if self._slot.closing is not None:
-            return self._slot.closing
+            yield self._slot.closing
+            return
 
         logger.info(
             "Closing spider (%(reason)s)", {"reason": reason}, extra={"spider": spider}
         )
 
-        dfd = self._slot.close()
+        def log_failure(msg: str) -> None:
+            logger.error(msg, exc_info=True, extra={"spider": spider})  # noqa: LOG014
 
-        def log_failure(msg: str) -> Callable[[Failure], None]:
-            def errback(failure: Failure) -> None:
-                logger.error(
-                    msg, exc_info=failure_to_exc_info(failure), extra={"spider": spider}
-                )
+        try:
+            yield self._slot.close()
+        except Exception:
+            log_failure("Slot close failure")
 
-            return errback
+        try:
+            self.downloader.close()
+        except Exception:
+            log_failure("Downloader close failure")
 
-        dfd.addBoth(lambda _: self.downloader.close())
-        dfd.addErrback(log_failure("Downloader close failure"))
-
-        dfd.addBoth(lambda _: self.scraper.close_spider())
-        dfd.addErrback(log_failure("Scraper close failure"))
+        try:
+            yield self.scraper.close_spider()
+        except Exception:
+            log_failure("Scraper close failure")
 
         if hasattr(self._slot.scheduler, "close"):
-            dfd.addBoth(lambda _: cast("_Slot", self._slot).scheduler.close(reason))
-            dfd.addErrback(log_failure("Scheduler close failure"))
+            try:
+                if (d := self._slot.scheduler.close(reason)) is not None:
+                    yield d
+            except Exception:
+                log_failure("Scheduler close failure")
 
-        dfd.addBoth(
-            lambda _: self.signals.send_catch_log_deferred(
+        try:
+            yield self.signals.send_catch_log_deferred(
                 signal=signals.spider_closed,
                 spider=spider,
                 reason=reason,
             )
-        )
-        dfd.addErrback(log_failure("Error while sending spider_close signal"))
+        except Exception:
+            log_failure("Error while sending spider_close signal")
 
-        def close_stats(_: Any) -> None:
-            assert self.crawler.stats
+        assert self.crawler.stats
+        try:
             self.crawler.stats.close_spider(spider, reason=reason)
+        except Exception:
+            log_failure("Stats close failure")
 
-        dfd.addBoth(close_stats)
-        dfd.addErrback(log_failure("Stats close failure"))
-
-        dfd.addBoth(
-            lambda _: logger.info(
-                "Spider closed (%(reason)s)",
-                {"reason": reason},
-                extra={"spider": spider},
-            )
+        logger.info(
+            "Spider closed (%(reason)s)",
+            {"reason": reason},
+            extra={"spider": spider},
         )
 
-        def unassign_slot(_: Any) -> None:
-            self._slot = None
+        self._slot = None
+        self.spider = None
 
-        dfd.addBoth(unassign_slot)
-        dfd.addErrback(log_failure("Error while unassigning slot"))
-
-        def unassign_spider(_: Any) -> None:
-            self.spider = None
-
-        dfd.addBoth(unassign_spider)
-        dfd.addErrback(log_failure("Error while unassigning spider"))
-
-        dfd.addBoth(lambda _: self._spider_closed_callback(spider))
-        dfd.addErrback(log_failure("Error running spider_closed_callback"))
-
-        return dfd
+        try:
+            if (d := self._spider_closed_callback(spider)) is not None:
+                yield d
+        except Exception:
+            log_failure("Error running spider_closed_callback")
