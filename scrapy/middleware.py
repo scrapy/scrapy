@@ -181,21 +181,13 @@ class MiddlewareManager(ABC):
     def open_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
         # TODO add open_spider_async(), deprecate this one
         if spider:
-            # circular import
-            from scrapy.pipelines import ItemPipelineManager  # noqa: PLC0415
-
-            if not isinstance(self, ItemPipelineManager):  # TODO
-                self._warn_spider_arg("open_spider")
+            self._warn_spider_arg("open_spider")
             self._set_compat_spider(spider)
         return self._process_parallel("open_spider", self._spider)
 
     def close_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
         # TODO add close_spider_async(), deprecate this one
         if spider:
-            # circular import
-            from scrapy.pipelines import ItemPipelineManager  # noqa: PLC0415
-
-            if not isinstance(self, ItemPipelineManager):  # TODO
-                self._warn_spider_arg("close_spider")
+            self._warn_spider_arg("close_spider")
             self._set_compat_spider(spider)
         return self._process_parallel("close_spider", self._spider)

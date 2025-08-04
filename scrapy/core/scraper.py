@@ -108,16 +108,22 @@ class Scraper:
             crawler.settings["ITEM_PROCESSOR"]
         )
         self.itemproc: ItemPipelineManager = itemproc_cls.from_crawler(crawler)
-        self._itemproc_process_item_needs_spider: bool = argument_is_required(
-            self.itemproc.process_item, "spider"
-        )
-        if self._itemproc_process_item_needs_spider:
-            warnings.warn(
-                f"The process_item() method of {global_object_name(itemproc_cls)} requires a spider argument,"
-                f" this is deprecated and the argument will not be passed in the future Scrapy versions.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
+        self._itemproc_needs_spider: dict[str, bool] = {}
+        for method in (
+            "open_spider",
+            "close_spider",
+            "process_item",
+        ):
+            self._itemproc_needs_spider[method] = argument_is_required(
+                getattr(self.itemproc, method), "spider"
             )
+            if self._itemproc_needs_spider[method]:
+                warnings.warn(
+                    f"The {method}() method of {global_object_name(itemproc_cls)} requires a spider argument,"
+                    f" this is deprecated and the argument will not be passed in the future Scrapy versions.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
         self.concurrent_items: int = crawler.settings.getint("CONCURRENT_ITEMS")
         self.crawler: Crawler = crawler
         self.signals: SignalManager = crawler.signals
@@ -139,7 +145,12 @@ class Scraper:
             raise RuntimeError(
                 "Scraper.open_spider() called before Crawler.spider is set."
             )
-        await maybe_deferred_to_future(self.itemproc.open_spider(self.crawler.spider))
+        if self._itemproc_needs_spider["open_spider"]:
+            await maybe_deferred_to_future(
+                self.itemproc.open_spider(self.crawler.spider)
+            )
+        else:
+            await maybe_deferred_to_future(self.itemproc.open_spider())
 
     def close_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
         """Close the spider being scraped and release its resources"""
@@ -153,7 +164,10 @@ class Scraper:
         if self.slot is None:
             raise RuntimeError("Scraper slot not assigned")
         self.slot.closing = Deferred()
-        d = self.slot.closing.addCallback(self.itemproc.close_spider)
+        if self._itemproc_needs_spider["close_spider"]:
+            d = self.slot.closing.addCallback(self.itemproc.close_spider)
+        else:
+            d = self.slot.closing.addCallback(lambda _: self.itemproc.close_spider())
         self._check_if_closing()
         return d
 
@@ -435,7 +449,7 @@ class Scraper:
         assert self.crawler.spider is not None  # typing
         self.slot.itemproc_size += 1
         try:
-            if self._itemproc_process_item_needs_spider:
+            if self._itemproc_needs_spider["process_item"]:
                 d = self.itemproc.process_item(item, self.crawler.spider)
             else:
                 d = self.itemproc.process_item(item)
