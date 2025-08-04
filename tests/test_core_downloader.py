@@ -179,7 +179,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
 @deferred_f_from_coro_f
 async def test_fetch_deprecated_spider_arg():
     class CustomDownloader(Downloader):
-        def fetch(self, request, spider):
+        def fetch(self, request, spider):  # pylint: disable=signature-differs
             return super().fetch(request, spider)
 
     crawler = get_crawler(DefaultSpider, {"DOWNLOADER": CustomDownloader})
