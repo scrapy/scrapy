@@ -91,7 +91,7 @@ class SitemapSpider(Spider):
             # as this Iterable can be long lived
             # and they take much more memory than list of urls
             if s.type == "sitemapindex":
-                urls: list[str] = [
+                urls = [
                     loc
                     for loc in iterloc(it, self.sitemap_alternate_links)
                     if any(x.search(loc) for x in self._follow)
@@ -103,7 +103,7 @@ class SitemapSpider(Spider):
                 for loc in urls:
                     yield Request(loc, callback=self._parse_sitemap)
             elif s.type == "urlset":
-                urls: list[str] = list(iterloc(it, self.sitemap_alternate_links))
+                urls = list(iterloc(it, self.sitemap_alternate_links))
                 del s
                 del it
                 del body
