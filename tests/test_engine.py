@@ -1,14 +1,4 @@
-"""
-Scrapy engine tests
-
-This starts a testing web server (using twisted.server.Site) and then crawls it
-with the Scrapy crawler.
-
-To view the testing web server in a browser you can start it by running this
-module with the ``runserver`` argument::
-
-    python test_engine.py runserver
-"""
+from __future__ import annotations
 
 import asyncio
 import re
@@ -17,6 +7,7 @@ import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from logging import DEBUG
+from typing import TYPE_CHECKING, cast
 from unittest.mock import Mock, call
 from urllib.parse import urlparse
 
@@ -48,7 +39,12 @@ from scrapy.utils.signal import disconnect_all
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests import get_testdata
-from tests.mockserver.http import MockServer
+
+if TYPE_CHECKING:
+    from scrapy.core.scheduler import Scheduler
+    from scrapy.crawler import Crawler
+    from scrapy.statscollectors import MemoryStatsCollector
+    from tests.mockserver.http import MockServer
 
 
 class MyItem(Item):
@@ -636,3 +632,100 @@ def test_request_scheduled_signal(caplog):
         f"{scheduler.enqueued!r} != [{keep_request!r}]"
     )
     crawler.signals.disconnect(signal_handler, request_scheduled)
+
+
+class TestEngineCloseSpider:
+    """Tests for exception handling coverage during close_spider()."""
+
+    @pytest.fixture
+    def crawler(self) -> Crawler:
+        crawler = get_crawler(DefaultSpider)
+        crawler.spider = crawler._create_spider()
+        return crawler
+
+    @deferred_f_from_coro_f
+    async def test_no_slot(self, crawler: Crawler) -> None:
+        engine = ExecutionEngine(crawler, lambda _: None)
+        await engine.open_spider_async()
+        engine._slot = None
+        assert crawler.spider
+        with pytest.raises(RuntimeError, match="Engine slot not assigned"):
+            await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+
+    @deferred_f_from_coro_f
+    async def test_exception_slot(
+        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        engine = ExecutionEngine(crawler, lambda _: None)
+        await engine.open_spider_async()
+        assert engine._slot
+        del engine._slot.heartbeat
+        assert crawler.spider
+        await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+        assert "Slot close failure" in caplog.text
+
+    @deferred_f_from_coro_f
+    async def test_exception_downloader(
+        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        engine = ExecutionEngine(crawler, lambda _: None)
+        await engine.open_spider_async()
+        del engine.downloader.slots
+        assert crawler.spider
+        await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+        assert "Downloader close failure" in caplog.text
+
+    @deferred_f_from_coro_f
+    async def test_exception_scraper(
+        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        engine = ExecutionEngine(crawler, lambda _: None)
+        await engine.open_spider_async()
+        engine.scraper.slot = None
+        assert crawler.spider
+        await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+        assert "Scraper close failure" in caplog.text
+
+    @deferred_f_from_coro_f
+    async def test_exception_scheduler(
+        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        engine = ExecutionEngine(crawler, lambda _: None)
+        await engine.open_spider_async()
+        assert engine._slot
+        del cast("Scheduler", engine._slot.scheduler).dqs
+        assert crawler.spider
+        await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+        assert "Scheduler close failure" in caplog.text
+
+    @deferred_f_from_coro_f
+    async def test_exception_signal(
+        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        engine = ExecutionEngine(crawler, lambda _: None)
+        await engine.open_spider_async()
+        del engine.signals
+        assert crawler.spider
+        await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+        assert "Error while sending spider_close signal" in caplog.text
+
+    @deferred_f_from_coro_f
+    async def test_exception_stats(
+        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        engine = ExecutionEngine(crawler, lambda _: None)
+        await engine.open_spider_async()
+        del cast("MemoryStatsCollector", crawler.stats).spider_stats
+        assert crawler.spider
+        await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+        assert "Stats close failure" in caplog.text
+
+    @deferred_f_from_coro_f
+    async def test_exception_callback(
+        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        engine = ExecutionEngine(crawler, lambda _: defer.fail(ValueError()))
+        await engine.open_spider_async()
+        assert crawler.spider
+        await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+        assert "Error running spider_closed_callback" in caplog.text
