@@ -651,6 +651,7 @@ implement the required methods:
     from scrapy.commands import ScrapyCommand
     from scrapy.exceptions import UsageError
 
+
     class Command(ScrapyCommand):
         requires_project = True  # Set to True if command needs a Scrapy project
         requires_crawler_process = False  # Set to False if command doesn't run crawls
@@ -671,7 +672,7 @@ implement the required methods:
         def help(self):
             """Return extensive help with examples (optional)"""
             return """Extensive help text that can contain newlines.
-            
+
             Examples:
               scrapy mycommand arg1
               scrapy mycommand --option value
@@ -680,14 +681,13 @@ implement the required methods:
         def add_options(self, parser):
             """Add custom command-line options"""
             super().add_options(parser)
-            parser.add_argument('--custom-option', 
-                               help='Description of custom option')
+            parser.add_argument("--custom-option", help="Description of custom option")
 
         def process_options(self, args, opts):
             """Process parsed options"""
             super().process_options(args, opts)
             if opts.custom_option:
-                self.settings.set('CUSTOM_SETTING', opts.custom_option)
+                self.settings.set("CUSTOM_SETTING", opts.custom_option)
 
         def run(self, args, opts):
             """Main command logic"""
@@ -727,6 +727,7 @@ For commands that run spiders, inherit from :class:`~scrapy.commands.BaseRunSpid
 
     from scrapy.commands import BaseRunSpiderCommand
 
+
     class Command(BaseRunSpiderCommand):
         requires_project = True
 
@@ -736,14 +737,14 @@ For commands that run spiders, inherit from :class:`~scrapy.commands.BaseRunSpid
         def run(self, args, opts):
             if len(args) < 1:
                 raise UsageError("Missing spider name")
-            
+
             spider_name = args[0]
             # opts.spargs contains spider arguments from -a options
             # opts.output contains output files from -o/-O options
-            
+
             self.crawler_process.crawl(spider_name, **opts.spargs)
             self.crawler_process.start()
-            
+
             if self.crawler_process.bootstrap_failed:
                 self.exitcode = 1
 
@@ -766,6 +767,7 @@ Here are some practical examples:
 
         def run(self, args, opts):
             from scrapy.spiderloader import get_spider_loader
+
             spider_loader = get_spider_loader(self.settings)
             for spider_name in sorted(spider_loader.list()):
                 print(spider_name)
@@ -782,21 +784,22 @@ Here are some practical examples:
 
         def add_options(self, parser):
             super().add_options(parser)
-            parser.add_argument('--verbose', action='store_true',
-                               help='Enable verbose output')
+            parser.add_argument(
+                "--verbose", action="store_true", help="Enable verbose output"
+            )
 
         def process_options(self, args, opts):
             super().process_options(args, opts)
             if opts.verbose:
-                self.settings.set('LOG_LEVEL', 'DEBUG')
+                self.settings.set("LOG_LEVEL", "DEBUG")
 
         def run(self, args, opts):
             if len(args) < 1:
                 raise UsageError("Missing spider name")
-            
+
             spider_name = args[0]
             print(f"Starting spider: {spider_name}")
-            
+
             self.crawler_process.crawl(spider_name, **opts.spargs)
             self.crawler_process.start()
 
