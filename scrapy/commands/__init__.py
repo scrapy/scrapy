@@ -24,6 +24,54 @@ if TYPE_CHECKING:
 
 
 class ScrapyCommand(ABC):
+    """
+    Base class for implementing Scrapy commands.
+
+    This class provides the foundation for creating custom Scrapy commands. When creating
+    a custom command, inherit from this class and implement the required abstract methods.
+
+    Class Attributes:
+        requires_project (bool): Set to True if the command requires a Scrapy project
+            to run. Commands that require access to project-specific settings, spiders,
+            or other project components should set this to True. Default: False.
+        
+        requires_crawler_process (bool): Set to True if the command needs access to
+            a CrawlerProcess instance. Commands that need to run spiders or crawls
+            should set this to True. Default: True.
+        
+        default_settings (dict[str, Any]): Default settings to use for this command
+            instead of global defaults. This allows commands to override specific
+            settings without affecting the global configuration. Default: {}.
+
+    Instance Attributes:
+        crawler_process (CrawlerProcessBase | None): The crawler process instance,
+            set automatically by scrapy.cmdline when the command is run.
+        
+        settings (Settings | None): The settings instance for this command,
+            set automatically by scrapy.cmdline when the command is run.
+        
+        exitcode (int): The exit code to return when the command finishes.
+            Set this to a non-zero value to indicate an error. Default: 0.
+
+    Example:
+        To create a custom command that lists all available spiders::
+
+            from scrapy.commands import ScrapyCommand
+
+            class Command(ScrapyCommand):
+                requires_project = True
+                requires_crawler_process = False
+                default_settings = {"LOG_ENABLED": False}
+
+                def short_desc(self):
+                    return "List available spiders"
+
+                def run(self, args, opts):
+                    from scrapy.spiderloader import get_spider_loader
+                    spider_loader = get_spider_loader(self.settings)
+                    for spider_name in sorted(spider_loader.list()):
+                        print(spider_name)
+    """
     requires_project: bool = False
     requires_crawler_process: bool = True
     crawler_process: CrawlerProcessBase | None = None  # set in scrapy.cmdline
@@ -43,34 +91,93 @@ class ScrapyCommand(ABC):
 
     def syntax(self) -> str:
         """
-        Command syntax (preferably one-line). Do not include command name.
+        Return the command syntax (preferably one-line). Do not include command name.
+        
+        This should describe the arguments and options that the command accepts.
+        
+        Returns:
+            str: A string describing the command syntax, e.g., "[options] <spider>"
+            
+        Example:
+            For a command that takes a spider name::
+            
+                def syntax(self):
+                    return "[options] <spider>"
         """
         return ""
 
     @abstractmethod
     def short_desc(self) -> str:
         """
-        A short description of the command
+        Return a short description of the command.
+        
+        This method must be implemented by subclasses. The description should be
+        concise and explain what the command does in a few words.
+        
+        Returns:
+            str: A brief description of the command's purpose.
+            
+        Example:
+            def short_desc(self):
+                return "Run a spider"
         """
         return ""
 
     def long_desc(self) -> str:
-        """A long description of the command. Return short description when not
-        available. It cannot contain newlines since contents will be formatted
+        """
+        Return a long description of the command.
+        
+        Override this method to provide a more detailed description of the command.
+        The description cannot contain newlines since contents will be formatted
         by optparser which removes newlines and wraps text.
+        
+        Returns:
+            str: A detailed description of the command. Defaults to short_desc().
+            
+        Note:
+            If you need to include newlines in your help text, use the help() method instead.
         """
         return self.short_desc()
 
     def help(self) -> str:
-        """An extensive help for the command. It will be shown when using the
-        "help" command. It can contain newlines since no post-formatting will
-        be applied to its contents.
+        """
+        Return extensive help text for the command.
+        
+        This method provides detailed help that will be shown when using the
+        "help" command. Unlike long_desc(), this can contain newlines since
+        no post-formatting will be applied to its contents.
+        
+        Returns:
+            str: Detailed help text for the command. Defaults to long_desc().
+            
+        Example:
+            def help(self):
+                return '''Run a spider by name.
+            
+            This command starts a spider by its name and runs it until completion.
+            You can pass arguments to the spider using -a option.
+            
+            Examples:
+              scrapy crawl myspider
+              scrapy crawl myspider -a domain=example.com
+            '''
         """
         return self.long_desc()
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:
         """
-        Populate option parse with options available for this command
+        Add command-specific options to the argument parser.
+        
+        Override this method to add custom command-line options for your command.
+        The base implementation adds common global options like --logfile, --loglevel, etc.
+        
+        Args:
+            parser (argparse.ArgumentParser): The argument parser to add options to.
+            
+        Example:
+            def add_options(self, parser):
+                super().add_options(parser)
+                parser.add_argument('--custom-option', help='Custom option for this command')
         """
         assert self.settings is not None
         group = parser.add_argument_group(title="Global Options")
@@ -105,6 +212,22 @@ class ScrapyCommand(ABC):
         group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
 
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
+        """
+        Process command-line options after they have been parsed.
+        
+        Override this method to handle custom options added in add_options().
+        The base implementation processes common global options.
+        
+        Args:
+            args (list[str]): Command-line arguments that were not parsed as options.
+            opts (argparse.Namespace): Parsed command-line options.
+            
+        Example:
+            def process_options(self, args, opts):
+                super().process_options(args, opts)
+                if opts.custom_option:
+                    self.settings.set('CUSTOM_SETTING', opts.custom_option)
+        """
         assert self.settings is not None
         try:
             self.settings.setdict(arglist_to_dict(opts.set), priority="cmdline")
@@ -133,14 +256,51 @@ class ScrapyCommand(ABC):
     @abstractmethod
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         """
-        Entry point for running commands
+        Execute the command logic.
+        
+        This method must be implemented by subclasses and contains the main
+        logic for the command.
+        
+        Args:
+            args (list[str]): Command-line arguments that were not parsed as options.
+            opts (argparse.Namespace): Parsed command-line options.
+            
+        Example:
+            def run(self, args, opts):
+                if len(args) < 1:
+                    raise UsageError("Missing required argument")
+                spider_name = args[0]
+                # Command logic here...
         """
         raise NotImplementedError
 
 
 class BaseRunSpiderCommand(ScrapyCommand):
     """
-    Common class used to share functionality between the crawl, parse and runspider commands
+    Base class for commands that run spiders.
+    
+    This class extends ScrapyCommand with functionality common to commands that need to
+    run spiders, such as crawl, parse, and runspider. It adds spider argument handling
+    and output options.
+    
+    Additional Options Added:
+        -a NAME=VALUE: Set spider argument (may be repeated)
+        -o FILE: Append scraped items to the end of FILE
+        -O FILE: Dump scraped items into FILE, overwriting any existing file
+        
+    Example:
+        For a command that runs a specific spider with custom behavior::
+        
+            class Command(BaseRunSpiderCommand):
+                requires_project = True
+                
+                def short_desc(self):
+                    return "Run a spider with custom settings"
+                
+                def run(self, args, opts):
+                    spider_name = args[0]
+                    self.crawler_process.crawl(spider_name, **opts.spargs)
+                    self.crawler_process.start()
     """
 
     def add_options(self, parser: argparse.ArgumentParser) -> None:

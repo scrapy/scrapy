@@ -628,9 +628,179 @@ In this case you should set the :setting:`FORCE_CRAWLER_PROCESS` setting to
 Custom project commands
 =======================
 
-You can also add your custom project commands by using the
-:setting:`COMMANDS_MODULE` setting. See the Scrapy commands in
-`scrapy/commands`_ for examples on how to implement your commands.
+You can add custom project commands by using the :setting:`COMMANDS_MODULE` setting
+or by using entry points. This section provides comprehensive guidance on implementing
+custom commands.
+
+Base Classes
+------------
+
+Scrapy provides two base classes for implementing custom commands:
+
+* :class:`~scrapy.commands.ScrapyCommand`: Base class for all commands
+* :class:`~scrapy.commands.BaseRunSpiderCommand`: Base class for commands that run spiders
+
+Creating a Custom Command
+--------------------------
+
+To create a custom command, inherit from :class:`~scrapy.commands.ScrapyCommand` and
+implement the required methods:
+
+.. code-block:: python
+
+    from scrapy.commands import ScrapyCommand
+    from scrapy.exceptions import UsageError
+
+    class Command(ScrapyCommand):
+        requires_project = True  # Set to True if command needs a Scrapy project
+        requires_crawler_process = False  # Set to False if command doesn't run crawls
+        default_settings = {"LOG_ENABLED": False}  # Override default settings
+
+        def syntax(self):
+            """Return command syntax"""
+            return "[options] <argument>"
+
+        def short_desc(self):
+            """Return short description"""
+            return "Description of what this command does"
+
+        def long_desc(self):
+            """Return detailed description (optional)"""
+            return "Detailed description without newlines for help text"
+
+        def help(self):
+            """Return extensive help with examples (optional)"""
+            return """Extensive help text that can contain newlines.
+            
+            Examples:
+              scrapy mycommand arg1
+              scrapy mycommand --option value
+            """
+
+        def add_options(self, parser):
+            """Add custom command-line options"""
+            super().add_options(parser)
+            parser.add_argument('--custom-option', 
+                               help='Description of custom option')
+
+        def process_options(self, args, opts):
+            """Process parsed options"""
+            super().process_options(args, opts)
+            if opts.custom_option:
+                self.settings.set('CUSTOM_SETTING', opts.custom_option)
+
+        def run(self, args, opts):
+            """Main command logic"""
+            if len(args) < 1:
+                raise UsageError("Missing required argument")
+            # Command implementation here
+            print(f"Running command with argument: {args[0]}")
+
+Key Attributes and Methods
+--------------------------
+
+Class Attributes:
+    * ``requires_project`` (bool): Whether the command requires a Scrapy project
+    * ``requires_crawler_process`` (bool): Whether the command needs crawler access
+    * ``default_settings`` (dict): Default settings for this command
+
+Instance Attributes:
+    * ``settings``: Access to Scrapy settings
+    * ``crawler_process``: Access to crawler process (if enabled)
+    * ``exitcode``: Set to non-zero value to indicate errors
+
+Methods to Override:
+    * ``syntax()``: Return command syntax string
+    * ``short_desc()``: Return brief description (required)
+    * ``long_desc()``: Return detailed description (optional)
+    * ``help()``: Return extensive help text (optional)
+    * ``add_options(parser)``: Add custom command-line options
+    * ``process_options(args, opts)``: Process parsed options
+    * ``run(args, opts)``: Main command logic (required)
+
+Creating Spider Commands
+-------------------------
+
+For commands that run spiders, inherit from :class:`~scrapy.commands.BaseRunSpiderCommand`:
+
+.. code-block:: python
+
+    from scrapy.commands import BaseRunSpiderCommand
+
+    class Command(BaseRunSpiderCommand):
+        requires_project = True
+
+        def short_desc(self):
+            return "Run a spider with custom behavior"
+
+        def run(self, args, opts):
+            if len(args) < 1:
+                raise UsageError("Missing spider name")
+            
+            spider_name = args[0]
+            # opts.spargs contains spider arguments from -a options
+            # opts.output contains output files from -o/-O options
+            
+            self.crawler_process.crawl(spider_name, **opts.spargs)
+            self.crawler_process.start()
+            
+            if self.crawler_process.bootstrap_failed:
+                self.exitcode = 1
+
+Examples
+--------
+
+Here are some practical examples:
+
+**Simple Information Command:**
+
+.. code-block:: python
+
+    class Command(ScrapyCommand):
+        requires_project = True
+        requires_crawler_process = False
+        default_settings = {"LOG_ENABLED": False}
+
+        def short_desc(self):
+            return "List available spiders"
+
+        def run(self, args, opts):
+            from scrapy.spiderloader import get_spider_loader
+            spider_loader = get_spider_loader(self.settings)
+            for spider_name in sorted(spider_loader.list()):
+                print(spider_name)
+
+**Custom Spider Runner:**
+
+.. code-block:: python
+
+    class Command(BaseRunSpiderCommand):
+        requires_project = True
+
+        def short_desc(self):
+            return "Run spider with verbose output"
+
+        def add_options(self, parser):
+            super().add_options(parser)
+            parser.add_argument('--verbose', action='store_true',
+                               help='Enable verbose output')
+
+        def process_options(self, args, opts):
+            super().process_options(args, opts)
+            if opts.verbose:
+                self.settings.set('LOG_LEVEL', 'DEBUG')
+
+        def run(self, args, opts):
+            if len(args) < 1:
+                raise UsageError("Missing spider name")
+            
+            spider_name = args[0]
+            print(f"Starting spider: {spider_name}")
+            
+            self.crawler_process.crawl(spider_name, **opts.spargs)
+            self.crawler_process.start()
+
+For more examples, see the built-in Scrapy commands in `scrapy/commands`_.
 
 .. _scrapy/commands: https://github.com/scrapy/scrapy/tree/master/scrapy/commands
 .. setting:: COMMANDS_MODULE

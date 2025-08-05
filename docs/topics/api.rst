@@ -294,3 +294,17 @@ Engine API
 
 .. autoclass:: scrapy.core.engine.ExecutionEngine()
    :members: needs_backout
+
+Commands API
+============
+
+.. module:: scrapy.commands
+   :synopsis: Scrapy commands base classes
+
+.. autoclass:: ScrapyCommand
+   :members:
+   :show-inheritance:
+
+.. autoclass:: BaseRunSpiderCommand
+   :members:
+   :show-inheritance:
