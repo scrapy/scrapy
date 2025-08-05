@@ -131,16 +131,16 @@ class Scraper:
         assert crawler.logformatter
         self.logformatter: LogFormatter = crawler.logformatter
 
-    @deferred_f_from_coro_f
-    async def open_spider(self, spider: Spider | None = None) -> None:
-        """Open the spider for scraping and allocate resources for it"""
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to Scraper.open_spider() is deprecated.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
+    def open_spider(self, spider: Spider | None = None) -> Deferred[None]:
+        warnings.warn(
+            "Scraper.open_spider() is deprecated, use open_spider_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return deferred_from_coro(self.open_spider_async())
 
+    async def open_spider_async(self) -> None:
+        """Open the spider for scraping and allocate resources for it"""
         self.slot = Slot(self.crawler.settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE"))
         if not self.crawler.spider:
             raise RuntimeError(
@@ -153,24 +153,27 @@ class Scraper:
         else:
             await maybe_deferred_to_future(self.itemproc.open_spider())
 
-    def close_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
-        """Close the spider being scraped and release its resources"""
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to Scraper.close_spider() is deprecated.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
+    def close_spider(self, spider: Spider | None = None) -> Deferred[None]:
+        warnings.warn(
+            "Scraper.close_spider() is deprecated, use close_spider_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return deferred_from_coro(self.close_spider_async())
 
+    async def close_spider_async(self) -> None:
+        """Close the spider being scraped and release its resources"""
         if self.slot is None:
             raise RuntimeError("Scraper slot not assigned")
         self.slot.closing = Deferred()
-        if self._itemproc_needs_spider["close_spider"]:
-            d = self.slot.closing.addCallback(self.itemproc.close_spider)
-        else:
-            d = self.slot.closing.addCallback(lambda _: self.itemproc.close_spider())
         self._check_if_closing()
-        return d
+        await maybe_deferred_to_future(self.slot.closing)
+        if self._itemproc_needs_spider["close_spider"]:
+            await maybe_deferred_to_future(
+                self.itemproc.close_spider(self.crawler.spider)
+            )
+        else:
+            await maybe_deferred_to_future(self.itemproc.close_spider())
 
     def is_idle(self) -> bool:
         """Return True if there isn't any more spiders to process"""

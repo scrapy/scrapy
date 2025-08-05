@@ -79,10 +79,10 @@ class _Slot:
         self.inprogress.remove(request)
         self._maybe_fire_closing()
 
-    def close(self) -> Deferred[None]:
+    async def close(self) -> None:
         self.closing = Deferred()
         self._maybe_fire_closing()
-        return self.closing
+        await maybe_deferred_to_future(self.closing)
 
     def _maybe_fire_closing(self) -> None:
         if self.closing is not None and not self.inprogress:
@@ -481,7 +481,7 @@ class ExecutionEngine:
         self._start = await self.scraper.spidermw.process_start()
         if hasattr(scheduler, "open") and (d := scheduler.open(self.crawler.spider)):
             await maybe_deferred_to_future(d)
-        await maybe_deferred_to_future(self.scraper.open_spider())
+        await self.scraper.open_spider_async()
         assert self.crawler.stats
         self.crawler.stats.open_spider(self.crawler.spider)
         await self.signals.send_catch_log_async(
@@ -543,7 +543,7 @@ class ExecutionEngine:
             logger.error(msg, exc_info=True, extra={"spider": spider})  # noqa: LOG014
 
         try:
-            await maybe_deferred_to_future(self._slot.close())
+            await self._slot.close()
         except Exception:
             log_failure("Slot close failure")
 
@@ -553,7 +553,7 @@ class ExecutionEngine:
             log_failure("Downloader close failure")
 
         try:
-            await maybe_deferred_to_future(self.scraper.close_spider())
+            await self.scraper.close_spider_async()
         except Exception:
             log_failure("Scraper close failure")
 
