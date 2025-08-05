@@ -34,8 +34,10 @@ from scrapy.utils.defer import (
     deferred_from_coro,
     maybe_deferred_to_future,
 )
+from scrapy.utils.deprecate import argument_is_required
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
@@ -121,6 +123,17 @@ class ExecutionEngine:
                 crawler.settings
             )
             self.downloader: Downloader = downloader_cls(crawler)
+            self._downloader_fetch_needs_spider: bool = argument_is_required(
+                self.downloader.fetch, "spider"
+            )
+            if self._downloader_fetch_needs_spider:
+                warnings.warn(
+                    f"The fetch() method of {global_object_name(downloader_cls)} requires a spider argument,"
+                    f" this is deprecated and the argument will not be passed in the future Scrapy versions.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+
             self.scraper: Scraper = Scraper(crawler)
         except Exception:
             self.close()
@@ -419,9 +432,11 @@ class ExecutionEngine:
 
         self._slot.add_request(request)
         try:
-            result: Response | Request = yield self.downloader.fetch(
-                request, self.spider
-            )
+            result: Response | Request
+            if self._downloader_fetch_needs_spider:
+                result = yield self.downloader.fetch(request, self.spider)
+            else:
+                result = yield self.downloader.fetch(request)
             if not isinstance(result, (Response, Request)):
                 raise TypeError(
                     f"Incorrect type: expected Response or Request, got {type(result)}: {result!r}"
@@ -429,7 +444,6 @@ class ExecutionEngine:
             if isinstance(result, Response):
                 if result.request is None:
                     result.request = request
-                assert self.spider is not None
                 logkws = self.logformatter.crawled(result.request, result, self.spider)
                 if logkws is not None:
                     logger.log(
@@ -451,30 +465,28 @@ class ExecutionEngine:
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        return deferred_from_coro(
-            self.open_spider_async(spider, close_if_idle=close_if_idle)
-        )
+        return deferred_from_coro(self.open_spider_async(close_if_idle=close_if_idle))
 
-    async def open_spider_async(
-        self,
-        spider: Spider,
-        *,
-        close_if_idle: bool = True,
-    ) -> None:
+    async def open_spider_async(self, *, close_if_idle: bool = True) -> None:
+        assert self.crawler.spider
         if self._slot is not None:
-            raise RuntimeError(f"No free spider slot when opening {spider.name!r}")
-        logger.info("Spider opened", extra={"spider": spider})
-        self.spider = spider
+            raise RuntimeError(
+                f"No free spider slot when opening {self.crawler.spider.name!r}"
+            )
+        logger.info("Spider opened", extra={"spider": self.crawler.spider})
+        self.spider = self.crawler.spider
         nextcall = CallLaterOnce(self._start_scheduled_requests)
         scheduler = build_from_crawler(self.scheduler_cls, self.crawler)
         self._slot = _Slot(close_if_idle, nextcall, scheduler)
-        self._start = await self.scraper.spidermw.process_start(spider)
-        if hasattr(scheduler, "open") and (d := scheduler.open(spider)):
+        self._start = await self.scraper.spidermw.process_start()
+        if hasattr(scheduler, "open") and (d := scheduler.open(self.crawler.spider)):
             await maybe_deferred_to_future(d)
-        await maybe_deferred_to_future(self.scraper.open_spider(spider))
+        await maybe_deferred_to_future(self.scraper.open_spider())
         assert self.crawler.stats
-        self.crawler.stats.open_spider(spider)
-        await self.signals.send_catch_log_async(signals.spider_opened, spider=spider)
+        self.crawler.stats.open_spider(self.crawler.spider)
+        await self.signals.send_catch_log_async(
+            signals.spider_opened, spider=self.crawler.spider
+        )
 
     def _spider_idle(self) -> None:
         """

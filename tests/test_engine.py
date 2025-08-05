@@ -441,8 +441,10 @@ class TestEngine(TestEngineBase):
 
     @inlineCallbacks
     def test_start_already_running_exception(self):
-        e = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
-        yield deferred_from_coro(e.open_spider_async(DefaultSpider()))
+        crawler = get_crawler(DefaultSpider)
+        crawler.spider = crawler._create_spider()
+        e = ExecutionEngine(crawler, lambda _: None)
+        yield deferred_from_coro(e.open_spider_async())
         _schedule_coro(e.start_async())
         with pytest.raises(RuntimeError, match="Engine already running"):
             yield deferred_from_coro(e.start_async())
@@ -451,8 +453,10 @@ class TestEngine(TestEngineBase):
     @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
     async def test_start_already_running_exception_asyncio(self):
-        e = ExecutionEngine(get_crawler(DefaultSpider), lambda _: None)
-        await e.open_spider_async(DefaultSpider())
+        crawler = get_crawler(DefaultSpider)
+        crawler.spider = crawler._create_spider()
+        e = ExecutionEngine(crawler, lambda _: None)
+        await e.open_spider_async()
         with pytest.raises(RuntimeError, match="Engine already running"):
             await asyncio.gather(e.start_async(), e.start_async())
         await deferred_to_future(e.stop())
@@ -537,12 +541,11 @@ class TestEngineDownloadAsync:
         assert result == response
         engine._slot.add_request.assert_called_once_with(request)
         engine._slot.remove_request.assert_called_once_with(request)
-        engine.downloader.fetch.assert_called_once_with(request, engine.spider)
+        engine.downloader.fetch.assert_called_once_with(request)
 
     @deferred_f_from_coro_f
     async def test_download_async_redirect(self, engine):
         """Test async download with a redirect request."""
-        # Arrange
         original_request = Request("http://example.com")
         redirect_request = Request("http://example.com/redirect")
         final_response = Response("http://example.com/redirect", body=b"redirected")
