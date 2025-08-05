@@ -213,33 +213,44 @@ def binary_is_text(data: bytes) -> bool:
     return all(c not in _BINARYCHARS for c in data)
 
 
-def get_func_args(func: Callable[..., Any], stripself: bool = False) -> list[str]:
-    """Return the argument name list of a callable object"""
+def get_func_args_dict(
+    func: Callable[..., Any], stripself: bool = False
+) -> Mapping[str, inspect.Parameter]:
+    """Return the argument dict of a callable object.
+
+    .. versionadded:: VERSION
+    """
     if not callable(func):
         raise TypeError(f"func must be callable, got '{type(func).__name__}'")
 
-    args: list[str] = []
+    args: Mapping[str, inspect.Parameter]
     try:
         sig = inspect.signature(func)
     except ValueError:
-        return args
+        return {}
 
     if isinstance(func, partial):
         partial_args = func.args
         partial_kw = func.keywords
 
+        args = {}
         for name, param in sig.parameters.items():
-            if param.name in partial_args:
+            if name in partial_args:
                 continue
-            if partial_kw and param.name in partial_kw:
+            if partial_kw and name in partial_kw:
                 continue
-            args.append(name)
+            args[name] = param
     else:
-        args = list(sig.parameters)
+        args = sig.parameters
 
-    if stripself and args and args[0] == "self":
-        args = args[1:]
+    if stripself and args and "self" in args:
+        args = {k: v for k, v in args.items() if k != "self"}
     return args
+
+
+def get_func_args(func: Callable[..., Any], stripself: bool = False) -> list[str]:
+    """Return the argument name list of a callable object"""
+    return list(get_func_args_dict(func, stripself=stripself))
 
 
 def get_spec(func: Callable[..., Any]) -> tuple[list[str], dict[str, Any]]:

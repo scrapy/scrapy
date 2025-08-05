@@ -236,7 +236,7 @@ def test_get_func_args():
     assert get_func_args(partial_f2) == ["a", "c"]
     assert get_func_args(partial_f3) == ["c"]
     assert get_func_args(cal) == ["a", "b", "c"]
-    assert get_func_args(object) == []
+    assert get_func_args(object) == []  # pylint: disable=use-implicit-booleaness-not-comparison
     assert get_func_args(str.split, stripself=True) == ["sep", "maxsplit"]
     assert get_func_args(" ".join, stripself=True) == ["iterable"]
 

@@ -16,6 +16,7 @@ from scrapy.http import Request, Response
 from scrapy.utils import display
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.defer import aiter_errback, deferred_from_coro
+from scrapy.utils.deprecate import argument_is_required
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.spider import spidercls_for_request
@@ -284,8 +285,12 @@ class Command(BaseRunSpiderCommand):
         if opts.pipelines:
             assert self.pcrawler.engine
             itemproc = self.pcrawler.engine.scraper.itemproc
+            needs_spider = argument_is_required(itemproc.process_item, "spider")
             for item in items:
-                itemproc.process_item(item, spider)
+                if needs_spider:
+                    itemproc.process_item(item, spider)
+                else:
+                    itemproc.process_item(item)
         self.add_items(depth, items)
         self.add_requests(depth, requests)
 

@@ -126,7 +126,7 @@ class Shell:
 
         self.crawler.spider = spider
         assert self.crawler.engine
-        await self.crawler.engine.open_spider_async(spider, close_if_idle=False)
+        await self.crawler.engine.open_spider_async(close_if_idle=False)
         self.crawler.engine._start_request_processing()
         self.spider = spider
 

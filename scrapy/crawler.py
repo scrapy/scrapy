@@ -159,7 +159,7 @@ class Crawler:
             self._apply_settings()
             self._update_root_log_handler()
             self.engine = self._create_engine()
-            yield deferred_from_coro(self.engine.open_spider_async(self.spider))
+            yield deferred_from_coro(self.engine.open_spider_async())
             yield deferred_from_coro(self.engine.start_async())
         except Exception:
             self.crawling = False
@@ -195,7 +195,7 @@ class Crawler:
             self._apply_settings()
             self._update_root_log_handler()
             self.engine = self._create_engine()
-            await self.engine.open_spider_async(self.spider)
+            await self.engine.open_spider_async()
             await self.engine.start_async()
         except Exception:
             self.crawling = False
