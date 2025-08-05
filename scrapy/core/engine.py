@@ -187,7 +187,7 @@ class ExecutionEngine:
             self._start_request_processing_dfd.cancel()
             self._start_request_processing_dfd = None
         dfd = (
-            self.close_spider(self.spider, reason="shutdown")
+            deferred_from_coro(self.close_spider_async(reason="shutdown"))
             if self.spider is not None
             else succeed(None)
         )
@@ -201,8 +201,8 @@ class ExecutionEngine:
         if self.running:
             return self.stop()  # will also close spider and downloader
         if self.spider is not None:
-            return self.close_spider(
-                self.spider, reason="shutdown"
+            return deferred_from_coro(
+                self.close_spider_async(reason="shutdown")
             )  # will also close downloader
         if hasattr(self, "downloader"):
             self.downloader.close()
@@ -511,19 +511,29 @@ class ExecutionEngine:
         if self.spider_is_idle():
             ex = detected_ex.get(CloseSpider, CloseSpider(reason="finished"))
             assert isinstance(ex, CloseSpider)  # typing
-            self.close_spider(self.spider, reason=ex.reason)
+            _schedule_coro(self.close_spider_async(reason=ex.reason))
 
-    @inlineCallbacks
-    def close_spider(
-        self, spider: Spider, reason: str = "cancelled"
-    ) -> Generator[Deferred[Any], Any, None]:
+    def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred[None]:
+        warnings.warn(
+            "ExecutionEngine.close_spider() is deprecated, use close_spider_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return deferred_from_coro(self.close_spider_async(reason=reason))
+
+    async def close_spider_async(self, *, reason: str = "cancelled") -> None:
         """Close (cancel) spider and clear all its outstanding requests"""
+        if self.spider is None:
+            raise RuntimeError("Spider not opened")
+
         if self._slot is None:
             raise RuntimeError("Engine slot not assigned")
 
         if self._slot.closing is not None:
-            yield self._slot.closing
+            await maybe_deferred_to_future(self._slot.closing)
             return
+
+        spider = self.spider
 
         logger.info(
             "Closing spider (%(reason)s)", {"reason": reason}, extra={"spider": spider}
@@ -533,7 +543,7 @@ class ExecutionEngine:
             logger.error(msg, exc_info=True, extra={"spider": spider})  # noqa: LOG014
 
         try:
-            yield self._slot.close()
+            await maybe_deferred_to_future(self._slot.close())
         except Exception:
             log_failure("Slot close failure")
 
@@ -543,19 +553,19 @@ class ExecutionEngine:
             log_failure("Downloader close failure")
 
         try:
-            yield self.scraper.close_spider()
+            await maybe_deferred_to_future(self.scraper.close_spider())
         except Exception:
             log_failure("Scraper close failure")
 
         if hasattr(self._slot.scheduler, "close"):
             try:
                 if (d := self._slot.scheduler.close(reason)) is not None:
-                    yield d
+                    await maybe_deferred_to_future(d)
             except Exception:
                 log_failure("Scheduler close failure")
 
         try:
-            yield self.signals.send_catch_log_deferred(
+            await self.signals.send_catch_log_async(
                 signal=signals.spider_closed,
                 spider=spider,
                 reason=reason,
@@ -580,6 +590,6 @@ class ExecutionEngine:
 
         try:
             if (d := self._spider_closed_callback(spider)) is not None:
-                yield d
+                await maybe_deferred_to_future(d)
         except Exception:
             log_failure("Error running spider_closed_callback")

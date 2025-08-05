@@ -24,6 +24,7 @@ from scrapy.http import Request, Response
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
 from scrapy.utils.defer import (
     _defer_sleep_async,
+    _schedule_coro,
     aiter_errback,
     deferred_f_from_coro_f,
     deferred_from_coro,
@@ -315,8 +316,8 @@ class Scraper:
         exc = _failure.value
         if isinstance(exc, CloseSpider):
             assert self.crawler.engine is not None  # typing
-            self.crawler.engine.close_spider(
-                self.crawler.spider, exc.reason or "cancelled"
+            _schedule_coro(
+                self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
             )
             return
         logkws = self.logformatter.spider_error(

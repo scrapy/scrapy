@@ -635,7 +635,7 @@ def test_request_scheduled_signal(caplog):
 
 
 class TestEngineCloseSpider:
-    """Tests for exception handling coverage during close_spider()."""
+    """Tests for exception handling coverage during close_spider_async()."""
 
     @pytest.fixture
     def crawler(self) -> Crawler:
@@ -648,9 +648,14 @@ class TestEngineCloseSpider:
         engine = ExecutionEngine(crawler, lambda _: None)
         await engine.open_spider_async()
         engine._slot = None
-        assert crawler.spider
         with pytest.raises(RuntimeError, match="Engine slot not assigned"):
-            await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+            await engine.close_spider_async()
+
+    @deferred_f_from_coro_f
+    async def test_no_spider(self, crawler: Crawler) -> None:
+        engine = ExecutionEngine(crawler, lambda _: None)
+        with pytest.raises(RuntimeError, match="Spider not opened"):
+            await engine.close_spider_async()
 
     @deferred_f_from_coro_f
     async def test_exception_slot(
@@ -660,8 +665,7 @@ class TestEngineCloseSpider:
         await engine.open_spider_async()
         assert engine._slot
         del engine._slot.heartbeat
-        assert crawler.spider
-        await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+        await engine.close_spider_async()
         assert "Slot close failure" in caplog.text
 
     @deferred_f_from_coro_f
@@ -671,8 +675,7 @@ class TestEngineCloseSpider:
         engine = ExecutionEngine(crawler, lambda _: None)
         await engine.open_spider_async()
         del engine.downloader.slots
-        assert crawler.spider
-        await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+        await engine.close_spider_async()
         assert "Downloader close failure" in caplog.text
 
     @deferred_f_from_coro_f
@@ -682,8 +685,7 @@ class TestEngineCloseSpider:
         engine = ExecutionEngine(crawler, lambda _: None)
         await engine.open_spider_async()
         engine.scraper.slot = None
-        assert crawler.spider
-        await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+        await engine.close_spider_async()
         assert "Scraper close failure" in caplog.text
 
     @deferred_f_from_coro_f
@@ -694,8 +696,7 @@ class TestEngineCloseSpider:
         await engine.open_spider_async()
         assert engine._slot
         del cast("Scheduler", engine._slot.scheduler).dqs
-        assert crawler.spider
-        await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+        await engine.close_spider_async()
         assert "Scheduler close failure" in caplog.text
 
     @deferred_f_from_coro_f
@@ -705,8 +706,7 @@ class TestEngineCloseSpider:
         engine = ExecutionEngine(crawler, lambda _: None)
         await engine.open_spider_async()
         del engine.signals
-        assert crawler.spider
-        await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+        await engine.close_spider_async()
         assert "Error while sending spider_close signal" in caplog.text
 
     @deferred_f_from_coro_f
@@ -716,8 +716,7 @@ class TestEngineCloseSpider:
         engine = ExecutionEngine(crawler, lambda _: None)
         await engine.open_spider_async()
         del cast("MemoryStatsCollector", crawler.stats).spider_stats
-        assert crawler.spider
-        await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+        await engine.close_spider_async()
         assert "Stats close failure" in caplog.text
 
     @deferred_f_from_coro_f
@@ -726,6 +725,5 @@ class TestEngineCloseSpider:
     ) -> None:
         engine = ExecutionEngine(crawler, lambda _: defer.fail(ValueError()))
         await engine.open_spider_async()
-        assert crawler.spider
-        await maybe_deferred_to_future(engine.close_spider(crawler.spider))
+        await engine.close_spider_async()
         assert "Error running spider_closed_callback" in caplog.text
