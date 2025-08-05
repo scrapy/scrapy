@@ -314,10 +314,11 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         compbs = BaseSettings()
         base_settings = self[name + "_BASE"]
         component_priority_dict = self[name]
-        for cls in tuple(base_settings):
+        for cls_path in tuple(base_settings):
             for cls_or_path in tuple(component_priority_dict):
-                if load_object(cls_or_path) == load_object(cls):
-                    del base_settings[cls]
+                if load_object(cls_or_path) == load_object(cls_path):
+                    del base_settings[cls_path]
+                    break
         compbs.update(base_settings)
         compbs.update(self[name])
         return compbs
