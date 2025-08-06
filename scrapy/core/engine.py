@@ -159,6 +159,10 @@ class ExecutionEngine:
         )
 
     async def start_async(self, *, _start_request_processing: bool = True) -> None:
+        """Start the execution engine.
+
+        .. versionadded:: VERSION
+        """
         if self.running:
             raise RuntimeError("Engine already running")
         self.start_time = time()
@@ -181,7 +185,10 @@ class ExecutionEngine:
         return deferred_from_coro(self.stop_async())
 
     async def stop_async(self) -> None:
-        """Gracefully stop the execution engine"""
+        """Gracefully stop the execution engine.
+
+        .. versionadded:: VERSION
+        """
 
         if not self.running:
             raise RuntimeError("Engine not running")
@@ -414,7 +421,12 @@ class ExecutionEngine:
         return deferred_from_coro(self.download_async(request))
 
     async def download_async(self, request: Request) -> Response:
-        """Asynchronous version of download() that returns a Response."""
+        """Return a coroutine which fires with a Response as result.
+
+         Only downloader middlewares are applied.
+
+        .. versionadded:: VERSION
+        """
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
         try:
@@ -527,7 +539,10 @@ class ExecutionEngine:
         return deferred_from_coro(self.close_spider_async(reason=reason))
 
     async def close_spider_async(self, *, reason: str = "cancelled") -> None:
-        """Close (cancel) spider and clear all its outstanding requests"""
+        """Close (cancel) spider and clear all its outstanding requests.
+
+        .. versionadded:: VERSION
+        """
         if self.spider is None:
             raise RuntimeError("Spider not opened")
 

@@ -140,7 +140,10 @@ class Scraper:
         return deferred_from_coro(self.open_spider_async())
 
     async def open_spider_async(self) -> None:
-        """Open the spider for scraping and allocate resources for it"""
+        """Open the spider for scraping and allocate resources for it.
+
+        .. versionadded:: VERSION
+        """
         self.slot = Slot(self.crawler.settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE"))
         if not self.crawler.spider:
             raise RuntimeError(
@@ -162,7 +165,10 @@ class Scraper:
         return deferred_from_coro(self.close_spider_async())
 
     async def close_spider_async(self) -> None:
-        """Close the spider being scraped and release its resources"""
+        """Close the spider being scraped and release its resources.
+
+        .. versionadded:: VERSION
+        """
         if self.slot is None:
             raise RuntimeError("Scraper slot not assigned")
         self.slot.closing = Deferred()
@@ -275,7 +281,10 @@ class Scraper:
     async def call_spider_async(
         self, result: Response | Failure, request: Request
     ) -> Iterable[Any] | AsyncIterator[Any]:
-        """Call the request callback or errback with the response or failure."""
+        """Call the request callback or errback with the response or failure.
+
+        .. versionadded:: 2.13
+        """
         await _defer_sleep_async()
         assert self.crawler.spider
         if isinstance(result, Response):
@@ -369,7 +378,10 @@ class Scraper:
         request: Request,
         response: Response | Failure,
     ) -> None:
-        """Pass items/requests produced by a callback to ``_process_spidermw_output()`` in parallel."""
+        """Pass items/requests produced by a callback to ``_process_spidermw_output()`` in parallel.
+
+        .. versionadded:: 2.13
+        """
         it: Iterable[_T] | AsyncIterator[_T]
         if is_asyncio_available():
             if isinstance(result, AsyncIterator):
@@ -448,6 +460,8 @@ class Scraper:
 
         *response* is the source of the item data. If the item does not come
         from response data, e.g. it was hard-coded, set it to ``None``.
+
+        .. versionadded:: VERSION
         """
         assert self.slot is not None  # typing
         assert self.crawler.spider is not None  # typing
