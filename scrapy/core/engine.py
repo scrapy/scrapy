@@ -154,9 +154,11 @@ class ExecutionEngine:
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
-        return deferred_from_coro(self.start_async(_start_request_processing))
+        return deferred_from_coro(
+            self.start_async(_start_request_processing=_start_request_processing)
+        )
 
-    async def start_async(self, _start_request_processing: bool = True) -> None:
+    async def start_async(self, *, _start_request_processing: bool = True) -> None:
         if self.running:
             raise RuntimeError("Engine already running")
         self.start_time = time()
@@ -171,13 +173,15 @@ class ExecutionEngine:
         await maybe_deferred_to_future(self._closewait)
 
     def stop(self) -> Deferred[None]:
-        """Gracefully stop the execution engine"""
+        warnings.warn(
+            "ExecutionEngine.stop() is deprecated, use stop_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return deferred_from_coro(self.stop_async())
 
-        @deferred_f_from_coro_f
-        async def _finish_stopping_engine(_: Any) -> None:
-            await self.signals.send_catch_log_async(signal=signals.engine_stopped)
-            if self._closewait:
-                self._closewait.callback(None)
+    async def stop_async(self) -> None:
+        """Gracefully stop the execution engine"""
 
         if not self.running:
             raise RuntimeError("Engine not running")
@@ -186,12 +190,11 @@ class ExecutionEngine:
         if self._start_request_processing_dfd is not None:
             self._start_request_processing_dfd.cancel()
             self._start_request_processing_dfd = None
-        dfd = (
-            deferred_from_coro(self.close_spider_async(reason="shutdown"))
-            if self.spider is not None
-            else succeed(None)
-        )
-        return dfd.addBoth(_finish_stopping_engine)
+        if self.spider is not None:
+            await self.close_spider_async(reason="shutdown")
+        await self.signals.send_catch_log_async(signal=signals.engine_stopped)
+        if self._closewait:
+            self._closewait.callback(None)
 
     def close(self) -> Deferred[None]:
         """
@@ -199,7 +202,9 @@ class ExecutionEngine:
         If it has already been started, stop it. In all cases, close the spider and the downloader.
         """
         if self.running:
-            return self.stop()  # will also close spider and downloader
+            return deferred_from_coro(
+                self.stop_async()
+            )  # will also close spider and downloader
         if self.spider is not None:
             return deferred_from_coro(
                 self.close_spider_async(reason="shutdown")
@@ -272,7 +277,7 @@ class ExecutionEngine:
                 exc_info=True,
                 extra={"spider": self.spider},
             )
-            await maybe_deferred_to_future(self.stop())
+            await self.stop_async()
 
     def _start_scheduled_requests(self) -> None:
         if self._slot is None or self._slot.closing is not None or self.paused:

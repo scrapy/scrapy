@@ -217,7 +217,7 @@ class Crawler:
             self.crawling = False
             assert self.engine
             if self.engine.running:
-                yield self.engine.stop()
+                yield deferred_from_coro(self.engine.stop_async())
 
     async def stop_async(self) -> None:
         """Start a graceful stop of the crawler and complete when the crawler is stopped.

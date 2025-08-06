@@ -32,7 +32,6 @@ from scrapy.utils.defer import (
     _schedule_coro,
     deferred_f_from_coro_f,
     deferred_from_coro,
-    deferred_to_future,
     maybe_deferred_to_future,
 )
 from scrapy.utils.signal import disconnect_all
@@ -444,7 +443,7 @@ class TestEngine(TestEngineBase):
         _schedule_coro(e.start_async())
         with pytest.raises(RuntimeError, match="Engine already running"):
             yield deferred_from_coro(e.start_async())
-        yield e.stop()
+        yield deferred_from_coro(e.stop_async())
 
     @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
@@ -455,7 +454,7 @@ class TestEngine(TestEngineBase):
         await e.open_spider_async()
         with pytest.raises(RuntimeError, match="Engine already running"):
             await asyncio.gather(e.start_async(), e.start_async())
-        await deferred_to_future(e.stop())
+        await e.stop_async()
 
     @inlineCallbacks
     def test_start_request_processing_exception(self):
