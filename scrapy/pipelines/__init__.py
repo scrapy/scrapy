@@ -33,5 +33,8 @@ class ItemPipelineManager(MiddlewareManager):
                 deferred_f_from_coro_f(pipe.process_item)
             )
 
-    def process_item(self, item: Any, spider: Spider) -> Deferred[Any]:
-        return self._process_chain("process_item", item, spider)
+    def process_item(self, item: Any, spider: Spider | None = None) -> Deferred[Any]:
+        if spider:
+            self._warn_spider_arg("process_item")
+            self._set_compat_spider(spider)
+        return self._process_chain("process_item", item, self._spider)

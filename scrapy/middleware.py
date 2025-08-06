@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.defer import process_chain, process_parallel
 from scrapy.utils.misc import build_from_crawler, load_object
+from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -37,9 +38,19 @@ class MiddlewareManager(ABC):
     """Base class for implementing middleware managers"""
 
     component_name: str
+    _compat_spider: Spider | None = None
 
-    def __init__(self, *middlewares: Any) -> None:
-        self.middlewares = middlewares
+    def __init__(self, *middlewares: Any, crawler: Crawler | None = None) -> None:
+        self.crawler: Crawler | None = crawler
+        if crawler is None:
+            warnings.warn(
+                f"MiddlewareManager.__init__() was called without the crawler argument"
+                f" when creating {global_object_name(self.__class__)}."
+                f" This is deprecated and the argument will be required in future Scrapy versions.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        self.middlewares: tuple[Any, ...] = middlewares
         # Only process_spider_output and process_spider_exception can be None.
         # Only process_spider_output can be a tuple, and only until _async compatibility methods are removed.
         self.methods: dict[str, deque[Callable | tuple[Callable, Callable] | None]] = (
@@ -47,6 +58,43 @@ class MiddlewareManager(ABC):
         )
         for mw in middlewares:
             self._add_middleware(mw)
+
+    @property
+    def _spider(self) -> Spider:
+        if self.crawler is not None:
+            if self.crawler.spider is None:
+                raise ValueError(
+                    f"{type(self).__name__} needs to access self.crawler.spider but it is None."
+                )
+            return self.crawler.spider
+        if self._compat_spider is not None:
+            return self._compat_spider
+        raise ValueError(f"{type(self).__name__} has no known Spider instance.")
+
+    def _set_compat_spider(self, spider: Spider | None) -> None:
+        if spider is None or self.crawler is not None:
+            return
+        # printing a deprecation warning is the caller's responsibility
+        if self._compat_spider is None:
+            self._compat_spider = spider
+        elif self._compat_spider is not spider:
+            raise RuntimeError(
+                f"Different instances of Spider were passed to {type(self).__name__}:"
+                f" {self._compat_spider} and {spider}"
+            )
+
+    def _warn_spider_arg(self, method_name: str) -> None:
+        if self.crawler:
+            msg = (
+                f"Passing a spider argument to {type(self).__name__}.{method_name}() is deprecated"
+                " and the passed value is ignored."
+            )
+        else:
+            msg = (
+                f"Passing a spider argument to {type(self).__name__}.{method_name}() is deprecated,"
+                f" {type(self).__name__} should be instantiated with a Crawler instance instead."
+            )
+        warnings.warn(msg, category=ScrapyDeprecationWarning, stacklevel=3)
 
     @classmethod
     @abstractmethod
@@ -108,7 +156,7 @@ class MiddlewareManager(ABC):
             },
             extra={"crawler": crawler},
         )
-        return cls(*middlewares)
+        return cls(*middlewares, crawler=crawler)
 
     def _add_middleware(self, mw: Any) -> None:
         if hasattr(mw, "open_spider"):
@@ -130,8 +178,14 @@ class MiddlewareManager(ABC):
         )
         return process_chain(methods, obj, *args)
 
-    def open_spider(self, spider: Spider) -> Deferred[list[None]]:
-        return self._process_parallel("open_spider", spider)
+    def open_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
+        if spider:
+            self._warn_spider_arg("open_spider")
+            self._set_compat_spider(spider)
+        return self._process_parallel("open_spider", self._spider)
 
-    def close_spider(self, spider: Spider) -> Deferred[list[None]]:
-        return self._process_parallel("close_spider", spider)
+    def close_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
+        if spider:
+            self._warn_spider_arg("close_spider")
+            self._set_compat_spider(spider)
+        return self._process_parallel("close_spider", self._spider)
