@@ -216,7 +216,8 @@ class Crawler:
         if self.crawling:
             self.crawling = False
             assert self.engine
-            yield self.engine.stop()
+            if self.engine.running:
+                yield self.engine.stop()
 
     async def stop_async(self) -> None:
         """Start a graceful stop of the crawler and complete when the crawler is stopped.
