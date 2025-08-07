@@ -551,17 +551,21 @@ class TestHttpCompression:
         with pytest.raises(IgnoreRequest):
             mw.process_response(response.request, response, spider)
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_br(self):
         _skip_if_no_br()
 
         self._test_compression_bomb_spider_attr("br")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_deflate(self):
         self._test_compression_bomb_spider_attr("deflate")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_gzip(self):
         self._test_compression_bomb_spider_attr("gzip")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_zstd(self):
         _skip_if_no_zstd()
 
@@ -664,17 +668,21 @@ class TestHttpCompression:
             ),
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr_br(self):
         _skip_if_no_br()
 
         self._test_download_warnsize_spider_attr("br")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr_deflate(self):
         self._test_download_warnsize_spider_attr("deflate")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr_gzip(self):
         self._test_download_warnsize_spider_attr("gzip")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr_zstd(self):
         _skip_if_no_zstd()
 

@@ -93,9 +93,23 @@ def _get_concurrency_delay(
 ) -> tuple[int, float]:
     delay: float = settings.getfloat("DOWNLOAD_DELAY")
     if hasattr(spider, "download_delay"):
+        warnings.warn(
+            "The 'download_delay' spider attribute is deprecated. "
+            "Use Spider.custom_settings or Spider.update_settings() instead. "
+            "The corresponding setting name is 'DOWNLOAD_DELAY'.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         delay = spider.download_delay
 
     if hasattr(spider, "max_concurrent_requests"):
+        warnings.warn(
+            "The 'max_concurrent_requests' spider attribute is deprecated. "
+            "Use Spider.custom_settings or Spider.update_settings() instead. "
+            "The corresponding setting name is 'CONCURRENT_REQUESTS'.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         concurrency = spider.max_concurrent_requests
 
     return concurrency, delay
