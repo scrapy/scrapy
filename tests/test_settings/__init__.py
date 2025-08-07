@@ -402,6 +402,25 @@ class TestBaseSettings:
         assert frozencopy.frozen
         assert frozencopy is not self.settings
 
+    def test_getwithbase_override_none_by_type(self):
+        class DummyMiddleware:
+            pass
+
+        DummyMiddleware.__module__ = "tests.test_settings"
+        DummyMiddleware.__name__ = "DummyMiddleware"
+
+        settings = BaseSettings(
+            {
+                "DOWNLOADER_MIDDLEWARES_BASE": {DummyMiddleware: 300},
+                "DOWNLOADER_MIDDLEWARES": {DummyMiddleware: None},
+            }
+        )
+        compbs = settings.getwithbase("DOWNLOADER_MIDDLEWARES")
+
+        assert isinstance(compbs, BaseSettings)
+        assert DummyMiddleware not in compbs
+        assert DummyMiddleware not in compbs.attributes
+
 
 class TestSettings:
     def setup_method(self):

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import logging
 import warnings
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 from importlib import import_module
@@ -36,6 +37,8 @@ SETTINGS_PRIORITIES: dict[str, int] = {
     "spider": 30,
     "cmdline": 40,
 }
+
+logger = logging.getLogger(__name__)
 
 
 def get_settings_priority(priority: int | str) -> int:
@@ -311,9 +314,39 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """
         if not isinstance(name, str):
             raise ValueError(f"Base setting key must be a string, got {name}")
+
+        base_settings = dict(self[name + "_BASE"]) if name + "_BASE" in self else {}
+        override_settings = dict(self[name]) if name in self else {}
+
+        override_keys_normalized = set()
+        for k in override_settings:
+            if isinstance(k, type):
+                override_keys_normalized.add(f"{k.__module__}.{k.__name__}")
+            else:
+                override_keys_normalized.add(str(k))
+
+        keys_to_drop = []
+        for k in base_settings:
+            if isinstance(k, type):
+                normalized_k = f"{k.__module__}.{k.__name__}"
+            else:
+                normalized_k = str(k)
+
+            if normalized_k in override_keys_normalized:
+                logger.warning(
+                    f"{name}: dropped base key '{k}' because of duplicate with override"
+                )
+                keys_to_drop.append(k)
+
+        for k in keys_to_drop:
+            del base_settings[k]
+
         compbs = BaseSettings()
-        compbs.update(self[name + "_BASE"])
-        compbs.update(self[name])
+        compbs.update(base_settings)
+        for k, v in override_settings.items():
+            if v is not None:
+                compbs[k] = v
+
         return compbs
 
     def getpriority(self, name: _SettingsKeyT) -> int | None:
