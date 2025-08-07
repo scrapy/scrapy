@@ -58,6 +58,8 @@ dev = [
     "mypy",
     "pre-commit",
     "pytest",
+    "pytest-asyncio",
+    "pytest-twisted",
     "pytest-cov",
     "ruff",
     "tox"

@@ -312,8 +312,23 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         if not isinstance(name, str):
             raise ValueError(f"Base setting key must be a string, got {name}")
         compbs = BaseSettings()
-        compbs.update(self[name + "_BASE"])
+        class_set = set()
         compbs.update(self[name])
+
+        for k in compbs:
+            class_set.add(load_object(k))
+
+        for k, v in self[name + "_BASE"]:
+            o = load_object(k)
+            if o not in class_set:
+                class_set.add(o)
+                compbs.set(k, v, priority=self[name + "_BASE"][k])
+            else:
+                message = (
+                    f"Detected a duplicate key due to mixing of import path strings and class objects: {k} and {o}. "
+                    f"Ignoring entry {k}."
+                )
+                warnings.warn(message)
         return compbs
 
     def getpriority(self, name: _SettingsKeyT) -> int | None:
@@ -495,7 +510,8 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
                 self.set(key, getattr(module, key), priority)
 
     # BaseSettings.update() doesn't support all inputs that MutableMapping.update() supports
-    def update(self, values: _SettingsInputT, priority: int | str = "project") -> None:  # type: ignore[override]
+    # type: ignore[override]
+    def update(self, values: _SettingsInputT, priority: int | str = "project") -> None:
         """
         Store key/value pairs with a given priority.
 

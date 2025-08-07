@@ -341,6 +341,26 @@ class TestBaseSettings:
         assert set(s.getwithbase("HASNOBASE")) == set(s["HASNOBASE"])
         assert s.getwithbase("NONEXISTENT") == {}
 
+    def test_getwithbase_duplicate(self):
+        s = BaseSettings(
+            {
+                "DOWNLOADER_MIDDLEWARES_BASE": BaseSettings(
+                    {"scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": None},
+                    "project",
+                ),
+                "DOWNLOADER_MIDDLEWARES": BaseSettings(
+                    {HttpAuthMiddleware: None}, "default"
+                ),
+            }
+        )
+        with warnings.catch_warnings(record=True) as warns:
+            warnings.simplefilter("always")
+
+            base = s.getwithbase("DOWNLOADER_MIDDLEWARES")
+
+            assert len(warns) > 0
+            assert base == {HttpAuthMiddleware: None}
+
     def test_maxpriority(self):
         # Empty settings should return 'default'
         assert self.settings.maxpriority() == 0
