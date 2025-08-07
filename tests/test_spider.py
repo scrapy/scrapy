@@ -726,6 +726,7 @@ Sitemap: /sitemap-relative-url.xml
         response = Response(url="https://example.com", body=body, request=request)
         assert spider._get_sitemap_body(response) is None
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr(self):
         class DownloadMaxSizeSpider(self.spider_class):
             download_maxsize = 10_000_000
@@ -773,6 +774,7 @@ Sitemap: /sitemap-relative-url.xml
             ),
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr(self):
         class DownloadWarnSizeSpider(self.spider_class):
             download_warnsize = 10_000_000
