@@ -293,15 +293,21 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         if isinstance(value, str):
             try:
                 value_loaded = json.loads(value)
-                assert isinstance(value_loaded, (dict, list))
+                if not isinstance(value_loaded, (dict, list)):
+                    raise TypeError(
+                        f"Expected JSON string to decode to dict or list, got {type(value_loaded).__name__}"
+                    )
                 return value_loaded
             except ValueError:
                 return value.split(",")
         if isinstance(value, tuple):
             return list(value)
-        assert isinstance(value, (dict, list))
+        if not isinstance(value, (dict, list)):
+            raise TypeError(
+                f"Expected dict or list, got {type(value).__name__}"
+            )
         return copy.deepcopy(value)
-
+    
     def getwithbase(self, name: _SettingsKeyT) -> BaseSettings:
         """Get a composition of a dictionary-like setting and its `_BASE`
         counterpart.
