@@ -416,10 +416,10 @@ class TestEngine(TestEngineBase):
             "reason": "custom_reason",
         } == run.signals_caught[signals.spider_closed]
 
-    @inlineCallbacks
-    def test_close_downloader(self):
+    @deferred_f_from_coro_f
+    async def test_close_downloader(self):
         e = ExecutionEngine(get_crawler(MySpider), lambda _: None)
-        yield e.close()
+        await e.close_async()
 
     def test_close_without_downloader(self):
         class CustomException(Exception):

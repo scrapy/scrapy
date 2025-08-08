@@ -164,7 +164,7 @@ class Crawler:
         except Exception:
             self.crawling = False
             if self.engine is not None:
-                yield self.engine.close()
+                yield deferred_from_coro(self.engine.close_async())
             raise
 
     async def crawl_async(self, *args: Any, **kwargs: Any) -> None:
@@ -200,7 +200,7 @@ class Crawler:
         except Exception:
             self.crawling = False
             if self.engine is not None:
-                await deferred_to_future(self.engine.close())
+                await self.engine.close_async()
             raise
 
     def _create_spider(self, *args: Any, **kwargs: Any) -> Spider:

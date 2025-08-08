@@ -14,7 +14,7 @@ from time import time
 from traceback import format_exc
 from typing import TYPE_CHECKING, Any
 
-from twisted.internet.defer import CancelledError, Deferred, inlineCallbacks, succeed
+from twisted.internet.defer import CancelledError, Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import signals
@@ -27,10 +27,13 @@ from scrapy.exceptions import (
     ScrapyDeprecationWarning,
 )
 from scrapy.http import Request, Response
-from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
+from scrapy.utils.asyncio import (
+    AsyncioLoopingCall,
+    create_looping_call,
+    is_asyncio_available,
+)
 from scrapy.utils.defer import (
     _schedule_coro,
-    deferred_f_from_coro_f,
     deferred_from_coro,
     maybe_deferred_to_future,
 )
@@ -116,7 +119,9 @@ class ExecutionEngine:
         self.start_time: float | None = None
         self._start: AsyncIterator[Any] | None = None
         self._closewait: Deferred[None] | None = None
-        self._start_request_processing_dfd: Deferred[None] | None = None
+        self._start_request_processing_awaitable: (
+            asyncio.Future[None] | Deferred[None] | None
+        ) = None
         downloader_cls: type[Downloader] = load_object(self.settings["DOWNLOADER"])
         try:
             self.scheduler_cls: type[BaseScheduler] = self._get_scheduler_class(
@@ -136,7 +141,8 @@ class ExecutionEngine:
 
             self.scraper: Scraper = Scraper(crawler)
         except Exception:
-            self.close()
+            if hasattr(self, "downloader"):
+                self.downloader.close()
             raise
 
     def _get_scheduler_class(self, settings: BaseSettings) -> type[BaseScheduler]:
@@ -173,7 +179,13 @@ class ExecutionEngine:
         self.running = True
         self._closewait = Deferred()
         if _start_request_processing:
-            self._start_request_processing_dfd = self._start_request_processing()
+            coro = self._start_request_processing()
+            if is_asyncio_available():
+                # not wrapping in a Deferred here to avoid https://github.com/twisted/twisted/issues/12470
+                # (can happen when this is cancelled, e.g. in test_close_during_start_iteration())
+                self._start_request_processing_awaitable = asyncio.ensure_future(coro)
+            else:
+                self._start_request_processing_awaitable = Deferred.fromCoroutine(coro)
         await maybe_deferred_to_future(self._closewait)
 
     def stop(self) -> Deferred[None]:
@@ -194,9 +206,9 @@ class ExecutionEngine:
             raise RuntimeError("Engine not running")
 
         self.running = False
-        if self._start_request_processing_dfd is not None:
-            self._start_request_processing_dfd.cancel()
-            self._start_request_processing_dfd = None
+        if self._start_request_processing_awaitable is not None:
+            self._start_request_processing_awaitable.cancel()
+            self._start_request_processing_awaitable = None
         if self.spider is not None:
             await self.close_spider_async(reason="shutdown")
         await self.signals.send_catch_log_async(signal=signals.engine_stopped)
@@ -204,21 +216,26 @@ class ExecutionEngine:
             self._closewait.callback(None)
 
     def close(self) -> Deferred[None]:
+        warnings.warn(
+            "ExecutionEngine.close() is deprecated, use close_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return deferred_from_coro(self.close_async())
+
+    async def close_async(self) -> None:
         """
         Gracefully close the execution engine.
         If it has already been started, stop it. In all cases, close the spider and the downloader.
         """
         if self.running:
-            return deferred_from_coro(
-                self.stop_async()
-            )  # will also close spider and downloader
-        if self.spider is not None:
-            return deferred_from_coro(
-                self.close_spider_async(reason="shutdown")
+            await self.stop_async()  # will also close spider and downloader
+        elif self.spider is not None:
+            await self.close_spider_async(
+                reason="shutdown"
             )  # will also close downloader
-        if hasattr(self, "downloader"):
+        elif hasattr(self, "downloader"):
             self.downloader.close()
-        return succeed(None)
 
     def pause(self) -> None:
         self.paused = True
@@ -254,7 +271,6 @@ class ExecutionEngine:
                 )
                 self._slot.nextcall.schedule()
 
-    @deferred_f_from_coro_f
     async def _start_request_processing(self) -> None:
         """Starts consuming Spider.start() output and sending scheduled
         requests."""
@@ -278,7 +294,7 @@ class ExecutionEngine:
             return
         except Exception:
             # an error happened, log it and stop the engine
-            self._start_request_processing_dfd = None
+            self._start_request_processing_awaitable = None
             logger.error(
                 "Error while processing requests from start()",
                 exc_info=True,
