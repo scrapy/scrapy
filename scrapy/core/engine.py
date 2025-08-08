@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import warnings
+from collections.abc import AsyncIterator, Callable, Coroutine, Generator
 from time import time
 from traceback import format_exc
 from typing import TYPE_CHECKING, Any
@@ -44,8 +45,6 @@ from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Generator
-
     from twisted.internet.task import LoopingCall
 
     from scrapy.core.downloader import Downloader
@@ -102,7 +101,9 @@ class ExecutionEngine:
     def __init__(
         self,
         crawler: Crawler,
-        spider_closed_callback: Callable[[Spider], Deferred[None] | None],
+        spider_closed_callback: Callable[
+            [Spider], Coroutine[Any, Any, None] | Deferred[None] | None
+        ],
     ) -> None:
         self.crawler: Crawler = crawler
         self.settings: Settings = crawler.settings
@@ -113,9 +114,9 @@ class ExecutionEngine:
         self.spider: Spider | None = None
         self.running: bool = False
         self.paused: bool = False
-        self._spider_closed_callback: Callable[[Spider], Deferred[None] | None] = (
-            spider_closed_callback
-        )
+        self._spider_closed_callback: Callable[
+            [Spider], Coroutine[Any, Any, None] | Deferred[None] | None
+        ] = spider_closed_callback
         self.start_time: float | None = None
         self._start: AsyncIterator[Any] | None = None
         self._closewait: Deferred[None] | None = None
@@ -625,7 +626,11 @@ class ExecutionEngine:
         self.spider = None
 
         try:
-            if (d := self._spider_closed_callback(spider)) is not None:
-                await maybe_deferred_to_future(d)
+            aw = self._spider_closed_callback(spider)
+            # TODO: replace with ensure_awaitable() when we add it
+            if isinstance(aw, Coroutine):
+                await aw
+            elif isinstance(aw, Deferred):
+                await maybe_deferred_to_future(aw)
         except Exception:
             log_failure("Error running spider_closed_callback")
