@@ -4,7 +4,6 @@ from collections import deque
 from logging import ERROR
 from typing import TYPE_CHECKING
 
-from testfixtures import LogCapture
 from twisted.internet.defer import Deferred
 
 from scrapy import Request, Spider, signals
@@ -15,6 +14,8 @@ from tests.test_scheduler import MemoryScheduler
 from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
+    import pytest
+
     from scrapy.http import Response
 
 
@@ -87,13 +88,15 @@ class TestMain:
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
     @deferred_f_from_coro_f
-    async def test_close_during_start_iteration(self):
+    async def test_close_during_start_iteration(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         class TestSpider(Spider):
             name = "test"
 
             async def start(self):
                 assert self.crawler.engine is not None
-                await maybe_deferred_to_future(self.crawler.engine.close())
+                await self.crawler.engine.close_async()
                 yield Request("data:,a")
 
             def parse(self, response):
@@ -108,15 +111,14 @@ class TestMain:
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
 
-        with LogCapture(level=ERROR) as log:
+        caplog.clear()
+        with caplog.at_level(ERROR):
             await maybe_deferred_to_future(crawler.crawl())
 
-        assert len(log.records) == 1
-        assert log.records[0].msg == "Error running spider_closed_callback"
-        finish_reason = crawler.stats.get_value("finish_reason")
-        assert finish_reason == "shutdown", f"{finish_reason=}"
-        expected_urls = []
-        assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
+        assert not caplog.records
+        assert crawler.stats
+        assert crawler.stats.get_value("finish_reason") == "shutdown"
+        assert not actual_urls
 
 
 class TestRequestSendOrder:

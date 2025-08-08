@@ -160,12 +160,12 @@ class Crawler:
             self._apply_settings()
             self._update_root_log_handler()
             self.engine = self._create_engine()
-            yield self.engine.open_spider(self.spider)
-            yield self.engine.start()
+            yield deferred_from_coro(self.engine.open_spider_async())
+            yield deferred_from_coro(self.engine.start_async())
         except Exception:
             self.crawling = False
             if self.engine is not None:
-                yield self.engine.close()
+                yield deferred_from_coro(self.engine.close_async())
             raise
 
     async def crawl_async(self, *args: Any, **kwargs: Any) -> None:
@@ -196,12 +196,12 @@ class Crawler:
             self._apply_settings()
             self._update_root_log_handler()
             self.engine = self._create_engine()
-            await self.engine.open_spider_async(self.spider)
+            await self.engine.open_spider_async()
             await self.engine.start_async()
         except Exception:
             self.crawling = False
             if self.engine is not None:
-                await deferred_to_future(self.engine.close())
+                await self.engine.close_async()
             raise
 
     def _create_spider(self, *args: Any, **kwargs: Any) -> Spider:
@@ -217,7 +217,8 @@ class Crawler:
         if self.crawling:
             self.crawling = False
             assert self.engine
-            yield self.engine.stop()
+            if self.engine.running:
+                yield deferred_from_coro(self.engine.stop_async())
 
     async def stop_async(self) -> None:
         """Start a graceful stop of the crawler and complete when the crawler is stopped.

@@ -22,17 +22,19 @@ from tests.utils.decorators import deferred_f_from_coro_f
 if TYPE_CHECKING:
     from twisted.python.failure import Failure
 
+    from scrapy.crawler import Crawler
+
 
 class TestSpiderMiddleware:
     def setup_method(self):
         self.request = Request("http://example.com/index.html")
         self.response = Response(self.request.url, request=self.request)
         self.crawler = get_crawler(Spider, {"SPIDER_MIDDLEWARES_BASE": {}})
-        self.spider = self.crawler._create_spider("foo")
+        self.crawler.spider = self.crawler._create_spider("foo")
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
 
     async def _scrape_response(self) -> Any:
-        """Execute spider mw manager's scrape_response method and return the result.
+        """Execute spider mw manager's scrape_response_async method and return the result.
         Raise exception in case of failure.
         """
 
@@ -42,10 +44,8 @@ class TestSpiderMiddleware:
             it = mock.MagicMock()
             return defer.succeed(it)
 
-        return await maybe_deferred_to_future(
-            self.mwman.scrape_response(
-                scrape_func, self.response, self.request, self.spider
-            )
+        return await self.mwman.scrape_response_async(
+            scrape_func, self.response, self.request
         )
 
 
@@ -137,10 +137,10 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
         yield {"foo": 2}
         yield {"foo": 3}
 
-    def _scrape_func(
+    async def _scrape_func(
         self, response: Response | Failure, request: Request
-    ) -> defer.Deferred[Iterable[Any] | AsyncIterator[Any]]:
-        return defer.succeed(self._callback())
+    ) -> Iterable[Any] | AsyncIterator[Any]:
+        return self._callback()
 
     async def _get_middleware_result(
         self, *mw_classes: type[Any], start_index: int | None = None
@@ -149,10 +149,10 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
         self.crawler = get_crawler(
             Spider, {"SPIDER_MIDDLEWARES_BASE": {}, "SPIDER_MIDDLEWARES": setting}
         )
-        self.spider = self.crawler._create_spider("foo")
+        self.crawler.spider = self.crawler._create_spider("foo")
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
         return await self.mwman.scrape_response_async(
-            self._scrape_func, self.response, self.request, self.spider
+            self._scrape_func, self.response, self.request
         )
 
     async def _test_simple_base(
@@ -370,9 +370,9 @@ class TestProcessStartSimple(TestBaseAsyncSpiderMiddleware):
         self.crawler = get_crawler(
             TestSpider, {"SPIDER_MIDDLEWARES_BASE": {}, "SPIDER_MIDDLEWARES": setting}
         )
-        self.spider = self.crawler._create_spider()
+        self.crawler.spider = self.crawler._create_spider()
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
-        return await self.mwman.process_start(self.spider)
+        return await self.mwman.process_start()
 
     @deferred_f_from_coro_f
     async def test_simple(self):
@@ -407,8 +407,12 @@ class UniversalMiddlewareBothAsync:
 
 class TestUniversalMiddlewareManager:
     @pytest.fixture
-    def mwman(self) -> SpiderMiddlewareManager:
-        return SpiderMiddlewareManager()
+    def crawler(self) -> Crawler:
+        return get_crawler(Spider)
+
+    @pytest.fixture
+    def mwman(self, crawler: Crawler) -> SpiderMiddlewareManager:
+        return SpiderMiddlewareManager.from_crawler(crawler)
 
     def test_simple_mw(self, mwman: SpiderMiddlewareManager) -> None:
         mw = ProcessSpiderOutputSimpleMiddleware()
@@ -478,10 +482,10 @@ class TestBuiltinMiddlewareSimple(TestBaseAsyncSpiderMiddleware):
     ) -> Any:
         setting = self._construct_mw_setting(*mw_classes, start_index=start_index)
         self.crawler = get_crawler(Spider, {"SPIDER_MIDDLEWARES": setting})
-        self.spider = self.crawler._create_spider("foo")
+        self.crawler.spider = self.crawler._create_spider("foo")
         self.mwman = SpiderMiddlewareManager.from_crawler(self.crawler)
         return await self.mwman.scrape_response_async(
-            self._scrape_func, self.response, self.request, self.spider
+            self._scrape_func, self.response, self.request
         )
 
     @deferred_f_from_coro_f

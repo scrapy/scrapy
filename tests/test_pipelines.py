@@ -4,8 +4,15 @@ import pytest
 from twisted.internet.defer import Deferred
 
 from scrapy import Request, Spider, signals
+from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import call_later
-from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
+from scrapy.utils.defer import (
+    deferred_f_from_coro_f,
+    deferred_to_future,
+    maybe_deferred_to_future,
+)
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.mockserver.http import MockServer
 from tests.utils.decorators import inlineCallbacks
@@ -128,3 +135,68 @@ class TestPipeline:
         crawler = self._create_crawler(AsyncDefNotAsyncioPipeline)
         yield crawler.crawl(mockserver=self.mockserver)
         assert len(self.items) == 1
+
+
+class TestCustomPipelineManager:
+    def test_deprecated_process_item_spider_arg(self) -> None:
+        class CustomPipelineManager(ItemPipelineManager):
+            def process_item(self, item, spider):  # pylint: disable=signature-differs
+                return super().process_item(item, spider)
+
+        crawler = get_crawler(DefaultSpider)
+        crawler.spider = crawler._create_spider()
+        itemproc = CustomPipelineManager.from_crawler(crawler)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"Passing a spider argument to CustomPipelineManager.process_item\(\) is deprecated",
+        ):
+            itemproc.process_item({}, crawler.spider)
+
+    @deferred_f_from_coro_f
+    async def test_deprecated_spider_arg_integration(
+        self, mockserver: MockServer
+    ) -> None:
+        class CustomPipelineManager(ItemPipelineManager):
+            def open_spider(self, spider):  # pylint: disable=signature-differs
+                return super().open_spider(spider)
+
+            def process_item(self, item, spider):  # pylint: disable=signature-differs
+                return super().process_item(item, spider)
+
+        items = []
+
+        def _on_item_scraped(item):
+            assert isinstance(item, dict)
+            assert item.get("pipeline_passed")
+            items.append(item)
+
+        crawler = get_crawler(
+            ItemSpider,
+            {
+                "ITEM_PROCESSOR": CustomPipelineManager,
+                "ITEM_PIPELINES": {SimplePipeline: 1},
+            },
+        )
+        crawler.spider = crawler._create_spider()
+        crawler.signals.connect(_on_item_scraped, signals.item_scraped)
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"The open_spider\(\) method of .+\.CustomPipelineManager requires a spider argument",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"The process_item\(\) method of .+\.CustomPipelineManager requires a spider argument",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"Passing a spider argument to CustomPipelineManager.open_spider\(\) is deprecated",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"Passing a spider argument to CustomPipelineManager.process_item\(\) is deprecated",
+            ),
+        ):
+            await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+
+        assert len(items) == 1

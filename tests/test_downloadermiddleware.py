@@ -3,13 +3,14 @@ from __future__ import annotations
 import asyncio
 from contextlib import asynccontextmanager
 from gzip import BadGzipFile
+from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
 from twisted.internet.defer import Deferred, succeed
 
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.exceptions import _InvalidOutput
+from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -17,25 +18,27 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.utils.decorators import deferred_f_from_coro_f
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
 
 class TestManagerBase:
     settings_dict = None
 
     # should be a fixture but async fixtures that use Futures are problematic with pytest-twisted
     @asynccontextmanager
-    async def get_mwman_and_spider(self):
+    async def get_mwman(self) -> AsyncGenerator[DownloaderMiddlewareManager]:
         crawler = get_crawler(Spider, self.settings_dict)
-        spider = crawler._create_spider("foo")
+        crawler.spider = crawler._create_spider("foo")
         mwman = DownloaderMiddlewareManager.from_crawler(crawler)
         crawler.engine = crawler._create_engine()
-        await crawler.engine.open_spider_async(spider)
-        yield mwman, spider
-        await maybe_deferred_to_future(crawler.engine.close_spider(spider))
+        await crawler.engine.open_spider_async()
+        yield mwman
+        await crawler.engine.close_spider_async()
 
     @staticmethod
     async def _download(
         mwman: DownloaderMiddlewareManager,
-        spider: Spider,
         request: Request,
         response: Response | None = None,
     ) -> Response | Request:
@@ -46,12 +49,10 @@ class TestManagerBase:
         if not response:
             response = Response(request.url)
 
-        def download_func(request: Request, spider: Spider) -> Deferred[Response]:
+        def download_func(request: Request) -> Deferred[Response]:
             return succeed(response)
 
-        return await maybe_deferred_to_future(
-            mwman.download(download_func, request, spider)
-        )
+        return await maybe_deferred_to_future(mwman.download(download_func, request))
 
 
 class TestDefaults(TestManagerBase):
@@ -61,8 +62,8 @@ class TestDefaults(TestManagerBase):
     async def test_request_response(self):
         req = Request("http://example.com/index.html")
         resp = Response(req.url, status=200)
-        async with self.get_mwman_and_spider() as (mwman, spider):
-            ret = await self._download(mwman, spider, req, resp)
+        async with self.get_mwman() as mwman:
+            ret = await self._download(mwman, req, resp)
         assert isinstance(ret, Response), "Non-response returned"
 
     @deferred_f_from_coro_f
@@ -91,8 +92,8 @@ class TestDefaults(TestManagerBase):
                 "Location": "http://example.com/login",
             },
         )
-        async with self.get_mwman_and_spider() as (mwman, spider):
-            ret = await self._download(mwman, spider, req, resp)
+        async with self.get_mwman() as mwman:
+            ret = await self._download(mwman, req, resp)
         assert isinstance(ret, Request), f"Not redirected: {ret!r}"
         assert to_bytes(ret.url) == resp.headers["Location"], (
             "Not redirected to location header"
@@ -114,8 +115,8 @@ class TestDefaults(TestManagerBase):
             },
         )
         with pytest.raises(BadGzipFile):
-            async with self.get_mwman_and_spider() as (mwman, spider):
-                await self._download(mwman, spider, req, resp)
+            async with self.get_mwman() as mwman:
+                await self._download(mwman, req, resp)
 
 
 class TestResponseFromProcessRequest(TestManagerBase):
@@ -131,11 +132,9 @@ class TestResponseFromProcessRequest(TestManagerBase):
             def process_request(self, request, spider):
                 return resp
 
-        async with self.get_mwman_and_spider() as (mwman, spider):
+        async with self.get_mwman() as mwman:
             mwman._add_middleware(ResponseMiddleware())
-            result = await maybe_deferred_to_future(
-                mwman.download(download_func, req, spider)
-            )
+            result = await maybe_deferred_to_future(mwman.download(download_func, req))
         assert result is resp
         assert not download_func.called
 
@@ -149,7 +148,7 @@ class TestResponseFromProcessException(TestManagerBase):
         resp = Response("http://example.com/index.html")
         calls = []
 
-        def download_func(request, spider):
+        def download_func(request):
             raise ValueError("test")
 
         class ResponseMiddleware:
@@ -161,11 +160,9 @@ class TestResponseFromProcessException(TestManagerBase):
                 calls.append("process_exception")
                 return resp
 
-        async with self.get_mwman_and_spider() as (mwman, spider):
+        async with self.get_mwman() as mwman:
             mwman._add_middleware(ResponseMiddleware())
-            result = await maybe_deferred_to_future(
-                mwman.download(download_func, req, spider)
-            )
+            result = await maybe_deferred_to_future(mwman.download(download_func, req))
         assert result is resp
         assert calls == [
             "process_exception",
@@ -183,10 +180,10 @@ class TestInvalidOutput(TestManagerBase):
             def process_request(self, request, spider):
                 return 1
 
-        async with self.get_mwman_and_spider() as (mwman, spider):
+        async with self.get_mwman() as mwman:
             mwman._add_middleware(InvalidProcessRequestMiddleware())
             with pytest.raises(_InvalidOutput):
-                await self._download(mwman, spider, req)
+                await self._download(mwman, req)
 
     @deferred_f_from_coro_f
     async def test_invalid_process_response(self):
@@ -197,10 +194,10 @@ class TestInvalidOutput(TestManagerBase):
             def process_response(self, request, response, spider):
                 return 1
 
-        async with self.get_mwman_and_spider() as (mwman, spider):
+        async with self.get_mwman() as mwman:
             mwman._add_middleware(InvalidProcessResponseMiddleware())
             with pytest.raises(_InvalidOutput):
-                await self._download(mwman, spider, req)
+                await self._download(mwman, req)
 
     @deferred_f_from_coro_f
     async def test_invalid_process_exception(self):
@@ -214,10 +211,10 @@ class TestInvalidOutput(TestManagerBase):
             def process_exception(self, request, exception, spider):
                 return 1
 
-        async with self.get_mwman_and_spider() as (mwman, spider):
+        async with self.get_mwman() as mwman:
             mwman._add_middleware(InvalidProcessExceptionMiddleware())
             with pytest.raises(_InvalidOutput):
-                await self._download(mwman, spider, req)
+                await self._download(mwman, req)
 
 
 class TestMiddlewareUsingDeferreds(TestManagerBase):
@@ -239,11 +236,9 @@ class TestMiddlewareUsingDeferreds(TestManagerBase):
                 d.callback(resp)
                 return d
 
-        async with self.get_mwman_and_spider() as (mwman, spider):
+        async with self.get_mwman() as mwman:
             mwman._add_middleware(DeferredMiddleware())
-            result = await maybe_deferred_to_future(
-                mwman.download(download_func, req, spider)
-            )
+            result = await maybe_deferred_to_future(mwman.download(download_func, req))
         assert result is resp
         assert not download_func.called
 
@@ -262,11 +257,9 @@ class TestMiddlewareUsingCoro(TestManagerBase):
                 await succeed(42)
                 return resp
 
-        async with self.get_mwman_and_spider() as (mwman, spider):
+        async with self.get_mwman() as mwman:
             mwman._add_middleware(CoroMiddleware())
-            result = await maybe_deferred_to_future(
-                mwman.download(download_func, req, spider)
-            )
+            result = await maybe_deferred_to_future(mwman.download(download_func, req))
         assert result is resp
         assert not download_func.called
 
@@ -282,10 +275,44 @@ class TestMiddlewareUsingCoro(TestManagerBase):
                 await asyncio.sleep(0.1)
                 return await get_from_asyncio_queue(resp)
 
-        async with self.get_mwman_and_spider() as (mwman, spider):
+        async with self.get_mwman() as mwman:
             mwman._add_middleware(CoroMiddleware())
-            result = await maybe_deferred_to_future(
-                mwman.download(download_func, req, spider)
-            )
+            result = await maybe_deferred_to_future(mwman.download(download_func, req))
         assert result is resp
         assert not download_func.called
+
+
+class TestDownloadDeprecated(TestManagerBase):
+    @deferred_f_from_coro_f
+    async def test_download_func_spider_arg(self):
+        req = Request("http://example.com/index.html")
+        resp = Response(req.url, status=200)
+
+        def download_func(request: Request, spider: Spider) -> Deferred[Response]:
+            return succeed(resp)
+
+        async with self.get_mwman() as mwman:
+            with pytest.warns(
+                ScrapyDeprecationWarning,
+                match="The spider argument of download_func is deprecated",
+            ):
+                ret = await maybe_deferred_to_future(mwman.download(download_func, req))
+        assert isinstance(ret, Response)
+
+    @deferred_f_from_coro_f
+    async def test_mwman_download_spider_arg(self):
+        req = Request("http://example.com/index.html")
+        resp = Response(req.url, status=200)
+
+        def download_func(request: Request) -> Deferred[Response]:
+            return succeed(resp)
+
+        async with self.get_mwman() as mwman:
+            with pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"Passing a spider argument to DownloaderMiddlewareManager.download\(\) is deprecated",
+            ):
+                ret = await maybe_deferred_to_future(
+                    mwman.download(download_func, req, mwman.crawler.spider)
+                )
+        assert isinstance(ret, Response)
