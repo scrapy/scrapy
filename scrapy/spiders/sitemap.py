@@ -87,12 +87,28 @@ class SitemapSpider(Spider):
             s = Sitemap(body)
             it = self.sitemap_filter(s)
 
+            # free response + XML as soon as possible
+            # as this Iterable can be long lived
+            # and they take much more memory than list of urls
             if s.type == "sitemapindex":
-                for loc in iterloc(it, self.sitemap_alternate_links):
-                    if any(x.search(loc) for x in self._follow):
-                        yield Request(loc, callback=self._parse_sitemap)
+                urls = [
+                    loc
+                    for loc in iterloc(it, self.sitemap_alternate_links)
+                    if any(x.search(loc) for x in self._follow)
+                ]
+                del s
+                del it
+                del body
+                del response
+                for loc in urls:
+                    yield Request(loc, callback=self._parse_sitemap)
             elif s.type == "urlset":
-                for loc in iterloc(it, self.sitemap_alternate_links):
+                urls = list(iterloc(it, self.sitemap_alternate_links))
+                del s
+                del it
+                del body
+                del response
+                for loc in urls:
                     for r, c in self._cbs:
                         if r.search(loc):
                             yield Request(loc, callback=c)
