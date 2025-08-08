@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 import warnings
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 from importlib import import_module
@@ -311,24 +312,36 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """
         if not isinstance(name, str):
             raise ValueError(f"Base setting key must be a string, got {name}")
+        base_name = name + "_BASE"
         compbs = BaseSettings()
         class_set = set()
-        compbs.update(self[name])
-
+        to_delete = set()
+        compbs.update(self[base_name])
+        # Default settings contain full import path string
         for k in compbs:
-            class_set.add(load_object(k))
+            if isinstance(k, str):
+                try:
+                    o = load_object(k)
+                    class_set.add(o)
+                except TypeError:
+                    class_set.add(k)
 
-        for k, v in self[name + "_BASE"]:
-            o = load_object(k)
-            if o not in class_set:
-                class_set.add(o)
-                compbs.set(k, v, priority=self[name + "_BASE"][k])
-            else:
-                message = (
-                    f"Detected a duplicate key due to mixing of import path strings and class objects: {k} and {o}. "
-                    f"Ignoring entry {k}."
-                )
-                warnings.warn(message)
+        compbs.update(self[name])
+        for k in compbs:
+            if isinstance(k, type):
+                try:
+                    o = load_object(k)
+                    if o in class_set:
+                        full_path = f"{o.__module__}.{o.__qualname__}"
+                        message = f"Detected a duplicate key due to mixing of import path strings and class objects: {full_path} and {o.__name__}. Deleting entry {full_path}."
+                        warnings.warn(message)
+                        to_delete.add(full_path)
+                except TypeError:
+                    pass
+
+        for k in to_delete:
+            del compbs[k]
+
         return compbs
 
     def getpriority(self, name: _SettingsKeyT) -> int | None:
@@ -668,6 +681,20 @@ class Settings(BaseSettings):
             if isinstance(val, dict):
                 self.set(name, BaseSettings(val, "default"), "default")
         self.update(values, priority)
+
+
+def check_suffixes(settings: set, s1: str) -> tuple[bool, str | None]:
+    """Helper function to check if any string in the set is a suffix of the given string s1.
+
+    Returns a tuple of (is_suffix, matching_suffix) where is_suffix is a boolean indicating
+    if a matching suffix was found, and matching_suffix is the matching suffix string in the set or None.
+    """
+    for s2 in settings:
+        if isinstance(s2, str) and os.path.commonprefix(
+            [str(reversed(s1)), str(reversed(s2))]
+        ):
+            return (True, s2)
+    return (False, None)
 
 
 def iter_default_settings() -> Iterable[tuple[str, Any]]:
