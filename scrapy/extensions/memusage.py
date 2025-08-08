@@ -17,6 +17,7 @@ from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.mail import MailSender
 from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
+from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.engine import get_engine_status
 
 if TYPE_CHECKING:
@@ -110,8 +111,8 @@ class MemoryUsage:
                 self.crawler.stats.set_value("memusage/limit_notified", 1)
 
             if self.crawler.engine.spider is not None:
-                self.crawler.engine.close_spider(
-                    self.crawler.engine.spider, "memusage_exceeded"
+                _schedule_coro(
+                    self.crawler.engine.close_spider_async(reason="memusage_exceeded")
                 )
             else:
                 self.crawler.stop()

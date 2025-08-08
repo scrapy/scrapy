@@ -33,7 +33,7 @@ class TestManagerBase:
         crawler.engine = crawler._create_engine()
         await crawler.engine.open_spider_async()
         yield mwman
-        await maybe_deferred_to_future(crawler.engine.close_spider(crawler.spider))
+        await crawler.engine.close_spider_async()
 
     @staticmethod
     async def _download(

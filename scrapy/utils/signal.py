@@ -120,6 +120,8 @@ async def send_catch_log_async(
     <signal-deferred>`.
 
     Returns a coroutine that completes once all signal handlers have finished.
+
+    .. versionadded:: VERSION
     """
     return await maybe_deferred_to_future(
         send_catch_log_deferred(signal, sender, *arguments, **named)

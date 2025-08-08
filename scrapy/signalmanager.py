@@ -77,6 +77,8 @@ class SignalManager:
 
         The keyword arguments are passed to the signal handlers (connected
         through the :meth:`connect` method).
+
+        .. versionadded:: VERSION
         """
         kwargs.setdefault("sender", self.sender)
         return await _signal.send_catch_log_async(signal, **kwargs)
