@@ -63,9 +63,10 @@ class ImagesPipeline(FilesPipeline):
         crawler: Crawler | None = None,
     ):
         try:
-            from PIL import Image  # noqa: PLC0415
+            from PIL import Image, ImageOps  # noqa: PLC0415
 
             self._Image = Image
+            self._ImageOps = ImageOps
         except ImportError:
             raise NotConfigured(
                 "ImagesPipeline requires installing Pillow 8.0.0 or later"
@@ -180,8 +181,9 @@ class ImagesPipeline(FilesPipeline):
     ) -> Iterable[tuple[str, Image.Image, BytesIO]]:
         path = self.file_path(request, response=response, info=info, item=item)
         orig_image = self._Image.open(BytesIO(response.body))
+        transposed_image = self._ImageOps.exif_transpose(orig_image)
 
-        width, height = orig_image.size
+        width, height = transposed_image.size
         if width < self.min_width or height < self.min_height:
             raise ImageException(
                 "Image too small "
@@ -190,7 +192,7 @@ class ImagesPipeline(FilesPipeline):
             )
 
         image, buf = self.convert_image(
-            orig_image, response_body=BytesIO(response.body)
+            transposed_image, response_body=BytesIO(response.body)
         )
         yield path, image, buf
 
