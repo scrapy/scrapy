@@ -14,6 +14,7 @@ from tempfile import mkdtemp
 from typing import Any
 from unittest import mock
 from urllib.parse import urlparse
+from scrapy.spiders import Spider
 
 import attr
 import pytest
@@ -802,3 +803,37 @@ class TestBuildFromCrawler:
             assert len(w) == 0
             assert pipe.store
             assert pipe._from_crawler_called
+
+    def test_media_downloaded_accepts_201_created(tmp_path):
+        # Define a simple spider class for testing
+        class DummySpider(Spider):
+            name = "dummy"
+
+        # Define a simple pipeline that always saves to the same file name
+        class DummyPipeline(FilesPipeline):
+            def file_path(self, request, response=None, info=None, *, item=None):
+                return "201test.txt"
+
+        # Create a crawler and pipeline instance
+        crawler = get_crawler(DummySpider)
+        pipeline = DummyPipeline(store_uri=str(tmp_path), crawler=crawler)
+
+        # Create a request and a response with status 201 (Created)
+        request = Request(url="http://example.com/testfile.png")
+        response = Response(
+            url="http://example.com/testfile.png",
+            status=201,
+            body=b"fake image content",
+            request=request
+        )
+
+        # Get the spider info object
+        info = pipeline.spiderinfo(crawler.spider)
+
+        # Call the media_downloaded method
+        result = pipeline.media_downloaded(response, request, info=info)
+
+        # Check the results
+        assert result["status"] == "downloaded"
+        assert "checksum" in result
+        assert result["path"] == "201test.txt"
