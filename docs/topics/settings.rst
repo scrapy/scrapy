@@ -205,6 +205,8 @@ For example:
        "mybot.pipelines.validate.ValidateMyItem": 300,
    }
 
+.. warning:: Mixing class objects and import path strings as keys can lead to ambiguous behavior. To correct duplicate entries, you can use ``Spider.update_settings() or ``Addon.update_settings()``.
+
 .. note:: Passing non-callable objects is not supported.
 
 

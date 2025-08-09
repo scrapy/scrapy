@@ -332,6 +332,10 @@ Tests are implemented using the :doc:`Twisted unit-testing framework
 Running tests
 -------------
 
+To install development dependencies::
+
+    pip install -e ".[extra]"
+
 To run all tests::
 
     tox
