@@ -313,8 +313,8 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
             raise ValueError(f"Base setting key must be a string, got {name}")
         base_name = name + "_BASE"
         compbs = BaseSettings()
-        class_set = set()
-        to_delete = set()
+        class_set: set[str] = set()
+        to_delete: set[str] = set()
         compbs.update(self[base_name])
         # Default settings contain full import path string
         for k in compbs:
