@@ -319,24 +319,16 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         # Default settings contain full import path string
         for k in compbs:
             if isinstance(k, str):
-                try:
-                    o = load_object(k)
-                    class_set.add(o)
-                except (TypeError, ValueError):
-                    pass
+                class_set.add(k)
 
         compbs.update(self[name])
         for k in compbs:
             if isinstance(k, type):
-                try:
-                    o = load_object(k)
-                    if o in class_set:
-                        full_path = f"{o.__module__}.{o.__qualname__}"
-                        message = f"Detected a duplicate key due to mixing of import path strings and class objects: {full_path} and {o.__name__}. Deleting entry {full_path}."
-                        warnings.warn(message)
-                        to_delete.add(full_path)
-                except (TypeError, ValueError):
-                    pass
+                full_path = f"{k.__module__}.{k.__qualname__}"
+                if full_path in class_set:
+                    message = f"Detected a duplicate key due to mixing of import path strings and class objects: {full_path} and {k.__name__}. Deleting entry {full_path}."
+                    warnings.warn(message)
+                    to_delete.add(full_path)
 
         for k in to_delete:
             del compbs[k]
