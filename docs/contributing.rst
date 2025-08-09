@@ -334,7 +334,7 @@ Running tests
 
 To install development dependencies::
 
-    pip install -e ".[extra]"
+    pip install -e ".[dev]"
 
 To run all tests::
 

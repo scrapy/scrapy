@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import copy
 import json
-import os
 import warnings
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 from importlib import import_module
@@ -323,8 +322,8 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
                 try:
                     o = load_object(k)
                     class_set.add(o)
-                except TypeError:
-                    class_set.add(k)
+                except (TypeError, ValueError):
+                    pass
 
         compbs.update(self[name])
         for k in compbs:
@@ -336,7 +335,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
                         message = f"Detected a duplicate key due to mixing of import path strings and class objects: {full_path} and {o.__name__}. Deleting entry {full_path}."
                         warnings.warn(message)
                         to_delete.add(full_path)
-                except TypeError:
+                except (TypeError, ValueError):
                     pass
 
         for k in to_delete:
@@ -523,8 +522,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
                 self.set(key, getattr(module, key), priority)
 
     # BaseSettings.update() doesn't support all inputs that MutableMapping.update() supports
-    # type: ignore[override]
-    def update(self, values: _SettingsInputT, priority: int | str = "project") -> None:
+    def update(self, values: _SettingsInputT, priority: int | str = "project") -> None:  # type: ignore[override]
         """
         Store key/value pairs with a given priority.
 
@@ -681,20 +679,6 @@ class Settings(BaseSettings):
             if isinstance(val, dict):
                 self.set(name, BaseSettings(val, "default"), "default")
         self.update(values, priority)
-
-
-def check_suffixes(settings: set, s1: str) -> tuple[bool, str | None]:
-    """Helper function to check if any string in the set is a suffix of the given string s1.
-
-    Returns a tuple of (is_suffix, matching_suffix) where is_suffix is a boolean indicating
-    if a matching suffix was found, and matching_suffix is the matching suffix string in the set or None.
-    """
-    for s2 in settings:
-        if isinstance(s2, str) and os.path.commonprefix(
-            [str(reversed(s1)), str(reversed(s2))]
-        ):
-            return (True, s2)
-    return (False, None)
 
 
 def iter_default_settings() -> Iterable[tuple[str, Any]]:

@@ -59,8 +59,8 @@ dev = [
     "pre-commit",
     "pytest",
     "pytest-asyncio",
-    "pytest-twisted",
     "pytest-cov",
+    "pytest-twisted",
     "ruff",
     "tox"
 ]

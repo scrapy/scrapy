@@ -342,7 +342,7 @@ class TestBaseSettings:
         assert set(s.getwithbase("HASNOBASE")) == set(s["HASNOBASE"])
         assert s.getwithbase("NONEXISTENT") == {}
 
-    def test_getwithbase_duplicate(self):
+    def test_getwithbase_duplicate_keys(self):
         s = BaseSettings(
             {
                 "DOWNLOADER_MIDDLEWARES_BASE": BaseSettings(
