@@ -7,15 +7,11 @@ from scrapy import Request, Spider, signals
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import call_later
-from scrapy.utils.defer import (
-    deferred_f_from_coro_f,
-    deferred_to_future,
-    maybe_deferred_to_future,
-)
+from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.mockserver.http import MockServer
-from tests.utils.decorators import inlineCallbacks
+from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
 
 
 class SimplePipeline:
