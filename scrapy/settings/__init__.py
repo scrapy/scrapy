@@ -306,6 +306,10 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """Get a composition of a dictionary-like setting and its `_BASE`
         counterpart.
 
+        When both base and custom settings contain equivalent keys, the custom 
+        setting takes precedence and the base setting key is dropped to avoid 
+        ambiguous behavior.
+
         :param name: name of the dictionary-like setting
         :type name: str
         """
@@ -313,6 +317,30 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
             raise ValueError(f"Base setting key must be a string, got {name}")
         compbs = BaseSettings()
         compbs.update(self[name + "_BASE"])
+        custom_settings = self[name]
+        if custom_settings:
+            from scrapy.utils.deprecate import update_classpath
+            import logging
+            logger = logging.getLogger(__name__)
+            base_keys_to_remove = []
+            for custom_key in custom_settings:
+                try:
+                    converted_key = update_classpath(custom_key)
+                    if converted_key in compbs:
+                        base_keys_to_remove.append(converted_key)
+                except (TypeError, AttributeError, ValueError):
+                    pass
+            for base_key in base_keys_to_remove:
+                if base_key in compbs:
+                    del compbs[base_key]
+            if base_keys_to_remove:
+                logger.warning(
+                f"Found duplicate component keys in {name!r} settings. "
+                f"Base setting keys {base_keys_to_remove!r} are being overridden "
+                f"by equivalent class objects in custom settings. "
+                f"Consider using consistent key types (all strings or all class objects) "
+                f"to avoid ambiguous behavior."
+                )
         compbs.update(self[name])
         return compbs
 

@@ -402,6 +402,21 @@ class TestBaseSettings:
         assert frozencopy.frozen
         assert frozencopy is not self.settings
 
+    def test_getwithbase_resolves_duplicate_keys(self):
+        settings = BaseSettings()
+        base_settings = BaseSettings({'builtins.dict': 500})
+        settings['TEST_BASE'] = base_settings
+ 
+        custom_settings = BaseSettings({dict: None})
+        settings['TEST'] = custom_settings
+        
+        result = settings.getwithbase('TEST')
+        result_dict = dict(result)
+        
+        assert 'builtins.dict' in result_dict
+        assert result_dict['builtins.dict'] is None
+        assert len(result_dict) == 1
+
 
 class TestSettings:
     def setup_method(self):
