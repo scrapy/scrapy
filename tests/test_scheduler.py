@@ -15,6 +15,7 @@ from scrapy.core.scheduler import BaseScheduler, Scheduler
 from scrapy.crawler import Crawler
 from scrapy.http import Request
 from scrapy.spiders import Spider
+from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
@@ -114,7 +115,7 @@ class SchedulerHandler(ABC):
 
     def close_scheduler(self):
         self.scheduler.close("finished")
-        self.mock_crawler.stop()
+        _schedule_coro(self.mock_crawler.stop_async())
         self.mock_crawler.engine.downloader.close()
 
     def setup_method(self):

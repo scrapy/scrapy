@@ -31,7 +31,11 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
 from scrapy.utils.asyncio import call_later
-from scrapy.utils.defer import deferred_f_from_coro_f, deferred_from_coro
+from scrapy.utils.defer import (
+    deferred_f_from_coro_f,
+    deferred_from_coro,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
@@ -1174,3 +1178,14 @@ def test_log_scrapy_info(settings, items, caplog):
         f"{item}': '[^']+('\n +'[^']+)*" for item in items
     )
     assert re.search(r"^Versions:\n{'" + expected_items_pattern + "'}$", version_string)
+
+
+@deferred_f_from_coro_f
+async def test_deprecated_crawler_stop() -> None:
+    crawler = get_crawler(DefaultSpider)
+    d = crawler.crawl()
+    await maybe_deferred_to_future(d)
+    with pytest.warns(
+        ScrapyDeprecationWarning, match=r"Crawler.stop\(\) is deprecated"
+    ):
+        await maybe_deferred_to_future(crawler.stop())

@@ -180,12 +180,12 @@ class CrawlerRun:
         dispatcher.connect(self.stop, signals.engine_stopped)
         await maybe_deferred_to_future(self.deferred)
 
-    def stop(self):
+    async def stop(self):
         for name, signal in vars(signals).items():
             if not name.startswith("_"):
                 disconnect_all(signal)
         self.deferred.callback(None)
-        return self.crawler.stop()
+        await self.crawler.stop_async()
 
     def geturl(self, path: str) -> str:
         return self.mockserver.url(path)
@@ -723,6 +723,18 @@ class TestEngineCloseSpider:
         self, crawler: Crawler, caplog: pytest.LogCaptureFixture
     ) -> None:
         engine = ExecutionEngine(crawler, lambda _: defer.fail(ValueError()))
+        await engine.open_spider_async()
+        await engine.close_spider_async()
+        assert "Error running spider_closed_callback" in caplog.text
+
+    @deferred_f_from_coro_f
+    async def test_exception_async_callback(
+        self, crawler: Crawler, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        async def cb(_):
+            raise ValueError
+
+        engine = ExecutionEngine(crawler, cb)
         await engine.open_spider_async()
         await engine.close_spider_async()
         assert "Error running spider_closed_callback" in caplog.text
