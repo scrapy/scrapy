@@ -637,49 +637,25 @@ class FilesPipeline(MediaPipeline):
         item: Any = None,
     ) -> FileInfo:
         referer = referer_str(request)
-
-        # Enhanced handling for 201 Created responses
-        if response.status == 201:
-            if not response.body:
-                # If there's no body, check for Location header
-                location = response.headers.get(b"Location")
-                if location:
-                    new_url = location.decode()
-                    logger.debug(
-                        "File (201): no body, following Location header to %(new_url)s "
-                        "(referer: %(referer)s)",
-                        {"new_url": new_url, "referer": referer},
-                        extra={"spider": info.spider},
-                    )
-                    # Create new request to the Location URL
-                    new_request = request.replace(url=new_url, dont_filter=True)
-                    response = self._download_func(new_request, info.spider)
-                else:
-                    logger.warning(
-                        "File (201): no body and no Location header for %(request)s",
-                        {"request": request},
-                        extra={"spider": info.spider},
-                    )
-                    raise FileException("no-content-or-location")
                     
+        # Accept 200 and 201 as valid download codes
         if response.status not in (200, 201):
             logger.warning(
-                "File (code: %(status)s): Error downloading file from "
-                "%(request)s referred in <%(referer)s>",
+                "File (code: %(status)s): Error downloading file from %(request)s referred in <%(referer)s>",
                 {"status": response.status, "request": request, "referer": referer},
                 extra={"spider": info.spider},
             )
             raise FileException("download-error")
 
+        # Require a body for both 200 and 201
         if not response.body:
             logger.warning(
-                "File (empty-content): Empty file from %(request)s referred "
-                "in <%(referer)s>: no-content",
+                "File (empty-content): Empty file from %(request)s referred in <%(referer)s>: no-content",
                 {"request": request, "referer": referer},
                 extra={"spider": info.spider},
             )
             raise FileException("empty-content")
-
+        
         status = "cached" if "cached" in response.flags else "downloaded"
         logger.debug(
             "File (%(status)s): Downloaded file from %(request)s referred in "

@@ -805,35 +805,50 @@ class TestBuildFromCrawler:
             assert pipe._from_crawler_called
 
 def test_media_downloaded_accepts_201_created(tmp_path):
-    # Define a simple spider class for testing
     class DummySpider(Spider):
         name = "dummy"
 
-    # Define a simple pipeline that always saves to the same file name
     class DummyPipeline(FilesPipeline):
         def file_path(self, request, response=None, info=None, *, item=None):
             return "201test.txt"
 
-    # Create a crawler and pipeline instance
-    crawler = get_crawler(DummySpider)
+    crawler = get_crawler(DummySpider, {"FILES_STORE": str(tmp_path)})
     pipeline = DummyPipeline(store_uri=str(tmp_path), crawler=crawler)
 
-    # Create a request and a response with status 201 (Created)
     request = Request(url="http://example.com/testfile.png")
     response = Response(
-        url="http://example.com/testfile.png",
+        url=request.url,
         status=201,
         body=b"fake image content",
-        request=request
+        request=request,
     )
 
-    # Get the spider info object
-    info = pipeline.spiderinfo(crawler.spider)
-
-    # Call the media_downloaded method
+    info = pipeline.SpiderInfo(DummySpider())
     result = pipeline.media_downloaded(response, request, info=info)
 
-    # Check the results
     assert result["status"] == "downloaded"
     assert "checksum" in result
     assert result["path"] == "201test.txt"
+
+def test_media_downloaded_201_empty_body_raises(tmp_path):
+    class DummySpider(Spider):
+        name = "dummy"
+
+    class DummyPipeline(FilesPipeline):
+        def file_path(self, request, response=None, info=None, *, item=None):
+            return "201test.txt"
+
+    crawler = get_crawler(DummySpider, {"FILES_STORE": str(tmp_path)})
+    pipeline = DummyPipeline(store_uri=str(tmp_path), crawler=crawler)
+
+    request = Request(url="http://example.com/testfile.png")
+    response = Response(
+        url=request.url,
+        status=201,
+        body=b"",
+        request=request,
+    )
+
+    info = pipeline.SpiderInfo(DummySpider())
+    with pytest.raises(Exception):
+        pipeline.media_downloaded(response, request, info=info)
