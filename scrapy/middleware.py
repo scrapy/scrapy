@@ -8,7 +8,7 @@ from collections import defaultdict, deque
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.utils.defer import process_chain, process_parallel
+from scrapy.utils.defer import _process_chain, process_parallel
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import global_object_name
 
@@ -172,11 +172,11 @@ class MiddlewareManager(ABC):
         )
         return process_parallel(methods, obj, *args)
 
-    def _process_chain(self, methodname: str, obj: _T, *args: Any) -> Deferred[_T]:
+    async def _process_chain(self, methodname: str, obj: _T, *args: Any) -> _T:
         methods = cast(
             "Iterable[Callable[Concatenate[_T, _P], _T]]", self.methods[methodname]
         )
-        return process_chain(methods, obj, *args)
+        return await _process_chain(methods, obj, *args)
 
     def open_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
         if spider:

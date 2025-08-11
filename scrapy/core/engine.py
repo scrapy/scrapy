@@ -10,7 +10,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import warnings
-from collections.abc import AsyncIterator, Callable, Coroutine, Generator
 from time import time
 from traceback import format_exc
 from typing import TYPE_CHECKING, Any
@@ -36,6 +35,7 @@ from scrapy.utils.asyncio import (
 from scrapy.utils.defer import (
     _schedule_coro,
     deferred_from_coro,
+    ensure_awaitable,
     maybe_deferred_to_future,
 )
 from scrapy.utils.deprecate import argument_is_required
@@ -45,6 +45,8 @@ from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Callable, Coroutine, Generator
+
     from twisted.internet.task import LoopingCall
 
     from scrapy.core.downloader import Downloader
@@ -626,11 +628,6 @@ class ExecutionEngine:
         self.spider = None
 
         try:
-            aw = self._spider_closed_callback(spider)
-            # TODO: replace with ensure_awaitable() when we add it
-            if isinstance(aw, Coroutine):
-                await aw
-            elif isinstance(aw, Deferred):
-                await maybe_deferred_to_future(aw)
+            await ensure_awaitable(self._spider_closed_callback(spider))
         except Exception:
             log_failure("Error running spider_closed_callback")
