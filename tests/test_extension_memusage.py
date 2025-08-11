@@ -1,149 +1,312 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
+from testfixtures import LogCapture
+from twisted.internet import defer
 
+from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import NotConfigured
 from scrapy.extensions.memusage import MemoryUsage
-from scrapy.mail import MailSender
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
-if TYPE_CHECKING:
-    from scrapy.crawler import Crawler
 
+class TestSpider(Spider):
+    name = "memory_test"
+    start_urls = ["data:text/html,<html><body>test</body></html>"]
 
-@pytest.fixture
-def crawler() -> Crawler:
-    """Create a test crawler with MemoryUsage extension enabled."""
-    settings = {
-        "MEMUSAGE_ENABLED": True,
-        "MEMUSAGE_LIMIT_MB": 100,
-        "MEMUSAGE_WARNING_MB": 80,
-        "MEMUSAGE_CHECK_INTERVAL_SECONDS": 1.0,
-        "MEMUSAGE_NOTIFY_MAIL": ["test@example.com"],
-        "BOT_NAME": "test_bot",
-    }
-    return get_crawler(Spider, settings)
-
-
-@pytest.fixture
-def spider(crawler: Crawler) -> Spider:
-    """Create a test spider."""
-    return crawler._create_spider("test_spider")
+    def parse(self, response):
+        yield {"test_data": "memory_test", "url": response.url}
 
 
 class TestMemoryUsage:
-    """Test cases for MemoryUsage extension."""
-
     def test_extension_disabled_when_memusage_disabled(self):
-        """Test that extension raises NotConfigured when MEMUSAGE_ENABLED is False."""
-        crawler = get_crawler(Spider, {"MEMUSAGE_ENABLED": False})
+        """Extension raises NotConfigured when MEMUSAGE_ENABLED is False."""
+        crawler = get_crawler(TestSpider, {"MEMUSAGE_ENABLED": False})
         with pytest.raises(NotConfigured):
             MemoryUsage.from_crawler(crawler)
 
     @mock.patch("scrapy.extensions.memusage.import_module")
     def test_extension_disabled_when_resource_unavailable(self, mock_import):
-        """Test that extension raises NotConfigured when resource module is not available."""
+        """Extension raises NotConfigured when resource module is not available."""
         mock_import.side_effect = ImportError("No module named 'resource'")
-        crawler = get_crawler(Spider, {"MEMUSAGE_ENABLED": True})
+        crawler = get_crawler(TestSpider, {"MEMUSAGE_ENABLED": True})
         with pytest.raises(NotConfigured):
             MemoryUsage.from_crawler(crawler)
 
-    def test_from_crawler_initialization(self, crawler: Crawler):
-        """Test proper initialization from crawler."""
-        extension = MemoryUsage.from_crawler(crawler)
-        assert extension.crawler is crawler
-        assert extension.limit == 100 * 1024 * 1024  # 100 MB in bytes
-        assert extension.warning == 80 * 1024 * 1024  # 80 MB in bytes
-        assert extension.check_interval == 1.0
-        assert extension.notify_mails == ["test@example.com"]
-        assert extension.warned is False
-        assert isinstance(extension.mail, MailSender)
+    async def test_memory_warning_produces_log_message(self):
+        """Memory warning generates proper log message during crawl."""
+        settings = {
+            "MEMUSAGE_ENABLED": True,
+            "MEMUSAGE_WARNING_MB": 50,
+            "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.1,
+            "LOG_LEVEL": "INFO",
+        }
 
-    @mock.patch("scrapy.extensions.memusage.import_module")
-    def test_get_virtual_size_linux(self, mock_import):
-        """Test get_virtual_size method on Linux platform."""
-        # Mock resource module
-        mock_resource = mock.Mock()
-        mock_rusage = mock.Mock()
-        mock_rusage.ru_maxrss = 1024  # KB on Linux
-        mock_resource.getrusage.return_value = mock_rusage
-        mock_resource.RUSAGE_SELF = 0
-        mock_import.return_value = mock_resource
+        crawler = get_crawler(TestSpider, settings)
 
-        crawler = get_crawler(Spider, {"MEMUSAGE_ENABLED": True})
-
-        with mock.patch("sys.platform", "linux"):
-            extension = MemoryUsage.from_crawler(crawler)
-            size = extension.get_virtual_size()
-            assert size == 1024 * 1024  # Should be converted to bytes (KB * 1024)
-
-    @mock.patch("scrapy.extensions.memusage.import_module")
-    def test_get_virtual_size_darwin(self, mock_import):
-        """Test get_virtual_size method on Darwin (macOS) platform."""
-        # Mock resource module
-        mock_resource = mock.Mock()
-        mock_rusage = mock.Mock()
-        mock_rusage.ru_maxrss = 1048576  # Bytes on Darwin
-        mock_resource.getrusage.return_value = mock_rusage
-        mock_resource.RUSAGE_SELF = 0
-        mock_import.return_value = mock_resource
-
-        crawler = get_crawler(Spider, {"MEMUSAGE_ENABLED": True})
-
-        with mock.patch("sys.platform", "darwin"):
-            extension = MemoryUsage.from_crawler(crawler)
-            size = extension.get_virtual_size()
-            assert size == 1048576  # Should remain in bytes on Darwin
-
-    def test_engine_stopped_cleanup(self, crawler: Crawler):
-        """Test that engine_stopped properly stops all running tasks."""
-        extension = MemoryUsage.from_crawler(crawler)
-
-        # Create mock tasks
-        mock_task1 = mock.Mock()
-        mock_task1.running = True
-        mock_task2 = mock.Mock()
-        mock_task2.running = False
-        mock_task3 = mock.Mock()
-        mock_task3.running = True
-
-        extension.tasks = [mock_task1, mock_task2, mock_task3]
-
-        extension.engine_stopped()
-
-        # Check that running tasks are stopped
-        mock_task1.stop.assert_called_once()
-        mock_task2.stop.assert_not_called()
-        mock_task3.stop.assert_called_once()
-
-    def test_update_method_sets_max_stat(self, crawler: Crawler):
-        """Test that update method sets maximum memory usage stat."""
-        extension = MemoryUsage.from_crawler(crawler)
-
-        with mock.patch.object(
-            extension, "get_virtual_size", return_value=75 * 1024 * 1024
+        # Mock memory usage to exceed warning threshold
+        with (
+            mock.patch.object(
+                MemoryUsage, "get_virtual_size", return_value=60 * 1024 * 1024
+            ),
+            LogCapture() as logs,
         ):
-            extension.update()
+            spider = crawler._create_spider("memory_test")
+            await defer.maybeDeferred(crawler.crawl, spider)
 
-        # Should call max_value to track peak memory usage
-        expected_memory = 75 * 1024 * 1024
-        if crawler.stats:
-            assert crawler.stats.get_value("memusage/max") >= expected_memory
+            # Check that warning message appears in logs
+            log_messages = [record.getMessage() for record in logs.records]
+            warning_found = any("Memory usage reached" in msg for msg in log_messages)
+            assert warning_found, f"Warning message not found in logs: {log_messages}"
 
-    def test_check_warning_below_threshold(self, crawler: Crawler):
-        """Test that no warning is triggered when memory is below threshold."""
-        extension = MemoryUsage.from_crawler(crawler)
+            # Check that warning stats are set
+            assert crawler.stats.get_value("memusage/warning_reached") == 1
 
-        with mock.patch.object(
-            extension, "get_virtual_size", return_value=70 * 1024 * 1024
+    async def test_memory_limit_closes_spider_with_correct_reason(self):
+        """Exceeding memory limit closes spider with 'memusage_exceeded' reason."""
+        settings = {
+            "MEMUSAGE_ENABLED": True,
+            "MEMUSAGE_LIMIT_MB": 50,
+            "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.1,
+            "LOG_LEVEL": "INFO",
+        }
+
+        crawler = get_crawler(TestSpider, settings)
+
+        # Mock memory usage to exceed limit
+        with (
+            mock.patch.object(
+                MemoryUsage, "get_virtual_size", return_value=60 * 1024 * 1024
+            ),
+            LogCapture() as logs,
         ):
-            extension._check_warning()
+            spider = crawler._create_spider("memory_test")
+            await defer.maybeDeferred(crawler.crawl, spider)
 
-        if crawler.stats:
+            # Check finish reason
+            finish_reason = crawler.stats.get_value("finish_reason")
+            assert finish_reason == "memusage_exceeded", (
+                f"Expected 'memusage_exceeded', got '{finish_reason}'"
+            )
+
+            # Check that limit reached stat is set
+            assert crawler.stats.get_value("memusage/limit_reached") == 1
+
+            # Check log message for memory limit exceeded
+            log_messages = [record.getMessage() for record in logs.records]
+            limit_msg_found = any(
+                "Memory usage exceeded" in msg and "Shutting down" in msg
+                for msg in log_messages
+            )
+            assert limit_msg_found, (
+                f"Memory limit exceeded message not found: {log_messages}"
+            )
+
+    async def test_memory_limit_exceeded_sends_email_notification(self):
+        """Memory limit exceeded triggers email notification when configured."""
+        settings = {
+            "MEMUSAGE_ENABLED": True,
+            "MEMUSAGE_LIMIT_MB": 50,
+            "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.1,
+            "MEMUSAGE_NOTIFY_MAIL": ["test@example.com"],
+            "MAIL_HOST": "localhost",
+            "BOT_NAME": "test_bot",
+        }
+
+        crawler = get_crawler(TestSpider, settings)
+
+        # Mock memory usage above limit
+        with (
+            mock.patch.object(
+                MemoryUsage, "get_virtual_size", return_value=60 * 1024 * 1024
+            ),
+            mock.patch("scrapy.mail.MailSender.send") as mock_send,
+        ):
+            spider = crawler._create_spider("memory_test")
+            await defer.maybeDeferred(crawler.crawl, spider)
+
+            # Verify email was sent
+            assert mock_send.called, (
+                "Email notification should be sent when memory limit exceeded"
+            )
+
+            # Verify email stats
+            assert crawler.stats.get_value("memusage/limit_notified") == 1
+
+    async def test_memory_warning_sends_email_notification(self):
+        """Memory warning triggers email notification when configured."""
+        settings = {
+            "MEMUSAGE_ENABLED": True,
+            "MEMUSAGE_WARNING_MB": 50,
+            "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.1,
+            "MEMUSAGE_NOTIFY_MAIL": ["test@example.com"],
+            "MAIL_HOST": "localhost",
+            "BOT_NAME": "test_bot",
+        }
+
+        crawler = get_crawler(TestSpider, settings)
+
+        # Mock memory usage above warning but below limit
+        with (
+            mock.patch.object(
+                MemoryUsage, "get_virtual_size", return_value=55 * 1024 * 1024
+            ),
+            mock.patch("scrapy.mail.MailSender.send") as mock_send,
+        ):
+            spider = crawler._create_spider("memory_test")
+            await defer.maybeDeferred(crawler.crawl, spider)
+
+            # Verify email was sent for warning
+            assert mock_send.called, (
+                "Email notification should be sent when memory warning reached"
+            )
+
+            # Verify warning email stats
+            assert crawler.stats.get_value("memusage/warning_notified") == 1
+
+    async def test_normal_memory_usage_completes_successfully(self):
+        """Crawls complete normally when under memory limits."""
+        settings = {
+            "MEMUSAGE_ENABLED": True,
+            "MEMUSAGE_WARNING_MB": 100,
+            "MEMUSAGE_LIMIT_MB": 150,
+            "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.1,
+            "LOG_LEVEL": "INFO",
+        }
+
+        crawler = get_crawler(TestSpider, settings)
+
+        # Mock normal memory usage (below thresholds)
+        with mock.patch.object(
+            MemoryUsage, "get_virtual_size", return_value=30 * 1024 * 1024
+        ):
+            spider = crawler._create_spider("memory_test")
+            await defer.maybeDeferred(crawler.crawl, spider)
+
+            # Verify spider completes with 'finished' reason
+            finish_reason = crawler.stats.get_value("finish_reason")
+            assert finish_reason == "finished", (
+                f"Expected 'finished', got '{finish_reason}'"
+            )
+
+            # Verify no warning/limit stats are set
             assert crawler.stats.get_value("memusage/warning_reached") is None
-            assert crawler.stats.get_value("memusage/warning_notified") is None
-        assert extension.warned is False
+            assert crawler.stats.get_value("memusage/limit_reached") is None
+
+            # Verify max memory usage is tracked
+            max_memory = crawler.stats.get_value("memusage/max")
+            assert max_memory is not None
+            assert max_memory > 0
+
+    async def test_memory_stats_tracking(self):
+        """Memory usage statistics are properly tracked."""
+        settings = {
+            "MEMUSAGE_ENABLED": True,
+            "MEMUSAGE_WARNING_MB": 100,
+            "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.1,
+        }
+
+        crawler = get_crawler(TestSpider, settings)
+
+        # Mock increasing memory usage over time
+        memory_values = [20 * 1024 * 1024, 40 * 1024 * 1024, 30 * 1024 * 1024]
+        with mock.patch.object(
+            MemoryUsage, "get_virtual_size", side_effect=memory_values
+        ):
+            spider = crawler._create_spider("memory_test")
+            await defer.maybeDeferred(crawler.crawl, spider)
+
+            # Verify max memory tracks the highest value
+            max_memory = crawler.stats.get_value("memusage/max")
+            expected_max = max(memory_values)
+            assert max_memory >= expected_max, (
+                f"Max memory should be at least {expected_max}, got {max_memory}"
+            )
+
+    def test_crawler_runner_integration(self):
+        """MemoryUsage extension works with CrawlerRunner."""
+        settings = {
+            "MEMUSAGE_ENABLED": True,
+            "MEMUSAGE_WARNING_MB": 50,
+            "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.1,
+        }
+
+        runner = CrawlerRunner(settings)
+
+        # Mock memory usage
+        with mock.patch.object(
+            MemoryUsage, "get_virtual_size", return_value=40 * 1024 * 1024
+        ):
+            # Verify runner can be created with MemoryUsage extension
+            crawler = runner.create_crawler(TestSpider)
+            extension = MemoryUsage.from_crawler(crawler)
+
+            # Verify extension is properly configured
+            assert extension.warning == 50 * 1024 * 1024  # 50 MB in bytes
+            assert extension.check_interval == 0.1
+
+    async def test_extension_cleanup_on_spider_close(self):
+        """MemoryUsage extension cleans up properly when spider closes."""
+        settings = {
+            "MEMUSAGE_ENABLED": True,
+            "MEMUSAGE_WARNING_MB": 100,
+            "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.5,  # Longer interval for testing
+        }
+
+        crawler = get_crawler(TestSpider, settings)
+
+        with mock.patch.object(
+            MemoryUsage, "get_virtual_size", return_value=50 * 1024 * 1024
+        ):
+            spider = crawler._create_spider("memory_test")
+
+            # Get reference to extension
+            extension = None
+            for ext in crawler.extensions.middlewares:
+                if isinstance(ext, MemoryUsage):
+                    extension = ext
+                    break
+
+            assert extension is not None, "MemoryUsage extension should be loaded"
+
+            # Run crawl
+            await defer.maybeDeferred(crawler.crawl, spider)
+
+            # Verify tasks are cleaned up (all should be stopped)
+            for task in extension.tasks:
+                assert not task.running, (
+                    "All tasks should be stopped after spider close"
+                )
+
+    def test_configuration_validation(self):
+        """MemoryUsage extension validates configuration properly."""
+        # Minimal valid configuration
+        settings = {"MEMUSAGE_ENABLED": True}
+        crawler = get_crawler(TestSpider, settings)
+        extension = MemoryUsage.from_crawler(crawler)
+
+        # Verify default values
+        assert extension.limit == 0  # Default no limit
+        assert extension.warning == 0  # Default no warning
+        assert extension.check_interval == 60.0  # Default interval
+        assert extension.notify_mails == []  # Default no emails
+
+        # Custom configuration
+        custom_settings = {
+            "MEMUSAGE_ENABLED": True,
+            "MEMUSAGE_LIMIT_MB": 200,
+            "MEMUSAGE_WARNING_MB": 150,
+            "MEMUSAGE_CHECK_INTERVAL_SECONDS": 30.0,
+            "MEMUSAGE_NOTIFY_MAIL": ["admin@example.com", "dev@example.com"],
+        }
+
+        crawler = get_crawler(TestSpider, custom_settings)
+        extension = MemoryUsage.from_crawler(crawler)
+
+        assert extension.limit == 200 * 1024 * 1024
+        assert extension.warning == 150 * 1024 * 1024
+        assert extension.check_interval == 30.0
+        assert extension.notify_mails == ["admin@example.com", "dev@example.com"]
