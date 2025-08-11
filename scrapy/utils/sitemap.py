@@ -7,6 +7,7 @@ SitemapSpider, its API is subject to change without notice.
 
 from __future__ import annotations
 
+from io import BytesIO, StringIO
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
@@ -20,31 +21,39 @@ class Sitemap:
     """Class to parse Sitemap (type=urlset) and Sitemap Index
     (type=sitemapindex) files"""
 
-    def __init__(self, xmltext: str | bytes):
-        xmlp = lxml.etree.XMLParser(
-            recover=True, remove_comments=True, resolve_entities=False
+    def __init__(self, xmltext: bytes):
+        self.xmliter = lxml.etree.iterparse(
+            BytesIO(xmltext),
+            recover=True,
+            remove_comments=True,
+            resolve_entities=False,
+            remove_blank_text=True,
+            collect_ids=False,
+            remove_pis=True,
+            events=("start", "end"),
         )
-        self._root = lxml.etree.fromstring(xmltext, parser=xmlp)
-        rt = self._root.tag
-        assert isinstance(rt, str)
-        self.type = rt.split("}", 1)[1] if "}" in rt else rt
+        _, elem = next(self.xmliter)
+        self.type = self._get_type(elem)
 
     def __iter__(self) -> Iterator[dict[str, Any]]:
-        for elem in self._root.getchildren():
+        for _, elem in self.xmliter:
             d: dict[str, Any] = {}
-            for el in elem.getchildren():
-                tag = el.tag
-                assert isinstance(tag, str)
-                name = tag.split("}", 1)[1] if "}" in tag else tag
-
+            for el in elem:
+                name = self._get_type(el)
                 if name == "link":
                     if "href" in el.attrib:
                         d.setdefault("alternate", []).append(el.get("href"))
                 else:
                     d[name] = el.text.strip() if el.text else ""
-
+                el.clear()
             if "loc" in d:
                 yield d
+            elem.clear()
+
+    @staticmethod
+    def _get_type(elem: lxml.etree._Element) -> str:
+        _, _, localname = str(elem.tag).partition("}")
+        return localname or elem.tag
 
 
 def sitemap_urls_from_robots(
@@ -53,7 +62,7 @@ def sitemap_urls_from_robots(
     """Return an iterator over all sitemap urls contained in the given
     robots.txt file
     """
-    for line in robots_text.splitlines():
-        if line.lstrip().lower().startswith("sitemap:"):
-            url = line.split(":", 1)[1].strip()
+    for line in StringIO(robots_text):
+        if line.lstrip()[:8].lower() == "sitemap:":
+            url = line.partition(":")[2].strip()
             yield urljoin(base_url or "", url)
