@@ -137,7 +137,7 @@ class ExecutionEngine:
             if self._downloader_fetch_needs_spider:
                 warnings.warn(
                     f"The fetch() method of {global_object_name(downloader_cls)} requires a spider argument,"
-                    f" this is deprecated and the argument will not be passed in the future Scrapy versions.",
+                    f" this is deprecated and the argument will not be passed in future Scrapy versions.",
                     ScrapyDeprecationWarning,
                     stacklevel=2,
                 )

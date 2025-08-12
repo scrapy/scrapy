@@ -117,7 +117,7 @@ class Scraper:
         if not hasattr(self.itemproc, "process_item_async"):
             warnings.warn(
                 f"{global_object_name(itemproc_cls)} doesn't define a process_item_async() method,"
-                f" this is deprecated and the method will be required in the future Scrapy versions.",
+                f" this is deprecated and the method will be required in future Scrapy versions.",
                 ScrapyDeprecationWarning,
                 stacklevel=2,
             )
@@ -132,7 +132,7 @@ class Scraper:
         ):
             warnings.warn(
                 f"{global_object_name(itemproc_cls)} overrides process_item() but doesn't override process_item_async()."
-                f" This is deprecated. process_item() will be used, but in the future Scrapy versions process_item_async() will be used instead.",
+                f" This is deprecated. process_item() will be used, but in future Scrapy versions process_item_async() will be used instead.",
                 ScrapyDeprecationWarning,
                 stacklevel=2,
             )
@@ -148,7 +148,7 @@ class Scraper:
             if self._itemproc_needs_spider[method]:
                 warnings.warn(
                     f"The {method}() method of {global_object_name(itemproc_cls)} requires a spider argument,"
-                    f" this is deprecated and the argument will not be passed in the future Scrapy versions.",
+                    f" this is deprecated and the argument will not be passed in future Scrapy versions.",
                     ScrapyDeprecationWarning,
                     stacklevel=2,
                 )
