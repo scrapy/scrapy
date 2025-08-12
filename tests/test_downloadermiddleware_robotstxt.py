@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 from twisted.internet import error
-from twisted.internet.defer import Deferred, maybeDeferred
+from twisted.internet.defer import Deferred
 from twisted.python import failure
 
 from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
@@ -15,7 +15,11 @@ from scrapy.http import Request, Response, TextResponse
 from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import (
+    deferred_f_from_coro_f,
+    ensure_awaitable,
+    maybe_deferred_to_future,
+)
 from tests.test_robotstxt_interface import rerp_available
 
 if TYPE_CHECKING:
@@ -214,9 +218,7 @@ Disallow: /some/randome/page.html
         self, request: Request, middleware: RobotsTxtMiddleware
     ) -> None:
         spider = None  # not actually used
-        result = await maybe_deferred_to_future(
-            maybeDeferred(middleware.process_request, request, spider)  # type: ignore[call-overload]
-        )
+        result = await ensure_awaitable(middleware.process_request(request, spider))  # type: ignore[arg-type]
         assert result is None
 
     async def assertIgnored(
@@ -224,9 +226,7 @@ Disallow: /some/randome/page.html
     ) -> None:
         spider = None  # not actually used
         with pytest.raises(IgnoreRequest):
-            await maybe_deferred_to_future(
-                maybeDeferred(middleware.process_request, request, spider)  # type: ignore[call-overload]
-            )
+            await ensure_awaitable(middleware.process_request(request, spider))  # type: ignore[arg-type]
 
     def assertRobotsTxtRequested(self, base_url: str) -> None:
         calls = self.crawler.engine.download_async.call_args_list

@@ -420,15 +420,13 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self._check_deprecated_start_requests_use()
         if self._use_start_requests:
             sync_start = iter(self._spider.start_requests())
-            sync_start = await maybe_deferred_to_future(
-                self._process_chain("process_start_requests", sync_start, self._spider)
+            sync_start = await self._process_chain(
+                "process_start_requests", sync_start, self._spider
             )
             start: AsyncIterator[Any] = as_async_generator(sync_start)
         else:
             start = self._spider.start()
-            start = await maybe_deferred_to_future(
-                self._process_chain("process_start", start)
-            )
+            start = await self._process_chain("process_start", start)
         return start
 
     def _check_deprecated_start_requests_use(self):
