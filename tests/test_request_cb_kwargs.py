@@ -33,12 +33,12 @@ class InjectArgumentsSpiderMiddleware:
                 request.cb_kwargs["from_process_start"] = True
             yield request
 
-    def process_spider_input(self, response, spider):
+    def process_spider_input(self, response):
         request = response.request
         if request.callback.__name__ == "parse_spider_mw":
             request.cb_kwargs["from_process_spider_input"] = True
 
-    def process_spider_output(self, response, result, spider):
+    def process_spider_output(self, response, result):
         for element in result:
             if (
                 isinstance(element, Request)

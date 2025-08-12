@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.defer import _process_chain, process_parallel
+from scrapy.utils.deprecate import argument_is_required
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import global_object_name
 
@@ -56,6 +57,7 @@ class MiddlewareManager(ABC):
         self.methods: dict[str, deque[Callable | tuple[Callable, Callable] | None]] = (
             defaultdict(deque)
         )
+        self._mw_methods_requiring_spider: set[Callable] = set()
         for mw in middlewares:
             self._add_middleware(mw)
 
@@ -163,6 +165,18 @@ class MiddlewareManager(ABC):
             self.methods["open_spider"].append(mw.open_spider)
         if hasattr(mw, "close_spider"):
             self.methods["close_spider"].appendleft(mw.close_spider)
+
+    def _check_mw_method_spider_arg(self, method: Callable) -> None:
+        if argument_is_required(method, "spider"):
+            warnings.warn(
+                f"{method.__qualname__}() requires a spider argument,"
+                f" this is deprecated and the argument will not be passed in future Scrapy versions."
+                f" If you need to access the spider instance you can save the crawler instance"
+                f" passed to from_crawler() and use its spider attribute.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            self._mw_methods_requiring_spider.add(method)
 
     def _process_parallel(
         self, methodname: str, obj: _T, *args: Any

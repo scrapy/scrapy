@@ -50,7 +50,7 @@ def test_process_spider_output(
     resp.request = req
     result = [Request("http://scrapytest.org")]
 
-    out = list(mw.process_spider_output(resp, result, spider))
+    out = list(mw.process_spider_output(resp, result))
     assert out == result
 
     rdc = stats.get_value("request_depth_count/1", spider=spider)
@@ -58,7 +58,7 @@ def test_process_spider_output(
 
     req.meta["depth"] = 1
 
-    out2 = list(mw.process_spider_output(resp, result, spider))
+    out2 = list(mw.process_spider_output(resp, result))
     assert not out2
 
     rdm = stats.get_value("request_depth_max", spider=spider)
