@@ -92,7 +92,7 @@ def sitemap_urls_from_robots(
     """Return an iterator over all sitemap urls contained in the given
     robots.txt file
     """
-    for line in MemoryviewReader.from_anystr(robots_text):
-        if line.lstrip()[:8].lower() == b"sitemap:":
-            url = line.partition(b":")[2].strip()
-            yield urljoin(base_url or "", url.decode())
+    for line in robots_text.splitlines():
+        if line.lstrip().lower().startswith("sitemap:"):
+            url = line.split(":", 1)[1].strip()
+            yield urljoin(base_url or "", url)
