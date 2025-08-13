@@ -7,7 +7,7 @@ SitemapSpider, its API is subject to change without notice.
 
 from __future__ import annotations
 
-from io import BytesIO, StringIO
+from io import BytesIO
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
@@ -17,13 +17,21 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
 
+def _bytes_io_from_anystr(str_or_bytes: str | bytes) -> BytesIO:
+    return (
+        BytesIO(str_or_bytes)
+        if isinstance(str_or_bytes, bytes)
+        else BytesIO(str_or_bytes.encode())
+    )
+
+
 class Sitemap:
     """Class to parse Sitemap (type=urlset) and Sitemap Index
     (type=sitemapindex) files"""
 
-    def __init__(self, xmltext: bytes):
+    def __init__(self, xmltext: str | bytes):
         self.xmliter = lxml.etree.iterparse(
-            BytesIO(xmltext),
+            _bytes_io_from_anystr(xmltext),
             recover=True,
             remove_comments=True,
             resolve_entities=False,
@@ -52,17 +60,18 @@ class Sitemap:
 
     @staticmethod
     def _get_type(elem: lxml.etree._Element) -> str:
+        assert isinstance(elem.tag, str)
         _, _, localname = str(elem.tag).partition("}")
         return localname or elem.tag
 
 
 def sitemap_urls_from_robots(
-    robots_text: str, base_url: str | None = None
+    robots_text: str | bytes, base_url: str | None = None
 ) -> Iterable[str]:
     """Return an iterator over all sitemap urls contained in the given
     robots.txt file
     """
-    for line in StringIO(robots_text):
-        if line.lstrip()[:8].lower() == "sitemap:":
-            url = line.partition(":")[2].strip()
-            yield urljoin(base_url or "", url)
+    for line in _bytes_io_from_anystr(robots_text):
+        if line.lstrip()[:8].lower() == b"sitemap:":
+            url = line.partition(b":")[2].strip()
+            yield urljoin(base_url or "", url.decode())
