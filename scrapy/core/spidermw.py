@@ -446,7 +446,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         if self._use_start_requests:
             sync_start = iter(self._spider.start_requests())
             sync_start = await self._process_chain(
-                "process_start_requests", sync_start, self._spider
+                "process_start_requests", sync_start, always_add_spider=True
             )
             start: AsyncIterator[Any] = as_async_generator(sync_start)
         else:

@@ -7,10 +7,10 @@ class ZeroDivisionErrorPipeline:
     def open_spider(self, spider):
         1 / 0
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         return item
 
 
 class ProcessWithZeroDivisionErrorPipeline:
-    def process_item(self, item, spider):
+    def process_item(self, item):
         1 / 0

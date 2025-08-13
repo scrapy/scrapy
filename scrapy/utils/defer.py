@@ -312,19 +312,6 @@ def process_chain(
     return d
 
 
-async def _process_chain(
-    callables: Iterable[Callable[Concatenate[_T, _P], _T | Awaitable[_T]]],
-    input_: _T,
-    *a: _P.args,
-    **kw: _P.kwargs,
-) -> _T:
-    """Chain the given (potentialy asynchronous) callables."""
-    result = input_
-    for callable_ in callables:
-        result = await ensure_awaitable(callable_(result, *a, **kw))
-    return result
-
-
 def process_chain_both(
     callbacks: Iterable[Callable[Concatenate[_T, _P], Any]],
     errbacks: Iterable[Callable[Concatenate[Failure, _P], Any]],
