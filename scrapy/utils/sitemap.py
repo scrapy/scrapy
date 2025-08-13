@@ -40,14 +40,14 @@ class Sitemap:
             remove_pis=True,
             events=("start", "end"),
         )
-        _, elem = next(self.xmliter)
-        self.type = self._get_type(elem)
+        _, root = next(self.xmliter)
+        self.type = self._get_tag_name(root)
 
     def __iter__(self) -> Iterator[dict[str, Any]]:
         for _, elem in self.xmliter:
             try:
-                tag = self._get_type(elem)
-                if tag != "url" and tag != "sitemap":  # noqa: R1714
+                tag_name = self._get_tag_name(elem)
+                if tag_name != "url" and tag_name != "sitemap":  # noqa: R1714
                     continue
 
                 if d := self._process_sitemap_element(elem):
@@ -64,13 +64,13 @@ class Sitemap:
 
         for el in elem:
             try:
-                name = self._get_type(el)
-                if name == "link":
+                tag_name = self._get_tag_name(el)
+                if tag_name == "link":
                     if href := el.get("href"):
                         alternate.append(href)
                 else:
-                    d[name] = el.text.strip() if el.text else ""
-                    if name == "loc":
+                    d[tag_name] = el.text.strip() if el.text else ""
+                    if tag_name == "loc":
                         has_loc = True
             finally:
                 el.clear()
@@ -84,7 +84,7 @@ class Sitemap:
         return d
 
     @staticmethod
-    def _get_type(elem: lxml.etree._Element) -> str:
+    def _get_tag_name(elem: lxml.etree._Element) -> str:
         assert isinstance(elem.tag, str)
         _, _, localname = str(elem.tag).partition("}")
         return localname or elem.tag
