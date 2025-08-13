@@ -45,18 +45,27 @@ class Sitemap:
 
     def __iter__(self) -> Iterator[dict[str, Any]]:
         for _, elem in self.xmliter:
-            d: dict[str, Any] = {}
-            for el in elem:
-                name = self._get_type(el)
-                if name == "link":
-                    if "href" in el.attrib:
-                        d.setdefault("alternate", []).append(el.get("href"))
-                else:
-                    d[name] = el.text.strip() if el.text else ""
-                el.clear()
-            if "loc" in d:
-                yield d
-            elem.clear()
+            try:
+                tag = self._get_type(elem)
+                if tag != "url" and tag != "sitemap":  # noqa: PLR1714
+                    continue
+
+                d: dict[str, Any] = {}
+                for el in elem:
+                    try:
+                        name = self._get_type(el)
+                        if name == "link":
+                            if "href" in el.attrib:
+                                d.setdefault("alternate", []).append(el.get("href"))
+                        else:
+                            d[name] = el.text.strip() if el.text else ""
+                    finally:
+                        el.clear()
+
+                if "loc" in d:
+                    yield d
+            finally:
+                elem.clear()
 
     @staticmethod
     def _get_type(elem: lxml.etree._Element) -> str:
