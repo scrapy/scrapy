@@ -47,7 +47,7 @@ class Sitemap:
         for _, elem in self.xmliter:
             try:
                 tag_name = self._get_tag_name(elem)
-                if tag_name != "url" and tag_name != "sitemap":  # noqa: R1714
+                if tag_name != "url" and tag_name != "sitemap":  # pylint: disable=consider-using-in # noqa: PLR1714
                     continue
 
                 if d := self._process_sitemap_element(elem):
