@@ -72,8 +72,15 @@ class SitemapSpider(Spider):
 
     def _parse_sitemap(self, response: Response) -> Iterable[Request]:
         if response.url.endswith("/robots.txt"):
-            for url in sitemap_urls_from_robots(response.text, base_url=response.url):
-                yield Request(url, callback=self._parse_sitemap)
+            requests = [
+                Request(url, callback=self._parse_sitemap)
+                for url in sitemap_urls_from_robots(
+                    response.body, base_url=response.url
+                )
+            ]
+            del response
+
+            yield from requests
         else:
             body = self._get_sitemap_body(response)
             if body is None:
@@ -85,18 +92,26 @@ class SitemapSpider(Spider):
                 return
 
             s = Sitemap(body)
-            it = self.sitemap_filter(s)
+            del body, response
 
-            if s.type == "sitemapindex":
-                for loc in iterloc(it, self.sitemap_alternate_links):
-                    if any(x.search(loc) for x in self._follow):
-                        yield Request(loc, callback=self._parse_sitemap)
-            elif s.type == "urlset":
-                for loc in iterloc(it, self.sitemap_alternate_links):
-                    for r, c in self._cbs:
-                        if r.search(loc):
-                            yield Request(loc, callback=c)
-                            break
+            requests = list(self.__get_sitemap_requests(s, self.sitemap_filter(s)))
+            del s
+
+            yield from requests
+
+    def __get_sitemap_requests(
+        self, s: Sitemap, it: Iterable[dict[str, Any]]
+    ) -> Iterable[Request]:
+        if s.type == "sitemapindex":
+            for loc in iterloc(it, self.sitemap_alternate_links):
+                if any(x.search(loc) for x in self._follow):
+                    yield Request(loc, callback=self._parse_sitemap)
+        elif s.type == "urlset":
+            for loc in iterloc(it, self.sitemap_alternate_links):
+                for r, c in self._cbs:
+                    if r.search(loc):
+                        yield Request(loc, callback=c)
+                        break
 
     def _get_sitemap_body(self, response: Response) -> bytes | None:
         """Return the sitemap body contained in the given response,
