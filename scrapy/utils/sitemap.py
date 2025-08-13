@@ -47,25 +47,41 @@ class Sitemap:
         for _, elem in self.xmliter:
             try:
                 tag = self._get_type(elem)
-                if tag != "url" and tag != "sitemap":  # noqa: PLR1714
+                if tag != "url" and tag != "sitemap":  # noqa: R1714
                     continue
 
-                d: dict[str, Any] = {}
-                for el in elem:
-                    try:
-                        name = self._get_type(el)
-                        if name == "link":
-                            if "href" in el.attrib:
-                                d.setdefault("alternate", []).append(el.get("href"))
-                        else:
-                            d[name] = el.text.strip() if el.text else ""
-                    finally:
-                        el.clear()
-
-                if "loc" in d:
+                if d := self._process_sitemap_element(elem):
                     yield d
             finally:
                 elem.clear()
+
+    def _process_sitemap_element(
+        self, elem: lxml.etree._Element
+    ) -> dict[str, Any] | None:
+        d: dict[str, Any] = {}
+        alternate: list[str] = []
+        has_loc = False
+
+        for el in elem:
+            try:
+                name = self._get_type(el)
+                if name == "link":
+                    if href := el.get("href"):
+                        alternate.append(href)
+                else:
+                    d[name] = el.text.strip() if el.text else ""
+                    if name == "loc":
+                        has_loc = True
+            finally:
+                el.clear()
+
+        if not has_loc:
+            return None
+
+        if alternate:
+            d["alternate"] = alternate
+
+        return d
 
     @staticmethod
     def _get_type(elem: lxml.etree._Element) -> str:

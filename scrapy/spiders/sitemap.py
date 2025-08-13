@@ -80,24 +80,22 @@ class SitemapSpider(Spider):
             ]
             del response
 
-            yield from requests
         else:
             body = self._get_sitemap_body(response)
-            if body is None:
+            if not body:
                 logger.warning(
                     "Ignoring invalid sitemap: %(response)s",
                     {"response": response},
                     extra={"spider": self},
                 )
                 return
-
+            del response
             s = Sitemap(body)
-            del body, response
-
+            del body
             requests = list(self.__get_sitemap_requests(s, self.sitemap_filter(s)))
             del s
 
-            yield from requests
+        yield from requests
 
     def __get_sitemap_requests(
         self, s: Sitemap, it: Iterable[dict[str, Any]]
