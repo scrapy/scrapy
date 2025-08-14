@@ -25,6 +25,7 @@ from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _defer_sleep_async,
     _schedule_coro,
+    deferred_from_coro,
     maybe_deferred_to_future,
 )
 from scrapy.utils.httpobj import urlparse_cached
@@ -151,7 +152,11 @@ class Downloader:
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
         try:
-            return (yield self.middleware.download(self._enqueue_request, request))
+            return (
+                yield deferred_from_coro(
+                    self.middleware.download_async(self._enqueue_request, request)
+                )
+            )
         finally:
             self.active.remove(request)
 
