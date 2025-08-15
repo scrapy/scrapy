@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import sys
 from unittest import mock
 
@@ -17,9 +18,37 @@ from tests.spiders import SimpleSpider
     sys.platform == "win32", reason="MemUsage extension does not work in Windows."
 )
 class TestMemoryUsageExtension(unittest.TestCase):
+    def setUp(self):
+        """Set up base test configuration."""
+        # Base settings that disable problematic extensions
+        self.base_test_settings = {
+            "TELNETCONSOLE_ENABLED": False,  # Critical: No telnet console
+            "LOG_LEVEL": "ERROR",  # Reduce test noise
+            "ROBOTSTXT_OBEY": False,  # No robots.txt requests
+            "COOKIES_ENABLED": False,  # Simplify tests
+            "RETRY_ENABLED": False,  # No retries in tests
+            "DOWNLOAD_DELAY": 0,  # No delays
+            "RANDOMIZE_DOWNLOAD_DELAY": False,  # No randomization
+            "AUTOTHROTTLE_ENABLED": False,  # No auto-throttling
+        }
+
+    def tearDown(self):
+        #  TID253 `twisted.internet.reactor` is banned at the module level
+        # Import here to avoid import-time reactor issues
+        from twisted.internet import reactor
+
+        # Cancel any remaining DelayedCalls
+        delayed_calls = reactor.getDelayedCalls()
+        for call in delayed_calls:
+            if not call.cancelled and not call.called:
+                with contextlib.suppress(BaseException):
+                    call.cancel()  # Ignore errors during cleanup
+
     def test_extension_disabled_when_memusage_disabled(self):
         """Extension raises NotConfigured when MEMUSAGE_ENABLED is False."""
-        crawler = get_crawler(SimpleSpider, {"MEMUSAGE_ENABLED": False})
+        crawler = get_crawler(
+            SimpleSpider, {**self.base_test_settings, "MEMUSAGE_ENABLED": False}
+        )
         with pytest.raises(NotConfigured):
             MemoryUsage.from_crawler(crawler)
 
@@ -27,7 +56,9 @@ class TestMemoryUsageExtension(unittest.TestCase):
     def test_extension_disabled_when_resource_unavailable(self, mock_import):
         """Extension raises NotConfigured when resource module is not available."""
         mock_import.side_effect = ImportError("No module named 'resource'")
-        crawler = get_crawler(SimpleSpider, {"MEMUSAGE_ENABLED": True})
+        crawler = get_crawler(
+            SimpleSpider, {**self.base_test_settings, "MEMUSAGE_ENABLED": True}
+        )
         with pytest.raises(NotConfigured):
             MemoryUsage.from_crawler(crawler)
 
@@ -54,6 +85,7 @@ class TestMemoryUsageExtension(unittest.TestCase):
     def test_normal_crawl_completes_successfully(self):
         """Test that crawl completes normally when memory usage is under limits."""
         settings = {
+            **self.base_test_settings,
             "MEMUSAGE_ENABLED": True,
             "MEMUSAGE_WARNING_MB": 1000,  # High threshold
             "MEMUSAGE_LIMIT_MB": 1500,  # High threshold
@@ -96,6 +128,7 @@ class TestMemoryUsageExtension(unittest.TestCase):
         mock_get_size.side_effect = memory_values
 
         settings = {
+            **self.base_test_settings,
             "MEMUSAGE_ENABLED": True,
             "MEMUSAGE_WARNING_MB": 20,  # 20MB threshold
             "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.1,
@@ -122,6 +155,7 @@ class TestMemoryUsageExtension(unittest.TestCase):
         mock_get_size.side_effect = memory_values
 
         settings = {
+            **self.base_test_settings,
             "MEMUSAGE_ENABLED": True,
             "MEMUSAGE_LIMIT_MB": 50,  # 50MB limit
             "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.1,
@@ -139,6 +173,7 @@ class TestMemoryUsageExtension(unittest.TestCase):
     def test_email_notification_on_warning(self, mock_get_size):
         """Test that email notification is sent when warning threshold is reached."""
         settings = {
+            **self.base_test_settings,
             "MEMUSAGE_ENABLED": True,
             "MEMUSAGE_WARNING_MB": 50,
             "LOG_LEVEL": "ERROR",
@@ -168,6 +203,7 @@ class TestMemoryUsageExtension(unittest.TestCase):
     def test_extension_cleanup_on_spider_close(self):
         """Test that extension properly cleans up tasks when spider closes."""
         settings = {
+            **self.base_test_settings,
             "MEMUSAGE_ENABLED": True,
             "MEMUSAGE_WARNING_MB": 100,
             "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.5,
@@ -197,7 +233,7 @@ class TestMemoryUsageExtension(unittest.TestCase):
 
     def test_get_virtual_size_method(self):
         """Test that get_virtual_size method works correctly."""
-        settings = {"MEMUSAGE_ENABLED": True}
+        settings = {**self.base_test_settings, "MEMUSAGE_ENABLED": True}
         crawler = get_crawler(SimpleSpider, settings)
         extension = MemoryUsage.from_crawler(crawler)
 
