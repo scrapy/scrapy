@@ -22,14 +22,14 @@ class TestMemoryUsageExtension(unittest.TestCase):
         """Set up base test configuration."""
         # Base settings that disable problematic extensions
         self.base_test_settings = {
-            "TELNETCONSOLE_ENABLED": False,  # Critical: No telnet console
-            "LOG_LEVEL": "ERROR",  # Reduce test noise
-            "ROBOTSTXT_OBEY": False,  # No robots.txt requests
-            "COOKIES_ENABLED": False,  # Simplify tests
-            "RETRY_ENABLED": False,  # No retries in tests
-            "DOWNLOAD_DELAY": 0,  # No delays
-            "RANDOMIZE_DOWNLOAD_DELAY": False,  # No randomization
-            "AUTOTHROTTLE_ENABLED": False,  # No auto-throttling
+            "TELNETCONSOLE_ENABLED": False,
+            "LOG_LEVEL": "WARNING",  # Changed from "ERROR" to allow warning logs
+            "ROBOTSTXT_OBEY": False,
+            "COOKIES_ENABLED": False,
+            "RETRY_ENABLED": False,
+            "DOWNLOAD_DELAY": 0,
+            "RANDOMIZE_DOWNLOAD_DELAY": False,
+            "AUTOTHROTTLE_ENABLED": False,
         }
 
     def tearDown(self):
