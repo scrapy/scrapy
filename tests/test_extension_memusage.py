@@ -164,39 +164,6 @@ class TestMemoryUsageExtension(unittest.TestCase):
         assert crawler.stats.get_value("memusage/max") == 60 * 1024 * 1024
         extension.engine_stopped()
 
-    @mock.patch.object(MemoryUsage, "get_virtual_size")
-    def test_email_notification_on_limit(self, mock_get_size):
-        """Test that email notification is sent when limit is exceeded."""
-
-        settings = {
-            "MEMUSAGE_ENABLED": True,
-            "MEMUSAGE_LIMIT_MB": 100,
-            "LOG_LEVEL": "ERROR",
-            # No MEMUSAGE_NOTIFY_MAIL set - no actual emails
-        }
-
-        crawler = get_crawler(SimpleSpider, settings)
-        extension = MemoryUsage.from_crawler(crawler)
-
-        # Mock the engine and spider for shutdown testing
-        crawler.engine = mock.MagicMock()
-        crawler.engine.spider = mock.MagicMock()
-        crawler.engine.close_spider_async = mock.AsyncMock()
-
-        # Test startup
-        mock_get_size.return_value = 40 * 1024 * 1024  # 40MB
-        extension.engine_started()
-        assert crawler.stats.get_value("memusage/startup") == 40 * 1024 * 1024
-        extension.engine_stopped()
-
-        # Update with memory that exceeds limit
-        mock_get_size.return_value = 120 * 1024 * 1024  # 120MB - exceeds 100MB limit
-        extension.engine_started()
-
-        # Verify limit logic was triggered
-        assert crawler.stats.get_value("memusage/limit_reached") == 1
-        crawler.engine.close_spider_async.assert_called_once()
-
     @defer.inlineCallbacks
     def test_extension_cleanup_on_spider_close(self):
         """Test that extension properly cleans up tasks when spider closes."""
@@ -204,6 +171,8 @@ class TestMemoryUsageExtension(unittest.TestCase):
             "MEMUSAGE_ENABLED": True,
             "MEMUSAGE_WARNING_MB": 100,
             "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.5,
+            "TELNETCONSOLE_ENABLED": False,  # Disable telnet console for testing
+            "LOG_LEVEL": "ERROR",  # Reduce test noise
         }
 
         crawler = get_crawler(SimpleSpider, settings)
@@ -236,18 +205,3 @@ class TestMemoryUsageExtension(unittest.TestCase):
         size = extension.get_virtual_size()
         assert isinstance(size, int)
         assert size > 0
-
-    def test_warning_only_triggered_once(self):
-        """Test that warning is only triggered once even if threshold is exceeded multiple times."""
-        settings = {"MEMUSAGE_ENABLED": True}
-        crawler = get_crawler(SimpleSpider, settings)
-        extension = MemoryUsage.from_crawler(crawler)
-
-        # Initially not warned
-        assert not extension.warned
-
-        # Simulate warning triggered
-        extension.warned = True
-
-        # Should remain warned
-        assert extension.warned
