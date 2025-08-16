@@ -6,8 +6,13 @@ Contributing to Scrapy
 
 .. important::
 
-    Double check that you are reading the most recent version of this document at
-    https://docs.scrapy.org/en/master/contributing.html
+    Double check that you are reading the most recent version of this document
+    at https://docs.scrapy.org/en/master/contributing.html
+
+    By participating in this project you agree to abide by the terms of our
+    `Code of Conduct
+    <https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md>`_. Please
+    report unacceptable behavior to opensource@zyte.com.
 
 There are many ways to contribute to Scrapy. Here are some of them:
 
@@ -246,10 +251,10 @@ Coding style
 Please follow these coding conventions when writing code for inclusion in
 Scrapy:
 
-* We use `black <https://black.readthedocs.io/en/stable/>`_ for code formatting.
+* We use `Ruff <https://docs.astral.sh/ruff/>`_ for code formatting.
   There is a hook in the pre-commit config
   that will automatically format your code before every commit. You can also
-  run black manually with ``tox -e pre-commit``.
+  run Ruff manually with ``tox -e pre-commit``.
 
 * Don't put your name in the code you contribute; git provides enough
   metadata to identify author of the code.

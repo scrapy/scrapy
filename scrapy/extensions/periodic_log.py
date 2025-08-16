@@ -4,16 +4,17 @@ import logging
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
-from twisted.internet import task
-
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 if TYPE_CHECKING:
-    # typing.Self requires Python 3.11
     from json import JSONEncoder
 
+    from twisted.internet.task import LoopingCall
+
+    # typing.Self requires Python 3.11
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
@@ -37,7 +38,7 @@ class PeriodicLog:
         self.stats: StatsCollector = stats
         self.interval: float = interval
         self.multiplier: float = 60.0 / self.interval
-        self.task: task.LoopingCall | None = None
+        self.task: AsyncioLoopingCall | LoopingCall | None = None
         self.encoder: JSONEncoder = ScrapyJSONEncoder(sort_keys=True, indent=4)
         self.ext_stats_enabled: bool = bool(ext_stats)
         self.ext_stats_include: list[str] = ext_stats.get("include", [])
@@ -74,7 +75,7 @@ class PeriodicLog:
             )
 
         ext_timing_enabled: bool = crawler.settings.getbool(
-            "PERIODIC_LOG_TIMING_ENABLED", False
+            "PERIODIC_LOG_TIMING_ENABLED"
         )
         if not (ext_stats or ext_delta or ext_timing_enabled):
             raise NotConfigured
@@ -97,7 +98,7 @@ class PeriodicLog:
         self.delta_prev: dict[str, int | float] = {}
         self.stats_prev: dict[str, int | float] = {}
 
-        self.task = task.LoopingCall(self.log)
+        self.task = create_looping_call(self.log)
         self.task.start(self.interval)
 
     def log(self) -> None:

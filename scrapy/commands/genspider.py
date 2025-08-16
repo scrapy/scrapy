@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
+from scrapy.spiderloader import get_spider_loader
 from scrapy.utils.template import render_templatefile, string_camelcase
 
 if TYPE_CHECKING:
@@ -45,7 +46,7 @@ def verify_url_scheme(url: str) -> str:
 
 
 class Command(ScrapyCommand):
-    requires_project = False
+    requires_crawler_process = False
     default_settings = {"LOG_ENABLED": False}
 
     def syntax(self) -> str:
@@ -92,6 +93,7 @@ class Command(ScrapyCommand):
         )
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
+        assert self.settings is not None
         if opts.list:
             self._list_templates()
             return
@@ -127,6 +129,7 @@ class Command(ScrapyCommand):
         url: str,
         template_name: str,
     ) -> dict[str, Any]:
+        assert self.settings is not None
         capitalized_module = "".join(s.capitalize() for s in module.split("_"))
         return {
             "project_name": self.settings.get("BOT_NAME"),
@@ -147,6 +150,7 @@ class Command(ScrapyCommand):
         template_file: str | os.PathLike,
     ) -> None:
         """Generate the spider module, based on the given template"""
+        assert self.settings is not None
         tvars = self._generate_template_variables(module, name, url, template_name)
         if self.settings.get("NEWSPIDER_MODULE"):
             spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])
@@ -180,6 +184,7 @@ class Command(ScrapyCommand):
                 print(f"  {file.stem}")
 
     def _spider_exists(self, name: str) -> bool:
+        assert self.settings is not None
         if not self.settings.get("NEWSPIDER_MODULE"):
             # if run as a standalone command and file with same filename already exists
             path = Path(name + ".py")
@@ -188,12 +193,9 @@ class Command(ScrapyCommand):
                 return True
             return False
 
-        assert self.crawler_process is not None, (
-            "crawler_process must be set before calling run"
-        )
-
+        spider_loader = get_spider_loader(self.settings)
         try:
-            spidercls = self.crawler_process.spider_loader.load(name)
+            spidercls = spider_loader.load(name)
         except KeyError:
             pass
         else:
@@ -204,7 +206,7 @@ class Command(ScrapyCommand):
 
         # a file with the same name exists in the target directory
         spiders_module = import_module(self.settings["NEWSPIDER_MODULE"])
-        spiders_dir = Path(cast(str, spiders_module.__file__)).parent
+        spiders_dir = Path(cast("str", spiders_module.__file__)).parent
         spiders_dir_abs = spiders_dir.resolve()
         path = spiders_dir_abs / (name + ".py")
         if path.exists():
@@ -215,6 +217,7 @@ class Command(ScrapyCommand):
 
     @property
     def templates_dir(self) -> str:
+        assert self.settings is not None
         return str(
             Path(
                 self.settings["TEMPLATES_DIR"] or Path(scrapy.__path__[0], "templates"),

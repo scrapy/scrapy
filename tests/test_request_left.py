@@ -1,10 +1,9 @@
-from twisted.internet import defer
-from twisted.trial.unittest import TestCase
+from twisted.internet.defer import inlineCallbacks
 
 from scrapy.signals import request_left_downloader
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 
 
 class SignalCatcherSpider(Spider):
@@ -24,35 +23,35 @@ class SignalCatcherSpider(Spider):
         self.caught_times += 1
 
 
-class TestCatching(TestCase):
+class TestCatching:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_success(self):
         crawler = get_crawler(SignalCatcherSpider)
         yield crawler.crawl(self.mockserver.url("/status?n=200"))
         assert crawler.spider.caught_times == 1
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_timeout(self):
         crawler = get_crawler(SignalCatcherSpider, {"DOWNLOAD_TIMEOUT": 0.1})
         yield crawler.crawl(self.mockserver.url("/delay?n=0.2"))
         assert crawler.spider.caught_times == 1
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_disconnect(self):
         crawler = get_crawler(SignalCatcherSpider)
         yield crawler.crawl(self.mockserver.url("/drop"))
         assert crawler.spider.caught_times == 1
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_noconnect(self):
         crawler = get_crawler(SignalCatcherSpider)
         yield crawler.crawl("http://thereisdefinetelynosuchdomain.com")

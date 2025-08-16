@@ -1,12 +1,12 @@
 # ruff: noqa: E402
 
 from scrapy.utils.reactor import install_reactor
+from tests.mockserver.dns import MockDNSServer
+from tests.mockserver.http import MockServer
 
 install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
 
-from urllib.parse import urlparse
 
-from twisted.internet import reactor
 from twisted.names import cache, resolve
 from twisted.names import hosts as hostsModule
 from twisted.names.client import Resolver
@@ -16,7 +16,6 @@ from scrapy import Request, Spider
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.log import configure_logging
-from tests.mockserver import MockDNSServer, MockServer
 
 
 # https://stackoverflow.com/a/32784190
@@ -44,8 +43,10 @@ class LocalhostSpider(Spider):
 
 
 if __name__ == "__main__":
+    from twisted.internet import reactor
+
     with MockServer() as mock_http_server, MockDNSServer() as mock_dns_server:
-        port = urlparse(mock_http_server.http_address).port
+        port = mock_http_server.http_port
         url = f"http://not.a.real.domain:{port}/echo"
 
         servers = [(mock_dns_server.host, mock_dns_server.port)]

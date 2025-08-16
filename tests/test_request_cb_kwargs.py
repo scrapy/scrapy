@@ -1,10 +1,9 @@
 from testfixtures import LogCapture
-from twisted.internet import defer
-from twisted.trial.unittest import TestCase
+from twisted.internet.defer import inlineCallbacks
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import MockServerSpider
 
 
@@ -149,19 +148,17 @@ class KeywordArgumentsSpider(MockServerSpider):
         self.crawler.stats.inc_value("boolean_checks", 1)
 
 
-class TestCallbackKeywordArguments(TestCase):
-    maxDiff = None
-
+class TestCallbackKeywordArguments:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_callback_kwargs(self):
         crawler = get_crawler(KeywordArgumentsSpider)
         with LogCapture() as log:

@@ -3,8 +3,10 @@ from __future__ import annotations
 import dataclasses
 import io
 import random
+from abc import ABC, abstractmethod
 from shutil import rmtree
 from tempfile import mkdtemp
+from typing import Any
 
 import attr
 import pytest
@@ -207,8 +209,33 @@ class TestImagesPipeline:
         assert converted.mode == "RGB"
         assert converted.getcolors() == [(10000, (205, 230, 255))]
 
+    @pytest.mark.parametrize(
+        "bad_type",
+        [
+            "http://example.com/file.jpg",
+            ("http://example.com/file.jpg",),
+            {"url": "http://example.com/file.jpg"},
+            123,
+            None,
+        ],
+    )
+    def test_rejects_non_list_image_urls(self, tmp_path, bad_type):
+        pipeline = ImagesPipeline.from_crawler(
+            get_crawler(None, {"IMAGES_STORE": str(tmp_path)})
+        )
+        item = ImagesPipelineTestItem()
+        item["image_urls"] = bad_type
 
-class ImagesPipelineTestCaseFieldsMixin:
+        with pytest.raises(TypeError, match="image_urls must be a list of URLs"):
+            list(pipeline.get_media_requests(item, None))
+
+
+class TestImagesPipelineFieldsMixin(ABC):
+    @property
+    @abstractmethod
+    def item_class(self) -> Any:
+        raise NotImplementedError
+
     def test_item_fields_default(self):
         url = "http://www.example.com/images/1.jpg"
         item = self.item_class(name="item1", image_urls=[url])
@@ -245,7 +272,7 @@ class ImagesPipelineTestCaseFieldsMixin:
         assert isinstance(item, self.item_class)
 
 
-class TestImagesPipelineFieldsDict(ImagesPipelineTestCaseFieldsMixin):
+class TestImagesPipelineFieldsDict(TestImagesPipelineFieldsMixin):
     item_class = dict
 
 
@@ -259,7 +286,7 @@ class ImagesPipelineTestItem(Item):
     custom_images = Field()
 
 
-class TestImagesPipelineFieldsItem(ImagesPipelineTestCaseFieldsMixin):
+class TestImagesPipelineFieldsItem(TestImagesPipelineFieldsMixin):
     item_class = ImagesPipelineTestItem
 
 
@@ -274,7 +301,7 @@ class ImagesPipelineTestDataClass:
     custom_images: list = dataclasses.field(default_factory=list)
 
 
-class TestImagesPipelineFieldsDataClass(ImagesPipelineTestCaseFieldsMixin):
+class TestImagesPipelineFieldsDataClass(TestImagesPipelineFieldsMixin):
     item_class = ImagesPipelineTestDataClass
 
 
@@ -289,7 +316,7 @@ class ImagesPipelineTestAttrsItem:
     custom_images: list[dict[str, str]] = attr.ib(default=list)
 
 
-class TestImagesPipelineFieldsAttrsItem(ImagesPipelineTestCaseFieldsMixin):
+class TestImagesPipelineFieldsAttrsItem(TestImagesPipelineFieldsMixin):
     item_class = ImagesPipelineTestAttrsItem
 
 
@@ -495,8 +522,8 @@ class TestImagesPipelineCustomSettings:
             assert getattr(pipeline_cls, pipe_attr.lower()) == expected_value
 
 
-def _create_image(format, *a, **kw):
+def _create_image(format_, *a, **kw):
     buf = io.BytesIO()
-    Image.new(*a, **kw).save(buf, format)
+    Image.new(*a, **kw).save(buf, format_)
     buf.seek(0)
     return Image.open(buf), buf

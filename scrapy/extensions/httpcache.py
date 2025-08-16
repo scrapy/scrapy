@@ -307,7 +307,7 @@ class DbmCacheStorage:
         if 0 < self.expiration_secs < time() - float(ts):
             return None  # expired
 
-        return cast(dict[str, Any], pickle.loads(db[f"{key}_data"]))  # noqa: S301
+        return cast("dict[str, Any]", pickle.loads(db[f"{key}_data"]))  # noqa: S301
 
 
 class FilesystemCacheStorage:
@@ -389,7 +389,7 @@ class FilesystemCacheStorage:
         if 0 < self.expiration_secs < time() - mtime:
             return None  # expired
         with self._open(metapath, "rb") as f:
-            return cast(dict[str, Any], pickle.load(f))  # noqa: S301
+            return cast("dict[str, Any]", pickle.load(f))  # noqa: S301
 
 
 def parse_cachecontrol(header: bytes) -> dict[bytes, bytes | None]:

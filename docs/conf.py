@@ -3,7 +3,6 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# pylint: disable=import-error
 import os
 import sys
 from collections.abc import Sequence
@@ -27,7 +26,6 @@ author = "Scrapy developers"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "hoverxref.extension",
     "notfound.extension",
     "scrapydocs",
     "sphinx.ext.autodoc",
@@ -158,22 +156,5 @@ intersphinx_mapping = {
 }
 intersphinx_disabled_reftypes: Sequence[str] = []
 
-
-# -- Options for sphinx-hoverxref extension ----------------------------------
-# https://sphinx-hoverxref.readthedocs.io/en/latest/configuration.html
-
-hoverxref_auto_ref = True
-hoverxref_role_types = {
-    "class": "tooltip",
-    "command": "tooltip",
-    "confval": "tooltip",
-    "hoverxref": "tooltip",
-    "mod": "tooltip",
-    "ref": "tooltip",
-    "reqmeta": "tooltip",
-    "setting": "tooltip",
-    "signal": "tooltip",
-}
-hoverxref_roles = ["command", "reqmeta", "setting", "signal"]
-
+# -- Other options ------------------------------------------------------------
 default_dark_mode = False

@@ -36,10 +36,8 @@ class RobotsTxtMiddleware:
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("ROBOTSTXT_OBEY"):
             raise NotConfigured
-        self._default_useragent: str = crawler.settings.get("USER_AGENT", "Scrapy")
-        self._robotstxt_useragent: str | None = crawler.settings.get(
-            "ROBOTSTXT_USER_AGENT", None
-        )
+        self._default_useragent: str = crawler.settings["USER_AGENT"]
+        self._robotstxt_useragent: str | None = crawler.settings["ROBOTSTXT_USER_AGENT"]
         self.crawler: Crawler = crawler
         self._parsers: dict[str, RobotParser | Deferred[RobotParser | None] | None] = {}
         self._parserimpl: RobotParser = load_object(
@@ -99,10 +97,7 @@ class RobotsTxtMiddleware:
             assert self.crawler.engine
             assert self.crawler.stats
             try:
-                # TODO switch to download_async() when it's available
-                resp = await maybe_deferred_to_future(
-                    self.crawler.engine.download(robotsreq)
-                )
+                resp = await self.crawler.engine.download_async(robotsreq)
                 self._parse_robots(resp, netloc)
             except Exception as e:
                 self._logerror(e, robotsreq, spider)
@@ -119,7 +114,7 @@ class RobotsTxtMiddleware:
             logger.error(
                 "Error downloading %(request)s: %(f_exception)s",
                 {"request": request, "f_exception": exc},
-                exc_info=True,
+                exc_info=True,  # noqa: LOG014
                 extra={"spider": spider},
             )
 

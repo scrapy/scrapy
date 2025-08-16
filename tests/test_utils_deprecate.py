@@ -1,6 +1,7 @@
 import inspect
 import warnings
 from unittest import mock
+from warnings import WarningMessage
 
 import pytest
 
@@ -21,7 +22,9 @@ class NewName(SomeBaseClass):
 
 
 class TestWarnWhenSubclassed:
-    def _mywarnings(self, w, category=MyWarning):
+    def _mywarnings(
+        self, w: list[WarningMessage], category: type[Warning] = MyWarning
+    ) -> list[WarningMessage]:
         return [x for x in w if x.category is MyWarning]
 
     def test_no_warning_on_definition(self):
@@ -243,7 +246,7 @@ class TestWarnWhenSubclassed:
             )
 
         w = self._mywarnings(w)
-        assert len(w) == 0, str(map(str, w))
+        assert len(w) == 0, [str(warning) for warning in w]
 
         with warnings.catch_warnings(record=True) as w:
             AlsoDeprecated()

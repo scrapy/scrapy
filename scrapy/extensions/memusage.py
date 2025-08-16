@@ -13,14 +13,16 @@ from importlib import import_module
 from pprint import pformat
 from typing import TYPE_CHECKING
 
-from twisted.internet import task
-
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.mail import MailSender
+from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
+from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.engine import get_engine_status
 
 if TYPE_CHECKING:
+    from twisted.internet.task import LoopingCall
+
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -66,16 +68,16 @@ class MemoryUsage:
     def engine_started(self) -> None:
         assert self.crawler.stats
         self.crawler.stats.set_value("memusage/startup", self.get_virtual_size())
-        self.tasks: list[task.LoopingCall] = []
-        tsk = task.LoopingCall(self.update)
+        self.tasks: list[AsyncioLoopingCall | LoopingCall] = []
+        tsk = create_looping_call(self.update)
         self.tasks.append(tsk)
         tsk.start(self.check_interval, now=True)
         if self.limit:
-            tsk = task.LoopingCall(self._check_limit)
+            tsk = create_looping_call(self._check_limit)
             self.tasks.append(tsk)
             tsk.start(self.check_interval, now=True)
         if self.warning:
-            tsk = task.LoopingCall(self._check_warning)
+            tsk = create_looping_call(self._check_warning)
             self.tasks.append(tsk)
             tsk.start(self.check_interval, now=True)
 
@@ -109,11 +111,11 @@ class MemoryUsage:
                 self.crawler.stats.set_value("memusage/limit_notified", 1)
 
             if self.crawler.engine.spider is not None:
-                self.crawler.engine.close_spider(
-                    self.crawler.engine.spider, "memusage_exceeded"
+                _schedule_coro(
+                    self.crawler.engine.close_spider_async(reason="memusage_exceeded")
                 )
             else:
-                self.crawler.stop()
+                _schedule_coro(self.crawler.stop_async())
         else:
             logger.info(
                 "Peak memory usage is %(virtualsize)dMiB",

@@ -21,7 +21,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 -   The :meth:`~scrapy.spiders.Spider.start` spider method, which *must* be
     defined as an :term:`asynchronous generator`.
 
-    .. versionadded: 2.13
+    .. versionadded:: 2.13
 
 -   :class:`~scrapy.Request` callbacks.
 
@@ -266,7 +266,6 @@ within a spider callback:
 .. code-block:: python
 
     from scrapy import Spider, Request
-    from scrapy.utils.defer import maybe_deferred_to_future
 
 
     class SingleRequestSpider(Spider):
@@ -275,8 +274,9 @@ within a spider callback:
 
         async def parse(self, response, **kwargs):
             additional_request = Request("https://example.org/price")
-            deferred = self.crawler.engine.download(additional_request)
-            additional_response = await maybe_deferred_to_future(deferred)
+            additional_response = await self.crawler.engine.download_async(
+                additional_request
+            )
             yield {
                 "h1": response.css("h1").get(),
                 "price": additional_response.css("#price").get(),
@@ -286,9 +286,9 @@ You can also send multiple requests in parallel:
 
 .. code-block:: python
 
+    import asyncio
+
     from scrapy import Spider, Request
-    from scrapy.utils.defer import maybe_deferred_to_future
-    from twisted.internet.defer import DeferredList
 
 
     class MultipleRequestsSpider(Spider):
@@ -300,11 +300,11 @@ You can also send multiple requests in parallel:
                 Request("https://example.com/price"),
                 Request("https://example.com/color"),
             ]
-            deferreds = []
+            tasks = []
             for r in additional_requests:
-                deferred = self.crawler.engine.download(r)
-                deferreds.append(deferred)
-            responses = await maybe_deferred_to_future(DeferredList(deferreds))
+                task = self.crawler.engine.download_async(r)
+                tasks.append(task)
+            responses = await asyncio.gather(*tasks)
             yield {
                 "h1": response.css("h1::text").get(),
                 "price": responses[0][1].css(".price::text").get(),

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import warnings
 from itertools import chain
 from logging import getLogger
 from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
-from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.utils._compression import (
@@ -74,8 +75,22 @@ class HttpCompressionMiddleware:
 
     def open_spider(self, spider: Spider) -> None:
         if hasattr(spider, "download_maxsize"):
+            warnings.warn(
+                "The 'download_maxsize' spider attribute is deprecated. "
+                "Use Spider.custom_settings or Spider.update_settings() instead. "
+                "The corresponding setting name is 'DOWNLOAD_MAXSIZE'.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
             self._max_size = spider.download_maxsize
         if hasattr(spider, "download_warnsize"):
+            warnings.warn(
+                "The 'download_warnsize' spider attribute is deprecated. "
+                "Use Spider.custom_settings or Spider.update_settings() instead. "
+                "The corresponding setting name is 'DOWNLOAD_WARNSIZE'.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
             self._warn_size = spider.download_warnsize
 
     def process_request(

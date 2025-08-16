@@ -5,9 +5,9 @@ import pprint
 import sys
 from collections.abc import MutableMapping
 from logging.config import dictConfig
-from types import TracebackType
 from typing import TYPE_CHECKING, Any, Optional, cast
 
+from twisted.internet import asyncioreactor
 from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
@@ -16,6 +16,8 @@ from scrapy.settings import Settings, _SettingsKeyT
 from scrapy.utils.versions import get_versions
 
 if TYPE_CHECKING:
+    from types import TracebackType
+
     from scrapy.crawler import Crawler
     from scrapy.logformatter import LogFormatterResult
 
@@ -33,7 +35,7 @@ def failure_to_exc_info(
         return (
             failure.type,
             failure.value,
-            cast(Optional[TracebackType], failure.getTracebackObject()),
+            cast("Optional[TracebackType]", failure.getTracebackObject()),
         )
     return None
 
@@ -182,7 +184,7 @@ def log_scrapy_info(settings: Settings) -> None:
 
 
 def log_reactor_info() -> None:
-    from twisted.internet import asyncioreactor, reactor
+    from twisted.internet import reactor
 
     logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
     if isinstance(reactor, asyncioreactor.AsyncioSelectorReactor):
@@ -240,7 +242,7 @@ def logformatter_adapter(
     message = logkws.get("msg") or ""
     # NOTE: This also handles 'args' being an empty dict, that case doesn't
     # play well in logger.log calls
-    args = cast(dict[str, Any], logkws) if not logkws.get("args") else logkws["args"]
+    args = cast("dict[str, Any]", logkws) if not logkws.get("args") else logkws["args"]
 
     return (level, message, args)
 

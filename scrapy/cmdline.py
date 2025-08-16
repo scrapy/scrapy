@@ -10,11 +10,12 @@ from typing import TYPE_CHECKING
 
 import scrapy
 from scrapy.commands import BaseRunSpiderCommand, ScrapyCommand, ScrapyHelpFormatter
-from scrapy.crawler import CrawlerProcess
+from scrapy.crawler import AsyncCrawlerProcess, CrawlerProcess
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import get_project_settings, inside_project
 from scrapy.utils.python import garbage_collect
+from scrapy.utils.reactor import _asyncio_reactor_path
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -31,8 +32,9 @@ class ScrapyArgumentParser(argparse.ArgumentParser):
     def _parse_optional(
         self, arg_string: str
     ) -> tuple[argparse.Action | None, str, str | None] | None:
-        # if starts with -: it means that is a parameter not a argument
-        if arg_string[:2] == "-:":
+        # Support something like ‘-o -:json’, where ‘-:json’ is a value for
+        # ‘-o’, not another parameter.
+        if arg_string.startswith("-:"):
             return None
 
         return super()._parse_optional(arg_string)
@@ -201,7 +203,13 @@ def execute(argv: list[str] | None = None, settings: Settings | None = None) -> 
     opts, args = parser.parse_known_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
-    cmd.crawler_process = CrawlerProcess(settings)
+    if cmd.requires_crawler_process:
+        if settings[
+            "TWISTED_REACTOR"
+        ] == _asyncio_reactor_path and not settings.getbool("FORCE_CRAWLER_PROCESS"):
+            cmd.crawler_process = AsyncCrawlerProcess(settings)
+        else:
+            cmd.crawler_process = CrawlerProcess(settings)
     _run_print_help(parser, _run_command, cmd, args, opts)
     sys.exit(cmd.exitcode)
 

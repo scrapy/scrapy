@@ -873,7 +873,7 @@ It is usual for web sites to provide pre-populated form fields through ``<input
 type="hidden">`` elements, such as session related data or authentication
 tokens (for login pages). When scraping, you'll want these fields to be
 automatically pre-populated and only override a couple of them, such as the
-user name and password. You can use the :meth:`.FormRequest.from_response()`
+user name and password. You can use the :meth:`.FormRequest.from_response`
 method for this job. Here's an example spider which uses it:
 
 .. code-block:: python

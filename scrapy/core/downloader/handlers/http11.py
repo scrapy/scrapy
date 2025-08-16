@@ -8,13 +8,13 @@ import re
 from contextlib import suppress
 from io import BytesIO
 from time import time
-from typing import TYPE_CHECKING, Any, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
 from twisted.internet.defer import CancelledError, Deferred, succeed
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.internet.error import TimeoutError
+from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
 from twisted.web.client import (
@@ -27,7 +27,7 @@ from twisted.web.client import (
 from twisted.web.client import Response as TxResponse
 from twisted.web.http import PotentialDataLoss, _DataLoss
 from twisted.web.http_headers import Headers as TxHeaders
-from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS
+from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS, IResponse
 from zope.interface import implementer
 
 from scrapy import Request, Spider, signals
@@ -286,11 +286,11 @@ class TunnelingAgent(Agent):
         key: Any,
         endpoint: TCP4ClientEndpoint,
         method: bytes,
-        parsedURI: bytes,
+        parsedURI: URI,
         headers: TxHeaders | None,
         bodyProducer: IBodyProducer | None,
         requestPath: bytes,
-    ) -> Deferred[TxResponse]:
+    ) -> Deferred[IResponse]:
         # proxy host and port are required for HTTP pool `key`
         # otherwise, same remote host connection request could reuse
         # a cached tunneled connection to a different proxy
@@ -329,14 +329,14 @@ class ScrapyProxyAgent(Agent):
         uri: bytes,
         headers: TxHeaders | None = None,
         bodyProducer: IBodyProducer | None = None,
-    ) -> Deferred[TxResponse]:
+    ) -> Deferred[IResponse]:
         """
         Issue a new request via the configured proxy.
         """
         # Cache *all* connections under the same key, since we are only
         # connecting to a single destination, the proxy:
         return self._requestWithEndpoint(
-            key=("http-proxy", self._proxyURI.host, self._proxyURI.port),
+            key=(b"http-proxy", self._proxyURI.host, self._proxyURI.port),
             endpoint=self._getEndpoint(self._proxyURI),
             method=method,
             parsedURI=URI.fromBytes(uri),
@@ -386,6 +386,7 @@ class ScrapyAgent:
             if not proxy_port:
                 proxy_port = 443 if proxy_parsed.scheme == "https" else 80
             if urlparse_cached(request).scheme == "https":
+                assert proxy_host is not None
                 proxyAuth = request.headers.get(b"Proxy-Authorization", None)
                 proxyConf = (proxy_host, proxy_port, proxyAuth)
                 return self._TunnelingAgent(
@@ -426,8 +427,11 @@ class ScrapyAgent:
             headers.removeHeader(b"Proxy-Authorization")
         bodyproducer = _RequestBodyProducer(request.body) if request.body else None
         start_time = time()
-        d: Deferred[TxResponse] = agent.request(
-            method, to_bytes(url, encoding="ascii"), headers, bodyproducer
+        d: Deferred[IResponse] = agent.request(
+            method,
+            to_bytes(url, encoding="ascii"),
+            headers,
+            cast("IBodyProducer", bodyproducer),
         )
         # set download latency
         d.addCallback(self._cb_latency, request, start_time)
@@ -448,7 +452,7 @@ class ScrapyAgent:
         if self._txresponse:
             self._txresponse._transport.stopProducing()
 
-        raise TimeoutError(f"Getting {url} took longer than {timeout} seconds.")
+        raise TxTimeoutError(f"Getting {url} took longer than {timeout} seconds.")
 
     def _cb_latency(self, result: _T, request: Request, start_time: float) -> _T:
         request.meta["download_latency"] = time() - start_time

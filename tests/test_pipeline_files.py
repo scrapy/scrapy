@@ -3,7 +3,9 @@ import os
 import random
 import time
 import warnings
+from abc import ABC, abstractmethod
 from datetime import datetime
+from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
 from posixpath import split
@@ -16,8 +18,7 @@ from urllib.parse import urlparse
 import attr
 import pytest
 from itemadapter import ItemAdapter
-from twisted.internet import defer
-from twisted.trial import unittest
+from twisted.internet.defer import inlineCallbacks
 
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
@@ -28,10 +29,8 @@ from scrapy.pipelines.files import (
     GCSFilesStore,
     S3FilesStore,
 )
-from scrapy.utils.test import (
-    get_crawler,
-)
-from tests.mockserver import MockFTPServer
+from scrapy.utils.test import get_crawler
+from tests.mockserver.ftp import MockFTPServer
 
 from .test_pipeline_media import _mocked_download_func
 
@@ -39,7 +38,7 @@ from .test_pipeline_media import _mocked_download_func
 def get_gcs_content_and_delete(
     bucket: Any, path: str
 ) -> tuple[bytes, list[dict[str, str]], Any]:
-    from google.cloud import storage
+    from google.cloud import storage  # noqa: PLC0415
 
     client = storage.Client(project=os.environ.get("GCS_PROJECT_ID"))
     bucket = client.get_bucket(bucket)
@@ -58,8 +57,6 @@ def get_ftp_content_and_delete(
     password: str,
     use_active_mode: bool = False,
 ) -> bytes:
-    from ftplib import FTP
-
     ftp = FTP()
     ftp.connect(host, port)
     ftp.login(username, password)
@@ -77,8 +74,8 @@ def get_ftp_content_and_delete(
     return b"".join(ftp_data)
 
 
-class TestFilesPipeline(unittest.TestCase):
-    def setUp(self):
+class TestFilesPipeline:
+    def setup_method(self):
         self.tempdir = mkdtemp()
         settings_dict = {"FILES_STORE": self.tempdir}
         crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
@@ -86,7 +83,7 @@ class TestFilesPipeline(unittest.TestCase):
         self.pipeline.download_func = _mocked_download_func
         self.pipeline.open_spider(None)
 
-    def tearDown(self):
+    def teardown_method(self):
         rmtree(self.tempdir)
 
     def test_file_path(self):
@@ -159,7 +156,7 @@ class TestFilesPipeline(unittest.TestCase):
         fullpath = Path(self.tempdir, "some", "image", "key.jpg")
         assert self.pipeline.store._get_filesystem_path(path) == fullpath
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_file_not_expired(self):
         item_url = "http://example.com/file.pdf"
         item = _create_item_with_files(item_url)
@@ -186,7 +183,7 @@ class TestFilesPipeline(unittest.TestCase):
         for p in patchers:
             p.stop()
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_file_expired(self):
         item_url = "http://example.com/file2.pdf"
         item = _create_item_with_files(item_url)
@@ -217,7 +214,7 @@ class TestFilesPipeline(unittest.TestCase):
         for p in patchers:
             p.stop()
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_file_cached(self):
         item_url = "http://example.com/file3.pdf"
         item = _create_item_with_files(item_url)
@@ -264,8 +261,33 @@ class TestFilesPipeline(unittest.TestCase):
         request = Request("http://example.com")
         assert file_path(request, item=item) == "full/path-to-store-file"
 
+    @pytest.mark.parametrize(
+        "bad_type",
+        [
+            "http://example.com/file.pdf",
+            ("http://example.com/file.pdf",),
+            {"url": "http://example.com/file.pdf"},
+            123,
+            None,
+        ],
+    )
+    def test_rejects_non_list_file_urls(self, tmp_path, bad_type):
+        pipeline = FilesPipeline.from_crawler(
+            get_crawler(None, {"FILES_STORE": str(tmp_path)})
+        )
+        item = ItemWithFiles()
+        item["file_urls"] = bad_type
 
-class FilesPipelineTestCaseFieldsMixin:
+        with pytest.raises(TypeError, match="file_urls must be a list of URLs"):
+            list(pipeline.get_media_requests(item, None))
+
+
+class TestFilesPipelineFieldsMixin(ABC):
+    @property
+    @abstractmethod
+    def item_class(self) -> Any:
+        raise NotImplementedError
+
     def test_item_fields_default(self, tmp_path):
         url = "http://www.example.com/files/1.txt"
         item = self.item_class(name="item1", file_urls=[url])
@@ -302,7 +324,7 @@ class FilesPipelineTestCaseFieldsMixin:
         assert isinstance(item, self.item_class)
 
 
-class TestFilesPipelineFieldsDict(FilesPipelineTestCaseFieldsMixin):
+class TestFilesPipelineFieldsDict(TestFilesPipelineFieldsMixin):
     item_class = dict
 
 
@@ -316,7 +338,7 @@ class FilesPipelineTestItem(Item):
     custom_files = Field()
 
 
-class TestFilesPipelineFieldsItem(FilesPipelineTestCaseFieldsMixin):
+class TestFilesPipelineFieldsItem(TestFilesPipelineFieldsMixin):
     item_class = FilesPipelineTestItem
 
 
@@ -331,7 +353,7 @@ class FilesPipelineTestDataClass:
     custom_files: list = dataclasses.field(default_factory=list)
 
 
-class TestFilesPipelineFieldsDataClass(FilesPipelineTestCaseFieldsMixin):
+class TestFilesPipelineFieldsDataClass(TestFilesPipelineFieldsMixin):
     item_class = FilesPipelineTestDataClass
 
 
@@ -346,7 +368,7 @@ class FilesPipelineTestAttrsItem:
     custom_files: list[dict[str, str]] = attr.ib(default=list)
 
 
-class TestFilesPipelineFieldsAttrsItem(FilesPipelineTestCaseFieldsMixin):
+class TestFilesPipelineFieldsAttrsItem(TestFilesPipelineFieldsMixin):
     item_class = FilesPipelineTestAttrsItem
 
 
@@ -518,26 +540,25 @@ class TestFilesPipelineCustomSettings:
             expected_value = settings.get(settings_attr)
             assert getattr(pipeline_cls, pipe_inst_attr) == expected_value
 
-    def test_file_pipeline_using_pathlike_objects(self):
+    def test_file_pipeline_using_pathlike_objects(self, tmp_path):
         class CustomFilesPipelineWithPathLikeDir(FilesPipeline):
             def file_path(self, request, response=None, info=None, *, item=None):
                 return Path("subdir") / Path(request.url).name
 
         pipeline = CustomFilesPipelineWithPathLikeDir.from_crawler(
-            get_crawler(None, {"FILES_STORE": Path("./Temp")})
+            get_crawler(None, {"FILES_STORE": tmp_path})
         )
         request = Request("http://example.com/image01.jpg")
         assert pipeline.file_path(request) == Path("subdir/image01.jpg")
 
-    def test_files_store_constructor_with_pathlike_object(self):
-        path = Path("./FileDir")
-        fs_store = FSFilesStore(path)
-        assert fs_store.basedir == str(path)
+    def test_files_store_constructor_with_pathlike_object(self, tmp_path):
+        fs_store = FSFilesStore(tmp_path)
+        assert fs_store.basedir == str(tmp_path)
 
 
 @pytest.mark.requires_botocore
-class TestS3FilesStore(unittest.TestCase):
-    @defer.inlineCallbacks
+class TestS3FilesStore:
+    @inlineCallbacks
     def test_persist(self):
         bucket = "mybucket"
         key = "export.csv"
@@ -548,7 +569,7 @@ class TestS3FilesStore(unittest.TestCase):
         content_type = "image/png"
 
         store = S3FilesStore(uri)
-        from botocore.stub import Stubber
+        from botocore.stub import Stubber  # noqa: PLC0415
 
         with Stubber(store.s3_client) as stub:
             stub.add_response(
@@ -577,7 +598,7 @@ class TestS3FilesStore(unittest.TestCase):
             # The call to read does not happen with Stubber
             assert buffer.method_calls == [mock.call.seek(0)]
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_stat(self):
         bucket = "mybucket"
         key = "export.csv"
@@ -586,7 +607,7 @@ class TestS3FilesStore(unittest.TestCase):
         last_modified = datetime(2019, 12, 1)
 
         store = S3FilesStore(uri)
-        from botocore.stub import Stubber
+        from botocore.stub import Stubber  # noqa: PLC0415
 
         with Stubber(store.s3_client) as stub:
             stub.add_response(
@@ -613,12 +634,12 @@ class TestS3FilesStore(unittest.TestCase):
 @pytest.mark.skipif(
     "GCS_PROJECT_ID" not in os.environ, reason="GCS_PROJECT_ID not found"
 )
-class TestGCSFilesStore(unittest.TestCase):
-    @defer.inlineCallbacks
+class TestGCSFilesStore:
+    @inlineCallbacks
     def test_persist(self):
         uri = os.environ.get("GCS_TEST_FILE_URI")
         if not uri:
-            raise unittest.SkipTest("No GCS URI available for testing")
+            pytest.skip("No GCS URI available for testing")
         data = b"TestGCSFilesStore: \xe2\x98\x83"
         buf = BytesIO(data)
         meta = {"foo": "bar"}
@@ -639,15 +660,15 @@ class TestGCSFilesStore(unittest.TestCase):
         assert blob.content_type == "application/octet-stream"
         assert expected_policy in acl
 
-    @defer.inlineCallbacks
+    @inlineCallbacks
     def test_blob_path_consistency(self):
         """Test to make sure that paths used to store files is the same as the one used to get
         already uploaded files.
         """
         try:
-            import google.cloud.storage  # noqa: F401
+            import google.cloud.storage  # noqa: F401,PLC0415
         except ModuleNotFoundError:
-            raise unittest.SkipTest("google-cloud-storage is not installed")
+            pytest.skip("google-cloud-storage is not installed")
         with (
             mock.patch("google.cloud.storage"),
             mock.patch("scrapy.pipelines.files.time"),
@@ -665,8 +686,8 @@ class TestGCSFilesStore(unittest.TestCase):
             store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
-class TestFTPFileStore(unittest.TestCase):
-    @defer.inlineCallbacks
+class TestFTPFileStore:
+    @inlineCallbacks
     def test_persist(self):
         data = b"TestFTPFilesStore: \xe2\x98\x83"
         buf = BytesIO(data)

@@ -173,8 +173,8 @@ class Scheduler(BaseScheduler):
 
     :ref:`Start requests <start-requests>` are sent in the order they are
     yielded from :meth:`~scrapy.Spider.start`, and given the same
-    :attr:`~scrapy.http.Request.priority`, start requests take precedence over
-    other requests.
+    :attr:`~scrapy.http.Request.priority`, other requests take precedence over
+    start requests.
 
     You can set :setting:`SCHEDULER_START_MEMORY_QUEUE` and
     :setting:`SCHEDULER_START_DISK_QUEUE` to ``None`` to handle start requests
@@ -491,7 +491,7 @@ class Scheduler(BaseScheduler):
         if not path.exists():
             return []
         with path.open(encoding="utf-8") as f:
-            return cast(list[int], json.load(f))
+            return cast("list[int]", json.load(f))
 
     def _write_dqs_state(self, dqdir: str, state: list[int]) -> None:
         with Path(dqdir, "active.json").open("w", encoding="utf-8") as f:

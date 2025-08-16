@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Request
 from scrapy.shell import Shell
+from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.spider import DefaultSpider, spidercls_for_request
 from scrapy.utils.url import guess_scheme
 
@@ -22,7 +23,6 @@ if TYPE_CHECKING:
 
 
 class Command(ScrapyCommand):
-    requires_project = False
     default_settings = {
         "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
         "KEEP_ALIVE": True,
@@ -57,7 +57,7 @@ class Command(ScrapyCommand):
             help="do not handle HTTP 3xx status codes and print response as-is",
         )
 
-    def update_vars(self, vars: dict[str, Any]) -> None:
+    def update_vars(self, vars: dict[str, Any]) -> None:  # noqa: A002
         """You can use this function to update the Scrapy objects that will be
         available in the shell
         """
@@ -85,7 +85,7 @@ class Command(ScrapyCommand):
         crawler._apply_settings()
         # The Shell class needs a persistent engine in the crawler
         crawler.engine = crawler._create_engine()
-        crawler.engine.start(_start_request_processing=False)
+        _schedule_coro(crawler.engine.start_async(_start_request_processing=False))
 
         self._start_crawler_thread()
 

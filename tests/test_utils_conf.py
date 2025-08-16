@@ -47,12 +47,11 @@ class TestBuildComponentList:
         assert build_component_list(d, convert=lambda x: x) == ["b", "c", "a"]
 
 
-class TestUtilsConf:
-    def test_arglist_to_dict(self):
-        assert arglist_to_dict(["arg1=val1", "arg2=val2"]) == {
-            "arg1": "val1",
-            "arg2": "val2",
-        }
+def test_arglist_to_dict():
+    assert arglist_to_dict(["arg1=val1", "arg2=val2"]) == {
+        "arg1": "val1",
+        "arg2": "val2",
+    }
 
 
 class TestFeedExportConfig:

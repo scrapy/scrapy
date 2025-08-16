@@ -4,10 +4,9 @@ from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
-from twisted.internet import error, reactor
+from twisted.internet import error
 from twisted.internet.defer import Deferred
 from twisted.python import failure
-from twisted.trial import unittest
 
 from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
 from scrapy.downloadermiddlewares.robotstxt import logger as mw_module_logger
@@ -15,20 +14,21 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
-from scrapy.utils.defer import deferred_f_from_coro_f
+from scrapy.utils.asyncio import call_later
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from tests.test_robotstxt_interface import rerp_available
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
 
 
-class TestRobotsTxtMiddleware(unittest.TestCase):
-    def setUp(self):
+class TestRobotsTxtMiddleware:
+    def setup_method(self):
         self.crawler = mock.MagicMock()
         self.crawler.settings = Settings()
-        self.crawler.engine.download = mock.MagicMock()
+        self.crawler.engine.download_async = mock.AsyncMock()
 
-    def tearDown(self):
+    def teardown_method(self):
         del self.crawler
 
     def test_robotstxt_settings(self):
@@ -52,12 +52,12 @@ Disallow: /some/randome/page.html
 """.encode()
         response = TextResponse("http://site.local/robots.txt", body=ROBOTS)
 
-        def return_response(request):
+        async def return_response(request):
             deferred = Deferred()
-            reactor.callFromThread(deferred.callback, response)
-            return deferred
+            call_later(0, deferred.callback, response)
+            return await maybe_deferred_to_future(deferred)
 
-        crawler.engine.download.side_effect = return_response
+        crawler.engine.download_async.side_effect = return_response
         return crawler
 
     @deferred_f_from_coro_f
@@ -101,12 +101,12 @@ Disallow: /some/randome/page.html
             "http://site.local/robots.txt", body=b"GIF89a\xd3\x00\xfe\x00\xa2"
         )
 
-        def return_response(request):
+        async def return_response(request):
             deferred = Deferred()
-            reactor.callFromThread(deferred.callback, response)
-            return deferred
+            call_later(0, deferred.callback, response)
+            return await maybe_deferred_to_future(deferred)
 
-        crawler.engine.download.side_effect = return_response
+        crawler.engine.download_async.side_effect = return_response
         return crawler
 
     @deferred_f_from_coro_f
@@ -123,12 +123,12 @@ Disallow: /some/randome/page.html
         crawler.settings.set("ROBOTSTXT_OBEY", True)
         response = Response("http://site.local/robots.txt")
 
-        def return_response(request):
+        async def return_response(request):
             deferred = Deferred()
-            reactor.callFromThread(deferred.callback, response)
-            return deferred
+            call_later(0, deferred.callback, response)
+            return await maybe_deferred_to_future(deferred)
 
-        crawler.engine.download.side_effect = return_response
+        crawler.engine.download_async.side_effect = return_response
         return crawler
 
     @deferred_f_from_coro_f
@@ -144,12 +144,12 @@ Disallow: /some/randome/page.html
         self.crawler.settings.set("ROBOTSTXT_OBEY", True)
         err = error.DNSLookupError("Robotstxt address not found")
 
-        def return_failure(request):
+        async def return_failure(request):
             deferred = Deferred()
-            reactor.callFromThread(deferred.errback, failure.Failure(err))
-            return deferred
+            call_later(0, deferred.errback, failure.Failure(err))
+            return await maybe_deferred_to_future(deferred)
 
-        self.crawler.engine.download.side_effect = return_failure
+        self.crawler.engine.download_async.side_effect = return_failure
 
         middleware = RobotsTxtMiddleware(self.crawler)
         middleware._logerror = mock.MagicMock(side_effect=middleware._logerror)
@@ -161,10 +161,10 @@ Disallow: /some/randome/page.html
         self.crawler.settings.set("ROBOTSTXT_OBEY", True)
         err = error.DNSLookupError("Robotstxt address not found")
 
-        def immediate_failure(request):
+        async def immediate_failure(request):
             raise err
 
-        self.crawler.engine.download.side_effect = immediate_failure
+        self.crawler.engine.download_async.side_effect = immediate_failure
 
         middleware = RobotsTxtMiddleware(self.crawler)
         await self.assertNotIgnored(Request("http://site.local"), middleware)
@@ -173,12 +173,12 @@ Disallow: /some/randome/page.html
     async def test_ignore_robotstxt_request(self):
         self.crawler.settings.set("ROBOTSTXT_OBEY", True)
 
-        def ignore_request(request):
+        async def ignore_request(request):
             deferred = Deferred()
-            reactor.callFromThread(deferred.errback, failure.Failure(IgnoreRequest()))
-            return deferred
+            call_later(0, deferred.errback, failure.Failure(IgnoreRequest()))
+            return await maybe_deferred_to_future(deferred)
 
-        self.crawler.engine.download.side_effect = ignore_request
+        self.crawler.engine.download_async.side_effect = ignore_request
 
         middleware = RobotsTxtMiddleware(self.crawler)
         mw_module_logger.error = mock.MagicMock()
@@ -230,18 +230,16 @@ Disallow: /some/randome/page.html
             await middleware.process_request(request, spider)  # type: ignore[arg-type]
 
     def assertRobotsTxtRequested(self, base_url: str) -> None:
-        calls = self.crawler.engine.download.call_args_list
+        calls = self.crawler.engine.download_async.call_args_list
         request = calls[0][0][0]
         assert request.url == f"{base_url}/robots.txt"
         assert request.callback == NO_CALLBACK
 
 
+@pytest.mark.skipif(not rerp_available(), reason="Rerp parser is not installed")
 class TestRobotsTxtMiddlewareWithRerp(TestRobotsTxtMiddleware):
-    if not rerp_available():
-        skip = "Rerp parser is not installed"
-
-    def setUp(self):
-        super().setUp()
+    def setup_method(self):
+        super().setup_method()
         self.crawler.settings.set(
             "ROBOTSTXT_PARSER", "scrapy.robotstxt.RerpRobotParser"
         )
