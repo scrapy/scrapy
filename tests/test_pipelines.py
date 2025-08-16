@@ -19,7 +19,7 @@ from tests.mockserver.http import MockServer
 
 
 class SimplePipeline:
-    def process_item(self, item, spider):
+    def process_item(self, item):
         item["pipeline_passed"] = True
         return item
 
@@ -29,7 +29,7 @@ class DeferredPipeline:
         item["pipeline_passed"] = True
         return item
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         d = Deferred()
         d.addCallback(self.cb)
         d.callback(item)
@@ -37,7 +37,7 @@ class DeferredPipeline:
 
 
 class AsyncDefPipeline:
-    async def process_item(self, item, spider):
+    async def process_item(self, item):
         d = Deferred()
         call_later(0, d.callback, None)
         await maybe_deferred_to_future(d)
@@ -46,7 +46,7 @@ class AsyncDefPipeline:
 
 
 class AsyncDefAsyncioPipeline:
-    async def process_item(self, item, spider):
+    async def process_item(self, item):
         d = Deferred()
         loop = asyncio.get_event_loop()
         loop.call_later(0, d.callback, None)
@@ -57,7 +57,7 @@ class AsyncDefAsyncioPipeline:
 
 
 class AsyncDefNotAsyncioPipeline:
-    async def process_item(self, item, spider):
+    async def process_item(self, item):
         d1 = Deferred()
         from twisted.internet import reactor
 
@@ -254,7 +254,7 @@ class TestCustomPipelineManager:
 
             def process_item(self, item, spider):
                 for pipeline in self.pipelines:
-                    item = pipeline.process_item(item, spider)
+                    item = pipeline.process_item(item)
                 return succeed(item)
 
         items = []

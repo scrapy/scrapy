@@ -61,11 +61,11 @@ class TestRefererMiddleware:
     def get_response(self, origin: str) -> Response:
         return Response(origin, headers=self.resp_headers)
 
-    def test(self, mw: RefererMiddleware, spider: Spider) -> None:
+    def test(self, mw: RefererMiddleware) -> None:
         for origin, target, referrer in self.scenarii:
             response = self.get_response(origin)
             request = self.get_request(target)
-            out = list(mw.process_spider_output(response, [request], spider))
+            out = list(mw.process_spider_output(response, [request]))
             assert out[0].headers.get("Referer") == referrer
 
 
@@ -1036,7 +1036,7 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
             response = self.get_response(parent)
             request = self.get_request(target)
 
-            out = list(referrermw.process_spider_output(response, [request], spider))
+            out = list(referrermw.process_spider_output(response, [request]))
             assert out[0].headers.get("Referer") == init_referrer
 
             for status, url in redirections:

@@ -169,8 +169,15 @@ class MediaPipeline(ABC):
         self.spiderinfo = self.SpiderInfo(spider)
 
     def process_item(
-        self, item: Any, spider: Spider
+        self, item: Any, spider: Spider | None = None
     ) -> Deferred[list[FileInfoOrError]]:
+        if spider is not None:
+            warnings.warn(
+                "Passing a spider argument to MediaPipeline.process_item()"
+                " is deprecated and the passed value is ignored.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         info = self.spiderinfo
         requests = arg_to_iter(self.get_media_requests(item, info))
         dlist = [self._process_request(r, info, item) for r in requests]

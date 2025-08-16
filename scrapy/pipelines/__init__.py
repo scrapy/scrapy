@@ -33,6 +33,7 @@ class ItemPipelineManager(MiddlewareManager):
         super()._add_middleware(pipe)
         if hasattr(pipe, "process_item"):
             self.methods["process_item"].append(pipe.process_item)
+            self._check_mw_method_spider_arg(pipe.process_item)
 
     def process_item(self, item: Any, spider: Spider | None = None) -> Deferred[Any]:
         if spider:
@@ -45,4 +46,4 @@ class ItemPipelineManager(MiddlewareManager):
         return deferred_from_coro(self.process_item_async(item))
 
     async def process_item_async(self, item: Any) -> Any:
-        return await self._process_chain("process_item", item, self._spider)
+        return await self._process_chain("process_item", item, add_spider=True)
