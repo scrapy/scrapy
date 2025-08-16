@@ -201,7 +201,7 @@ class MiddlewareManager(ABC):
             if always_add_spider or (
                 add_spider and method in self._mw_methods_requiring_spider
             ):
-                obj = await ensure_awaitable(method(obj, *args, self._spider))
+                obj = await ensure_awaitable(method(obj, *(*args, self._spider)))
             else:
                 obj = await ensure_awaitable(method(obj, *args))
         return obj
