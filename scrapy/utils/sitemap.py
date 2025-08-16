@@ -7,6 +7,7 @@ SitemapSpider, its API is subject to change without notice.
 
 from __future__ import annotations
 
+from io import BytesIO
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
@@ -16,44 +17,86 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
 
 
+def _bytes_io_from_anystr(str_or_bytes: str | bytes) -> BytesIO:
+    return (
+        BytesIO(str_or_bytes)
+        if isinstance(str_or_bytes, bytes)
+        else BytesIO(str_or_bytes.encode())
+    )
+
+
 class Sitemap:
     """Class to parse Sitemap (type=urlset) and Sitemap Index
     (type=sitemapindex) files"""
 
     def __init__(self, xmltext: str | bytes):
-        xmlp = lxml.etree.XMLParser(
-            recover=True, remove_comments=True, resolve_entities=False
+        self.xmliter = lxml.etree.iterparse(
+            _bytes_io_from_anystr(xmltext),
+            recover=True,
+            remove_comments=True,
+            resolve_entities=False,
+            remove_blank_text=True,
+            collect_ids=False,
+            remove_pis=True,
+            events=("start", "end"),
         )
-        self._root = lxml.etree.fromstring(xmltext, parser=xmlp)
-        rt = self._root.tag
-        assert isinstance(rt, str)
-        self.type = rt.split("}", 1)[1] if "}" in rt else rt
+        _, root = next(self.xmliter)
+        self.type = self._get_tag_name(root)
 
     def __iter__(self) -> Iterator[dict[str, Any]]:
-        for elem in self._root.getchildren():
-            d: dict[str, Any] = {}
-            for el in elem.getchildren():
-                tag = el.tag
-                assert isinstance(tag, str)
-                name = tag.split("}", 1)[1] if "}" in tag else tag
+        for _, elem in self.xmliter:
+            try:
+                tag_name = self._get_tag_name(elem)
+                if tag_name != "url" and tag_name != "sitemap":  # pylint: disable=consider-using-in # noqa: PLR1714
+                    continue
 
-                if name == "link":
-                    if "href" in el.attrib:
-                        d.setdefault("alternate", []).append(el.get("href"))
+                if d := self._process_sitemap_element(elem):
+                    yield d
+            finally:
+                elem.clear()
+
+    def _process_sitemap_element(
+        self, elem: lxml.etree._Element
+    ) -> dict[str, Any] | None:
+        d: dict[str, Any] = {}
+        alternate: list[str] = []
+        has_loc = False
+
+        for el in elem:
+            try:
+                tag_name = self._get_tag_name(el)
+                if tag_name == "link":
+                    if href := el.get("href"):
+                        alternate.append(href)
                 else:
-                    d[name] = el.text.strip() if el.text else ""
+                    d[tag_name] = el.text.strip() if el.text else ""
+                    if tag_name == "loc":
+                        has_loc = True
+            finally:
+                el.clear()
 
-            if "loc" in d:
-                yield d
+        if not has_loc:
+            return None
+
+        if alternate:
+            d["alternate"] = alternate
+
+        return d
+
+    @staticmethod
+    def _get_tag_name(elem: lxml.etree._Element) -> str:
+        assert isinstance(elem.tag, str)
+        _, _, localname = str(elem.tag).partition("}")
+        return localname or elem.tag
 
 
 def sitemap_urls_from_robots(
-    robots_text: str, base_url: str | None = None
+    robots_text: str | bytes, base_url: str | None = None
 ) -> Iterable[str]:
     """Return an iterator over all sitemap urls contained in the given
     robots.txt file
     """
-    for line in robots_text.splitlines():
-        if line.lstrip().lower().startswith("sitemap:"):
-            url = line.split(":", 1)[1].strip()
-            yield urljoin(base_url or "", url)
+    for line in _bytes_io_from_anystr(robots_text):
+        if line.lstrip()[:8].lower() == b"sitemap:":
+            url = line.partition(b":")[2].strip()
+            yield urljoin(base_url or "", url.decode())
