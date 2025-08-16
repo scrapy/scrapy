@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
 from twisted.internet import error
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, DeferredList
 from twisted.python import failure
 
 from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
@@ -15,7 +16,11 @@ from scrapy.http import Request, Response, TextResponse
 from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import (
+    deferred_f_from_coro_f,
+    deferred_from_coro,
+    maybe_deferred_to_future,
+)
 from tests.test_robotstxt_interface import rerp_available
 
 if TYPE_CHECKING:
@@ -73,6 +78,25 @@ Disallow: /some/randome/page.html
         await self.assertIgnored(
             Request("http://site.local/wiki/Käyttäjä:"), middleware
         )
+
+    @deferred_f_from_coro_f
+    async def test_robotstxt_multiple_reqs(self) -> None:
+        middleware = RobotsTxtMiddleware(self._get_successful_crawler())
+        d1 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/allowed1"), None)  # type: ignore[arg-type]
+        )
+        d2 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/allowed2"), None)  # type: ignore[arg-type]
+        )
+        await maybe_deferred_to_future(DeferredList([d1, d2], fireOnOneErrback=True))
+
+    @pytest.mark.only_asyncio
+    @deferred_f_from_coro_f
+    async def test_robotstxt_multiple_reqs_asyncio(self) -> None:
+        middleware = RobotsTxtMiddleware(self._get_successful_crawler())
+        c1 = middleware.process_request(Request("http://site.local/allowed1"), None)  # type: ignore[arg-type]
+        c2 = middleware.process_request(Request("http://site.local/allowed2"), None)  # type: ignore[arg-type]
+        await asyncio.gather(c1, c2)
 
     @deferred_f_from_coro_f
     async def test_robotstxt_ready_parser(self):
