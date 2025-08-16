@@ -27,7 +27,6 @@ from scrapy.utils.defer import (
     _defer_sleep_async,
     _schedule_coro,
     aiter_errback,
-    deferred_f_from_coro_f,
     deferred_from_coro,
     ensure_awaitable,
     iter_errback,
@@ -235,7 +234,7 @@ class Scraper:
         dfd = self.slot.add_response_request(result, request)
         self._scrape_next()
         try:
-            yield dfd
+            yield dfd  # fired in _wait_for_processing()
         except Exception:
             logger.error(
                 "Scraper bug processing %(request)s",
@@ -251,10 +250,9 @@ class Scraper:
     def _scrape_next(self) -> None:
         assert self.slot is not None  # typing
         while self.slot.queue:
-            result, request, deferred = self.slot.next_response_request_deferred()
-            self._scrape(result, request).chainDeferred(deferred)
+            result, request, queue_dfd = self.slot.next_response_request_deferred()
+            _schedule_coro(self._wait_for_processing(result, request, queue_dfd))
 
-    @deferred_f_from_coro_f
     async def _scrape(self, result: Response | Failure, request: Request) -> None:
         """Handle the downloaded response or failure through the spider callback/errback."""
         if not isinstance(result, (Response, Failure)):
@@ -295,6 +293,16 @@ class Scraper:
                 self.handle_spider_error(Failure(), request, result)
         else:
             await self.handle_spider_output_async(output, request, result)
+
+    async def _wait_for_processing(
+        self, result: Response | Failure, request: Request, queue_dfd: Deferred[None]
+    ) -> None:
+        try:
+            await self._scrape(result, request)
+        except Exception:
+            queue_dfd.errback(Failure())
+        else:
+            queue_dfd.callback(None)  # awaited in enqueue_scrape()
 
     def call_spider(
         self, result: Response | Failure, request: Request, spider: Spider | None = None
