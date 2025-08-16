@@ -44,6 +44,14 @@ Backward-incompatible changes
 
         - :meth:`~scrapy.spidermiddlewares.referer.ReferrerPolicy.referrer`
 
+-   :meth:`scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware.process_request`
+    now returns a coroutine, previously it returned a
+    :class:`~twisted.internet.defer.Deferred` object or ``None``. The
+    ``robot_parser()`` method was also changed to return a coroutine. This
+    change only impacts code that subclasses
+    :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` or
+    calls its methods directly.
+
 
 .. _release-2.13.3:
 
