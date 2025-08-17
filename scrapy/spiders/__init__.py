@@ -55,7 +55,8 @@ class Spider(object_ref):
 
     @property
     def logger(self) -> SpiderLoggerAdapter:
-        from scrapy.utils.log import SpiderLoggerAdapter
+        # circular import
+        from scrapy.utils.log import SpiderLoggerAdapter  # noqa: PLC0415
 
         logger = logging.getLogger(self.name)
         return SpiderLoggerAdapter(logger, {"spider": self})

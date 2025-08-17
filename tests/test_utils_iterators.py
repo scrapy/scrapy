@@ -1,3 +1,8 @@
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
+
 import pytest
 
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -5,9 +10,19 @@ from scrapy.http import Response, TextResponse, XmlResponse
 from scrapy.utils.iterators import _body_or_str, csviter, xmliter, xmliter_lxml
 from tests import get_testdata
 
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
-class XmliterBase:
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
+    from scrapy import Selector
+
+
+class TestXmliterBase(ABC):
+    @abstractmethod
+    def xmliter(
+        self, obj: Response | str | bytes, nodename: str, *args: Any
+    ) -> Iterator[Selector]:
+        raise NotImplementedError
+
     def test_xmliter(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -39,7 +54,6 @@ class XmliterBase:
             ("002", ["Name 2"], ["Type 2"]),
         ]
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_unusual_node(self):
         body = b"""<?xml version="1.0" encoding="UTF-8"?>
             <root>
@@ -53,7 +67,6 @@ class XmliterBase:
         ]
         assert nodenames == [["matchme..."]]
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_unicode(self):
         # example taken from https://github.com/scrapy/scrapy/issues/1665
         body = """<?xml version="1.0" encoding="UTF-8"?>
@@ -113,7 +126,6 @@ class XmliterBase:
                 ("27", ["A"], ["27"]),
             ]
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_text(self):
         body = (
             '<?xml version="1.0" encoding="UTF-8"?>'
@@ -125,7 +137,6 @@ class XmliterBase:
             ["two"],
         ]
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_namespaces(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -163,7 +174,6 @@ class XmliterBase:
         assert node.xpath("id/text()").getall() == []
         assert node.xpath("price/text()").getall() == []
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_namespaced_nodename(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -191,7 +201,6 @@ class XmliterBase:
             "http://www.mydummycompany.com/images/item1.jpg"
         ]
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_namespaced_nodename_missing(self):
         body = b"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -216,26 +225,23 @@ class XmliterBase:
         with pytest.raises(StopIteration):
             next(my_iter)
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_exception(self):
         body = (
             '<?xml version="1.0" encoding="UTF-8"?>'
             "<products><product>one</product><product>two</product></products>"
         )
 
-        iter = self.xmliter(body, "product")
-        next(iter)
-        next(iter)
+        my_iter = self.xmliter(body, "product")
+        next(my_iter)
+        next(my_iter)
         with pytest.raises(StopIteration):
-            next(iter)
+            next(my_iter)
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_objtype_exception(self):
         i = self.xmliter(42, "product")
         with pytest.raises(TypeError):
             next(i)
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_xmliter_encoding(self):
         body = (
             b'<?xml version="1.0" encoding="ISO-8859-9"?>\n'
@@ -250,8 +256,12 @@ class XmliterBase:
         )
 
 
-class TestXmliter(XmliterBase):
-    xmliter = staticmethod(xmliter)
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
+class TestXmliter(TestXmliterBase):
+    def xmliter(
+        self, obj: Response | str | bytes, nodename: str, *args: Any
+    ) -> Iterator[Selector]:
+        return xmliter(obj, nodename)
 
     def test_deprecation(self):
         body = b"""
@@ -267,8 +277,11 @@ class TestXmliter(XmliterBase):
             next(self.xmliter(body, "product"))
 
 
-class TestLxmlXmliter(XmliterBase):
-    xmliter = staticmethod(xmliter_lxml)
+class TestLxmlXmliter(TestXmliterBase):
+    def xmliter(
+        self, obj: Response | str | bytes, nodename: str, *args: Any
+    ) -> Iterator[Selector]:
+        return xmliter_lxml(obj, nodename, *args)
 
     def test_xmliter_iterate_namespace(self):
         body = b"""
@@ -460,13 +473,13 @@ class TestUtilsCsv:
         body = get_testdata("feeds", "feed-sample3.csv")
 
         response = TextResponse(url="http://example.com/", body=body)
-        iter = csviter(response)
-        next(iter)
-        next(iter)
-        next(iter)
-        next(iter)
+        my_iter = csviter(response)
+        next(my_iter)
+        next(my_iter)
+        next(my_iter)
+        next(my_iter)
         with pytest.raises(StopIteration):
-            next(iter)
+            next(my_iter)
 
     def test_csviter_encoding(self):
         body1 = get_testdata("feeds", "feed-sample4.csv")
@@ -493,23 +506,32 @@ class TestUtilsCsv:
         ]
 
 
-class TestHelper:
+class TestBodyOrStr:
     bbody = b"utf8-body"
     ubody = bbody.decode("utf8")
-    txtresponse = TextResponse(url="http://example.org/", body=bbody, encoding="utf-8")
-    response = Response(url="http://example.org/", body=bbody)
 
-    def test_body_or_str(self):
-        for obj in (self.bbody, self.ubody, self.txtresponse, self.response):
-            r1 = _body_or_str(obj)
-            self._assert_type_and_value(r1, self.ubody, obj)
-            r2 = _body_or_str(obj, unicode=True)
-            self._assert_type_and_value(r2, self.ubody, obj)
-            r3 = _body_or_str(obj, unicode=False)
-            self._assert_type_and_value(r3, self.bbody, obj)
-            assert type(r1) is type(r2)
-            assert type(r1) is not type(r3)
+    @pytest.mark.parametrize(
+        "obj",
+        [
+            bbody,
+            ubody,
+            TextResponse(url="http://example.org/", body=bbody, encoding="utf-8"),
+            Response(url="http://example.org/", body=bbody),
+        ],
+    )
+    def test_body_or_str(self, obj: Response | str | bytes) -> None:
+        r1 = _body_or_str(obj)
+        self._assert_type_and_value(r1, self.ubody, obj)
+        r2 = _body_or_str(obj, unicode=True)
+        self._assert_type_and_value(r2, self.ubody, obj)
+        r3 = _body_or_str(obj, unicode=False)
+        self._assert_type_and_value(r3, self.bbody, obj)
+        assert type(r1) is type(r2)
+        assert type(r1) is not type(r3)
 
-    def _assert_type_and_value(self, a, b, obj):
+    @staticmethod
+    def _assert_type_and_value(
+        a: str | bytes, b: str | bytes, obj: Response | str | bytes
+    ) -> None:
         assert type(a) is type(b), f"Got {type(a)}, expected {type(b)} for {obj!r}"
         assert a == b

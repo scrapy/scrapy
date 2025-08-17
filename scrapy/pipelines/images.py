@@ -63,7 +63,7 @@ class ImagesPipeline(FilesPipeline):
         crawler: Crawler | None = None,
     ):
         try:
-            from PIL import Image
+            from PIL import Image  # noqa: PLC0415
 
             self._Image = Image
         except ImportError:
@@ -241,6 +241,10 @@ class ImagesPipeline(FilesPipeline):
         self, item: Any, info: MediaPipeline.SpiderInfo
     ) -> list[Request]:
         urls = ItemAdapter(item).get(self.images_urls_field, [])
+        if not isinstance(urls, list):
+            raise TypeError(
+                f"{self.images_urls_field} must be a list of URLs, got {type(urls).__name__}. "
+            )
         return [Request(u, callback=NO_CALLBACK) for u in urls]
 
     def item_completed(

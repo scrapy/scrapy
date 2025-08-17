@@ -75,7 +75,7 @@ class Selector(_ParselSelector, object_ref):
         self,
         response: TextResponse | None = None,
         text: str | None = None,
-        type: str | None = None,
+        type: str | None = None,  # noqa: A002
         root: Any | None = _NOT_SET,
         **kwargs: Any,
     ):

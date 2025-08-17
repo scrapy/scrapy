@@ -6,14 +6,15 @@ import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
-from twisted.trial import unittest
 
 from scrapy import signals
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException
 from scrapy.pipelines.media import MediaPipeline
 from scrapy.spiders import Spider
+from scrapy.utils.asyncio import call_later
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.test import get_crawler
@@ -36,17 +37,17 @@ class UserDefinedPipeline(MediaPipeline):
         return {}
 
     def media_failed(self, failure, request, info):
-        return failure
+        failure.raiseException()
 
     def file_path(self, request, response=None, info=None, *, item=None):
         return ""
 
 
-class TestBaseMediaPipeline(unittest.TestCase):
+class TestBaseMediaPipeline:
     pipeline_class = UserDefinedPipeline
     settings = None
 
-    def setUp(self):
+    def setup_method(self):
         spider_cls = Spider
         self.spider = spider_cls("media.com")
         crawler = get_crawler(spider_cls, self.settings)
@@ -56,7 +57,7 @@ class TestBaseMediaPipeline(unittest.TestCase):
         self.info = self.pipe.spiderinfo
         self.fingerprint = crawler.request_fingerprinter.fingerprint
 
-    def tearDown(self):
+    def teardown_method(self):
         for name, signal in vars(signals).items():
             if not name.startswith("_"):
                 disconnect_all(signal)
@@ -227,7 +228,8 @@ class TestMediaPipeline(TestBaseMediaPipeline):
     @inlineCallbacks
     def test_result_failure(self):
         self.pipe.LOG_FAILED_RESULTS = False
-        fail = Failure(Exception())
+        exc = Exception("foo")
+        fail = Failure(exc)
         req = Request(
             "http://url1",
             meta={"response": fail},
@@ -235,7 +237,10 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         )
         item = {"requests": req}
         new_item = yield self.pipe.process_item(item, self.spider)
-        assert new_item["results"] == [(False, fail)]
+        assert len(new_item["results"]) == 1
+        assert new_item["results"][0][0] is False
+        assert isinstance(new_item["results"][0][1], Failure)
+        assert new_item["results"][0][1].value == exc
         assert self.pipe._mockcalled == [
             "get_media_requests",
             "media_to_download",
@@ -249,11 +254,16 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         self.pipe.LOG_FAILED_RESULTS = False
         rsp1 = Response("http://url1")
         req1 = Request("http://url1", meta={"response": rsp1})
-        fail = Failure(Exception())
+        exc = Exception("foo")
+        fail = Failure(exc)
         req2 = Request("http://url2", meta={"response": fail})
         item = {"requests": [req1, req2]}
         new_item = yield self.pipe.process_item(item, self.spider)
-        assert new_item["results"] == [(True, {}), (False, fail)]
+        assert len(new_item["results"]) == 2
+        assert new_item["results"][0] == (True, {})
+        assert new_item["results"][1][0] is False
+        assert isinstance(new_item["results"][1][1], Failure)
+        assert new_item["results"][1][1].value == exc
         m = self.pipe._mockcalled
         # only once
         assert m[0] == "get_media_requests"  # first hook called
@@ -328,10 +338,8 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         rsp1 = Response("http://url")
 
         def rsp1_func():
-            from twisted.internet import reactor
-
             dfd = Deferred().addCallback(_check_downloading)
-            reactor.callLater(0.1, dfd.callback, rsp1)
+            call_later(0.1, dfd.callback, rsp1)
             return dfd
 
         def rsp2_func():
@@ -345,7 +353,7 @@ class TestMediaPipeline(TestBaseMediaPipeline):
 
     @inlineCallbacks
     def test_use_media_to_download_result(self):
-        req = Request("http://url", meta={"result": "ITSME", "response": self.fail})
+        req = Request("http://url", meta={"result": "ITSME"})
         item = {"requests": req}
         new_item = yield self.pipe.process_item(item, self.spider)
         assert new_item["results"] == [(True, "ITSME")]
@@ -532,3 +540,62 @@ class TestBuildFromCrawler:
             assert pipe._fingerprinter
             assert len(w) == 0
             assert pipe._from_crawler_called
+
+
+class MediaFailedFailurePipeline(MockedMediaPipeline):
+    def media_failed(self, failure, request, info):
+        self._mockcalled.append("media_failed")
+        return failure  # deprecated
+
+
+class TestMediaFailedFailure:
+    """Test that media_failed() can return a failure instead of raising."""
+
+    pipeline_class = MediaFailedFailurePipeline
+    settings = None
+
+    def setup_method(self):
+        spider_cls = Spider
+        self.spider = spider_cls("media.com")
+        crawler = get_crawler(spider_cls, self.settings)
+        self.pipe = self.pipeline_class.from_crawler(crawler)
+        self.pipe.download_func = _mocked_download_func
+        self.pipe.open_spider(self.spider)
+        self.info = self.pipe.spiderinfo
+        self.fingerprint = crawler.request_fingerprinter.fingerprint
+
+    def teardown_method(self):
+        for name, signal in vars(signals).items():
+            if not name.startswith("_"):
+                disconnect_all(signal)
+
+    def _errback(self, result):
+        self.pipe._mockcalled.append("request_errback")
+        return result
+
+    @inlineCallbacks
+    def test_result_failure(self):
+        self.pipe.LOG_FAILED_RESULTS = False
+        exc = Exception("foo")
+        fail = Failure(exc)
+        req = Request(
+            "http://url1",
+            meta={"response": fail},
+            errback=self._errback,
+        )
+        item = {"requests": req}
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="media_failed returned a Failure instance"
+        ):
+            new_item = yield self.pipe.process_item(item, self.spider)
+        assert len(new_item["results"]) == 1
+        assert new_item["results"][0][0] is False
+        assert isinstance(new_item["results"][0][1], Failure)
+        assert new_item["results"][0][1].value == exc
+        assert self.pipe._mockcalled == [
+            "get_media_requests",
+            "media_to_download",
+            "media_failed",
+            "request_errback",
+            "item_completed",
+        ]

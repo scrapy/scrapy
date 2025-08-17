@@ -169,7 +169,7 @@ class S3FilesStore:
     def __init__(self, uri: str):
         if not is_botocore_available():
             raise NotConfigured("missing botocore library")
-        import botocore.session
+        import botocore.session  # noqa: PLC0415
 
         session = botocore.session.get_session()
         self.s3_client = session.create_client(
@@ -284,7 +284,7 @@ class GCSFilesStore:
     POLICY = None
 
     def __init__(self, uri: str):
-        from google.cloud import storage
+        from google.cloud import storage  # noqa: PLC0415
 
         client = storage.Client(project=self.GCS_PROJECT_ID)
         bucket, prefix = uri[5:].split("/", 1)
@@ -317,7 +317,7 @@ class GCSFilesStore:
 
         blob_path = self._get_blob_path(path)
         return cast(
-            Deferred[StatInfo],
+            "Deferred[StatInfo]",
             deferToThread(self.bucket.get_blob, blob_path).addCallback(_onsuccess),
         )
 
@@ -531,7 +531,9 @@ class FilesPipeline(MediaPipeline):
 
     @classmethod
     def _update_stores(cls, settings: BaseSettings) -> None:
-        s3store: type[S3FilesStore] = cast(type[S3FilesStore], cls.STORE_SCHEMES["s3"])
+        s3store: type[S3FilesStore] = cast(
+            "type[S3FilesStore]", cls.STORE_SCHEMES["s3"]
+        )
         s3store.AWS_ACCESS_KEY_ID = settings["AWS_ACCESS_KEY_ID"]
         s3store.AWS_SECRET_ACCESS_KEY = settings["AWS_SECRET_ACCESS_KEY"]
         s3store.AWS_SESSION_TOKEN = settings["AWS_SESSION_TOKEN"]
@@ -542,13 +544,13 @@ class FilesPipeline(MediaPipeline):
         s3store.POLICY = settings["FILES_STORE_S3_ACL"]
 
         gcs_store: type[GCSFilesStore] = cast(
-            type[GCSFilesStore], cls.STORE_SCHEMES["gs"]
+            "type[GCSFilesStore]", cls.STORE_SCHEMES["gs"]
         )
         gcs_store.GCS_PROJECT_ID = settings["GCS_PROJECT_ID"]
         gcs_store.POLICY = settings["FILES_STORE_GCS_ACL"] or None
 
         ftp_store: type[FTPFilesStore] = cast(
-            type[FTPFilesStore], cls.STORE_SCHEMES["ftp"]
+            "type[FTPFilesStore]", cls.STORE_SCHEMES["ftp"]
         )
         ftp_store.FTP_USERNAME = settings["FTP_USER"]
         ftp_store.FTP_PASSWORD = settings["FTP_PASSWORD"]
@@ -562,7 +564,7 @@ class FilesPipeline(MediaPipeline):
 
     def media_to_download(
         self, request: Request, info: MediaPipeline.SpiderInfo, *, item: Any = None
-    ) -> Deferred[FileInfo | None]:
+    ) -> Deferred[FileInfo | None] | None:
         def _onsuccess(result: StatInfo) -> FileInfo | None:
             if not result:
                 return None  # returning None force download
@@ -702,6 +704,10 @@ class FilesPipeline(MediaPipeline):
         self, item: Any, info: MediaPipeline.SpiderInfo
     ) -> list[Request]:
         urls = ItemAdapter(item).get(self.files_urls_field, [])
+        if not isinstance(urls, list):
+            raise TypeError(
+                f"{self.files_urls_field} must be a list of URLs, got {type(urls).__name__}. "
+            )
         return [Request(u, callback=NO_CALLBACK) for u in urls]
 
     def file_downloaded(
@@ -742,5 +748,5 @@ class FilesPipeline(MediaPipeline):
             media_ext = ""
             media_type = mimetypes.guess_type(request.url)[0]
             if media_type:
-                media_ext = cast(str, mimetypes.guess_extension(media_type))
+                media_ext = cast("str", mimetypes.guess_extension(media_type))
         return f"full/{media_guid}{media_ext}"

@@ -6,19 +6,20 @@ See documentation in docs/topics/downloader-middleware.rst
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import warnings
 from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 
-from scrapy.exceptions import _InvalidOutput
+from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.defer import deferred_from_coro, mustbe_deferred
+from scrapy.utils.defer import _defer_sleep, deferred_from_coro
+from scrapy.utils.deprecate import argument_is_required
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
 
     from scrapy import Spider
     from scrapy.settings import BaseSettings
@@ -42,18 +43,29 @@ class DownloaderMiddlewareManager(MiddlewareManager):
     @inlineCallbacks
     def download(
         self,
-        download_func: Callable[[Request, Spider], Deferred[Response]],
+        download_func: Callable[[Request], Deferred[Response]],
         request: Request,
-        spider: Spider,
+        spider: Spider | None = None,
     ) -> Generator[Deferred[Any], Any, Response | Request]:
+        if argument_is_required(download_func, "spider"):
+            warnings.warn(
+                "The spider argument of download_func is deprecated"
+                " and will not be passed in future Scrapy versions.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            need_spider_arg = True
+        else:
+            need_spider_arg = False
+
         @inlineCallbacks
         def process_request(
             request: Request,
         ) -> Generator[Deferred[Any], Any, Response | Request]:
             for method in self.methods["process_request"]:
-                method = cast(Callable, method)
+                method = cast("Callable", method)
                 response = yield deferred_from_coro(
-                    method(request=request, spider=spider)
+                    method(request=request, spider=self._spider)
                 )
                 if response is not None and not isinstance(
                     response, (Response, Request)
@@ -64,7 +76,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     )
                 if response:
                     return response
-            return (yield download_func(request, spider))
+            if need_spider_arg:
+                return (yield download_func(request, self._spider))  # type: ignore[call-arg]
+            return (yield download_func(request))
 
         @inlineCallbacks
         def process_response(
@@ -76,9 +90,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 return response
 
             for method in self.methods["process_response"]:
-                method = cast(Callable, method)
+                method = cast("Callable", method)
                 response = yield deferred_from_coro(
-                    method(request=request, response=response, spider=spider)
+                    method(request=request, response=response, spider=self._spider)
                 )
                 if not isinstance(response, (Response, Request)):
                     raise _InvalidOutput(
@@ -94,9 +108,9 @@ class DownloaderMiddlewareManager(MiddlewareManager):
             exception: Exception,
         ) -> Generator[Deferred[Any], Any, Response | Request]:
             for method in self.methods["process_exception"]:
-                method = cast(Callable, method)
+                method = cast("Callable", method)
                 response = yield deferred_from_coro(
-                    method(request=request, exception=exception, spider=spider)
+                    method(request=request, exception=exception, spider=self._spider)
                 )
                 if response is not None and not isinstance(
                     response, (Response, Request)
@@ -109,9 +123,13 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     return response
             raise exception
 
+        if spider:
+            self._warn_spider_arg("download")
+            self._set_compat_spider(spider)
         try:
-            result: Response | Request = yield mustbe_deferred(process_request, request)
+            result: Response | Request = yield process_request(request)
         except Exception as ex:
+            yield _defer_sleep()
             # either returns a request or response (which we pass to process_response())
             # or reraises the exception
             result = yield process_exception(ex)

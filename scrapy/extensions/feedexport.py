@@ -11,6 +11,7 @@ import logging
 import re
 import sys
 import warnings
+from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
@@ -140,7 +141,7 @@ class FeedStorageProtocol(Protocol):
 
 
 @implementer(IFeedStorage)
-class BlockingFeedStorage:
+class BlockingFeedStorage(ABC):
     def open(self, spider: Spider) -> IO[bytes]:
         path = spider.crawler.settings["FEED_TEMPDIR"]
         if path and not Path(path).is_dir():
@@ -151,6 +152,7 @@ class BlockingFeedStorage:
     def store(self, file: IO[bytes]) -> Deferred[None] | None:
         return deferToThread(self._store_in_thread, file)
 
+    @abstractmethod
     def _store_in_thread(self, file: IO[bytes]) -> None:
         raise NotImplementedError
 
@@ -185,7 +187,7 @@ class StdoutFeedStorage:
 @implementer(IFeedStorage)
 class FileFeedStorage:
     def __init__(self, uri: str, *, feed_options: dict[str, Any] | None = None):
-        self.path: str = file_uri_to_path(uri)
+        self.path: str = file_uri_to_path(uri) if uri.startswith("file://") else uri
         feed_options = feed_options or {}
         self.write_mode: OpenBinaryMode = (
             "wb" if feed_options.get("overwrite", False) else "ab"
@@ -216,7 +218,7 @@ class S3FeedStorage(BlockingFeedStorage):
         region_name: str | None = None,
     ):
         try:
-            import boto3.session
+            import boto3.session  # noqa: PLC0415
         except ImportError:
             raise NotConfigured("missing boto3 library")
         u = urlparse(uri)
@@ -315,7 +317,7 @@ class GCSFeedStorage(BlockingFeedStorage):
 
     def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
-        from google.cloud.storage import Client
+        from google.cloud.storage import Client  # noqa: PLC0415
 
         client = Client(project=self.project_id)
         bucket = client.get_bucket(self.bucket_name)
@@ -374,11 +376,11 @@ class FeedSlot:
         self,
         storage: FeedStorageProtocol,
         uri: str,
-        format: str,
+        format: str,  # noqa: A002
         store_empty: bool,
         batch_id: int,
         uri_template: str,
-        filter: ItemFilter,
+        filter: ItemFilter,  # noqa: A002
         feed_options: dict[str, Any],
         spider: Spider,
         exporters: dict[str, type[BaseItemExporter]],
@@ -411,7 +413,7 @@ class FeedSlot:
             self.file = self.storage.open(self.spider)
             if "postprocessing" in self.feed_options:
                 self.file = cast(
-                    IO[bytes],
+                    "IO[bytes]",
                     PostProcessingManager(
                         self.feed_options["postprocessing"],
                         self.file,
@@ -420,7 +422,7 @@ class FeedSlot:
                 )
             self.exporter = self._get_exporter(
                 file=self.file,
-                format=self.feed_options["format"],
+                format_=self.feed_options["format"],
                 fields_to_export=self.feed_options["fields"],
                 encoding=self.feed_options["encoding"],
                 indent=self.feed_options["indent"],
@@ -434,10 +436,10 @@ class FeedSlot:
             self._exporting = True
 
     def _get_exporter(
-        self, file: IO[bytes], format: str, *args: Any, **kwargs: Any
+        self, file: IO[bytes], format_: str, *args: Any, **kwargs: Any
     ) -> BaseItemExporter:
         return build_from_crawler(
-            self.exporters[format], self.crawler, file, *args, **kwargs
+            self.exporters[format_], self.crawler, file, *args, **kwargs
         )
 
     def finish_exporting(self) -> None:
@@ -479,7 +481,7 @@ class FeedExporter:
             uri = self.settings["FEED_URI"]
             # handle pathlib.Path objects
             uri = str(uri) if not isinstance(uri, Path) else uri.absolute().as_uri()
-            feed_options = {"format": self.settings.get("FEED_FORMAT", "jsonlines")}
+            feed_options = {"format": self.settings["FEED_FORMAT"]}
             self.feeds[uri] = feed_complete_default_values_from_settings(
                 feed_options, self.settings
             )
@@ -660,7 +662,7 @@ class FeedExporter:
 
     def _load_components(self, setting_prefix: str) -> dict[str, Any]:
         conf = without_none_values(
-            cast(dict[str, str], self.settings.getwithbase(setting_prefix))
+            cast("dict[str, str]", self.settings.getwithbase(setting_prefix))
         )
         d = {}
         for k, v in conf.items():
@@ -668,10 +670,10 @@ class FeedExporter:
                 d[k] = load_object(v)
         return d
 
-    def _exporter_supported(self, format: str) -> bool:
-        if format in self.exporters:
+    def _exporter_supported(self, format_: str) -> bool:
+        if format_ in self.exporters:
             return True
-        logger.error("Unknown feed format: %(format)s", {"format": format})
+        logger.error("Unknown feed format: %(format)s", {"format": format_})
         return False
 
     def _settings_are_valid(self) -> bool:

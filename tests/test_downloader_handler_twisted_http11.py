@@ -7,13 +7,13 @@ from typing import TYPE_CHECKING, Any
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from tests.test_downloader_handlers_http_base import (
     TestHttp11Base,
-    TestHttpMockServerBase,
     TestHttpProxyBase,
     TestHttps11Base,
     TestHttpsCustomCiphersBase,
     TestHttpsInvalidDNSIdBase,
     TestHttpsInvalidDNSPatternBase,
     TestHttpsWrongHostnameBase,
+    TestHttpWithCrawlerBase,
     TestSimpleHttpsBase,
 )
 
@@ -39,27 +39,25 @@ class TestSimpleHttps(HTTP11DownloadHandlerMixin, TestSimpleHttpsBase):
     pass
 
 
-class Https11WrongHostnameTestCase(
-    HTTP11DownloadHandlerMixin, TestHttpsWrongHostnameBase
-):
+class TestHttps11WrongHostname(HTTP11DownloadHandlerMixin, TestHttpsWrongHostnameBase):
     pass
 
 
-class Https11InvalidDNSId(HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
+class TestHttps11InvalidDNSId(HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSIdBase):
     pass
 
 
-class Https11InvalidDNSPattern(
+class TestHttps11InvalidDNSPattern(
     HTTP11DownloadHandlerMixin, TestHttpsInvalidDNSPatternBase
 ):
     pass
 
 
-class Https11CustomCiphers(HTTP11DownloadHandlerMixin, TestHttpsCustomCiphersBase):
+class TestHttps11CustomCiphers(HTTP11DownloadHandlerMixin, TestHttpsCustomCiphersBase):
     pass
 
 
-class TestHttp11MockServer(TestHttpMockServerBase):
+class TestHttp11WithCrawler(TestHttpWithCrawlerBase):
     @property
     def settings_dict(self) -> dict[str, Any] | None:
         return None  # default handler settings

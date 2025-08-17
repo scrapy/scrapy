@@ -280,7 +280,7 @@ In more complex websites, it could be difficult to easily reproduce the
 requests, as we could need to add ``headers`` or ``cookies`` to make it work.
 In those cases you can export the requests in `cURL <https://curl.se/>`_
 format, by right-clicking on each of them in the network tool and using the
-:meth:`~scrapy.Request.from_curl()` method to generate an equivalent
+:meth:`~scrapy.Request.from_curl` method to generate an equivalent
 request:
 
 .. code-block:: python

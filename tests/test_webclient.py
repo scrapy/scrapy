@@ -1,41 +1,33 @@
 """
-from twisted.internet import defer
 Tests borrowed from the twisted.web.client tests.
 """
 
 from __future__ import annotations
 
-import shutil
-from pathlib import Path
-from tempfile import mkdtemp
 from urllib.parse import urlparse
 
 import OpenSSL.SSL
 import pytest
+from pytest_twisted import async_yield_fixture
 from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.testing import StringTransport
 from twisted.protocols.policies import WrappingFactory
-from twisted.trial import unittest
 from twisted.web import resource, server, static, util
+from twisted.web.client import _makeGetterFactory
 
 from scrapy.core.downloader import webclient as client
-from scrapy.core.downloader.contextfactory import (
-    ScrapyClientContextFactory,
-)
+from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
 from scrapy.http import Headers, Request
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.test import get_crawler
-from tests.mockserver import (
-    BrokenDownloadResource,
-    ErrorResource,
+from tests.mockserver.http_resources import (
     ForeverTakingResource,
     HostHeaderResource,
-    NoLengthResource,
     PayloadResource,
-    ssl_context_factory,
 )
+from tests.mockserver.utils import ssl_context_factory
 from tests.test_core_downloader import TestContextFactoryBase
 
 
@@ -50,8 +42,6 @@ def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
         )
         f.deferred.addCallback(response_transform or (lambda r: r.body))
         return f
-
-    from twisted.web.client import _makeGetterFactory
 
     return _makeGetterFactory(
         to_bytes(url),
@@ -202,17 +192,38 @@ class EncodingResource(resource.Resource):
         return body.encode(self.out_encoding)
 
 
+class BrokenDownloadResource(resource.Resource):
+    def render(self, request):
+        # only sends 3 bytes even though it claims to send 5
+        request.setHeader(b"content-length", b"5")
+        request.write(b"abc")
+        return b""
+
+
+class ErrorResource(resource.Resource):
+    def render(self, request):
+        request.setResponseCode(401)
+        if request.args.get(b"showlength"):
+            request.setHeader(b"content-length", b"0")
+        return b""
+
+
+class NoLengthResource(resource.Resource):
+    def render(self, request):
+        return b"nolength"
+
+
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class TestWebClient(unittest.TestCase):
+class TestWebClient:
     def _listen(self, site):
         from twisted.internet import reactor
 
         return reactor.listenTCP(0, site, interface="127.0.0.1")
 
-    def setUp(self):
-        self.tmpname = Path(mkdtemp())
-        (self.tmpname / "file").write_bytes(b"0123456789")
-        r = static.File(str(self.tmpname))
+    @pytest.fixture
+    def wrapper(self, tmp_path):
+        (tmp_path / "file").write_bytes(b"0123456789")
+        r = static.File(str(tmp_path))
         r.putChild(b"redirect", util.Redirect(b"/file"))
         r.putChild(b"wait", ForeverTakingResource())
         r.putChild(b"error", ErrorResource())
@@ -221,49 +232,47 @@ class TestWebClient(unittest.TestCase):
         r.putChild(b"payload", PayloadResource())
         r.putChild(b"broken", BrokenDownloadResource())
         r.putChild(b"encoding", EncodingResource())
-        self.site = server.Site(r, timeout=None)
-        self.wrapper = WrappingFactory(self.site)
-        self.port = self._listen(self.wrapper)
-        self.portno = self.port.getHost().port
+        site = server.Site(r, timeout=None)
+        return WrappingFactory(site)
+
+    @async_yield_fixture
+    async def server_port(self, wrapper):
+        port = self._listen(wrapper)
+
+        yield port.getHost().port
+
+        await port.stopListening()
+
+    @pytest.fixture
+    def server_url(self, server_port):
+        return f"http://127.0.0.1:{server_port}/"
 
     @inlineCallbacks
-    def tearDown(self):
-        yield self.port.stopListening()
-        shutil.rmtree(self.tmpname)
-
-    def getURL(self, path):
-        return f"http://127.0.0.1:{self.portno}/{path}"
-
-    def testPayload(self):
+    def testPayload(self, server_url):
         s = "0123456789" * 10
-        return getPage(self.getURL("payload"), body=s).addCallback(
-            self.assertEqual, to_bytes(s)
-        )
+        body = yield getPage(server_url + "payload", body=s)
+        assert body == to_bytes(s)
 
-    def testHostHeader(self):
+    @inlineCallbacks
+    def testHostHeader(self, server_port, server_url):
         # if we pass Host header explicitly, it should be used, otherwise
         # it should extract from url
-        return defer.gatherResults(
-            [
-                getPage(self.getURL("host")).addCallback(
-                    self.assertEqual, to_bytes(f"127.0.0.1:{self.portno}")
-                ),
-                getPage(
-                    self.getURL("host"), headers={"Host": "www.example.com"}
-                ).addCallback(self.assertEqual, to_bytes("www.example.com")),
-            ]
-        )
+        body = yield getPage(server_url + "host")
+        assert body == to_bytes(f"127.0.0.1:{server_port}")
+        body = yield getPage(server_url + "host", headers={"Host": "www.example.com"})
+        assert body == to_bytes("www.example.com")
 
-    def test_getPage(self):
+    @inlineCallbacks
+    def test_getPage(self, server_url):
         """
         L{client.getPage} returns a L{Deferred} which is called back with
         the body of the response if the default method B{GET} is used.
         """
-        d = getPage(self.getURL("file"))
-        d.addCallback(self.assertEqual, b"0123456789")
-        return d
+        body = yield getPage(server_url + "file")
+        assert body == b"0123456789"
 
-    def test_getPageHead(self):
+    @inlineCallbacks
+    def test_getPageHead(self, server_url):
         """
         L{client.getPage} returns a L{Deferred} which is called back with
         the empty string if the method is C{HEAD} and there is a successful
@@ -271,115 +280,110 @@ class TestWebClient(unittest.TestCase):
         """
 
         def _getPage(method):
-            return getPage(self.getURL("file"), method=method)
+            return getPage(server_url + "file", method=method)
 
-        return defer.gatherResults(
-            [
-                _getPage("head").addCallback(self.assertEqual, b""),
-                _getPage("HEAD").addCallback(self.assertEqual, b""),
-            ]
-        )
+        body = yield _getPage("head")
+        assert body == b""
+        body = yield _getPage("HEAD")
+        assert body == b""
 
-    def test_timeoutNotTriggering(self):
+    @inlineCallbacks
+    def test_timeoutNotTriggering(self, server_port, server_url):
         """
         When a non-zero timeout is passed to L{getPage} and the page is
         retrieved before the timeout period elapses, the L{Deferred} is
         called back with the contents of the page.
         """
-        d = getPage(self.getURL("host"), timeout=100)
-        d.addCallback(self.assertEqual, to_bytes(f"127.0.0.1:{self.portno}"))
-        return d
+        body = yield getPage(server_url + "host", timeout=100)
+        assert body == to_bytes(f"127.0.0.1:{server_port}")
 
     @inlineCallbacks
-    def test_timeoutTriggering(self):
+    def test_timeoutTriggering(self, wrapper, server_url):
         """
         When a non-zero timeout is passed to L{getPage} and that many
         seconds elapse before the server responds to the request. the
         L{Deferred} is errbacked with a L{error.TimeoutError}.
         """
         with pytest.raises(defer.TimeoutError):
-            yield getPage(self.getURL("wait"), timeout=0.000001)
+            yield getPage(server_url + "wait", timeout=0.000001)
         # Clean up the server which is hanging around not doing
         # anything.
-        connected = list(self.wrapper.protocols.keys())
+        connected = list(wrapper.protocols.keys())
         # There might be nothing here if the server managed to already see
         # that the connection was lost.
         if connected:
             connected[0].transport.loseConnection()
 
-    def testNotFound(self):
-        return getPage(self.getURL("notsuchfile")).addCallback(self._cbNoSuchFile)
+    @inlineCallbacks
+    def testNotFound(self, server_url):
+        body = yield getPage(server_url + "notsuchfile")
+        assert b"404 - No Such Resource" in body
 
-    def _cbNoSuchFile(self, pageData):
-        assert b"404 - No Such Resource" in pageData
-
-    def testFactoryInfo(self):
+    @inlineCallbacks
+    def testFactoryInfo(self, server_url):
         from twisted.internet import reactor
 
-        url = self.getURL("file")
+        url = server_url + "file"
         parsed = urlparse(url)
         factory = client.ScrapyHTTPClientFactory(Request(url))
         reactor.connectTCP(parsed.hostname, parsed.port, factory)
-        return factory.deferred.addCallback(self._cbFactoryInfo, factory)
-
-    def _cbFactoryInfo(self, ignoredResult, factory):
+        yield factory.deferred
         assert factory.status == b"200"
         assert factory.version.startswith(b"HTTP/")
         assert factory.message == b"OK"
         assert factory.response_headers[b"content-length"] == b"10"
 
-    def testRedirect(self):
-        return getPage(self.getURL("redirect")).addCallback(self._cbRedirect)
-
-    def _cbRedirect(self, pageData):
+    @inlineCallbacks
+    def testRedirect(self, server_url):
+        body = yield getPage(server_url + "redirect")
         assert (
-            pageData
+            body
             == b'\n<html>\n    <head>\n        <meta http-equiv="refresh" content="0;URL=/file">\n'
             b'    </head>\n    <body bgcolor="#FFFFFF" text="#000000">\n    '
             b'<a href="/file">click here</a>\n    </body>\n</html>\n'
         )
 
-    def test_encoding(self):
+    @inlineCallbacks
+    def test_encoding(self, server_url):
         """Test that non-standart body encoding matches
         Content-Encoding header"""
-        body = b"\xd0\x81\xd1\x8e\xd0\xaf"
-        dfd = getPage(
-            self.getURL("encoding"), body=body, response_transform=lambda r: r
+        original_body = b"\xd0\x81\xd1\x8e\xd0\xaf"
+        response = yield getPage(
+            server_url + "encoding", body=original_body, response_transform=lambda r: r
         )
-        return dfd.addCallback(self._check_Encoding, body)
-
-    def _check_Encoding(self, response, original_body):
         content_encoding = to_unicode(response.headers[b"Content-Encoding"])
         assert content_encoding == EncodingResource.out_encoding
         assert response.body.decode(content_encoding) == to_unicode(original_body)
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class WebClientSSLTestCase(TestContextFactoryBase):
-    def testPayload(self):
+class TestWebClientSSL(TestContextFactoryBase):
+    @inlineCallbacks
+    def testPayload(self, server_url):
         s = "0123456789" * 10
-        return getPage(self.getURL("payload"), body=s).addCallback(
-            self.assertEqual, to_bytes(s)
-        )
+        body = yield getPage(server_url + "payload", body=s)
+        assert body == to_bytes(s)
 
 
-class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
+class TestWebClientCustomCiphersSSL(TestWebClientSSL):
     # we try to use a cipher that is not enabled by default in OpenSSL
     custom_ciphers = "CAMELLIA256-SHA"
     context_factory = ssl_context_factory(cipher_string=custom_ciphers)
 
-    def testPayload(self):
+    @inlineCallbacks
+    def testPayload(self, server_url):
         s = "0123456789" * 10
         crawler = get_crawler(
             settings_dict={"DOWNLOADER_CLIENT_TLS_CIPHERS": self.custom_ciphers}
         )
         client_context_factory = build_from_crawler(ScrapyClientContextFactory, crawler)
-        return getPage(
-            self.getURL("payload"), body=s, contextFactory=client_context_factory
-        ).addCallback(self.assertEqual, to_bytes(s))
+        body = yield getPage(
+            server_url + "payload", body=s, contextFactory=client_context_factory
+        )
+        assert body == to_bytes(s)
 
     @inlineCallbacks
-    def testPayloadDisabledCipher(self):
+    def testPayloadDisabledCipher(self, server_url):
         s = "0123456789" * 10
         crawler = get_crawler(
             settings_dict={
@@ -389,5 +393,5 @@ class WebClientCustomCiphersSSLTestCase(WebClientSSLTestCase):
         client_context_factory = build_from_crawler(ScrapyClientContextFactory, crawler)
         with pytest.raises(OpenSSL.SSL.Error):
             yield getPage(
-                self.getURL("payload"), body=s, contextFactory=client_context_factory
+                server_url + "payload", body=s, contextFactory=client_context_factory
             )

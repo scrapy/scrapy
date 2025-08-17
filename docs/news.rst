@@ -15,6 +15,125 @@ Backward-incompatible changes
     ``True`` when running Scrapy via :ref:`its command-line tool
     <topics-commands-crawlerprocess>` to avoid a reactor mismatch exception.
 
+-   The classes listed below are now :term:`abstract base classes <abstract
+    base class>`. They cannot be instantiated directly and their subclasses
+    need to override the abstract methods listed below to be able to be
+    instantiated. If you previously instantiated these classes directly, you
+    will now need to subclass them and provide trivial (e.g. empty)
+    implementations for the abstract methods.
+
+    - :class:`scrapy.commands.ScrapyCommand`
+
+        - :meth:`~scrapy.commands.ScrapyCommand.run`
+
+        - :meth:`~scrapy.commands.ScrapyCommand.short_desc`
+
+    - :class:`scrapy.exporters.BaseItemExporter`
+
+        - :meth:`~scrapy.exporters.BaseItemExporter.export_item`
+
+    - :class:`scrapy.extensions.feedexport.BlockingFeedStorage`
+
+        - :meth:`~scrapy.extensions.feedexport.BlockingFeedStorage._store_in_thread`
+
+    - :class:`scrapy.middleware.MiddlewareManager`
+
+        - :meth:`~scrapy.middleware.MiddlewareManager._get_mwlist_from_settings`
+
+    - :class:`scrapy.spidermiddlewares.referer.ReferrerPolicy`
+
+        - :meth:`~scrapy.spidermiddlewares.referer.ReferrerPolicy.referrer`
+
+
+.. _release-2.13.3:
+
+Scrapy 2.13.3 (2025-07-02)
+--------------------------
+
+-   Changed the values for :setting:`DOWNLOAD_DELAY` (from ``0`` to ``1``) and
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` (from ``8`` to ``1``) in the
+    default project template.
+    (:issue:`6597`, :issue:`6918`, :issue:`6923`)
+
+-   Improved :class:`scrapy.core.engine.ExecutionEngine` logic related to
+    initialization and exception handling, fixing several cases where the
+    spider would crash, hang or log an unhandled exception.
+    (:issue:`6783`, :issue:`6784`, :issue:`6900`, :issue:`6908`, :issue:`6910`,
+    :issue:`6911`)
+
+-   Fixed a Windows issue with :ref:`feed exports <topics-feed-exports>` using
+    :class:`scrapy.extensions.feedexport.FileFeedStorage` that caused the file
+    to be created on the wrong drive.
+    (:issue:`6894`, :issue:`6897`)
+
+-   Allowed running tests with Twisted 25.5.0+ again. Pytest 8.4.1+ is now
+    required for running tests in non-pinned envs as support for the new
+    Twisted version was added in that version.
+    (:issue:`6893`)
+
+-   Fixed running tests with lxml 6.0.0+.
+    (:issue:`6919`)
+
+-   Added a deprecation notice for
+    ``scrapy.spidermiddlewares.offsite.OffsiteMiddleware`` to :ref:`the Scrapy
+    2.11.2 release notes <release-2.11.2>`.
+    (:issue:`6926`)
+
+-   Updated :ref:`contribution docs <topics-contributing>` to refer to ruff_
+    instead of black_.
+    (:issue:`6903`)
+
+-   Added ``.venv/`` and ``.vscode/`` to ``.gitignore``.
+    (:issue:`6901`, :issue:`6907`)
+
+
+.. _release-2.13.2:
+
+Scrapy 2.13.2 (2025-06-09)
+--------------------------
+
+-   Fixed a bug introduced in Scrapy 2.13.0 that caused results of request
+    errbacks to be ignored when the errback was called because of a downloader
+    error.
+    (:issue:`6861`, :issue:`6863`)
+
+-   Added a note about the behavior change of
+    :func:`scrapy.utils.reactor.is_asyncio_reactor_installed` to its docs and
+    to the "Backward-incompatible changes" section of :ref:`the Scrapy 2.13.0
+    release notes <release-2.13.0>`.
+    (:issue:`6866`)
+
+-   Improved the message in the exception raised by
+    :func:`scrapy.utils.test.get_reactor_settings` when there is no reactor
+    installed.
+    (:issue:`6866`)
+
+-   Updated the :class:`scrapy.crawler.CrawlerRunner` examples in
+    :ref:`topics-practices` to install the reactor explicitly, to fix
+    reactor-related errors with Scrapy 2.13.0 and later.
+    (:issue:`6865`)
+
+-   Fixed ``scrapy fetch`` not working with scrapy-poet_.
+    (:issue:`6872`)
+
+-   Fixed an exception produced by :class:`scrapy.core.engine.ExecutionEngine`
+    when it's closed before being fully initialized.
+    (:issue:`6857`, :issue:`6867`)
+
+-   Improved the README, updated the Scrapy logo in it.
+    (:issue:`6831`, :issue:`6833`, :issue:`6839`)
+
+-   Restricted the Twisted version used in tests to below 25.5.0, as some tests
+    fail with 25.5.0.
+    (:issue:`6878`, :issue:`6882`)
+
+-   Updated type hints for Twisted 25.5.0 changes.
+    (:issue:`6882`)
+
+-   Removed the old artwork.
+    (:issue:`6874`)
+
+
 .. _release-2.13.1:
 
 Scrapy 2.13.1 (2025-05-28)
@@ -137,6 +256,15 @@ Backward-incompatible changes
 -   The URL length limit, set by the :setting:`URLLENGTH_LIMIT` setting, is now
     also enforced for start requests.
     (:issue:`6777`)
+
+-   Calling :func:`scrapy.utils.reactor.is_asyncio_reactor_installed` without
+    an installed reactor now raises an exception instead of installing a
+    reactor. This shouldn't affect normal Scrapy use cases, but it may affect
+    3rd-party test suites that use Scrapy internals such as
+    :class:`~scrapy.crawler.Crawler` and don't install a reactor explicitly. If
+    you are affected by this change, you most likely need to install the
+    reactor before running Scrapy code that expects it to be installed.
+    (:issue:`6732`, :issue:`6735`)
 
 -   The ``from_settings()`` method of
     :class:`~scrapy.spidermiddlewares.urllength.UrlLengthMiddleware`,
@@ -283,7 +411,7 @@ Deprecations
     (:issue:`6708`, :issue:`6714`)
 
 -   ``scrapy.utils.versions.scrapy_components_versions()`` is deprecated, use
-    :func:`scrapy.utils.versions.get_versions()` instead.
+    :func:`scrapy.utils.versions.get_versions` instead.
     (:issue:`6582`)
 
 -   ``BaseDupeFilter.log()`` is deprecated. It does nothing and shouldn't be
@@ -1176,6 +1304,17 @@ Security bug fixes
 
     .. _defusedxml: https://github.com/tiran/defusedxml
 
+Deprecations
+~~~~~~~~~~~~
+
+-   ``scrapy.spidermiddlewares.offsite.OffsiteMiddleware`` (a spider
+    middleware) is now deprecated and not enabled by default. The new
+    downloader middleware with the same functionality,
+    :class:`scrapy.downloadermiddlewares.offsite.OffsiteMiddleware`, is enabled
+    instead.
+    (:issue:`2241`, :issue:`6358`)
+
+
 Bug fixes
 ~~~~~~~~~
 
@@ -1729,7 +1868,7 @@ Bug fixes
     (:issue:`5914`, :issue:`5917`)
 
 -   Fixed an error breaking user handling of send failures in
-    :meth:`scrapy.mail.MailSender.send()`. (:issue:`1611`, :issue:`5880`)
+    :meth:`scrapy.mail.MailSender.send`. (:issue:`1611`, :issue:`5880`)
 
 Documentation
 ~~~~~~~~~~~~~
@@ -4397,6 +4536,8 @@ Highlights:
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. skip: start
+
 *   Python 3.4 is no longer supported, and some of the minimum requirements of
     Scrapy have also changed:
 
@@ -4436,6 +4577,8 @@ Backward-incompatible changes
 
     (:issue:`3804`, :issue:`3819`, :issue:`3897`, :issue:`3976`, :issue:`3998`,
     :issue:`4036`)
+
+.. skip: end
 
 See also :ref:`1.8-deprecation-removals` below.
 
@@ -5275,7 +5418,7 @@ Docs
 - Added missing bullet point for the ``AUTOTHROTTLE_TARGET_CONCURRENCY``
   setting. (:issue:`2756`)
 - Update Contributing docs, document new support channels
-  (:issue:`2762`, issue:`3038`)
+  (:issue:`2762`, :issue:`3038`)
 - Include references to Scrapy subreddit in the docs
 - Fix broken links; use ``https://`` for external links
   (:issue:`2978`, :issue:`2982`, :issue:`2958`)

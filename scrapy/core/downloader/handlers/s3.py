@@ -51,8 +51,8 @@ class S3DownloadHandler:
         self.anon = kw.get("anon")
 
         self._signer = None
-        import botocore.auth
-        import botocore.credentials
+        import botocore.auth  # noqa: PLC0415
+        import botocore.credentials  # noqa: PLC0415
 
         kw.pop("anon", None)
         if kw:
@@ -87,7 +87,7 @@ class S3DownloadHandler:
         if self.anon:
             request = request.replace(url=url)
         else:
-            import botocore.awsrequest
+            import botocore.awsrequest  # noqa: PLC0415
 
             awsrequest = botocore.awsrequest.AWSRequest(
                 method=request.method,

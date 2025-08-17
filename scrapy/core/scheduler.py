@@ -491,7 +491,7 @@ class Scheduler(BaseScheduler):
         if not path.exists():
             return []
         with path.open(encoding="utf-8") as f:
-            return cast(list[int], json.load(f))
+            return cast("list[int]", json.load(f))
 
     def _write_dqs_state(self, dqdir: str, state: list[int]) -> None:
         with Path(dqdir, "active.json").open("w", encoding="utf-8") as f:

@@ -16,12 +16,12 @@ from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 
 
-def _get_dupefilter(*, crawler=None, settings=None, open=True):
+def _get_dupefilter(*, crawler=None, settings=None, open_=True):
     if crawler is None:
         crawler = get_crawler(settings_dict=settings)
     scheduler = Scheduler.from_crawler(crawler)
     dupefilter = scheduler.df
-    if open:
+    if open_:
         dupefilter.open()
     return dupefilter
 
@@ -77,7 +77,7 @@ class TestRFPDupeFilter:
 
         path = tempfile.mkdtemp()
         try:
-            df = _get_dupefilter(settings={"JOBDIR": path}, open=False)
+            df = _get_dupefilter(settings={"JOBDIR": path}, open_=False)
             try:
                 df.open()
                 assert not df.request_seen(r1)
@@ -85,7 +85,7 @@ class TestRFPDupeFilter:
             finally:
                 df.close("finished")
 
-            df2 = _get_dupefilter(settings={"JOBDIR": path}, open=False)
+            df2 = _get_dupefilter(settings={"JOBDIR": path}, open_=False)
             assert df != df2
             try:
                 df2.open()

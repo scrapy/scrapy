@@ -1,4 +1,5 @@
 import warnings
+from typing import Any
 
 import pytest
 from w3lib.http import basic_auth_header
@@ -8,9 +9,8 @@ from scrapy.utils.curl import curl_to_request_kwargs
 
 
 class TestCurlToRequestKwargs:
-    maxDiff = 5000
-
-    def _test_command(self, curl_command, expected_result):
+    @staticmethod
+    def _test_command(curl_command: str, expected_result: dict[str, Any]) -> None:
         result = curl_to_request_kwargs(curl_command)
         assert result == expected_result
         try:

@@ -69,7 +69,7 @@ def is_asyncio_available() -> bool:
 async def _parallel_asyncio(
     iterable: Iterable[_T] | AsyncIterator[_T],
     count: int,
-    callable: Callable[Concatenate[_T, _P], Coroutine[Any, Any, None]],
+    callable_: Callable[Concatenate[_T, _P], Coroutine[Any, Any, None]],
     *args: _P.args,
     **kwargs: _P.kwargs,
 ) -> None:
@@ -89,7 +89,7 @@ async def _parallel_asyncio(
             if item is None:
                 break
             try:
-                await callable(item, *args, **kwargs)
+                await callable_(item, *args, **kwargs)
             finally:
                 queue.task_done()
 

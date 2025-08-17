@@ -7,6 +7,7 @@ import subprocess
 import sys
 import warnings
 from abc import ABC, abstractmethod
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +15,6 @@ import pytest
 from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
 from twisted.internet.defer import Deferred, inlineCallbacks
-from twisted.trial import unittest
 from w3lib import __version__ as w3lib_version
 from zope.interface.exceptions import MultipleInvalid
 
@@ -30,11 +30,17 @@ from scrapy.crawler import (
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
-from scrapy.utils.defer import deferred_f_from_coro_f, deferred_from_coro
+from scrapy.utils.asyncio import call_later
+from scrapy.utils.defer import (
+    deferred_f_from_coro_f,
+    deferred_from_coro,
+    maybe_deferred_to_future,
+)
 from scrapy.utils.log import configure_logging, get_scrapy_root_handler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
-from tests.mockserver import MockServer, get_mockserver_env
+from tests.mockserver.http import MockServer
+from tests.utils import get_script_run_env
 
 BASE_SETTINGS: dict[str, Any] = {}
 
@@ -48,7 +54,7 @@ def get_raw_crawler(spidercls=None, settings_dict=None):
     return Crawler(spidercls or DefaultSpider, settings)
 
 
-class TestBaseCrawler(unittest.TestCase):
+class TestBaseCrawler:
     def assertOptionIsDefault(self, settings, key):
         assert isinstance(settings, Settings)
         assert settings[key] == getattr(default_settings, key)
@@ -526,10 +532,10 @@ class TestCrawlerLogging:
         crawler = get_crawler(MySpider)
         assert get_scrapy_root_handler().level == logging.INFO
         info_count = crawler.stats.get_value("log_count/INFO")
-        logging.debug("debug message")
-        logging.info("info message")
-        logging.warning("warning message")
-        logging.error("error message")
+        logging.debug("debug message")  # noqa: LOG015
+        logging.info("info message")  # noqa: LOG015
+        logging.warning("warning message")  # noqa: LOG015
+        logging.error("error message")  # noqa: LOG015
 
         logged = log_file.read_text(encoding="utf-8")
 
@@ -556,7 +562,7 @@ class TestCrawlerLogging:
 
         configure_logging()
         get_crawler(MySpider)
-        logging.debug("debug message")
+        logging.debug("debug message")  # noqa: LOG015
 
         logged = log_file.read_text(encoding="utf-8")
 
@@ -648,8 +654,7 @@ class NoRequestsSpider(scrapy.Spider):
         yield
 
 
-@pytest.mark.usefixtures("reactor_pytest")
-class TestCrawlerRunnerHasSpider(unittest.TestCase):
+class TestCrawlerRunnerHasSpider:
     @staticmethod
     def _runner():
         return CrawlerRunner(get_reactor_settings())
@@ -700,8 +705,10 @@ class TestCrawlerRunnerHasSpider(unittest.TestCase):
         assert runner.bootstrap_failed
 
     @inlineCallbacks
-    def test_crawler_runner_asyncio_enabled_true(self):
-        if self.reactor_pytest == "default":
+    def test_crawler_runner_asyncio_enabled_true(
+        self, reactor_pytest: str
+    ) -> Generator[Deferred[Any], Any, None]:
+        if reactor_pytest != "asyncio":
             runner = CrawlerRunner(
                 settings={
                     "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
@@ -752,7 +759,7 @@ class ScriptRunnerMixin(ABC):
         args = self.get_script_args(script_name, *script_args)
         p = subprocess.Popen(
             args,
-            env=get_mockserver_env(),
+            env=get_script_run_env(),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -760,7 +767,7 @@ class ScriptRunnerMixin(ABC):
         return stderr.decode("utf-8")
 
 
-class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin, unittest.TestCase):
+class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     """Common tests between CrawlerProcess and AsyncCrawlerProcess,
     with the same file names and expectations.
     """
@@ -829,14 +836,14 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin, unittest.TestCase):
         assert "Spider closed (finished)" in log
         assert "twisted.internet.error.DNSLookupError" not in log
 
-    def test_caching_hostname_resolver_finite_execution(self):
-        with MockServer() as mock_server:
-            http_address = mock_server.http_address.replace("0.0.0.0", "127.0.0.1")
-            log = self.run_script("caching_hostname_resolver.py", http_address)
-            assert "Spider closed (finished)" in log
-            assert "ERROR: Error downloading" not in log
-            assert "TimeoutError" not in log
-            assert "twisted.internet.error.DNSLookupError" not in log
+    def test_caching_hostname_resolver_finite_execution(
+        self, mockserver: MockServer
+    ) -> None:
+        log = self.run_script("caching_hostname_resolver.py", mockserver.url("/"))
+        assert "Spider closed (finished)" in log
+        assert "ERROR: Error downloading" not in log
+        assert "TimeoutError" not in log
+        assert "twisted.internet.error.DNSLookupError" not in log
 
     def test_twisted_reactor_asyncio(self):
         log = self.run_script("twisted_reactor_asyncio.py")
@@ -930,8 +937,6 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin, unittest.TestCase):
 
     @inlineCallbacks
     def test_shutdown_forced(self):
-        from twisted.internet import reactor
-
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
         args = self.get_script_args("sleeping.py", "10")
         p = PopenSpawn(args, timeout=5)
@@ -941,7 +946,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin, unittest.TestCase):
         p.expect_exact("shutting down gracefully")
         # sending the second signal too fast often causes problems
         d = Deferred()
-        reactor.callLater(0.01, d.callback, None)
+        call_later(0.01, d.callback, None)
         yield d
         p.kill(sig)
         p.expect_exact("forcing unclean shutdown")
@@ -1173,3 +1178,14 @@ def test_log_scrapy_info(settings, items, caplog):
         f"{item}': '[^']+('\n +'[^']+)*" for item in items
     )
     assert re.search(r"^Versions:\n{'" + expected_items_pattern + "'}$", version_string)
+
+
+@deferred_f_from_coro_f
+async def test_deprecated_crawler_stop() -> None:
+    crawler = get_crawler(DefaultSpider)
+    d = crawler.crawl()
+    await maybe_deferred_to_future(d)
+    with pytest.warns(
+        ScrapyDeprecationWarning, match=r"Crawler.stop\(\) is deprecated"
+    ):
+        await maybe_deferred_to_future(crawler.stop())

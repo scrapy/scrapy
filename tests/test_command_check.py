@@ -7,10 +7,8 @@ from tests.test_commands import TestCommandBase
 
 
 class TestCheckCommand(TestCommandBase):
-    command = "check"
-
-    def setUp(self):
-        super().setUp()
+    def setup_method(self):
+        super().setup_method()
         self.spider_name = "check_spider"
         self.spider = (self.proj_mod_path / "spiders" / "checkspider.py").resolve()
 

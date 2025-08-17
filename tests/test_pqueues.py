@@ -92,7 +92,7 @@ class TestPriorityQueue:
         assert len(queue) == 2
         assert dequeued.url == req3.url
         assert dequeued.priority == req3.priority
-        assert queue.close() == [-1, -2]
+        assert set(queue.close()) == {-1, -2}
 
 
 class TestDownloaderAwarePriorityQueue:
@@ -159,7 +159,7 @@ class TestDownloaderAwarePriorityQueue:
 
 
 @pytest.mark.parametrize(
-    ("input", "output"),
+    ("input_", "output"),
     [
         # By default, start requests are FIFO, other requests are LIFO.
         ([{}, {}], [2, 1]),
@@ -172,7 +172,7 @@ class TestDownloaderAwarePriorityQueue:
         ([{"start": True}, {}], [2, 1]),
     ],
 )
-def test_pop_order(input, output):
+def test_pop_order(input_, output):
     def make_url(index):
         return f"https://toscrape.com/{index}"
 
@@ -187,7 +187,7 @@ def test_pop_order(input, output):
         )
 
     input_requests = [
-        make_request(index, data) for index, data in enumerate(input, start=1)
+        make_request(index, data) for index, data in enumerate(input_, start=1)
     ]
     expected_output_urls = [make_url(index) for index in output]
 

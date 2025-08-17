@@ -418,7 +418,7 @@ class CrawlSpiderWithParseMethod(MockServerSpider, CrawlSpider):
     async def start(self):
         test_body = b"""
         <html>
-            <head><title>Page title<title></head>
+            <head><title>Page title</title></head>
             <body>
                 <p><a href="/status?n=200">Item 200</a></p>  <!-- callback -->
                 <p><a href="/status?n=201">Item 201</a></p>  <!-- callback -->
@@ -472,7 +472,7 @@ class CrawlSpiderWithErrback(CrawlSpiderWithParseMethod):
     async def start(self):
         test_body = b"""
         <html>
-            <head><title>Page title<title></head>
+            <head><title>Page title</title></head>
             <body>
                 <p><a href="/status?n=200">Item 200</a></p>  <!-- callback -->
                 <p><a href="/status?n=201">Item 201</a></p>  <!-- callback -->

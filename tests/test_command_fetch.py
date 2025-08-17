@@ -1,35 +1,35 @@
-from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
-
-from tests.utils.testproc import ProcessTest
-from tests.utils.testsite import SiteTest
+from tests.mockserver.http import MockServer
+from tests.test_commands import TestProjectBase
 
 
-class TestFetchCommand(ProcessTest, SiteTest, unittest.TestCase):
-    command = "fetch"
+class TestFetchCommand(TestProjectBase):
+    @classmethod
+    def setup_class(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
 
-    @inlineCallbacks
+    @classmethod
+    def teardown_class(cls):
+        cls.mockserver.__exit__(None, None, None)
+
     def test_output(self):
-        _, out, _ = yield self.execute([self.url("/text")])
-        assert out.strip() == b"Works"
+        _, out, _ = self.proc("fetch", self.mockserver.url("/text"))
+        assert out.strip() == "Works"
 
-    @inlineCallbacks
     def test_redirect_default(self):
-        _, out, _ = yield self.execute([self.url("/redirect")])
-        assert out.strip() == b"Redirected here"
+        _, out, _ = self.proc("fetch", self.mockserver.url("/redirect"))
+        assert out.strip() == "Redirected here"
 
-    @inlineCallbacks
     def test_redirect_disabled(self):
-        _, out, err = yield self.execute(
-            ["--no-redirect", self.url("/redirect-no-meta-refresh")]
+        _, _, err = self.proc(
+            "fetch", "--no-redirect", self.mockserver.url("/redirect-no-meta-refresh")
         )
         err = err.strip()
-        assert b"downloader/response_status_count/302" in err, err
-        assert b"downloader/response_status_count/200" not in err, err
+        assert "downloader/response_status_count/302" in err, err
+        assert "downloader/response_status_count/200" not in err, err
 
-    @inlineCallbacks
     def test_headers(self):
-        _, out, _ = yield self.execute([self.url("/text"), "--headers"])
-        out = out.replace(b"\r", b"")  # required on win32
-        assert b"Server: TwistedWeb" in out, out
-        assert b"Content-Type: text/plain" in out
+        _, out, _ = self.proc("fetch", self.mockserver.url("/text"), "--headers")
+        out = out.replace("\r", "")  # required on win32
+        assert "Server: TwistedWeb" in out, out
+        assert "Content-Type: text/plain" in out
