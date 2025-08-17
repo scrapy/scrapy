@@ -13,10 +13,10 @@ from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException
 from scrapy.pipelines.media import MediaPipeline
-from scrapy.spiders import Spider
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
 
@@ -48,12 +48,11 @@ class TestBaseMediaPipeline:
     settings = None
 
     def setup_method(self):
-        spider_cls = Spider
-        spider = spider_cls("media.com")
-        crawler = get_crawler(spider_cls, self.settings)
+        crawler = get_crawler(DefaultSpider, self.settings)
+        crawler.spider = crawler._create_spider()
         self.pipe = self.pipeline_class.from_crawler(crawler)
         self.pipe.download_func = _mocked_download_func
-        self.pipe.open_spider(spider)
+        self.pipe.open_spider()
         self.info = self.pipe.spiderinfo
         self.fingerprint = crawler.request_fingerprinter.fingerprint
 
@@ -555,12 +554,11 @@ class TestMediaFailedFailure:
     settings = None
 
     def setup_method(self):
-        spider_cls = Spider
-        spider = spider_cls("media.com")
-        crawler = get_crawler(spider_cls, self.settings)
+        crawler = get_crawler(DefaultSpider, self.settings)
+        crawler.spider = crawler._create_spider()
         self.pipe = self.pipeline_class.from_crawler(crawler)
         self.pipe.download_func = _mocked_download_func
-        self.pipe.open_spider(spider)
+        self.pipe.open_spider()
         self.info = self.pipe.spiderinfo
         self.fingerprint = crawler.request_fingerprinter.fingerprint
 

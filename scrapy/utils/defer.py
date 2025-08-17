@@ -346,6 +346,11 @@ def process_parallel(
     """Return a Deferred with the output of all successful calls to the given
     callbacks
     """
+    warnings.warn(
+        "process_parallel() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     dfds = [succeed(input).addCallback(x, *a, **kw) for x in callbacks]
     d: Deferred[list[tuple[bool, _T2]]] = DeferredList(
         dfds, fireOnOneErrback=True, consumeErrors=True

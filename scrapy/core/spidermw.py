@@ -117,8 +117,6 @@ class SpiderMiddlewareManager(MiddlewareManager):
             )
 
     def _add_middleware(self, mw: Any) -> None:
-        super()._add_middleware(mw)
-
         if hasattr(mw, "process_spider_input"):
             self.methods["process_spider_input"].append(mw.process_spider_input)
             self._check_mw_method_spider_arg(mw.process_spider_input)

@@ -165,8 +165,16 @@ class MediaPipeline(ABC):
             pipe._finish_init(crawler)
         return pipe
 
-    def open_spider(self, spider: Spider) -> None:
-        self.spiderinfo = self.SpiderInfo(spider)
+    def open_spider(self, spider: Spider | None = None) -> None:
+        if spider is not None:
+            warnings.warn(
+                "Passing a spider argument to MediaPipeline.open_spider()"
+                " is deprecated and the passed value is ignored.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        assert self.crawler.spider
+        self.spiderinfo = self.SpiderInfo(self.crawler.spider)
 
     def process_item(
         self, item: Any, spider: Spider | None = None

@@ -8,7 +8,7 @@ from collections import defaultdict, deque
 from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
-from scrapy.utils.defer import ensure_awaitable, process_parallel
+from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.deprecate import argument_is_required
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import global_object_name
@@ -32,7 +32,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
-_T2 = TypeVar("_T2")
 
 
 class MiddlewareManager(ABC):
@@ -160,11 +159,8 @@ class MiddlewareManager(ABC):
         )
         return cls(*middlewares, crawler=crawler)
 
-    def _add_middleware(self, mw: Any) -> None:
-        if hasattr(mw, "open_spider"):
-            self.methods["open_spider"].append(mw.open_spider)
-        if hasattr(mw, "close_spider"):
-            self.methods["close_spider"].appendleft(mw.close_spider)
+    def _add_middleware(self, mw: Any) -> None:  # noqa: B027
+        pass
 
     def _check_mw_method_spider_arg(self, method: Callable) -> None:
         if argument_is_required(method, "spider"):
@@ -177,14 +173,6 @@ class MiddlewareManager(ABC):
                 stacklevel=2,
             )
             self._mw_methods_requiring_spider.add(method)
-
-    def _process_parallel(
-        self, methodname: str, obj: _T, *args: Any
-    ) -> Deferred[list[_T2]]:
-        methods = cast(
-            "Iterable[Callable[Concatenate[_T, _P], _T2]]", self.methods[methodname]
-        )
-        return process_parallel(methods, obj, *args)
 
     async def _process_chain(
         self,
@@ -207,13 +195,13 @@ class MiddlewareManager(ABC):
         return obj
 
     def open_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
-        if spider:
-            self._warn_spider_arg("open_spider")
-            self._set_compat_spider(spider)
-        return self._process_parallel("open_spider", self._spider)
+        raise NotImplementedError(
+            "MiddlewareManager.open_spider() is no longer implemented"
+            " and will be removed in a future Scrapy version."
+        )
 
     def close_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
-        if spider:
-            self._warn_spider_arg("close_spider")
-            self._set_compat_spider(spider)
-        return self._process_parallel("close_spider", self._spider)
+        raise NotImplementedError(
+            "MiddlewareManager.close_spider() is no longer implemented"
+            " and will be removed in a future Scrapy version."
+        )
