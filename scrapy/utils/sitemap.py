@@ -7,22 +7,15 @@ SitemapSpider, its API is subject to change without notice.
 
 from __future__ import annotations
 
-from io import BytesIO
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import lxml.etree
 
+from scrapy.utils.misc import MemoryviewReader
+
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
-
-
-def _bytes_io_from_anystr(str_or_bytes: str | bytes) -> BytesIO:
-    return (
-        BytesIO(str_or_bytes)
-        if isinstance(str_or_bytes, bytes)
-        else BytesIO(str_or_bytes.encode())
-    )
 
 
 class Sitemap:
@@ -31,7 +24,7 @@ class Sitemap:
 
     def __init__(self, xmltext: str | bytes):
         self.xmliter = lxml.etree.iterparse(
-            _bytes_io_from_anystr(xmltext),
+            MemoryviewReader.from_anystr(xmltext),
             recover=True,
             remove_comments=True,
             resolve_entities=False,
@@ -70,7 +63,7 @@ class Sitemap:
                         alternate.append(href)
                 else:
                     d[tag_name] = el.text.strip() if el.text else ""
-                    if tag_name == "loc":
+                    if not has_loc and tag_name == "loc":
                         has_loc = True
             finally:
                 el.clear()
@@ -86,7 +79,7 @@ class Sitemap:
     @staticmethod
     def _get_tag_name(elem: lxml.etree._Element) -> str:
         assert isinstance(elem.tag, str)
-        _, _, localname = str(elem.tag).partition("}")
+        _, _, localname = elem.tag.partition("}")
         return localname or elem.tag
 
 
@@ -96,7 +89,7 @@ def sitemap_urls_from_robots(
     """Return an iterator over all sitemap urls contained in the given
     robots.txt file
     """
-    for line in _bytes_io_from_anystr(robots_text):
+    for line in MemoryviewReader.from_anystr(robots_text):
         if line.lstrip()[:8].lower() == b"sitemap:":
             url = line.partition(b":")[2].strip()
             yield urljoin(base_url or "", url.decode())
