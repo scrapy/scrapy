@@ -301,7 +301,7 @@ class MemoryviewReader:
         self._pos = i
         return mv[start:i].tobytes()
 
-    def __iter__(self) -> MemoryviewReader:
+    def __iter__(self) -> Self:
         return self
 
     def __next__(self) -> bytes:
