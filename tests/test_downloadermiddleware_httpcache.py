@@ -34,7 +34,7 @@ class TestBase:
         self.crawler.stats.open_spider()
 
     def teardown_method(self):
-        self.crawler.stats.close_spider("")
+        self.crawler.stats.close_spider()
         shutil.rmtree(self.tmpdir)
 
     def _get_settings(self, **new_settings):

@@ -41,4 +41,4 @@ class TestDownloaderStats:
         )
 
     def teardown_method(self):
-        self.crawler.stats.close_spider("")
+        self.crawler.stats.close_spider()

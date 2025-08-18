@@ -27,7 +27,7 @@ class StatsCollector:
     def __init__(self, crawler: Crawler):
         self._dump: bool = crawler.settings.getbool("STATS_DUMP")
         self._stats: StatsT = {}
-        self._crawler = crawler
+        self._crawler: Crawler = crawler
 
     def __getattribute__(self, name):
         original_attr = super().__getattribute__(name)
@@ -41,6 +41,8 @@ class StatsCollector:
             "max_value",
             "min_value",
             "clear_stats",
+            "open_spider",
+            "close_spider",
         ) and callable(original_attr):
 
             def _deprecated_wrapper(*args, **kwargs):
@@ -49,7 +51,8 @@ class StatsCollector:
 
                 if sig.arguments.get("spider"):
                     warnings.warn(
-                        f"Passing a 'spider' argument to StatsCollector.{name} is deprecated and will be removed in a future Scrapy version.",
+                        f"Passing a 'spider' argument to StatsCollector.{name}() is deprecated and"
+                        f" the argument will be removed in a future Scrapy version.",
                         category=ScrapyDeprecationWarning,
                         stacklevel=2,
                     )
@@ -89,10 +92,12 @@ class StatsCollector:
     def clear_stats(self, spider: Spider | None = None) -> None:
         self._stats.clear()
 
-    def open_spider(self) -> None:
+    def open_spider(self, spider: Spider | None = None) -> None:
         pass
 
-    def close_spider(self, reason: str | None = None) -> None:
+    def close_spider(
+        self, spider: Spider | None = None, reason: str | None = None
+    ) -> None:
         if self._dump:
             logger.info(
                 "Dumping Scrapy stats:\n" + pprint.pformat(self._stats),

@@ -34,7 +34,7 @@ def stats(crawler: Crawler) -> Generator[StatsCollector]:
 
     yield crawler.stats
 
-    crawler.stats.close_spider("")
+    crawler.stats.close_spider()
 
 
 @pytest.fixture

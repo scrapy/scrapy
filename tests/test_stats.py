@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import warnings
 from datetime import datetime
 from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.corestats import CoreStats
 from scrapy.spiders import Spider
 from scrapy.statscollectors import DummyStatsCollector, StatsCollector
@@ -92,7 +92,7 @@ class TestStatsCollector:
         stats.min_value("test4", 7)
         assert stats.get_value("test4") == 7
 
-    def test_dummy_collector(self, crawler: Crawler, spider: Spider) -> None:
+    def test_dummy_collector(self, crawler: Crawler) -> None:
         stats = DummyStatsCollector(crawler)
         assert stats.get_stats() == {}
         assert stats.get_value("anything") is None
@@ -102,18 +102,19 @@ class TestStatsCollector:
         stats.max_value("v2", 100)
         stats.min_value("v3", 100)
         stats.open_spider()
-
-        with warnings.catch_warnings(record=True) as w:
-            stats.set_value("test", "value", spider=spider)
-            assert (
-                str(w[0].message)
-                == "Passing a 'spider' argument to StatsCollector.set_value is deprecated and will be removed in a future Scrapy version."
-            )
-
+        stats.set_value("test", "value")
         assert stats.get_stats() == {}
-        with warnings.catch_warnings(record=True) as w:
-            assert stats.get_stats("a") == {}
-            assert (
-                str(w[0].message)
-                == "Passing a 'spider' argument to StatsCollector.get_stats is deprecated and will be removed in a future Scrapy version."
-            )
+
+    def test_deprecated_spider_arg(self, crawler: Crawler, spider: Spider) -> None:
+        stats = StatsCollector(crawler)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"Passing a 'spider' argument to StatsCollector.set_value\(\) is deprecated",
+        ):
+            stats.set_value("test", "value", spider=spider)
+        assert stats.get_stats() == {"test": "value"}
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"Passing a 'spider' argument to StatsCollector.get_stats\(\) is deprecated",
+        ):
+            assert stats.get_stats(spider) == {"test": "value"}
