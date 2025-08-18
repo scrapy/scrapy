@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import inspect
+import io
 import os
 import re
 import warnings
@@ -22,6 +23,8 @@ from scrapy.utils.datatypes import LocalWeakReferencedCache
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
     from types import ModuleType
+
+    from typing_extensions import Self
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
@@ -255,3 +258,71 @@ def warn_on_generator_with_return_value(
             f'including the code of "{callable_name}"',
             stacklevel=2,
         )
+
+
+class MemoryviewReader:
+    def __init__(self, buf: bytes | bytearray | memoryview):
+        if not isinstance(buf, memoryview):
+            buf = memoryview(buf)
+        self._mv = buf
+        self._pos = 0
+
+    @classmethod
+    def from_anystr(cls, str_or_bytes: str | bytes) -> Self:
+        return (
+            cls(str_or_bytes)
+            if isinstance(str_or_bytes, bytes)
+            else cls(str_or_bytes.encode())
+        )
+
+    def read(self, amount: int = -1, /) -> bytes:
+        if amount == -1:
+            amount = len(self._mv) - self._pos
+        start = self._pos
+        end = min(len(self._mv), start + amount)
+        self._pos = end
+        return self._mv[start:end].tobytes()
+
+    def readline(self, amount: int = -1, /) -> bytes:
+        if self._pos >= len(self._mv):
+            return b""
+
+        mv = self._mv
+        start = self._pos
+        limit = len(mv) if amount < 0 else min(len(mv), start + amount)
+
+        i = start
+        while i < limit:
+            if mv[i] == 10:  # ord('\n')
+                i += 1  # include newline
+                break
+            i += 1
+
+        self._pos = i
+        return mv[start:i].tobytes()
+
+    def __iter__(self) -> MemoryviewReader:
+        return self
+
+    def __next__(self) -> bytes:
+        line = self.readline()
+        if not line:
+            raise StopIteration
+        return line
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        if whence == io.SEEK_SET:
+            new = offset
+        elif whence == io.SEEK_CUR:
+            new = self._pos + offset
+        elif whence == io.SEEK_END:
+            new = len(self._mv) + offset
+        else:
+            raise ValueError("Invalid whence")
+        if not (0 <= new <= len(self._mv)):
+            raise ValueError("Seek out of range")
+        self._pos = new
+        return self._pos
+
+    def tell(self) -> int:
+        return self._pos
