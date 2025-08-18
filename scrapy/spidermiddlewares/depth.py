@@ -55,17 +55,17 @@ class DepthMiddleware(BaseSpiderMiddleware):
     def process_spider_output(
         self, response: Response, result: Iterable[Any], spider: Spider
     ) -> Iterable[Any]:
-        self._init_depth(response, spider)
+        self._init_depth(response)
         yield from super().process_spider_output(response, result, spider)
 
     async def process_spider_output_async(
         self, response: Response, result: AsyncIterator[Any], spider: Spider
     ) -> AsyncIterator[Any]:
-        self._init_depth(response, spider)
+        self._init_depth(response)
         async for o in super().process_spider_output_async(response, result, spider):
             yield o
 
-    def _init_depth(self, response: Response, spider: Spider) -> None:
+    def _init_depth(self, response: Response) -> None:
         # base case (depth=0)
         if "depth" not in response.meta:
             response.meta["depth"] = 0
