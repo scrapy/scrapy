@@ -28,11 +28,6 @@ def crawler() -> Crawler:
 
 
 @pytest.fixture
-def spider(crawler: Crawler) -> Spider:
-    return crawler._create_spider("foo")
-
-
-@pytest.fixture
 def stats(crawler: Crawler) -> StatsCollector:
     assert crawler.stats is not None
     return crawler.stats
@@ -52,10 +47,7 @@ def test_middleware_works(mw: UrlLengthMiddleware) -> None:
 
 
 def test_logging(
-    stats: StatsCollector,
-    mw: UrlLengthMiddleware,
-    spider: Spider,
-    caplog: pytest.LogCaptureFixture,
+    stats: StatsCollector, mw: UrlLengthMiddleware, caplog: pytest.LogCaptureFixture
 ) -> None:
     with caplog.at_level(INFO):
         process_spider_output(mw)

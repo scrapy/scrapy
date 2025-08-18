@@ -22,12 +22,6 @@ def crawler() -> Crawler:
 
 
 @pytest.fixture
-def spider(crawler: Crawler) -> Spider:
-    crawler.spider = crawler._create_spider("scrapytest.org")
-    return crawler.spider
-
-
-@pytest.fixture
 def stats(crawler: Crawler) -> Generator[StatsCollector]:
     assert crawler.stats is not None
     crawler.stats.open_spider()
@@ -42,9 +36,7 @@ def mw(crawler: Crawler) -> DepthMiddleware:
     return DepthMiddleware.from_crawler(crawler)
 
 
-def test_process_spider_output(
-    mw: DepthMiddleware, stats: StatsCollector, spider: Spider
-) -> None:
+def test_process_spider_output(mw: DepthMiddleware, stats: StatsCollector) -> None:
     req = Request("http://scrapytest.org")
     resp = Response("http://scrapytest.org")
     resp.request = req
