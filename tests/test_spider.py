@@ -848,6 +848,38 @@ Sitemap: /sitemap-relative-url.xml
         assert request.dont_filter is False
         assert request.callback == spider._parse_sitemap
 
+    def test_sitemap_filter_with_rule(self):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <url><loc>http://www.example.com/english/</loc></url>
+        <url><loc>http://www.example.com/portuguese/</loc></url>
+    </urlset>"""
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+
+        class RuleSpider(self.spider_class):
+            sitemap_rules = [(r"english", "parse")]
+
+        spider = RuleSpider("example.com")
+        urls = [req.url for req in spider._parse_sitemap(r)]
+        assert urls == ["http://www.example.com/english/"]
+
+    def test_parse_sitemap_empty_body(self):
+        r = XmlResponse(url="http://www.example.com/sitemap.xml", body=b"")
+        spider = self.spider_class("example.com")
+
+        with LogCapture() as lc:
+            results = list(spider._parse_sitemap(r))
+
+        assert not results
+
+        lc.check(
+            (
+                "scrapy.spiders.sitemap",
+                "WARNING",
+                "Ignoring invalid sitemap: <200 http://www.example.com/sitemap.xml>",
+            )
+        )
+
 
 class TestDeprecation:
     def test_crawl_spider(self):

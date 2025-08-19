@@ -261,6 +261,84 @@ def warn_on_generator_with_return_value(
 
 
 class MemoryviewReader:
+    """
+    File-like reader over internal buffer of bytes or bytearray using memoryview.
+    Supports reading, line iteration, seeking, and telling.
+
+    Basic reading:
+    >>> r = MemoryviewReader(memoryview(b"hello world"))
+    >>> r.read(5)
+    b'hello'
+    >>> r.read()
+    b' world'
+
+    Reading lines:
+    >>> r = MemoryviewReader(b"line1\\nline2\\nline3")
+    >>> r.readline()
+    b'line1\\n'
+    >>> r.readline()
+    b'line2\\n'
+    >>> r.readline()
+    b'line3'
+    >>> r.readline()
+    b''
+
+    Iterating lines:
+    >>> list(MemoryviewReader(b"a\\nb\\nc"))
+    [b'a\\n', b'b\\n', b'c']
+
+    Constructing from strings:
+    >>> r = MemoryviewReader.from_anystr("hello")
+    >>> r.read()
+    b'hello'
+    >>> r = MemoryviewReader.from_anystr(b"world")
+    >>> r.read()
+    b'world'
+
+    Seeking and telling:
+    >>> r = MemoryviewReader(b"abcdef")
+    >>> r.read(3)  # advance position
+    b'abc'
+    >>> r.tell()
+    3
+
+    # SEEK_SET (absolute)
+    >>> r.seek(0, io.SEEK_SET)
+    0
+    >>> r.read(2)
+    b'ab'
+
+    # SEEK_CUR (relative)
+    >>> r.seek(2, io.SEEK_CUR)  # skip 'cd'
+    4
+    >>> r.read(2)
+    b'ef'
+
+    # SEEK_END (relative to end)
+    >>> r.seek(-3, io.SEEK_END)  # 6-3 = 3
+    3
+    >>> r.read()
+    b'def'
+
+    # Invalid whence
+    >>> r.seek(0, 99)
+    Traceback (most recent call last):
+    ...
+    ValueError: Invalid whence
+
+    # Out of range (too negative)
+    >>> r.seek(-10, io.SEEK_SET)
+    Traceback (most recent call last):
+    ...
+    ValueError: Seek out of range
+
+    # Out of range (too large)
+    >>> r.seek(10, io.SEEK_SET)
+    Traceback (most recent call last):
+    ...
+    ValueError: Seek out of range
+    """  # noqa: D301
+
     def __init__(self, buf: bytes | bytearray | memoryview):
         if not isinstance(buf, memoryview):
             buf = memoryview(buf)
@@ -287,19 +365,18 @@ class MemoryviewReader:
         if self._pos >= len(self._mv):
             return b""
 
-        mv = self._mv
         start = self._pos
-        limit = len(mv) if amount < 0 else min(len(mv), start + amount)
+        limit = len(self._mv) if amount < 0 else min(len(self._mv), start + amount)
 
         i = start
         while i < limit:
-            if mv[i] == 10:  # ord('\n')
+            if self._mv[i] == 10:  # ord('\n')
                 i += 1  # include newline
                 break
             i += 1
 
         self._pos = i
-        return mv[start:i].tobytes()
+        return self._mv[start:i].tobytes()
 
     def __iter__(self) -> Self:
         return self
@@ -319,7 +396,7 @@ class MemoryviewReader:
             new = len(self._mv) + offset
         else:
             raise ValueError("Invalid whence")
-        if not (0 <= new <= len(self._mv)):
+        if not (0 <= new <= len(self._mv)):  # pylint: disable=superfluous-parens
             raise ValueError("Seek out of range")
         self._pos = new
         return self._pos
