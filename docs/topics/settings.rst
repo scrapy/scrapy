@@ -554,7 +554,7 @@ When writing an item pipeline, you can force a different log level by setting
 
 
    class MyPipeline:
-       def process_item(self, item, spider):
+       def process_item(self, item):
            if not item.get("price"):
                raise DropItem("Missing price data", log_level="INFO")
            return item

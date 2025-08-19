@@ -191,7 +191,7 @@ shorter and cleaner:
             adapter["field"] = data
             return item
 
-        def process_item(self, item, spider):
+        def process_item(self, item):
             adapter = ItemAdapter(item)
             dfd = db.get_some_data(adapter["id"])
             dfd.addCallback(self._update_item, item)
@@ -205,7 +205,7 @@ becomes:
 
 
     class DbPipeline:
-        async def process_item(self, item, spider):
+        async def process_item(self, item):
             adapter = ItemAdapter(item)
             adapter["field"] = await db.get_some_data(adapter["id"])
             return item
@@ -421,12 +421,12 @@ For example:
 .. code-block:: python
 
     class UniversalSpiderMiddleware:
-        def process_spider_output(self, response, result, spider):
+        def process_spider_output(self, response, result):
             for r in result:
                 # ... do something with r
                 yield r
 
-        async def process_spider_output_async(self, response, result, spider):
+        async def process_spider_output_async(self, response, result):
             async for r in result:
                 # ... do something with r
                 yield r
