@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
 from twisted.internet import error
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, DeferredList
 from twisted.python import failure
 
 from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
@@ -17,7 +18,7 @@ from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import (
     deferred_f_from_coro_f,
-    ensure_awaitable,
+    deferred_from_coro,
     maybe_deferred_to_future,
 )
 from tests.test_robotstxt_interface import rerp_available
@@ -77,6 +78,25 @@ Disallow: /some/randome/page.html
         await self.assertIgnored(
             Request("http://site.local/wiki/Käyttäjä:"), middleware
         )
+
+    @deferred_f_from_coro_f
+    async def test_robotstxt_multiple_reqs(self) -> None:
+        middleware = RobotsTxtMiddleware(self._get_successful_crawler())
+        d1 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/allowed1"), None)  # type: ignore[arg-type]
+        )
+        d2 = deferred_from_coro(
+            middleware.process_request(Request("http://site.local/allowed2"), None)  # type: ignore[arg-type]
+        )
+        await maybe_deferred_to_future(DeferredList([d1, d2], fireOnOneErrback=True))
+
+    @pytest.mark.only_asyncio
+    @deferred_f_from_coro_f
+    async def test_robotstxt_multiple_reqs_asyncio(self) -> None:
+        middleware = RobotsTxtMiddleware(self._get_successful_crawler())
+        c1 = middleware.process_request(Request("http://site.local/allowed1"), None)  # type: ignore[arg-type]
+        c2 = middleware.process_request(Request("http://site.local/allowed2"), None)  # type: ignore[arg-type]
+        await asyncio.gather(c1, c2)
 
     @deferred_f_from_coro_f
     async def test_robotstxt_ready_parser(self):
@@ -157,9 +177,7 @@ Disallow: /some/randome/page.html
 
         middleware = RobotsTxtMiddleware(self.crawler)
         middleware._logerror = mock.MagicMock(side_effect=middleware._logerror)
-        await maybe_deferred_to_future(
-            middleware.process_request(Request("http://site.local"), None)
-        )
+        await middleware.process_request(Request("http://site.local"), None)
         assert middleware._logerror.called
 
     @deferred_f_from_coro_f
@@ -201,32 +219,39 @@ Disallow: /some/randome/page.html
         middleware.process_request_2(rp, Request("http://site.local/allowed"), None)
         rp.allowed.assert_called_once_with("http://site.local/allowed", "Examplebot")
 
-    def test_robotstxt_local_file(self):
+    @deferred_f_from_coro_f
+    async def test_robotstxt_local_file(self):
         middleware = RobotsTxtMiddleware(self._get_emptybody_crawler())
-        assert not middleware.process_request(
+        middleware.process_request_2 = mock.MagicMock()
+
+        await middleware.process_request(
             Request("data:text/plain,Hello World data"), None
         )
-        assert not middleware.process_request(
+        assert not middleware.process_request_2.called
+
+        await middleware.process_request(
             Request("file:///tests/sample_data/test_site/nothinghere.html"), None
         )
-        assert isinstance(
-            middleware.process_request(Request("http://site.local/allowed"), None),
-            Deferred,
-        )
+        assert not middleware.process_request_2.called
+
+        await middleware.process_request(Request("http://site.local/allowed"), None)
+        assert middleware.process_request_2.called
 
     async def assertNotIgnored(
         self, request: Request, middleware: RobotsTxtMiddleware
     ) -> None:
         spider = None  # not actually used
-        result = await ensure_awaitable(middleware.process_request(request, spider))  # type: ignore[arg-type]
-        assert result is None
+        try:
+            await middleware.process_request(request, spider)  # type: ignore[arg-type]
+        except IgnoreRequest:
+            pytest.fail("IgnoreRequest was raised unexpectedly")
 
     async def assertIgnored(
         self, request: Request, middleware: RobotsTxtMiddleware
     ) -> None:
         spider = None  # not actually used
         with pytest.raises(IgnoreRequest):
-            await ensure_awaitable(middleware.process_request(request, spider))  # type: ignore[arg-type]
+            await middleware.process_request(request, spider)  # type: ignore[arg-type]
 
     def assertRobotsTxtRequested(self, base_url: str) -> None:
         calls = self.crawler.engine.download_async.call_args_list
