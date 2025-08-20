@@ -280,13 +280,13 @@ class (which they all inherit from).
     The following methods are not part of the stats collection api but instead
     used when implementing custom stats collectors:
 
-    .. method:: open_spider(spider)
+    .. method:: open_spider()
 
-        Open the given spider for stats collection.
+        Open the spider for stats collection.
 
-    .. method:: close_spider(spider)
+    .. method:: close_spider()
 
-        Close the given spider. After this is called, no more specific stats
+        Close the spider. After this is called, no more specific stats
         can be accessed or collected.
 
 Engine API

@@ -89,9 +89,7 @@ class DepthMiddleware(BaseSpiderMiddleware):
         if "depth" not in response.meta:
             response.meta["depth"] = 0
             if self.verbose_stats:
-                self.stats.inc_value(
-                    "request_depth_count/0", spider=self.crawler.spider
-                )
+                self.stats.inc_value("request_depth_count/0")
 
     def get_processed_request(
         self, request: Request, response: Response | None
@@ -111,8 +109,6 @@ class DepthMiddleware(BaseSpiderMiddleware):
             )
             return None
         if self.verbose_stats:
-            self.stats.inc_value(
-                f"request_depth_count/{depth}", spider=self.crawler.spider
-            )
-        self.stats.max_value("request_depth_max", depth, spider=self.crawler.spider)
+            self.stats.inc_value(f"request_depth_count/{depth}")
+        self.stats.max_value("request_depth_max", depth)
         return request

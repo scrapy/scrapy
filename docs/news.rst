@@ -58,6 +58,14 @@ Backward-incompatible changes
     - Code in ``scrapy.middleware.MiddlewareManager._add_middleware()`` that
       processes ``open_spider()`` and ``close_spider()`` component methods.
 
+-   :meth:`scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware.process_request`
+    now returns a coroutine, previously it returned a
+    :class:`~twisted.internet.defer.Deferred` object or ``None``. The
+    ``robot_parser()`` method was also changed to return a coroutine. This
+    change only impacts code that subclasses
+    :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` or
+    calls its methods directly.
+
 
 .. _release-2.13.3:
 
