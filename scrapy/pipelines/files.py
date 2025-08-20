@@ -451,7 +451,7 @@ class FilesPipeline(MediaPipeline):
         crawler: Crawler | None = None,
     ):
         if not (store_uri and (store_uri := _to_string(store_uri))):
-            from scrapy.pipelines.images import ImagesPipeline
+            from scrapy.pipelines.images import ImagesPipeline  # noqa: PLC0415
 
             setting_name = (
                 "IMAGES_STORE" if isinstance(self, ImagesPipeline) else "FILES_STORE"
