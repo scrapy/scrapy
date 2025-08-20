@@ -25,8 +25,11 @@ class SimplePipeline:
         return item
 
 
-class DeprecatedOpenSpiderArgPipeline:
+class DeprecatedSpiderArgPipeline:
     def open_spider(self, spider):
+        pass
+
+    def close_spider(self, spider):
         pass
 
 
@@ -326,11 +329,17 @@ class TestMiddlewareManagerSpider:
         """Crawler is provided, but doesn't have a spider. The instance passed to the method is
         ignored and raises a warning."""
         mwman = ItemPipelineManager(crawler=crawler)
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match=r"DeprecatedOpenSpiderArgPipeline.open_spider\(\) requires a spider argument",
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"DeprecatedSpiderArgPipeline.open_spider\(\) requires a spider argument",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"DeprecatedSpiderArgPipeline.close_spider\(\) requires a spider argument",
+            ),
         ):
-            mwman._add_middleware(DeprecatedOpenSpiderArgPipeline)
+            mwman._add_middleware(DeprecatedSpiderArgPipeline)
         with (
             pytest.warns(
                 ScrapyDeprecationWarning,
@@ -342,6 +351,17 @@ class TestMiddlewareManagerSpider:
             ),
         ):
             mwman.open_spider(DefaultSpider())
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"Passing a spider argument to ItemPipelineManager.close_spider\(\) is deprecated",
+            ),
+            pytest.raises(
+                ValueError,
+                match="ItemPipelineManager needs to access self.crawler.spider but it is None",
+            ),
+        ):
+            mwman.close_spider(DefaultSpider())
 
     def test_deprecated_spider_arg_with_crawler(self, crawler: Crawler) -> None:
         """Crawler is provided and has a spider, works. The instance passed to the method is ignored,
@@ -389,11 +409,17 @@ class TestMiddlewareManagerSpider:
             match="was called without the crawler argument",
         ):
             mwman = ItemPipelineManager()
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match=r"DeprecatedOpenSpiderArgPipeline.open_spider\(\) requires a spider argument",
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"DeprecatedSpiderArgPipeline.open_spider\(\) requires a spider argument",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"DeprecatedSpiderArgPipeline.close_spider\(\) requires a spider argument",
+            ),
         ):
-            mwman._add_middleware(DeprecatedOpenSpiderArgPipeline)
+            mwman._add_middleware(DeprecatedSpiderArgPipeline)
         with (
             pytest.raises(
                 ValueError,
