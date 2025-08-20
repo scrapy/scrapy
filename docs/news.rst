@@ -48,7 +48,7 @@ Backward-incompatible changes
     handling ``open_spider()`` and ``close_spider()`` component methods. As
     this code was only used for pipelines it was moved into
     :class:`scrapy.pipelines.ItemPipelineManager`. This change should only
-    affect custom subclasses of :class:`scrapy.middleware.~MiddlewareManager`.
+    affect custom subclasses of :class:`~scrapy.middleware.MiddlewareManager`.
     The following code was moved:
 
     - ``scrapy.middleware.MiddlewareManager.open_spider()``

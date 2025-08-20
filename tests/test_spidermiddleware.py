@@ -10,7 +10,7 @@ from testfixtures import LogCapture
 from twisted.internet import defer
 
 from scrapy.core.spidermw import SpiderMiddlewareManager
-from scrapy.exceptions import _InvalidOutput
+from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
@@ -600,3 +600,34 @@ class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
     async def test_exc_async_simple(self):
         """Async exc mw -> simple output mw; cannot work as downgrading is not supported"""
         await self._test_asyncgen_nodowngrade(self.MW_SIMPLE, self.MW_EXC_ASYNCGEN)
+
+
+class TestDeprecatedSpiderArg(TestSpiderMiddleware):
+    @deferred_f_from_coro_f
+    async def test_deprecated_spider_arg(self):
+        class DeprecatedSpiderArgMiddleware:
+            def process_spider_input(self, response, spider):
+                return None
+
+            def process_spider_output(self, response, result, spider):
+                1 / 0
+
+            def process_spider_exception(self, response, exception, spider):
+                return []
+
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"process_spider_input\(\) requires a spider argument",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"process_spider_output\(\) requires a spider argument",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"process_spider_exception\(\) requires a spider argument",
+            ),
+        ):
+            self.mwman._add_middleware(DeprecatedSpiderArgMiddleware())
+        await self._scrape_response()

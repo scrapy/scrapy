@@ -190,6 +190,9 @@ class TestCustomPipelineManager:
             def open_spider(self, spider):  # pylint: disable=signature-differs
                 return super().open_spider(spider)
 
+            def close_spider(self, spider):  # pylint: disable=signature-differs
+                return super().close_spider(spider)
+
             def process_item(self, item, spider):  # pylint: disable=signature-differs
                 with pytest.warns(
                     ScrapyDeprecationWarning,
@@ -220,11 +223,19 @@ class TestCustomPipelineManager:
             ),
             pytest.warns(
                 ScrapyDeprecationWarning,
+                match=r"The close_spider\(\) method of .+\.CustomPipelineManager requires a spider argument",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
                 match=r"The process_item\(\) method of .+\.CustomPipelineManager requires a spider argument",
             ),
             pytest.warns(
                 ScrapyDeprecationWarning,
                 match=r"Passing a spider argument to CustomPipelineManager.open_spider\(\) is deprecated",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"Passing a spider argument to CustomPipelineManager.close_spider\(\) is deprecated",
             ),
             pytest.warns(
                 ScrapyDeprecationWarning,
