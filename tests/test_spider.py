@@ -848,7 +848,11 @@ Sitemap: /sitemap-relative-url.xml
         assert request.dont_filter is False
         assert request.callback == spider._parse_sitemap
 
-    def test_sitemap_filter_with_rule(self):
+    @pytest.mark.parametrize(
+        ("rule", "result"),
+        [(r"english", ["http://www.example.com/english/"]), (r"nonexistent", [])],
+    )
+    def test_sitemap_filter_with_rule(self, rule: str, result: list[str]):
         sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
         <url><loc>http://www.example.com/english/</loc></url>
@@ -856,12 +860,12 @@ Sitemap: /sitemap-relative-url.xml
     </urlset>"""
         r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
 
-        class RuleSpider(self.spider_class):
-            sitemap_rules = [(r"english", "parse")]
+        class RuleSpider(self.spider_class):  # type: ignore[name-defined]
+            sitemap_rules = [(rule, "parse")]
 
         spider = RuleSpider("example.com")
         urls = [req.url for req in spider._parse_sitemap(r)]
-        assert urls == ["http://www.example.com/english/"]
+        assert urls == result
 
     def test_parse_sitemap_empty_body(self):
         r = XmlResponse(url="http://www.example.com/sitemap.xml", body=b"")
@@ -879,6 +883,19 @@ Sitemap: /sitemap-relative-url.xml
                 "Ignoring invalid sitemap: <200 http://www.example.com/sitemap.xml>",
             )
         )
+
+    def test_parse_sitemap_not_sitemap(self):
+        body = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <some attr="string">
+        <tag><tag3>sometext</tag3></tag>
+        <tag2><tag4>sometext2</tag4></tag2>
+    </some>"""
+        r = XmlResponse(url="http://www.example.com/random.xml", body=body)
+        spider = self.spider_class("example.com")
+
+        results = list(spider._parse_sitemap(r))
+
+        assert not results
 
 
 class TestDeprecation:

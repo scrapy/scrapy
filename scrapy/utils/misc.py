@@ -339,11 +339,14 @@ class MemoryviewReader:
     ValueError: Seek out of range
     """  # noqa: D301
 
+    __slots__ = ("_mv", "_pos", "size")
+
     def __init__(self, buf: bytes | bytearray | memoryview):
         if not isinstance(buf, memoryview):
             buf = memoryview(buf)
         self._mv = buf
         self._pos = 0
+        self.size = len(self._mv)
 
     @classmethod
     def from_anystr(cls, str_or_bytes: str | bytes) -> Self:
@@ -354,22 +357,31 @@ class MemoryviewReader:
         )
 
     def read(self, amount: int = -1, /) -> bytes:
-        if amount == -1:
-            amount = len(self._mv) - self._pos
+        if amount < 0:
+            end = self.size
+        else:
+            end = self._pos + amount
+            if end > self.size:  # pylint: disable=consider-using-min-builtin # noqa: PLR1730
+                end = self.size
+
         start = self._pos
-        end = min(len(self._mv), start + amount)
         self._pos = end
         return self._mv[start:end].tobytes()
 
     def readline(self, amount: int = -1, /) -> bytes:
-        if self._pos >= len(self._mv):
+        if self._pos >= self.size:
             return b""
 
-        start = self._pos
-        limit = len(self._mv) if amount < 0 else min(len(self._mv), start + amount)
+        if amount < 0:
+            end = self.size
+        else:
+            end = self._pos + amount
+            if end > self.size:  # pylint: disable=consider-using-min-builtin # noqa: PLR1730
+                end = self.size
 
+        start = self._pos
         i = start
-        while i < limit:
+        while i < end:
             if self._mv[i] == 10:  # ord('\n')
                 i += 1  # include newline
                 break
@@ -393,10 +405,10 @@ class MemoryviewReader:
         elif whence == io.SEEK_CUR:
             new = self._pos + offset
         elif whence == io.SEEK_END:
-            new = len(self._mv) + offset
+            new = self.size + offset
         else:
             raise ValueError("Invalid whence")
-        if not (0 <= new <= len(self._mv)):  # pylint: disable=superfluous-parens
+        if not (0 <= new <= self.size):  # pylint: disable=superfluous-parens
             raise ValueError("Seek out of range")
         self._pos = new
         return self._pos
