@@ -28,13 +28,13 @@ def spider(crawler: Crawler) -> Spider:
 
 
 @pytest.fixture
-def stats(crawler: Crawler, spider: Spider) -> Generator[StatsCollector]:
+def stats(crawler: Crawler) -> Generator[StatsCollector]:
     assert crawler.stats is not None
-    crawler.stats.open_spider(spider)
+    crawler.stats.open_spider()
 
     yield crawler.stats
 
-    crawler.stats.close_spider(spider, "")
+    crawler.stats.close_spider()
 
 
 @pytest.fixture
@@ -53,7 +53,7 @@ def test_process_spider_output(
     out = list(mw.process_spider_output(resp, result, spider))
     assert out == result
 
-    rdc = stats.get_value("request_depth_count/1", spider=spider)
+    rdc = stats.get_value("request_depth_count/1")
     assert rdc == 1
 
     req.meta["depth"] = 1
@@ -61,5 +61,5 @@ def test_process_spider_output(
     out2 = list(mw.process_spider_output(resp, result, spider))
     assert not out2
 
-    rdm = stats.get_value("request_depth_max", spider=spider)
+    rdm = stats.get_value("request_depth_max")
     assert rdm == 1

@@ -133,11 +133,8 @@ class HttpCompressionMiddleware:
                     self.stats.inc_value(
                         "httpcompression/response_bytes",
                         len(decoded_body),
-                        spider=spider,
                     )
-                    self.stats.inc_value(
-                        "httpcompression/response_count", spider=spider
-                    )
+                    self.stats.inc_value("httpcompression/response_count")
                 respcls = responsetypes.from_args(
                     headers=response.headers, url=response.url, body=decoded_body
                 )

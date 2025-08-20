@@ -59,6 +59,6 @@ def test_logging(
 ) -> None:
     with caplog.at_level(INFO):
         process_spider_output(mw, spider)
-    ric = stats.get_value("urllength/request_ignored_count", spider=spider)
+    ric = stats.get_value("urllength/request_ignored_count")
     assert ric == 1
     assert f"Ignoring link (url length > {maxlength})" in caplog.text

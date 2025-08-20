@@ -519,7 +519,7 @@ class ExecutionEngine:
             await maybe_deferred_to_future(d)
         await self.scraper.open_spider_async()
         assert self.crawler.stats
-        self.crawler.stats.open_spider(self.crawler.spider)
+        self.crawler.stats.open_spider()
         await self.signals.send_catch_log_async(
             signals.spider_opened, spider=self.crawler.spider
         )
@@ -614,7 +614,7 @@ class ExecutionEngine:
 
         assert self.crawler.stats
         try:
-            self.crawler.stats.close_spider(spider, reason=reason)
+            self.crawler.stats.close_spider(reason=reason)
         except Exception:
             log_failure("Stats close failure")
 

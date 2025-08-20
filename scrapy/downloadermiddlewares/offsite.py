@@ -54,8 +54,8 @@ class OffsiteMiddleware:
                 {"domain": domain, "request": request},
                 extra={"spider": spider},
             )
-            self.stats.inc_value("offsite/domains", spider=spider)
-        self.stats.inc_value("offsite/filtered", spider=spider)
+            self.stats.inc_value("offsite/domains")
+        self.stats.inc_value("offsite/filtered")
         raise IgnoreRequest
 
     def should_follow(self, request: Request, spider: Spider) -> bool:
