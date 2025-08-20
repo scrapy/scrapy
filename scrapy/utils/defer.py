@@ -342,7 +342,7 @@ def process_parallel(
     input: _T,  # noqa: A002
     *a: _P.args,
     **kw: _P.kwargs,
-) -> Deferred[list[_T2]]:
+) -> Deferred[list[_T2]]:  # pragma: no cover
     """Return a Deferred with the output of all successful calls to the given
     callbacks
     """

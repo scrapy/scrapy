@@ -166,7 +166,7 @@ class MediaPipeline(ABC):
         return pipe
 
     def open_spider(self, spider: Spider | None = None) -> None:
-        if spider is not None:
+        if spider is not None:  # pragma: no cover
             warnings.warn(
                 "Passing a spider argument to MediaPipeline.open_spider()"
                 " is deprecated and the passed value is ignored.",
@@ -179,7 +179,7 @@ class MediaPipeline(ABC):
     def process_item(
         self, item: Any, spider: Spider | None = None
     ) -> Deferred[list[FileInfoOrError]]:
-        if spider is not None:
+        if spider is not None:  # pragma: no cover
             warnings.warn(
                 "Passing a spider argument to MediaPipeline.process_item()"
                 " is deprecated and the passed value is ignored.",

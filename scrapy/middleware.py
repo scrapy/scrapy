@@ -194,13 +194,17 @@ class MiddlewareManager(ABC):
                 obj = await ensure_awaitable(method(obj, *args))
         return obj
 
-    def open_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
+    def open_spider(
+        self, spider: Spider | None = None
+    ) -> Deferred[list[None]]:  # pragma: no cover
         raise NotImplementedError(
             "MiddlewareManager.open_spider() is no longer implemented"
             " and will be removed in a future Scrapy version."
         )
 
-    def close_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
+    def close_spider(
+        self, spider: Spider | None = None
+    ) -> Deferred[list[None]]:  # pragma: no cover
         raise NotImplementedError(
             "MiddlewareManager.close_spider() is no longer implemented"
             " and will be removed in a future Scrapy version."

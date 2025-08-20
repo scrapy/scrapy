@@ -53,7 +53,7 @@ class HttpErrorMiddleware:
     def process_spider_input(
         self, response: Response, spider: Spider | None = None
     ) -> None:
-        if spider is not None:
+        if spider is not None:  # pragma: no cover
             warnings.warn(
                 "Passing a spider argument to HttpErrorMiddleware.process_spider_input()"
                 " is deprecated and the passed value is ignored.",
@@ -82,7 +82,7 @@ class HttpErrorMiddleware:
     def process_spider_exception(
         self, response: Response, exception: Exception, spider: Spider | None = None
     ) -> Iterable[Any] | None:
-        if spider is not None:
+        if spider is not None:  # pragma: no cover
             warnings.warn(
                 "Passing a spider argument to HttpErrorMiddleware.process_spider_exception()"
                 " is deprecated and the passed value is ignored.",

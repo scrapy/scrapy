@@ -57,7 +57,7 @@ class BaseSpiderMiddleware:
     def process_spider_output(
         self, response: Response, result: Iterable[Any], spider: Spider | None = None
     ) -> Iterable[Any]:
-        if spider is not None:
+        if spider is not None:  # pragma: no cover
             warnings.warn(
                 "Passing a spider argument to BaseSpiderMiddleware.process_spider_output()"
                 " is deprecated and the passed value is ignored.",
@@ -74,7 +74,7 @@ class BaseSpiderMiddleware:
         result: AsyncIterator[Any],
         spider: Spider | None = None,
     ) -> AsyncIterator[Any]:
-        if spider is not None:
+        if spider is not None:  # pragma: no cover
             warnings.warn(
                 "Passing a spider argument to BaseSpiderMiddleware.process_spider_output_async()"
                 " is deprecated and the passed value is ignored.",
