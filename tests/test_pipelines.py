@@ -339,7 +339,7 @@ class TestMiddlewareManagerSpider:
                 match=r"DeprecatedSpiderArgPipeline.close_spider\(\) requires a spider argument",
             ),
         ):
-            mwman._add_middleware(DeprecatedSpiderArgPipeline)
+            mwman._add_middleware(DeprecatedSpiderArgPipeline())
         with (
             pytest.warns(
                 ScrapyDeprecationWarning,
@@ -386,6 +386,17 @@ class TestMiddlewareManagerSpider:
             match="was called without the crawler argument",
         ):
             mwman = ItemPipelineManager()
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"DeprecatedSpiderArgPipeline.open_spider\(\) requires a spider argument",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"DeprecatedSpiderArgPipeline.close_spider\(\) requires a spider argument",
+            ),
+        ):
+            mwman._add_middleware(DeprecatedSpiderArgPipeline())
         with pytest.warns(
             ScrapyDeprecationWarning,
             match=r"Passing a spider argument to ItemPipelineManager.open_spider\(\) is deprecated",
@@ -401,6 +412,7 @@ class TestMiddlewareManagerSpider:
             ),
         ):
             mwman.close_spider(DefaultSpider())
+        mwman.close_spider()
 
     def test_no_spider_arg_without_crawler(self) -> None:
         """If no crawler and no spider arg, raise an error."""
@@ -419,7 +431,7 @@ class TestMiddlewareManagerSpider:
                 match=r"DeprecatedSpiderArgPipeline.close_spider\(\) requires a spider argument",
             ),
         ):
-            mwman._add_middleware(DeprecatedSpiderArgPipeline)
+            mwman._add_middleware(DeprecatedSpiderArgPipeline())
         with (
             pytest.raises(
                 ValueError,
