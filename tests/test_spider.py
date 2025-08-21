@@ -897,6 +897,30 @@ Sitemap: /sitemap-relative-url.xml
 
         assert not results
 
+    @pytest.mark.parametrize(
+        ("follow", "result"),
+        [
+            (r"1.xml", ["http://www.example.com/sitemap1.xml"]),
+            (re.compile(r"sitemap\d"), ["http://www.example.com/sitemap1.xml"]),
+            (r"nonexistent", []),
+        ],
+    )
+    def test_sitemap_follow(self, follow, result):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <sitemap>
+            <loc>http://www.example.com/sitemap1.xml</loc>
+        </sitemap>
+    </sitemapindex>"""
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+
+        class FollowSpider(self.spider_class):  # type: ignore[name-defined]
+            sitemap_follow = [follow]
+
+        spider = FollowSpider("example.com")
+        urls = [req.url for req in spider._parse_sitemap(r)]
+        assert urls == result
+
 
 class TestDeprecation:
     def test_crawl_spider(self):
