@@ -57,13 +57,11 @@ class ItemPipelineManager(MiddlewareManager):
     async def process_item_async(self, item: Any) -> Any:
         return await self._process_chain("process_item", item, add_spider=True)
 
-    def _process_parallel(
-        self, methodname: str, add_spider: bool = False
-    ) -> Deferred[list[None]]:
+    def _process_parallel(self, methodname: str) -> Deferred[list[None]]:
         methods = cast("Iterable[Callable[..., None]]", self.methods[methodname])
 
         def get_dfd(method: Callable[..., None]) -> Deferred[None]:
-            if add_spider and method in self._mw_methods_requiring_spider:
+            if method in self._mw_methods_requiring_spider:
                 return maybeDeferred_coro(method, self._spider)
             return maybeDeferred_coro(method)
 
@@ -83,10 +81,10 @@ class ItemPipelineManager(MiddlewareManager):
         if spider:
             self._warn_spider_arg("open_spider")
             self._set_compat_spider(spider)
-        return self._process_parallel("open_spider", add_spider=True)
+        return self._process_parallel("open_spider")
 
     def close_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
         if spider:
             self._warn_spider_arg("close_spider")
             self._set_compat_spider(spider)
-        return self._process_parallel("close_spider", add_spider=True)
+        return self._process_parallel("close_spider")
