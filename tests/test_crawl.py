@@ -23,7 +23,7 @@ from scrapy.utils.engine import format_engine_status, get_engine_status
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import NON_EXISTING_RESOLVABLE
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import (
     AsyncDefAsyncioGenComplexSpider,
     AsyncDefAsyncioGenExcSpider,

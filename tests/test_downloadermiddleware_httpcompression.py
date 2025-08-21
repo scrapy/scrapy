@@ -72,7 +72,7 @@ class TestHttpCompression:
         self.crawler = get_crawler(Spider)
         self.spider = self.crawler._create_spider("scrapytest.org")
         self.mw = HttpCompressionMiddleware.from_crawler(self.crawler)
-        self.crawler.stats.open_spider(self.spider)
+        self.crawler.stats.open_spider()
 
     def _getresponse(self, coding):
         if coding not in FORMAT:
@@ -97,8 +97,8 @@ class TestHttpCompression:
         return response
 
     def assertStatsEqual(self, key, value):
-        assert self.crawler.stats.get_value(key, spider=self.spider) == value, str(
-            self.crawler.stats.get_stats(self.spider)
+        assert self.crawler.stats.get_value(key) == value, str(
+            self.crawler.stats.get_stats()
         )
 
     def test_setting_false_compression_enabled(self):
@@ -551,17 +551,21 @@ class TestHttpCompression:
         with pytest.raises(IgnoreRequest):
             mw.process_response(response.request, response, spider)
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_br(self):
         _skip_if_no_br()
 
         self._test_compression_bomb_spider_attr("br")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_deflate(self):
         self._test_compression_bomb_spider_attr("deflate")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_gzip(self):
         self._test_compression_bomb_spider_attr("gzip")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_zstd(self):
         _skip_if_no_zstd()
 
@@ -664,17 +668,21 @@ class TestHttpCompression:
             ),
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr_br(self):
         _skip_if_no_br()
 
         self._test_download_warnsize_spider_attr("br")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr_deflate(self):
         self._test_download_warnsize_spider_attr("deflate")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr_gzip(self):
         self._test_download_warnsize_spider_attr("gzip")
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr_zstd(self):
         _skip_if_no_zstd()
 

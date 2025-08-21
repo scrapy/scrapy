@@ -35,12 +35,18 @@ from scrapy.utils.defer import (
     deferred_from_coro,
     maybe_deferred_to_future,
 )
-from tests.mockserver import LeafResource, Status, ssl_context_factory
+from tests.mockserver.http_resources import LeafResource, Status
+from tests.mockserver.utils import ssl_context_factory
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Coroutine, Generator
 
     from scrapy.core.http2.protocol import H2ClientProtocol
+
+
+pytestmark = pytest.mark.skipif(
+    not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
+)
 
 
 def generate_random_string(size: int) -> str:
@@ -186,7 +192,6 @@ async def make_request(client: H2ClientProtocol, request: Request) -> Response:
     return await maybe_deferred_to_future(make_request_dfd(client, request))
 
 
-@pytest.mark.skipif(not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled")
 class TestHttps2ClientProtocol:
     scheme = "https"
     host = "localhost"

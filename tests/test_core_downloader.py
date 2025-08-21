@@ -6,23 +6,25 @@ from typing import TYPE_CHECKING, Any, cast
 import OpenSSL.SSL
 import pytest
 from pytest_twisted import async_yield_fixture
-from twisted.protocols.policies import WrappingFactory
 from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
 from twisted.web.client import Response as TxResponse
 
-from scrapy.core.downloader import Slot
+from scrapy.core.downloader import Downloader, Slot
 from scrapy.core.downloader.contextfactory import (
     ScrapyClientContextFactory,
     load_context_factory_from_settings,
 )
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
-from tests.mockserver import PayloadResource, ssl_context_factory
+from tests.mockserver.http_resources import PayloadResource
+from tests.mockserver.utils import ssl_context_factory
 
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
@@ -44,8 +46,7 @@ class TestContextFactoryBase:
         r = static.File(str(tmp_path))
         r.putChild(b"payload", PayloadResource())
         site = server.Site(r, timeout=None)
-        wrapper = WrappingFactory(site)
-        port = self._listen(wrapper)
+        port = self._listen(site)
         portno = port.getHost().port
 
         yield f"https://127.0.0.1:{portno}/"
@@ -173,3 +174,17 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         client_context_factory = ScrapyClientContextFactory(OpenSSL.SSL.TLSv1_2_METHOD)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
+
+
+@deferred_f_from_coro_f
+async def test_fetch_deprecated_spider_arg():
+    class CustomDownloader(Downloader):
+        def fetch(self, request, spider):  # pylint: disable=signature-differs
+            return super().fetch(request, spider)
+
+    crawler = get_crawler(DefaultSpider, {"DOWNLOADER": CustomDownloader})
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match=r"The fetch\(\) method of .+\.CustomDownloader requires a spider argument",
+    ):
+        await maybe_deferred_to_future(crawler.crawl())
