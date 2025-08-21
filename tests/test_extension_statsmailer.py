@@ -19,7 +19,7 @@ class DummySpider(Spider):
 def dummy_stats():
     class DummyStats(StatsCollector):
         def __init__(self):
-            super().__init__(crawler=None)
+            # pylint: disable=super-init-not-called
             self._stats = {"global_item_scraped_count": 42}
 
         def get_stats(self, spider=None):
