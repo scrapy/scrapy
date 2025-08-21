@@ -1,13 +1,14 @@
-import pytest
 from unittest.mock import MagicMock
 
-from scrapy.exceptions import NotConfigured
-from scrapy.statscollectors import StatsCollector
-from scrapy.spiders import Spider
-from scrapy.signalmanager import SignalManager
-from scrapy.mail import MailSender
-from scrapy.extensions import statsmailer
+import pytest
+
 from scrapy import signals
+from scrapy.exceptions import NotConfigured
+from scrapy.extensions import statsmailer
+from scrapy.mail import MailSender
+from scrapy.signalmanager import SignalManager
+from scrapy.spiders import Spider
+from scrapy.statscollectors import StatsCollector
 
 
 class DummySpider(Spider):
