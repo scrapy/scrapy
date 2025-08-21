@@ -19,6 +19,7 @@ class DummySpider(Spider):
 def dummy_stats():
     class DummyStats(StatsCollector):
         def __init__(self):
+            super().__init__(crawler=None)
             self._stats = {"global_item_scraped_count": 42}
 
         def get_stats(self, spider=None):
@@ -54,7 +55,9 @@ def test_from_crawler_with_recipients_registers_signal(dummy_stats):
     assert ext.recipients == ["test@example.com"]
     assert ext.mail is mailer
 
-    connected = crawler.signals.send_catch_log(signals.spider_closed, spider=DummySpider("dummy"))
+    connected = crawler.signals.send_catch_log(
+        signals.spider_closed, spider=DummySpider("dummy")
+    )
     assert connected is not None
 
 
