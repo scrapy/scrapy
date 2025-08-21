@@ -153,7 +153,7 @@ import logging
 class MyPipeline:
     component_name = 'my_pipeline'
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         logging.info('It Works!')
         return item
 """,

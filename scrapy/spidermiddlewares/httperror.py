@@ -7,9 +7,10 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
+import warnings
 from typing import TYPE_CHECKING, Any
 
-from scrapy.exceptions import IgnoreRequest
+from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -35,9 +36,7 @@ class HttpError(IgnoreRequest):
 
 
 class HttpErrorMiddleware:
-    @classmethod
-    def from_crawler(cls, crawler: Crawler) -> Self:
-        return cls(crawler.settings)
+    crawler: Crawler
 
     def __init__(self, settings: BaseSettings):
         self.handle_httpstatus_all: bool = settings.getbool("HTTPERROR_ALLOW_ALL")
@@ -45,7 +44,22 @@ class HttpErrorMiddleware:
             "HTTPERROR_ALLOWED_CODES"
         )
 
-    def process_spider_input(self, response: Response, spider: Spider) -> None:
+    @classmethod
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        o = cls(crawler.settings)
+        o.crawler = crawler
+        return o
+
+    def process_spider_input(
+        self, response: Response, spider: Spider | None = None
+    ) -> None:
+        if spider is not None:  # pragma: no cover
+            warnings.warn(
+                "Passing a spider argument to HttpErrorMiddleware.process_spider_input()"
+                " is deprecated and the passed value is ignored.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         if 200 <= response.status < 300:  # common case
             return
         meta = response.meta
@@ -57,25 +71,34 @@ class HttpErrorMiddleware:
             return
         else:
             allowed_statuses = getattr(
-                spider, "handle_httpstatus_list", self.handle_httpstatus_list
+                self.crawler.spider,
+                "handle_httpstatus_list",
+                self.handle_httpstatus_list,
             )
         if response.status in allowed_statuses:
             return
         raise HttpError(response, "Ignoring non-200 response")
 
     def process_spider_exception(
-        self, response: Response, exception: Exception, spider: Spider
+        self, response: Response, exception: Exception, spider: Spider | None = None
     ) -> Iterable[Any] | None:
+        if spider is not None:  # pragma: no cover
+            warnings.warn(
+                "Passing a spider argument to HttpErrorMiddleware.process_spider_exception()"
+                " is deprecated and the passed value is ignored.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         if isinstance(exception, HttpError):
-            assert spider.crawler.stats
-            spider.crawler.stats.inc_value("httperror/response_ignored_count")
-            spider.crawler.stats.inc_value(
+            assert self.crawler.stats
+            self.crawler.stats.inc_value("httperror/response_ignored_count")
+            self.crawler.stats.inc_value(
                 f"httperror/response_ignored_status_count/{response.status}"
             )
             logger.info(
                 "Ignoring response %(response)r: HTTP status code is not handled or not allowed",
                 {"response": response},
-                extra={"spider": spider},
+                extra={"spider": self.crawler.spider},
             )
             return []
         return None

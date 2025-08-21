@@ -312,19 +312,6 @@ def process_chain(
     return d
 
 
-async def _process_chain(
-    callables: Iterable[Callable[Concatenate[_T, _P], _T | Awaitable[_T]]],
-    input_: _T,
-    *a: _P.args,
-    **kw: _P.kwargs,
-) -> _T:
-    """Chain the given (potentialy asynchronous) callables."""
-    result = input_
-    for callable_ in callables:
-        result = await ensure_awaitable(callable_(result, *a, **kw))
-    return result
-
-
 def process_chain_both(
     callbacks: Iterable[Callable[Concatenate[_T, _P], Any]],
     errbacks: Iterable[Callable[Concatenate[Failure, _P], Any]],
@@ -355,10 +342,15 @@ def process_parallel(
     input: _T,  # noqa: A002
     *a: _P.args,
     **kw: _P.kwargs,
-) -> Deferred[list[_T2]]:
+) -> Deferred[list[_T2]]:  # pragma: no cover
     """Return a Deferred with the output of all successful calls to the given
     callbacks
     """
+    warnings.warn(
+        "process_parallel() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     dfds = [succeed(input).addCallback(x, *a, **kw) for x in callbacks]
     d: Deferred[list[tuple[bool, _T2]]] = DeferredList(
         dfds, fireOnOneErrback=True, consumeErrors=True

@@ -451,7 +451,7 @@ class TestSettings:
 
     def test_passing_objects_as_values(self):
         class TestPipeline:
-            def process_item(self, i, s):
+            def process_item(self, i):
                 return i
 
         settings = Settings(
@@ -471,7 +471,7 @@ class TestSettings:
         assert priority == 800
         assert mypipeline == TestPipeline
         assert isinstance(mypipeline(), TestPipeline)
-        assert mypipeline().process_item("item", None) == "item"
+        assert mypipeline().process_item("item") == "item"
 
         myhandler = settings.getdict("DOWNLOAD_HANDLERS").pop("ftp")
         assert myhandler == FileDownloadHandler

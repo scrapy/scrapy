@@ -44,6 +44,20 @@ Backward-incompatible changes
 
         - :meth:`~scrapy.spidermiddlewares.referer.ReferrerPolicy.referrer`
 
+-   :class:`scrapy.middleware.MiddlewareManager` no longer includes code for
+    handling ``open_spider()`` and ``close_spider()`` component methods. As
+    this code was only used for pipelines it was moved into
+    :class:`scrapy.pipelines.ItemPipelineManager`. This change should only
+    affect custom subclasses of :class:`~scrapy.middleware.MiddlewareManager`.
+    The following code was moved:
+
+    - ``scrapy.middleware.MiddlewareManager.open_spider()``
+
+    - ``scrapy.middleware.MiddlewareManager.close_spider()``
+
+    - Code in ``scrapy.middleware.MiddlewareManager._add_middleware()`` that
+      processes ``open_spider()`` and ``close_spider()`` component methods.
+
 -   :meth:`scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware.process_request`
     now returns a coroutine, previously it returned a
     :class:`~twisted.internet.defer.Deferred` object or ``None``. The

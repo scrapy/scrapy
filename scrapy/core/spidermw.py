@@ -117,9 +117,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
             )
 
     def _add_middleware(self, mw: Any) -> None:
-        super()._add_middleware(mw)
         if hasattr(mw, "process_spider_input"):
             self.methods["process_spider_input"].append(mw.process_spider_input)
+            self._check_mw_method_spider_arg(mw.process_spider_input)
+
         if self._use_start_requests:
             if hasattr(mw, "process_start_requests"):
                 self.methods["process_start_requests"].appendleft(
@@ -127,10 +128,19 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 )
         elif hasattr(mw, "process_start"):
             self.methods["process_start"].appendleft(mw.process_start)
+
         process_spider_output = self._get_async_method_pair(mw, "process_spider_output")
         self.methods["process_spider_output"].appendleft(process_spider_output)
+        if callable(process_spider_output):
+            self._check_mw_method_spider_arg(process_spider_output)
+        elif isinstance(process_spider_output, tuple):
+            for m in process_spider_output:
+                self._check_mw_method_spider_arg(m)
+
         process_spider_exception = getattr(mw, "process_spider_exception", None)
         self.methods["process_spider_exception"].appendleft(process_spider_exception)
+        if process_spider_exception is not None:
+            self._check_mw_method_spider_arg(process_spider_exception)
 
     async def _process_spider_input(
         self,
@@ -141,7 +151,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
         for method in self.methods["process_spider_input"]:
             method = cast("Callable", method)
             try:
-                result = method(response=response, spider=self._spider)
+                if method in self._mw_methods_requiring_spider:
+                    result = method(response=response, spider=self._spider)
+                else:
+                    result = method(response=response)
                 if result is not None:
                     msg = (
                         f"{global_object_name(method)} must return None "
@@ -212,7 +225,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
             if method is None:
                 continue
             method = cast("Callable", method)
-            result = method(response=response, exception=exception, spider=self._spider)
+            if method in self._mw_methods_requiring_spider:
+                result = method(
+                    response=response, exception=exception, spider=self._spider
+                )
+            else:
+                result = method(response=response, exception=exception)
             if _isiterable(result):
                 # stop exception handling by handing control over to the
                 # process_spider_output chain if an iterable has been returned
@@ -298,7 +316,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
                         )
                         recovered = MutableChain(recovered_collected)
                 # might fail directly if the output value is not a generator
-                result = method(response=response, result=result, spider=self._spider)
+                if method in self._mw_methods_requiring_spider:
+                    result = method(
+                        response=response, result=result, spider=self._spider
+                    )
+                else:
+                    result = method(response=response, result=result)
             except Exception as ex:
                 exception_result: Failure | MutableChain[_T] | MutableAsyncChain[_T] = (
                     self._process_spider_exception(response, ex, method_index + 1)
@@ -421,7 +444,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         if self._use_start_requests:
             sync_start = iter(self._spider.start_requests())
             sync_start = await self._process_chain(
-                "process_start_requests", sync_start, self._spider
+                "process_start_requests", sync_start, always_add_spider=True
             )
             start: AsyncIterator[Any] = as_async_generator(sync_start)
         else:

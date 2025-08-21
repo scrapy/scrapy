@@ -28,11 +28,6 @@ def crawler() -> Crawler:
 
 
 @pytest.fixture
-def spider(crawler: Crawler) -> Spider:
-    return crawler._create_spider("foo")
-
-
-@pytest.fixture
 def stats(crawler: Crawler) -> StatsCollector:
     assert crawler.stats is not None
     return crawler.stats
@@ -43,22 +38,19 @@ def mw(crawler: Crawler) -> UrlLengthMiddleware:
     return UrlLengthMiddleware.from_crawler(crawler)
 
 
-def process_spider_output(mw: UrlLengthMiddleware, spider: Spider) -> list[Request]:
-    return list(mw.process_spider_output(response, reqs, spider))
+def process_spider_output(mw: UrlLengthMiddleware) -> list[Request]:
+    return list(mw.process_spider_output(response, reqs))
 
 
-def test_middleware_works(mw: UrlLengthMiddleware, spider: Spider) -> None:
-    assert process_spider_output(mw, spider) == [short_url_req]
+def test_middleware_works(mw: UrlLengthMiddleware) -> None:
+    assert process_spider_output(mw) == [short_url_req]
 
 
 def test_logging(
-    stats: StatsCollector,
-    mw: UrlLengthMiddleware,
-    spider: Spider,
-    caplog: pytest.LogCaptureFixture,
+    stats: StatsCollector, mw: UrlLengthMiddleware, caplog: pytest.LogCaptureFixture
 ) -> None:
     with caplog.at_level(INFO):
-        process_spider_output(mw, spider)
+        process_spider_output(mw)
     ric = stats.get_value("urllength/request_ignored_count")
     assert ric == 1
     assert f"Ignoring link (url length > {maxlength})" in caplog.text

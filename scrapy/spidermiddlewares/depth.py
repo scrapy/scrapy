@@ -7,8 +7,10 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
+import warnings
 from typing import TYPE_CHECKING, Any
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
 
 if TYPE_CHECKING:
@@ -53,16 +55,33 @@ class DepthMiddleware(BaseSpiderMiddleware):
         return o
 
     def process_spider_output(
-        self, response: Response, result: Iterable[Any], spider: Spider
+        self, response: Response, result: Iterable[Any], spider: Spider | None = None
     ) -> Iterable[Any]:
+        if spider is not None:  # pragma: no cover
+            warnings.warn(
+                "Passing a spider argument to DepthMiddleware.process_spider_output()"
+                " is deprecated and the passed value is ignored.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         self._init_depth(response)
-        yield from super().process_spider_output(response, result, spider)
+        yield from super().process_spider_output(response, result)
 
     async def process_spider_output_async(
-        self, response: Response, result: AsyncIterator[Any], spider: Spider
+        self,
+        response: Response,
+        result: AsyncIterator[Any],
+        spider: Spider | None = None,
     ) -> AsyncIterator[Any]:
+        if spider is not None:  # pragma: no cover
+            warnings.warn(
+                "Passing a spider argument to DepthMiddleware.process_spider_output_async()"
+                " is deprecated and the passed value is ignored.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         self._init_depth(response)
-        async for o in super().process_spider_output_async(response, result, spider):
+        async for o in super().process_spider_output_async(response, result):
             yield o
 
     def _init_depth(self, response: Response) -> None:
