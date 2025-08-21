@@ -30,7 +30,6 @@ from scrapy.pipelines.files import (
     GCSFilesStore,
     S3FilesStore,
 )
-
 from scrapy.settings import Settings
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
