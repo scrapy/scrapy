@@ -637,25 +637,25 @@ class FilesPipeline(MediaPipeline):
         item: Any = None,
     ) -> FileInfo:
         referer = referer_str(request)
-
-        if response.status != 200:
+                    
+        # Accept 200 and 201 as valid download codes
+        if response.status not in (200, 201):
             logger.warning(
-                "File (code: %(status)s): Error downloading file from "
-                "%(request)s referred in <%(referer)s>",
+                "File (code: %(status)s): Error downloading file from %(request)s referred in <%(referer)s>",
                 {"status": response.status, "request": request, "referer": referer},
                 extra={"spider": info.spider},
             )
             raise FileException("download-error")
 
+        # Require a body for both 200 and 201
         if not response.body:
             logger.warning(
-                "File (empty-content): Empty file from %(request)s referred "
-                "in <%(referer)s>: no-content",
+                "File (empty-content): Empty file from %(request)s referred in <%(referer)s>: no-content",
                 {"request": request, "referer": referer},
                 extra={"spider": info.spider},
             )
             raise FileException("empty-content")
-
+        
         status = "cached" if "cached" in response.flags else "downloaded"
         logger.debug(
             "File (%(status)s): Downloaded file from %(request)s referred in "

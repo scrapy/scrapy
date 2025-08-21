@@ -14,6 +14,7 @@ from tempfile import mkdtemp
 from typing import Any
 from unittest import mock
 from urllib.parse import urlparse
+from scrapy.spiders import Spider
 
 import attr
 import pytest
@@ -804,3 +805,52 @@ class TestBuildFromCrawler:
             assert len(w) == 0
             assert pipe.store
             assert pipe._from_crawler_called
+
+def test_media_downloaded_accepts_201_created(tmp_path):
+    class DummySpider(Spider):
+        name = "dummy"
+
+    class DummyPipeline(FilesPipeline):
+        def file_path(self, request, response=None, info=None, *, item=None):
+            return "201test.txt"
+
+    crawler = get_crawler(DummySpider, {"FILES_STORE": str(tmp_path)})
+    pipeline = DummyPipeline(store_uri=str(tmp_path), crawler=crawler)
+
+    request = Request(url="http://example.com/testfile.png")
+    response = Response(
+        url=request.url,
+        status=201,
+        body=b"fake image content",
+        request=request,
+    )
+
+    info = pipeline.SpiderInfo(DummySpider())
+    result = pipeline.media_downloaded(response, request, info=info)
+
+    assert result["status"] == "downloaded"
+    assert "checksum" in result
+    assert result["path"] == "201test.txt"
+
+def test_media_downloaded_201_empty_body_raises(tmp_path):
+    class DummySpider(Spider):
+        name = "dummy"
+
+    class DummyPipeline(FilesPipeline):
+        def file_path(self, request, response=None, info=None, *, item=None):
+            return "201test.txt"
+
+    crawler = get_crawler(DummySpider, {"FILES_STORE": str(tmp_path)})
+    pipeline = DummyPipeline(store_uri=str(tmp_path), crawler=crawler)
+
+    request = Request(url="http://example.com/testfile.png")
+    response = Response(
+        url=request.url,
+        status=201,
+        body=b"",
+        request=request,
+    )
+
+    info = pipeline.SpiderInfo(DummySpider())
+    with pytest.raises(Exception):
+        pipeline.media_downloaded(response, request, info=info)
