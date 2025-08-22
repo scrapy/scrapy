@@ -117,6 +117,18 @@ def requires_boto3(request):
         pytest.skip("boto3 is not installed")
 
 
+@pytest.fixture(autouse=True)
+def requires_litellm(request):
+    if not request.node.get_closest_marker("requires_litellm"):
+        return
+    try:
+        import litellm  # noqa: PLC0415
+
+        del litellm
+    except ImportError:
+        pytest.skip("litellm is not installed")
+
+
 def pytest_configure(config):
     if config.getoption("--reactor") == "asyncio":
         # Needed on Windows to switch from proactor to selector for Twisted reactor compatibility.

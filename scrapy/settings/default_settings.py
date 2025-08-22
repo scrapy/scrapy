@@ -333,6 +333,7 @@ FEED_EXPORTERS_BASE = {
     "xml": "scrapy.exporters.XmlItemExporter",
     "marshal": "scrapy.exporters.MarshalItemExporter",
     "pickle": "scrapy.exporters.PickleItemExporter",
+    "jsonl-pinecone": "scrapy.exporters.JsonLinesItemExporter",
 }
 FEED_FORMAT = "jsonlines"
 FEED_STORE_EMPTY = True
@@ -345,6 +346,11 @@ FEED_STORAGES_BASE = {
     "s3": "scrapy.extensions.feedexport.S3FeedStorage",
     "stdout": "scrapy.extensions.feedexport.StdoutFeedStorage",
 }
+
+# Embeddings pipeline settings (LiteLLM)
+# LITELLM_API_KEY = "your-api-key-here"
+# LITELLM_EMBEDDING_MODEL = "text-embedding-3-small"
+
 FEED_STORAGE_FTP_ACTIVE = False
 FEED_STORAGE_GCS_ACL = ""
 FEED_STORAGE_S3_ACL = ""
