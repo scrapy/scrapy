@@ -139,8 +139,27 @@ class FSFilesStore:
         return {"last_modified": last_modified, "checksum": checksum}
 
     def _get_filesystem_path(self, path: str | PathLike[str]) -> Path:
-        path_comps = _to_string(path).split("/")
-        return Path(self.basedir, *path_comps)
+        p = Path(_to_string(path))
+
+        # If absolute (Windows or POSIX), strip the root/drive
+        if p.is_absolute():
+            try:
+                p = p.relative_to(p.anchor)  # removes C:\ or /
+            except ValueError:
+                p = Path(*p.parts[1:])  # fallback
+
+        # Join with basedir
+        full_path = Path(self.basedir).joinpath(*p.parts).resolve()
+
+        # Ensure path stays inside basedir
+        base_resolved = Path(self.basedir).resolve()
+        try:
+            full_path.relative_to(base_resolved)
+        except ValueError:
+            # Auto-fix: force it back inside basedir
+            full_path = base_resolved.joinpath(full_path.name)
+
+        return full_path
 
     def _mkdir(
         self, dirname: Path, domain: MediaPipeline.SpiderInfo | None = None
