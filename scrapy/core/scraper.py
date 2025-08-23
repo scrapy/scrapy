@@ -361,6 +361,12 @@ class Scraper:
         assert self.crawler.spider
         exc = _failure.value
         if isinstance(exc, CloseSpider):
+# Log the CloseSpider exception with its message
+            logger.info(
+                "Spider closed by CloseSpider exception: %(reason)s",
+                {"reason": exc.reason or "cancelled"},
+                extra={"spider": self.crawler.spider},
+            )
             assert self.crawler.engine is not None  # typing
             _schedule_coro(
                 self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
