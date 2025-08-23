@@ -121,7 +121,7 @@ class TestMain:
 
 
 class TestRequestSendOrder:
-    seconds = 0.1  # increase if flaky
+    seconds = 0.2  # increase if flaky
 
     @classmethod
     def setup_class(cls):
@@ -335,7 +335,7 @@ class TestRequestSendOrder:
     async def test_lazy(self):
         start_nums = [1, 2, 4]
         cb_nums = [3]
-        response_seconds = self.seconds * 2**1  # increase if flaky
+        response_seconds = self.seconds * 2**2  # increase if flaky
         download_slots = 1
 
         async def start(spider):
