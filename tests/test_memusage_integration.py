@@ -18,6 +18,17 @@ pytestmark = pytest.mark.skipif(
     reason="MemoryUsage extension not available on Windows",
 )
 
+MiB = 1024 * 1024
+
+
+def _installed_reactor_path() -> str:
+    """Return the fully qualified path of the *already installed* Twisted reactor.
+    Local import avoids module-level reactor import (keeps Ruff happy)."""
+    from twisted.internet import reactor as _reactor  # local on purpose
+
+    cls = _reactor.__class__
+    return f"{cls.__module__}.{cls.__name__}"
+
 
 class _LoopSpider(Spider):
     name = "loop-data-spider"
@@ -47,12 +58,13 @@ def test_memusage_limit_closes_spider_with_reason_and_error_log(caplog, monkeypa
             "LOG_LEVEL": "INFO",
         }
     )
+    # Respect the reactor already installed by the test env/CI.
+    settings.set("TWISTED_REACTOR", _installed_reactor_path(), priority="cmdline")
 
-    MB = 1024 * 1024
     state = {"high": False}
 
     def fake_vsz(self):
-        return 250 * MB if state["high"] else 5 * MB
+        return 250 * MiB if state["high"] else 5 * MiB
 
     monkeypatch.setattr(MemoryUsage, "get_virtual_size", fake_vsz)
 
@@ -84,9 +96,10 @@ def test_memusage_warning_logs_but_allows_normal_finish(caplog, monkeypatch):
             "LOG_LEVEL": "INFO",
         }
     )
+    # Respect the reactor already installed by the test env/CI.
+    settings.set("TWISTED_REACTOR", _installed_reactor_path(), priority="cmdline")
 
-    MB = 1024 * 1024
-    monkeypatch.setattr(MemoryUsage, "get_virtual_size", lambda self: 75 * MB)
+    monkeypatch.setattr(MemoryUsage, "get_virtual_size", lambda self: 75 * MiB)
 
     crawler = get_crawler(spidercls=_LoopSpider, settings_dict=settings)
 
