@@ -1,6 +1,6 @@
 from __future__ import annotations
-
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import pprint
 import sys
 from collections.abc import MutableMapping
@@ -153,9 +153,17 @@ def _get_handler(settings: Settings) -> logging.Handler:
     filename = settings.get("LOG_FILE")
     handler: logging.Handler
     if filename:
-        mode = "a" if settings.getbool("LOG_FILE_APPEND") else "w"
-        encoding = settings.get("LOG_ENCODING")
-        handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
+        if settings.getbool("LOG_FILE_DAILY_ROTATION"):
+            encoding = settings.get("LOG_ENCODING")
+            # TimedRotatingFileHandler uses 'a' mode by default and doesn't support 'w' mode
+            # so we ignore LOG_FILE_APPEND when daily rotation is enabled
+            handler = logging.handlers.TimedRotatingFileHandler(
+                filename, when="midnight", interval=1, encoding=encoding, backupCount=30
+            )
+        else:
+            mode = "a" if settings.getbool("LOG_FILE_APPEND") else "w"
+            encoding = settings.get("LOG_ENCODING")
+            handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
     elif settings.getbool("LOG_ENABLED"):
         handler = logging.StreamHandler()
     else:

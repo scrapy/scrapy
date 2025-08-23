@@ -60,7 +60,7 @@ argument.  If needed, the last example could be rewritten as:
 On top of that, you can create different "loggers" to encapsulate messages. (For
 example, a common practice is to create different loggers for every module).
 These loggers can be configured independently, and they allow hierarchical
-constructions.
+constructures.
 
 The previous examples use the root logger behind the scenes, which is a top level
 logger where all messages are propagated to (unless otherwise specified). Using
@@ -163,6 +163,7 @@ These settings can be used to configure the logging:
 
 * :setting:`LOG_FILE`
 * :setting:`LOG_FILE_APPEND`
+* :setting:`LOG_FILE_DAILY_ROTATION`
 * :setting:`LOG_ENABLED`
 * :setting:`LOG_ENCODING`
 * :setting:`LOG_LEVEL`
@@ -179,6 +180,11 @@ messages will be displayed on the standard error. If :setting:`LOG_FILE` is set
 and :setting:`LOG_FILE_APPEND` is ``False``, the file will be overwritten
 (discarding the output from previous runs, if any). Lastly, if
 :setting:`LOG_ENABLED` is ``False``, there won't be any visible log output.
+
+If :setting:`LOG_FILE_DAILY_ROTATION` is set to ``True``, log files will be
+rotated daily at midnight, keeping the 30 most recent log files. This setting
+is only effective when :setting:`LOG_FILE` is also set. When daily rotation is
+enabled, the :setting:`LOG_FILE_APPEND` setting is ignored.
 
 :setting:`LOG_LEVEL` determines the minimum level of severity to display, those
 messages with lower severity will be filtered out. It ranges through the
