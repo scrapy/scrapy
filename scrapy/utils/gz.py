@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import struct
 from gzip import GzipFile
-from io import BytesIO
 from typing import TYPE_CHECKING
+
+from scrapy.utils.misc import MemoryviewReader
 
 from ._compression import _CHUNK_SIZE, _DecompressionMaxSizeExceeded
 
@@ -16,8 +17,8 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
 
     This is resilient to CRC checksum errors.
     """
-    f = GzipFile(fileobj=BytesIO(data))
-    output_stream = BytesIO()
+    f = GzipFile(fileobj=MemoryviewReader(data))
+    output_stream = bytearray()
     chunk = b"."
     decompressed_size = 0
     while chunk:
@@ -27,7 +28,7 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
             # complete only if there is some data, otherwise re-raise
             # see issue 87 about catching struct.error
             # some pages are quite small so output_stream is empty
-            if output_stream.getbuffer().nbytes > 0:
+            if len(output_stream) > 0:
                 break
             raise
         decompressed_size += len(chunk)
@@ -37,9 +38,9 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
                 f"({decompressed_size} B) exceed the specified maximum "
                 f"({max_size} B)."
             )
-        output_stream.write(chunk)
-    output_stream.seek(0)
-    return output_stream.read()
+        output_stream.extend(chunk)
+
+    return bytes(output_stream)
 
 
 def gzip_magic_number(response: Response) -> bool:

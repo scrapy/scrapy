@@ -72,31 +72,44 @@ class SitemapSpider(Spider):
 
     def _parse_sitemap(self, response: Response) -> Iterable[Request]:
         if response.url.endswith("/robots.txt"):
-            for url in sitemap_urls_from_robots(response.text, base_url=response.url):
-                yield Request(url, callback=self._parse_sitemap)
+            requests = [
+                Request(url, callback=self._parse_sitemap)
+                for url in sitemap_urls_from_robots(
+                    response.body, base_url=response.url
+                )
+            ]
+            del response
+
         else:
             body = self._get_sitemap_body(response)
-            if body is None:
+            if not body:
                 logger.warning(
                     "Ignoring invalid sitemap: %(response)s",
                     {"response": response},
                     extra={"spider": self},
                 )
                 return
-
+            del response
             s = Sitemap(body)
-            it = self.sitemap_filter(s)
+            del body
+            requests = list(self.__get_sitemap_requests(s, self.sitemap_filter(s)))
+            del s
 
-            if s.type == "sitemapindex":
-                for loc in iterloc(it, self.sitemap_alternate_links):
-                    if any(x.search(loc) for x in self._follow):
-                        yield Request(loc, callback=self._parse_sitemap)
-            elif s.type == "urlset":
-                for loc in iterloc(it, self.sitemap_alternate_links):
-                    for r, c in self._cbs:
-                        if r.search(loc):
-                            yield Request(loc, callback=c)
-                            break
+        yield from requests
+
+    def __get_sitemap_requests(
+        self, s: Sitemap, it: Iterable[dict[str, Any]]
+    ) -> Iterable[Request]:
+        if s.type == "sitemapindex":
+            for loc in iterloc(it, self.sitemap_alternate_links):
+                if any(x.search(loc) for x in self._follow):
+                    yield Request(loc, callback=self._parse_sitemap)
+        elif s.type == "urlset":
+            for loc in iterloc(it, self.sitemap_alternate_links):
+                for r, c in self._cbs:
+                    if r.search(loc):
+                        yield Request(loc, callback=c)
+                        break
 
     def _get_sitemap_body(self, response: Response) -> bytes | None:
         """Return the sitemap body contained in the given response,
@@ -140,8 +153,9 @@ def regex(x: re.Pattern[str] | str) -> re.Pattern[str]:
 
 def iterloc(it: Iterable[dict[str, Any]], alt: bool = False) -> Iterable[str]:
     for d in it:
-        yield d["loc"]
+        if loc := d["loc"]:
+            yield loc
 
         # Also consider alternate URLs (xhtml:link rel="alternate")
-        if alt and "alternate" in d:
-            yield from d["alternate"]
+        if alt and (alt_list := d.get("alternate")):
+            yield from alt_list
