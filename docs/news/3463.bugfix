@@ -1,0 +1,1 @@
+Fixed CloseSpider error messages not being logged when raised (#3463) 
