@@ -173,6 +173,8 @@ class LxmlLinkExtractor:
         restrict_xpaths: str | Iterable[str] = (),
         tags: str | Iterable[str] = ("a", "area"),
         attrs: str | Iterable[str] = ("href",),
+exclude_tags: str | Iterable[str] = (),
+        exclude_attrs: str | Iterable[str] = (),
         canonicalize: bool = False,
         unique: bool = True,
         process_value: Callable[[Any], Any] | None = None,
@@ -182,9 +184,22 @@ class LxmlLinkExtractor:
         restrict_text: _RegexOrSeveralT | None = None,
     ):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
+        exclude_tags, exclude_attrs = set(arg_to_iter(exclude_tags)), set(arg_to_iter(exclude_attrs))
+        
+        # If tags or attrs are empty, include all except excluded ones
+        if not tags:
+            tag_func = lambda tag: tag not in exclude_tags
+        else:
+            tag_func = partial(operator.contains, tags)
+            
+        if not attrs:
+            attr_func = lambda attr: attr not in exclude_attrs
+        else:
+            attr_func = partial(operator.contains, attrs)
+            
         self.link_extractor = LxmlParserLinkExtractor(
-            tag=partial(operator.contains, tags),
-            attr=partial(operator.contains, attrs),
+            tag=tag_func,
+            attr=attr_func,
             unique=unique,
             process=process_value,
             strip=strip,
