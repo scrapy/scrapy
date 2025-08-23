@@ -153,8 +153,9 @@ def regex(x: re.Pattern[str] | str) -> re.Pattern[str]:
 
 def iterloc(it: Iterable[dict[str, Any]], alt: bool = False) -> Iterable[str]:
     for d in it:
-        yield d["loc"]
+        if loc := d["loc"]:
+            yield loc
 
         # Also consider alternate URLs (xhtml:link rel="alternate")
-        if alt and "alternate" in d:
+        if alt and d.get("alternate"):
             yield from d["alternate"]
