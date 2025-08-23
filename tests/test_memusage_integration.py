@@ -2,21 +2,17 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 import pytest
 from twisted.internet.defer import inlineCallbacks
 
 from scrapy import signals
-from scrapy.crawler import CrawlerRunner
 from scrapy.extensions.memusage import MemoryUsage
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
+from scrapy.utils.test import get_crawler
 
-# Memusage relies on 'resource' (Unix only).
+# memusage relies on the stdlib 'resource' module (not available on Windows)
 pytestmark = pytest.mark.skipif(
     sys.platform.startswith("win"),
     reason="MemoryUsage extension not available on Windows",
@@ -24,9 +20,7 @@ pytestmark = pytest.mark.skipif(
 
 
 class _LoopSpider(Spider):
-    """Keeps the engine running long enough for periodic checks."""
-
-    name = "loop-file-spider"
+    name = "loop-data-spider"
 
     def __init__(self, url: str, loops: int = 60, **kw):
         super().__init__(**kw)
@@ -42,31 +36,9 @@ class _LoopSpider(Spider):
             )
 
 
-def _tmp_file_uri(tmp_path: Path) -> str:
-    f = tmp_path / "hello.txt"
-    f.write_text("hello\n")
-    return f.as_uri()
-
-
-def _pin_reactor_to_installed(settings: Settings) -> None:
-    """Honor the reactor already installed by the test env/CI."""
-    from twisted.internet import (
-        reactor as _reactor,  # local import to avoid import-time issues
-    )
-
-    settings.set(
-        "TWISTED_REACTOR",
-        f"{_reactor.__class__.__module__}.{_reactor.__class__.__name__}",
-        priority="cmdline",
-    )
-
-
 @inlineCallbacks
-@pytest.mark.twisted
-def test_memusage_limit_closes_spider_with_reason_and_error_log(
-    tmp_path, caplog, monkeypatch
-):
-    url = _tmp_file_uri(tmp_path)
+def test_memusage_limit_closes_spider_with_reason_and_error_log(caplog, monkeypatch):
+    url = "data:,"
     settings = Settings(
         {
             "MEMUSAGE_ENABLED": True,
@@ -75,7 +47,6 @@ def test_memusage_limit_closes_spider_with_reason_and_error_log(
             "LOG_LEVEL": "INFO",
         }
     )
-    _pin_reactor_to_installed(settings)
 
     MB = 1024 * 1024
     state = {"high": False}
@@ -85,8 +56,7 @@ def test_memusage_limit_closes_spider_with_reason_and_error_log(
 
     monkeypatch.setattr(MemoryUsage, "get_virtual_size", fake_vsz)
 
-    runner = CrawlerRunner(settings)
-    crawler = runner.create_crawler(_LoopSpider)
+    crawler = get_crawler(spidercls=_LoopSpider, settings_dict=settings)
 
     def on_opened(spider):
         state["high"] = True
@@ -94,7 +64,7 @@ def test_memusage_limit_closes_spider_with_reason_and_error_log(
     crawler.signals.connect(on_opened, signal=signals.spider_opened)
 
     caplog.set_level(logging.ERROR, logger="scrapy.extensions.memusage")
-    yield runner.crawl(crawler, url=url, loops=100)
+    yield crawler.crawl(url=url, loops=100)
 
     assert crawler.stats.get_value("finish_reason") == "memusage_exceeded"
     assert any(
@@ -103,33 +73,25 @@ def test_memusage_limit_closes_spider_with_reason_and_error_log(
 
 
 @inlineCallbacks
-@pytest.mark.twisted
-def test_memusage_warning_logs_but_allows_normal_finish(tmp_path, caplog, monkeypatch):
-    url = _tmp_file_uri(tmp_path)
+def test_memusage_warning_logs_but_allows_normal_finish(caplog, monkeypatch):
+    url = "data:,"
     settings = Settings(
         {
             "MEMUSAGE_ENABLED": True,
             "MEMUSAGE_WARNING_MB": 50,
-            "MEMUSAGE_LIMIT_MB": 0,
+            "MEMUSAGE_LIMIT_MB": 0,  # no hard limit
             "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.01,
             "LOG_LEVEL": "INFO",
         }
     )
-    _pin_reactor_to_installed(settings)
 
     MB = 1024 * 1024
     monkeypatch.setattr(MemoryUsage, "get_virtual_size", lambda self: 75 * MB)
 
-    runner = CrawlerRunner(settings)
-    crawler = runner.create_crawler(_LoopSpider)
+    crawler = get_crawler(spidercls=_LoopSpider, settings_dict=settings)
 
     caplog.set_level(logging.WARNING, logger="scrapy.extensions.memusage")
-    yield runner.crawl(crawler, url=url, loops=60)
+    yield crawler.crawl(url=url, loops=60)
 
     assert crawler.stats.get_value("finish_reason") == "finished"
-    assert any(
-        ("memory usage reached" in r.getMessage().lower())
-        or ("memory usage warning" in r.getMessage().lower())
-        or ("warning: memory usage reached" in r.getMessage().lower())
-        for r in caplog.records
-    )
+    assert any("memory usage reached" in r.getMessage().lower() for r in caplog.records)
