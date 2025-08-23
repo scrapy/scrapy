@@ -1,6 +1,7 @@
 .. _topics-settings:
 
 ========
+
 Settings
 ========
 
@@ -171,8 +172,7 @@ for some :ref:`built-in settings <topics-settings-ref>`.
     The reference documentation of settings indicates the default value if one
     exists. If :command:`startproject` sets a value, that value is documented
     as default, and the value from ``scrapy.settings.default_settings`` is
-    documented as “fallback”.
-
+    documented as "fallback".
 
 Compatibility with pickle
 =========================
@@ -209,7 +209,7 @@ For example:
 
 
 How to access settings
-======================
+=====================
 
 .. highlight:: python
 
@@ -362,7 +362,7 @@ raised.
 .. _topics-settings-ref:
 
 Built-in settings reference
-===========================
+==========================
 
 Here's a list of all available Scrapy settings, in alphabetical order, along
 with their default values and the scope where they apply.
@@ -1390,6 +1390,17 @@ Default: ``True``
 If ``False``, the log file specified with :setting:`LOG_FILE` will be
 overwritten (discarding the output from previous runs, if any).
 
+.. setting:: LOG_FILE_DAILY_ROTATION
+
+LOG_FILE_DAILY_ROTATION
+-----------------------
+
+Default: ``False``
+
+If ``True``, the log file specified with :setting:`LOG_FILE` will be
+rotated daily, with the date appended to the filename in the format
+``YYYY-MM-DD``. This setting requires :setting:`LOG_FILE` to be set.
+
 .. setting:: LOG_FORMAT
 
 LOG_FORMAT
@@ -1704,441 +1715,4 @@ Stats counter (``scheduler/unserializable``) tracks the number of times this hap
 
 Example entry in logs::
 
-    1956-01-31 00:00:00+0800 [scrapy.core.scheduler] ERROR: Unable to serialize request:
-    <GET http://example.com> - reason: cannot serialize <Request at 0x9a7c7ec>
-    (type Request)> - no more unserializable requests will be logged
-    (see 'scheduler/unserializable' stats counter)
-
-
-.. setting:: SCHEDULER_DISK_QUEUE
-
-SCHEDULER_DISK_QUEUE
---------------------
-
-Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
-
-Type of disk queue that will be used by the scheduler. Other available types
-are ``scrapy.squeues.PickleFifoDiskQueue``,
-``scrapy.squeues.MarshalFifoDiskQueue``,
-``scrapy.squeues.MarshalLifoDiskQueue``.
-
-
-.. setting:: SCHEDULER_MEMORY_QUEUE
-
-SCHEDULER_MEMORY_QUEUE
-----------------------
-
-Default: ``'scrapy.squeues.LifoMemoryQueue'``
-
-Type of in-memory queue used by the scheduler. Other available type is:
-``scrapy.squeues.FifoMemoryQueue``.
-
-
-.. setting:: SCHEDULER_PRIORITY_QUEUE
-
-SCHEDULER_PRIORITY_QUEUE
-------------------------
-
-Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
-
-Type of priority queue used by the scheduler. Another available type is
-``scrapy.pqueues.DownloaderAwarePriorityQueue``.
-``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
-``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
-domains in parallel.
-
-
-.. setting:: SCHEDULER_START_DISK_QUEUE
-
-SCHEDULER_START_DISK_QUEUE
---------------------------
-
-Default: ``'scrapy.squeues.PickleFifoDiskQueue'``
-
-Type of disk queue (see :setting:`JOBDIR`) that the :ref:`scheduler
-<topics-scheduler>` uses for :ref:`start requests <start-requests>`.
-
-For available choices, see :setting:`SCHEDULER_DISK_QUEUE`.
-
-.. queue-common-starts
-
-Use ``None`` or ``""`` to disable these separate queues entirely, and instead
-have start requests share the same queues as other requests.
-
-.. note::
-
-    Disabling separate start request queues makes :ref:`start request order
-    <start-request-order>` unintuitive: start requests will be sent in order
-    only until :setting:`CONCURRENT_REQUESTS` is reached, then remaining start
-    requests will be sent in reverse order.
-
-.. queue-common-ends
-
-
-.. setting:: SCHEDULER_START_MEMORY_QUEUE
-
-SCHEDULER_START_MEMORY_QUEUE
-----------------------------
-
-Default: ``'scrapy.squeues.FifoMemoryQueue'``
-
-Type of in-memory queue that the :ref:`scheduler <topics-scheduler>` uses for
-:ref:`start requests <start-requests>`.
-
-For available choices, see :setting:`SCHEDULER_MEMORY_QUEUE`.
-
-.. include:: settings.rst
-    :start-after: queue-common-starts
-    :end-before: queue-common-ends
-
-
-.. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
-
-SCRAPER_SLOT_MAX_ACTIVE_SIZE
-----------------------------
-
-.. versionadded:: 2.0
-
-Default: ``5_000_000``
-
-Soft limit (in bytes) for response data being processed.
-
-While the sum of the sizes of all responses being processed is above this value,
-Scrapy does not process new requests.
-
-.. setting:: SPIDER_CONTRACTS
-
-SPIDER_CONTRACTS
-----------------
-
-Default:: ``{}``
-
-A dict containing the spider contracts enabled in your project, used for
-testing spiders. For more info see :ref:`topics-contracts`.
-
-.. setting:: SPIDER_CONTRACTS_BASE
-
-SPIDER_CONTRACTS_BASE
----------------------
-
-Default:
-
-.. code-block:: python
-
-    {
-        "scrapy.contracts.default.UrlContract": 1,
-        "scrapy.contracts.default.ReturnsContract": 2,
-        "scrapy.contracts.default.ScrapesContract": 3,
-    }
-
-A dict containing the Scrapy contracts enabled by default in Scrapy. You should
-never modify this setting in your project, modify :setting:`SPIDER_CONTRACTS`
-instead. For more info see :ref:`topics-contracts`.
-
-You can disable any of these contracts by assigning ``None`` to their class
-path in :setting:`SPIDER_CONTRACTS`. E.g., to disable the built-in
-``ScrapesContract``, place this in your ``settings.py``:
-
-.. code-block:: python
-
-    SPIDER_CONTRACTS = {
-        "scrapy.contracts.default.ScrapesContract": None,
-    }
-
-.. setting:: SPIDER_LOADER_CLASS
-
-SPIDER_LOADER_CLASS
--------------------
-
-Default: ``'scrapy.spiderloader.SpiderLoader'``
-
-The class that will be used for loading spiders, which must implement the
-:ref:`topics-api-spiderloader`.
-
-.. setting:: SPIDER_LOADER_WARN_ONLY
-
-SPIDER_LOADER_WARN_ONLY
------------------------
-
-Default: ``False``
-
-By default, when Scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
-it will fail loudly if there is any ``ImportError`` or ``SyntaxError`` exception.
-But you can choose to silence this exception and turn it into a simple
-warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
-
-.. setting:: SPIDER_MIDDLEWARES
-
-SPIDER_MIDDLEWARES
-------------------
-
-Default:: ``{}``
-
-A dict containing the spider middlewares enabled in your project, and their
-orders. For more info see :ref:`topics-spider-middleware-setting`.
-
-.. setting:: SPIDER_MIDDLEWARES_BASE
-
-SPIDER_MIDDLEWARES_BASE
------------------------
-
-Default:
-
-.. code-block:: python
-
-    {
-        "scrapy.spidermiddlewares.httperror.HttpErrorMiddleware": 50,
-        "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
-        "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
-        "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
-    }
-
-A dict containing the spider middlewares enabled by default in Scrapy, and
-their orders. Low orders are closer to the engine, high orders are closer to
-the spider. For more info see :ref:`topics-spider-middleware-setting`.
-
-.. setting:: SPIDER_MODULES
-
-SPIDER_MODULES
---------------
-
-Default: ``["<project name>.spiders"]`` (:ref:`fallback <default-settings>`: ``[]``)
-
-A list of modules where Scrapy will look for spiders.
-
-Example:
-
-.. code-block:: python
-
-    SPIDER_MODULES = ["mybot.spiders_prod", "mybot.spiders_dev"]
-
-.. setting:: STATS_CLASS
-
-STATS_CLASS
------------
-
-Default: ``'scrapy.statscollectors.MemoryStatsCollector'``
-
-The class to use for collecting stats, who must implement the
-:ref:`topics-api-stats`.
-
-.. setting:: STATS_DUMP
-
-STATS_DUMP
-----------
-
-Default: ``True``
-
-Dump the :ref:`Scrapy stats <topics-stats>` (to the Scrapy log) once the spider
-finishes.
-
-For more info see: :ref:`topics-stats`.
-
-.. setting:: STATSMAILER_RCPTS
-
-STATSMAILER_RCPTS
------------------
-
-Default: ``[]`` (empty list)
-
-Send Scrapy stats after spiders finish scraping. See
-:class:`~scrapy.extensions.statsmailer.StatsMailer` for more info.
-
-.. setting:: TELNETCONSOLE_ENABLED
-
-TELNETCONSOLE_ENABLED
----------------------
-
-Default: ``True``
-
-A boolean which specifies if the :ref:`telnet console <topics-telnetconsole>`
-will be enabled (provided its extension is also enabled).
-
-.. setting:: TEMPLATES_DIR
-
-TEMPLATES_DIR
--------------
-
-Default: ``templates`` dir inside scrapy module
-
-The directory where to look for templates when creating new projects with
-:command:`startproject` command and new spiders with :command:`genspider`
-command.
-
-The project name must not conflict with the name of custom files or directories
-in the ``project`` subdirectory.
-
-.. setting:: TWISTED_REACTOR
-
-TWISTED_REACTOR
----------------
-
-.. versionadded:: 2.0
-
-Default: ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``
-
-Import path of a given :mod:`~twisted.internet.reactor`.
-
-Scrapy will install this reactor if no other reactor is installed yet, such as
-when the ``scrapy`` CLI program is invoked or when using the
-:class:`~scrapy.crawler.AsyncCrawlerProcess` class or the
-:class:`~scrapy.crawler.CrawlerProcess` class.
-
-If you are using the :class:`~scrapy.crawler.AsyncCrawlerRunner` class or the
-:class:`~scrapy.crawler.CrawlerRunner` class, you also
-need to install the correct reactor manually. You can do that using
-:func:`~scrapy.utils.reactor.install_reactor`:
-
-.. autofunction:: scrapy.utils.reactor.install_reactor
-
-If a reactor is already installed,
-:func:`~scrapy.utils.reactor.install_reactor` has no effect.
-
-:class:`~scrapy.crawler.AsyncCrawlerRunner` and other similar classes raise an
-exception if the installed reactor does not match the
-:setting:`TWISTED_REACTOR` setting; therefore, having top-level
-:mod:`~twisted.internet.reactor` imports in project files and imported
-third-party libraries will make Scrapy raise an exception when it checks which
-reactor is installed.
-
-In order to use the reactor installed by Scrapy:
-
-.. skip: next
-.. code-block:: python
-
-    import scrapy
-    from twisted.internet import reactor
-
-
-    class QuotesSpider(scrapy.Spider):
-        name = "quotes"
-
-        def __init__(self, *args, **kwargs):
-            self.timeout = int(kwargs.pop("timeout", "60"))
-            super(QuotesSpider, self).__init__(*args, **kwargs)
-
-        async def start(self):
-            reactor.callLater(self.timeout, self.stop)
-
-            urls = ["https://quotes.toscrape.com/page/1"]
-            for url in urls:
-                yield scrapy.Request(url=url, callback=self.parse)
-
-        def parse(self, response):
-            for quote in response.css("div.quote"):
-                yield {"text": quote.css("span.text::text").get()}
-
-        def stop(self):
-            self.crawler.engine.close_spider(self, "timeout")
-
-
-which raises an exception, becomes:
-
-.. code-block:: python
-
-    import scrapy
-
-
-    class QuotesSpider(scrapy.Spider):
-        name = "quotes"
-
-        def __init__(self, *args, **kwargs):
-            self.timeout = int(kwargs.pop("timeout", "60"))
-            super(QuotesSpider, self).__init__(*args, **kwargs)
-
-        async def start(self):
-            from twisted.internet import reactor
-
-            reactor.callLater(self.timeout, self.stop)
-
-            urls = ["https://quotes.toscrape.com/page/1"]
-            for url in urls:
-                yield scrapy.Request(url=url, callback=self.parse)
-
-        def parse(self, response):
-            for quote in response.css("div.quote"):
-                yield {"text": quote.css("span.text::text").get()}
-
-        def stop(self):
-            self.crawler.engine.close_spider(self, "timeout")
-
-
-If this setting is set ``None``, Scrapy will use the existing reactor if one is
-already installed, or install the default reactor defined by Twisted for the
-current platform.
-
-.. versionchanged:: 2.7
-   The :command:`startproject` command now sets this setting to
-   ``twisted.internet.asyncioreactor.AsyncioSelectorReactor`` in the generated
-   ``settings.py`` file.
-
-.. versionchanged:: 2.13
-   The default value was changed from ``None`` to
-   ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``.
-
-For additional information, see :doc:`core/howto/choosing-reactor`.
-
-
-.. setting:: URLLENGTH_LIMIT
-
-URLLENGTH_LIMIT
----------------
-
-Default: ``2083``
-
-Scope: ``spidermiddlewares.urllength``
-
-The maximum URL length to allow for crawled URLs.
-
-This setting can act as a stopping condition in case of URLs of ever-increasing
-length, which may be caused for example by a programming error either in the
-target server or in your code. See also :setting:`REDIRECT_MAX_TIMES` and
-:setting:`DEPTH_LIMIT`.
-
-Use ``0`` to allow URLs of any length.
-
-The default value is copied from the `Microsoft Internet Explorer maximum URL
-length`_, even though this setting exists for different reasons.
-
-.. _Microsoft Internet Explorer maximum URL length: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
-
-.. setting:: USER_AGENT
-
-USER_AGENT
-----------
-
-Default: ``"Scrapy/VERSION (+https://scrapy.org)"``
-
-The default User-Agent to use when crawling, unless overridden. This user agent is
-also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`
-if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
-there is no overriding User-Agent header specified for the request.
-
-.. setting:: WARN_ON_GENERATOR_RETURN_VALUE
-
-WARN_ON_GENERATOR_RETURN_VALUE
-------------------------------
-
-Default: ``True``
-
-When enabled, Scrapy will warn if generator-based callback methods (like
-``parse``) contain return statements with non-``None`` values. This helps detect
-potential mistakes in spider development.
-
-Disable this setting to prevent syntax errors that may occur when dynamically
-modifying generator function source code during runtime, skip AST parsing of
-callback functions, or improve performance in auto-reloading development
-environments.
-
-Settings documented elsewhere:
-------------------------------
-
-The following settings are documented elsewhere, please check each specific
-case to see how to enable and use them.
-
-.. settingslist::
-
-.. _Amazon web services: https://aws.amazon.com/
-.. _breadth-first order: https://en.wikipedia.org/wiki/Breadth-first_search
-.. _depth-first order: https://en.wikipedia.org/wiki/Depth-first_search
-.. _Google Cloud Storage: https://cloud.google.com/storage/
+    1956-01-31
