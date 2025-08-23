@@ -157,5 +157,5 @@ def iterloc(it: Iterable[dict[str, Any]], alt: bool = False) -> Iterable[str]:
             yield loc
 
         # Also consider alternate URLs (xhtml:link rel="alternate")
-        if alt and d.get("alternate"):
-            yield from d["alternate"]
+        if alt and (alt_list := d.get("alternate")):
+            yield from alt_list

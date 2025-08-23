@@ -40,7 +40,7 @@ class Sitemap:
         for _, elem in self.xmliter:
             try:
                 tag_name = self._get_tag_name(elem)
-                if tag_name != "url" and tag_name != "sitemap":  # pylint: disable=consider-using-in # noqa: PLR1714
+                if not tag_name or (tag_name != "url" and tag_name != "sitemap"):  # pylint: disable=consider-using-in # noqa: PLR1714
                     continue
 
                 if d := self._process_sitemap_element(elem):
@@ -58,6 +58,9 @@ class Sitemap:
         for el in elem:
             try:
                 tag_name = self._get_tag_name(el)
+                if not tag_name:
+                    continue
+
                 if tag_name == "link":
                     if href := el.get("href"):
                         alternate.append(href)
