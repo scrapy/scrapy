@@ -27,6 +27,27 @@ this directory must not be shared by different spiders, or even different
 jobs/runs of the same spider, as it's meant to be used for storing the state of
 a *single* job.
 
+Files in the job directory
+==========================
+
+The following files and directories are created in the job directory:
+
+* ``spider.state``: Stores the spider's state, which includes any key/value pairs
+  stored in the ``spider.state`` attribute. This file is created by the
+  :ref:`SpiderState extension <topics-extensions-ref-spiderstate>`.
+
+* ``requests.queue``: A directory that stores disk-based priority queues for
+  requests. This directory is created by the scheduler when :setting:`JOBDIR`
+  is set.
+
+* ``requests.queue/active.json``: Stores the state of active queues in the
+  disk-based priority queue system. This file is used by the scheduler to
+  resume crawling from where it left off.
+
+* ``requests.seen``: Stores fingerprints of requests that have been seen by the
+  :class:`~scrapy.dupefilters.RFPDupeFilter` to prevent duplicate requests.
+  This file is only created when using the default duplicate filter class.
+
 How to use it
 =============
 
