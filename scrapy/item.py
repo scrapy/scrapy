@@ -38,14 +38,35 @@ class ItemMeta(ABCMeta):
         new_bases = tuple(base._class for base in bases if hasattr(base, "_class"))
         _class = super().__new__(mcs, "x_" + class_name, new_bases, attrs)
 
-        fields = getattr(_class, "fields", {})
+        # Collect fields preserving definition order. Python 3.6+ preserves
+        # insertion order in class __dict__, so iterate over the merged
+        # mro-aware attribute resolution but favor declaration order from
+        # each class.__dict__. We need to include inherited fields and
+        # keep the order: base classes first (in MRO), then subclass
+        # declarations.
+        fields: dict[str, Field] = {}
+        # Iterate over MRO to collect fields from base classes in MRO order
+        # (excluding the temporary `_class` and `object`). This way fields
+        # declared in ancestor classes appear before those in subclasses.
+        for base in _class.__mro__[1:-1]:
+            base_dict = getattr(base, "__dict__", None)
+            if not isinstance(base_dict, dict):
+                continue
+            for name, value in base_dict.items():
+                if isinstance(value, Field):
+                    fields[name] = value
+
+        # Now collect fields from the current class attrs preserving the
+        # order they were defined in the class statement (attrs dict)
+        for name, value in attrs.items():
+            if isinstance(value, Field):
+                fields[name] = value
+
         new_attrs = {}
-        for n in dir(_class):
-            v = getattr(_class, n)
-            if isinstance(v, Field):
-                fields[n] = v
-            elif n in attrs:
-                new_attrs[n] = attrs[n]
+        # Preserve other attributes explicitly provided in attrs
+        for n, v in attrs.items():
+            if not isinstance(v, Field):
+                new_attrs[n] = v
 
         new_attrs["fields"] = fields
         new_attrs["_class"] = _class
