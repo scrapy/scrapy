@@ -7,6 +7,7 @@ import pytest
 from twisted.internet.defer import inlineCallbacks
 
 from scrapy import signals
+from scrapy.extensions import memusage as memusage_mod
 from scrapy.extensions.memusage import MemoryUsage
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
@@ -35,6 +36,23 @@ class _LoopSpider(Spider):
             )
 
 
+class _OneShotLoop:
+    """Test stub for create_looping_call: run once immediately, no background task."""
+
+    def __init__(self, func):
+        self.func = func
+        self.running = False
+
+    def start(self, _interval, now: bool = False, **_kw):
+        self.running = True
+        if now:
+            self.func()
+        return self
+
+    def stop(self):
+        self.running = False
+
+
 @inlineCallbacks
 def test_memusage_limit_closes_spider_with_reason_and_error_log(caplog, monkeypatch):
     url = "data:,"
@@ -44,6 +62,9 @@ def test_memusage_limit_closes_spider_with_reason_and_error_log(caplog, monkeypa
         "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.01,
         "LOG_LEVEL": "INFO",
     }
+
+    # Avoid background LoopingCall that can log after the test finishes.
+    monkeypatch.setattr(memusage_mod, "create_looping_call", lambda f: _OneShotLoop(f))
 
     MB = 1024 * 1024
     state = {"high": False}
@@ -79,6 +100,9 @@ def test_memusage_warning_logs_but_allows_normal_finish(caplog, monkeypatch):
         "MEMUSAGE_CHECK_INTERVAL_SECONDS": 0.01,
         "LOG_LEVEL": "INFO",
     }
+
+    # Avoid background LoopingCall that can log after the test finishes.
+    monkeypatch.setattr(memusage_mod, "create_looping_call", lambda f: _OneShotLoop(f))
 
     MB = 1024 * 1024
     monkeypatch.setattr(MemoryUsage, "get_virtual_size", lambda self: 75 * MB)
