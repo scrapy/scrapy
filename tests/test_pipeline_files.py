@@ -813,5 +813,7 @@ def test_files_pipeline_raises_notconfigured_when_files_store_invalid(store):
     settings = Settings()
     settings.clear()
     settings.set("FILES_STORE", store, priority="cmdline")
+    crawler = get_crawler(settings_dict=settings)
+
     with pytest.raises(NotConfigured):
-        FilesPipeline.from_settings(settings)
+        FilesPipeline.from_crawler(crawler)
