@@ -7,12 +7,8 @@ from scrapy.exceptions import NotConfigured
 from scrapy.extensions import statsmailer
 from scrapy.mail import MailSender
 from scrapy.signalmanager import SignalManager
-from scrapy.spiders import Spider
 from scrapy.statscollectors import StatsCollector
-
-
-class DummySpider(Spider):
-    name = "dummy_spider"
+from scrapy.utils.spider import DefaultSpider
 
 
 @pytest.fixture
@@ -23,9 +19,7 @@ def dummy_stats():
             self._stats = {"global_item_scraped_count": 42}
 
         def get_stats(self, spider=None):
-            if spider:
-                return {"item_scraped_count": 10}
-            return self._stats
+            return {"item_scraped_count": 10, **self._stats}
 
     return DummyStats()
 
@@ -39,15 +33,14 @@ def test_from_crawler_without_recipients_raises_notconfigured():
         statsmailer.StatsMailer.from_crawler(crawler)
 
 
-def test_from_crawler_with_recipients_registers_signal(dummy_stats):
+def test_from_crawler_with_recipients_initializes_extension(dummy_stats, monkeypatch):
     crawler = MagicMock()
     crawler.settings.getlist.return_value = ["test@example.com"]
     crawler.stats = dummy_stats
     crawler.signals = SignalManager(crawler)
 
     mailer = MagicMock(spec=MailSender)
-    monkeypatch_mail = MagicMock(return_value=mailer)
-    statsmailer.MailSender.from_crawler = monkeypatch_mail
+    monkeypatch.setattr(statsmailer.MailSender, "from_crawler", lambda _: mailer)
 
     ext = statsmailer.StatsMailer.from_crawler(crawler)
 
@@ -55,8 +48,20 @@ def test_from_crawler_with_recipients_registers_signal(dummy_stats):
     assert ext.recipients == ["test@example.com"]
     assert ext.mail is mailer
 
+
+def test_from_crawler_connects_spider_closed_signal(dummy_stats, monkeypatch):
+    crawler = MagicMock()
+    crawler.settings.getlist.return_value = ["test@example.com"]
+    crawler.stats = dummy_stats
+    crawler.signals = SignalManager(crawler)
+
+    mailer = MagicMock(spec=MailSender)
+    monkeypatch.setattr(statsmailer.MailSender, "from_crawler", lambda _: mailer)
+
+    statsmailer.StatsMailer.from_crawler(crawler)
+
     connected = crawler.signals.send_catch_log(
-        signals.spider_closed, spider=DummySpider("dummy")
+        signals.spider_closed, spider=DefaultSpider(name="dummy")
     )
     assert connected is not None
 
@@ -66,7 +71,7 @@ def test_spider_closed_sends_email(dummy_stats):
     mail = MagicMock(spec=MailSender)
     ext = statsmailer.StatsMailer(dummy_stats, recipients, mail)
 
-    spider = DummySpider("dummy")
+    spider = DefaultSpider(name="dummy")
     ext.spider_closed(spider)
 
     args, kwargs = mail.send.call_args
