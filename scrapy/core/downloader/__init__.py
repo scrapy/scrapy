@@ -21,6 +21,7 @@ from scrapy.utils.asyncio import (
     call_later,
     create_looping_call,
 )
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _defer_sleep_async,
     _schedule_coro,
@@ -144,15 +145,10 @@ class Downloader:
         )
 
     @inlineCallbacks
+    @_warn_spider_arg
     def fetch(
         self, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, Response | Request]:
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to Downloader.fetch() is deprecated.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
         self.active.add(request)
         try:
             return (yield self.middleware.download(self._enqueue_request, request))

@@ -22,6 +22,7 @@ from scrapy.http.request import NO_CALLBACK, Request
 from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.datatypes import SequenceExclude
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import _DEFER_DELAY, _defer_sleep, deferred_from_coro
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
@@ -165,27 +166,15 @@ class MediaPipeline(ABC):
             pipe._finish_init(crawler)
         return pipe
 
+    @_warn_spider_arg
     def open_spider(self, spider: Spider | None = None) -> None:
-        if spider is not None:  # pragma: no cover
-            warnings.warn(
-                "Passing a spider argument to MediaPipeline.open_spider()"
-                " is deprecated and the passed value is ignored.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
         assert self.crawler.spider
         self.spiderinfo = self.SpiderInfo(self.crawler.spider)
 
+    @_warn_spider_arg
     def process_item(
         self, item: Any, spider: Spider | None = None
     ) -> Deferred[list[FileInfoOrError]]:
-        if spider is not None:  # pragma: no cover
-            warnings.warn(
-                "Passing a spider argument to MediaPipeline.process_item()"
-                " is deprecated and the passed value is ignored.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
         info = self.spiderinfo
         requests = arg_to_iter(self.get_media_requests(item, info))
         dlist = [self._process_request(r, info, item) for r in requests]
