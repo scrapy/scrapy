@@ -8,7 +8,6 @@ import warnings
 from collections import deque
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Any, TypeVar, Union
-from scrapy.core.tracker.pipeline_task_tracker import PipelineTaskTracker
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
@@ -110,10 +109,6 @@ class Scraper:
             crawler.settings["ITEM_PROCESSOR"]
         )
         self.itemproc: ItemPipelineManager = itemproc_cls.from_crawler(crawler)
-        from scrapy.core.tracker.pipeline_task_tracker import PipelineTaskTracker
-
-        self.tracker = PipelineTaskTracker()
-
         itemproc_methods = [
             "open_spider",
             "close_spider",
@@ -490,12 +485,7 @@ class Scraper:
         return deferred_from_coro(self.start_itemproc_async(item, response=response))
 
     async def start_itemproc_async(
-        self,
-        item: Any,
-        *,
-        request=None,
-        spider=None,
-        response: Response | Failure | None,
+        self, item: Any, *, response: Response | Failure | None
     ) -> None:
         """Send *item* to the item pipelines for processing.
 
@@ -506,8 +496,6 @@ class Scraper:
         """
         assert self.slot is not None  # typing
         assert self.crawler.spider is not None  # typing
-        if request is not None:
-            self.tracker.track(item, request, self.crawler.spider)
         self.slot.itemproc_size += 1
         try:
             if self._itemproc_has_process_async:
