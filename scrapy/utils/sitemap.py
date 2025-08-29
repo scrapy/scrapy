@@ -31,7 +31,7 @@ class Sitemap:
             remove_blank_text=True,
             collect_ids=False,
             remove_pis=True,
-            events=("start", "end"),
+            events=("start",),
         )
         _, root = next(self.xmliter)
         self.type = self._get_tag_name(root)
