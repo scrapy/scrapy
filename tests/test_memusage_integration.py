@@ -4,10 +4,10 @@ import logging
 import sys
 
 import pytest
+from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks
 
 from scrapy import signals
-from scrapy.extensions import memusage as memusage_mod
 from scrapy.extensions.memusage import MemoryUsage
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
@@ -36,21 +36,18 @@ class _LoopSpider(Spider):
             )
 
 
-class _OneShotLoop:
-    """Test stub for create_looping_call: run once immediately, no background task."""
-
-    def __init__(self, func):
-        self.func = func
-        self.running = False
-
-    def start(self, _interval, now: bool = False, **_kw):
-        self.running = True
-        if now:
-            self.func()
-        return self
-
-    def stop(self):
-        self.running = False
+def _engine_started_once(self: MemoryUsage):
+    """
+    Test-only replacement for MemoryUsage.engine_started:
+    run checks once, synchronously; do not schedule periodic LoopingCalls.
+    """
+    # keep side-effects identical to a single immediate tick
+    self.update()
+    if self.limit:
+        self._check_limit()
+    if self.warning:
+        self._check_warning()
+    return defer.succeed(None)
 
 
 @inlineCallbacks
@@ -63,8 +60,10 @@ def test_memusage_limit_closes_spider_with_reason_and_error_log(caplog, monkeypa
         "LOG_LEVEL": "INFO",
     }
 
-    # Avoid background LoopingCall that can log after the test finishes.
-    monkeypatch.setattr(memusage_mod, "create_looping_call", lambda f: _OneShotLoop(f))
+    # Avoid background timers; run memusage checks once synchronously.
+    monkeypatch.setattr(
+        MemoryUsage, "engine_started", _engine_started_once, raising=True
+    )
 
     MB = 1024 * 1024
     state = {"high": False}
@@ -72,7 +71,7 @@ def test_memusage_limit_closes_spider_with_reason_and_error_log(caplog, monkeypa
     def fake_vsz(self):
         return 250 * MB if state["high"] else 5 * MB
 
-    monkeypatch.setattr(MemoryUsage, "get_virtual_size", fake_vsz)
+    monkeypatch.setattr(MemoryUsage, "get_virtual_size", fake_vsz, raising=True)
 
     crawler = get_crawler(spidercls=_LoopSpider, settings_dict=settings)
 
@@ -101,11 +100,15 @@ def test_memusage_warning_logs_but_allows_normal_finish(caplog, monkeypatch):
         "LOG_LEVEL": "INFO",
     }
 
-    # Avoid background LoopingCall that can log after the test finishes.
-    monkeypatch.setattr(memusage_mod, "create_looping_call", lambda f: _OneShotLoop(f))
+    # Avoid background timers; run memusage checks once synchronously.
+    monkeypatch.setattr(
+        MemoryUsage, "engine_started", _engine_started_once, raising=True
+    )
 
     MB = 1024 * 1024
-    monkeypatch.setattr(MemoryUsage, "get_virtual_size", lambda self: 75 * MB)
+    monkeypatch.setattr(
+        MemoryUsage, "get_virtual_size", lambda self: 75 * MB, raising=True
+    )
 
     crawler = get_crawler(spidercls=_LoopSpider, settings_dict=settings)
 
