@@ -663,6 +663,7 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
     ):
         super().__init__(settings, install_root_handler)
         self._initialized_reactor: bool = False
+        logger.debug("Using CrawlerProcess")
 
     def _create_crawler(self, spidercls: type[Spider] | str) -> Crawler:
         if isinstance(spidercls, str):
@@ -737,6 +738,7 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         install_root_handler: bool = True,
     ):
         super().__init__(settings, install_root_handler)
+        logger.debug("Using AsyncCrawlerProcess")
         # We want the asyncio event loop to be installed early, so that it's
         # always the correct one. And as we do that, we can also install the
         # reactor here.
