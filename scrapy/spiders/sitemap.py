@@ -71,45 +71,65 @@ class SitemapSpider(Spider):
         yield from entries
 
     def _parse_sitemap(self, response: Response) -> Iterable[Request]:
-        if response.url.endswith("/robots.txt"):
-            requests = [
-                Request(url, callback=self._parse_sitemap)
-                for url in sitemap_urls_from_robots(
-                    response.body, base_url=response.url
+        try:
+            if response.url.endswith("/robots.txt"):
+                urls = list(
+                    sitemap_urls_from_robots(response.body, base_url=response.url)
                 )
-            ]
-            del response
+                requests = (Request(url, callback=self._parse_sitemap) for url in urls)
+            else:
+                body = self._get_sitemap_body(response)
+                if not body:
+                    logger.warning(
+                        "Ignoring invalid sitemap: %(response)s",
+                        {"response": response},
+                        extra={"spider": self},
+                    )
+                    return
 
-        else:
-            body = self._get_sitemap_body(response)
-            if not body:
-                logger.warning(
-                    "Ignoring invalid sitemap: %(response)s",
-                    {"response": response},
-                    extra={"spider": self},
-                )
-                return
-            del response
-            s = Sitemap(body)
-            del body
-            requests = list(self.__get_sitemap_requests(s, self.sitemap_filter(s)))
-            del s
+                s = Sitemap(body)
+
+                if s.type == "sitemapindex":
+                    urls = list(
+                        self._get_urls_from_sitemapindex(self.sitemap_filter(s))
+                    )
+                    requests = (
+                        Request(loc, callback=self._parse_sitemap) for loc in urls
+                    )
+                elif s.type == "urlset":
+                    url_callback_pairs = list(
+                        self._get_urls_and_callbacks_from_urlset(self.sitemap_filter(s))
+                    )
+                    requests = (
+                        Request(loc, callback=c) for loc, c in url_callback_pairs
+                    )
+                else:
+                    logger.warning(
+                        "Ignoring invalid sitemap: %(response)s",
+                        {"response": response},
+                        extra={"spider": self},
+                    )
+                    return
+        finally:
+            response = s = body = None
 
         yield from requests
 
-    def __get_sitemap_requests(
-        self, s: Sitemap, it: Iterable[dict[str, Any]]
-    ) -> Iterable[Request]:
-        if s.type == "sitemapindex":
-            for loc in iterloc(it, self.sitemap_alternate_links):
-                if any(x.search(loc) for x in self._follow):
-                    yield Request(loc, callback=self._parse_sitemap)
-        elif s.type == "urlset":
-            for loc in iterloc(it, self.sitemap_alternate_links):
-                for r, c in self._cbs:
-                    if r.search(loc):
-                        yield Request(loc, callback=c)
-                        break
+    def _get_urls_from_sitemapindex(
+        self, it: Iterable[dict[str, Any]]
+    ) -> Iterable[str]:
+        for loc in iterloc(it, self.sitemap_alternate_links):
+            if any(x.search(loc) for x in self._follow):
+                yield loc
+
+    def _get_urls_and_callbacks_from_urlset(
+        self, it: Iterable[dict[str, Any]]
+    ) -> Iterable[str, CallbackT]:
+        for loc in iterloc(it, self.sitemap_alternate_links):
+            for r, c in self._cbs:
+                if r.search(loc):
+                    yield loc, c
+                    break
 
     def _get_sitemap_body(self, response: Response) -> bytes | None:
         """Return the sitemap body contained in the given response,
