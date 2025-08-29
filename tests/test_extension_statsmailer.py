@@ -18,7 +18,7 @@ def dummy_stats():
             # pylint: disable=super-init-not-called
             self._stats = {"global_item_scraped_count": 42}
 
-        def get_stats(self, *args, **kwargs):
+        def get_stats(self):
             return {"item_scraped_count": 10, **self._stats}
 
     return DummyStats()
