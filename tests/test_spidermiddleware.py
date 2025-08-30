@@ -10,7 +10,7 @@ from testfixtures import LogCapture
 from twisted.internet import defer
 
 from scrapy.core.spidermw import SpiderMiddlewareManager
-from scrapy.exceptions import _InvalidOutput
+from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
@@ -54,7 +54,7 @@ class TestProcessSpiderInputInvalidOutput(TestSpiderMiddleware):
     @deferred_f_from_coro_f
     async def test_invalid_process_spider_input(self):
         class InvalidProcessSpiderInputMiddleware:
-            def process_spider_input(self, response, spider):
+            def process_spider_input(self, response):
                 return 1
 
         self.mwman._add_middleware(InvalidProcessSpiderInputMiddleware())
@@ -68,7 +68,7 @@ class TestProcessSpiderOutputInvalidOutput(TestSpiderMiddleware):
     @deferred_f_from_coro_f
     async def test_invalid_process_spider_output(self):
         class InvalidProcessSpiderOutputMiddleware:
-            def process_spider_output(self, response, result, spider):
+            def process_spider_output(self, response, result):
                 return 1
 
         self.mwman._add_middleware(InvalidProcessSpiderOutputMiddleware())
@@ -82,11 +82,11 @@ class TestProcessSpiderExceptionInvalidOutput(TestSpiderMiddleware):
     @deferred_f_from_coro_f
     async def test_invalid_process_spider_exception(self):
         class InvalidProcessSpiderOutputExceptionMiddleware:
-            def process_spider_exception(self, response, exception, spider):
+            def process_spider_exception(self, response, exception):
                 return 1
 
         class RaiseExceptionProcessSpiderOutputMiddleware:
-            def process_spider_output(self, response, result, spider):
+            def process_spider_output(self, response, result):
                 raise RuntimeError
 
         self.mwman._add_middleware(InvalidProcessSpiderOutputExceptionMiddleware())
@@ -101,11 +101,11 @@ class TestProcessSpiderExceptionReRaise(TestSpiderMiddleware):
     @deferred_f_from_coro_f
     async def test_process_spider_exception_return_none(self):
         class ProcessSpiderExceptionReturnNoneMiddleware:
-            def process_spider_exception(self, response, exception, spider):
+            def process_spider_exception(self, response, exception):
                 return None
 
         class RaiseExceptionProcessSpiderOutputMiddleware:
-            def process_spider_output(self, response, result, spider):
+            def process_spider_output(self, response, result):
                 1 / 0
 
         self.mwman._add_middleware(ProcessSpiderExceptionReturnNoneMiddleware())
@@ -191,34 +191,34 @@ class TestBaseAsyncSpiderMiddleware(TestSpiderMiddleware):
 
 
 class ProcessSpiderOutputSimpleMiddleware:
-    def process_spider_output(self, response, result, spider):
+    def process_spider_output(self, response, result):
         yield from result
 
 
 class ProcessSpiderOutputAsyncGenMiddleware:
-    async def process_spider_output(self, response, result, spider):
+    async def process_spider_output(self, response, result):
         async for r in result:
             yield r
 
 
 class ProcessSpiderOutputUniversalMiddleware:
-    def process_spider_output(self, response, result, spider):
+    def process_spider_output(self, response, result):
         yield from result
 
-    async def process_spider_output_async(self, response, result, spider):
+    async def process_spider_output_async(self, response, result):
         async for r in result:
             yield r
 
 
 class ProcessSpiderExceptionSimpleIterableMiddleware:
-    def process_spider_exception(self, response, exception, spider):
+    def process_spider_exception(self, response, exception):
         yield {"foo": 1}
         yield {"foo": 2}
         yield {"foo": 3}
 
 
 class ProcessSpiderExceptionAsyncIteratorMiddleware:
-    async def process_spider_exception(self, response, exception, spider):
+    async def process_spider_exception(self, response, exception):
         yield {"foo": 1}
         d = defer.Deferred()
         call_later(0, d.callback, None)
@@ -315,12 +315,12 @@ class TestProcessSpiderOutputAsyncGen(TestProcessSpiderOutputSimple):
 
 
 class ProcessSpiderOutputNonIterableMiddleware:
-    def process_spider_output(self, response, result, spider):
+    def process_spider_output(self, response, result):
         return
 
 
 class ProcessSpiderOutputCoroutineMiddleware:
-    async def process_spider_output(self, response, result, spider):
+    async def process_spider_output(self, response, result):
         return result
 
 
@@ -384,23 +384,23 @@ class TestProcessStartSimple(TestBaseAsyncSpiderMiddleware):
 
 
 class UniversalMiddlewareNoSync:
-    async def process_spider_output_async(self, response, result, spider):
+    async def process_spider_output_async(self, response, result):
         yield
 
 
 class UniversalMiddlewareBothSync:
-    def process_spider_output(self, response, result, spider):
+    def process_spider_output(self, response, result):
         yield
 
-    def process_spider_output_async(self, response, result, spider):
+    def process_spider_output_async(self, response, result):
         yield
 
 
 class UniversalMiddlewareBothAsync:
-    async def process_spider_output(self, response, result, spider):
+    async def process_spider_output(self, response, result):
         yield
 
-    async def process_spider_output_async(self, response, result, spider):
+    async def process_spider_output_async(self, response, result):
         yield
 
 
@@ -600,3 +600,34 @@ class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
     async def test_exc_async_simple(self):
         """Async exc mw -> simple output mw; cannot work as downgrading is not supported"""
         await self._test_asyncgen_nodowngrade(self.MW_SIMPLE, self.MW_EXC_ASYNCGEN)
+
+
+class TestDeprecatedSpiderArg(TestSpiderMiddleware):
+    @deferred_f_from_coro_f
+    async def test_deprecated_spider_arg(self):
+        class DeprecatedSpiderArgMiddleware:
+            def process_spider_input(self, response, spider):
+                return None
+
+            def process_spider_output(self, response, result, spider):
+                1 / 0
+
+            def process_spider_exception(self, response, exception, spider):
+                return []
+
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"process_spider_input\(\) requires a spider argument",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"process_spider_output\(\) requires a spider argument",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match=r"process_spider_exception\(\) requires a spider argument",
+            ),
+        ):
+            self.mwman._add_middleware(DeprecatedSpiderArgMiddleware())
+        await self._scrape_response()

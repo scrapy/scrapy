@@ -246,7 +246,7 @@ class SkipMessagesLogFormatter(LogFormatter):
 class DropSomeItemsPipeline:
     drop = True
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         if self.drop:
             self.drop = False
             raise DropItem("Ignoring item")

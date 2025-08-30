@@ -7,7 +7,6 @@ import pytest
 from scrapy import Spider
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.middleware import MiddlewareManager
-from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
@@ -57,7 +56,10 @@ class MyMiddlewareManager(MiddlewareManager):
         return [M1, MOff, M3]
 
     def _add_middleware(self, mw):
-        super()._add_middleware(mw)
+        if hasattr(mw, "open_spider"):
+            self.methods["open_spider"].append(mw.open_spider)
+        if hasattr(mw, "close_spider"):
+            self.methods["close_spider"].appendleft(mw.close_spider)
         if hasattr(mw, "process"):
             self.methods["process"].append(mw.process)
 
@@ -105,73 +107,3 @@ def test_no_crawler() -> None:
         mwman = MyMiddlewareManager(m1, m2, m3)
     assert mwman.middlewares == (m1, m2, m3)
     assert mwman.crawler is None
-
-
-def test_deprecated_spider_arg_no_crawler_spider(crawler: Crawler) -> None:
-    """Crawler is provided, but doesn't have a spider. The instance passed to the method is
-    ignored and raises a warning."""
-    mwman = MyMiddlewareManager(crawler=crawler)
-    with (
-        pytest.warns(
-            ScrapyDeprecationWarning,
-            match=r"Passing a spider argument to MyMiddlewareManager.open_spider\(\) is deprecated",
-        ),
-        pytest.raises(
-            ValueError,
-            match="MyMiddlewareManager needs to access self.crawler.spider but it is None",
-        ),
-    ):
-        mwman.open_spider(DefaultSpider())
-
-
-def test_deprecated_spider_arg_with_crawler(crawler: Crawler) -> None:
-    """Crawler is provided and has a spider, works. The instance passed to the method is ignored,
-    even if mismatched, but raises a warning."""
-    mwman = MyMiddlewareManager(crawler=crawler)
-    crawler.spider = crawler._create_spider("foo")
-    with pytest.warns(
-        ScrapyDeprecationWarning,
-        match=r"Passing a spider argument to MyMiddlewareManager.open_spider\(\) is deprecated",
-    ):
-        mwman.open_spider(DefaultSpider())
-    with pytest.warns(
-        ScrapyDeprecationWarning,
-        match=r"Passing a spider argument to MyMiddlewareManager.close_spider\(\) is deprecated",
-    ):
-        mwman.close_spider(DefaultSpider())
-
-
-def test_deprecated_spider_arg_without_crawler() -> None:
-    """The first instance passed to the method is used, with a warning. Mismatched ones raise an error."""
-    with pytest.warns(
-        ScrapyDeprecationWarning,
-        match="was called without the crawler argument",
-    ):
-        mwman = MyMiddlewareManager()
-    with pytest.warns(
-        ScrapyDeprecationWarning,
-        match=r"Passing a spider argument to MyMiddlewareManager.open_spider\(\) is deprecated",
-    ):
-        mwman.open_spider(DefaultSpider())
-    with (
-        pytest.warns(
-            ScrapyDeprecationWarning,
-            match=r"Passing a spider argument to MyMiddlewareManager.close_spider\(\) is deprecated",
-        ),
-        pytest.raises(RuntimeError, match="Different instances of Spider were passed"),
-    ):
-        mwman.close_spider(DefaultSpider())
-
-
-def test_no_spider_arg_without_crawler() -> None:
-    """If no crawler and no spider arg, raise an error."""
-    with pytest.warns(
-        ScrapyDeprecationWarning,
-        match="was called without the crawler argument",
-    ):
-        mwman = MyMiddlewareManager()
-    with pytest.raises(
-        ValueError,
-        match="has no known Spider instance",
-    ):
-        mwman.open_spider()

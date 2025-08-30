@@ -50,7 +50,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         if argument_is_required(download_func, "spider"):
             warnings.warn(
                 "The spider argument of download_func is deprecated"
-                " and will not be passed in the future Scrapy versions.",
+                " and will not be passed in future Scrapy versions.",
                 ScrapyDeprecationWarning,
                 stacklevel=2,
             )

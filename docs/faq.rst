@@ -349,7 +349,7 @@ method for this purpose. For example:
 
 
     class MultiplyItemsMiddleware:
-        def process_spider_output(self, response, result, spider):
+        def process_spider_output(self, response, result):
             for item_or_request in result:
                 if isinstance(item_or_request, Request):
                     continue

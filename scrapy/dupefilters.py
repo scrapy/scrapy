@@ -152,4 +152,4 @@ class RFPDupeFilter(BaseDupeFilter):
             self.logdupes = False
 
         assert spider.crawler.stats
-        spider.crawler.stats.inc_value("dupefilter/filtered", spider=spider)
+        spider.crawler.stats.inc_value("dupefilter/filtered")

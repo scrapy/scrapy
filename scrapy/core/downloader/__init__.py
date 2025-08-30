@@ -8,6 +8,7 @@ from time import time
 from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.python.failure import Failure
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
@@ -22,7 +23,7 @@ from scrapy.utils.asyncio import (
 )
 from scrapy.utils.defer import (
     _defer_sleep_async,
-    deferred_from_coro,
+    _schedule_coro,
     maybe_deferred_to_future,
 )
 from scrapy.utils.httpobj import urlparse_cached
@@ -200,6 +201,7 @@ class Downloader:
         )
         return self.get_slot_key(request)
 
+    # passed as download_func into self.middleware.download() in self.fetch()
     @inlineCallbacks
     def _enqueue_request(
         self, request: Request
@@ -216,7 +218,7 @@ class Downloader:
         slot.queue.append((request, d))
         self._process_queue(slot)
         try:
-            return (yield d)
+            return (yield d)  # fired in _wait_for_download()
         finally:
             slot.active.remove(request)
 
@@ -237,9 +239,8 @@ class Downloader:
         # Process enqueued requests if there are free slots to transfer for this slot
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
-            request, deferred = slot.queue.popleft()
-            dfd = deferred_from_coro(self._download(slot, request))
-            dfd.chainDeferred(deferred)
+            request, queue_dfd = slot.queue.popleft()
+            _schedule_coro(self._wait_for_download(slot, request, queue_dfd))
             # prevent burst if inter-request delays were configured
             if delay:
                 self._process_queue(slot)
@@ -281,6 +282,16 @@ class Downloader:
                 request=request,
                 spider=self.crawler.spider,
             )
+
+    async def _wait_for_download(
+        self, slot: Slot, request: Request, queue_dfd: Deferred[Response]
+    ) -> None:
+        try:
+            response = await self._download(slot, request)
+        except Exception:
+            queue_dfd.errback(Failure())
+        else:
+            queue_dfd.callback(response)  # awaited in _enqueue_request()
 
     def close(self) -> None:
         self._slot_gc_loop.stop()

@@ -183,6 +183,8 @@ def method_is_overridden(subclass: type, base_class: type, method_name: str) -> 
     ...         pass
     >>> class Sub4(Sub2):
     ...     pass
+    >>> method_is_overridden(Base, Base, 'foo')
+    False
     >>> method_is_overridden(Sub1, Base, 'foo')
     False
     >>> method_is_overridden(Sub2, Base, 'foo')

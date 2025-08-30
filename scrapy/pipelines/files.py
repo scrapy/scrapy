@@ -585,7 +585,7 @@ class FilesPipeline(MediaPipeline):
                 {"medianame": self.MEDIA_NAME, "request": request, "referer": referer},
                 extra={"spider": info.spider},
             )
-            self.inc_stats(info.spider, "uptodate")
+            self.inc_stats("uptodate")
 
             checksum = result.get("checksum", None)
             return {
@@ -663,7 +663,7 @@ class FilesPipeline(MediaPipeline):
             {"status": status, "request": request, "referer": referer},
             extra={"spider": info.spider},
         )
-        self.inc_stats(info.spider, status)
+        self.inc_stats(status)
 
         try:
             path = self.file_path(request, response=response, info=info, item=item)
@@ -694,10 +694,10 @@ class FilesPipeline(MediaPipeline):
             "status": status,
         }
 
-    def inc_stats(self, spider: Spider, status: str) -> None:
-        assert spider.crawler.stats
-        spider.crawler.stats.inc_value("file_count", spider=spider)
-        spider.crawler.stats.inc_value(f"file_status_count/{status}", spider=spider)
+    def inc_stats(self, status: str) -> None:
+        assert self.crawler.stats
+        self.crawler.stats.inc_value("file_count")
+        self.crawler.stats.inc_value(f"file_status_count/{status}")
 
     # Overridable Interface
     def get_media_requests(

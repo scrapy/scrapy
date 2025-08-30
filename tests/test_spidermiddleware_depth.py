@@ -22,19 +22,13 @@ def crawler() -> Crawler:
 
 
 @pytest.fixture
-def spider(crawler: Crawler) -> Spider:
-    crawler.spider = crawler._create_spider("scrapytest.org")
-    return crawler.spider
-
-
-@pytest.fixture
-def stats(crawler: Crawler, spider: Spider) -> Generator[StatsCollector]:
+def stats(crawler: Crawler) -> Generator[StatsCollector]:
     assert crawler.stats is not None
-    crawler.stats.open_spider(spider)
+    crawler.stats.open_spider()
 
     yield crawler.stats
 
-    crawler.stats.close_spider(spider, "")
+    crawler.stats.close_spider()
 
 
 @pytest.fixture
@@ -42,24 +36,22 @@ def mw(crawler: Crawler) -> DepthMiddleware:
     return DepthMiddleware.from_crawler(crawler)
 
 
-def test_process_spider_output(
-    mw: DepthMiddleware, stats: StatsCollector, spider: Spider
-) -> None:
+def test_process_spider_output(mw: DepthMiddleware, stats: StatsCollector) -> None:
     req = Request("http://scrapytest.org")
     resp = Response("http://scrapytest.org")
     resp.request = req
     result = [Request("http://scrapytest.org")]
 
-    out = list(mw.process_spider_output(resp, result, spider))
+    out = list(mw.process_spider_output(resp, result))
     assert out == result
 
-    rdc = stats.get_value("request_depth_count/1", spider=spider)
+    rdc = stats.get_value("request_depth_count/1")
     assert rdc == 1
 
     req.meta["depth"] = 1
 
-    out2 = list(mw.process_spider_output(resp, result, spider))
+    out2 = list(mw.process_spider_output(resp, result))
     assert not out2
 
-    rdm = stats.get_value("request_depth_max", spider=spider)
+    rdm = stats.get_value("request_depth_max")
     assert rdm == 1

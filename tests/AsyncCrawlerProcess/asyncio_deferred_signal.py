@@ -16,7 +16,7 @@ class UppercasePipeline:
     def open_spider(self, spider):
         return deferred_from_coro(self._open_spider(spider))
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         return {"url": item["url"].upper()}
 
 

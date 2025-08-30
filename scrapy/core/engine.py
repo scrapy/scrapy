@@ -35,6 +35,7 @@ from scrapy.utils.asyncio import (
 from scrapy.utils.defer import (
     _schedule_coro,
     deferred_from_coro,
+    ensure_awaitable,
     maybe_deferred_to_future,
 )
 from scrapy.utils.deprecate import argument_is_required
@@ -44,7 +45,7 @@ from scrapy.utils.python import global_object_name
 from scrapy.utils.reactor import CallLaterOnce
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator, Callable, Generator
+    from collections.abc import AsyncIterator, Callable, Coroutine, Generator
 
     from twisted.internet.task import LoopingCall
 
@@ -102,7 +103,9 @@ class ExecutionEngine:
     def __init__(
         self,
         crawler: Crawler,
-        spider_closed_callback: Callable[[Spider], Deferred[None] | None],
+        spider_closed_callback: Callable[
+            [Spider], Coroutine[Any, Any, None] | Deferred[None] | None
+        ],
     ) -> None:
         self.crawler: Crawler = crawler
         self.settings: Settings = crawler.settings
@@ -113,9 +116,9 @@ class ExecutionEngine:
         self.spider: Spider | None = None
         self.running: bool = False
         self.paused: bool = False
-        self._spider_closed_callback: Callable[[Spider], Deferred[None] | None] = (
-            spider_closed_callback
-        )
+        self._spider_closed_callback: Callable[
+            [Spider], Coroutine[Any, Any, None] | Deferred[None] | None
+        ] = spider_closed_callback
         self.start_time: float | None = None
         self._start: AsyncIterator[Any] | None = None
         self._closewait: Deferred[None] | None = None
@@ -134,7 +137,7 @@ class ExecutionEngine:
             if self._downloader_fetch_needs_spider:
                 warnings.warn(
                     f"The fetch() method of {global_object_name(downloader_cls)} requires a spider argument,"
-                    f" this is deprecated and the argument will not be passed in the future Scrapy versions.",
+                    f" this is deprecated and the argument will not be passed in future Scrapy versions.",
                     ScrapyDeprecationWarning,
                     stacklevel=2,
                 )
@@ -516,7 +519,7 @@ class ExecutionEngine:
             await maybe_deferred_to_future(d)
         await self.scraper.open_spider_async()
         assert self.crawler.stats
-        self.crawler.stats.open_spider(self.crawler.spider)
+        self.crawler.stats.open_spider()
         await self.signals.send_catch_log_async(
             signals.spider_opened, spider=self.crawler.spider
         )
@@ -611,7 +614,7 @@ class ExecutionEngine:
 
         assert self.crawler.stats
         try:
-            self.crawler.stats.close_spider(spider, reason=reason)
+            self.crawler.stats.close_spider(reason=reason)
         except Exception:
             log_failure("Stats close failure")
 
@@ -625,7 +628,6 @@ class ExecutionEngine:
         self.spider = None
 
         try:
-            if (d := self._spider_closed_callback(spider)) is not None:
-                await maybe_deferred_to_future(d)
+            await ensure_awaitable(self._spider_closed_callback(spider))
         except Exception:
             log_failure("Error running spider_closed_callback")

@@ -5,6 +5,7 @@ import contextlib
 import logging
 import pprint
 import signal
+import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -13,12 +14,13 @@ from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 from scrapy import Spider, signals
 from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extension import ExtensionManager
 from scrapy.settings import Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
 from scrapy.utils.asyncio import is_asyncio_available
-from scrapy.utils.defer import deferred_from_coro, deferred_to_future
+from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import (
     LogCounterHandler,
     configure_logging,
@@ -207,30 +209,28 @@ class Crawler:
         return self.spidercls.from_crawler(self, *args, **kwargs)
 
     def _create_engine(self) -> ExecutionEngine:
-        return ExecutionEngine(self, lambda _: self.stop())
+        return ExecutionEngine(self, lambda _: self.stop_async())
 
-    @inlineCallbacks
-    def stop(self) -> Generator[Deferred[Any], Any, None]:
+    def stop(self) -> Deferred[None]:
         """Start a graceful stop of the crawler and return a deferred that is
         fired when the crawler is stopped."""
-        if self.crawling:
-            self.crawling = False
-            assert self.engine
-            if self.engine.running:
-                yield deferred_from_coro(self.engine.stop_async())
+        warnings.warn(
+            "Crawler.stop() is deprecated, use stop_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return deferred_from_coro(self.stop_async())
 
     async def stop_async(self) -> None:
         """Start a graceful stop of the crawler and complete when the crawler is stopped.
 
         .. versionadded:: VERSION
-
-        This function requires
-        :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
-        installed.
         """
-        if not is_asyncio_available():
-            raise RuntimeError("Crawler.stop_async() requires AsyncioSelectorReactor.")
-        await deferred_to_future(self.stop())
+        if self.crawling:
+            self.crawling = False
+            assert self.engine
+            if self.engine.running:
+                await self.engine.stop_async()
 
     @staticmethod
     def _get_component(
@@ -447,7 +447,7 @@ class CrawlerRunner(CrawlerRunnerBase):
 
         Returns a deferred that is fired when they all have ended.
         """
-        return DeferredList(c.stop() for c in self.crawlers)
+        return DeferredList(deferred_from_coro(c.stop_async()) for c in self.crawlers)
 
     @inlineCallbacks
     def join(self) -> Generator[Deferred[Any], Any, None]:
