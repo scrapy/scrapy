@@ -315,3 +315,41 @@ class TestDownloadDeprecated(TestManagerBase):
                     mwman.download(download_func, req, mwman.crawler.spider)
                 )
         assert isinstance(ret, Response)
+
+
+class TestDeprecatedSpiderArg(TestManagerBase):
+    @deferred_f_from_coro_f
+    async def test_deprecated_spider_arg(self):
+        req = Request("http://example.com/index.html")
+        resp = Response("http://example.com/index.html")
+        download_func = mock.MagicMock()
+
+        class DeprecatedSpiderArgMiddleware:
+            def process_request(self, request, spider):
+                1 / 0
+
+            def process_response(self, request, response, spider):
+                return response
+
+            def process_exception(self, request, exception, spider):
+                return resp
+
+        async with self.get_mwman() as mwman:
+            with (
+                pytest.warns(
+                    ScrapyDeprecationWarning,
+                    match=r"process_request\(\) requires a spider argument",
+                ),
+                pytest.warns(
+                    ScrapyDeprecationWarning,
+                    match=r"process_response\(\) requires a spider argument",
+                ),
+                pytest.warns(
+                    ScrapyDeprecationWarning,
+                    match=r"process_exception\(\) requires a spider argument",
+                ),
+            ):
+                mwman._add_middleware(DeprecatedSpiderArgMiddleware())
+            result = await maybe_deferred_to_future(mwman.download(download_func, req))
+        assert result is resp
+        assert not download_func.called
