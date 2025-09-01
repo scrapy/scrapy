@@ -100,6 +100,22 @@ class Request(object_ref):
         "flags",
         "cb_kwargs",
     )
+    __slots__: tuple[str, ...] = (
+        "__weakref__",
+        "_body",
+        "_cb_kwargs",
+        "_cookies",
+        "_encoding",
+        "_flags",
+        "_headers",
+        "_meta",
+        "_url",
+        "callback",
+        "dont_filter",
+        "errback",
+        "method",
+        "priority",
+    )
     """A tuple of :class:`str` objects containing the name of all public
     attributes of the class that are also keyword parameters of the
     ``__init__()`` method.
@@ -177,7 +193,7 @@ class Request(object_ref):
         #:
         #: .. seealso::
         #:     :ref:`topics-request-response-ref-request-callback-arguments`
-        self.callback: CallbackT | None = callback
+        self.callback: CallbackT | None = None if callback is NO_CALLBACK else callback
 
         #: :class:`~collections.abc.Callable` to handle exceptions raised
         #: during request or response processing.
@@ -186,10 +202,14 @@ class Request(object_ref):
         #: its first parameter.
         #:
         #: .. seealso:: :ref:`topics-request-response-ref-errbacks`
-        self.errback: Callable[[Failure], Any] | None = errback
+        self.errback: Callable[[Failure], Any] | None = (
+            None if errback is NO_CALLBACK else errback
+        )
 
-        self.cookies: CookiesT = cookies or {}
-        self.headers: Headers = Headers(headers or {}, encoding=encoding)
+        self._cookies: CookiesT | None = cookies if cookies else None
+        self._headers: Headers | None = (
+            Headers(headers, encoding=encoding) if headers else None
+        )
 
         #: Whether this request may be filtered out by :ref:`components
         #: <topics-components>` that support filtering out requests (``False``,
@@ -206,19 +226,27 @@ class Request(object_ref):
 
         self._meta: dict[str, Any] | None = dict(meta) if meta else None
         self._cb_kwargs: dict[str, Any] | None = dict(cb_kwargs) if cb_kwargs else None
-        self.flags: list[str] = [] if flags is None else list(flags)
+        self._flags: list[str] | None = None if flags is None else list(flags)
 
     @property
     def cb_kwargs(self) -> dict[str, Any]:
         if self._cb_kwargs is None:
-            self._cb_kwargs = {}
+            return {}
         return self._cb_kwargs
+
+    @cb_kwargs.setter
+    def cb_kwargs(self, value: dict[str, Any]) -> None:
+        self._cb_kwargs = dict(value) if value else None
 
     @property
     def meta(self) -> dict[str, Any]:
         if self._meta is None:
-            self._meta = {}
+            return {}
         return self._meta
+
+    @meta.setter
+    def meta(self, value: dict[str, Any]) -> None:
+        self._meta = dict(value) if value else None
 
     @property
     def url(self) -> str:
@@ -242,11 +270,43 @@ class Request(object_ref):
         return self._body
 
     def _set_body(self, body: str | bytes | None) -> None:
-        self._body = b"" if body is None else to_bytes(body, self.encoding)
+        self._body = b"" if not body else to_bytes(body, self.encoding)
 
     @property
     def encoding(self) -> str:
         return self._encoding
+
+    @property
+    def flags(self) -> list[str]:
+        if self._flags is None:
+            return []
+        return self._flags
+
+    @flags.setter
+    def flags(self, value: list[str]) -> None:
+        self._flags = list(value) if value else None
+
+    @property
+    def cookies(self) -> CookiesT:
+        if self._cookies is None:
+            return {}
+        return self._cookies
+
+    @cookies.setter
+    def cookies(self, value: CookiesT) -> None:
+        self._cookies = value if value else None
+
+    @property
+    def headers(self) -> Headers:
+        if self._headers is None:
+            return Headers(None, encoding=self.encoding)
+        return self._headers
+
+    @headers.setter
+    def headers(
+        self, value: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]]
+    ) -> None:
+        self._headers = Headers(value, encoding=self.encoding) if value else None
 
     def __repr__(self) -> str:
         return f"<{self.method} {self.url}>"

@@ -37,6 +37,8 @@ FormdataType = Optional[Union[dict[str, FormdataVType], list[FormdataKVType]]]
 
 
 class FormRequest(Request):
+    __slots__ = ()
+
     valid_form_methods = ["GET", "POST"]
 
     def __init__(
