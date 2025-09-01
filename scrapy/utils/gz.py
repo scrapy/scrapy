@@ -17,7 +17,7 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
     This is resilient to CRC checksum errors.
     """
     f = GzipFile(fileobj=BytesIO(data))
-    output_buf = bytearray()
+    output_stream = BytesIO()
     chunk = b"."
     decompressed_size = 0
     while chunk:
@@ -27,7 +27,7 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
             # complete only if there is some data, otherwise re-raise
             # see issue 87 about catching struct.error
             # some pages are quite small so output_stream is empty
-            if len(output_buf) > 0:
+            if output_stream.getbuffer().nbytes > 0:
                 break
             raise
         decompressed_size += len(chunk)
