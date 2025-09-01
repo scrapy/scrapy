@@ -7,10 +7,10 @@ See documentation in docs/topics/spider-middleware.rst
 from __future__ import annotations
 
 import logging
-import warnings
 from typing import TYPE_CHECKING, Any
 
-from scrapy.exceptions import IgnoreRequest, ScrapyDeprecationWarning
+from scrapy.exceptions import IgnoreRequest
+from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -50,16 +50,10 @@ class HttpErrorMiddleware:
         o.crawler = crawler
         return o
 
+    @_warn_spider_arg
     def process_spider_input(
         self, response: Response, spider: Spider | None = None
     ) -> None:
-        if spider is not None:  # pragma: no cover
-            warnings.warn(
-                "Passing a spider argument to HttpErrorMiddleware.process_spider_input()"
-                " is deprecated and the passed value is ignored.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
         if 200 <= response.status < 300:  # common case
             return
         meta = response.meta
@@ -79,16 +73,10 @@ class HttpErrorMiddleware:
             return
         raise HttpError(response, "Ignoring non-200 response")
 
+    @_warn_spider_arg
     def process_spider_exception(
         self, response: Response, exception: Exception, spider: Spider | None = None
     ) -> Iterable[Any] | None:
-        if spider is not None:  # pragma: no cover
-            warnings.warn(
-                "Passing a spider argument to HttpErrorMiddleware.process_spider_exception()"
-                " is deprecated and the passed value is ignored.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
         if isinstance(exception, HttpError):
             assert self.crawler.stats
             self.crawler.stats.inc_value("httperror/response_ignored_count")

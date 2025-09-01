@@ -180,7 +180,7 @@ class TestFilesPipeline:
         for p in patchers:
             p.start()
 
-        result = yield self.pipeline.process_item(item, None)
+        result = yield self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] == "abc"
         assert result["files"][0]["status"] == "uptodate"
 
@@ -211,7 +211,7 @@ class TestFilesPipeline:
         for p in patchers:
             p.start()
 
-        result = yield self.pipeline.process_item(item, None)
+        result = yield self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "downloaded"
 
@@ -242,7 +242,7 @@ class TestFilesPipeline:
         for p in patchers:
             p.start()
 
-        result = yield self.pipeline.process_item(item, None)
+        result = yield self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "cached"
 

@@ -23,6 +23,7 @@ from scrapy.exceptions import (
 from scrapy.http import Request, Response
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _defer_sleep_async,
     _schedule_coro,
@@ -219,16 +220,10 @@ class Scraper:
             self.slot.closing.callback(self.crawler.spider)
 
     @inlineCallbacks
+    @_warn_spider_arg
     def enqueue_scrape(
         self, result: Response | Failure, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, None]:
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to Scraper.enqueue_scrape() is deprecated.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-
         if self.slot is None:
             raise RuntimeError("Scraper slot not assigned")
         dfd = self.slot.add_response_request(result, request)
@@ -343,6 +338,7 @@ class Scraper:
             # which needs to be passed to iterate_spider_output()
         return await ensure_awaitable(iterate_spider_output(output))
 
+    @_warn_spider_arg
     def handle_spider_error(
         self,
         _failure: Failure,
@@ -351,13 +347,6 @@ class Scraper:
         spider: Spider | None = None,
     ) -> None:
         """Handle an exception raised by a spider callback or errback."""
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to Scraper.handle_spider_error() is deprecated.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-
         assert self.crawler.spider
         exc = _failure.value
         if isinstance(exc, CloseSpider):
