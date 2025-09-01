@@ -40,7 +40,7 @@ class StatsMailer:
         return o
 
     def spider_closed(self, spider: Spider) -> Deferred[None] | None:
-        spider_stats = self.stats.get_stats(spider)
+        spider_stats = self.stats.get_stats()
         body = "Global stats\n\n"
         body += "\n".join(f"{k:<50} : {v}" for k, v in self.stats.get_stats().items())
         body += f"\n\n{spider.name} stats\n\n"
