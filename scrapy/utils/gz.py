@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import struct
 from gzip import GzipFile
+from io import BytesIO
 from typing import TYPE_CHECKING
 
 from ._compression import _CHUNK_SIZE, _check_max_size
@@ -15,7 +16,7 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
 
     This is resilient to CRC checksum errors.
     """
-    f = GzipFile(fileobj=MemoryviewReader(data))
+    f = GzipFile(fileobj=BytesIO(data))
     output_buf = bytearray()
     chunk = b"."
     decompressed_size = 0

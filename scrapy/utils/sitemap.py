@@ -7,12 +7,11 @@ SitemapSpider, its API is subject to change without notice.
 
 from __future__ import annotations
 
+from io import BytesIO
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import lxml.etree
-
-from scrapy.utils.misc import MemoryviewReader
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
@@ -22,9 +21,9 @@ class Sitemap:
     """Class to parse Sitemap (type=urlset) and Sitemap Index
     (type=sitemapindex) files"""
 
-    def __init__(self, xmltext: str | bytes):
+    def __init__(self, xmltext: bytes):
         self.xmliter = lxml.etree.iterparse(
-            MemoryviewReader.from_anystr(xmltext),
+            BytesIO(xmltext),
             recover=True,
             remove_comments=True,
             resolve_entities=False,
@@ -87,7 +86,7 @@ class Sitemap:
 
 
 def sitemap_urls_from_robots(
-    robots_text: str | bytes, base_url: str | None = None
+    robots_text: bytes, base_url: str | None = None
 ) -> Iterable[str]:
     """Return an iterator over all sitemap urls contained in the given
     robots.txt file

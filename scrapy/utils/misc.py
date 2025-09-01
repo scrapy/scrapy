@@ -5,7 +5,6 @@ from __future__ import annotations
 import ast
 import hashlib
 import inspect
-import io
 import os
 import re
 import warnings
@@ -23,8 +22,6 @@ from scrapy.utils.datatypes import LocalWeakReferencedCache
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
     from types import ModuleType
-
-    from typing_extensions import Self
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
@@ -258,125 +255,3 @@ def warn_on_generator_with_return_value(
             f'including the code of "{callable_name}"',
             stacklevel=2,
         )
-
-
-class MemoryviewReader:
-    """
-    File-like reader over internal buffer of bytes or bytearray using memoryview.
-
-    Basic read:
-    >>> r = MemoryviewReader.from_anystr("hello world")
-    >>> r.read(5), r.read()
-    (b'hello', b' world')
-
-    Read lines:
-    >>> r = MemoryviewReader(b"a\\nb\\nc")
-    >>> r.readline(99), r.readline(1), r.readline(), r.readline(), r.readline(99)
-    (b'a\\n', b'b', b'\\n', b'c', b'')
-
-    Iterate lines:
-    >>> list(MemoryviewReader(b"x\\ny"))
-    [b'x\\n', b'y']
-
-    Seek/tell:
-    >>> r = MemoryviewReader(memoryview(b"abcdef"))
-    >>> r.read(3), r.tell()
-    (b'abc', 3)
-    >>> r.seek(0), r.read(2)
-    (0, b'ab')
-    >>> r.seek(2, io.SEEK_CUR), r.read(2)
-    (4, b'ef')
-    >>> r.seek(-3, io.SEEK_END), r.read(99)
-    (3, b'def')
-
-    Errors:
-    >>> r.seek(0, 99)
-    Traceback (most recent call last):
-    ...
-    ValueError: Invalid whence
-    >>> r.seek(-10, io.SEEK_SET)
-    Traceback (most recent call last):
-    ...
-    ValueError: Seek out of range
-    >>> r.seek(10, io.SEEK_SET)
-    Traceback (most recent call last):
-    ...
-    ValueError: Seek out of range
-    """  # noqa: D301
-
-    __slots__ = ("_mv", "_pos", "size")
-
-    def __init__(self, buf: bytes | bytearray | memoryview):
-        if not isinstance(buf, memoryview):
-            buf = memoryview(buf)
-        self._mv = buf
-        self._pos = 0
-        self.size = len(self._mv)
-
-    @classmethod
-    def from_anystr(cls, str_or_bytes: str | bytes) -> Self:
-        return (
-            cls(str_or_bytes)
-            if isinstance(str_or_bytes, bytes)
-            else cls(str_or_bytes.encode())
-        )
-
-    def read(self, amount: int = -1, /) -> bytes:
-        if amount < 0:
-            end = self.size
-        else:
-            end = self._pos + amount
-            if end > self.size:  # pylint: disable=consider-using-min-builtin # noqa: PLR1730
-                end = self.size
-
-        start = self._pos
-        self._pos = end
-        return self._mv[start:end].tobytes()
-
-    def readline(self, amount: int = -1, /) -> bytes:
-        if self._pos >= self.size:
-            return b""
-
-        if amount < 0:
-            end = self.size
-        else:
-            end = self._pos + amount
-            if end > self.size:  # pylint: disable=consider-using-min-builtin # noqa: PLR1730
-                end = self.size
-
-        start = self._pos
-        i = start
-        while i < end:
-            if self._mv[i] == 10:  # ord('\n')
-                i += 1  # include newline
-                break
-            i += 1
-
-        self._pos = i
-        return self._mv[start:i].tobytes()
-
-    def __iter__(self) -> Self:
-        return self
-
-    def __next__(self) -> bytes:
-        line = self.readline()
-        if not line:
-            raise StopIteration
-        return line
-
-    def seek(self, offset: int, whence: int = 0) -> int:
-        if whence == io.SEEK_SET:
-            new = offset
-        elif whence == io.SEEK_CUR:
-            new = self._pos + offset
-        elif whence == io.SEEK_END:
-            new = self.size + offset
-        else:
-            raise ValueError("Invalid whence")
-        if not (0 <= new <= self.size):  # pylint: disable=superfluous-parens
-            raise ValueError("Seek out of range")
-        self._pos = new
-        return self._pos
-
-    def tell(self) -> int:
-        return self._pos

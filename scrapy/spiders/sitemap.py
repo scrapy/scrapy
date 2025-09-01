@@ -71,12 +71,6 @@ class SitemapSpider(Spider):
         yield from entries
 
     def _parse_sitemap(self, response: Response) -> Iterable[Request]:
-        requests = self._get_sitemap_requests(response)
-        del response
-
-        yield from requests
-
-    def _get_sitemap_requests(self, response: Response) -> Iterable[Request]:
         if response.url.endswith("/robots.txt"):
             urls = list(sitemap_urls_from_robots(response.body, base_url=response.url))
             return (Request(url, callback=self._parse_sitemap) for url in urls)
