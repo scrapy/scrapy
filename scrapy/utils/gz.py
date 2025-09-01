@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import struct
 from gzip import GzipFile
+from io import BytesIO
 from typing import TYPE_CHECKING
-
-from scrapy.utils.misc import MemoryviewReader
 
 from ._compression import _CHUNK_SIZE, _DecompressionMaxSizeExceeded
 
@@ -17,7 +16,7 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
 
     This is resilient to CRC checksum errors.
     """
-    f = GzipFile(fileobj=MemoryviewReader(data))
+    f = GzipFile(fileobj=BytesIO(data))
     output_buf = bytearray()
     chunk = b"."
     decompressed_size = 0
