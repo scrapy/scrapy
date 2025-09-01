@@ -15,6 +15,7 @@ from scrapy.utils._compression import (
     _unbrotli,
     _unzstd,
 )
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.gz import gunzip
 
 if TYPE_CHECKING:
@@ -93,14 +94,16 @@ class HttpCompressionMiddleware:
             )
             self._warn_size = spider.download_warnsize
 
+    @_warn_spider_arg
     def process_request(
-        self, request: Request, spider: Spider
+        self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
         request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
         return None
 
+    @_warn_spider_arg
     def process_response(
-        self, request: Request, response: Response, spider: Spider
+        self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
         if request.method == "HEAD":
             return response

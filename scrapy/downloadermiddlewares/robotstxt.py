@@ -14,6 +14,7 @@ from twisted.internet.defer import Deferred
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
@@ -51,17 +52,18 @@ class RobotsTxtMiddleware:
     def from_crawler(cls, crawler: Crawler) -> Self:
         return cls(crawler)
 
-    async def process_request(self, request: Request, spider: Spider) -> None:
+    @_warn_spider_arg
+    async def process_request(
+        self, request: Request, spider: Spider | None = None
+    ) -> None:
         if request.meta.get("dont_obey_robotstxt"):
             return
         if request.url.startswith("data:") or request.url.startswith("file:"):
             return
-        rp = await self.robot_parser(request, spider)
-        self.process_request_2(rp, request, spider)
+        rp = await self.robot_parser(request)
+        self.process_request_2(rp, request)
 
-    def process_request_2(
-        self, rp: RobotParser | None, request: Request, spider: Spider
-    ) -> None:
+    def process_request_2(self, rp: RobotParser | None, request: Request) -> None:
         if rp is None:
             return
 
@@ -73,15 +75,13 @@ class RobotsTxtMiddleware:
             logger.debug(
                 "Forbidden by robots.txt: %(request)s",
                 {"request": request},
-                extra={"spider": spider},
+                extra={"spider": self.crawler.spider},
             )
             assert self.crawler.stats
             self.crawler.stats.inc_value("robotstxt/forbidden")
             raise IgnoreRequest("Forbidden by robots.txt")
 
-    async def robot_parser(
-        self, request: Request, spider: Spider
-    ) -> RobotParser | None:
+    async def robot_parser(self, request: Request) -> RobotParser | None:
         url = urlparse_cached(request)
         netloc = url.netloc
 
@@ -100,7 +100,13 @@ class RobotsTxtMiddleware:
                 resp = await self.crawler.engine.download_async(robotsreq)
                 self._parse_robots(resp, netloc)
             except Exception as e:
-                self._logerror(e, robotsreq, spider)
+                if not isinstance(e, IgnoreRequest):
+                    logger.error(
+                        "Error downloading %(request)s: %(f_exception)s",
+                        {"request": request, "f_exception": e},
+                        exc_info=True,
+                        extra={"spider": self.crawler.spider},
+                    )
                 self._robots_error(e, netloc)
             self.crawler.stats.inc_value("robotstxt/request_count")
 
@@ -108,15 +114,6 @@ class RobotsTxtMiddleware:
         if isinstance(parser, Deferred):
             return await maybe_deferred_to_future(parser)
         return parser
-
-    def _logerror(self, exc: Exception, request: Request, spider: Spider) -> None:
-        if not isinstance(exc, IgnoreRequest):
-            logger.error(
-                "Error downloading %(request)s: %(f_exception)s",
-                {"request": request, "f_exception": exc},
-                exc_info=True,  # noqa: LOG014
-                extra={"spider": spider},
-            )
 
     def _parse_robots(self, response: Response, netloc: str) -> None:
         assert self.crawler.stats

@@ -70,7 +70,7 @@ defines one or more of these methods:
 
    .. note::  Any of the downloader middleware methods may also return a deferred.
 
-   .. method:: process_request(request, spider)
+   .. method:: process_request(request)
 
       This method is called for each request that goes through the download
       middleware.
@@ -102,10 +102,7 @@ defines one or more of these methods:
       :param request: the request being processed
       :type request: :class:`~scrapy.Request` object
 
-      :param spider: the spider for which this request is intended
-      :type spider: :class:`~scrapy.Spider` object
-
-   .. method:: process_response(request, response, spider)
+   .. method:: process_response(request, response)
 
       :meth:`process_response` should either: return a :class:`~scrapy.http.Response`
       object, return a :class:`~scrapy.Request` object or
@@ -129,10 +126,7 @@ defines one or more of these methods:
       :param response: the response being processed
       :type response: :class:`~scrapy.http.Response` object
 
-      :param spider: the spider for which this response is intended
-      :type spider: :class:`~scrapy.Spider` object
-
-   .. method:: process_exception(request, exception, spider)
+   .. method:: process_exception(request, exception)
 
       Scrapy calls :meth:`process_exception` when a download handler
       or a :meth:`process_request` (from a downloader middleware) raises an
@@ -159,9 +153,6 @@ defines one or more of these methods:
 
       :param exception: the raised exception
       :type exception: an ``Exception`` object
-
-      :param spider: the spider for which this request is intended
-      :type spider: :class:`~scrapy.Spider` object
 
 .. _topics-downloader-middleware-ref:
 
