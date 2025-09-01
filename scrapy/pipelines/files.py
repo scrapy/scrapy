@@ -450,9 +450,16 @@ class FilesPipeline(MediaPipeline):
         *,
         crawler: Crawler | None = None,
     ):
-        store_uri = _to_string(store_uri)
-        if not store_uri:
-            raise NotConfigured
+        if not (store_uri and (store_uri := _to_string(store_uri))):
+            from scrapy.pipelines.images import ImagesPipeline  # noqa: PLC0415
+
+            setting_name = (
+                "IMAGES_STORE" if isinstance(self, ImagesPipeline) else "FILES_STORE"
+            )
+            raise NotConfigured(
+                f"{setting_name} setting must be set to a valid path (not empty) "
+                f"to enable {self.__class__.__name__}."
+            )
 
         if crawler is not None:
             if settings is not None:
