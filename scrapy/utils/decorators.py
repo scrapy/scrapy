@@ -91,12 +91,11 @@ def _warn_spider_arg(
     | Callable[_P, Coroutine[Any, Any, _T]]
     | Callable[_P, AsyncGenerator[_T]]
 ):
-    """Decorator to warn if a (non-None) ``spider`` argument is passed to a function."""
+    """Decorator to warn if a ``spider`` argument is passed to a function."""
 
     def check_args(*args: _P.args, **kwargs: _P.kwargs) -> None:
         bound = inspect.signature(func).bind(*args, **kwargs)
-        bound.apply_defaults()
-        if bound.arguments.get("spider"):
+        if "spider" in bound.arguments:
             warnings.warn(
                 f"Passing a 'spider' argument to {func.__qualname__}() is deprecated and "
                 "the argument will be removed in a future Scrapy version.",
