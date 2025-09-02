@@ -35,10 +35,13 @@ class DownloaderMiddlewareManager(MiddlewareManager):
     def _add_middleware(self, mw: Any) -> None:
         if hasattr(mw, "process_request"):
             self.methods["process_request"].append(mw.process_request)
+            self._check_mw_method_spider_arg(mw.process_request)
         if hasattr(mw, "process_response"):
             self.methods["process_response"].appendleft(mw.process_response)
+            self._check_mw_method_spider_arg(mw.process_response)
         if hasattr(mw, "process_exception"):
             self.methods["process_exception"].appendleft(mw.process_exception)
+            self._check_mw_method_spider_arg(mw.process_exception)
 
     @inlineCallbacks
     def download(
@@ -64,9 +67,12 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         ) -> Generator[Deferred[Any], Any, Response | Request]:
             for method in self.methods["process_request"]:
                 method = cast("Callable", method)
-                response = yield deferred_from_coro(
-                    method(request=request, spider=self._spider)
-                )
+                if method in self._mw_methods_requiring_spider:
+                    response = yield deferred_from_coro(
+                        method(request=request, spider=self._spider)
+                    )
+                else:
+                    response = yield deferred_from_coro(method(request=request))
                 if response is not None and not isinstance(
                     response, (Response, Request)
                 ):
@@ -91,9 +97,14 @@ class DownloaderMiddlewareManager(MiddlewareManager):
 
             for method in self.methods["process_response"]:
                 method = cast("Callable", method)
-                response = yield deferred_from_coro(
-                    method(request=request, response=response, spider=self._spider)
-                )
+                if method in self._mw_methods_requiring_spider:
+                    response = yield deferred_from_coro(
+                        method(request=request, response=response, spider=self._spider)
+                    )
+                else:
+                    response = yield deferred_from_coro(
+                        method(request=request, response=response)
+                    )
                 if not isinstance(response, (Response, Request)):
                     raise _InvalidOutput(
                         f"Middleware {method.__qualname__} must return Response or Request, "
@@ -109,9 +120,16 @@ class DownloaderMiddlewareManager(MiddlewareManager):
         ) -> Generator[Deferred[Any], Any, Response | Request]:
             for method in self.methods["process_exception"]:
                 method = cast("Callable", method)
-                response = yield deferred_from_coro(
-                    method(request=request, exception=exception, spider=self._spider)
-                )
+                if method in self._mw_methods_requiring_spider:
+                    response = yield deferred_from_coro(
+                        method(
+                            request=request, exception=exception, spider=self._spider
+                        )
+                    )
+                else:
+                    response = yield deferred_from_coro(
+                        method(request=request, exception=exception)
+                    )
                 if response is not None and not isinstance(
                     response, (Response, Request)
                 ):
