@@ -85,22 +85,27 @@ class Request(object_ref):
     executed by the Downloader, thus generating a :class:`~scrapy.http.Response`.
     """
 
+    __attrs_and_slots = ("callback", "dont_filter", "errback", "method", "priority")
     attributes: tuple[str, ...] = (
         "url",
-        "callback",
-        "method",
         "headers",
         "body",
         "cookies",
         "meta",
         "encoding",
-        "priority",
-        "dont_filter",
-        "errback",
         "flags",
         "cb_kwargs",
+        *__attrs_and_slots,
     )
-    __slots__: tuple[str, ...] = (
+    """A tuple of :class:`str` objects containing the name of all public
+    attributes of the class that are also keyword parameters of the
+    ``__init__()`` method.
+
+    Currently used by :meth:`.Request.replace`, :meth:`.Request.to_dict` and
+    :func:`~scrapy.utils.request.request_from_dict`.
+    """
+
+    __slots__ = (
         "__weakref__",
         "_body",
         "_cb_kwargs",
@@ -110,19 +115,9 @@ class Request(object_ref):
         "_headers",
         "_meta",
         "_url",
-        "callback",
-        "dont_filter",
-        "errback",
-        "method",
-        "priority",
+        *__attrs_and_slots,
     )
-    """A tuple of :class:`str` objects containing the name of all public
-    attributes of the class that are also keyword parameters of the
-    ``__init__()`` method.
-
-    Currently used by :meth:`.Request.replace`, :meth:`.Request.to_dict` and
-    :func:`~scrapy.utils.request.request_from_dict`.
-    """
+    del __attrs_and_slots
 
     def __init__(
         self,
@@ -193,7 +188,7 @@ class Request(object_ref):
         #:
         #: .. seealso::
         #:     :ref:`topics-request-response-ref-request-callback-arguments`
-        self.callback: CallbackT | None = None if callback is NO_CALLBACK else callback
+        self.callback: CallbackT | None = callback
 
         #: :class:`~collections.abc.Callable` to handle exceptions raised
         #: during request or response processing.
@@ -202,9 +197,7 @@ class Request(object_ref):
         #: its first parameter.
         #:
         #: .. seealso:: :ref:`topics-request-response-ref-errbacks`
-        self.errback: Callable[[Failure], Any] | None = (
-            None if errback is NO_CALLBACK else errback
-        )
+        self.errback: Callable[[Failure], Any] | None = errback
 
         self._cookies: CookiesT | None = cookies if cookies else None
         self._headers: Headers | None = (
@@ -226,27 +219,27 @@ class Request(object_ref):
 
         self._meta: dict[str, Any] | None = dict(meta) if meta else None
         self._cb_kwargs: dict[str, Any] | None = dict(cb_kwargs) if cb_kwargs else None
-        self._flags: list[str] | None = None if flags is None else list(flags)
+        self._flags: list[str] | None = list(flags) if flags else None
 
     @property
     def cb_kwargs(self) -> dict[str, Any]:
         if self._cb_kwargs is None:
-            return {}
+            self._cb_kwargs = {}
         return self._cb_kwargs
 
     @cb_kwargs.setter
-    def cb_kwargs(self, value: dict[str, Any]) -> None:
-        self._cb_kwargs = dict(value) if value else None
+    def cb_kwargs(self, value: dict[str, Any] | None) -> None:
+        self._cb_kwargs = value if value else None
 
     @property
     def meta(self) -> dict[str, Any]:
         if self._meta is None:
-            return {}
+            self._meta = {}
         return self._meta
 
     @meta.setter
-    def meta(self, value: dict[str, Any]) -> None:
-        self._meta = dict(value) if value else None
+    def meta(self, value: dict[str, Any] | None) -> None:
+        self._meta = value if value else None
 
     @property
     def url(self) -> str:
@@ -279,34 +272,37 @@ class Request(object_ref):
     @property
     def flags(self) -> list[str]:
         if self._flags is None:
-            return []
+            self._flags = []
         return self._flags
 
     @flags.setter
-    def flags(self, value: list[str]) -> None:
-        self._flags = list(value) if value else None
+    def flags(self, value: list[str] | None) -> None:
+        self._flags = value if value else None
 
     @property
     def cookies(self) -> CookiesT:
         if self._cookies is None:
-            return {}
+            self._cookies = {}
         return self._cookies
 
     @cookies.setter
-    def cookies(self, value: CookiesT) -> None:
+    def cookies(self, value: CookiesT | None) -> None:
         self._cookies = value if value else None
 
     @property
     def headers(self) -> Headers:
         if self._headers is None:
-            return Headers(None, encoding=self.encoding)
+            self._headers = Headers(encoding=self.encoding)
         return self._headers
 
     @headers.setter
     def headers(
-        self, value: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]]
+        self, value: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None
     ) -> None:
-        self._headers = Headers(value, encoding=self.encoding) if value else None
+        if isinstance(value, Headers):
+            self._headers = value
+        else:
+            self._headers = Headers(value, encoding=self.encoding) if value else None
 
     def __repr__(self) -> str:
         return f"<{self.method} {self.url}>"
