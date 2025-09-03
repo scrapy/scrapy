@@ -13,6 +13,16 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
+def warn_on_deprecated_spider_attribute(attribute_name: str, setting_name: str) -> None:
+    warnings.warn(
+        f"The '{attribute_name}' spider attribute is deprecated. "
+        "Use Spider.custom_settings or Spider.update_settings() instead. "
+        f"The corresponding setting name is '{setting_name}'.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+
+
 def attribute(obj: Any, oldattr: str, newattr: str, version: str = "0.12") -> None:
     cname = obj.__class__.__name__
     warnings.warn(
