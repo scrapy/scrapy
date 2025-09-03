@@ -829,6 +829,7 @@ always uses the ``'meta refresh'`` string as reason.
 The :class:`RedirectMiddleware` can be configured through the following
 settings (see the settings documentation for more info):
 
+* :setting:`REDIRECT_ALLOWED_HTTP_CODES`
 * :setting:`REDIRECT_ENABLED`
 * :setting:`REDIRECT_MAX_TIMES`
 
@@ -838,7 +839,7 @@ If :attr:`Request.meta <scrapy.Request.meta>` has ``dont_redirect``
 key set to True, the request will be ignored by this middleware.
 
 If you want to handle some redirect status codes in your spider, you can
-specify these in the ``handle_httpstatus_list`` spider attribute.
+specify these in the :setting:`REDIRECT_ALLOWED_HTTP_CODES` setting.
 
 For example, if you want the redirect middleware to ignore 301 and 302
 responses (and pass them through to your spider) you can do this:
@@ -846,7 +847,7 @@ responses (and pass them through to your spider) you can do this:
 .. code-block:: python
 
     class MySpider(CrawlSpider):
-        handle_httpstatus_list = [301, 302]
+        custom_settings = {"REDIRECT_ALLOWED_HTTP_CODES": [301, 302]}
 
 The ``handle_httpstatus_list`` key of :attr:`Request.meta
 <scrapy.Request.meta>` can also be used to specify which response codes to
@@ -876,6 +877,15 @@ Default: ``20``
 
 The maximum number of redirections that will be followed for a single request.
 If maximum redirections are exceeded, the request is aborted and ignored.
+
+.. setting:: REDIRECT_ALLOWED_HTTP_CODES
+
+REDIRECT_ALLOWED_HTTP_CODES
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Default: ``[]``
+
+Pass all responses with status codes contained in this list.
 
 MetaRefreshMiddleware
 ---------------------
