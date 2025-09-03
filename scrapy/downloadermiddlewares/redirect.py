@@ -9,6 +9,7 @@ from w3lib.url import safe_url_string
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import HtmlResponse, Response
 from scrapy.utils.decorators import _warn_spider_arg
+from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.response import get_meta_refresh
 
@@ -89,6 +90,9 @@ class BaseRedirectMiddleware:
 
         self.max_redirect_times: int = settings.getint("REDIRECT_MAX_TIMES")
         self.priority_adjust: int = settings.getint("REDIRECT_PRIORITY_ADJUST")
+        self.handle_httpstatus_list: list[int] = settings.getlist(
+            "REDIRECT_ALLOWED_HTTP_CODES"
+        )
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
@@ -150,11 +154,17 @@ class RedirectMiddleware(BaseRedirectMiddleware):
     def process_response(
         self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
+        if hasattr(self.crawler.spider, "handle_httpstatus_list"):
+            warn_on_deprecated_spider_attribute(
+                "handle_httpstatus_list", "REDIRECT_ALLOWED_HTTP_CODES"
+            )
+
         if (
             request.meta.get("dont_redirect", False)
             or response.status
             in getattr(self.crawler.spider, "handle_httpstatus_list", [])
             or response.status in request.meta.get("handle_httpstatus_list", [])
+            or response.status in self.handle_httpstatus_list
             or request.meta.get("handle_httpstatus_all", False)
         ):
             return response
