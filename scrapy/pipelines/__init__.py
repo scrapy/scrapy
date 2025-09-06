@@ -14,7 +14,11 @@ from twisted.internet.defer import Deferred, DeferredList
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.defer import deferred_from_coro, maybeDeferred_coro
+from scrapy.utils.defer import (
+    deferred_from_coro,
+    maybe_deferred_to_future,
+    maybeDeferred_coro,
+)
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
@@ -44,14 +48,13 @@ class ItemPipelineManager(MiddlewareManager):
             self.methods["process_item"].append(pipe.process_item)
             self._check_mw_method_spider_arg(pipe.process_item)
 
-    def process_item(self, item: Any, spider: Spider | None = None) -> Deferred[Any]:
-        if spider:
-            self._set_compat_spider(spider)
+    def process_item(self, item: Any, spider: Spider) -> Deferred[Any]:
         warnings.warn(
             f"{global_object_name(type(self))}.process_item() is deprecated, use process_item_async() instead.",
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
+        self._set_compat_spider(spider)
         return deferred_from_coro(self.process_item_async(item))
 
     async def process_item_async(self, item: Any) -> Any:
@@ -77,14 +80,26 @@ class ItemPipelineManager(MiddlewareManager):
         d2.addErrback(eb)
         return d2
 
-    def open_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
-        if spider:
-            self._warn_spider_arg("open_spider")
-            self._set_compat_spider(spider)
+    def open_spider(self, spider: Spider) -> Deferred[list[None]]:
+        warnings.warn(
+            f"{global_object_name(type(self))}.open_spider() is deprecated, use open_spider_async() instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        self._set_compat_spider(spider)
         return self._process_parallel("open_spider")
 
-    def close_spider(self, spider: Spider | None = None) -> Deferred[list[None]]:
-        if spider:
-            self._warn_spider_arg("close_spider")
-            self._set_compat_spider(spider)
+    async def open_spider_async(self) -> None:
+        await maybe_deferred_to_future(self._process_parallel("open_spider"))
+
+    def close_spider(self, spider: Spider) -> Deferred[list[None]]:
+        warnings.warn(
+            f"{global_object_name(type(self))}.close_spider() is deprecated, use close_spider_async() instead.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        self._set_compat_spider(spider)
         return self._process_parallel("close_spider")
+
+    async def close_spider_async(self) -> None:
+        await maybe_deferred_to_future(self._process_parallel("close_spider"))
