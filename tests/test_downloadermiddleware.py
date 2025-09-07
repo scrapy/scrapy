@@ -15,7 +15,6 @@ from scrapy.http import Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.python import to_bytes
-from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 
 if TYPE_CHECKING:
@@ -316,25 +315,6 @@ class TestDownloadDeprecated(TestManagerBase):
                 ret = await maybe_deferred_to_future(
                     mwman.download(download_func, req, mwman.crawler.spider)
                 )
-        assert isinstance(ret, Response)
-
-    @deferred_f_from_coro_f
-    async def test_mwman_download_spider_arg_no_crawler(self):
-        req = Request("http://example.com/index.html")
-        resp = Response(req.url, status=200)
-
-        def download_func(request: Request, spider: Spider) -> Deferred[Response]:
-            return succeed(resp)
-
-        mwman = DownloaderMiddlewareManager()
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match=r"Passing a spider argument to DownloaderMiddlewareManager.download\(\)"
-            r" is deprecated, (.+) should be instantiated with a Crawler",
-        ):
-            ret = await maybe_deferred_to_future(
-                mwman.download(download_func, req, DefaultSpider())
-            )
         assert isinstance(ret, Response)
 
 
