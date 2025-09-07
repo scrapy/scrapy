@@ -48,8 +48,8 @@ class TestManagerBase:
         if not response:
             response = Response(request.url)
 
-        def download_func(request: Request) -> Deferred[Response]:
-            return succeed(response)
+        async def download_func(request: Request) -> Response:
+            return response
 
         return await mwman.download_async(download_func, request)
 
@@ -283,27 +283,11 @@ class TestMiddlewareUsingCoro(TestManagerBase):
 
 class TestDownloadDeprecated(TestManagerBase):
     @deferred_f_from_coro_f
-    async def test_download_func_spider_arg(self):
-        req = Request("http://example.com/index.html")
-        resp = Response(req.url, status=200)
-
-        def download_func(request: Request, spider: Spider) -> Deferred[Response]:
-            return succeed(resp)
-
-        async with self.get_mwman() as mwman:
-            with pytest.warns(
-                ScrapyDeprecationWarning,
-                match="The spider argument of download_func is deprecated",
-            ):
-                ret = await mwman.download_async(download_func, req)
-        assert isinstance(ret, Response)
-
-    @deferred_f_from_coro_f
     async def test_mwman_download(self):
         req = Request("http://example.com/index.html")
         resp = Response(req.url, status=200)
 
-        def download_func(request: Request) -> Deferred[Response]:
+        def download_func(request: Request, spider: Spider) -> Deferred[Response]:
             return succeed(resp)
 
         async with self.get_mwman() as mwman:

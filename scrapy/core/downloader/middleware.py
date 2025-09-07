@@ -7,6 +7,7 @@ See documentation in docs/topics/downloader-middleware.rst
 from __future__ import annotations
 
 import warnings
+from functools import wraps
 from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
@@ -19,10 +20,9 @@ from scrapy.utils.defer import (
     ensure_awaitable,
     maybe_deferred_to_future,
 )
-from scrapy.utils.deprecate import argument_is_required
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Coroutine
 
     from twisted.internet.defer import Deferred
 
@@ -50,34 +50,28 @@ class DownloaderMiddlewareManager(MiddlewareManager):
 
     def download(
         self,
-        download_func: Callable[[Request], Deferred[Response]],
+        download_func: Callable[[Request, Spider], Deferred[Response]],
         request: Request,
-        spider: Spider | None = None,
+        spider: Spider,
     ) -> Deferred[Response | Request]:
         warnings.warn(
             "DownloaderMiddlewareManager.download() is deprecated, use download_async() instead",
             ScrapyDeprecationWarning,
             stacklevel=2,
         )
+
+        @wraps(download_func)
+        async def download_func_wrapped(request: Request) -> Response:
+            return await maybe_deferred_to_future(download_func(request, spider))
+
         self._set_compat_spider(spider)
-        return deferred_from_coro(self.download_async(download_func, request))
+        return deferred_from_coro(self.download_async(download_func_wrapped, request))
 
     async def download_async(
         self,
-        download_func: Callable[[Request], Deferred[Response]],
+        download_func: Callable[[Request], Coroutine[Any, Any, Response]],
         request: Request,
     ) -> Response | Request:
-        if argument_is_required(download_func, "spider"):
-            warnings.warn(
-                "The spider argument of download_func is deprecated"
-                " and will not be passed in future Scrapy versions.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-            need_spider_arg = True
-        else:
-            need_spider_arg = False
-
         async def process_request(request: Request) -> Response | Request:
             for method in self.methods["process_request"]:
                 method = cast("Callable", method)
@@ -96,12 +90,7 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     )
                 if response:
                     return response
-            d: Deferred[Response]
-            if need_spider_arg:
-                d = download_func(request, self._spider)  # type: ignore[call-arg]
-            else:
-                d = download_func(request)
-            return cast("Response", await maybe_deferred_to_future(d))
+            return await download_func(request)
 
         async def process_response(response: Response | Request) -> Response | Request:
             if response is None:

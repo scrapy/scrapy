@@ -203,10 +203,7 @@ class Downloader:
         return self.get_slot_key(request)
 
     # passed as download_func into self.middleware.download() in self.fetch()
-    @inlineCallbacks
-    def _enqueue_request(
-        self, request: Request
-    ) -> Generator[Deferred[Any], Any, Response]:
+    async def _enqueue_request(self, request: Request) -> Response:
         key, slot = self._get_slot(request)
         request.meta[self.DOWNLOAD_SLOT] = key
         slot.active.add(request)
@@ -219,7 +216,7 @@ class Downloader:
         slot.queue.append((request, d))
         self._process_queue(slot)
         try:
-            return (yield d)  # fired in _wait_for_download()
+            return await maybe_deferred_to_future(d)  # fired in _wait_for_download()
         finally:
             slot.active.remove(request)
 
