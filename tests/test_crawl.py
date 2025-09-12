@@ -612,7 +612,7 @@ class TestCrawlSpider:
     @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
     async def test_async_def_deferred_wrapped(self):
-        log, items, _ = await self._run_spider(AsyncDefDeferredWrappedSpider)
+        _, items, _ = await self._run_spider(AsyncDefDeferredWrappedSpider)
         assert items == [{"code": 200}]
 
     @deferred_f_from_coro_f

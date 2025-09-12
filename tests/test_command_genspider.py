@@ -172,7 +172,7 @@ class TestGenspiderStandaloneCommand:
     def test_same_name_as_existing_file(self, force: bool, tmp_path: Path) -> None:
         file_name = "example"
         file_path = Path(tmp_path, file_name + ".py")
-        p, out, err = proc("genspider", file_name, "example.com", cwd=tmp_path)
+        _, out, _ = proc("genspider", file_name, "example.com", cwd=tmp_path)
         assert f"Created spider {file_name!r} using template 'basic' " in out
         assert file_path.exists()
         modify_time_before = file_path.stat().st_mtime
@@ -180,7 +180,7 @@ class TestGenspiderStandaloneCommand:
 
         if force:
             # use different template to ensure contents were changed
-            p, out, err = proc(
+            _, out, _ = proc(
                 "genspider",
                 "--force",
                 "-t",
