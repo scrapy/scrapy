@@ -87,8 +87,8 @@ of the system, and triggering events when certain actions occur. See the
 Scheduler
 ---------
 
-The :ref:`scheduler <topics-scheduler>` receives requests from the engine and 
-enqueues them for feeding them later (also to the engine) when the engine 
+The :ref:`scheduler <topics-scheduler>` receives requests from the engine and
+enqueues them for feeding them later (also to the engine) when the engine
 requests them.
 
 .. _component-downloader:
@@ -150,7 +150,7 @@ requests).
 Use a Spider middleware if you need to
 
 * post-process output of spider callbacks - change/add/remove requests or items;
-* post-process start_requests;
+* post-process start requests or items;
 * handle spider exceptions;
 * call errback instead of callback for some of the requests based on response
   content.
@@ -168,9 +168,7 @@ For more information about asynchronous programming and Twisted see these
 links:
 
 * :doc:`twisted:core/howto/defer-intro`
-* `Twisted - hello, asynchronous programming`_
 * `Twisted Introduction - Krondo`_
 
-.. _Twisted: https://twistedmatrix.com/trac/
-.. _Twisted - hello, asynchronous programming: http://jessenoller.com/blog/2009/02/11/twisted-hello-asynchronous-programming/
-.. _Twisted Introduction - Krondo: http://krondo.com/an-introduction-to-asynchronous-programming-and-twisted/
+.. _Twisted: https://twisted.org/
+.. _Twisted Introduction - Krondo: https://krondo.com/an-introduction-to-asynchronous-programming-and-twisted/

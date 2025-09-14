@@ -10,11 +10,12 @@ from typing import TYPE_CHECKING
 
 import scrapy
 from scrapy.commands import BaseRunSpiderCommand, ScrapyCommand, ScrapyHelpFormatter
-from scrapy.crawler import CrawlerProcess
+from scrapy.crawler import AsyncCrawlerProcess, CrawlerProcess
 from scrapy.exceptions import UsageError
 from scrapy.utils.misc import walk_modules
 from scrapy.utils.project import get_project_settings, inside_project
 from scrapy.utils.python import garbage_collect
+from scrapy.utils.reactor import _asyncio_reactor_path
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -31,8 +32,9 @@ class ScrapyArgumentParser(argparse.ArgumentParser):
     def _parse_optional(
         self, arg_string: str
     ) -> tuple[argparse.Action | None, str, str | None] | None:
-        # if starts with -: it means that is a parameter not a argument
-        if arg_string[:2] == "-:":
+        # Support something like ‘-o -:json’, where ‘-:json’ is a value for
+        # ‘-o’, not another parameter.
+        if arg_string.startswith("-:"):
             return None
 
         return super()._parse_optional(arg_string)
@@ -74,7 +76,7 @@ def _get_commands_from_entry_points(
         if inspect.isclass(obj):
             cmds[entry_point.name] = obj()
         else:
-            raise Exception(f"Invalid entry point {entry_point.name}")
+            raise ValueError(f"Invalid entry point {entry_point.name}")
     return cmds
 
 
@@ -89,13 +91,16 @@ def _get_commands_dict(
     return cmds
 
 
+def _get_project_only_cmds(settings: BaseSettings) -> set[str]:
+    return set(_get_commands_dict(settings, inproject=True)) - set(
+        _get_commands_dict(settings, inproject=False)
+    )
+
+
 def _pop_command_name(argv: list[str]) -> str | None:
-    i = 0
-    for arg in argv[1:]:
-        if not arg.startswith("-"):
-            del argv[i]
-            return arg
-        i += 1
+    for i in range(1, len(argv)):
+        if not argv[i].startswith("-"):
+            return argv.pop(i)
     return None
 
 
@@ -123,11 +128,25 @@ def _print_commands(settings: BaseSettings, inproject: bool) -> None:
     print('Use "scrapy <command> -h" to see more info about a command')
 
 
+def _print_unknown_command_msg(
+    settings: BaseSettings, cmdname: str, inproject: bool
+) -> None:
+    proj_only_cmds = _get_project_only_cmds(settings)
+    if cmdname in proj_only_cmds and not inproject:
+        cmd_list = ", ".join(sorted(proj_only_cmds))
+        print(
+            f"The {cmdname} command is not available from this location.\n"
+            f"These commands are only available from within a project: {cmd_list}.\n"
+        )
+    else:
+        print(f"Unknown command: {cmdname}\n")
+
+
 def _print_unknown_command(
     settings: BaseSettings, cmdname: str, inproject: bool
 ) -> None:
     _print_header(settings, inproject)
-    print(f"Unknown command: {cmdname}\n")
+    _print_unknown_command_msg(settings, cmdname, inproject)
     print('Use "scrapy" to see available commands')
 
 
@@ -184,7 +203,13 @@ def execute(argv: list[str] | None = None, settings: Settings | None = None) -> 
     opts, args = parser.parse_known_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
-    cmd.crawler_process = CrawlerProcess(settings)
+    if cmd.requires_crawler_process:
+        if settings[
+            "TWISTED_REACTOR"
+        ] == _asyncio_reactor_path and not settings.getbool("FORCE_CRAWLER_PROCESS"):
+            cmd.crawler_process = AsyncCrawlerProcess(settings)
+        else:
+            cmd.crawler_process = CrawlerProcess(settings)
     _run_print_help(parser, _run_command, cmd, args, opts)
     sys.exit(cmd.exitcode)
 

@@ -308,6 +308,7 @@ Examples:
 
 * ``*::text`` selects all descendant text nodes of the current selector context:
 
+..skip: next
 .. code-block:: pycon
 
     >>> response.css("#images *::text").getall()
@@ -559,7 +560,7 @@ For example, suppose you want to extract all ``<p>`` elements inside ``<div>``
 elements. First, you would get all ``<div>`` elements:
 
 .. code-block:: pycon
-    
+
     >>> divs = response.xpath("//div")
 
 At first, you may be tempted to use the following approach, which is wrong, as
@@ -591,7 +592,7 @@ Another common case would be to extract all direct ``<p>`` children:
 For more details about relative XPaths see the `Location Paths`_ section in the
 XPath specification.
 
-.. _Location Paths: https://www.w3.org/TR/xpath/all/#location-paths
+.. _Location Paths: https://www.w3.org/TR/xpath-10/#location-paths
 
 When querying by class, consider using CSS
 ------------------------------------------
@@ -610,7 +611,7 @@ As it turns out, Scrapy selectors allow you to chain selectors, so most of the t
 you can just select by class using CSS and then switch to XPath when needed:
 
 .. code-block:: pycon
-    
+
     >>> from scrapy import Selector
     >>> sel = Selector(
     ...     text='<div class="hero shout"><time datetime="2014-07-23 19:00">Special date</time></div>'
@@ -727,7 +728,7 @@ But using the ``.`` to mean the node, works:
     >>> sel.xpath("//a[contains(., 'Next Page')]").getall()
     ['<a href="#">Click here to go to the <strong>Next Page</strong></a>']
 
-.. _`XPath string function`: https://www.w3.org/TR/xpath/all/#section-String-Functions
+.. _`XPath string function`: https://www.w3.org/TR/xpath-10/#section-String-Functions
 
 .. _topics-selectors-xpath-variables:
 
@@ -777,7 +778,7 @@ Removing namespaces
 When dealing with scraping projects, it is often quite convenient to get rid of
 namespaces altogether and just work with element names, to write more
 simple/convenient XPaths. You can use the
-:meth:`Selector.remove_namespaces` method for that.
+:meth:`.Selector.remove_namespaces` method for that.
 
 Let's show an example that illustrates this with the Python Insider blog atom feed.
 
@@ -801,8 +802,8 @@ This is how the file starts::
       ...
 
 You can see several namespace declarations including a default
-"http://www.w3.org/2005/Atom" and another one using the "gd:" prefix for
-"http://schemas.google.com/g/2005".
+``"http://www.w3.org/2005/Atom"`` and another one using the ``gd:`` prefix for
+``"http://schemas.google.com/g/2005"``.
 
 .. highlight:: python
 
@@ -814,7 +815,7 @@ doesn't work (because the Atom XML namespace is obfuscating those nodes):
     >>> response.xpath("//link")
     []
 
-But once we call the :meth:`Selector.remove_namespaces` method, all
+But once we call the :meth:`.Selector.remove_namespaces` method, all
 nodes can be accessed directly by their names:
 
 .. code-block:: pycon
@@ -878,7 +879,7 @@ Example selecting links in list item with a "class" attribute ending with a digi
     >>> sel = Selector(text=doc, type="html")
     >>> sel.xpath("//li//@href").getall()
     ['link1.html', 'link2.html', 'link3.html', 'link4.html', 'link5.html']
-    >>> sel.xpath('//li[re:test(@class, "item-\d$")]//@href').getall()
+    >>> sel.xpath(r'//li[re:test(@class, "item-\d$")]//@href').getall()
     ['link1.html', 'link2.html', 'link4.html', 'link5.html']
 
 .. warning:: C library ``libxslt`` doesn't natively support EXSLT regular
@@ -1032,7 +1033,7 @@ whereas the CSS lookup is translated into XPath and thus runs more efficiently,
 so performance-wise its uses are limited to situations that are not easily
 described with CSS selectors.
 
-Parsel also simplifies adding your own XPath extensions with 
+Parsel also simplifies adding your own XPath extensions with
 :func:`~parsel.xpathfuncs.set_xpathfunc`.
 
 .. _topics-selectors-ref:
@@ -1046,7 +1047,7 @@ Built-in Selectors reference
 Selector objects
 ----------------
 
-.. autoclass:: Selector
+.. autoclass:: scrapy.Selector
 
   .. automethod:: xpath
 
@@ -1126,8 +1127,8 @@ Examples
 Selector examples on HTML response
 ----------------------------------
 
-Here are some :class:`Selector` examples to illustrate several concepts.
-In all cases, we assume there is already a :class:`Selector` instantiated with
+Here are some :class:`~scrapy.Selector` examples to illustrate several concepts.
+In all cases, we assume there is already a :class:`~scrapy.Selector` instantiated with
 a :class:`~scrapy.http.HtmlResponse` object like this:
 
 .. code-block:: python
@@ -1135,7 +1136,7 @@ a :class:`~scrapy.http.HtmlResponse` object like this:
       sel = Selector(html_response)
 
 1. Select all ``<h1>`` elements from an HTML response body, returning a list of
-   :class:`Selector` objects (i.e. a :class:`SelectorList` object):
+   :class:`~scrapy.Selector` objects (i.e. a :class:`SelectorList` object):
 
    .. code-block:: python
 
@@ -1165,7 +1166,7 @@ Selector examples on XML response
 
 .. skip: start
 
-Here are some examples to illustrate concepts for :class:`Selector` objects
+Here are some examples to illustrate concepts for :class:`~scrapy.Selector` objects
 instantiated with an :class:`~scrapy.http.XmlResponse` object:
 
 .. code-block:: python
@@ -1173,7 +1174,7 @@ instantiated with an :class:`~scrapy.http.XmlResponse` object:
       sel = Selector(xml_response)
 
 1. Select all ``<product>`` elements from an XML response body, returning a list
-   of :class:`Selector` objects (i.e. a :class:`SelectorList` object):
+   of :class:`~scrapy.Selector` objects (i.e. a :class:`SelectorList` object):
 
    .. code-block:: python
 

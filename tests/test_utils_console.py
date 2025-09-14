@@ -1,4 +1,4 @@
-import unittest
+import pytest
 
 from scrapy.utils.console import get_shell_embed_func
 
@@ -18,27 +18,24 @@ except ImportError:
     ipy = False
 
 
-class UtilsConsoleTestCase(unittest.TestCase):
-    def test_get_shell_embed_func(self):
-        shell = get_shell_embed_func(["invalid"])
-        self.assertEqual(shell, None)
+def test_get_shell_embed_func():
+    shell = get_shell_embed_func(["invalid"])
+    assert shell is None
 
-        shell = get_shell_embed_func(["invalid", "python"])
-        self.assertTrue(callable(shell))
-        self.assertEqual(shell.__name__, "_embed_standard_shell")
-
-    @unittest.skipIf(not bpy, "bpython not available in testenv")
-    def test_get_shell_embed_func2(self):
-        shell = get_shell_embed_func(["bpython"])
-        self.assertTrue(callable(shell))
-        self.assertEqual(shell.__name__, "_embed_bpython_shell")
-
-    @unittest.skipIf(not ipy, "IPython not available in testenv")
-    def test_get_shell_embed_func3(self):
-        # default shell should be 'ipython'
-        shell = get_shell_embed_func()
-        self.assertEqual(shell.__name__, "_embed_ipython_shell")
+    shell = get_shell_embed_func(["invalid", "python"])
+    assert callable(shell)
+    assert shell.__name__ == "_embed_standard_shell"
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.mark.skipif(not bpy, reason="bpython not available in testenv")
+def test_get_shell_embed_func_bpython():
+    shell = get_shell_embed_func(["bpython"])
+    assert callable(shell)
+    assert shell.__name__ == "_embed_bpython_shell"
+
+
+@pytest.mark.skipif(not ipy, reason="IPython not available in testenv")
+def test_get_shell_embed_func_ipython():
+    # default shell should be 'ipython'
+    shell = get_shell_embed_func()
+    assert shell.__name__ == "_embed_ipython_shell"

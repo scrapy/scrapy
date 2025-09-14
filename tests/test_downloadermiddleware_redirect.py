@@ -1,4 +1,3 @@
-import unittest
 from itertools import chain, product
 
 import pytest
@@ -12,16 +11,17 @@ from scrapy.exceptions import IgnoreRequest
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.misc import set_environ
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
 
 class Base:
-    class Test(unittest.TestCase):
+    class Test:
         def test_priority_adjust(self):
             req = Request("http://a.com")
             rsp = self.get_response(req, "http://a.com/redirected")
-            req2 = self.mw.process_response(req, rsp, self.spider)
-            self.assertGreater(req2.priority, req.priority)
+            req2 = self.mw.process_response(req, rsp)
+            assert req2.priority > req.priority
 
         def test_dont_redirect(self):
             url = "http://www.example.com/301"
@@ -29,7 +29,7 @@ class Base:
             req = Request(url, meta={"dont_redirect": True})
             rsp = self.get_response(req, url2)
 
-            r = self.mw.process_response(req, rsp, self.spider)
+            r = self.mw.process_response(req, rsp)
             assert isinstance(r, Response)
             assert r is rsp
 
@@ -37,7 +37,7 @@ class Base:
             req = Request(url, meta={"dont_redirect": False})
             rsp = self.get_response(req, url2)
 
-            r = self.mw.process_response(req, rsp, self.spider)
+            r = self.mw.process_response(req, rsp)
             assert isinstance(r, Request)
 
         def test_post(self):
@@ -51,16 +51,16 @@ class Base:
             )
             rsp = self.get_response(req, url2)
 
-            req2 = self.mw.process_response(req, rsp, self.spider)
+            req2 = self.mw.process_response(req, rsp)
             assert isinstance(req2, Request)
-            self.assertEqual(req2.url, url2)
-            self.assertEqual(req2.method, "GET")
-            assert (
-                "Content-Type" not in req2.headers
-            ), "Content-Type header must not be present in redirected request"
-            assert (
-                "Content-Length" not in req2.headers
-            ), "Content-Length header must not be present in redirected request"
+            assert req2.url == url2
+            assert req2.method == "GET"
+            assert "Content-Type" not in req2.headers, (
+                "Content-Type header must not be present in redirected request"
+            )
+            assert "Content-Length" not in req2.headers, (
+                "Content-Length header must not be present in redirected request"
+            )
             assert not req2.body, f"Redirected body must be empty, not '{req2.body}'"
 
         def test_max_redirect_times(self):
@@ -68,50 +68,46 @@ class Base:
             req = Request("http://scrapytest.org/302")
             rsp = self.get_response(req, "/redirected")
 
-            req = self.mw.process_response(req, rsp, self.spider)
+            req = self.mw.process_response(req, rsp)
             assert isinstance(req, Request)
             assert "redirect_times" in req.meta
-            self.assertEqual(req.meta["redirect_times"], 1)
-            self.assertRaises(
-                IgnoreRequest, self.mw.process_response, req, rsp, self.spider
-            )
+            assert req.meta["redirect_times"] == 1
+            with pytest.raises(IgnoreRequest):
+                self.mw.process_response(req, rsp)
 
         def test_ttl(self):
             self.mw.max_redirect_times = 100
             req = Request("http://scrapytest.org/302", meta={"redirect_ttl": 1})
             rsp = self.get_response(req, "/a")
 
-            req = self.mw.process_response(req, rsp, self.spider)
+            req = self.mw.process_response(req, rsp)
             assert isinstance(req, Request)
-            self.assertRaises(
-                IgnoreRequest, self.mw.process_response, req, rsp, self.spider
-            )
+            with pytest.raises(IgnoreRequest):
+                self.mw.process_response(req, rsp)
 
         def test_redirect_urls(self):
             req1 = Request("http://scrapytest.org/first")
             rsp1 = self.get_response(req1, "/redirected")
-            req2 = self.mw.process_response(req1, rsp1, self.spider)
+            req2 = self.mw.process_response(req1, rsp1)
             rsp2 = self.get_response(req1, "/redirected2")
-            req3 = self.mw.process_response(req2, rsp2, self.spider)
+            req3 = self.mw.process_response(req2, rsp2)
 
-            self.assertEqual(req2.url, "http://scrapytest.org/redirected")
-            self.assertEqual(
-                req2.meta["redirect_urls"], ["http://scrapytest.org/first"]
-            )
-            self.assertEqual(req3.url, "http://scrapytest.org/redirected2")
-            self.assertEqual(
-                req3.meta["redirect_urls"],
-                ["http://scrapytest.org/first", "http://scrapytest.org/redirected"],
-            )
+            assert req2.url == "http://scrapytest.org/redirected"
+            assert req2.meta["redirect_urls"] == ["http://scrapytest.org/first"]
+            assert req3.url == "http://scrapytest.org/redirected2"
+            assert req3.meta["redirect_urls"] == [
+                "http://scrapytest.org/first",
+                "http://scrapytest.org/redirected",
+            ]
 
         def test_redirect_reasons(self):
             req1 = Request("http://scrapytest.org/first")
             rsp1 = self.get_response(req1, "/redirected1")
-            req2 = self.mw.process_response(req1, rsp1, self.spider)
+            req2 = self.mw.process_response(req1, rsp1)
             rsp2 = self.get_response(req2, "/redirected2")
-            req3 = self.mw.process_response(req2, rsp2, self.spider)
-            self.assertEqual(req2.meta["redirect_reasons"], [self.reason])
-            self.assertEqual(req3.meta["redirect_reasons"], [self.reason, self.reason])
+            req3 = self.mw.process_response(req2, rsp2)
+            assert req2.meta["redirect_reasons"] == [self.reason]
+            assert req3.meta["redirect_reasons"] == [self.reason, self.reason]
 
         def test_cross_origin_header_dropping(self):
             safe_headers = {"A": "B"}
@@ -129,12 +125,10 @@ class Base:
                 original_request, "https://example.com/a"
             )
             internal_redirect_request = self.mw.process_response(
-                original_request, internal_response, self.spider
+                original_request, internal_response
             )
-            self.assertIsInstance(internal_redirect_request, Request)
-            self.assertEqual(
-                original_request.headers, internal_redirect_request.headers
-            )
+            assert isinstance(internal_redirect_request, Request)
+            assert original_request.headers == internal_redirect_request.headers
 
             # Redirects to the same origin (same scheme, same domain, same port)
             # keep all headers also when the scheme is http.
@@ -144,10 +138,10 @@ class Base:
             )
             http_response = self.get_response(http_request, "http://example.com/a")
             http_redirect_request = self.mw.process_response(
-                http_request, http_response, self.spider
+                http_request, http_response
             )
-            self.assertIsInstance(http_redirect_request, Request)
-            self.assertEqual(http_request.headers, http_redirect_request.headers)
+            assert isinstance(http_redirect_request, Request)
+            assert http_request.headers == http_redirect_request.headers
 
             # For default ports, whether the port is explicit or implicit does not
             # affect the outcome, it is still the same origin.
@@ -155,12 +149,10 @@ class Base:
                 original_request, "https://example.com:443/a"
             )
             to_explicit_port_redirect_request = self.mw.process_response(
-                original_request, to_explicit_port_response, self.spider
+                original_request, to_explicit_port_response
             )
-            self.assertIsInstance(to_explicit_port_redirect_request, Request)
-            self.assertEqual(
-                original_request.headers, to_explicit_port_redirect_request.headers
-            )
+            assert isinstance(to_explicit_port_redirect_request, Request)
+            assert original_request.headers == to_explicit_port_redirect_request.headers
 
             # For default ports, whether the port is explicit or implicit does not
             # affect the outcome, it is still the same origin.
@@ -168,12 +160,10 @@ class Base:
                 original_request, "https://example.com/a"
             )
             to_implicit_port_redirect_request = self.mw.process_response(
-                original_request, to_implicit_port_response, self.spider
+                original_request, to_implicit_port_response
             )
-            self.assertIsInstance(to_implicit_port_redirect_request, Request)
-            self.assertEqual(
-                original_request.headers, to_implicit_port_redirect_request.headers
-            )
+            assert isinstance(to_implicit_port_redirect_request, Request)
+            assert original_request.headers == to_implicit_port_redirect_request.headers
 
             # A port change drops the Authorization header because the origin
             # changes, but keeps the Cookie header because the domain remains the
@@ -182,38 +172,36 @@ class Base:
                 original_request, "https://example.com:8080/a"
             )
             different_port_redirect_request = self.mw.process_response(
-                original_request, different_port_response, self.spider
+                original_request, different_port_response
             )
-            self.assertIsInstance(different_port_redirect_request, Request)
-            self.assertEqual(
-                {**safe_headers, **cookie_header},
-                different_port_redirect_request.headers.to_unicode_dict(),
-            )
+            assert isinstance(different_port_redirect_request, Request)
+            assert {
+                **safe_headers,
+                **cookie_header,
+            } == different_port_redirect_request.headers.to_unicode_dict()
 
             # A domain change drops both the Authorization and the Cookie header.
             external_response = self.get_response(
                 original_request, "https://example.org/a"
             )
             external_redirect_request = self.mw.process_response(
-                original_request, external_response, self.spider
+                original_request, external_response
             )
-            self.assertIsInstance(external_redirect_request, Request)
-            self.assertEqual(
-                safe_headers, external_redirect_request.headers.to_unicode_dict()
-            )
+            assert isinstance(external_redirect_request, Request)
+            assert safe_headers == external_redirect_request.headers.to_unicode_dict()
 
             # A scheme upgrade (http → https) drops the Authorization header
             # because the origin changes, but keeps the Cookie header because the
             # domain remains the same.
             upgrade_response = self.get_response(http_request, "https://example.com/a")
             upgrade_redirect_request = self.mw.process_response(
-                http_request, upgrade_response, self.spider
+                http_request, upgrade_response
             )
-            self.assertIsInstance(upgrade_redirect_request, Request)
-            self.assertEqual(
-                {**safe_headers, **cookie_header},
-                upgrade_redirect_request.headers.to_unicode_dict(),
-            )
+            assert isinstance(upgrade_redirect_request, Request)
+            assert {
+                **safe_headers,
+                **cookie_header,
+            } == upgrade_redirect_request.headers.to_unicode_dict()
 
             # A scheme downgrade (https → http) drops the Authorization header
             # because the origin changes, and the Cookie header because its value
@@ -228,13 +216,10 @@ class Base:
                 original_request, "http://example.com/a"
             )
             downgrade_redirect_request = self.mw.process_response(
-                original_request, downgrade_response, self.spider
+                original_request, downgrade_response
             )
-            self.assertIsInstance(downgrade_redirect_request, Request)
-            self.assertEqual(
-                safe_headers,
-                downgrade_redirect_request.headers.to_unicode_dict(),
-            )
+            assert isinstance(downgrade_redirect_request, Request)
+            assert safe_headers == downgrade_redirect_request.headers.to_unicode_dict()
 
         def test_meta_proxy_http_absolute(self):
             crawler = get_crawler()
@@ -243,40 +228,39 @@ class Base:
 
             meta = {"proxy": "https://a:@a.example"}
             request1 = Request("http://example.com", meta=meta)
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertEqual(request1.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request1.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request1.meta["proxy"], "https://a.example")
+            assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request1.meta["_auth_proxy"] == "https://a.example"
+            assert request1.meta["proxy"] == "https://a.example"
 
             response1 = self.get_response(request1, "http://example.com")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert isinstance(request2, Request)
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
             response2 = self.get_response(request2, "http://example.com")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert isinstance(request3, Request)
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
         def test_meta_proxy_http_relative(self):
             crawler = get_crawler()
@@ -285,40 +269,39 @@ class Base:
 
             meta = {"proxy": "https://a:@a.example"}
             request1 = Request("http://example.com", meta=meta)
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertEqual(request1.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request1.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request1.meta["proxy"], "https://a.example")
+            assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request1.meta["_auth_proxy"] == "https://a.example"
+            assert request1.meta["proxy"] == "https://a.example"
 
             response1 = self.get_response(request1, "/a")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert isinstance(request2, Request)
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
             response2 = self.get_response(request2, "/a")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert isinstance(request3, Request)
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
         def test_meta_proxy_https_absolute(self):
             crawler = get_crawler()
@@ -327,40 +310,39 @@ class Base:
 
             meta = {"proxy": "https://a:@a.example"}
             request1 = Request("https://example.com", meta=meta)
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertEqual(request1.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request1.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request1.meta["proxy"], "https://a.example")
+            assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request1.meta["_auth_proxy"] == "https://a.example"
+            assert request1.meta["proxy"] == "https://a.example"
 
             response1 = self.get_response(request1, "https://example.com")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert isinstance(request2, Request)
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
             response2 = self.get_response(request2, "https://example.com")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert isinstance(request3, Request)
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
         def test_meta_proxy_https_relative(self):
             crawler = get_crawler()
@@ -369,40 +351,39 @@ class Base:
 
             meta = {"proxy": "https://a:@a.example"}
             request1 = Request("https://example.com", meta=meta)
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertEqual(request1.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request1.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request1.meta["proxy"], "https://a.example")
+            assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request1.meta["_auth_proxy"] == "https://a.example"
+            assert request1.meta["proxy"] == "https://a.example"
 
             response1 = self.get_response(request1, "/a")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert isinstance(request2, Request)
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
             response2 = self.get_response(request2, "/a")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert isinstance(request3, Request)
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
         def test_meta_proxy_http_to_https(self):
             crawler = get_crawler()
@@ -411,40 +392,39 @@ class Base:
 
             meta = {"proxy": "https://a:@a.example"}
             request1 = Request("http://example.com", meta=meta)
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertEqual(request1.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request1.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request1.meta["proxy"], "https://a.example")
+            assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request1.meta["_auth_proxy"] == "https://a.example"
+            assert request1.meta["proxy"] == "https://a.example"
 
             response1 = self.get_response(request1, "https://example.com")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert isinstance(request2, Request)
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
             response2 = self.get_response(request2, "http://example.com")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert isinstance(request3, Request)
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
         def test_meta_proxy_https_to_http(self):
             crawler = get_crawler()
@@ -453,40 +433,39 @@ class Base:
 
             meta = {"proxy": "https://a:@a.example"}
             request1 = Request("https://example.com", meta=meta)
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertEqual(request1.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request1.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request1.meta["proxy"], "https://a.example")
+            assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request1.meta["_auth_proxy"] == "https://a.example"
+            assert request1.meta["proxy"] == "https://a.example"
 
             response1 = self.get_response(request1, "http://example.com")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert isinstance(request2, Request)
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
             response2 = self.get_response(request2, "https://example.com")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert isinstance(request3, Request)
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
         def test_system_proxy_http_absolute(self):
             crawler = get_crawler()
@@ -498,40 +477,39 @@ class Base:
                 proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
 
             request1 = Request("http://example.com")
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertEqual(request1.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request1.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request1.meta["proxy"], "https://a.example")
+            assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request1.meta["_auth_proxy"] == "https://a.example"
+            assert request1.meta["proxy"] == "https://a.example"
 
             response1 = self.get_response(request1, "http://example.com")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert isinstance(request2, Request)
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
             response2 = self.get_response(request2, "http://example.com")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert isinstance(request3, Request)
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
         def test_system_proxy_http_relative(self):
             crawler = get_crawler()
@@ -543,40 +521,39 @@ class Base:
                 proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
 
             request1 = Request("http://example.com")
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertEqual(request1.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request1.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request1.meta["proxy"], "https://a.example")
+            assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request1.meta["_auth_proxy"] == "https://a.example"
+            assert request1.meta["proxy"] == "https://a.example"
 
             response1 = self.get_response(request1, "/a")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert isinstance(request2, Request)
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
             response2 = self.get_response(request2, "/a")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert isinstance(request3, Request)
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
         def test_system_proxy_https_absolute(self):
             crawler = get_crawler()
@@ -588,40 +565,39 @@ class Base:
                 proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
 
             request1 = Request("https://example.com")
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertEqual(request1.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request1.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request1.meta["proxy"], "https://a.example")
+            assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request1.meta["_auth_proxy"] == "https://a.example"
+            assert request1.meta["proxy"] == "https://a.example"
 
             response1 = self.get_response(request1, "https://example.com")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert isinstance(request2, Request)
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
             response2 = self.get_response(request2, "https://example.com")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert isinstance(request3, Request)
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
         def test_system_proxy_https_relative(self):
             crawler = get_crawler()
@@ -633,40 +609,39 @@ class Base:
                 proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
 
             request1 = Request("https://example.com")
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertEqual(request1.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request1.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request1.meta["proxy"], "https://a.example")
+            assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request1.meta["_auth_proxy"] == "https://a.example"
+            assert request1.meta["proxy"] == "https://a.example"
 
             response1 = self.get_response(request1, "/a")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert isinstance(request2, Request)
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
             response2 = self.get_response(request2, "/a")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert isinstance(request3, Request)
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
         def test_system_proxy_proxied_http_to_proxied_https(self):
             crawler = get_crawler()
@@ -679,40 +654,39 @@ class Base:
                 proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
 
             request1 = Request("http://example.com")
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertEqual(request1.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request1.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request1.meta["proxy"], "https://a.example")
+            assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request1.meta["_auth_proxy"] == "https://a.example"
+            assert request1.meta["proxy"] == "https://a.example"
 
             response1 = self.get_response(request1, "https://example.com")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertNotIn("Proxy-Authorization", request2.headers)
-            self.assertNotIn("_auth_proxy", request2.meta)
-            self.assertNotIn("proxy", request2.meta)
+            assert isinstance(request2, Request)
+            assert "Proxy-Authorization" not in request2.headers
+            assert "_auth_proxy" not in request2.meta
+            assert "proxy" not in request2.meta
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic Yjo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://b.example")
-            self.assertEqual(request2.meta["proxy"], "https://b.example")
+            assert request2.headers["Proxy-Authorization"] == b"Basic Yjo="
+            assert request2.meta["_auth_proxy"] == "https://b.example"
+            assert request2.meta["proxy"] == "https://b.example"
 
             response2 = self.get_response(request2, "http://example.com")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertNotIn("Proxy-Authorization", request3.headers)
-            self.assertNotIn("_auth_proxy", request3.meta)
-            self.assertNotIn("proxy", request3.meta)
+            assert isinstance(request3, Request)
+            assert "Proxy-Authorization" not in request3.headers
+            assert "_auth_proxy" not in request3.meta
+            assert "proxy" not in request3.meta
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
         def test_system_proxy_proxied_http_to_unproxied_https(self):
             crawler = get_crawler()
@@ -724,40 +698,39 @@ class Base:
                 proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
 
             request1 = Request("http://example.com")
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertEqual(request1.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request1.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request1.meta["proxy"], "https://a.example")
+            assert request1.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request1.meta["_auth_proxy"] == "https://a.example"
+            assert request1.meta["proxy"] == "https://a.example"
 
             response1 = self.get_response(request1, "https://example.com")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertNotIn("Proxy-Authorization", request2.headers)
-            self.assertNotIn("_auth_proxy", request2.meta)
-            self.assertNotIn("proxy", request2.meta)
+            assert isinstance(request2, Request)
+            assert "Proxy-Authorization" not in request2.headers
+            assert "_auth_proxy" not in request2.meta
+            assert "proxy" not in request2.meta
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertNotIn("Proxy-Authorization", request2.headers)
-            self.assertNotIn("_auth_proxy", request2.meta)
-            self.assertNotIn("proxy", request2.meta)
+            assert "Proxy-Authorization" not in request2.headers
+            assert "_auth_proxy" not in request2.meta
+            assert "proxy" not in request2.meta
 
             response2 = self.get_response(request2, "http://example.com")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertNotIn("Proxy-Authorization", request3.headers)
-            self.assertNotIn("_auth_proxy", request3.meta)
-            self.assertNotIn("proxy", request3.meta)
+            assert isinstance(request3, Request)
+            assert "Proxy-Authorization" not in request3.headers
+            assert "_auth_proxy" not in request3.meta
+            assert "proxy" not in request3.meta
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request3.meta["proxy"], "https://a.example")
+            assert request3.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request3.meta["_auth_proxy"] == "https://a.example"
+            assert request3.meta["proxy"] == "https://a.example"
 
         def test_system_proxy_unproxied_http_to_proxied_https(self):
             crawler = get_crawler()
@@ -769,40 +742,39 @@ class Base:
                 proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
 
             request1 = Request("http://example.com")
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertNotIn("Proxy-Authorization", request1.headers)
-            self.assertNotIn("_auth_proxy", request1.meta)
-            self.assertNotIn("proxy", request1.meta)
+            assert "Proxy-Authorization" not in request1.headers
+            assert "_auth_proxy" not in request1.meta
+            assert "proxy" not in request1.meta
 
             response1 = self.get_response(request1, "https://example.com")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertNotIn("Proxy-Authorization", request2.headers)
-            self.assertNotIn("_auth_proxy", request2.meta)
-            self.assertNotIn("proxy", request2.meta)
+            assert isinstance(request2, Request)
+            assert "Proxy-Authorization" not in request2.headers
+            assert "_auth_proxy" not in request2.meta
+            assert "proxy" not in request2.meta
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic Yjo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://b.example")
-            self.assertEqual(request2.meta["proxy"], "https://b.example")
+            assert request2.headers["Proxy-Authorization"] == b"Basic Yjo="
+            assert request2.meta["_auth_proxy"] == "https://b.example"
+            assert request2.meta["proxy"] == "https://b.example"
 
             response2 = self.get_response(request2, "http://example.com")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertNotIn("Proxy-Authorization", request3.headers)
-            self.assertNotIn("_auth_proxy", request3.meta)
-            self.assertNotIn("proxy", request3.meta)
+            assert isinstance(request3, Request)
+            assert "Proxy-Authorization" not in request3.headers
+            assert "_auth_proxy" not in request3.meta
+            assert "proxy" not in request3.meta
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertNotIn("Proxy-Authorization", request3.headers)
-            self.assertNotIn("_auth_proxy", request3.meta)
-            self.assertNotIn("proxy", request3.meta)
+            assert "Proxy-Authorization" not in request3.headers
+            assert "_auth_proxy" not in request3.meta
+            assert "proxy" not in request3.meta
 
         def test_system_proxy_unproxied_http_to_unproxied_https(self):
             crawler = get_crawler()
@@ -810,40 +782,39 @@ class Base:
             proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
 
             request1 = Request("http://example.com")
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertNotIn("Proxy-Authorization", request1.headers)
-            self.assertNotIn("_auth_proxy", request1.meta)
-            self.assertNotIn("proxy", request1.meta)
+            assert "Proxy-Authorization" not in request1.headers
+            assert "_auth_proxy" not in request1.meta
+            assert "proxy" not in request1.meta
 
             response1 = self.get_response(request1, "https://example.com")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertNotIn("Proxy-Authorization", request2.headers)
-            self.assertNotIn("_auth_proxy", request2.meta)
-            self.assertNotIn("proxy", request2.meta)
+            assert isinstance(request2, Request)
+            assert "Proxy-Authorization" not in request2.headers
+            assert "_auth_proxy" not in request2.meta
+            assert "proxy" not in request2.meta
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertNotIn("Proxy-Authorization", request2.headers)
-            self.assertNotIn("_auth_proxy", request2.meta)
-            self.assertNotIn("proxy", request2.meta)
+            assert "Proxy-Authorization" not in request2.headers
+            assert "_auth_proxy" not in request2.meta
+            assert "proxy" not in request2.meta
 
             response2 = self.get_response(request2, "http://example.com")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertNotIn("Proxy-Authorization", request3.headers)
-            self.assertNotIn("_auth_proxy", request3.meta)
-            self.assertNotIn("proxy", request3.meta)
+            assert isinstance(request3, Request)
+            assert "Proxy-Authorization" not in request3.headers
+            assert "_auth_proxy" not in request3.meta
+            assert "proxy" not in request3.meta
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertNotIn("Proxy-Authorization", request3.headers)
-            self.assertNotIn("_auth_proxy", request3.meta)
-            self.assertNotIn("proxy", request3.meta)
+            assert "Proxy-Authorization" not in request3.headers
+            assert "_auth_proxy" not in request3.meta
+            assert "proxy" not in request3.meta
 
         def test_system_proxy_proxied_https_to_proxied_http(self):
             crawler = get_crawler()
@@ -856,40 +827,39 @@ class Base:
                 proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
 
             request1 = Request("https://example.com")
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertEqual(request1.headers["Proxy-Authorization"], b"Basic Yjo=")
-            self.assertEqual(request1.meta["_auth_proxy"], "https://b.example")
-            self.assertEqual(request1.meta["proxy"], "https://b.example")
+            assert request1.headers["Proxy-Authorization"] == b"Basic Yjo="
+            assert request1.meta["_auth_proxy"] == "https://b.example"
+            assert request1.meta["proxy"] == "https://b.example"
 
             response1 = self.get_response(request1, "http://example.com")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertNotIn("Proxy-Authorization", request2.headers)
-            self.assertNotIn("_auth_proxy", request2.meta)
-            self.assertNotIn("proxy", request2.meta)
+            assert isinstance(request2, Request)
+            assert "Proxy-Authorization" not in request2.headers
+            assert "_auth_proxy" not in request2.meta
+            assert "proxy" not in request2.meta
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
             response2 = self.get_response(request2, "https://example.com")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertNotIn("Proxy-Authorization", request3.headers)
-            self.assertNotIn("_auth_proxy", request3.meta)
-            self.assertNotIn("proxy", request3.meta)
+            assert isinstance(request3, Request)
+            assert "Proxy-Authorization" not in request3.headers
+            assert "_auth_proxy" not in request3.meta
+            assert "proxy" not in request3.meta
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic Yjo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://b.example")
-            self.assertEqual(request3.meta["proxy"], "https://b.example")
+            assert request3.headers["Proxy-Authorization"] == b"Basic Yjo="
+            assert request3.meta["_auth_proxy"] == "https://b.example"
+            assert request3.meta["proxy"] == "https://b.example"
 
         def test_system_proxy_proxied_https_to_unproxied_http(self):
             crawler = get_crawler()
@@ -901,40 +871,39 @@ class Base:
                 proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
 
             request1 = Request("https://example.com")
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertEqual(request1.headers["Proxy-Authorization"], b"Basic Yjo=")
-            self.assertEqual(request1.meta["_auth_proxy"], "https://b.example")
-            self.assertEqual(request1.meta["proxy"], "https://b.example")
+            assert request1.headers["Proxy-Authorization"] == b"Basic Yjo="
+            assert request1.meta["_auth_proxy"] == "https://b.example"
+            assert request1.meta["proxy"] == "https://b.example"
 
             response1 = self.get_response(request1, "http://example.com")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertNotIn("Proxy-Authorization", request2.headers)
-            self.assertNotIn("_auth_proxy", request2.meta)
-            self.assertNotIn("proxy", request2.meta)
+            assert isinstance(request2, Request)
+            assert "Proxy-Authorization" not in request2.headers
+            assert "_auth_proxy" not in request2.meta
+            assert "proxy" not in request2.meta
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertNotIn("Proxy-Authorization", request2.headers)
-            self.assertNotIn("_auth_proxy", request2.meta)
-            self.assertNotIn("proxy", request2.meta)
+            assert "Proxy-Authorization" not in request2.headers
+            assert "_auth_proxy" not in request2.meta
+            assert "proxy" not in request2.meta
 
             response2 = self.get_response(request2, "https://example.com")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertNotIn("Proxy-Authorization", request3.headers)
-            self.assertNotIn("_auth_proxy", request3.meta)
-            self.assertNotIn("proxy", request3.meta)
+            assert isinstance(request3, Request)
+            assert "Proxy-Authorization" not in request3.headers
+            assert "_auth_proxy" not in request3.meta
+            assert "proxy" not in request3.meta
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertEqual(request3.headers["Proxy-Authorization"], b"Basic Yjo=")
-            self.assertEqual(request3.meta["_auth_proxy"], "https://b.example")
-            self.assertEqual(request3.meta["proxy"], "https://b.example")
+            assert request3.headers["Proxy-Authorization"] == b"Basic Yjo="
+            assert request3.meta["_auth_proxy"] == "https://b.example"
+            assert request3.meta["proxy"] == "https://b.example"
 
         def test_system_proxy_unproxied_https_to_proxied_http(self):
             crawler = get_crawler()
@@ -946,40 +915,39 @@ class Base:
                 proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
 
             request1 = Request("https://example.com")
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertNotIn("Proxy-Authorization", request1.headers)
-            self.assertNotIn("_auth_proxy", request1.meta)
-            self.assertNotIn("proxy", request1.meta)
+            assert "Proxy-Authorization" not in request1.headers
+            assert "_auth_proxy" not in request1.meta
+            assert "proxy" not in request1.meta
 
             response1 = self.get_response(request1, "http://example.com")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertNotIn("Proxy-Authorization", request2.headers)
-            self.assertNotIn("_auth_proxy", request2.meta)
-            self.assertNotIn("proxy", request2.meta)
+            assert isinstance(request2, Request)
+            assert "Proxy-Authorization" not in request2.headers
+            assert "_auth_proxy" not in request2.meta
+            assert "proxy" not in request2.meta
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertEqual(request2.headers["Proxy-Authorization"], b"Basic YTo=")
-            self.assertEqual(request2.meta["_auth_proxy"], "https://a.example")
-            self.assertEqual(request2.meta["proxy"], "https://a.example")
+            assert request2.headers["Proxy-Authorization"] == b"Basic YTo="
+            assert request2.meta["_auth_proxy"] == "https://a.example"
+            assert request2.meta["proxy"] == "https://a.example"
 
             response2 = self.get_response(request2, "https://example.com")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertNotIn("Proxy-Authorization", request3.headers)
-            self.assertNotIn("_auth_proxy", request3.meta)
-            self.assertNotIn("proxy", request3.meta)
+            assert isinstance(request3, Request)
+            assert "Proxy-Authorization" not in request3.headers
+            assert "_auth_proxy" not in request3.meta
+            assert "proxy" not in request3.meta
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertNotIn("Proxy-Authorization", request3.headers)
-            self.assertNotIn("_auth_proxy", request3.meta)
-            self.assertNotIn("proxy", request3.meta)
+            assert "Proxy-Authorization" not in request3.headers
+            assert "_auth_proxy" not in request3.meta
+            assert "proxy" not in request3.meta
 
         def test_system_proxy_unproxied_https_to_unproxied_http(self):
             crawler = get_crawler()
@@ -987,50 +955,49 @@ class Base:
             proxy_mw = HttpProxyMiddleware.from_crawler(crawler)
 
             request1 = Request("https://example.com")
-            spider = None
-            proxy_mw.process_request(request1, spider)
+            proxy_mw.process_request(request1)
 
-            self.assertNotIn("Proxy-Authorization", request1.headers)
-            self.assertNotIn("_auth_proxy", request1.meta)
-            self.assertNotIn("proxy", request1.meta)
+            assert "Proxy-Authorization" not in request1.headers
+            assert "_auth_proxy" not in request1.meta
+            assert "proxy" not in request1.meta
 
             response1 = self.get_response(request1, "http://example.com")
-            request2 = redirect_mw.process_response(request1, response1, spider)
+            request2 = redirect_mw.process_response(request1, response1)
 
-            self.assertIsInstance(request2, Request)
-            self.assertNotIn("Proxy-Authorization", request2.headers)
-            self.assertNotIn("_auth_proxy", request2.meta)
-            self.assertNotIn("proxy", request2.meta)
+            assert isinstance(request2, Request)
+            assert "Proxy-Authorization" not in request2.headers
+            assert "_auth_proxy" not in request2.meta
+            assert "proxy" not in request2.meta
 
-            proxy_mw.process_request(request2, spider)
+            proxy_mw.process_request(request2)
 
-            self.assertNotIn("Proxy-Authorization", request2.headers)
-            self.assertNotIn("_auth_proxy", request2.meta)
-            self.assertNotIn("proxy", request2.meta)
+            assert "Proxy-Authorization" not in request2.headers
+            assert "_auth_proxy" not in request2.meta
+            assert "proxy" not in request2.meta
 
             response2 = self.get_response(request2, "https://example.com")
-            request3 = redirect_mw.process_response(request2, response2, spider)
+            request3 = redirect_mw.process_response(request2, response2)
 
-            self.assertIsInstance(request3, Request)
-            self.assertNotIn("Proxy-Authorization", request3.headers)
-            self.assertNotIn("_auth_proxy", request3.meta)
-            self.assertNotIn("proxy", request3.meta)
+            assert isinstance(request3, Request)
+            assert "Proxy-Authorization" not in request3.headers
+            assert "_auth_proxy" not in request3.meta
+            assert "proxy" not in request3.meta
 
-            proxy_mw.process_request(request3, spider)
+            proxy_mw.process_request(request3)
 
-            self.assertNotIn("Proxy-Authorization", request3.headers)
-            self.assertNotIn("_auth_proxy", request3.meta)
-            self.assertNotIn("proxy", request3.meta)
+            assert "Proxy-Authorization" not in request3.headers
+            assert "_auth_proxy" not in request3.meta
+            assert "proxy" not in request3.meta
 
 
-class RedirectMiddlewareTest(Base.Test):
+class TestRedirectMiddleware(Base.Test):
     mwcls = RedirectMiddleware
     reason = 302
 
-    def setUp(self):
-        self.crawler = get_crawler(Spider)
-        self.spider = self.crawler._create_spider("foo")
-        self.mw = self.mwcls.from_crawler(self.crawler)
+    def setup_method(self):
+        crawler = get_crawler(DefaultSpider)
+        crawler.spider = crawler._create_spider()
+        self.mw = self.mwcls.from_crawler(crawler)
 
     def get_response(self, request, location, status=302):
         headers = {"Location": location}
@@ -1043,14 +1010,14 @@ class RedirectMiddlewareTest(Base.Test):
             req = Request(url, method=method)
             rsp = Response(url, headers={"Location": url2}, status=status)
 
-            req2 = self.mw.process_response(req, rsp, self.spider)
+            req2 = self.mw.process_response(req, rsp)
             assert isinstance(req2, Request)
-            self.assertEqual(req2.url, url2)
-            self.assertEqual(req2.method, method)
+            assert req2.url == url2
+            assert req2.method == method
 
             # response without Location header but with status code is 3XX should be ignored
             del rsp.headers["Location"]
-            assert self.mw.process_response(req, rsp, self.spider) is rsp
+            assert self.mw.process_response(req, rsp) is rsp
 
         _test("GET")
         _test("POST")
@@ -1070,10 +1037,10 @@ class RedirectMiddlewareTest(Base.Test):
         req = Request(url, method="HEAD")
         rsp = Response(url, headers={"Location": url2}, status=302)
 
-        req2 = self.mw.process_response(req, rsp, self.spider)
+        req2 = self.mw.process_response(req, rsp)
         assert isinstance(req2, Request)
-        self.assertEqual(req2.url, url2)
-        self.assertEqual(req2.method, "HEAD")
+        assert req2.url == url2
+        assert req2.method == "HEAD"
 
     def test_redirect_302_relative(self):
         url = "http://www.example.com/302"
@@ -1082,20 +1049,19 @@ class RedirectMiddlewareTest(Base.Test):
         req = Request(url, method="HEAD")
         rsp = Response(url, headers={"Location": url2}, status=302)
 
-        req2 = self.mw.process_response(req, rsp, self.spider)
+        req2 = self.mw.process_response(req, rsp)
         assert isinstance(req2, Request)
-        self.assertEqual(req2.url, url3)
-        self.assertEqual(req2.method, "HEAD")
+        assert req2.url == url3
+        assert req2.method == "HEAD"
 
     def test_spider_handling(self):
-        smartspider = self.crawler._create_spider("smarty")
-        smartspider.handle_httpstatus_list = [404, 301, 302]
+        self.mw.crawler.spider.handle_httpstatus_list = [404, 301, 302]
         url = "http://www.example.com/301"
         url2 = "http://www.example.com/redirected"
         req = Request(url)
         rsp = Response(url, headers={"Location": url2}, status=301)
-        r = self.mw.process_response(req, rsp, smartspider)
-        self.assertIs(r, rsp)
+        r = self.mw.process_response(req, rsp)
+        assert r is rsp
 
     def test_request_meta_handling(self):
         url = "http://www.example.com/301"
@@ -1103,8 +1069,8 @@ class RedirectMiddlewareTest(Base.Test):
 
         def _test_passthrough(req):
             rsp = Response(url, headers={"Location": url2}, status=301, request=req)
-            r = self.mw.process_response(req, rsp, self.spider)
-            self.assertIs(r, rsp)
+            r = self.mw.process_response(req, rsp)
+            assert r is rsp
 
         _test_passthrough(
             Request(url, meta={"handle_httpstatus_list": [404, 301, 302]})
@@ -1119,9 +1085,9 @@ class RedirectMiddlewareTest(Base.Test):
             headers={"Location": latin1_location},
             status=302,
         )
-        req_result = self.mw.process_response(req, resp, self.spider)
+        req_result = self.mw.process_response(req, resp)
         perc_encoded_utf8_url = "http://scrapytest.org/a%E7%E3o"
-        self.assertEqual(perc_encoded_utf8_url, req_result.url)
+        assert perc_encoded_utf8_url == req_result.url
 
     def test_utf8_location(self):
         req = Request("http://scrapytest.org/first")
@@ -1131,14 +1097,14 @@ class RedirectMiddlewareTest(Base.Test):
             headers={"Location": utf8_location},
             status=302,
         )
-        req_result = self.mw.process_response(req, resp, self.spider)
+        req_result = self.mw.process_response(req, resp)
         perc_encoded_utf8_url = "http://scrapytest.org/a%C3%A7%C3%A3o"
-        self.assertEqual(perc_encoded_utf8_url, req_result.url)
+        assert perc_encoded_utf8_url == req_result.url
 
     def test_no_location(self):
         request = Request("https://example.com")
         response = Response(request.url, status=302)
-        assert self.mw.process_response(request, response, self.spider) is response
+        assert self.mw.process_response(request, response) is response
 
 
 SCHEME_PARAMS = ("url", "location", "target")
@@ -1182,11 +1148,10 @@ REDIRECT_SCHEME_CASES = (
 @pytest.mark.parametrize(SCHEME_PARAMS, REDIRECT_SCHEME_CASES)
 def test_redirect_schemes(url, location, target):
     crawler = get_crawler(Spider)
-    spider = crawler._create_spider("foo")
     mw = RedirectMiddleware.from_crawler(crawler)
     request = Request(url)
     response = Response(url, headers={"Location": location}, status=301)
-    redirect = mw.process_response(request, response, spider)
+    redirect = mw.process_response(request, response)
     if target is None:
         assert redirect == response
     else:
@@ -1199,13 +1164,12 @@ def meta_refresh_body(url, interval=5):
     return html.encode("utf-8")
 
 
-class MetaRefreshMiddlewareTest(Base.Test):
+class TestMetaRefreshMiddleware(Base.Test):
     mwcls = MetaRefreshMiddleware
     reason = "meta refresh"
 
-    def setUp(self):
+    def setup_method(self):
         crawler = get_crawler(Spider)
-        self.spider = crawler._create_spider("foo")
         self.mw = self.mwcls.from_crawler(crawler)
 
     def _body(self, interval=5, url="http://example.org/newpage"):
@@ -1217,9 +1181,9 @@ class MetaRefreshMiddlewareTest(Base.Test):
     def test_meta_refresh(self):
         req = Request(url="http://example.org")
         rsp = HtmlResponse(req.url, body=self._body())
-        req2 = self.mw.process_response(req, rsp, self.spider)
+        req2 = self.mw.process_response(req, rsp)
         assert isinstance(req2, Request)
-        self.assertEqual(req2.url, "http://example.org/newpage")
+        assert req2.url == "http://example.org/newpage"
 
     def test_meta_refresh_with_high_interval(self):
         # meta-refresh with high intervals don't trigger redirects
@@ -1227,7 +1191,7 @@ class MetaRefreshMiddlewareTest(Base.Test):
         rsp = HtmlResponse(
             url="http://example.org", body=self._body(interval=1000), encoding="utf-8"
         )
-        rsp2 = self.mw.process_response(req, rsp, self.spider)
+        rsp2 = self.mw.process_response(req, rsp)
         assert rsp is rsp2
 
     def test_meta_refresh_trough_posted_request(self):
@@ -1238,17 +1202,17 @@ class MetaRefreshMiddlewareTest(Base.Test):
             headers={"Content-Type": "text/plain", "Content-length": "4"},
         )
         rsp = HtmlResponse(req.url, body=self._body())
-        req2 = self.mw.process_response(req, rsp, self.spider)
+        req2 = self.mw.process_response(req, rsp)
 
         assert isinstance(req2, Request)
-        self.assertEqual(req2.url, "http://example.org/newpage")
-        self.assertEqual(req2.method, "GET")
-        assert (
-            "Content-Type" not in req2.headers
-        ), "Content-Type header must not be present in redirected request"
-        assert (
-            "Content-Length" not in req2.headers
-        ), "Content-Length header must not be present in redirected request"
+        assert req2.url == "http://example.org/newpage"
+        assert req2.method == "GET"
+        assert "Content-Type" not in req2.headers, (
+            "Content-Type header must not be present in redirected request"
+        )
+        assert "Content-Length" not in req2.headers, (
+            "Content-Length header must not be present in redirected request"
+        )
         assert not req2.body, f"Redirected body must be empty, not '{req2.body}'"
 
     def test_ignore_tags_default(self):
@@ -1258,7 +1222,7 @@ class MetaRefreshMiddlewareTest(Base.Test):
             """content="0;URL='http://example.org/newpage'"></noscript>"""
         )
         rsp = HtmlResponse(req.url, body=body.encode())
-        response = self.mw.process_response(req, rsp, self.spider)
+        response = self.mw.process_response(req, rsp)
         assert isinstance(response, Response)
 
     def test_ignore_tags_1_x_list(self):
@@ -1272,13 +1236,13 @@ class MetaRefreshMiddlewareTest(Base.Test):
             """content="0;URL='http://example.org/newpage'"></noscript>"""
         )
         rsp = HtmlResponse(req.url, body=body.encode())
-        response = mw.process_response(req, rsp, self.spider)
+        response = mw.process_response(req, rsp)
         assert isinstance(response, Response)
 
 
 @pytest.mark.parametrize(
     SCHEME_PARAMS,
-    (
+    [
         *REDIRECT_SCHEME_CASES,
         # data/file/ftp/s3/foo → * does not redirect
         *(
@@ -1300,21 +1264,16 @@ class MetaRefreshMiddlewareTest(Base.Test):
             for scheme in NON_HTTP_SCHEMES
             for location in ("//example.com/b", "/b")
         ),
-    ),
+    ],
 )
 def test_meta_refresh_schemes(url, location, target):
     crawler = get_crawler(Spider)
-    spider = crawler._create_spider("foo")
     mw = MetaRefreshMiddleware.from_crawler(crawler)
     request = Request(url)
     response = HtmlResponse(url, body=meta_refresh_body(location))
-    redirect = mw.process_response(request, response, spider)
+    redirect = mw.process_response(request, response)
     if target is None:
         assert redirect == response
     else:
         assert isinstance(redirect, Request)
         assert redirect.url == target
-
-
-if __name__ == "__main__":
-    unittest.main()

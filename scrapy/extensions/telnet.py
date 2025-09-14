@@ -12,8 +12,9 @@ import os
 import pprint
 from typing import TYPE_CHECKING, Any
 
+from twisted.conch import telnet
+from twisted.conch.insults import insults
 from twisted.internet import protocol
-from twisted.internet.tcp import Port
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
@@ -23,7 +24,7 @@ from scrapy.utils.reactor import listen_tcp
 from scrapy.utils.trackref import print_live_refs
 
 if TYPE_CHECKING:
-    from twisted.conch import telnet
+    from twisted.internet.tcp import Port
 
     # typing.Self requires Python 3.11
     from typing_extensions import Self
@@ -75,21 +76,19 @@ class TelnetConsole(protocol.ServerFactory):
     def stop_listening(self) -> None:
         self.port.stopListening()
 
-    def protocol(self) -> telnet.TelnetTransport:  # type: ignore[override]
-        # these import twisted.internet.reactor
-        from twisted.conch import manhole, telnet
-        from twisted.conch.insults import insults
-
+    def protocol(self) -> telnet.TelnetTransport:
         class Portal:
             """An implementation of IPortal"""
 
             @defers
-            def login(self_, credentials, mind, *interfaces):
+            def login(self_, credentials, mind, *interfaces):  # pylint: disable=no-self-argument
                 if not (
                     credentials.username == self.username.encode("utf8")
                     and credentials.checkPassword(self.password.encode("utf8"))
                 ):
                     raise ValueError("Invalid credentials")
+
+                from twisted.conch import manhole
 
                 protocol = telnet.TelnetBootstrapProtocol(
                     insults.ServerProtocol, manhole.Manhole, self._get_telnet_vars()
@@ -104,7 +103,6 @@ class TelnetConsole(protocol.ServerFactory):
         telnet_vars: dict[str, Any] = {
             "engine": self.crawler.engine,
             "spider": self.crawler.engine.spider,
-            "slot": self.crawler.engine.slot,
             "crawler": self.crawler,
             "extensions": self.crawler.extensions,
             "stats": self.crawler.stats,

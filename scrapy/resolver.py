@@ -76,7 +76,7 @@ class HostResolution:
         self.name: str = name
 
     def cancel(self) -> None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 @provider(IResolutionReceiver)
@@ -141,9 +141,8 @@ class CachingHostnameResolver:
                 addressTypes,
                 transportSemantics,
             )
-        else:
-            resolutionReceiver.resolutionBegan(HostResolution(hostName))
-            for addr in addresses:
-                resolutionReceiver.addressResolved(addr)
-            resolutionReceiver.resolutionComplete()
-            return resolutionReceiver
+        resolutionReceiver.resolutionBegan(HostResolution(hostName))
+        for addr in addresses:
+            resolutionReceiver.addressResolved(addr)
+        resolutionReceiver.resolutionComplete()
+        return resolutionReceiver

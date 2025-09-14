@@ -1,3 +1,5 @@
+import sys
+
 from twisted.internet.defer import Deferred
 
 import scrapy
@@ -14,7 +16,7 @@ class SleepingSpider(scrapy.Spider):
         from twisted.internet import reactor
 
         d = Deferred()
-        reactor.callLater(int(self.sleep), d.callback, None)
+        reactor.callLater(int(sys.argv[1]), d.callback, None)
         await maybe_deferred_to_future(d)
 
 

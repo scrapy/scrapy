@@ -75,14 +75,13 @@ class Selector(_ParselSelector, object_ref):
         self,
         response: TextResponse | None = None,
         text: str | None = None,
-        type: str | None = None,
+        type: str | None = None,  # noqa: A002
         root: Any | None = _NOT_SET,
         **kwargs: Any,
     ):
         if response is not None and text is not None:
             raise ValueError(
-                f"{self.__class__.__name__}.__init__() received "
-                "both response and text"
+                f"{self.__class__.__name__}.__init__() received both response and text"
             )
 
         st = _st(response, type)

@@ -10,6 +10,7 @@ from scrapy import signals
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Response
 from scrapy.http.cookies import CookieJar
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_unicode
 
@@ -48,6 +49,8 @@ def get_cookiejar(self, response_or_request):
 class CookiesMiddleware:
     """This middleware enables working with sites that need cookies"""
 
+    crawler: Crawler
+
     def __init__(self, debug: bool = False):
         self.jars: defaultdict[Any, CookieJar] = defaultdict(CookieJar)
         self.debug: bool = debug
@@ -57,6 +60,7 @@ class CookiesMiddleware:
         if not crawler.settings.getbool("COOKIES_ENABLED"):
             raise NotConfigured
         o = cls(crawler.settings.getbool("COOKIES_DEBUG"))
+        o.crawler = crawler
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         return o
 
@@ -70,8 +74,7 @@ class CookiesMiddleware:
     ) -> None:
         for cookie in cookies:
             cookie_domain = cookie.domain
-            if cookie_domain.startswith("."):
-                cookie_domain = cookie_domain[1:]
+            cookie_domain = cookie_domain.removeprefix(".")
 
             hostname = urlparse_cached(request).hostname
             assert hostname is not None
@@ -84,8 +87,9 @@ class CookiesMiddleware:
 
             jar.set_cookie_if_ok(cookie, request)
 
+    @_warn_spider_arg
     def process_request(
-        self, request: Request, spider: Spider
+        self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
         if request.meta.get("dont_merge_cookies", False):
             return None
@@ -98,11 +102,12 @@ class CookiesMiddleware:
         # set Cookie header
         request.headers.pop("Cookie", None)
         jar.add_cookie_header(request)
-        self._debug_cookie(request, spider)
+        self._debug_cookie(request)
         return None
 
+    @_warn_spider_arg
     def process_response(
-        self, request: Request, response: Response, spider: Spider
+        self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
         if request.meta.get("dont_merge_cookies", False):
             return response
@@ -113,11 +118,11 @@ class CookiesMiddleware:
         cookies = jar.make_cookies(response, request)
         self._process_cookies(cookies, jar=jar, request=request)
 
-        self._debug_set_cookie(response, spider)
+        self._debug_set_cookie(response)
 
         return response
 
-    def _debug_cookie(self, request: Request, spider: Spider) -> None:
+    def _debug_cookie(self, request: Request) -> None:
         if self.debug:
             cl = [
                 to_unicode(c, errors="replace")
@@ -126,9 +131,9 @@ class CookiesMiddleware:
             if cl:
                 cookies = "\n".join(f"Cookie: {c}\n" for c in cl)
                 msg = f"Sending cookies to: {request}\n{cookies}"
-                logger.debug(msg, extra={"spider": spider})
+                logger.debug(msg, extra={"spider": self.crawler.spider})
 
-    def _debug_set_cookie(self, response: Response, spider: Spider) -> None:
+    def _debug_set_cookie(self, response: Response) -> None:
         if self.debug:
             cl = [
                 to_unicode(c, errors="replace")
@@ -137,7 +142,7 @@ class CookiesMiddleware:
             if cl:
                 cookies = "\n".join(f"Set-Cookie: {c}\n" for c in cl)
                 msg = f"Received cookies from: {response}\n{cookies}"
-                logger.debug(msg, extra={"spider": spider})
+                logger.debug(msg, extra={"spider": self.crawler.spider})
 
     def _format_cookie(self, cookie: VerboseCookie, request: Request) -> str | None:
         """
@@ -147,25 +152,26 @@ class CookiesMiddleware:
         decoded = {}
         flags = set()
         for key in ("name", "value", "path", "domain"):
-            if cookie.get(key) is None:
+            value = cookie.get(key)
+            if value is None:
                 if key in ("name", "value"):
                     msg = f"Invalid cookie found in request {request}: {cookie} ('{key}' is missing)"
                     logger.warning(msg)
                     return None
                 continue
-            # https://github.com/python/mypy/issues/7178, https://github.com/python/mypy/issues/9168
-            if isinstance(cookie[key], (bool, float, int, str)):  # type: ignore[literal-required]
-                decoded[key] = str(cookie[key])  # type: ignore[literal-required]
+            if isinstance(value, (bool, float, int, str)):
+                decoded[key] = str(value)
             else:
+                assert isinstance(value, bytes)
                 try:
-                    decoded[key] = cookie[key].decode("utf8")  # type: ignore[literal-required]
+                    decoded[key] = value.decode("utf8")
                 except UnicodeDecodeError:
                     logger.warning(
                         "Non UTF-8 encoded cookie found in request %s: %s",
                         request,
                         cookie,
                     )
-                    decoded[key] = cookie[key].decode("latin1", errors="replace")  # type: ignore[literal-required]
+                    decoded[key] = value.decode("latin1", errors="replace")
         for flag in ("secure",):
             value = cookie.get(flag, _UNSET)
             if value is _UNSET or not value:

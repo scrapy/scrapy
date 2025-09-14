@@ -6,17 +6,23 @@ from __future__ import annotations
 
 import asyncio
 import os
+import warnings
+from ftplib import FTP
 from importlib import import_module
 from pathlib import Path
 from posixpath import split
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 from unittest import TestCase, mock
 
 from twisted.trial.unittest import SkipTest
+from twisted.web.client import Agent
 
-from scrapy import Spider
-from scrapy.crawler import Crawler
+from scrapy.crawler import CrawlerRunner
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.boto import is_botocore_available
+from scrapy.utils.deprecate import create_deprecated_class
+from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
+from scrapy.utils.spider import DefaultSpider
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable
@@ -24,16 +30,31 @@ if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
     from twisted.web.client import Response as TxResponse
 
+    from scrapy import Spider
+    from scrapy.crawler import Crawler
+
 
 _T = TypeVar("_T")
 
 
 def assert_gcs_environ() -> None:
+    warnings.warn(
+        "The assert_gcs_environ() function is deprecated and will be removed in a future version of Scrapy."
+        " Check GCS_PROJECT_ID directly.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     if "GCS_PROJECT_ID" not in os.environ:
         raise SkipTest("GCS_PROJECT_ID not found")
 
 
 def skip_if_no_boto() -> None:
+    warnings.warn(
+        "The skip_if_no_boto() function is deprecated and will be removed in a future version of Scrapy."
+        " Check scrapy.utils.boto.is_botocore_available() directly.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     if not is_botocore_available():
         raise SkipTest("missing botocore library")
 
@@ -41,8 +62,13 @@ def skip_if_no_boto() -> None:
 def get_gcs_content_and_delete(
     bucket: Any, path: str
 ) -> tuple[bytes, list[dict[str, str]], Any]:
-    from google.cloud import storage
+    from google.cloud import storage  # noqa: PLC0415
 
+    warnings.warn(
+        "The get_gcs_content_and_delete() function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     client = storage.Client(project=os.environ.get("GCS_PROJECT_ID"))
     bucket = client.get_bucket(bucket)
     blob = bucket.get_blob(path)
@@ -60,8 +86,11 @@ def get_ftp_content_and_delete(
     password: str,
     use_active_mode: bool = False,
 ) -> bytes:
-    from ftplib import FTP
-
+    warnings.warn(
+        "The get_ftp_content_and_delete() function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     ftp = FTP()
     ftp.connect(host, port)
     ftp.login(username, password)
@@ -79,8 +108,25 @@ def get_ftp_content_and_delete(
     return b"".join(ftp_data)
 
 
-class TestSpider(Spider):
-    name = "test"
+TestSpider = create_deprecated_class("TestSpider", DefaultSpider)
+
+
+def get_reactor_settings() -> dict[str, Any]:
+    """Return a settings dict that works with the installed reactor.
+
+    ``Crawler._apply_settings()`` checks that the installed reactor matches the
+    settings, so tests that run the crawler in the current process may need to
+    pass a correct ``"TWISTED_REACTOR"`` setting value when creating it.
+    """
+    if not is_reactor_installed():
+        raise RuntimeError(
+            "get_reactor_settings() called without an installed reactor,"
+            " you may need to install a reactor explicitly when running your tests."
+        )
+    settings: dict[str, Any] = {}
+    if not is_asyncio_reactor_installed():
+        settings["TWISTED_REACTOR"] = None
+    return settings
 
 
 def get_crawler(
@@ -92,13 +138,14 @@ def get_crawler(
     will be used to populate the crawler settings with a project level
     priority.
     """
-    from scrapy.crawler import CrawlerRunner
-
-    # Set by default settings that prevent deprecation warnings.
-    settings: dict[str, Any] = {}
-    settings.update(settings_dict or {})
+    # When needed, useful settings can be added here, e.g. ones that prevent
+    # deprecation warnings.
+    settings: dict[str, Any] = {
+        **get_reactor_settings(),
+        **(settings_dict or {}),
+    }
     runner = CrawlerRunner(settings)
-    crawler = runner.create_crawler(spidercls or TestSpider)
+    crawler = runner.create_crawler(spidercls or DefaultSpider)
     crawler._apply_settings()
     return crawler
 
@@ -125,7 +172,12 @@ def assert_samelines(
     """Asserts text1 and text2 have the same lines, ignoring differences in
     line endings between platforms
     """
-    testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)
+    warnings.warn(
+        "The assert_samelines function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+    testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)  # noqa: PT009
 
 
 def get_from_asyncio_queue(value: _T) -> Awaitable[_T]:
@@ -139,7 +191,13 @@ def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
     """Creates autospec mocks for google-cloud-storage Client, Bucket and Blob
     classes and set their proper return values.
     """
-    from google.cloud.storage import Blob, Bucket, Client
+    from google.cloud.storage import Blob, Bucket, Client  # noqa: PLC0415
+
+    warnings.warn(
+        "The mock_google_cloud_storage() function is deprecated and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
 
     client_mock = mock.create_autospec(Client)
 
@@ -154,7 +212,6 @@ def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
 
 def get_web_client_agent_req(url: str) -> Deferred[TxResponse]:
     from twisted.internet import reactor
-    from twisted.web.client import Agent  # imports twisted.internet.reactor
 
     agent = Agent(reactor)
-    return agent.request(b"GET", url.encode("utf-8"))
+    return cast("Deferred[TxResponse]", agent.request(b"GET", url.encode("utf-8")))

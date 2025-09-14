@@ -14,7 +14,7 @@ from it.
 
 If you fail to do that, and you can nonetheless access the desired data through
 the :ref:`DOM <topics-livedom>` from your web browser, see
-:ref:`topics-javascript-rendering`.
+:ref:`topics-headless-browsing`.
 
 .. _topics-finding-data-source:
 
@@ -85,9 +85,8 @@ It might be enough to yield a :class:`~scrapy.Request` with the same HTTP
 method and URL. However, you may also need to reproduce the body, headers and
 form parameters (see :class:`~scrapy.FormRequest`) of that request.
 
-As all major browsers allow to export the requests in `cURL
-<https://curl.haxx.se/>`_ format, Scrapy incorporates the method
-:meth:`~scrapy.Request.from_curl()` to generate an equivalent
+As all major browsers allow to export the requests in curl_ format, Scrapy
+incorporates the method :meth:`~scrapy.Request.from_curl` to generate an equivalent
 :class:`~scrapy.Request` from a cURL command. To get more information
 visit :ref:`request from curl <requests-from-curl>` inside the network
 tool section.
@@ -98,7 +97,7 @@ it <topics-handling-response-formats>`.
 You can reproduce any request with Scrapy. However, some times reproducing all
 necessary requests may not seem efficient in developer time. If that is your
 case, and crawling speed is not a major concern for you, you can alternatively
-consider :ref:`JavaScript pre-rendering <topics-javascript-rendering>`.
+consider :ref:`using a headless browser <topics-headless-browsing>`.
 
 If you get the expected response `sometimes`, but not always, the issue is
 probably not your request, but the target server. The target server might be
@@ -112,13 +111,16 @@ you may use `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_.
 Handling different response formats
 ===================================
 
+.. skip: start
+
 Once you have a response with the desired data, how you extract the desired
 data from it depends on the type of response:
 
 -   If the response is HTML, XML or JSON, use :ref:`selectors
     <topics-selectors>` as usual.
 
--   If the response is JSON, use :func:`response.json()` to load the desired data:
+-   If the response is JSON, use :func:`response.json()
+    <scrapy.http.TextResponse.json>` to load the desired data:
 
     .. code-block:: python
 
@@ -144,7 +146,7 @@ data from it depends on the type of response:
 
 -   If the response is an image or another format based on images (e.g. PDF),
     read the response as bytes from
-    :attr:`response.body <scrapy.http.TextResponse.body>` and use an OCR
+    :attr:`response.body <scrapy.http.Response.body>` and use an OCR
     solution to extract the desired data as text.
 
     For example, you can use pytesseract_. To read a table from a PDF,
@@ -157,10 +159,14 @@ data from it depends on the type of response:
     Otherwise, you might need to convert the SVG code into a raster image, and
     :ref:`handle that raster image <topics-parsing-images>`.
 
+.. skip: end
+
 .. _topics-parsing-javascript:
 
 Parsing JavaScript code
 =======================
+
+.. skip: start
 
 If the desired data is hardcoded in JavaScript, you first need to get the
 JavaScript code:
@@ -220,9 +226,11 @@ data from it:
         >>> selector.css('var[name="data"]').get()
         '<var name="data"><object><property name="field"><string>value</string></property></object></var>'
 
-.. _topics-javascript-rendering:
+.. skip: end
 
-Pre-rendering JavaScript
+.. _topics-headless-browsing:
+
+Using a headless browser
 ========================
 
 On webpages that fetch data from additional requests, reproducing those
@@ -232,35 +240,17 @@ network transfer.
 
 However, sometimes it can be really hard to reproduce certain requests. Or you
 may need something that no request can give you, such as a screenshot of a
-webpage as seen in a web browser.
+webpage as seen in a web browser. In this case using a `headless browser`_ will
+help.
 
-In these cases use the Splash_ JavaScript-rendering service, along with
-`scrapy-splash`_ for seamless integration.
-
-Splash returns as HTML the :ref:`DOM <topics-livedom>` of a webpage, so that
-you can parse it with :ref:`selectors <topics-selectors>`. It provides great
-flexibility through configuration_ or scripting_.
-
-If you need something beyond what Splash offers, such as interacting with the
-DOM on-the-fly from Python code instead of using a previously-written script,
-or handling multiple web browser windows, you might need to
-:ref:`use a headless browser <topics-headless-browsing>` instead.
-
-.. _configuration: https://splash.readthedocs.io/en/stable/api.html
-.. _scripting: https://splash.readthedocs.io/en/stable/scripting-tutorial.html
-
-.. _topics-headless-browsing:
-
-Using a headless browser
-========================
-
-A `headless browser`_ is a special web browser that provides an API for
+A headless browser is a special web browser that provides an API for
 automation. By installing the :ref:`asyncio reactor <install-asyncio>`,
 it is possible to integrate ``asyncio``-based libraries which handle headless browsers.
 
 One such library is `playwright-python`_ (an official Python port of `playwright`_).
 The following is a simple snippet to illustrate its usage within a Scrapy spider:
 
+.. skip: next
 .. code-block:: python
 
     import scrapy
@@ -287,9 +277,8 @@ We recommend using `scrapy-playwright`_ for a better integration.
 .. _AJAX: https://en.wikipedia.org/wiki/Ajax_%28programming%29
 .. _CSS: https://en.wikipedia.org/wiki/Cascading_Style_Sheets
 .. _JavaScript: https://en.wikipedia.org/wiki/JavaScript
-.. _Splash: https://github.com/scrapinghub/splash
 .. _chompjs: https://github.com/Nykakin/chompjs
-.. _curl: https://curl.haxx.se/
+.. _curl: https://curl.se/
 .. _headless browser: https://en.wikipedia.org/wiki/Headless_browser
 .. _js2xml: https://github.com/scrapinghub/js2xml
 .. _playwright-python: https://github.com/microsoft/playwright-python
@@ -297,7 +286,6 @@ We recommend using `scrapy-playwright`_ for a better integration.
 .. _pyppeteer: https://pyppeteer.github.io/pyppeteer/
 .. _pytesseract: https://github.com/madmaze/pytesseract
 .. _scrapy-playwright: https://github.com/scrapy-plugins/scrapy-playwright
-.. _scrapy-splash: https://github.com/scrapy-plugins/scrapy-splash
 .. _tabula-py: https://github.com/chezou/tabula-py
 .. _wget: https://www.gnu.org/software/wget/
 .. _wgrep: https://github.com/stav/wgrep

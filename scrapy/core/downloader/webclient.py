@@ -1,14 +1,17 @@
+"""Deprecated HTTP/1.0 helper classes used by HTTP10DownloadHandler."""
+
 from __future__ import annotations
 
-import re
+import warnings
 from time import time
 from typing import TYPE_CHECKING
-from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
+from urllib.parse import urldefrag, urlparse, urlunparse
 
 from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
 from twisted.web.http import HTTPClient
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
@@ -18,36 +21,16 @@ if TYPE_CHECKING:
     from scrapy import Request
 
 
-def _parsed_url_args(parsed: ParseResult) -> tuple[bytes, bytes, bytes, int, bytes]:
-    # Assume parsed is urlparse-d from Request.url,
-    # which was passed via safe_url_string and is ascii-only.
-    path_str = urlunparse(("", "", parsed.path or "/", parsed.params, parsed.query, ""))
-    path = to_bytes(path_str, encoding="ascii")
-    assert parsed.hostname is not None
-    host = to_bytes(parsed.hostname, encoding="ascii")
-    port = parsed.port
-    scheme = to_bytes(parsed.scheme, encoding="ascii")
-    netloc = to_bytes(parsed.netloc, encoding="ascii")
-    if port is None:
-        port = 443 if scheme == b"https" else 80
-    return scheme, netloc, host, port, path
-
-
-def _parse(url: str) -> tuple[bytes, bytes, bytes, int, bytes]:
-    """Return tuple of (scheme, netloc, host, port, path),
-    all in bytes except for port which is int.
-    Assume url is from Request.url, which was passed via safe_url_string
-    and is ascii-only.
-    """
-    url = url.strip()
-    if not re.match(r"^\w+://", url):
-        url = "//" + url
-    parsed = urlparse(url)
-    return _parsed_url_args(parsed)
-
-
 class ScrapyHTTPPageGetter(HTTPClient):
     delimiter = b"\n"
+
+    def __init__(self):
+        warnings.warn(
+            "ScrapyHTTPPageGetter is deprecated and will be removed in a future Scrapy version.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__()
 
     def connectionMade(self):
         self.headers = Headers()  # bucket for response headers
@@ -130,16 +113,37 @@ class ScrapyHTTPClientFactory(ClientFactory):
         )
 
     def _set_connection_attributes(self, request):
-        parsed = urlparse_cached(request)
-        self.scheme, self.netloc, self.host, self.port, self.path = _parsed_url_args(
-            parsed
-        )
         proxy = request.meta.get("proxy")
         if proxy:
-            self.scheme, _, self.host, self.port, _ = _parse(proxy)
+            proxy_parsed = urlparse(to_bytes(proxy, encoding="ascii"))
+            self.scheme = proxy_parsed.scheme
+            self.host = proxy_parsed.hostname
+            self.port = proxy_parsed.port
+            self.netloc = proxy_parsed.netloc
+            if self.port is None:
+                self.port = 443 if proxy_parsed.scheme == b"https" else 80
             self.path = self.url
+        else:
+            parsed = urlparse_cached(request)
+            path_str = urlunparse(
+                ("", "", parsed.path or "/", parsed.params, parsed.query, "")
+            )
+            self.path = to_bytes(path_str, encoding="ascii")
+            assert parsed.hostname is not None
+            self.host = to_bytes(parsed.hostname, encoding="ascii")
+            self.port = parsed.port
+            self.scheme = to_bytes(parsed.scheme, encoding="ascii")
+            self.netloc = to_bytes(parsed.netloc, encoding="ascii")
+            if self.port is None:
+                self.port = 443 if self.scheme == b"https" else 80
 
     def __init__(self, request: Request, timeout: float = 180):
+        warnings.warn(
+            "ScrapyHTTPClientFactory is deprecated and will be removed in a future Scrapy version.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+
         self._url: str = urldefrag(request.url)[0]
         # converting to bytes to comply to Twisted interface
         self.url: bytes = to_bytes(self._url, encoding="ascii")

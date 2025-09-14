@@ -180,7 +180,7 @@ FTP supports two different connection modes: `active or passive
 mode by default. To use the active connection mode instead, set the
 :setting:`FEED_STORAGE_FTP_ACTIVE` setting to ``True``.
 
-The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
 storage backend is: ``True``.
 
 .. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
@@ -213,7 +213,7 @@ passed through the following settings:
 -   :setting:`AWS_SECRET_ACCESS_KEY`
 -   :setting:`AWS_SESSION_TOKEN` (only needed for `temporary security credentials`_)
 
-.. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
+.. _temporary security credentials: https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html
 
 You can also define a custom ACL, custom endpoint, and region name for exported
 feeds using these settings:
@@ -222,7 +222,7 @@ feeds using these settings:
 -   :setting:`AWS_ENDPOINT_URL`
 -   :setting:`AWS_REGION_NAME`
 
-The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
 storage backend is: ``True``.
 
 .. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
@@ -248,14 +248,14 @@ The feeds are stored on `Google Cloud Storage`_.
 
 -   Required external libraries: `google-cloud-storage`_.
 
-For more information about authentication, please refer to `Google Cloud documentation <https://cloud.google.com/docs/authentication/production>`_.
+For more information about authentication, please refer to `Google Cloud documentation <https://cloud.google.com/docs/authentication>`_.
 
 You can set a *Project ID* and *Access Control List (ACL)* through the following settings:
 
 -   :setting:`FEED_STORAGE_GCS_ACL`
 -   :setting:`GCS_PROJECT_ID`
 
-The default value for the ``overwrite`` key in the :setting:`FEEDS` for this 
+The default value for the ``overwrite`` key in the :setting:`FEEDS` for this
 storage backend is: ``True``.
 
 .. caution:: The value ``True`` in ``overwrite`` will cause you to lose the
@@ -516,8 +516,7 @@ as a fallback value if that key is not provided for a specific feed definition:
         .. note:: Some FTP servers may not support appending to files (the
                   ``APPE`` FTP command).
 
-    -   :ref:`topics-feed-storage-s3`: ``True`` (appending `is not supported
-        <https://forums.aws.amazon.com/message.jspa?messageID=540395>`_)
+    -   :ref:`topics-feed-storage-s3`: ``True`` (appending is not supported)
 
     -   :ref:`topics-feed-storage-gcs`: ``True`` (appending is not supported)
 
@@ -540,18 +539,18 @@ as a fallback value if that key is not provided for a specific feed definition:
 FEED_EXPORT_ENCODING
 --------------------
 
-Default: ``None``
+Default: ``"utf-8"`` (:ref:`fallback <default-settings>`: ``None``)
 
 The encoding to be used for the feed.
 
-If unset or set to ``None`` (default) it uses UTF-8 for everything except JSON output,
-which uses safe numeric encoding (``\uXXXX`` sequences) for historic reasons.
+If set to ``None``, it uses UTF-8 for everything except JSON output, which uses
+safe numeric encoding (``\uXXXX`` sequences) for historic reasons.
 
-Use ``utf-8`` if you want UTF-8 for JSON too.
+Use ``"utf-8"`` if you want UTF-8 for JSON too.
 
 .. versionchanged:: 2.8
    The :command:`startproject` command now sets this setting to
-   ``utf-8`` in the generated ``settings.py`` file.
+   ``"utf-8"`` in the generated ``settings.py`` file.
 
 .. setting:: FEED_EXPORT_FIELDS
 
@@ -588,8 +587,8 @@ FEED_STORE_EMPTY
 Default: ``True``
 
 Whether to export empty feeds (i.e. feeds with no items).
-If ``False``, and there are no items to export, no new files are created and 
-existing files are not modified, even if the :ref:`overwrite feed option 
+If ``False``, and there are no items to export, no new files are created and
+existing files are not modified, even if the :ref:`overwrite feed option
 <feed-options>` is enabled.
 
 .. setting:: FEED_STORAGES
@@ -816,5 +815,5 @@ source spider in the feed URI:
 .. _URIs: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Amazon S3: https://aws.amazon.com/s3/
 .. _boto3: https://github.com/boto/boto3
-.. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
+.. _Canned ACL: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Google Cloud Storage: https://cloud.google.com/storage/

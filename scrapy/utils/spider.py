@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
 
     from scrapy import Request
-    from scrapy.spiderloader import SpiderLoader
+    from scrapy.spiderloader import SpiderLoaderProtocol
 
 
 logger = logging.getLogger(__name__)
@@ -52,10 +52,6 @@ def iter_spider_classes(module: ModuleType) -> Iterable[type[Spider]]:
     """Return an iterator over all spider classes defined in the given module
     that can be instantiated (i.e. which have name)
     """
-    # this needs to be imported here until get rid of the spider manager
-    # singleton in scrapy.spider.spiders
-    from scrapy.spiders import Spider
-
     for obj in vars(module).values():
         if (
             inspect.isclass(obj)
@@ -68,7 +64,7 @@ def iter_spider_classes(module: ModuleType) -> Iterable[type[Spider]]:
 
 @overload
 def spidercls_for_request(
-    spider_loader: SpiderLoader,
+    spider_loader: SpiderLoaderProtocol,
     request: Request,
     default_spidercls: type[Spider],
     log_none: bool = ...,
@@ -78,7 +74,7 @@ def spidercls_for_request(
 
 @overload
 def spidercls_for_request(
-    spider_loader: SpiderLoader,
+    spider_loader: SpiderLoaderProtocol,
     request: Request,
     default_spidercls: Literal[None],
     log_none: bool = ...,
@@ -88,7 +84,7 @@ def spidercls_for_request(
 
 @overload
 def spidercls_for_request(
-    spider_loader: SpiderLoader,
+    spider_loader: SpiderLoaderProtocol,
     request: Request,
     *,
     log_none: bool = ...,
@@ -97,7 +93,7 @@ def spidercls_for_request(
 
 
 def spidercls_for_request(
-    spider_loader: SpiderLoader,
+    spider_loader: SpiderLoaderProtocol,
     request: Request,
     default_spidercls: type[Spider] | None = None,
     log_none: bool = False,

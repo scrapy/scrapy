@@ -23,9 +23,10 @@ Typical uses of item pipelines are:
 Writing your own item pipeline
 ==============================
 
-Each item pipeline component is a Python class that must implement the following method:
+Each item pipeline is a :ref:`component <topics-components>` that must
+implement the following method:
 
-.. method:: process_item(self, item, spider)
+.. method:: process_item(self, item)
 
    This method is called for every item pipeline component.
 
@@ -41,35 +42,15 @@ Each item pipeline component is a Python class that must implement the following
    :param item: the scraped item
    :type item: :ref:`item object <item-types>`
 
-   :param spider: the spider which scraped the item
-   :type spider: :class:`~scrapy.Spider` object
-
 Additionally, they may also implement the following methods:
 
-.. method:: open_spider(self, spider)
+.. method:: open_spider(self)
 
    This method is called when the spider is opened.
 
-   :param spider: the spider which was opened
-   :type spider: :class:`~scrapy.Spider` object
-
-.. method:: close_spider(self, spider)
+.. method:: close_spider(self)
 
    This method is called when the spider is closed.
-
-   :param spider: the spider which was closed
-   :type spider: :class:`~scrapy.Spider` object
-
-.. classmethod:: from_crawler(cls, crawler)
-
-   If present, this class method is called to create a pipeline instance
-   from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
-   of the pipeline. Crawler object provides access to all Scrapy core
-   components like settings and signals; it is a way for pipeline to
-   access them and hook its functionality into Scrapy.
-
-   :param crawler: crawler that uses this pipeline
-   :type crawler: :class:`~scrapy.crawler.Crawler` object
 
 
 Item pipeline example
@@ -92,7 +73,7 @@ contain a price:
     class PricePipeline:
         vat_factor = 1.15
 
-        def process_item(self, item, spider):
+        def process_item(self, item):
             adapter = ItemAdapter(item)
             if adapter.get("price"):
                 if adapter.get("price_excludes_vat"):
@@ -117,13 +98,13 @@ format:
 
 
    class JsonWriterPipeline:
-       def open_spider(self, spider):
+       def open_spider(self):
            self.file = open("items.jsonl", "w")
 
-       def close_spider(self, spider):
+       def close_spider(self):
            self.file.close()
 
-       def process_item(self, item, spider):
+       def process_item(self, item):
            line = json.dumps(ItemAdapter(item).asdict()) + "\n"
            self.file.write(line)
            return item
@@ -139,8 +120,8 @@ In this example we'll write items to MongoDB_ using pymongo_.
 MongoDB address and database name are specified in Scrapy settings;
 MongoDB collection is named after item class.
 
-The main point of this example is to show how to use :meth:`from_crawler`
-method and how to clean up the resources properly.
+The main point of this example is to show how to :ref:`get the crawler
+<from-crawler>` and how to clean up the resources properly.
 
 .. skip: next
 .. code-block:: python
@@ -163,19 +144,19 @@ method and how to clean up the resources properly.
                 mongo_db=crawler.settings.get("MONGO_DATABASE", "items"),
             )
 
-        def open_spider(self, spider):
+        def open_spider(self):
             self.client = pymongo.MongoClient(self.mongo_uri)
             self.db = self.client[self.mongo_db]
 
-        def close_spider(self, spider):
+        def close_spider(self):
             self.client.close()
 
-        def process_item(self, item, spider):
+        def process_item(self, item):
             self.db[self.collection_name].insert_one(ItemAdapter(item).asdict())
             return item
 
 .. _MongoDB: https://www.mongodb.com/
-.. _pymongo: https://api.mongodb.com/python/current/
+.. _pymongo: https://pymongo.readthedocs.io/en/stable/
 
 
 .. _ScreenshotPipeline:
@@ -200,7 +181,6 @@ item.
     import scrapy
     from itemadapter import ItemAdapter
     from scrapy.http.request import NO_CALLBACK
-    from scrapy.utils.defer import maybe_deferred_to_future
 
 
     class ScreenshotPipeline:
@@ -209,14 +189,19 @@ item.
 
         SPLASH_URL = "http://localhost:8050/render.png?url={}"
 
-        async def process_item(self, item, spider):
+        def __init__(crawler):
+            self.crawler = crawler
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            return cls(crawler)
+
+        async def process_item(self, item):
             adapter = ItemAdapter(item)
             encoded_item_url = quote(adapter["url"])
             screenshot_url = self.SPLASH_URL.format(encoded_item_url)
             request = scrapy.Request(screenshot_url, callback=NO_CALLBACK)
-            response = await maybe_deferred_to_future(
-                spider.crawler.engine.download(request)
-            )
+            response = await self.crawler.engine.download_async(request)
 
             if response.status != 200:
                 # Error happened, return item.
@@ -251,7 +236,7 @@ returns multiples items with the same id:
         def __init__(self):
             self.ids_seen = set()
 
-        def process_item(self, item, spider):
+        def process_item(self, item):
             adapter = ItemAdapter(item)
             if adapter["id"] in self.ids_seen:
                 raise DropItem(f"Item ID already seen: {adapter['id']}")

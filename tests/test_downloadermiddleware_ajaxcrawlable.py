@@ -1,15 +1,14 @@
-import unittest
+import pytest
 
 from scrapy.downloadermiddlewares.ajaxcrawl import AjaxCrawlMiddleware
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
-__doctests__ = ["scrapy.downloadermiddlewares.ajaxcrawl"]
 
-
-class AjaxCrawlMiddlewareTest(unittest.TestCase):
-    def setUp(self):
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
+class TestAjaxCrawlMiddleware:
+    def setup_method(self):
         crawler = get_crawler(Spider, {"AJAXCRAWL_ENABLED": True})
         self.spider = crawler._create_spider("foo")
         self.mw = AjaxCrawlMiddleware.from_crawler(crawler)
@@ -25,13 +24,13 @@ class AjaxCrawlMiddlewareTest(unittest.TestCase):
     def test_non_get(self):
         req, resp = self._req_resp("http://example.com/", {"method": "HEAD"})
         resp2 = self.mw.process_response(req, resp, self.spider)
-        self.assertEqual(resp, resp2)
+        assert resp == resp2
 
     def test_binary_response(self):
         req = Request("http://example.com/")
         resp = Response("http://example.com/", body=b"foobar\x00\x01\x02", request=req)
         resp2 = self.mw.process_response(req, resp, self.spider)
-        self.assertIs(resp, resp2)
+        assert resp is resp2
 
     def test_ajaxcrawl(self):
         req, resp = self._req_resp(
@@ -40,8 +39,8 @@ class AjaxCrawlMiddlewareTest(unittest.TestCase):
             {"body": self._ajaxcrawlable_body()},
         )
         req2 = self.mw.process_response(req, resp, self.spider)
-        self.assertEqual(req2.url, "http://example.com/?_escaped_fragment_=")
-        self.assertEqual(req2.meta["foo"], "bar")
+        assert req2.url == "http://example.com/?_escaped_fragment_="
+        assert req2.meta["foo"] == "bar"
 
     def test_ajaxcrawl_loop(self):
         req, resp = self._req_resp(
@@ -52,7 +51,7 @@ class AjaxCrawlMiddlewareTest(unittest.TestCase):
         resp3 = self.mw.process_response(req2, resp2, self.spider)
 
         assert isinstance(resp3, HtmlResponse), (resp3.__class__, resp3)
-        self.assertEqual(resp3.request.url, "http://example.com/?_escaped_fragment_=")
+        assert resp3.request.url == "http://example.com/?_escaped_fragment_="
         assert resp3 is resp2
 
     def test_noncrawlable_body(self):
@@ -60,4 +59,4 @@ class AjaxCrawlMiddlewareTest(unittest.TestCase):
             "http://example.com/", {}, {"body": b"<html></html>"}
         )
         resp2 = self.mw.process_response(req, resp, self.spider)
-        self.assertIs(resp, resp2)
+        assert resp is resp2

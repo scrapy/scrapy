@@ -46,9 +46,9 @@ Keeping persistent state between batches
 
 Sometimes you'll want to keep some persistent spider state between pause/resume
 batches. You can use the ``spider.state`` attribute for that, which should be a
-dict. There's a built-in extension that takes care of serializing, storing and
-loading that attribute from the job directory, when the spider starts and
-stops.
+dict. There's :ref:`a built-in extension <topics-extensions-ref-spiderstate>`
+that takes care of serializing, storing and loading that attribute from the job
+directory, when the spider starts and stops.
 
 Here's an example of a callback that uses the spider state (other spider code
 is omitted for brevity):

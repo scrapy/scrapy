@@ -1,28 +1,25 @@
 import argparse
-import os
+import re
 from pathlib import Path
-
-from twisted.internet import defer
 
 from scrapy.commands import parse
 from scrapy.settings import Settings
-from scrapy.utils.python import to_unicode
-from scrapy.utils.testproc import ProcessTest
-from scrapy.utils.testsite import SiteTest
-from tests.test_commands import CommandTest
+from tests.mockserver.http import MockServer
+from tests.test_commands import TestCommandBase
 
 
-def _textmode(bstr):
-    """Normalize input the same as writing to a file
-    and reading from it in text mode"""
-    return to_unicode(bstr).replace(os.linesep, "\n")
+class TestParseCommand(TestCommandBase):
+    @classmethod
+    def setup_class(cls):
+        cls.mockserver = MockServer()
+        cls.mockserver.__enter__()
 
+    @classmethod
+    def teardown_class(cls):
+        cls.mockserver.__exit__(None, None, None)
 
-class ParseCommandTest(ProcessTest, SiteTest, CommandTest):
-    command = "parse"
-
-    def setUp(self):
-        super().setUp()
+    def setup_method(self):
+        super().setup_method()
         self.spider_name = "parse_spider"
         (self.proj_mod_path / "spiders" / "myspider.py").write_text(
             f"""
@@ -156,7 +153,7 @@ import logging
 class MyPipeline:
     component_name = 'my_pipeline'
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         logging.info('It Works!')
         return item
 """,
@@ -170,267 +167,260 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
 """
             )
 
-    @defer.inlineCallbacks
     def test_spider_arguments(self):
-        _, _, stderr = yield self.execute(
-            [
-                "--spider",
-                self.spider_name,
-                "-a",
-                "test_arg=1",
-                "-c",
-                "parse",
-                "--verbose",
-                self.url("/html"),
-            ]
+        _, _, stderr = self.proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "-a",
+            "test_arg=1",
+            "-c",
+            "parse",
+            "--verbose",
+            self.mockserver.url("/html"),
         )
-        self.assertIn("DEBUG: It Works!", _textmode(stderr))
+        assert "DEBUG: It Works!" in stderr
 
-    @defer.inlineCallbacks
     def test_request_with_meta(self):
         raw_json_string = '{"foo" : "baz"}'
-        _, _, stderr = yield self.execute(
-            [
-                "--spider",
-                self.spider_name,
-                "--meta",
-                raw_json_string,
-                "-c",
-                "parse_request_with_meta",
-                "--verbose",
-                self.url("/html"),
-            ]
+        _, _, stderr = self.proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "--meta",
+            raw_json_string,
+            "-c",
+            "parse_request_with_meta",
+            "--verbose",
+            self.mockserver.url("/html"),
         )
-        self.assertIn("DEBUG: It Works!", _textmode(stderr))
+        assert "DEBUG: It Works!" in stderr
 
-        _, _, stderr = yield self.execute(
-            [
-                "--spider",
-                self.spider_name,
-                "-m",
-                raw_json_string,
-                "-c",
-                "parse_request_with_meta",
-                "--verbose",
-                self.url("/html"),
-            ]
+        _, _, stderr = self.proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "-m",
+            raw_json_string,
+            "-c",
+            "parse_request_with_meta",
+            "--verbose",
+            self.mockserver.url("/html"),
         )
-        self.assertIn("DEBUG: It Works!", _textmode(stderr))
+        assert "DEBUG: It Works!" in stderr
 
-    @defer.inlineCallbacks
     def test_request_with_cb_kwargs(self):
         raw_json_string = '{"foo" : "bar", "key": "value"}'
-        _, _, stderr = yield self.execute(
-            [
-                "--spider",
-                self.spider_name,
-                "--cbkwargs",
-                raw_json_string,
-                "-c",
-                "parse_request_with_cb_kwargs",
-                "--verbose",
-                self.url("/html"),
-            ]
+        _, _, stderr = self.proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "--cbkwargs",
+            raw_json_string,
+            "-c",
+            "parse_request_with_cb_kwargs",
+            "--verbose",
+            self.mockserver.url("/html"),
         )
-        log = _textmode(stderr)
-        self.assertIn("DEBUG: It Works!", log)
-        self.assertIn(
-            "DEBUG: request.callback signature: (response, foo=None, key=None)", log
+        assert "DEBUG: It Works!" in stderr
+        assert (
+            "DEBUG: request.callback signature: (response, foo=None, key=None)"
+            in stderr
         )
 
-    @defer.inlineCallbacks
     def test_request_without_meta(self):
-        _, _, stderr = yield self.execute(
-            [
-                "--spider",
-                self.spider_name,
-                "-c",
-                "parse_request_without_meta",
-                "--nolinks",
-                self.url("/html"),
-            ]
+        _, _, stderr = self.proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "-c",
+            "parse_request_without_meta",
+            "--nolinks",
+            self.mockserver.url("/html"),
         )
-        self.assertIn("DEBUG: It Works!", _textmode(stderr))
+        assert "DEBUG: It Works!" in stderr
 
-    @defer.inlineCallbacks
     def test_pipelines(self):
-        _, _, stderr = yield self.execute(
-            [
-                "--spider",
-                self.spider_name,
-                "--pipelines",
-                "-c",
-                "parse",
-                "--verbose",
-                self.url("/html"),
-            ]
+        _, _, stderr = self.proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "--pipelines",
+            "-c",
+            "parse",
+            "--verbose",
+            self.mockserver.url("/html"),
         )
-        self.assertIn("INFO: It Works!", _textmode(stderr))
+        assert "INFO: It Works!" in stderr
 
-    @defer.inlineCallbacks
     def test_async_def_asyncio_parse_items_list(self):
-        status, out, stderr = yield self.execute(
-            [
-                "--spider",
-                "asyncdef_asyncio_return",
-                "-c",
-                "parse",
-                self.url("/html"),
-            ]
+        _, out, stderr = self.proc(
+            "parse",
+            "--spider",
+            "asyncdef_asyncio_return",
+            "-c",
+            "parse",
+            self.mockserver.url("/html"),
         )
-        self.assertIn("INFO: Got response 200", _textmode(stderr))
-        self.assertIn("{'id': 1}", _textmode(out))
-        self.assertIn("{'id': 2}", _textmode(out))
+        assert "INFO: Got response 200" in stderr
+        assert "{'id': 1}" in out
+        assert "{'id': 2}" in out
 
-    @defer.inlineCallbacks
     def test_async_def_asyncio_parse_items_single_element(self):
-        status, out, stderr = yield self.execute(
-            [
-                "--spider",
-                "asyncdef_asyncio_return_single_element",
-                "-c",
-                "parse",
-                self.url("/html"),
-            ]
+        _, out, stderr = self.proc(
+            "parse",
+            "--spider",
+            "asyncdef_asyncio_return_single_element",
+            "-c",
+            "parse",
+            self.mockserver.url("/html"),
         )
-        self.assertIn("INFO: Got response 200", _textmode(stderr))
-        self.assertIn("{'foo': 42}", _textmode(out))
+        assert "INFO: Got response 200" in stderr
+        assert "{'foo': 42}" in out
 
-    @defer.inlineCallbacks
     def test_async_def_asyncgen_parse_loop(self):
-        status, out, stderr = yield self.execute(
-            [
-                "--spider",
-                "asyncdef_asyncio_gen_loop",
-                "-c",
-                "parse",
-                self.url("/html"),
-            ]
+        _, out, stderr = self.proc(
+            "parse",
+            "--spider",
+            "asyncdef_asyncio_gen_loop",
+            "-c",
+            "parse",
+            self.mockserver.url("/html"),
         )
-        self.assertIn("INFO: Got response 200", _textmode(stderr))
+        assert "INFO: Got response 200" in stderr
         for i in range(10):
-            self.assertIn(f"{{'foo': {i}}}", _textmode(out))
+            assert f"{{'foo': {i}}}" in out
 
-    @defer.inlineCallbacks
     def test_async_def_asyncgen_parse_exc(self):
-        status, out, stderr = yield self.execute(
-            [
-                "--spider",
-                "asyncdef_asyncio_gen_exc",
-                "-c",
-                "parse",
-                self.url("/html"),
-            ]
+        _, out, stderr = self.proc(
+            "parse",
+            "--spider",
+            "asyncdef_asyncio_gen_exc",
+            "-c",
+            "parse",
+            self.mockserver.url("/html"),
         )
-        self.assertIn("ValueError", _textmode(stderr))
+        assert "ValueError" in stderr
         for i in range(7):
-            self.assertIn(f"{{'foo': {i}}}", _textmode(out))
+            assert f"{{'foo': {i}}}" in out
 
-    @defer.inlineCallbacks
     def test_async_def_asyncio_parse(self):
-        _, _, stderr = yield self.execute(
-            [
-                "--spider",
-                "asyncdef_asyncio",
-                "-c",
-                "parse",
-                self.url("/html"),
-            ]
+        _, _, stderr = self.proc(
+            "parse",
+            "--spider",
+            "asyncdef_asyncio",
+            "-c",
+            "parse",
+            self.mockserver.url("/html"),
         )
-        self.assertIn("DEBUG: Got response 200", _textmode(stderr))
+        assert "DEBUG: Got response 200" in stderr
 
-    @defer.inlineCallbacks
     def test_parse_items(self):
-        status, out, stderr = yield self.execute(
-            ["--spider", self.spider_name, "-c", "parse", self.url("/html")]
+        _, out, _ = self.proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "-c",
+            "parse",
+            self.mockserver.url("/html"),
         )
-        self.assertIn("""[{}, {'foo': 'bar'}]""", _textmode(out))
+        assert "[{}, {'foo': 'bar'}]" in out
 
-    @defer.inlineCallbacks
     def test_parse_items_no_callback_passed(self):
-        status, out, stderr = yield self.execute(
-            ["--spider", self.spider_name, self.url("/html")]
+        _, out, _ = self.proc(
+            "parse", "--spider", self.spider_name, self.mockserver.url("/html")
         )
-        self.assertIn("""[{}, {'foo': 'bar'}]""", _textmode(out))
+        assert "[{}, {'foo': 'bar'}]" in out
 
-    @defer.inlineCallbacks
     def test_wrong_callback_passed(self):
-        status, out, stderr = yield self.execute(
-            ["--spider", self.spider_name, "-c", "dummy", self.url("/html")]
+        _, out, stderr = self.proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "-c",
+            "dummy",
+            self.mockserver.url("/html"),
         )
-        self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
-        self.assertIn("""Cannot find callback""", _textmode(stderr))
+        assert re.search(r"# Scraped Items  -+\r?\n\[\]", out)
+        assert "Cannot find callback" in stderr
 
-    @defer.inlineCallbacks
     def test_crawlspider_matching_rule_callback_set(self):
         """If a rule matches the URL, use it's defined callback."""
-        status, out, stderr = yield self.execute(
-            ["--spider", "goodcrawl" + self.spider_name, "-r", self.url("/html")]
+        _, out, _ = self.proc(
+            "parse",
+            "--spider",
+            "goodcrawl" + self.spider_name,
+            "-r",
+            self.mockserver.url("/html"),
         )
-        self.assertIn("""[{}, {'foo': 'bar'}]""", _textmode(out))
+        assert "[{}, {'foo': 'bar'}]" in out
 
-    @defer.inlineCallbacks
     def test_crawlspider_matching_rule_default_callback(self):
         """If a rule match but it has no callback set, use the 'parse' callback."""
-        status, out, stderr = yield self.execute(
-            ["--spider", "goodcrawl" + self.spider_name, "-r", self.url("/text")]
+        _, out, _ = self.proc(
+            "parse",
+            "--spider",
+            "goodcrawl" + self.spider_name,
+            "-r",
+            self.mockserver.url("/text"),
         )
-        self.assertIn("""[{}, {'nomatch': 'default'}]""", _textmode(out))
+        assert "[{}, {'nomatch': 'default'}]" in out
 
-    @defer.inlineCallbacks
     def test_spider_with_no_rules_attribute(self):
         """Using -r with a spider with no rule should not produce items."""
-        status, out, stderr = yield self.execute(
-            ["--spider", self.spider_name, "-r", self.url("/html")]
+        _, out, stderr = self.proc(
+            "parse", "--spider", self.spider_name, "-r", self.mockserver.url("/html")
         )
-        self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
-        self.assertIn("""No CrawlSpider rules found""", _textmode(stderr))
+        assert re.search(r"# Scraped Items  -+\r?\n\[\]", out)
+        assert "No CrawlSpider rules found" in stderr
 
-    @defer.inlineCallbacks
     def test_crawlspider_missing_callback(self):
-        status, out, stderr = yield self.execute(
-            ["--spider", "badcrawl" + self.spider_name, "-r", self.url("/html")]
+        _, out, _ = self.proc(
+            "parse",
+            "--spider",
+            "badcrawl" + self.spider_name,
+            "-r",
+            self.mockserver.url("/html"),
         )
-        self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
+        assert re.search(r"# Scraped Items  -+\r?\n\[\]", out)
 
-    @defer.inlineCallbacks
     def test_crawlspider_no_matching_rule(self):
         """The requested URL has no matching rule, so no items should be scraped"""
-        status, out, stderr = yield self.execute(
-            ["--spider", "badcrawl" + self.spider_name, "-r", self.url("/enc-gb18030")]
+        _, out, stderr = self.proc(
+            "parse",
+            "--spider",
+            "badcrawl" + self.spider_name,
+            "-r",
+            self.mockserver.url("/enc-gb18030"),
         )
-        self.assertRegex(_textmode(out), r"""# Scraped Items  -+\n\[\]""")
-        self.assertIn("""Cannot find a rule that matches""", _textmode(stderr))
+        assert re.search(r"# Scraped Items  -+\r?\n\[\]", out)
+        assert "Cannot find a rule that matches" in stderr
 
-    @defer.inlineCallbacks
     def test_crawlspider_not_exists_with_not_matched_url(self):
-        status, out, stderr = yield self.execute([self.url("/invalid_url")])
-        self.assertEqual(status, 0)
+        assert self.call("parse", self.mockserver.url("/invalid_url")) == 0
 
-    @defer.inlineCallbacks
     def test_output_flag(self):
         """Checks if a file was created successfully having
         correct format containing correct data in it.
         """
         file_name = "data.json"
         file_path = Path(self.proj_path, file_name)
-        yield self.execute(
-            [
-                "--spider",
-                self.spider_name,
-                "-c",
-                "parse",
-                "-o",
-                file_name,
-                self.url("/html"),
-            ]
+        self.proc(
+            "parse",
+            "--spider",
+            self.spider_name,
+            "-c",
+            "parse",
+            "-o",
+            file_name,
+            self.mockserver.url("/html"),
         )
 
-        self.assertTrue(file_path.exists())
-        self.assertTrue(file_path.is_file())
+        assert file_path.exists()
+        assert file_path.is_file()
 
         content = '[\n{},\n{"foo": "bar"}\n]'
-        self.assertEqual(file_path.read_text(encoding="utf-8"), content)
+        assert file_path.read_text(encoding="utf-8") == content
 
     def test_parse_add_options(self):
         command = parse.Command()
@@ -445,7 +435,7 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         namespace = parser.parse_args(
             ["--verbose", "--nolinks", "-d", "2", "--spider", self.spider_name]
         )
-        self.assertTrue(namespace.nolinks)
-        self.assertEqual(namespace.depth, 2)
-        self.assertEqual(namespace.spider, self.spider_name)
-        self.assertTrue(namespace.verbose)
+        assert namespace.nolinks
+        assert namespace.depth == 2
+        assert namespace.spider == self.spider_name
+        assert namespace.verbose

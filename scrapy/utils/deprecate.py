@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import inspect
 import warnings
-from typing import Any, overload
+from typing import TYPE_CHECKING, Any, overload
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.python import get_func_args_dict
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def attribute(obj: Any, oldattr: str, newattr: str, version: str = "0.12") -> None:
@@ -57,10 +61,11 @@ def create_deprecated_class(
 
     # https://github.com/python/mypy/issues/4177
     class DeprecatedClass(new_class.__class__):  # type: ignore[misc, name-defined]
+        # pylint: disable=no-self-argument
         deprecated_class: type | None = None
         warned_on_subclass: bool = False
 
-        def __new__(
+        def __new__(  # pylint: disable=bad-classmethod-argument
             metacls, name: str, bases: tuple[type, ...], clsdict_: dict[str, Any]
         ) -> type:
             cls = super().__new__(metacls, name, bases, clsdict_)
@@ -178,6 +183,8 @@ def method_is_overridden(subclass: type, base_class: type, method_name: str) -> 
     ...         pass
     >>> class Sub4(Sub2):
     ...     pass
+    >>> method_is_overridden(Base, Base, 'foo')
+    False
     >>> method_is_overridden(Sub1, Base, 'foo')
     False
     >>> method_is_overridden(Sub2, Base, 'foo')
@@ -190,3 +197,25 @@ def method_is_overridden(subclass: type, base_class: type, method_name: str) -> 
     base_method = getattr(base_class, method_name)
     sub_method = getattr(subclass, method_name)
     return base_method.__code__ is not sub_method.__code__
+
+
+def argument_is_required(func: Callable[..., Any], arg_name: str) -> bool:
+    """
+    Check if a function argument is required (exists and doesn't have a default value).
+
+    .. versionadded:: VERSION
+
+    >>> def func(a, b=1, c=None):
+    ...     pass
+    >>> argument_is_required(func, 'a')
+    True
+    >>> argument_is_required(func, 'b')
+    False
+    >>> argument_is_required(func, 'c')
+    False
+    >>> argument_is_required(func, 'd')
+    False
+    """
+    args = get_func_args_dict(func)
+    param = args.get(arg_name)
+    return param is not None and param.default is inspect.Parameter.empty

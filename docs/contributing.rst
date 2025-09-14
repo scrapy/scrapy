@@ -6,8 +6,13 @@ Contributing to Scrapy
 
 .. important::
 
-    Double check that you are reading the most recent version of this document at
-    https://docs.scrapy.org/en/master/contributing.html
+    Double check that you are reading the most recent version of this document
+    at https://docs.scrapy.org/en/master/contributing.html
+
+    By participating in this project you agree to abide by the terms of our
+    `Code of Conduct
+    <https://github.com/scrapy/scrapy/blob/master/CODE_OF_CONDUCT.md>`_. Please
+    report unacceptable behavior to opensource@zyte.com.
 
 There are many ways to contribute to Scrapy. Here are some of them:
 
@@ -74,17 +79,80 @@ guidelines when you're going to report a new bug.
 
 .. _Minimal, Complete, and Verifiable example: https://stackoverflow.com/help/mcve
 
+.. _find-work:
+
+Finding work
+============
+
+If you have decided to make a contribution to Scrapy, but you do not know what
+to contribute, you have a few options to find pending work:
+
+-   Check out the `contribution GitHub page`_, which lists open issues tagged
+    as **good first issue**.
+
+    .. _contribution GitHub page: https://github.com/scrapy/scrapy/contribute
+
+    There are also `help wanted issues`_ but mind that some may require
+    familiarity with the Scrapy code base. You can also target any other issue
+    provided it is not tagged as **discuss**.
+
+-   If you enjoy writing documentation, there are `documentation issues`_ as
+    well, but mind that some may require familiarity with the Scrapy code base
+    as well.
+
+    .. _documentation issues: https://github.com/scrapy/scrapy/issues?q=is%3Aissue+is%3Aopen+label%3Adocs+
+
+-   If you enjoy :ref:`writing automated tests <write-tests>`, you can work on
+    increasing our `test coverage`_.
+
+-   If you enjoy code cleanup, we welcome fixes for issues detected by our
+    static analysis tools. See ``pyproject.toml`` for silenced issues that may
+    need addressing.
+
+    Mind that some issues we do not aim to address at all, and usually include
+    a comment on them explaining the reason; not to confuse with comments that
+    state what the issue is about, for non-descriptive issue codes.
+
+If you have found an issue, make sure you read the entire issue thread before
+you ask questions. That includes related issues and pull requests that show up
+in the issue thread when the issue is mentioned elsewhere.
+
+We do not assign issues, and you do not need to announce that you are going to
+start working on an issue either. If you want to work on an issue, just go
+ahead and :ref:`write a patch for it <writing-patches>`.
+
+Do not discard an issue simply because there is an open pull request for it.
+Check if open pull requests are active first. And even if some are active, if
+you think you can build a better implementation, feel free to create a pull
+request with your approach.
+
+If you decide to work on something without an open issue, please:
+
+-   Do not create an issue to work on code coverage or code cleanup, create a
+    pull request directly.
+
+-   Do not create both an issue and a pull request right away. Either open an
+    issue first to get feedback on whether or not the issue is worth
+    addressing, and create a pull request later only if the feedback from the
+    team is positive, or create only a pull request, if you think a discussion
+    will be easier over your code.
+
+-   Do not add docstrings for the sake of adding docstrings, or only to address
+    silenced Ruff issues. We expect docstrings to exist only when they add
+    something significant to readers, such as explaining something that is not
+    easier to understand from reading the corresponding code, summarizing a
+    long, hard-to-read implementation, providing context about calling code, or
+    indicating purposely uncaught exceptions from called code.
+
+-   Do not add tests that use as much mocking as possible just to touch a given
+    line of code and hence improve line coverage. While we do aim to maximize
+    test coverage, tests should be written for real scenarios, with minimum
+    mocking. We usually prefer end-to-end tests.
+
 .. _writing-patches:
 
 Writing patches
 ===============
-
-Scrapy has a list of `good first issues`_ and `help wanted issues`_ that you
-can work on. These issues are a great way to get started with contributing to
-Scrapy. If you're new to the codebase, you may want to focus on documentation
-or testing-related issues, as they are always useful and can help you get
-more familiar with the project. You can also check Scrapy's `test coverage`_
-to see which areas may benefit from more tests.
 
 The better a patch is written, the higher the chances that it'll get accepted and the sooner it will be merged.
 
@@ -131,6 +199,14 @@ Remember to explain what was fixed or the new functionality (what it is, why
 it's needed, etc). The more info you include, the easier will be for core
 developers to understand and accept your patch.
 
+If your pull request aims to resolve an open issue, `link it accordingly
+<https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword>`__,
+e.g.:
+
+.. code-block:: none
+
+    Resolves #123
+
 You can also discuss the new functionality (or bug fix) before creating the
 patch, but it's always good to have a patch ready to illustrate your arguments
 and show that you have put some additional thought into the subject. A good
@@ -154,7 +230,7 @@ by running ``git fetch upstream pull/$PR_NUMBER/head:$BRANCH_NAME_TO_CREATE``
 (replace 'upstream' with a remote name for scrapy repository,
 ``$PR_NUMBER`` with an ID of the pull request, and ``$BRANCH_NAME_TO_CREATE``
 with a name of the branch you want to create locally).
-See also: https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/checking-out-pull-requests-locally#modifying-an-inactive-pull-request-locally.
+See also: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/checking-out-pull-requests-locally#modifying-an-inactive-pull-request-locally.
 
 When writing GitHub pull requests, try to keep titles short but descriptive.
 E.g. For bug #411: "Scrapy hangs if an exception raises in start_requests"
@@ -175,15 +251,15 @@ Coding style
 Please follow these coding conventions when writing code for inclusion in
 Scrapy:
 
-* We use `black <https://black.readthedocs.io/en/stable/>`_ for code formatting.
+* We use `Ruff <https://docs.astral.sh/ruff/>`_ for code formatting.
   There is a hook in the pre-commit config
   that will automatically format your code before every commit. You can also
-  run black manually with ``tox -e pre-commit``.
+  run Ruff manually with ``tox -e pre-commit``.
 
 * Don't put your name in the code you contribute; git provides enough
   metadata to identify author of the code.
-  See https://help.github.com/en/github/using-git/setting-your-username-in-git for
-  setup instructions.
+  See https://docs.github.com/en/get-started/getting-started-with-git/setting-your-username-in-git
+  for setup instructions.
 
 .. _scrapy-pre-commit:
 
@@ -242,6 +318,7 @@ Documentation about deprecated features must be removed as those features are
 deprecated, so that new readers do not run into it. New deprecations and
 deprecation removals are documented in the :ref:`release notes <news>`.
 
+.. _write-tests:
 
 Tests
 =====
@@ -317,9 +394,8 @@ And their unit-tests are in::
 .. _AUTHORS: https://github.com/scrapy/scrapy/blob/master/AUTHORS
 .. _tests/: https://github.com/scrapy/scrapy/tree/master/tests
 .. _open issues: https://github.com/scrapy/scrapy/issues
-.. _PEP 257: https://www.python.org/dev/peps/pep-0257/
-.. _pull request: https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request
+.. _PEP 257: https://peps.python.org/pep-0257/
+.. _pull request: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request
 .. _pytest-xdist: https://github.com/pytest-dev/pytest-xdist
-.. _good first issues: https://github.com/scrapy/scrapy/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22
 .. _help wanted issues: https://github.com/scrapy/scrapy/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22
 .. _test coverage: https://app.codecov.io/gh/scrapy/scrapy

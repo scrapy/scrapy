@@ -70,7 +70,7 @@ The advantage of using the :class:`ImagesPipeline` for image files is that you
 can configure some extra functions like generating thumbnails and filtering
 the images based on their size.
 
-The Images Pipeline requires Pillow_ 7.1.0 or greater. It is used for
+The Images Pipeline requires Pillow_ 8.0.0 or greater. It is used for
 thumbnailing and normalizing images to JPEG/RGB format.
 
 .. _Pillow: https://github.com/python-pillow/Pillow
@@ -261,7 +261,7 @@ policy:
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
 You can also use other S3-like storages. Storages like self-hosted `Minio`_ or
-`s3.scality`_. All you need to do is set endpoint option in you Scrapy
+`Zenko CloudServer`_. All you need to do is set endpoint option in you Scrapy
 settings:
 
 .. code-block:: python
@@ -276,9 +276,9 @@ For self-hosting you also might feel the need not to use SSL and not to verify S
     AWS_VERIFY = False  # or True (None by default)
 
 .. _botocore: https://github.com/boto/botocore
-.. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/dev/acl-overview.html#canned-acl
+.. _canned ACLs: https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl
 .. _Minio: https://github.com/minio/minio
-.. _s3.scality: https://s3.scality.com/
+.. _Zenko CloudServer: https://www.zenko.io/cloudserver/
 
 
 .. _media-pipeline-gcs:
@@ -303,7 +303,7 @@ For example, these are valid :setting:`IMAGES_STORE` and :setting:`GCS_PROJECT_I
 
 For information about authentication, see this `documentation`_.
 
-.. _documentation: https://cloud.google.com/docs/authentication/production
+.. _documentation: https://cloud.google.com/docs/authentication
 
 You can modify the Access Control List (ACL) policy used for the stored files,
 which is defined by the :setting:`FILES_STORE_GCS_ACL` and
@@ -414,7 +414,7 @@ class name. E.g. given pipeline class called MyPipeline you can set setting key:
 
 and pipeline class MyPipeline will have expiration time set to 180.
 
-The last modified time from the file is used to determine the age of the file in days, 
+The last modified time from the file is used to determine the age of the file in days,
 which is then compared to the set expiration time to determine if the file is expired.
 
 .. _topics-images-thumbnails:
@@ -519,7 +519,7 @@ See here the methods that you can override in your custom Files Pipeline:
 
       In addition to ``response``, this method receives the original
       :class:`request <scrapy.Request>`,
-      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and 
+      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and
       :class:`item <scrapy.Item>`
 
       You can override this method to customize the download path of each file.
@@ -541,9 +541,9 @@ See here the methods that you can override in your custom Files Pipeline:
             def file_path(self, request, response=None, info=None, *, item=None):
                 return "files/" + PurePosixPath(urlparse_cached(request).path).name
 
-      Similarly, you can use the ``item`` to determine the file path based on some item 
+      Similarly, you can use the ``item`` to determine the file path based on some item
       property.
-      
+
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
 
@@ -677,7 +677,7 @@ See here the methods that you can override in your custom Images Pipeline:
 
       In addition to ``response``, this method receives the original
       :class:`request <scrapy.Request>`,
-      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and 
+      :class:`info <scrapy.pipelines.media.MediaPipeline.SpiderInfo>` and
       :class:`item <scrapy.Item>`
 
       You can override this method to customize the download path of each file.
@@ -699,9 +699,9 @@ See here the methods that you can override in your custom Images Pipeline:
             def file_path(self, request, response=None, info=None, *, item=None):
                 return "files/" + PurePosixPath(urlparse_cached(request).path).name
 
-      Similarly, you can use the ``item`` to determine the file path based on some item 
+      Similarly, you can use the ``item`` to determine the file path based on some item
       property.
-      
+
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
 

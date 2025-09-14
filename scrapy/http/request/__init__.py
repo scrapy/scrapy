@@ -21,12 +21,12 @@ from typing import (
 
 from w3lib.url import safe_url_string
 
-import scrapy
+# a workaround for the docs "more than one target found" problem
+import scrapy  # noqa: TC001
 from scrapy.http.headers import Headers
 from scrapy.utils.curl import curl_to_request_kwargs
 from scrapy.utils.python import to_bytes
 from scrapy.utils.trackref import object_ref
-from scrapy.utils.url import escape_ajax
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -43,10 +43,10 @@ if TYPE_CHECKING:
 
 
 class VerboseCookie(TypedDict):
-    name: str
-    value: str
-    domain: NotRequired[str]
-    path: NotRequired[str]
+    name: str | bytes
+    value: str | bytes | bool | float | int
+    domain: NotRequired[str | bytes]
+    path: NotRequired[str | bytes]
     secure: NotRequired[bool]
 
 
@@ -58,7 +58,7 @@ RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")
 
 def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
     """When assigned to the ``callback`` parameter of
-    :class:`~scrapy.http.Request`, it indicates that the request is not meant
+    :class:`~scrapy.Request`, it indicates that the request is not meant
     to have a spider callback at all.
 
     For example:
@@ -82,7 +82,7 @@ def NO_CALLBACK(*args: Any, **kwargs: Any) -> NoReturn:
 
 class Request(object_ref):
     """Represents an HTTP request, which is usually generated in a Spider and
-    executed by the Downloader, thus generating a :class:`Response`.
+    executed by the Downloader, thus generating a :class:`~scrapy.http.Response`.
     """
 
     attributes: tuple[str, ...] = (
@@ -102,9 +102,9 @@ class Request(object_ref):
     )
     """A tuple of :class:`str` objects containing the name of all public
     attributes of the class that are also keyword parameters of the
-    ``__init__`` method.
+    ``__init__()`` method.
 
-    Currently used by :meth:`Request.replace`, :meth:`Request.to_dict` and
+    Currently used by :meth:`.Request.replace`, :meth:`.Request.to_dict` and
     :func:`~scrapy.utils.request.request_from_dict`.
     """
 
@@ -130,6 +130,16 @@ class Request(object_ref):
         self._set_body(body)
         if not isinstance(priority, int):
             raise TypeError(f"Request priority not an integer: {priority!r}")
+
+        #: Default: ``0``
+        #:
+        #: Value that the :ref:`scheduler <topics-scheduler>` may use for
+        #: request prioritization.
+        #:
+        #: Built-in schedulers prioritize requests with a higher priority
+        #: value.
+        #:
+        #: Negative values are allowed.
         self.priority: int = priority
 
         if not (callable(callback) or callback is None):
@@ -138,11 +148,60 @@ class Request(object_ref):
             )
         if not (callable(errback) or errback is None):
             raise TypeError(f"errback must be a callable, got {type(errback).__name__}")
+
+        #: :class:`~collections.abc.Callable` to parse the
+        #: :class:`~scrapy.http.Response` to this request once received.
+        #:
+        #: The callable must expect the response as its first parameter, and
+        #: support any additional keyword arguments set through
+        #: :attr:`cb_kwargs`.
+        #:
+        #: In addition to an arbitrary callable, the following values are also
+        #: supported:
+        #:
+        #: -   ``None`` (default), which indicates that the
+        #:     :meth:`~scrapy.Spider.parse` method of the spider must be used.
+        #:
+        #: -   :func:`~scrapy.http.request.NO_CALLBACK`.
+        #:
+        #: If an unhandled exception is raised during request or response
+        #: processing, i.e. by a :ref:`spider middleware
+        #: <topics-spider-middleware>`, :ref:`downloader middleware
+        #: <topics-downloader-middleware>` or download handler
+        #: (:setting:`DOWNLOAD_HANDLERS`), :attr:`errback` is called instead.
+        #:
+        #: .. tip::
+        #:     :class:`~scrapy.spidermiddlewares.httperror.HttpErrorMiddleware`
+        #:     raises exceptions for non-2xx responses by default, sending them
+        #:     to the :attr:`errback` instead.
+        #:
+        #: .. seealso::
+        #:     :ref:`topics-request-response-ref-request-callback-arguments`
         self.callback: CallbackT | None = callback
+
+        #: :class:`~collections.abc.Callable` to handle exceptions raised
+        #: during request or response processing.
+        #:
+        #: The callable must expect a :exc:`~twisted.python.failure.Failure` as
+        #: its first parameter.
+        #:
+        #: .. seealso:: :ref:`topics-request-response-ref-errbacks`
         self.errback: Callable[[Failure], Any] | None = errback
 
         self.cookies: CookiesT = cookies or {}
         self.headers: Headers = Headers(headers or {}, encoding=encoding)
+
+        #: Whether this request may be filtered out by :ref:`components
+        #: <topics-components>` that support filtering out requests (``False``,
+        #: default), or those components should not filter out this request
+        #: (``True``).
+        #:
+        #: This attribute is commonly set to ``True`` to prevent duplicate
+        #: requests from being filtered out.
+        #:
+        #: When defining the start URLs of a spider through
+        #: :attr:`~scrapy.Spider.start_urls`, this attribute is enabled by
+        #: default. See :meth:`~scrapy.Spider.start`.
         self.dont_filter: bool = dont_filter
 
         self._meta: dict[str, Any] | None = dict(meta) if meta else None
@@ -169,8 +228,7 @@ class Request(object_ref):
         if not isinstance(url, str):
             raise TypeError(f"Request url must be str, got {type(url).__name__}")
 
-        s = safe_url_string(url, self.encoding)
-        self._url = escape_ajax(s)
+        self._url = safe_url_string(url, self.encoding)
 
         if (
             "://" not in self._url
@@ -222,7 +280,7 @@ class Request(object_ref):
         **kwargs: Any,
     ) -> Self:
         """Create a Request object from a string containing a `cURL
-        <https://curl.haxx.se/>`_ command. It populates the HTTP method, the
+        <https://curl.se/>`_ command. It populates the HTTP method, the
         URL, the headers, the cookies and the body. It accepts the same
         arguments as the :class:`Request` class, taking preference and
         overriding the values of the same arguments contained in the cURL
@@ -232,7 +290,7 @@ class Request(object_ref):
         finding unknown options call this method by passing
         ``ignore_unknown_options=False``.
 
-        .. caution:: Using :meth:`from_curl` from :class:`~scrapy.http.Request`
+        .. caution:: Using :meth:`from_curl` from :class:`~scrapy.Request`
                      subclasses, such as :class:`~scrapy.http.JsonRequest`, or
                      :class:`~scrapy.http.XmlRpcRequest`, as well as having
                      :ref:`downloader middlewares <topics-downloader-middleware>`
@@ -243,7 +301,7 @@ class Request(object_ref):
                      :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`,
                      or
                      :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`,
-                     may modify the :class:`~scrapy.http.Request` object.
+                     may modify the :class:`~scrapy.Request` object.
 
         To translate a cURL command into a Scrapy request,
         you may use `curl2scrapy <https://michael-shub.github.io/curl2scrapy/>`_.

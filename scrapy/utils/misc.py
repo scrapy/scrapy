@@ -9,7 +9,6 @@ import os
 import re
 import warnings
 from collections import deque
-from collections.abc import Iterable
 from contextlib import contextmanager
 from functools import partial
 from importlib import import_module
@@ -21,12 +20,11 @@ from scrapy.item import Item
 from scrapy.utils.datatypes import LocalWeakReferencedCache
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
+    from collections.abc import Callable, Iterable, Iterator
     from types import ModuleType
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
-    from scrapy.settings import BaseSettings
 
 
 _ITERABLE_SINGLE_VALUES = dict, Item, str, bytes
@@ -42,7 +40,7 @@ def arg_to_iter(arg: Any) -> Iterable[Any]:
     if arg is None:
         return []
     if not isinstance(arg, _ITERABLE_SINGLE_VALUES) and hasattr(arg, "__iter__"):
-        return cast(Iterable[Any], arg)
+        return cast("Iterable[Any]", arg)
     return [arg]
 
 
@@ -111,13 +109,13 @@ def md5sum(file: IO[bytes]) -> str:
     """
     warnings.warn(
         (
-            "The scrapy.utils.misc.md5sum function is deprecated, and will be "
+            "The scrapy.utils.misc.md5sum function is deprecated and will be "
             "removed in a future version of Scrapy."
         ),
         ScrapyDeprecationWarning,
         stacklevel=2,
     )
-    m = hashlib.md5()  # nosec
+    m = hashlib.md5()  # noqa: S324
     while True:
         d = file.read(8096)
         if not d:
@@ -150,7 +148,7 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
     """
     warnings.warn(
         "The create_instance() function is deprecated. "
-        "Please use build_from_crawler() or build_from_settings() instead.",
+        "Please use build_from_crawler() instead.",
         category=ScrapyDeprecationWarning,
         stacklevel=2,
     )
@@ -176,7 +174,9 @@ def create_instance(objcls, settings, crawler, *args, **kwargs):
 def build_from_crawler(
     objcls: type[T], crawler: Crawler, /, *args: Any, **kwargs: Any
 ) -> T:
-    """Construct a class instance using its ``from_crawler`` constructor.
+    """Construct a class instance using its ``from_crawler`` or ``from_settings`` constructor.
+
+    .. versionadded:: 2.12
 
     ``*args`` and ``**kwargs`` are forwarded to the constructor.
 
@@ -186,6 +186,14 @@ def build_from_crawler(
         instance = objcls.from_crawler(crawler, *args, **kwargs)  # type: ignore[attr-defined]
         method_name = "from_crawler"
     elif hasattr(objcls, "from_settings"):
+        warnings.warn(
+            f"{objcls.__qualname__} has from_settings() but not from_crawler()."
+            " This is deprecated and calling from_settings() will be removed in a future"
+            " Scrapy version. You can implement a simple from_crawler() that calls"
+            " from_settings() with crawler.settings.",
+            category=ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         instance = objcls.from_settings(crawler.settings, *args, **kwargs)  # type: ignore[attr-defined]
         method_name = "from_settings"
     else:
@@ -193,27 +201,7 @@ def build_from_crawler(
         method_name = "__new__"
     if instance is None:
         raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
-    return cast(T, instance)
-
-
-def build_from_settings(
-    objcls: type[T], settings: BaseSettings, /, *args: Any, **kwargs: Any
-) -> T:
-    """Construct a class instance using its ``from_settings`` constructor.
-
-    ``*args`` and ``**kwargs`` are forwarded to the constructor.
-
-    Raises ``TypeError`` if the resulting instance is ``None``.
-    """
-    if hasattr(objcls, "from_settings"):
-        instance = objcls.from_settings(settings, *args, **kwargs)  # type: ignore[attr-defined]
-        method_name = "from_settings"
-    else:
-        instance = objcls(*args, **kwargs)
-        method_name = "__new__"
-    if instance is None:
-        raise TypeError(f"{objcls.__qualname__}.{method_name} returned None")
-    return cast(T, instance)
+    return cast("T", instance)
 
 
 @contextmanager
@@ -253,7 +241,7 @@ def walk_callable(node: ast.AST) -> Iterable[ast.AST]:
 _generator_callbacks_cache = LocalWeakReferencedCache(limit=128)
 
 
-def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:
+def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:  # noqa: A002
     """
     Returns True if a callable is a generator function which includes a
     'return' statement with a value different than None, False otherwise
@@ -263,8 +251,8 @@ def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:
 
     def returns_none(return_node: ast.Return) -> bool:
         value = return_node.value
-        return (
-            value is None or isinstance(value, ast.NameConstant) and value.value is None
+        return value is None or (
+            isinstance(value, ast.Constant) and value.value is None
         )
 
     if inspect.isgeneratorfunction(callable):
@@ -291,12 +279,15 @@ def is_generator_with_return_value(callable: Callable[..., Any]) -> bool:
 
 
 def warn_on_generator_with_return_value(
-    spider: Spider, callable: Callable[..., Any]
+    spider: Spider,
+    callable: Callable[..., Any],  # noqa: A002
 ) -> None:
     """
     Logs a warning if a callable is a generator function and includes
     a 'return' statement with a value different than None
     """
+    if not spider.settings.getbool("WARN_ON_GENERATOR_RETURN_VALUE"):
+        return
     try:
         if is_generator_with_return_value(callable):
             warnings.warn(

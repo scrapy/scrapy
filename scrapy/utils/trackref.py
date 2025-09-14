@@ -66,6 +66,7 @@ def get_oldest(class_name: str) -> Any:
             if not wdict:
                 break
             return min(wdict.items(), key=itemgetter(1))[0]
+    return None
 
 
 def iter_all(class_name: str) -> Iterable[Any]:

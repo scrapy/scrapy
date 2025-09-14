@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import argparse
-import subprocess  # nosec
+import subprocess
 import sys
 import time
 from typing import TYPE_CHECKING, Any
@@ -11,11 +10,11 @@ import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.http import Response, TextResponse
 from scrapy.linkextractors import LinkExtractor
+from scrapy.utils.test import get_testenv
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
-    from scrapy import Request
+    import argparse
+    from collections.abc import AsyncIterator
 
 
 class Command(ScrapyCommand):
@@ -37,12 +36,10 @@ class Command(ScrapyCommand):
 
 class _BenchServer:
     def __enter__(self) -> None:
-        from scrapy.utils.test import get_testenv
-
         pargs = [sys.executable, "-u", "-m", "scrapy.utils.benchserver"]
-        self.proc = subprocess.Popen(
+        self.proc = subprocess.Popen(  # noqa: S603
             pargs, stdout=subprocess.PIPE, env=get_testenv()
-        )  # nosec
+        )
         assert self.proc.stdout
         self.proc.stdout.readline()
 
@@ -61,12 +58,12 @@ class _BenchSpider(scrapy.Spider):
     baseurl = "http://localhost:8998"
     link_extractor = LinkExtractor()
 
-    def start_requests(self) -> Iterable[Request]:
+    async def start(self) -> AsyncIterator[Any]:
         qargs = {"total": self.total, "show": self.show}
         url = f"{self.baseurl}?{urlencode(qargs, doseq=True)}"
-        return [scrapy.Request(url, dont_filter=True)]
+        yield scrapy.Request(url, dont_filter=True)
 
     def parse(self, response: Response) -> Any:
-        assert isinstance(Response, TextResponse)
+        assert isinstance(response, TextResponse)
         for link in self.link_extractor.extract_links(response):
             yield scrapy.Request(link.url, callback=self.parse)

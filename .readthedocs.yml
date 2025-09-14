@@ -5,11 +5,11 @@ sphinx:
   fail_on_warning: true
 
 build:
-  os: ubuntu-20.04
+  os: ubuntu-24.04
   tools:
     # For available versions, see:
     # https://docs.readthedocs.io/en/stable/config-file/v2.html#build-tools-python
-    python: "3.12"  # Keep in sync with .github/workflows/checks.yml
+    python: "3.13"  # Keep in sync with .github/workflows/checks.yml
 
 python:
   install:

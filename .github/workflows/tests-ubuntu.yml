@@ -1,5 +1,10 @@
 name: Ubuntu
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - master
+    - '[0-9]+.[0-9]+'
+  pull_request:
 
 concurrency:
   group: ${{github.workflow}}-${{ github.ref }}
@@ -24,37 +29,43 @@ jobs:
         - python-version: "3.12"
           env:
             TOXENV: py
-        - python-version: "3.12"
+        - python-version: "3.13"
           env:
-            TOXENV: asyncio
-        - python-version: pypy3.9
+            TOXENV: py
+        - python-version: "3.13"
+          env:
+            TOXENV: default-reactor
+        - python-version: pypy3.10
           env:
             TOXENV: pypy3
-        - python-version: pypy3.10
+        - python-version: pypy3.11
           env:
             TOXENV: pypy3
 
         # pinned deps
-        - python-version: 3.9.19
+        - python-version: "3.9.21"
           env:
             TOXENV: pinned
-        - python-version: 3.9.19
+        - python-version: "3.9.21"
           env:
-            TOXENV: asyncio-pinned
-        - python-version: pypy3.9
+            TOXENV: default-reactor-pinned
+        - python-version: pypy3.10
           env:
             TOXENV: pypy3-pinned
-        - python-version: 3.9.19
+        - python-version: "3.9.21"
           env:
             TOXENV: extra-deps-pinned
-        - python-version: 3.9.19
+        - python-version: "3.9.21"
           env:
             TOXENV: botocore-pinned
 
-        - python-version: "3.12"
+        - python-version: "3.13"
           env:
             TOXENV: extra-deps
-        - python-version: "3.12"
+        - python-version: pypy3.11
+          env:
+            TOXENV: pypy3-extra-deps
+        - python-version: "3.13"
           env:
             TOXENV: botocore
 
@@ -79,4 +90,8 @@ jobs:
         tox
 
     - name: Upload coverage report
-      run: bash <(curl -s https://codecov.io/bash)
+      uses: codecov/codecov-action@v5
+
+    - name: Upload test results
+      if: ${{ !cancelled() }}
+      uses: codecov/test-results-action@v1

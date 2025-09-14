@@ -6,7 +6,8 @@ originated it.
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, cast
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, cast
 from urllib.parse import urlparse
 
 from w3lib.url import safe_url_string
@@ -14,13 +15,12 @@ from w3lib.url import safe_url_string
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
+from scrapy.spidermiddlewares.base import BaseSpiderMiddleware
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_unicode
 from scrapy.utils.url import strip_url
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterable, Iterable
-
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -46,12 +46,15 @@ POLICY_UNSAFE_URL = "unsafe-url"
 POLICY_SCRAPY_DEFAULT = "scrapy-default"
 
 
-class ReferrerPolicy:
+class ReferrerPolicy(ABC):
+    """Abstract base class for referrer policies."""
+
     NOREFERRER_SCHEMES: tuple[str, ...] = LOCAL_SCHEMES
     name: str
 
+    @abstractmethod
     def referrer(self, response_url: str, request_url: str) -> str | None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def stripped_referrer(self, url: str) -> str | None:
         if urlparse(url).scheme not in self.NOREFERRER_SCHEMES:
@@ -195,8 +198,7 @@ class StrictOriginPolicy(ReferrerPolicy):
         if (
             self.tls_protected(response_url)
             and self.potentially_trustworthy(request_url)
-            or not self.tls_protected(response_url)
-        ):
+        ) or not self.tls_protected(response_url):
             return self.origin_referrer(response_url)
         return None
 
@@ -249,8 +251,7 @@ class StrictOriginWhenCrossOriginPolicy(ReferrerPolicy):
         if (
             self.tls_protected(response_url)
             and self.potentially_trustworthy(request_url)
-            or not self.tls_protected(response_url)
-        ):
+        ) or not self.tls_protected(response_url):
             return self.origin_referrer(response_url)
         return None
 
@@ -282,7 +283,7 @@ class DefaultReferrerPolicy(NoReferrerWhenDowngradePolicy):
     using ``file://`` or ``s3://`` scheme.
     """
 
-    NOREFERRER_SCHEMES: tuple[str, ...] = LOCAL_SCHEMES + ("file", "s3")
+    NOREFERRER_SCHEMES: tuple[str, ...] = (*LOCAL_SCHEMES, "file", "s3")
     name: str = POLICY_SCRAPY_DEFAULT
 
 
@@ -314,7 +315,7 @@ def _load_policy_class(
     from https://www.w3.org/TR/referrer-policy/#referrer-policies
     """
     try:
-        return cast(type[ReferrerPolicy], load_object(policy))
+        return cast("type[ReferrerPolicy]", load_object(policy))
     except ValueError:
         tokens = [token.strip() for token in policy.lower().split(",")]
         # https://www.w3.org/TR/referrer-policy/#parse-referrer-policy-from-header
@@ -325,13 +326,12 @@ def _load_policy_class(
         msg = f"Could not load referrer policy {policy!r}"
         if not warning_only:
             raise RuntimeError(msg)
-        else:
-            warnings.warn(msg, RuntimeWarning)
-            return None
+        warnings.warn(msg, RuntimeWarning)
+        return None
 
 
-class RefererMiddleware:
-    def __init__(self, settings: BaseSettings | None = None):
+class RefererMiddleware(BaseSpiderMiddleware):
+    def __init__(self, settings: BaseSettings | None = None):  # pylint: disable=super-init-not-called
         self.default_policy: type[ReferrerPolicy] = DefaultReferrerPolicy
         if settings is not None:
             settings_policy = _load_policy_class(settings.get("REFERRER_POLICY"))
@@ -363,34 +363,26 @@ class RefererMiddleware:
         - otherwise, the policy from settings is used.
         """
         policy_name = request.meta.get("referrer_policy")
-        if policy_name is None:
-            if isinstance(resp_or_url, Response):
-                policy_header = resp_or_url.headers.get("Referrer-Policy")
-                if policy_header is not None:
-                    policy_name = to_unicode(policy_header.decode("latin1"))
+        if policy_name is None and isinstance(resp_or_url, Response):
+            policy_header = resp_or_url.headers.get("Referrer-Policy")
+            if policy_header is not None:
+                policy_name = to_unicode(policy_header.decode("latin1"))
         if policy_name is None:
             return self.default_policy()
 
         cls = _load_policy_class(policy_name, warning_only=True)
         return cls() if cls else self.default_policy()
 
-    def process_spider_output(
-        self, response: Response, result: Iterable[Any], spider: Spider
-    ) -> Iterable[Any]:
-        return (self._set_referer(r, response) for r in result)
-
-    async def process_spider_output_async(
-        self, response: Response, result: AsyncIterable[Any], spider: Spider
-    ) -> AsyncIterable[Any]:
-        async for r in result:
-            yield self._set_referer(r, response)
-
-    def _set_referer(self, r: Any, response: Response) -> Any:
-        if isinstance(r, Request):
-            referrer = self.policy(response, r).referrer(response.url, r.url)
-            if referrer is not None:
-                r.headers.setdefault("Referer", referrer)
-        return r
+    def get_processed_request(
+        self, request: Request, response: Response | None
+    ) -> Request | None:
+        if response is None:
+            # start requests
+            return request
+        referrer = self.policy(response, request).referrer(response.url, request.url)
+        if referrer is not None:
+            request.headers.setdefault("Referer", referrer)
+        return request
 
     def request_scheduled(self, request: Request, spider: Spider) -> None:
         # check redirected request to patch "Referer" header if necessary

@@ -23,7 +23,7 @@ comparing `jinja2`_ to `Django`_.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: https://lxml.de/
-.. _jinja2: https://palletsprojects.com/p/jinja/
+.. _jinja2: https://palletsprojects.com/projects/jinja/
 .. _Django: https://www.djangoproject.com/
 
 Can I use Scrapy with BeautifulSoup?
@@ -96,30 +96,13 @@ How can I simulate a user login in my spider?
 
 See :ref:`topics-request-response-ref-request-userlogin`.
 
+
 .. _faq-bfo-dfo:
 
 Does Scrapy crawl in breadth-first or depth-first order?
 --------------------------------------------------------
 
-By default, Scrapy uses a `LIFO`_ queue for storing pending requests, which
-basically means that it crawls in `DFO order`_. This order is more convenient
-in most cases.
-
-If you do want to crawl in true `BFO order`_, you can do it by
-setting the following settings:
-
-.. code-block:: python
-
-    DEPTH_PRIORITY = 1
-    SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
-    SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
-
-While pending requests are below the configured values of
-:setting:`CONCURRENT_REQUESTS`, :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` or
-:setting:`CONCURRENT_REQUESTS_PER_IP`, those requests are sent
-concurrently. As a result, the first few requests of a crawl rarely follow the
-desired order. Lowering those settings to ``1`` enforces the desired order, but
-it significantly slows down the crawl as a whole.
+:ref:`DFO by default, but other orders are possible <request-order>`.
 
 
 My Scrapy crawler has memory leaks. What can I do?
@@ -148,7 +131,7 @@ middleware with a :ref:`custom downloader middleware
     instead joining the strings in :attr:`~scrapy.Spider.allowed_domains` into
     a complex regular expression.
 
--   If you can `meet the installation requirements`_, use pyre2_ instead of
+-   If you can meet the installation requirements, use pyre2_ instead of
     Python’s re_ to compile your URL-filtering regular expression. See
     :issue:`1908`.
 
@@ -166,9 +149,8 @@ See also `other suggestions at StackOverflow
            "myproject.middlewares.CustomOffsiteMiddleware": 50,
        }
 
-.. _meet the installation requirements: https://github.com/andreasvc/pyre2#installation
 .. _pyre2: https://github.com/andreasvc/pyre2
-.. _re: https://docs.python.org/library/re.html
+.. _re: https://docs.python.org/3/library/re.html
 
 Can I use Basic HTTP Authentication in my spiders?
 --------------------------------------------------
@@ -282,7 +264,7 @@ The ``__VIEWSTATE`` parameter is used in sites built with ASP.NET/VB.NET. For
 more info on how it works see `this page`_. Also, here's an `example spider`_
 which scrapes one of these sites.
 
-.. _this page: https://metacpan.org/pod/release/ECARROLL/HTML-TreeBuilderX-ASP_NET-0.09/lib/HTML/TreeBuilderX/ASP_NET.pm
+.. _this page: https://metacpan.org/release/ECARROLL/HTML-TreeBuilderX-ASP_NET-0.09/view/lib/HTML/TreeBuilderX/ASP_NET.pm
 .. _example spider: https://github.com/AmbientLighter/rpn-fas/blob/master/fas/spiders/rnp.py
 
 What's the best way to parse big XML/CSV data feeds?
@@ -362,16 +344,18 @@ method for this purpose. For example:
 
     from copy import deepcopy
 
-    from itemadapter import is_item, ItemAdapter
+    from itemadapter import ItemAdapter
+    from scrapy import Request
 
 
     class MultiplyItemsMiddleware:
-        def process_spider_output(self, response, result, spider):
-            for item in result:
-                if is_item(item):
-                    adapter = ItemAdapter(item)
-                    for _ in range(adapter["multiply_by"]):
-                        yield deepcopy(item)
+        def process_spider_output(self, response, result):
+            for item_or_request in result:
+                if isinstance(item_or_request, Request):
+                    continue
+                adapter = ItemAdapter(item)
+                for _ in range(adapter["multiply_by"]):
+                    yield deepcopy(item)
 
 Does Scrapy support IPv6 addresses?
 -----------------------------------
@@ -411,7 +395,7 @@ How can I make a blank request?
 -------------------------------
 
 .. code-block:: python
-    
+
     from scrapy import Request
 
 
@@ -432,9 +416,6 @@ See :issue:`2680`.
 
 
 .. _has been reported: https://github.com/scrapy/scrapy/issues/2905
-.. _Python standard library modules: https://docs.python.org/py-modindex.html
+.. _Python standard library modules: https://docs.python.org/3/py-modindex.html
 .. _Python package: https://pypi.org/
 .. _user agents: https://en.wikipedia.org/wiki/User_agent
-.. _LIFO: https://en.wikipedia.org/wiki/Stack_(abstract_data_type)
-.. _DFO order: https://en.wikipedia.org/wiki/Depth-first_search
-.. _BFO order: https://en.wikipedia.org/wiki/Breadth-first_search

@@ -48,12 +48,12 @@ def get_meta_refresh(
     if response not in _metaref_cache:
         text = response.text[0:4096]
         _metaref_cache[response] = html.get_meta_refresh(
-            text, response.url, response.encoding, ignore_tags=ignore_tags
+            text, get_base_url(response), response.encoding, ignore_tags=ignore_tags
         )
     return _metaref_cache[response]
 
 
-def response_status_message(status: bytes | float | int | str) -> str:
+def response_status_message(status: bytes | float | str) -> str:
     """Return status code plus status text descriptive message"""
     status_int = int(status)
     message = http.RESPONSES.get(status_int, "Unknown Status")
@@ -66,9 +66,8 @@ def _remove_html_comments(body: bytes) -> bytes:
         end = body.find(b"-->", start + 1)
         if end == -1:
             return body[:start]
-        else:
-            body = body[:start] + body[end + 3 :]
-            start = body.find(b"<!--")
+        body = body[:start] + body[end + 3 :]
+        start = body.find(b"<!--")
     return body
 
 
@@ -92,7 +91,8 @@ def open_in_browser(
             if "item name" not in response.body:
                 open_in_browser(response)
     """
-    from scrapy.http import HtmlResponse, TextResponse
+    # circular imports
+    from scrapy.http import HtmlResponse, TextResponse  # noqa: PLC0415
 
     # XXX: this implementation is a bit dirty and could be improved
     body = response.body
@@ -105,7 +105,7 @@ def open_in_browser(
     elif isinstance(response, TextResponse):
         ext = ".txt"
     else:
-        raise TypeError("Unsupported response type: " f"{response.__class__.__name__}")
+        raise TypeError(f"Unsupported response type: {response.__class__.__name__}")
     fd, fname = tempfile.mkstemp(ext)
     os.write(fd, body)
     os.close(fd)

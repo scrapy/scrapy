@@ -49,13 +49,10 @@ class Contract:
                     results.addError(self.testcase_pre, sys.exc_info())
                 else:
                     results.addSuccess(self.testcase_pre)
-                finally:
-                    cb_result = cb(response, **cb_kwargs)
-                    if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
-                        raise TypeError("Contracts don't support async callbacks")
-                    return list(  # pylint: disable=return-in-finally
-                        cast(Iterable[Any], iterate_spider_output(cb_result))
-                    )
+                cb_result = cb(response, **cb_kwargs)
+                if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
+                    raise TypeError("Contracts don't support async callbacks")
+                return list(cast("Iterable[Any]", iterate_spider_output(cb_result)))
 
             request.callback = wrapper
 
@@ -71,7 +68,7 @@ class Contract:
                 cb_result = cb(response, **cb_kwargs)
                 if isinstance(cb_result, (AsyncGenerator, CoroutineType)):
                     raise TypeError("Contracts don't support async callbacks")
-                output = list(cast(Iterable[Any], iterate_spider_output(cb_result)))
+                output = list(cast("Iterable[Any]", iterate_spider_output(cb_result)))
                 try:
                     results.startTest(self.testcase_post)
                     self.post_process(output)
@@ -82,8 +79,7 @@ class Contract:
                     results.addError(self.testcase_post, sys.exc_info())
                 else:
                     results.addSuccess(self.testcase_post)
-                finally:
-                    return output  # pylint: disable=return-in-finally
+                return output
 
             request.callback = wrapper
 
@@ -185,7 +181,7 @@ class ContractsManager:
         def cb_wrapper(response: Response, **cb_kwargs: Any) -> None:
             try:
                 output = cb(response, **cb_kwargs)
-                output = list(cast(Iterable[Any], iterate_spider_output(output)))
+                output = list(cast("Iterable[Any]", iterate_spider_output(output)))
             except Exception:
                 case = _create_testcase(method, "callback")
                 results.addError(case, sys.exc_info())
@@ -203,7 +199,7 @@ def _create_testcase(method: Callable, desc: str) -> TestCase:
     spider = method.__self__.name  # type: ignore[attr-defined]
 
     class ContractTestCase(TestCase):
-        def __str__(_self) -> str:
+        def __str__(_self) -> str:  # pylint: disable=no-self-argument
             return f"[{spider}] {method.__name__} ({desc})"
 
     name = f"{spider}_{method.__name__}"

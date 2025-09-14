@@ -1,0 +1,424 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "Scrapy"
+dynamic = ["version"]
+description = "A high-level Web Crawling and Web Scraping framework"
+dependencies = [
+    "Twisted>=21.7.0",
+    "cryptography>=37.0.0",
+    "cssselect>=0.9.1",
+    "defusedxml>=0.7.1",
+    "itemadapter>=0.1.0",
+    "itemloaders>=1.0.1",
+    "lxml>=4.6.0",
+    "packaging",
+    "parsel>=1.5.0",
+    "protego>=0.1.15",
+    "pyOpenSSL>=22.0.0",
+    "queuelib>=1.4.2",
+    "service_identity>=18.1.0",
+    "tldextract",
+    "w3lib>=1.17.0",
+    "zope.interface>=5.1.0",
+    # Platform-specific dependencies
+    'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
+    'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Framework :: Scrapy",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+license = "BSD-3-Clause"
+license-files = ["LICENSE", "AUTHORS"]
+readme = "README.rst"
+requires-python = ">=3.9"
+authors = [{ name = "Scrapy developers", email = "pablo@pablohoffman.com" }]
+maintainers = [{ name = "Pablo Hoffman", email = "pablo@pablohoffman.com" }]
+
+[project.urls]
+Homepage = "https://scrapy.org/"
+Documentation = "https://docs.scrapy.org/"
+Source = "https://github.com/scrapy/scrapy"
+Tracker = "https://github.com/scrapy/scrapy/issues"
+"Release notes" = "https://docs.scrapy.org/en/latest/news.html"
+
+[project.scripts]
+scrapy = "scrapy.cmdline:execute"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/docs",
+  "/extras",
+  "/scrapy",
+  "/tests",
+  "/tests_typing",
+  "/CODE_OF_CONDUCT.md",
+  "/CONTRIBUTING.md",
+  "/INSTALL.md",
+  "/NEWS",
+  "/SECURITY.md",
+  "/codecov.yml",
+  "/conftest.py",
+  "/tox.ini",
+]
+
+[tool.hatch.version]
+path = "scrapy/VERSION"
+pattern = "^(?P<version>.+)$"
+
+[tool.mypy]
+ignore_missing_imports = true
+implicit_reexport = false
+
+# Interface classes are hard to support
+[[tool.mypy.overrides]]
+module = "twisted.internet.interfaces"
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "scrapy.interfaces"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "twisted.internet.reactor"
+follow_imports = "skip"
+
+# FIXME: remove the following section once the issues are solved
+[[tool.mypy.overrides]]
+module = "scrapy.settings.default_settings"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = "twisted"
+implicit_reexport = true
+
+[tool.bumpversion]
+current_version = "2.13.3"
+commit = true
+tag = true
+tag_name = "{new_version}"
+
+[[tool.bumpversion.files]]
+filename = "docs/news.rst"
+search = "\\(unreleased\\)$"
+replace = "({now:%Y-%m-%d})"
+regex = true
+
+[[tool.bumpversion.files]]
+filename = "scrapy/VERSION"
+
+[[tool.bumpversion.files]]
+filename = "SECURITY.md"
+parse = """(?P<major>0|[1-9]\\d*)\\.(?P<minor>0|[1-9]\\d*)"""
+serialize = ["{major}.{minor}"]
+
+[tool.coverage.run]
+branch = true
+include = ["scrapy/*"]
+omit = ["tests/*"]
+disable_warnings = ["include-ignored"]
+
+[tool.coverage.paths]
+source = [
+    "scrapy",
+    ".tox/**/site-packages/scrapy"
+]
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.pylint.MASTER]
+persistent = "no"
+jobs = 1          # >1 hides results
+extension-pkg-allow-list=[
+    "lxml",
+]
+
+[tool.pylint."MESSAGES CONTROL"]
+enable = [
+    "useless-suppression",
+]
+# Make INFO checks like useless-suppression also cause pylint to return a
+# non-zero exit code.
+fail-on = "I"
+disable = [
+    # Ones we want to ignore
+    "attribute-defined-outside-init",
+    "broad-exception-caught",
+    "consider-using-with",
+    "cyclic-import",
+    "disallowed-name",
+    "duplicate-code",  # https://github.com/pylint-dev/pylint/issues/214
+    "fixme",
+    "import-outside-toplevel",
+    "inherit-non-class",  # false positives with create_deprecated_class()
+    "invalid-name",
+    "invalid-overridden-method",
+    "isinstance-second-argument-not-valid-type",  # false positives with create_deprecated_class()
+    "line-too-long",
+    "logging-format-interpolation",
+    "logging-fstring-interpolation",
+    "logging-not-lazy",
+    "missing-docstring",
+    "no-member",
+    "no-value-for-parameter",  # https://github.com/pylint-dev/pylint/issues/3268
+    "not-callable",
+    "protected-access",
+    "redefined-builtin",
+    "redefined-outer-name",
+    "too-few-public-methods",
+    "too-many-ancestors",
+    "too-many-arguments",
+    "too-many-branches",
+    "too-many-function-args",
+    "too-many-instance-attributes",
+    "too-many-lines",
+    "too-many-locals",
+    "too-many-positional-arguments",
+    "too-many-public-methods",
+    "too-many-return-statements",
+    "unused-argument",
+    "unused-import",
+    "unused-variable",
+    "useless-import-alias",  # used as a hint to mypy
+    "useless-return",  # https://github.com/pylint-dev/pylint/issues/6530
+    "wrong-import-position",
+
+    # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
+    "abstract-method",
+    "arguments-differ",
+    "arguments-renamed",
+    "dangerous-default-value",
+    "keyword-arg-before-vararg",
+    "pointless-statement",
+    "raise-missing-from",
+    "unnecessary-dunder-call",
+    "used-before-assignment",
+]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--reactor=asyncio",
+]
+xfail_strict = true
+python_files = ["test_*.py", "test_*/__init__.py"]
+markers = [
+    "only_asyncio: marks tests as only enabled when --reactor=asyncio is passed",
+    "only_not_asyncio: marks tests as only enabled when --reactor=asyncio is not passed",
+    "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
+    "requires_botocore: marks tests that need botocore (but not boto3)",
+    "requires_boto3: marks tests that need botocore and boto3",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:twisted.web.static"
+]
+
+[tool.ruff.lint]
+extend-select = [
+    # flake8-builtins
+    "A",
+    # flake8-async
+    "ASYNC",
+    # flake8-bugbear
+    "B",
+    # flake8-comprehensions
+    "C4",
+    # flake8-commas
+    "COM",
+    # pydocstyle
+    "D",
+    # flake8-future-annotations
+    "FA",
+    # flynt
+    "FLY",
+    # refurb
+    "FURB",
+    # isort
+    "I",
+    # flake8-implicit-str-concat
+    "ISC",
+    # flake8-logging
+    "LOG",
+    # Perflint
+    "PERF",
+    # pygrep-hooks
+    "PGH",
+    # flake8-pie
+    "PIE",
+    # pylint
+    "PL",
+    # flake8-pytest-style
+    "PT",
+    # flake8-use-pathlib
+    "PTH",
+    # flake8-pyi
+    "PYI",
+    # flake8-quotes
+    "Q",
+    # flake8-return
+    "RET",
+    # flake8-raise
+    "RSE",
+    # Ruff-specific rules
+    "RUF",
+    # flake8-bandit
+    "S",
+    # flake8-simplify
+    "SIM",
+    # flake8-slots
+    "SLOT",
+    # flake8-debugger
+    "T10",
+    # flake8-type-checking
+    "TC",
+    # flake8-tidy-imports
+    "TID",
+    # pyupgrade
+    "UP",
+    # pycodestyle warnings
+    "W",
+    # flake8-2020
+    "YTT",
+]
+ignore = [
+    # Ones we want to ignore
+
+    # Trailing comma missing
+    "COM812",
+    # Missing docstring in public module
+    "D100",
+    # Missing docstring in public class
+    "D101",
+    # Missing docstring in public method
+    "D102",
+    # Missing docstring in public function
+    "D103",
+    # Missing docstring in public package
+    "D104",
+    # Missing docstring in magic method
+    "D105",
+    # Missing docstring in public nested class
+    "D106",
+    # Missing docstring in __init__
+    "D107",
+    # One-line docstring should fit on one line with quotes
+    "D200",
+    # No blank lines allowed after function docstring
+    "D202",
+    # 1 blank line required between summary line and description
+    "D205",
+    # Multi-line docstring closing quotes should be on a separate line
+    "D209",
+    # First line should end with a period
+    "D400",
+    # First line should be in imperative mood; try rephrasing
+    "D401",
+    # First line should not be the function's "signature"
+    "D402",
+    # First word of the first line should be properly capitalized
+    "D403",
+    # `try`-`except` within a loop incurs performance overhead
+    "PERF203",
+    # Import alias does not rename original package
+    "PLC0414",
+    # Too many return statements
+    "PLR0911",
+    # Too many branches
+    "PLR0912",
+    # Too many arguments in function definition
+    "PLR0913",
+    # Too many statements
+    "PLR0915",
+    # Magic value used in comparison
+    "PLR2004",
+    # `for` loop variable overwritten by assignment target
+    "PLW2901",
+    # String contains ambiguous {}.
+    "RUF001",
+    # Docstring contains ambiguous {}.
+    "RUF002",
+    # Comment contains ambiguous {}.
+    "RUF003",
+    # Mutable class attributes should be annotated with `typing.ClassVar`
+    "RUF012",
+    # Use of `assert` detected; needed for mypy
+    "S101",
+    # FTP-related functions are being called; https://github.com/scrapy/scrapy/issues/4180
+    "S321",
+    # Argument default set to insecure SSL protocol
+    "S503",
+    # Use a context manager for opening files
+    "SIM115",
+    # Yoda condition detected
+    "SIM300",
+
+    # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
+
+    # Assigning to `os.environ` doesn't clear the environment.
+    "B003",
+    # Do not use mutable data structures for argument defaults.
+    "B006",
+    # Loop control variable not used within the loop body.
+    "B007",
+    # Do not perform function calls in argument defaults.
+    "B008",
+    # Found useless expression.
+    "B018",
+    # Star-arg unpacking after a keyword argument is strongly discouraged.
+    "B026",
+    # No explicit stacklevel argument found.
+    "B028",
+    # Within an `except` clause, raise exceptions with `raise ... from`
+    "B904",
+    # Use capitalized environment variable
+    "SIM112",
+]
+
+[tool.ruff.lint.flake8-tidy-imports]
+banned-module-level-imports = [
+    "twisted.internet.reactor",
+    # indirectly imports twisted.conch.insults.helper which imports twisted.internet.reactor
+    "twisted.conch.manhole",
+    # directly imports twisted.internet.reactor
+    "twisted.protocols.ftp",
+]
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
+
+[tool.ruff.lint.per-file-ignores]
+# Circular import workarounds
+"scrapy/linkextractors/__init__.py" = ["E402"]
+"scrapy/spiders/__init__.py" = ["E402"]
+
+# Skip bandit in tests
+"tests/**" = ["S"]
+
+# Issues pending a review:
+"docs/conf.py" = ["E402"]
+"scrapy/utils/url.py" = ["F403", "F405"]
+"tests/test_loader.py" = ["E741"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"

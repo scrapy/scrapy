@@ -3,19 +3,19 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from twisted.internet import defer
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured, NotSupported
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from collections.abc import Callable, Generator
 
     from twisted.internet.defer import Deferred
 
@@ -35,13 +35,12 @@ class DownloadHandlerProtocol(Protocol):
 class DownloadHandlers:
     def __init__(self, crawler: Crawler):
         self._crawler: Crawler = crawler
-        self._schemes: dict[str, str | Callable[..., Any]] = (
-            {}
-        )  # stores acceptable schemes on instancing
-        self._handlers: dict[str, DownloadHandlerProtocol] = (
-            {}
-        )  # stores instanced handlers for schemes
-        self._notconfigured: dict[str, str] = {}  # remembers failed handlers
+        # stores acceptable schemes on instancing
+        self._schemes: dict[str, str | Callable[..., Any]] = {}
+        # stores instanced handlers for schemes
+        self._handlers: dict[str, DownloadHandlerProtocol] = {}
+        # remembers failed handlers
+        self._notconfigured: dict[str, str] = {}
         handlers: dict[str, str | Callable[..., Any]] = without_none_values(
             cast(
                 "dict[str, str | Callable[..., Any]]",
@@ -92,18 +91,21 @@ class DownloadHandlers:
             )
             self._notconfigured[scheme] = str(ex)
             return None
-        else:
-            self._handlers[scheme] = dh
-            return dh
+        self._handlers[scheme] = dh
+        return dh
 
-    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
+    @_warn_spider_arg
+    def download_request(
+        self, request: Request, spider: Spider | None = None
+    ) -> Deferred[Response]:
         scheme = urlparse_cached(request).scheme
         handler = self._get_handler(scheme)
         if not handler:
             raise NotSupported(
                 f"Unsupported URL scheme '{scheme}': {self._notconfigured[scheme]}"
             )
-        return handler.download_request(request, spider)
+        assert self._crawler.spider
+        return handler.download_request(request, self._crawler.spider)
 
     @defer.inlineCallbacks
     def _close(self, *_a: Any, **_kw: Any) -> Generator[Deferred[Any], Any, None]:

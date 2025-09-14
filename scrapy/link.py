@@ -5,8 +5,6 @@ For actual link extractors implementation see scrapy.linkextractors, or
 its documentation in: docs/topics/link-extractors.rst
 """
 
-from typing import Any
-
 
 class Link:
     """Link objects represent an extracted link by the LinkExtractor.
@@ -26,7 +24,7 @@ class Link:
                     of the anchor tag.
     """
 
-    __slots__ = ["url", "text", "fragment", "nofollow"]
+    __slots__ = ["fragment", "nofollow", "text", "url"]
 
     def __init__(
         self, url: str, text: str = "", fragment: str = "", nofollow: bool = False
@@ -39,7 +37,7 @@ class Link:
         self.fragment: str = fragment
         self.nofollow: bool = nofollow
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Link):
             raise NotImplementedError
         return (

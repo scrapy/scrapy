@@ -7,6 +7,7 @@ from __future__ import annotations
 import argparse
 import builtins
 import os
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -18,12 +19,14 @@ from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from scrapy.crawler import Crawler, CrawlerProcess
+    from scrapy.crawler import Crawler, CrawlerProcessBase
+    from scrapy.settings import Settings
 
 
-class ScrapyCommand:
+class ScrapyCommand(ABC):
     requires_project: bool = False
-    crawler_process: CrawlerProcess | None = None
+    requires_crawler_process: bool = True
+    crawler_process: CrawlerProcessBase | None = None  # set in scrapy.cmdline
 
     # default settings to be used for this command instead of global defaults
     default_settings: dict[str, Any] = {}
@@ -31,7 +34,7 @@ class ScrapyCommand:
     exitcode: int = 0
 
     def __init__(self) -> None:
-        self.settings: Any = None  # set in scrapy.cmdline
+        self.settings: Settings | None = None  # set in scrapy.cmdline
 
     def set_crawler(self, crawler: Crawler) -> None:
         if hasattr(self, "_crawler"):
@@ -44,6 +47,7 @@ class ScrapyCommand:
         """
         return ""
 
+    @abstractmethod
     def short_desc(self) -> str:
         """
         A short description of the command
@@ -68,6 +72,7 @@ class ScrapyCommand:
         """
         Populate option parse with options available for this command
         """
+        assert self.settings is not None
         group = parser.add_argument_group(title="Global Options")
         group.add_argument(
             "--logfile", metavar="FILE", help="log file. if omitted stderr will be used"
@@ -100,6 +105,7 @@ class ScrapyCommand:
         group.add_argument("--pdb", action="store_true", help="enable pdb on failure")
 
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
+        assert self.settings is not None
         try:
             self.settings.setdict(arglist_to_dict(opts.set), priority="cmdline")
         except ValueError:
@@ -124,6 +130,7 @@ class ScrapyCommand:
         if opts.pdb:
             failure.startDebugMode()
 
+    @abstractmethod
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
         """
         Entry point for running commands
@@ -162,12 +169,6 @@ class BaseRunSpiderCommand(ScrapyCommand):
             help="dump scraped items into FILE, overwriting any existing file,"
             " to define format set a colon at the end of the output URI (i.e. -O FILE:FORMAT)",
         )
-        parser.add_argument(
-            "-t",
-            "--output-format",
-            metavar="FORMAT",
-            help="format to use for dumping items",
-        )
 
     def process_options(self, args: list[str], opts: argparse.Namespace) -> None:
         super().process_options(args, opts)
@@ -176,11 +177,11 @@ class BaseRunSpiderCommand(ScrapyCommand):
         except ValueError:
             raise UsageError("Invalid -a value, use -a NAME=VALUE", print_help=False)
         if opts.output or opts.overwrite_output:
+            assert self.settings is not None
             feeds = feed_process_params_from_cli(
                 self.settings,
                 opts.output,
-                opts.output_format,
-                opts.overwrite_output,
+                overwrite_output=opts.overwrite_output,
             )
             self.settings.set("FEEDS", feeds, priority="cmdline")
 

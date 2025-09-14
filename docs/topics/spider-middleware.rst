@@ -63,18 +63,38 @@ particular setting. See each middleware documentation for more info.
 Writing your own spider middleware
 ==================================
 
-Each spider middleware is a Python class that defines one or more of the
-methods defined below.
-
-The main entry point is the ``from_crawler`` class method, which receives a
-:class:`~scrapy.crawler.Crawler` instance. The :class:`~scrapy.crawler.Crawler`
-object gives you access, for example, to the :ref:`settings <topics-settings>`.
+Each spider middleware is a :ref:`component <topics-components>` that defines
+one or more of these methods:
 
 .. module:: scrapy.spidermiddlewares
 
 .. class:: SpiderMiddleware
 
-    .. method:: process_spider_input(response, spider)
+    .. method:: process_start(start: AsyncIterator[Any], /) -> AsyncIterator[Any]
+        :async:
+
+        Iterate over the output of :meth:`~scrapy.Spider.start` or that
+        of the :meth:`process_start` method of an earlier spider middleware,
+        overriding it. For example:
+
+        .. code-block:: python
+
+            async def process_start(self, start):
+                async for item_or_request in start:
+                    yield item_or_request
+
+        You may yield the same type of objects as :meth:`~scrapy.Spider.start`.
+
+        To write spider middlewares that work on Scrapy versions lower than
+        2.13, define also a synchronous ``process_start_requests()`` method
+        that returns an iterable. For example:
+
+        .. code-block:: python
+
+            def process_start_requests(self, start, spider):
+                yield from start
+
+    .. method:: process_spider_input(response)
 
         This method is called for each response that goes through the spider
         middleware and into the spider, for processing.
@@ -96,11 +116,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :param response: the response being processed
         :type response: :class:`~scrapy.http.Response` object
 
-        :param spider: the spider for which this response is intended
-        :type spider: :class:`~scrapy.Spider` object
-
-
-    .. method:: process_spider_output(response, result, spider)
+    .. method:: process_spider_output(response, result)
 
         This method is called with the results returned from the Spider, after
         it has processed the response.
@@ -129,10 +145,8 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :type result: an iterable of :class:`~scrapy.Request` objects and
           :ref:`item objects <topics-items>`
 
-        :param spider: the spider whose result is being processed
-        :type spider: :class:`~scrapy.Spider` object
-
-    .. method:: process_spider_output_async(response, result, spider)
+    .. method:: process_spider_output_async(response, result)
+        :async:
 
         .. versionadded:: 2.7
 
@@ -140,7 +154,7 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         which will be called instead of :meth:`process_spider_output` if
         ``result`` is an :term:`asynchronous iterable`.
 
-    .. method:: process_spider_exception(response, exception, spider)
+    .. method:: process_spider_exception(response, exception)
 
         This method is called when a spider or :meth:`process_spider_output`
         method (from a previous spider middleware) raises an exception.
@@ -165,44 +179,19 @@ object gives you access, for example, to the :ref:`settings <topics-settings>`.
         :param exception: the exception raised
         :type exception: :exc:`Exception` object
 
-        :param spider: the spider which raised the exception
-        :type spider: :class:`~scrapy.Spider` object
 
-    .. method:: process_start_requests(start_requests, spider)
+Base class for custom spider middlewares
+----------------------------------------
 
-        This method is called with the start requests of the spider, and works
-        similarly to the :meth:`process_spider_output` method, except that it
-        doesn't have a response associated and must return only requests (not
-        items).
+Scrapy provides a base class for custom spider middlewares. It's not required
+to use it but it can help with simplifying middleware implementations and
+reducing the amount of boilerplate code in :ref:`universal middlewares
+<universal-spider-middleware>`.
 
-        It receives an iterable (in the ``start_requests`` parameter) and must
-        return another iterable of :class:`~scrapy.Request` objects and/or :ref:`item objects <topics-items>`.
+.. module:: scrapy.spidermiddlewares.base
 
-        .. note:: When implementing this method in your spider middleware, you
-           should always return an iterable (that follows the input one) and
-           not consume all ``start_requests`` iterator because it can be very
-           large (or even unbounded) and cause a memory overflow. The Scrapy
-           engine is designed to pull start requests while it has capacity to
-           process them, so the start requests iterator can be effectively
-           endless where there is some other condition for stopping the spider
-           (like a time limit or item/page count).
-
-        :param start_requests: the start requests
-        :type start_requests: an iterable of :class:`~scrapy.Request`
-
-        :param spider: the spider to whom the start requests belong
-        :type spider: :class:`~scrapy.Spider` object
-
-    .. method:: from_crawler(cls, crawler)
-
-       If present, this classmethod is called to create a middleware instance
-       from a :class:`~scrapy.crawler.Crawler`. It must return a new instance
-       of the middleware. Crawler object provides access to all Scrapy core
-       components like settings and signals; it is a way for middleware to
-       access them and hook its functionality into Scrapy.
-
-       :param crawler: crawler that uses this middleware
-       :type crawler: :class:`~scrapy.crawler.Crawler` object
+.. autoclass:: BaseSpiderMiddleware
+   :members:
 
 .. _topics-spider-middleware-ref:
 
@@ -356,9 +345,9 @@ Default: ``'scrapy.spidermiddlewares.referer.DefaultReferrerPolicy'``
 Acceptable values for REFERRER_POLICY
 *************************************
 
-- either a path to a ``scrapy.spidermiddlewares.referer.ReferrerPolicy``
+- either a path to a :class:`scrapy.spidermiddlewares.referer.ReferrerPolicy`
   subclass — a custom policy or one of the built-in ones (see classes below),
-- or one of the standard W3C-defined string values,
+- or one or more comma-separated standard W3C-defined string values,
 - or the special ``"scrapy-default"``.
 
 =======================================  ========================================================================
@@ -374,6 +363,8 @@ String value                             Class name (as a string)
 `"strict-origin-when-cross-origin"`_     :class:`scrapy.spidermiddlewares.referer.StrictOriginWhenCrossOriginPolicy`
 `"unsafe-url"`_                          :class:`scrapy.spidermiddlewares.referer.UnsafeUrlPolicy`
 =======================================  ========================================================================
+
+.. autoclass:: ReferrerPolicy
 
 .. autoclass:: DefaultReferrerPolicy
 .. warning::
@@ -417,6 +408,14 @@ String value                             Class name (as a string)
 .. _"origin-when-cross-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-origin-when-cross-origin
 .. _"strict-origin-when-cross-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin-when-cross-origin
 .. _"unsafe-url": https://www.w3.org/TR/referrer-policy/#referrer-policy-unsafe-url
+
+
+StartSpiderMiddleware
+---------------------
+
+.. module:: scrapy.spidermiddlewares.start
+
+.. autoclass:: StartSpiderMiddleware
 
 
 UrlLengthMiddleware

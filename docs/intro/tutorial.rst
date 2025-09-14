@@ -94,7 +94,7 @@ This is the code for our first Spider. Save it in a file named
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
 
-        def start_requests(self):
+        async def start(self):
             urls = [
                 "https://quotes.toscrape.com/page/1/",
                 "https://quotes.toscrape.com/page/2/",
@@ -116,10 +116,10 @@ and defines some attributes and methods:
   unique within a project, that is, you can't set the same name for different
   Spiders.
 
-* :meth:`~scrapy.Spider.start_requests`: must return an iterable of
-  Requests (you can return a list of requests or write a generator function)
-  which the Spider will begin to crawl from. Subsequent requests will be
-  generated successively from these initial requests.
+* :meth:`~scrapy.Spider.start`: must be an asynchronous generator that
+  yields requests (and, optionally, items) for the spider to start crawling.
+  Subsequent requests will be generated successively from these initial
+  requests.
 
 * :meth:`~scrapy.Spider.parse`: a method that will be called to handle
   the response downloaded for each of the requests made. The response parameter
@@ -164,21 +164,22 @@ for the respective URLs, as our ``parse`` method instructs.
 What just happened under the hood?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Scrapy schedules the :class:`scrapy.Request <scrapy.Request>` objects
-returned by the ``start_requests`` method of the Spider. Upon receiving a
-response for each one, it instantiates :class:`~scrapy.http.Response` objects
-and calls the callback method associated with the request (in this case, the
-``parse`` method) passing the response as an argument.
+Scrapy sends the first :class:`scrapy.Request <scrapy.Request>` objects yielded
+by the :meth:`~scrapy.Spider.start` spider method. Upon receiving a
+response for each one, Scrapy calls the callback method associated with the
+request (in this case, the ``parse`` method) with a
+:class:`~scrapy.http.Response` object.
 
 
-A shortcut to the start_requests method
----------------------------------------
-Instead of implementing a :meth:`~scrapy.Spider.start_requests` method
-that generates :class:`scrapy.Request <scrapy.Request>` objects from URLs,
-you can just define a :attr:`~scrapy.Spider.start_urls` class attribute
-with a list of URLs. This list will then be used by the default implementation
-of :meth:`~scrapy.Spider.start_requests` to create the initial requests
-for your spider.
+A shortcut to the ``start`` method
+----------------------------------
+
+Instead of implementing a :meth:`~scrapy.Spider.start` method that yields
+:class:`~scrapy.Request` objects from URLs, you can define a
+:attr:`~scrapy.Spider.start_urls` class attribute with a list of URLs. This
+list will then be used by the default implementation of
+:meth:`~scrapy.Spider.start` to create the initial requests for your
+spider.
 
 .. code-block:: python
 
@@ -292,7 +293,7 @@ As an alternative, you could've written:
     >>> response.css("title::text")[0].get()
     'Quotes to Scrape'
 
-Accessing an index on a :class:`~scrapy.selector.SelectorList` instance will 
+Accessing an index on a :class:`~scrapy.selector.SelectorList` instance will
 raise an :exc:`IndexError` exception if there are no results:
 
 .. code-block:: pycon
@@ -302,8 +303,8 @@ raise an :exc:`IndexError` exception if there are no results:
     ...
     IndexError: list index out of range
 
-You might want to use ``.get()`` directly on the 
-:class:`~scrapy.selector.SelectorList` instance instead, which returns ``None`` 
+You might want to use ``.get()`` directly on the
+:class:`~scrapy.selector.SelectorList` instance instead, which returns ``None``
 if there are no results:
 
 .. code-block:: pycon
@@ -369,7 +370,7 @@ recommend `this tutorial to learn XPath through examples
 <http://zvon.org/comp/r/tut-XPath_1.html>`_, and `this tutorial to learn "how
 to think in XPath" <http://plasmasturm.org/log/xpath101/>`_.
 
-.. _XPath: https://www.w3.org/TR/xpath/all/
+.. _XPath: https://www.w3.org/TR/xpath-10/
 .. _CSS: https://www.w3.org/TR/selectors
 
 Extracting quotes and authors
@@ -541,7 +542,7 @@ for Item Pipelines has been set up for you when the project is created, in
 ``tutorial/pipelines.py``. Though you don't need to implement any item
 pipelines if you just want to store the scraped items.
 
-.. _JSON Lines: http://jsonlines.org
+.. _JSON Lines: https://jsonlines.org
 .. _JQ: https://stedolan.github.io/jq
 
 
@@ -794,7 +795,7 @@ with a specific tag, building the URL based on the argument:
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
 
-        def start_requests(self):
+        async def start(self):
             url = "https://quotes.toscrape.com/"
             tag = getattr(self, "tag", None)
             if tag is not None:

@@ -1,3 +1,4 @@
+import contextlib
 import zlib
 from io import BytesIO
 from warnings import warn
@@ -37,10 +38,8 @@ else:
             return decompressor.process(data)
 
 
-try:
+with contextlib.suppress(ImportError):
     import zstandard
-except ImportError:
-    pass
 
 
 _CHUNK_SIZE = 65536  # 64 KiB

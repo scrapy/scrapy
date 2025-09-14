@@ -33,14 +33,14 @@ class StatsMailer:
         recipients: list[str] = crawler.settings.getlist("STATSMAILER_RCPTS")
         if not recipients:
             raise NotConfigured
-        mail: MailSender = MailSender.from_settings(crawler.settings)
+        mail: MailSender = MailSender.from_crawler(crawler)
         assert crawler.stats
         o = cls(crawler.stats, recipients, mail)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)
         return o
 
     def spider_closed(self, spider: Spider) -> Deferred[None] | None:
-        spider_stats = self.stats.get_stats(spider)
+        spider_stats = self.stats.get_stats()
         body = "Global stats\n\n"
         body += "\n".join(f"{k:<50} : {v}" for k, v in self.stats.get_stats().items())
         body += f"\n\n{spider.name} stats\n\n"

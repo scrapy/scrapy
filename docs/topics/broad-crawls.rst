@@ -61,12 +61,7 @@ Increase concurrency
 
 Concurrency is the number of requests that are processed in parallel. There is
 a global limit (:setting:`CONCURRENT_REQUESTS`) and an additional limit that
-can be set either per domain (:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`) or per
-IP (:setting:`CONCURRENT_REQUESTS_PER_IP`).
-
-.. note:: The scheduler priority queue :ref:`recommended for broad crawls
-          <broad-crawls-scheduler-priority-queue>` does not support
-          :setting:`CONCURRENT_REQUESTS_PER_IP`.
+can be set per domain (:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`).
 
 The default global concurrency limit in Scrapy is not suitable for crawling
 many different domains in parallel, so you will want to increase it. How much
@@ -181,32 +176,6 @@ To disable redirects use:
 .. code-block:: python
 
     REDIRECT_ENABLED = False
-
-Enable crawling of "Ajax Crawlable Pages"
-=========================================
-
-Some pages (up to 1%, based on empirical data from year 2013) declare
-themselves as `ajax crawlable`_. This means they provide plain HTML
-version of content that is usually available only via AJAX.
-Pages can indicate it in two ways:
-
-1) by using ``#!`` in URL - this is the default way;
-2) by using a special meta tag - this way is used on
-   "main", "index" website pages.
-
-Scrapy handles (1) automatically; to handle (2) enable
-:ref:`AjaxCrawlMiddleware <ajaxcrawl-middleware>`:
-
-.. code-block:: python
-
-    AJAXCRAWL_ENABLED = True
-
-When doing broad crawls it's common to crawl a lot of "index" web pages;
-AjaxCrawlMiddleware helps to crawl them correctly.
-It is turned OFF by default because it has some performance overhead,
-and enabling it for focused crawls doesn't make much sense.
-
-.. _ajax crawlable: https://developers.google.com/search/docs/ajax-crawling/docs/getting-started
 
 .. _broad-crawls-bfo:
 

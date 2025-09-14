@@ -3,14 +3,12 @@ from io import StringIO
 from unittest.mock import Mock, PropertyMock, call, patch
 
 from scrapy.commands.check import Command, TextTestResult
-from tests.test_commands import CommandTest
+from tests.test_commands import TestCommandBase
 
 
-class CheckCommandTest(CommandTest):
-    command = "check"
-
-    def setUp(self):
-        super().setUp()
+class TestCheckCommand(TestCommandBase):
+    def setup_method(self):
+        super().setup_method()
         self.spider_name = "check_spider"
         self.spider = (self.proj_mod_path / "spiders" / "checkspider.py").resolve()
 
@@ -36,9 +34,9 @@ class CheckSpider(scrapy.Spider):
     def _test_contract(self, contracts="", parse_def="pass"):
         self._write_contract(contracts, parse_def)
         p, out, err = self.proc("check")
-        self.assertNotIn("F", out)
-        self.assertIn("OK", err)
-        self.assertEqual(p.returncode, 0)
+        assert "F" not in out
+        assert "OK" in err
+        assert p.returncode == 0
 
     def test_check_returns_requests_contract(self):
         contracts = """
@@ -171,9 +169,7 @@ class CheckSpider(scrapy.Spider):
 
         cmd.run([spider_name], Mock(list=True))
 
-        self.assertEqual(
-            "FakeSpider\n  * fakeMethod1\n  * fakeMethod2\n", output.getvalue()
-        )
+        assert output.getvalue() == "FakeSpider\n  * fakeMethod1\n  * fakeMethod2\n"
         sys.stdout = sys.__stdout__
 
     @patch("scrapy.commands.check.ContractsManager")

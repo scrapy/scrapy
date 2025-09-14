@@ -33,7 +33,7 @@ Having trouble? We'd like to help!
 .. _StackOverflow using the scrapy tag: https://stackoverflow.com/tags/scrapy
 .. _#scrapy IRC channel: irc://irc.freenode.net/scrapy
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
-.. _Scrapy Discord: https://discord.gg/mv3yErfpvq
+.. _Scrapy Discord: https://discord.com/invite/mv3yErfpvq
 
 
 First steps

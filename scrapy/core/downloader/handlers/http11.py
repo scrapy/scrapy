@@ -8,30 +8,36 @@ import re
 from contextlib import suppress
 from io import BytesIO
 from time import time
-from typing import TYPE_CHECKING, Any, TypedDict, TypeVar
-from urllib.parse import urldefrag, urlunparse
+from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
+from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
 from twisted.internet.defer import CancelledError, Deferred, succeed
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.internet.error import TimeoutError
+from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
-from twisted.web.client import URI, Agent, HTTPConnectionPool
+from twisted.web.client import (
+    URI,
+    Agent,
+    HTTPConnectionPool,
+    ResponseDone,
+    ResponseFailed,
+)
 from twisted.web.client import Response as TxResponse
-from twisted.web.client import ResponseDone, ResponseFailed
 from twisted.web.http import PotentialDataLoss, _DataLoss
 from twisted.web.http_headers import Headers as TxHeaders
-from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS
+from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS, IResponse
 from zope.interface import implementer
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
-from scrapy.core.downloader.webclient import _parse
 from scrapy.exceptions import StopDownload
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
+from scrapy.utils.url import add_http_if_no_scheme
 
 if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
@@ -280,11 +286,11 @@ class TunnelingAgent(Agent):
         key: Any,
         endpoint: TCP4ClientEndpoint,
         method: bytes,
-        parsedURI: bytes,
+        parsedURI: URI,
         headers: TxHeaders | None,
         bodyProducer: IBodyProducer | None,
         requestPath: bytes,
-    ) -> Deferred[TxResponse]:
+    ) -> Deferred[IResponse]:
         # proxy host and port are required for HTTP pool `key`
         # otherwise, same remote host connection request could reuse
         # a cached tunneled connection to a different proxy
@@ -323,14 +329,14 @@ class ScrapyProxyAgent(Agent):
         uri: bytes,
         headers: TxHeaders | None = None,
         bodyProducer: IBodyProducer | None = None,
-    ) -> Deferred[TxResponse]:
+    ) -> Deferred[IResponse]:
         """
         Issue a new request via the configured proxy.
         """
         # Cache *all* connections under the same key, since we are only
         # connecting to a single destination, the proxy:
         return self._requestWithEndpoint(
-            key=("http-proxy", self._proxyURI.host, self._proxyURI.port),
+            key=(b"http-proxy", self._proxyURI.host, self._proxyURI.port),
             endpoint=self._getEndpoint(self._proxyURI),
             method=method,
             parsedURI=URI.fromBytes(uri),
@@ -373,12 +379,16 @@ class ScrapyAgent:
         bindaddress = request.meta.get("bindaddress") or self._bindAddress
         proxy = request.meta.get("proxy")
         if proxy:
-            proxyScheme, proxyNetloc, proxyHost, proxyPort, proxyParams = _parse(proxy)
-            scheme = _parse(request.url)[0]
-            proxyHost_str = to_unicode(proxyHost)
-            if scheme == b"https":
+            proxy = add_http_if_no_scheme(proxy)
+            proxy_parsed = urlparse(proxy)
+            proxy_host = proxy_parsed.hostname
+            proxy_port = proxy_parsed.port
+            if not proxy_port:
+                proxy_port = 443 if proxy_parsed.scheme == "https" else 80
+            if urlparse_cached(request).scheme == "https":
+                assert proxy_host is not None
                 proxyAuth = request.headers.get(b"Proxy-Authorization", None)
-                proxyConf = (proxyHost_str, proxyPort, proxyAuth)
+                proxyConf = (proxy_host, proxy_port, proxyAuth)
                 return self._TunnelingAgent(
                     reactor=reactor,
                     proxyConf=proxyConf,
@@ -387,13 +397,9 @@ class ScrapyAgent:
                     bindAddress=bindaddress,
                     pool=self._pool,
                 )
-            proxyScheme = proxyScheme or b"http"
-            proxyURI = urlunparse(
-                (proxyScheme, proxyNetloc, proxyParams, b"", b"", b"")
-            )
             return self._ProxyAgent(
                 reactor=reactor,
-                proxyURI=to_bytes(proxyURI, encoding="ascii"),
+                proxyURI=to_bytes(proxy, encoding="ascii"),
                 connectTimeout=timeout,
                 bindAddress=bindaddress,
                 pool=self._pool,
@@ -419,13 +425,13 @@ class ScrapyAgent:
         headers = TxHeaders(request.headers)
         if isinstance(agent, self._TunnelingAgent):
             headers.removeHeader(b"Proxy-Authorization")
-        if request.body:
-            bodyproducer = _RequestBodyProducer(request.body)
-        else:
-            bodyproducer = None
+        bodyproducer = _RequestBodyProducer(request.body) if request.body else None
         start_time = time()
-        d: Deferred[TxResponse] = agent.request(
-            method, to_bytes(url, encoding="ascii"), headers, bodyproducer
+        d: Deferred[IResponse] = agent.request(
+            method,
+            to_bytes(url, encoding="ascii"),
+            headers,
+            cast("IBodyProducer", bodyproducer),
         )
         # set download latency
         d.addCallback(self._cb_latency, request, start_time)
@@ -446,7 +452,7 @@ class ScrapyAgent:
         if self._txresponse:
             self._txresponse._transport.stopProducing()
 
-        raise TimeoutError(f"Getting {url} took longer than {timeout} seconds.")
+        raise TxTimeoutError(f"Getting {url} took longer than {timeout} seconds.")
 
     def _cb_latency(self, result: _T, request: Request, start_time: float) -> _T:
         request.meta["download_latency"] = time() - start_time

@@ -4,12 +4,12 @@ from time import time
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
-from twisted.internet.error import TimeoutError
+from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.web.client import URI
 
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
-from scrapy.core.downloader.webclient import _parse
 from scrapy.core.http2.agent import H2Agent, H2ConnectionPool, ScrapyProxyH2Agent
+from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
@@ -75,10 +75,7 @@ class ScrapyH2Agent:
         bind_address = request.meta.get("bindaddress") or self._bind_address
         proxy = request.meta.get("proxy")
         if proxy:
-            _, _, proxy_host, proxy_port, proxy_params = _parse(proxy)
-            scheme = _parse(request.url)[0]
-
-            if scheme == b"https":
+            if urlparse_cached(request).scheme == "https":
                 # ToDo
                 raise NotImplementedError(
                     "Tunneling via CONNECT method using HTTP/2.0 is not yet supported"
@@ -130,4 +127,4 @@ class ScrapyH2Agent:
             return response
 
         url = urldefrag(request.url)[0]
-        raise TimeoutError(f"Getting {url} took longer than {timeout} seconds.")
+        raise TxTimeoutError(f"Getting {url} took longer than {timeout} seconds.")

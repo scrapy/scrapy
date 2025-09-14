@@ -105,7 +105,7 @@ response:
 In both cases, the response could have its body truncated: the body contains
 all bytes received up until the exception is raised, including the bytes
 received in the signal handler that raises the exception. Also, the response
-object is marked with ``"download_stopped"`` in its :attr:`Response.flags`
+object is marked with ``"download_stopped"`` in its :attr:`~scrapy.http.Response.flags`
 attribute.
 
 .. note:: ``fail`` is a keyword-only parameter, i.e. raising
