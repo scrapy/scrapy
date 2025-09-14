@@ -15,6 +15,8 @@ from twisted.web.http import H2_ENABLED
 from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
 from tests.test_downloader_handlers_http_base import (
     TestHttpProxyBase,
     TestHttps11Base,
@@ -30,9 +32,6 @@ if TYPE_CHECKING:
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
     from tests.mockserver.http import MockServer
     from tests.mockserver.proxy_echo import ProxyEchoMockServer
-
-from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.test import get_crawler
 
 pytestmark = pytest.mark.skipif(
     not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
