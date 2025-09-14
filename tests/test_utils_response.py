@@ -67,9 +67,23 @@ if(!checkCookies()){
 </script>
     """,
     )
+    r4 = HtmlResponse(
+        "http://www.example.com",
+        body=b"""
+    <html>
+    <head><title>Dummy</title>
+    <base href="http://www.another-domain.com/base/path/">
+    <meta http-equiv="refresh" content="5;url=target.html"</head>
+    <body>blahablsdfsal&amp;</body>
+    </html>""",
+    )
     assert get_meta_refresh(r1) == (5.0, "http://example.org/newpage")
     assert get_meta_refresh(r2) == (None, None)
     assert get_meta_refresh(r3) == (None, None)
+    assert get_meta_refresh(r4) == (
+        5.0,
+        "http://www.another-domain.com/base/path/target.html",
+    )
 
 
 def test_get_base_url():
