@@ -1055,12 +1055,16 @@ class TestRedirectMiddleware(Base.Test):
         assert req2.method == "HEAD"
 
     def test_spider_handling(self):
-        self.mw.crawler.spider.handle_httpstatus_list = [404, 301, 302]
+        crawler = get_crawler(
+            DefaultSpider, {"REDIRECT_ALLOWED_HTTP_CODES": [404, 301, 302]}
+        )
+        crawler.spider = crawler._create_spider()
+        mw = self.mwcls.from_crawler(crawler)
         url = "http://www.example.com/301"
         url2 = "http://www.example.com/redirected"
         req = Request(url)
         rsp = Response(url, headers={"Location": url2}, status=301)
-        r = self.mw.process_response(req, rsp)
+        r = mw.process_response(req, rsp)
         assert r is rsp
 
     def test_request_meta_handling(self):
