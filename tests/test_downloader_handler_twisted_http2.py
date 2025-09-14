@@ -31,6 +31,8 @@ if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
     from tests.mockserver.proxy_echo import ProxyEchoMockServer
 
+from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
 
 pytestmark = pytest.mark.skipif(
     not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
@@ -63,9 +65,12 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
 
     @deferred_f_from_coro_f
     async def test_download_with_maxsize_very_large_file(
-        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
+        self, mockserver: MockServer
     ) -> None:
         from twisted.internet import reactor
+
+        crawler = get_crawler(settings_dict={"DOWNLOAD_MAXSIZE": 1_500})
+        download_handler = build_from_crawler(self.download_handler_cls, crawler)
 
         with mock.patch("scrapy.core.http2.stream.logger") as logger:
             request = Request(
@@ -76,9 +81,7 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
                 logger.error.assert_called_once_with(mock.ANY)
 
             with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
-                await download_request(
-                    download_handler, request, Spider("foo", download_maxsize=1500)
-                )
+                await download_request(download_handler, request, Spider("foo"))
 
             # As the error message is logged in the dataReceived callback, we
             # have to give a bit of time to the reactor to process the queue

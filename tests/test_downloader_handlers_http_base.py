@@ -303,7 +303,7 @@ class TestHttp11Base(TestHttpBase):
 
     @deferred_f_from_coro_f
     async def test_download_with_maxsize_very_large_file(
-        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
+        self, mockserver: MockServer
     ) -> None:
         # TODO: the logger check is specific to scrapy.core.downloader.handlers.http11
         crawler = get_crawler(settings_dict={"DOWNLOAD_MAXSIZE": 1_500})
