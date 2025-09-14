@@ -1054,7 +1054,7 @@ class TestRedirectMiddleware(Base.Test):
         assert req2.url == url3
         assert req2.method == "HEAD"
 
-    def test_spider_handling(self):
+    def test_setting_handling(self):
         crawler = get_crawler(
             DefaultSpider, {"REDIRECT_ALLOWED_HTTP_CODES": [404, 301, 302]}
         )
