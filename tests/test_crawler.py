@@ -521,6 +521,8 @@ class TestCrawlerLogging:
         log_file = Path(tmp_path, "log.txt")
         log_file.write_text("previous message\n", encoding="utf-8")
 
+        info_count = None
+
         class MySpider(scrapy.Spider):
             name = "spider"
             custom_settings = {
@@ -529,10 +531,15 @@ class TestCrawlerLogging:
             }
 
             async def start(self):
+                info_count_start = crawler.stats.get_value("log_count/INFO")
                 logging.debug("debug message")  # noqa: LOG015
                 logging.info("info message")  # noqa: LOG015
                 logging.warning("warning message")  # noqa: LOG015
                 logging.error("error message")  # noqa: LOG015
+                nonlocal info_count
+                info_count = (
+                    crawler.stats.get_value("log_count/INFO") - info_count_start
+                )
                 return
                 yield
 
@@ -540,7 +547,6 @@ class TestCrawlerLogging:
         assert get_scrapy_root_handler().level == logging.DEBUG
         crawler = get_crawler(MySpider)
         assert get_scrapy_root_handler().level == logging.INFO
-        # info_count = crawler.stats.get_value("log_count/INFO")
         await maybe_deferred_to_future(crawler.crawl())
 
         logged = log_file.read_text(encoding="utf-8")
@@ -552,7 +558,7 @@ class TestCrawlerLogging:
         assert "error message" in logged
         assert crawler.stats.get_value("log_count/ERROR") == 1
         assert crawler.stats.get_value("log_count/WARNING") == 1
-        # assert crawler.stats.get_value("log_count/INFO") - info_count == 1  # TODO
+        assert info_count == 1
         assert crawler.stats.get_value("log_count/DEBUG", 0) == 0
 
     def test_spider_custom_settings_log_append(self, tmp_path):
