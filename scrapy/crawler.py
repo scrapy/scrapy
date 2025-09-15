@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 
-from scrapy import Spider, signals
+from scrapy import Spider
 from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -22,7 +22,6 @@ from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import (
-    LogCounterHandler,
     configure_logging,
     get_scrapy_root_handler,
     install_scrapy_root_handler,
@@ -153,7 +152,6 @@ class Crawler:
             self.spider = self._create_spider(*args, **kwargs)
             self._apply_settings()
             self._update_root_log_handler()
-            self._install_log_counter()
             self.engine = self._create_engine()
             yield deferred_from_coro(self.engine.open_spider_async())
             yield deferred_from_coro(self.engine.start_async())
@@ -161,8 +159,6 @@ class Crawler:
             self.crawling = False
             if self.engine is not None:
                 yield deferred_from_coro(self.engine.close_async())
-            if hasattr(self, "_remove_log_counter"):
-                self._remove_log_counter()
             raise
 
     async def crawl_async(self, *args: Any, **kwargs: Any) -> None:
@@ -192,7 +188,6 @@ class Crawler:
             self.spider = self._create_spider(*args, **kwargs)
             self._apply_settings()
             self._update_root_log_handler()
-            self._install_log_counter()
             self.engine = self._create_engine()
             await self.engine.open_spider_async()
             await self.engine.start_async()
@@ -200,8 +195,6 @@ class Crawler:
             self.crawling = False
             if self.engine is not None:
                 await self.engine.close_async()
-            if hasattr(self, "_remove_log_counter"):
-                self._remove_log_counter()
             raise
 
     def _create_spider(self, *args: Any, **kwargs: Any) -> Spider:
@@ -209,19 +202,6 @@ class Crawler:
 
     def _create_engine(self) -> ExecutionEngine:
         return ExecutionEngine(self, lambda _: self.stop_async())
-
-    def _install_log_counter(self):
-        handler = LogCounterHandler(self, level=self.settings.get("LOG_LEVEL"))
-        logging.root.addHandler(handler)
-
-        def remove_log_counter():
-            logging.root.removeHandler(handler)
-            del self._remove_log_counter
-
-        # function is assigned to Crawler attribute because this way it is not
-        # garbage collected after leaving the scope
-        self._remove_log_counter = remove_log_counter
-        self.signals.connect(self._remove_log_counter, signals.engine_stopped)
 
     def stop(self) -> Deferred[None]:
         """Start a graceful stop of the crawler and return a deferred that is
