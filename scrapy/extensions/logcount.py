@@ -20,7 +20,7 @@ class LogCount:
     """Install a log handler that counts log messages by level.
 
     The handler installed is :class:`scrapy.utils.log.LogCounterHandler`.
-    The counts are stored in stats as `log_count/<level>`.
+    The counts are stored in stats as ``log_count/<level>``.
 
     .. versionadded:: VERSION
     """
