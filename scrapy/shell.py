@@ -179,7 +179,9 @@ class Shell:
             self.vars["banner"] = self.get_help()
 
     def print_help(self) -> None:
-        print(self.get_help())
+        from rich.console import Console
+        console = Console()
+        console.print(self.get_help())
 
     def get_help(self) -> str:
         b = []

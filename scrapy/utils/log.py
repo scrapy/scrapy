@@ -7,6 +7,8 @@ from collections.abc import MutableMapping
 from logging.config import dictConfig
 from typing import TYPE_CHECKING, Any, Optional, cast
 
+from rich.console import Console
+from rich.logging import RichHandler
 from twisted.internet import asyncioreactor
 from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
@@ -157,14 +159,27 @@ def _get_handler(settings: Settings) -> logging.Handler:
         encoding = settings.get("LOG_ENCODING")
         handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
     elif settings.getbool("LOG_ENABLED"):
-        handler = logging.StreamHandler()
+        # Use RichHandler for rich formatting when logging to console
+        console = Console(stderr=True, force_terminal=True)
+        handler = RichHandler(
+            console=console,
+            show_time=True,
+            show_level=True,
+            show_path=False,
+            markup=True,
+            rich_tracebacks=True,
+            tracebacks_show_locals=False,
+        )
     else:
         handler = logging.NullHandler()
 
-    formatter = logging.Formatter(
-        fmt=settings.get("LOG_FORMAT"), datefmt=settings.get("LOG_DATEFORMAT")
-    )
-    handler.setFormatter(formatter)
+    # Only set custom formatter for non-RichHandler
+    if not isinstance(handler, RichHandler):
+        formatter = logging.Formatter(
+            fmt=settings.get("LOG_FORMAT"), datefmt=settings.get("LOG_DATEFORMAT")
+        )
+        handler.setFormatter(formatter)
+
     handler.setLevel(settings.get("LOG_LEVEL"))
     if settings.getbool("LOG_SHORT_NAMES"):
         handler.addFilter(TopLevelFormatter(["scrapy"]))
@@ -172,15 +187,32 @@ def _get_handler(settings: Settings) -> logging.Handler:
 
 
 def log_scrapy_info(settings: Settings) -> None:
+    from rich.table import Table
+    from rich.console import Console
+
+    console = Console(stderr=True)
+
+    # Log startup message with rich formatting
     logger.info(
-        "Scrapy %(version)s started (bot: %(bot)s)",
+        "[bold green]Scrapy[/bold green] [cyan]%(version)s[/cyan] started (bot: [yellow]%(bot)s[/yellow])",
         {"version": scrapy.__version__, "bot": settings["BOT_NAME"]},
     )
+
     software = settings.getlist("LOG_VERSIONS")
     if not software:
         return
-    versions = pprint.pformat(dict(get_versions(software)), sort_dicts=False)
-    logger.info(f"Versions:\n{versions}")
+
+    # Create a rich table for versions
+    table = Table(title="Installed Versions", show_header=True, header_style="bold magenta")
+    table.add_column("Package", style="cyan", no_wrap=True)
+    table.add_column("Version", style="green")
+
+    versions_dict = dict(get_versions(software))
+    for package, version in versions_dict.items():
+        table.add_row(package, str(version))
+
+    # Print the table directly to console instead of logging
+    console.print(table)
 
 
 def log_reactor_info() -> None:

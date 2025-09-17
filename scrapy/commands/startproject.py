@@ -8,6 +8,8 @@ from shutil import copy2, copystat, ignore_patterns, move
 from stat import S_IWUSR as OWNER_WRITE_PERMISSION
 from typing import TYPE_CHECKING
 
+from rich.console import Console
+
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
@@ -47,13 +49,14 @@ class Command(ScrapyCommand):
             spec = find_spec(module_name)
             return spec is not None and spec.loader is not None
 
+        console = Console()
         if not re.search(r"^[_a-zA-Z]\w*$", project_name):
-            print(
-                "Error: Project names must begin with a letter and contain"
+            console.print(
+                "[red]Error:[/red] Project names must begin with a letter and contain"
                 " only\nletters, numbers and underscores"
             )
         elif _module_exists(project_name):
-            print(f"Error: Module {project_name!r} already exists")
+            console.print(f"[red]Error:[/red] Module {project_name!r} already exists")
         else:
             return True
         return False
@@ -99,7 +102,8 @@ class Command(ScrapyCommand):
 
         if (project_dir / "scrapy.cfg").exists():
             self.exitcode = 1
-            print(f"Error: scrapy.cfg already exists in {project_dir.resolve()}")
+            console = Console()
+            console.print(f"[red]Error:[/red] scrapy.cfg already exists in {project_dir.resolve()}")
             return
 
         if not self._is_valid_name(project_name):
@@ -121,14 +125,15 @@ class Command(ScrapyCommand):
                 project_name=project_name,
                 ProjectName=string_camelcase(project_name),
             )
-        print(
-            f"New Scrapy project '{project_name}', using template directory "
+        console = Console()
+        console.print(
+            f"[green]✓[/green] New Scrapy project '[cyan]{project_name}[/cyan]', using template directory "
             f"'{self.templates_dir}', created in:"
         )
-        print(f"    {project_dir.resolve()}\n")
-        print("You can start your first spider with:")
-        print(f"    cd {project_dir}")
-        print("    scrapy genspider example example.com")
+        console.print(f"    [bold]{project_dir.resolve()}[/bold]\n")
+        console.print("[yellow]You can start your first spider with:[/yellow]")
+        console.print(f"    [dim]cd {project_dir}[/dim]")
+        console.print("    [dim]scrapy genspider example example.com[/dim]")
 
     @property
     def templates_dir(self) -> str:

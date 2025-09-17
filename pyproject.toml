@@ -19,6 +19,7 @@ dependencies = [
     "protego>=0.1.15",
     "pyOpenSSL>=22.0.0",
     "queuelib>=1.4.2",
+    "rich>=10.0.0",
     "service_identity>=18.1.0",
     "tldextract",
     "w3lib>=1.17.0",
@@ -425,3 +426,16 @@ split-on-trailing-comma = false
 
 [tool.ruff.lint.pydocstyle]
 convention = "pep257"
+
+[tool.uv.workspace]
+members = [
+    ".",
+]
+
+[tool.uv.sources]
+scrapy = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "scrapy",
+]

@@ -1,5 +1,8 @@
 import argparse
 
+from rich.console import Console
+from rich.table import Table
+
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.utils.versions import get_versions
@@ -26,10 +29,19 @@ class Command(ScrapyCommand):
         )
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
+        console = Console()
+
         if opts.verbose:
             versions = get_versions()
-            width = max(len(n) for (n, _) in versions)
+
+            # Create a rich table for versions
+            table = Table(title="Software Versions", show_header=True, header_style="bold magenta")
+            table.add_column("Package", style="cyan", no_wrap=True)
+            table.add_column("Version", style="green")
+
             for name, version in versions:
-                print(f"{name:<{width}} : {version}")
+                table.add_row(name, str(version))
+
+            console.print(table)
         else:
-            print(f"Scrapy {scrapy.__version__}")
+            console.print(f"[bold green]Scrapy[/bold green] [cyan]{scrapy.__version__}[/cyan]")
