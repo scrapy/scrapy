@@ -9,6 +9,7 @@ from pprint import pformat as pformat_
 from typing import Any
 
 from packaging.version import Version as parse_version
+from rich.pretty import pprint as rich_pprint
 
 
 def _enable_windows_terminal_processing() -> bool:
@@ -48,4 +49,16 @@ def pformat(obj: Any, *args: Any, **kwargs: Any) -> str:
 
 
 def pprint(obj: Any, *args: Any, **kwargs: Any) -> None:
+    """Pretty print with rich formatting when available."""
+    # Use rich for better formatting if colorize is enabled
+    if kwargs.get('colorize', True) and sys.stdout.isatty() and _tty_supports_color():
+        try:
+            from scrapy.utils.console import get_console
+            console = get_console(use_stderr=False)
+            console.print(obj)
+            return
+        except ImportError:
+            pass
+
+    # Fallback to original implementation
     print(pformat(obj, *args, **kwargs))

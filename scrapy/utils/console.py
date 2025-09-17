@@ -5,11 +5,58 @@ from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any
 
+from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+from rich.theme import Theme
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
 EmbedFuncT = Callable[..., None]
 KnownShellsT = dict[str, Callable[..., EmbedFuncT]]
+
+# Scrapy-specific color theme
+SCRAPY_THEME = Theme({
+    "success": "bold green",
+    "error": "bold red",
+    "warning": "bold yellow",
+    "info": "cyan",
+    "spider": "magenta",
+    "url": "blue underline",
+    "filename": "green",
+    "number": "bright_blue",
+    "scrapy": "bold green",
+})
+
+# Shared console instances
+console = Console(theme=SCRAPY_THEME, stderr=True)
+stdout_console = Console(theme=SCRAPY_THEME, stderr=False)
+
+def get_console(use_stderr: bool = True) -> Console:
+    """Get a themed console instance.
+
+    Args:
+        use_stderr: If True, output to stderr (default). If False, output to stdout.
+
+    Returns:
+        Console instance with Scrapy theme.
+    """
+    return console if use_stderr else stdout_console
+
+
+def get_progress() -> Progress:
+    """Get a progress instance for long-running operations.
+
+    Returns:
+        Progress instance with spinner and progress bar.
+    """
+    return Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console,
+    )
 
 
 def _embed_ipython_shell(

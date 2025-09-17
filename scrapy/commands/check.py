@@ -7,6 +7,7 @@ from unittest import TextTestRunner
 from scrapy.commands import ScrapyCommand
 from scrapy.contracts import ContractsManager
 from scrapy.utils.conf import build_component_list
+from scrapy.utils.console import get_console
 from scrapy.utils.misc import load_object, set_environ
 
 
@@ -99,12 +100,13 @@ class Command(ScrapyCommand):
 
             # start checks
             if opts.list:
+                console = get_console(use_stderr=False)
                 for spider, methods in sorted(contract_reqs.items()):
                     if not methods and not opts.verbose:
                         continue
-                    print(spider)
+                    console.print(f"[spider]{spider}[/spider]")
                     for method in sorted(methods):
-                        print(f"  * {method}")
+                        console.print(f"  [success]•[/success] {method}")
             else:
                 start_time = time.time()
                 self.crawler_process.start()

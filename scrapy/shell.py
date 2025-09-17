@@ -179,8 +179,8 @@ class Shell:
             self.vars["banner"] = self.get_help()
 
     def print_help(self) -> None:
-        from rich.console import Console
-        console = Console()
+        from scrapy.utils.console import get_console
+        console = get_console()
         console.print(self.get_help())
 
     def get_help(self) -> str:

@@ -27,6 +27,7 @@ dependencies = [
     # Platform-specific dependencies
     'PyDispatcher>=2.0.5; platform_python_implementation == "CPython"',
     'PyPyDispatcher>=2.1.0; platform_python_implementation == "PyPy"',
+    "testfixtures>=8.3.0",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -438,4 +439,17 @@ scrapy = { workspace = true }
 [dependency-groups]
 dev = [
     "scrapy",
+]
+test = [
+    "attrs>=25.3.0",
+    "coverage>=7.10.6",
+    "pexpect>=4.9.0",
+    "pyftpdlib>=2.0.1",
+    "pygments>=2.19.2",
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+    "pytest-twisted>=1.14.3",
+    "pytest-xdist>=3.8.0",
+    "sybil>=9.2.0",
+    "testfixtures>=8.3.0",
 ]

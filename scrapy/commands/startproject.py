@@ -8,11 +8,10 @@ from shutil import copy2, copystat, ignore_patterns, move
 from stat import S_IWUSR as OWNER_WRITE_PERMISSION
 from typing import TYPE_CHECKING
 
-from rich.console import Console
-
 import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
+from scrapy.utils.console import get_console
 from scrapy.utils.template import render_templatefile, string_camelcase
 
 if TYPE_CHECKING:
@@ -49,7 +48,7 @@ class Command(ScrapyCommand):
             spec = find_spec(module_name)
             return spec is not None and spec.loader is not None
 
-        console = Console()
+        console = get_console()
         if not re.search(r"^[_a-zA-Z]\w*$", project_name):
             console.print(
                 "[red]Error:[/red] Project names must begin with a letter and contain"
@@ -102,7 +101,7 @@ class Command(ScrapyCommand):
 
         if (project_dir / "scrapy.cfg").exists():
             self.exitcode = 1
-            console = Console()
+            console = get_console()
             console.print(f"[red]Error:[/red] scrapy.cfg already exists in {project_dir.resolve()}")
             return
 
@@ -125,7 +124,7 @@ class Command(ScrapyCommand):
                 project_name=project_name,
                 ProjectName=string_camelcase(project_name),
             )
-        console = Console()
+        console = get_console()
         console.print(
             f"[green]✓[/green] New Scrapy project '[cyan]{project_name}[/cyan]', using template directory "
             f"'{self.templates_dir}', created in:"

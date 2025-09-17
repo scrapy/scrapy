@@ -82,10 +82,20 @@ class StatsCollector:
         self, spider: Spider | None = None, reason: str | None = None
     ) -> None:
         if self._dump:
-            logger.info(
-                "Dumping Scrapy stats:\n" + pprint.pformat(self._stats),
-                extra={"spider": self._crawler.spider},
-            )
+            # Use rich formatting for better stats display
+            try:
+                from scrapy.utils.rich_utils import print_spider_stats
+                print_spider_stats(
+                    self._stats,
+                    spider_name=spider.name if spider else "Unknown",
+                    reason=reason
+                )
+            except ImportError:
+                # Fallback to original logging
+                logger.info(
+                    "Dumping Scrapy stats:\n" + pprint.pformat(self._stats),
+                    extra={"spider": self._crawler.spider},
+                )
         self._persist_stats(self._stats)
 
     def _persist_stats(self, stats: StatsT) -> None:

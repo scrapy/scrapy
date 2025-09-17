@@ -7,7 +7,6 @@ from collections.abc import MutableMapping
 from logging.config import dictConfig
 from typing import TYPE_CHECKING, Any, Optional, cast
 
-from rich.console import Console
 from rich.logging import RichHandler
 from twisted.internet import asyncioreactor
 from twisted.python import log as twisted_log
@@ -160,7 +159,7 @@ def _get_handler(settings: Settings) -> logging.Handler:
         handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
     elif settings.getbool("LOG_ENABLED"):
         # Use RichHandler for rich formatting when logging to console
-        console = Console(stderr=True, force_terminal=True)
+        from scrapy.utils.console import console
         handler = RichHandler(
             console=console,
             show_time=True,
@@ -188,9 +187,7 @@ def _get_handler(settings: Settings) -> logging.Handler:
 
 def log_scrapy_info(settings: Settings) -> None:
     from rich.table import Table
-    from rich.console import Console
-
-    console = Console(stderr=True)
+    from scrapy.utils.console import console
 
     # Log startup message with rich formatting
     logger.info(

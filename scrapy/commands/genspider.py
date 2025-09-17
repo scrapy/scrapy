@@ -12,6 +12,7 @@ import scrapy
 from scrapy.commands import ScrapyCommand
 from scrapy.exceptions import UsageError
 from scrapy.spiderloader import get_spider_loader
+from scrapy.utils.console import get_console
 from scrapy.utils.template import render_templatefile, string_camelcase
 
 if TYPE_CHECKING:
@@ -110,7 +111,8 @@ class Command(ScrapyCommand):
         module = sanitize_module_name(name)
 
         if self.settings.get("BOT_NAME") == module:
-            print("Cannot create a spider with the same name as your project")
+            console = get_console()
+            console.print("[error]Cannot create a spider with the same name as your project[/error]")
             return
 
         if not opts.force and self._spider_exists(name):
@@ -162,26 +164,28 @@ class Command(ScrapyCommand):
         spider_file = f"{spiders_dir / module}.py"
         shutil.copyfile(template_file, spider_file)
         render_templatefile(spider_file, **tvars)
-        print(
-            f"Created spider {name!r} using template {template_name!r} ",
-            end=("" if spiders_module else "\n"),
+        console = get_console()
+        console.print(
+            f"[success]✓[/success] Created spider [spider]{name!r}[/spider] using template [info]{template_name!r}[/info]"
         )
         if spiders_module:
-            print(f"in module:\n  {spiders_module.__name__}.{module}")
+            console.print(f"[info]Location:[/info] {spiders_module.__name__}.{module}")
 
     def _find_template(self, template: str) -> Path | None:
         template_file = Path(self.templates_dir, f"{template}.tmpl")
         if template_file.exists():
             return template_file
-        print(f"Unable to find template: {template}\n")
-        print('Use "scrapy genspider --list" to see all available templates.')
+        console = get_console()
+        console.print(f"[error]Unable to find template: {template}[/error]\n")
+        console.print('Use [info]"scrapy genspider --list"[/info] to see all available templates.')
         return None
 
     def _list_templates(self) -> None:
-        print("Available templates:")
+        console = get_console(use_stderr=False)
+        console.print("[info]Available templates:[/info]")
         for file in sorted(Path(self.templates_dir).iterdir()):
             if file.suffix == ".tmpl":
-                print(f"  {file.stem}")
+                console.print(f"  [spider]{file.stem}[/spider]")
 
     def _spider_exists(self, name: str) -> bool:
         assert self.settings is not None
@@ -189,7 +193,8 @@ class Command(ScrapyCommand):
             # if run as a standalone command and file with same filename already exists
             path = Path(name + ".py")
             if path.exists():
-                print(f"{path.resolve()} already exists")
+                console = get_console()
+                console.print(f"[error]{path.resolve()} already exists[/error]")
                 return True
             return False
 
@@ -200,8 +205,9 @@ class Command(ScrapyCommand):
             pass
         else:
             # if spider with same name exists
-            print(f"Spider {name!r} already exists in module:")
-            print(f"  {spidercls.__module__}")
+            console = get_console()
+            console.print(f"[error]Spider {name!r} already exists in module:[/error]")
+            console.print(f"  {spidercls.__module__}")
             return True
 
         # a file with the same name exists in the target directory
@@ -210,7 +216,8 @@ class Command(ScrapyCommand):
         spiders_dir_abs = spiders_dir.resolve()
         path = spiders_dir_abs / (name + ".py")
         if path.exists():
-            print(f"{path} already exists")
+            console = get_console()
+            console.print(f"[error]{path} already exists[/error]")
             return True
 
         return False

@@ -1,10 +1,10 @@
 import argparse
 
-from rich.console import Console
 from rich.table import Table
 
 import scrapy
 from scrapy.commands import ScrapyCommand
+from scrapy.utils.console import get_console
 from scrapy.utils.versions import get_versions
 
 
@@ -29,7 +29,7 @@ class Command(ScrapyCommand):
         )
 
     def run(self, args: list[str], opts: argparse.Namespace) -> None:
-        console = Console()
+        console = get_console(use_stderr=False)
 
         if opts.verbose:
             versions = get_versions()
