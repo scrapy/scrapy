@@ -1350,6 +1350,17 @@ JOBDIR
 Default: ``None``
 
 A string indicating the directory for storing the state of a crawl when
+
+When enabled ,Scrapy stores several files inside the directory to keep track
+of the crawl progress:
+
+- **requests.seen** - stores fingerprints of already visited request to avoid duplicates.
+- **request.queue** (or 'queues/') - keeps the list of pending request not yet processed.
+- **spider.state** - holds the internal state of the spider (e.g., pagination, counters).
+- **activity.json** - records basic activity information of the crawl session.
+
+These files allow a spider to resume exactly where it was interrupted.
+
 :ref:`pausing and resuming crawls <topics-jobs>`.
 
 
