@@ -35,8 +35,16 @@ if TYPE_CHECKING:
 
 
 class Shell:
+    """
+    Interactive shell for Scrapy projects.
+    
+    Provides tools to inspect, debug, and experiment with spiders, requests, and responses
+    in an interactive Python environment. Useful for testing and troubleshooting scraping logic.
+    """
     relevant_classes: tuple[type, ...] = (Crawler, Spider, Request, Response, Settings)
 
+    # TODO: Consider refactoring this constructor to improve readability and logic.
+    # Possible improvements: split responsibilities, validate inputs, enhance code style.
     def __init__(
         self,
         crawler: Crawler,

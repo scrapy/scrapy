@@ -59,4 +59,17 @@ And follow the documentation_ to learn how to use it.
 
 If you wish to contribute, see Contributing_.
 
+
 .. _Contributing: https://docs.scrapy.org/en/master/contributing.html
+
+Community & Support
+===================
+
+If you need help or want to connect with other Scrapy users and contributors, check out:
+
+- `GitHub Discussions <https://github.com/scrapy/scrapy/discussions>`_
+- `Stack Overflow <https://stackoverflow.com/questions/tagged/scrapy>`_
+- `Gitter Chat <https://gitter.im/scrapy/scrapy>`_
+- `Twitter <https://twitter.com/scrapyproject>`_
+
+You can also find more resources and ask questions in the official documentation.
