@@ -129,6 +129,7 @@ __all__ = [
     "MAIL_HOST",
     "MAIL_PASS",
     "MAIL_PORT",
+    "MAIL_SENDER_CLASS",
     "MAIL_USER",
     "MEMDEBUG_ENABLED",
     "MEMDEBUG_NOTIFY",
@@ -418,6 +419,7 @@ MAIL_HOST = "localhost"
 MAIL_PORT = 25
 MAIL_USER = None
 MAIL_PASS = None
+MAIL_SENDER_CLASS = "scrapy.mail.MailSender"
 
 MEMDEBUG_ENABLED = False  # enable memory debugging
 MEMDEBUG_NOTIFY = []  # send memory debugging report by mail at engine shutdown

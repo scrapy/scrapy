@@ -10,7 +10,8 @@ from typing import TYPE_CHECKING
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
-from scrapy.mail import MailSender
+from scrapy.mail import get_mail_sender_from_crawler
+from scrapy.mail_interfaces import BaseMailSender
 
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
@@ -23,17 +24,17 @@ if TYPE_CHECKING:
 
 
 class StatsMailer:
-    def __init__(self, stats: StatsCollector, recipients: list[str], mail: MailSender):
+    def __init__(self, stats: StatsCollector, recipients: list[str], mail: BaseMailSender):
         self.stats: StatsCollector = stats
         self.recipients: list[str] = recipients
-        self.mail: MailSender = mail
+        self.mail: BaseMailSender = mail
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         recipients: list[str] = crawler.settings.getlist("STATSMAILER_RCPTS")
         if not recipients:
             raise NotConfigured
-        mail: MailSender = MailSender.from_crawler(crawler)
+        mail = get_mail_sender_from_crawler(crawler)
         assert crawler.stats
         o = cls(crawler.stats, recipients, mail)
         crawler.signals.connect(o.spider_closed, signal=signals.spider_closed)

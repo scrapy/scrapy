@@ -21,6 +21,7 @@ from twisted.internet import ssl
 from twisted.internet.defer import Deferred
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.mail_interfaces import BaseMailSender, MailSenderInterface
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
 
@@ -52,7 +53,34 @@ def _to_bytes_or_none(text: str | bytes | None) -> bytes | None:
     return to_bytes(text)
 
 
-class MailSender:
+def get_mail_sender_from_crawler(crawler: Crawler) -> BaseMailSender:
+    """Get a mail sender instance from crawler settings.
+    
+    This function creates a mail sender instance based on the MAIL_SENDER_CLASS
+    setting, falling back to the default MailSender if not specified.
+    
+    Args:
+        crawler: The Scrapy crawler instance
+        
+    Returns:
+        Mail sender instance that implements BaseMailSender
+    """
+    from scrapy.utils.misc import load_object
+    
+    mail_sender_class_path = crawler.settings.get("MAIL_SENDER_CLASS", "scrapy.mail.MailSender")
+    mail_sender_cls = load_object(mail_sender_class_path)
+    
+    # Check if the class implements the required interface
+    if not issubclass(mail_sender_cls, BaseMailSender):
+        logger.warning(
+            f"Mail sender class {mail_sender_class_path} does not inherit from "
+            "BaseMailSender. This may cause compatibility issues."
+        )
+    
+    return mail_sender_cls.from_crawler(crawler)
+
+
+class MailSender(BaseMailSender):
     def __init__(
         self,
         smtphost: str = "localhost",
@@ -109,6 +137,24 @@ class MailSender:
         charset: str | None = None,
         _callback: Callable[..., None] | None = None,
     ) -> Deferred[None] | None:
+        """Send an email message using Twisted.
+        
+        This is the original synchronous API for backward compatibility.
+        For new code, consider using send_async() instead.
+        
+        Args:
+            to: Recipient email address(es)
+            subject: Email subject
+            body: Email body content
+            cc: CC recipient email address(es)
+            attachs: Email attachments as (name, mimetype, file) tuples
+            mimetype: MIME type for the email body
+            charset: Character encoding for the email
+            _callback: Internal callback for testing
+            
+        Returns:
+            Deferred that fires when email is sent, or None in debug mode
+        """
         from twisted.internet import reactor
 
         msg: MIMEBase = (
@@ -165,6 +211,41 @@ class MailSender:
         dfd.addErrback(self._sent_failed, to, cc, subject, len(attachs))
         reactor.addSystemEventTrigger("before", "shutdown", lambda: dfd)
         return dfd
+
+    async def send_async(
+        self,
+        to: str | list[str],
+        subject: str,
+        body: str,
+        cc: str | list[str] | None = None,
+        attachs: Sequence[tuple[str, str, IO[Any]]] = (),
+        mimetype: str = "text/plain",
+        charset: str | None = None,
+    ) -> None:
+        """Send an email message asynchronously.
+        
+        This is the new async API that implements the BaseMailSender interface.
+        
+        Args:
+            to: Recipient email address(es)
+            subject: Email subject
+            body: Email body content
+            cc: CC recipient email address(es)
+            attachs: Email attachments as (name, mimetype, file) tuples
+            mimetype: MIME type for the email body
+            charset: Character encoding for the email
+        """
+        # For now, we'll use the existing sync implementation
+        # In a full implementation, this would be truly async
+        deferred = self.send(to, subject, body, cc, attachs, mimetype, charset)
+        if deferred is not None:
+            # Convert Twisted Deferred to async/await
+            from twisted.internet import defer
+            try:
+                await defer.ensureDeferred(deferred)
+            except Exception as e:
+                logger.error(f"Failed to send email: {e}")
+                raise
 
     def _sent_ok(
         self, result: Any, to: list[str], cc: list[str], subject: str, nattachs: int

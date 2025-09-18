@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
-from scrapy.mail import MailSender
+from scrapy.mail import get_mail_sender_from_crawler
 from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.engine import get_engine_status
@@ -50,7 +50,7 @@ class MemoryUsage:
         self.check_interval: float = crawler.settings.getfloat(
             "MEMUSAGE_CHECK_INTERVAL_SECONDS"
         )
-        self.mail: MailSender = MailSender.from_crawler(crawler)
+        self.mail = get_mail_sender_from_crawler(crawler)
         crawler.signals.connect(self.engine_started, signal=signals.engine_started)
         crawler.signals.connect(self.engine_stopped, signal=signals.engine_stopped)
 
