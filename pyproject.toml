@@ -135,6 +135,9 @@ branch = true
 include = ["scrapy/*"]
 omit = ["tests/*"]
 disable_warnings = ["include-ignored"]
+patch = [
+    "subprocess",
+]
 
 [tool.coverage.paths]
 source = [
