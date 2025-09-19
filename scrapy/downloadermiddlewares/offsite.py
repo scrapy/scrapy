@@ -124,7 +124,9 @@ class OffsiteMiddleware:
             allowed_domains = process_domains(allowed_domains_arg, "allowed_domains")
 
         if disallowed_domains_arg:
-            disallowed_domains = process_domains(disallowed_domains_arg, "disallowed_domains")
+            disallowed_domains = process_domains(
+                disallowed_domains_arg, "disallowed_domains"
+            )
 
         if allowed_domains:
             allowed_domain_pattern = rf"^(.*\.)?({'|'.join(allowed_domains)})$"
