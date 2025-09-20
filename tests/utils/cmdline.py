@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import subprocess
 import sys
-from tempfile import TemporaryFile
 from typing import Any
 
 import pytest
@@ -11,11 +10,14 @@ from scrapy.utils.test import get_testenv
 
 
 def call(*args: str, **popen_kwargs: Any) -> int:
-    with TemporaryFile() as out:  # TODO /dev/null
-        args = (sys.executable, "-m", "scrapy.cmdline", *args)
-        return subprocess.call(
-            args, stdout=out, stderr=out, env=get_testenv(), **popen_kwargs
-        )
+    args = (sys.executable, "-m", "scrapy.cmdline", *args)
+    return subprocess.call(
+        args,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        env=get_testenv(),
+        **popen_kwargs,
+    )
 
 
 def proc(*args: str, **popen_kwargs: Any) -> tuple[int, str, str]:
