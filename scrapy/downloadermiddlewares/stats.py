@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from twisted.web import http
 
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.python import global_object_name, to_bytes
 from scrapy.utils.request import request_httprepr
 
@@ -45,8 +46,9 @@ class DownloaderStats:
         assert crawler.stats
         return cls(crawler.stats)
 
+    @_warn_spider_arg
     def process_request(
-        self, request: Request, spider: Spider
+        self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
         self.stats.inc_value("downloader/request_count")
         self.stats.inc_value(f"downloader/request_method_count/{request.method}")
@@ -54,8 +56,9 @@ class DownloaderStats:
         self.stats.inc_value("downloader/request_bytes", reqlen)
         return None
 
+    @_warn_spider_arg
     def process_response(
-        self, request: Request, response: Response, spider: Spider
+        self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
         self.stats.inc_value("downloader/response_count")
         self.stats.inc_value(f"downloader/response_status_count/{response.status}")
@@ -69,8 +72,9 @@ class DownloaderStats:
         self.stats.inc_value("downloader/response_bytes", reslen)
         return response
 
+    @_warn_spider_arg
     def process_exception(
-        self, request: Request, exception: Exception, spider: Spider
+        self, request: Request, exception: Exception, spider: Spider | None = None
     ) -> Request | Response | None:
         ex_class = global_object_name(exception.__class__)
         self.stats.inc_value("downloader/exception_count")

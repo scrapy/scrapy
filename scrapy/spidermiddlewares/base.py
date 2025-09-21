@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable
@@ -54,33 +53,21 @@ class BaseSpiderMiddleware:
             if (o := self._get_processed(o, None)) is not None:
                 yield o
 
+    @_warn_spider_arg
     def process_spider_output(
         self, response: Response, result: Iterable[Any], spider: Spider | None = None
     ) -> Iterable[Any]:
-        if spider is not None:  # pragma: no cover
-            warnings.warn(
-                "Passing a spider argument to BaseSpiderMiddleware.process_spider_output()"
-                " is deprecated and the passed value is ignored.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
         for o in result:
             if (o := self._get_processed(o, response)) is not None:
                 yield o
 
+    @_warn_spider_arg
     async def process_spider_output_async(
         self,
         response: Response,
         result: AsyncIterator[Any],
         spider: Spider | None = None,
     ) -> AsyncIterator[Any]:
-        if spider is not None:  # pragma: no cover
-            warnings.warn(
-                "Passing a spider argument to BaseSpiderMiddleware.process_spider_output_async()"
-                " is deprecated and the passed value is ignored.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
         async for o in result:
             if (o := self._get_processed(o, response)) is not None:
                 yield o

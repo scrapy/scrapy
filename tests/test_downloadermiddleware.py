@@ -128,7 +128,7 @@ class TestResponseFromProcessRequest(TestManagerBase):
         download_func = mock.MagicMock()
 
         class ResponseMiddleware:
-            def process_request(self, request, spider):
+            def process_request(self, request):
                 return resp
 
         async with self.get_mwman() as mwman:
@@ -151,11 +151,11 @@ class TestResponseFromProcessException(TestManagerBase):
             raise ValueError("test")
 
         class ResponseMiddleware:
-            def process_response(self, request, response, spider):
+            def process_response(self, request, response):
                 calls.append("process_response")
                 return resp
 
-            def process_exception(self, request, exception, spider):
+            def process_exception(self, request, exception):
                 calls.append("process_exception")
                 return resp
 
@@ -176,7 +176,7 @@ class TestInvalidOutput(TestManagerBase):
         req = Request("http://example.com/index.html")
 
         class InvalidProcessRequestMiddleware:
-            def process_request(self, request, spider):
+            def process_request(self, request):
                 return 1
 
         async with self.get_mwman() as mwman:
@@ -190,7 +190,7 @@ class TestInvalidOutput(TestManagerBase):
         req = Request("http://example.com/index.html")
 
         class InvalidProcessResponseMiddleware:
-            def process_response(self, request, response, spider):
+            def process_response(self, request, response):
                 return 1
 
         async with self.get_mwman() as mwman:
@@ -204,10 +204,10 @@ class TestInvalidOutput(TestManagerBase):
         req = Request("http://example.com/index.html")
 
         class InvalidProcessExceptionMiddleware:
-            def process_request(self, request, spider):
+            def process_request(self, request):
                 raise RuntimeError
 
-            def process_exception(self, request, exception, spider):
+            def process_exception(self, request, exception):
                 return 1
 
         async with self.get_mwman() as mwman:
@@ -229,7 +229,7 @@ class TestMiddlewareUsingDeferreds(TestManagerBase):
             def cb(self, result):
                 return result
 
-            def process_request(self, request, spider):
+            def process_request(self, request):
                 d = Deferred()
                 d.addCallback(self.cb)
                 d.callback(resp)
@@ -252,7 +252,7 @@ class TestMiddlewareUsingCoro(TestManagerBase):
         download_func = mock.MagicMock()
 
         class CoroMiddleware:
-            async def process_request(self, request, spider):
+            async def process_request(self, request):
                 await succeed(42)
                 return resp
 
@@ -270,7 +270,7 @@ class TestMiddlewareUsingCoro(TestManagerBase):
         download_func = mock.MagicMock()
 
         class CoroMiddleware:
-            async def process_request(self, request, spider):
+            async def process_request(self, request):
                 await asyncio.sleep(0.1)
                 return await get_from_asyncio_queue(resp)
 
@@ -315,3 +315,41 @@ class TestDownloadDeprecated(TestManagerBase):
                     mwman.download(download_func, req, mwman.crawler.spider)
                 )
         assert isinstance(ret, Response)
+
+
+class TestDeprecatedSpiderArg(TestManagerBase):
+    @deferred_f_from_coro_f
+    async def test_deprecated_spider_arg(self):
+        req = Request("http://example.com/index.html")
+        resp = Response("http://example.com/index.html")
+        download_func = mock.MagicMock()
+
+        class DeprecatedSpiderArgMiddleware:
+            def process_request(self, request, spider):
+                1 / 0
+
+            def process_response(self, request, response, spider):
+                return response
+
+            def process_exception(self, request, exception, spider):
+                return resp
+
+        async with self.get_mwman() as mwman:
+            with (
+                pytest.warns(
+                    ScrapyDeprecationWarning,
+                    match=r"process_request\(\) requires a spider argument",
+                ),
+                pytest.warns(
+                    ScrapyDeprecationWarning,
+                    match=r"process_response\(\) requires a spider argument",
+                ),
+                pytest.warns(
+                    ScrapyDeprecationWarning,
+                    match=r"process_exception\(\) requires a spider argument",
+                ),
+            ):
+                mwman._add_middleware(DeprecatedSpiderArgMiddleware())
+            result = await maybe_deferred_to_future(mwman.download(download_func, req))
+        assert result is resp
+        assert not download_func.called

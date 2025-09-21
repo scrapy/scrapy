@@ -4,13 +4,11 @@ Scrapy extension for collecting scraping stats
 
 from __future__ import annotations
 
-import inspect
 import logging
 import pprint
-import warnings
 from typing import TYPE_CHECKING, Any
 
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
     from scrapy import Spider
@@ -44,22 +42,7 @@ class StatsCollector:
             "open_spider",
             "close_spider",
         ) and callable(original_attr):
-
-            def _deprecated_wrapper(*args, **kwargs):
-                sig = inspect.signature(original_attr).bind(*args, **kwargs)
-                sig.apply_defaults()
-
-                if sig.arguments.get("spider"):
-                    warnings.warn(
-                        f"Passing a 'spider' argument to StatsCollector.{name}() is deprecated and"
-                        f" the argument will be removed in a future Scrapy version.",
-                        category=ScrapyDeprecationWarning,
-                        stacklevel=2,
-                    )
-
-                return original_attr(*args, **kwargs)
-
-            return _deprecated_wrapper
+            return _warn_spider_arg(original_attr)
 
         return original_attr
 

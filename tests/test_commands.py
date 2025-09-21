@@ -131,30 +131,12 @@ class TestCommandCrawlerProcess(TestCommandBase):
     """Test that the command uses the expected kind of *CrawlerProcess
     and produces expected errors when needed."""
 
-    name = "crawltest"
-
-    NORMAL_MSG = "Type of self.crawler_process: <class 'scrapy.crawler.CrawlerProcess'>"
-    ASYNC_MSG = (
-        "Type of self.crawler_process: <class 'scrapy.crawler.AsyncCrawlerProcess'>"
-    )
+    name = "crawl"
+    NORMAL_MSG = "Using CrawlerProcess"
+    ASYNC_MSG = "Using AsyncCrawlerProcess"
 
     def setup_method(self):
         super().setup_method()
-        (self.cwd / self.project_name / "commands").mkdir(exist_ok=True)
-        (self.cwd / self.project_name / "commands" / "__init__.py").touch()
-        (self.cwd / self.project_name / "commands" / f"{self.name}.py").write_text("""
-from scrapy.commands.crawl import Command
-
-class CrawlerProcessCrawlCommand(Command):
-    requires_project = True
-
-    def run(self, args, opts):
-        print(f"Type of self.crawler_process: {type(self.crawler_process)}")
-        super().run(args, opts)
-""")
-
-        self._append_settings(f"COMMANDS_MODULE = '{self.project_name}.commands'\n")
-
         (self.cwd / self.project_name / "spiders" / "sp.py").write_text("""
 import scrapy
 
@@ -186,6 +168,8 @@ class MySpider(scrapy.Spider):
         yield
 """)
 
+        self._append_settings("LOG_LEVEL = 'DEBUG'\n")
+
     def _append_settings(self, text: str) -> None:
         """Add text to the end of the project settings.py."""
         with (self.cwd / self.project_name / "settings.py").open(
@@ -207,16 +191,16 @@ class MySpider(scrapy.Spider):
 
     def _assert_spider_works(self, msg: str, *args: str) -> None:
         """The command uses the expected *CrawlerProcess, the spider works."""
-        _, out, err = self.proc(self.name, *args)
-        assert msg in out, out
-        assert "It works!" in err, err
-        assert "Spider closed (finished)" in err, err
+        _, _, err = self.proc(self.name, *args)
+        assert msg in err
+        assert "It works!" in err
+        assert "Spider closed (finished)" in err
 
     def _assert_spider_asyncio_fail(self, msg: str, *args: str) -> None:
         """The command uses the expected *CrawlerProcess, the spider fails to use asyncio."""
-        _, out, err = self.proc(self.name, *args)
-        assert msg in out, out
-        assert "no running event loop" in err, err
+        _, _, err = self.proc(self.name, *args)
+        assert msg in err
+        assert "no running event loop" in err
 
     def test_project_settings(self):
         """The reactor is set via the project default settings (to the asyncio value).
@@ -316,13 +300,13 @@ class MySpider(scrapy.Spider):
                 spider,
                 "{'TWISTED_REACTOR': 'twisted.internet.selectreactor.SelectReactor'}",
             )
-            _, out, err = self.proc(self.name, spider)
-            assert self.ASYNC_MSG in out, out
+            _, _, err = self.proc(self.name, spider)
+            assert self.ASYNC_MSG in err
             assert (
                 "The installed reactor (twisted.internet.asyncioreactor.AsyncioSelectorReactor)"
                 " does not match the requested one"
                 " (twisted.internet.selectreactor.SelectReactor)"
-            ) in err, err
+            ) in err
 
     def test_project_asyncio_spider_settings_select_forced(self):
         """The reactor is set via the project settings to the asyncio value

@@ -20,7 +20,7 @@ class M1:
     def close_spider(self, spider):
         pass
 
-    def process(self, response, request, spider):
+    def process(self, response, request):
         pass
 
 
@@ -33,7 +33,7 @@ class M2:
 
 
 class M3:
-    def process(self, response, request, spider):
+    def process(self, response, request):
         pass
 
 

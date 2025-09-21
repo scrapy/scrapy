@@ -20,6 +20,7 @@ import pytest
 from itemadapter import ItemAdapter
 from twisted.internet.defer import inlineCallbacks
 
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import (
@@ -29,6 +30,7 @@ from scrapy.pipelines.files import (
     GCSFilesStore,
     S3FilesStore,
 )
+from scrapy.settings import Settings
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
@@ -178,7 +180,7 @@ class TestFilesPipeline:
         for p in patchers:
             p.start()
 
-        result = yield self.pipeline.process_item(item, None)
+        result = yield self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] == "abc"
         assert result["files"][0]["status"] == "uptodate"
 
@@ -209,7 +211,7 @@ class TestFilesPipeline:
         for p in patchers:
             p.start()
 
-        result = yield self.pipeline.process_item(item, None)
+        result = yield self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "downloaded"
 
@@ -240,7 +242,7 @@ class TestFilesPipeline:
         for p in patchers:
             p.start()
 
-        result = yield self.pipeline.process_item(item, None)
+        result = yield self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "cached"
 
@@ -804,3 +806,14 @@ class TestBuildFromCrawler:
             assert len(w) == 0
             assert pipe.store
             assert pipe._from_crawler_called
+
+
+@pytest.mark.parametrize("store", [None, ""])
+def test_files_pipeline_raises_notconfigured_when_files_store_invalid(store):
+    settings = Settings()
+    settings.clear()
+    settings.set("FILES_STORE", store, priority="cmdline")
+    crawler = get_crawler(settings_dict=settings)
+
+    with pytest.raises(NotConfigured):
+        FilesPipeline.from_crawler(crawler)
