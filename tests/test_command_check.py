@@ -26,6 +26,10 @@ class CheckSpider(scrapy.Spider):
     name = '{self.spider_name}'
     start_urls = ['data:,']
 
+    custom_settings = {{
+        "DOWNLOAD_DELAY": 0,
+    }}
+
     def parse(self, response, **cb_kwargs):
         \"\"\"
         @url data:,

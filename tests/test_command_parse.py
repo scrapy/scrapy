@@ -32,7 +32,13 @@ from scrapy.utils.test import get_from_asyncio_queue
 import asyncio
 
 
-class AsyncDefAsyncioReturnSpider(scrapy.Spider):
+class BaseSpider(scrapy.Spider):
+    custom_settings = {{
+        "DOWNLOAD_DELAY": 0,
+    }}
+
+
+class AsyncDefAsyncioReturnSpider(BaseSpider):
     name = "asyncdef_asyncio_return"
 
     async def parse(self, response):
@@ -41,7 +47,7 @@ class AsyncDefAsyncioReturnSpider(scrapy.Spider):
         self.logger.info(f"Got response {{status}}")
         return [{{'id': 1}}, {{'id': 2}}]
 
-class AsyncDefAsyncioReturnSingleElementSpider(scrapy.Spider):
+class AsyncDefAsyncioReturnSingleElementSpider(BaseSpider):
     name = "asyncdef_asyncio_return_single_element"
 
     async def parse(self, response):
@@ -50,7 +56,7 @@ class AsyncDefAsyncioReturnSingleElementSpider(scrapy.Spider):
         self.logger.info(f"Got response {{status}}")
         return {{'foo': 42}}
 
-class AsyncDefAsyncioGenLoopSpider(scrapy.Spider):
+class AsyncDefAsyncioGenLoopSpider(BaseSpider):
     name = "asyncdef_asyncio_gen_loop"
 
     async def parse(self, response):
@@ -59,7 +65,7 @@ class AsyncDefAsyncioGenLoopSpider(scrapy.Spider):
             yield {{'foo': i}}
         self.logger.info(f"Got response {{response.status}}")
 
-class AsyncDefAsyncioSpider(scrapy.Spider):
+class AsyncDefAsyncioSpider(BaseSpider):
     name = "asyncdef_asyncio"
 
     async def parse(self, response):
@@ -67,7 +73,7 @@ class AsyncDefAsyncioSpider(scrapy.Spider):
         status = await get_from_asyncio_queue(response.status)
         self.logger.debug(f"Got response {{status}}")
 
-class AsyncDefAsyncioGenExcSpider(scrapy.Spider):
+class AsyncDefAsyncioGenExcSpider(BaseSpider):
     name = "asyncdef_asyncio_gen_exc"
 
     async def parse(self, response):
@@ -89,7 +95,8 @@ class MySpider(scrapy.Spider):
     custom_settings = {{
         "DOWNLOADER_MIDDLEWARES": {{
             CallbackSignatureDownloaderMiddleware: 0,
-        }}
+        }},
+        "DOWNLOAD_DELAY": 0,
     }}
 
     def parse(self, response):
@@ -122,6 +129,10 @@ class MySpider(scrapy.Spider):
 class MyGoodCrawlSpider(CrawlSpider):
     name = 'goodcrawl{self.spider_name}'
 
+    custom_settings = {{
+        "DOWNLOAD_DELAY": 0,
+    }}
+
     rules = (
         Rule(LinkExtractor(allow=r'/html'), callback='parse_item', follow=True),
         Rule(LinkExtractor(allow=r'/text'), follow=True),
@@ -137,6 +148,10 @@ class MyGoodCrawlSpider(CrawlSpider):
 class MyBadCrawlSpider(CrawlSpider):
     '''Spider which doesn't define a parse_item callback while using it in a rule.'''
     name = 'badcrawl{self.spider_name}'
+
+    custom_settings = {{
+        "DOWNLOAD_DELAY": 0,
+    }}
 
     rules = (
         Rule(LinkExtractor(allow=r'/html'), callback='parse_item', follow=True),
