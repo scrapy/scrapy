@@ -12,6 +12,12 @@ Highlights:
 
 -   More coroutine-based replacements for Deferred-based APIs
 
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   Dropped support for PyPy 3.10.
+    (:issue:`7050`)
+
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -189,13 +195,16 @@ Deprecations
 
     - :meth:`scrapy.spidermiddlewares.base.BaseSpiderMiddleware.process_spider_output_async`
 
+    - all ``process_*()`` methods of built-in downloader middlewares
+
     - all ``process_*()`` methods of built-in spider middlewares
 
     - :meth:`scrapy.pipelines.media.MediaPipeline.open_spider`
 
     - :meth:`scrapy.pipelines.media.MediaPipeline.process_item`
 
-    (:issue:`6750`, :issue:`6927`, :issue:`6984`, :issue:`7006`, :issue:`7011`)
+    (:issue:`6750`, :issue:`6927`, :issue:`6984`, :issue:`7006`, :issue:`7011`,
+    :issue:`7033`, :issue:`7037`)
 
 -   Instantiating subclasses of :class:`scrapy.middleware.MiddlewareManager`
     without a :class:`~scrapy.crawler.Crawler` instance is deprecated.
@@ -206,6 +215,9 @@ Deprecations
     inside them you should get it from the :class:`~scrapy.crawler.Crawler`
     instance (you may need to refactor your code to save that instance in e.g.
     the ``from_crawler()`` method):
+
+    - the ``process_request()``, ``process_response()`` and
+      ``process_exception()`` methods of custom downloader middlewares
 
     - the ``process_spider_input()``, ``process_spider_output()``,
       ``process_spider_output_async()`` and ``process_spider_exception()``
@@ -221,12 +233,11 @@ Deprecations
     - a custom function passed as the ``download_func`` argument to
       :meth:`scrapy.core.downloader.middleware.DownloaderMiddlewareManager.download`
 
-    (:issue:`6927`, :issue:`6984`, :issue:`7006`)
+    (:issue:`6927`, :issue:`6984`, :issue:`7006`, :issue:`7037`)
 
 -   Custom implementations of :setting:`ITEM_PROCESSOR` should now define a
     ``process_item_async()`` method instead of, or in addition to,
     ``process_item()``.
-
     (:issue:`7005`)
 
 -   The ``CONCURRENT_REQUESTS_PER_IP`` setting is deprecated, use
@@ -264,7 +275,8 @@ New features
     :class:`scrapy.crawler.AsyncCrawlerRunner` as counterparts to
     :class:`~scrapy.crawler.CrawlerProcess` and
     :class:`~scrapy.crawler.CrawlerRunner` that offer coroutine-based APIs.
-    (:issue:`6789`, :issue:`6790`, :issue:`6796`, :issue:`6817`, :issue:`6845`)
+    (:issue:`6789`, :issue:`6790`, :issue:`6796`, :issue:`6817`, :issue:`6845`,
+    :issue:`7034`)
 
 -   Added coroutine counterparts to some of the Deferred-based APIs:
 
@@ -340,6 +352,18 @@ Improvements
 -   Improved :command:`shell` help formatting when using IPython 9+.
     (:issue:`6915`, :issue:`6980`)
 
+Bug fixes
+~~~~~~~~~
+
+-   Setting :setting:`FILES_STORE` or :setting:`IMAGES_STORE` to ``None`` now
+    correctly disables the respective pipeline.
+    (:issue:`6964`, :issue:`6969`)
+
+-   :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware` now
+    uses the URL set in the ``<base>`` tag as the base URL when redirecting to
+    a relative URL.
+    (:issue:`7042`, :issue:`7047`)
+
 Documentation
 ~~~~~~~~~~~~~
 
@@ -384,7 +408,9 @@ Quality assurance
     :issue:`6972`,
     :issue:`6974`,
     :issue:`7003`,
-    :issue:`7012`)
+    :issue:`7012`,
+    :issue:`7013`,
+    :issue:`7050`)
 
 -   Code cleanups.
     (:issue:`6803`,
