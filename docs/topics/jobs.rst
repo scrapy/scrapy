@@ -27,6 +27,18 @@ this directory must not be shared by different spiders, or even different
 jobs/runs of the same spider, as it's meant to be used for storing the state of
 a *single* job.
 
+Common files
+------------
+
+In addition to requests persisted by the scheduler, a job directory commonly
+includes auxiliary files:
+
+- ``requests.seen`` — stores SHA1 fingerprints of visited URLs used by the
+  duplicates filter to avoid re-crawling the same URL.
+- ``spider.state`` — persists the spider’s ``state`` dictionary between runs
+  (see :ref:`topics-keeping-persistent-state-between-batches`).
+
+
 How to use it
 =============
 
