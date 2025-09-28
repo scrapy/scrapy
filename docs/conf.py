@@ -68,6 +68,14 @@ html_css_files = [
     "custom.css",
 ]
 
+html_context = {
+    "display_github": True,
+    "github_user": "scrapy",
+    "github_repo": "scrapy",
+    "github_version": "master",
+    "conf_py_path": "/docs/",
+}
+
 # Set canonical URL from the Read the Docs Domain
 html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
 
