@@ -133,6 +133,9 @@ Request objects
     :param dont_filter: sets :attr:`dont_filter`, defaults to ``False``.
     :type dont_filter: bool
 
+    :param dont_encode_url: sets :attr:`dont_encode_url`, defaults to ``False``.
+    :type dont_encode_url: bool
+
     :param errback: sets :attr:`errback`, defaults to ``None``.
 
         .. versionchanged:: 2.0
@@ -238,6 +241,8 @@ Request objects
 
     .. autoattribute:: dont_filter
 
+    .. autoattribute:: dont_encode_url
+
     .. autoattribute:: Request.attributes
 
     .. method:: Request.copy()
@@ -245,7 +250,7 @@ Request objects
        Return a new Request which is a copy of this Request. See also:
        :ref:`topics-request-response-ref-request-callback-arguments`.
 
-    .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, callback, errback, cb_kwargs])
+    .. method:: Request.replace([url, method, headers, body, cookies, meta, flags, encoding, priority, dont_filter, dont_encode_url, callback, errback, cb_kwargs])
 
        Return a Request object with the same members, except for those members
        given new values by whichever keyword arguments are specified. The
@@ -419,6 +424,43 @@ achieve this by using ``Failure.request.cb_kwargs``:
             main_url=failure.request.cb_kwargs["main_url"],
         )
 
+
+.. _request-url-encoding:
+
+Controlling URL encoding
+------------------------
+
+.. versionadded:: VERSION
+
+By default, Scrapy processes URLs through :func:`w3lib.url.safe_url_string` to
+ensure they are properly formatted. However, some websites expect certain
+characters in URLs (such as forward slashes ``/`` or commas ``,`` in query
+parameters) to remain unescaped.
+
+To preserve the original URL without encoding, use the ``dont_encode_url`` parameter:
+
+.. code-block:: python
+
+    # URL with slashes in query parameters
+    url = "http://example.com/api?path=/users/123/profile&action=view"
+
+    # Without dont_encode_url (default behavior)
+    request = scrapy.Request(url)
+    # URL is processed through safe_url_string
+
+    # With dont_encode_url=True
+    request = scrapy.Request(url, dont_encode_url=True)
+    # URL remains exactly as provided: /users/123 preserved in query
+
+This is useful when:
+
+* The target website requires unescaped special characters in URLs
+* You need to preserve the exact parameter ordering in the URL
+* You're working with URLs that are already properly encoded
+
+.. warning::
+    When using ``dont_encode_url=True``, ensure your URLs are valid and
+    properly formatted, as Scrapy will not modify them.
 
 .. _request-fingerprints:
 
