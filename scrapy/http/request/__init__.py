@@ -128,6 +128,17 @@ class Request(object_ref):
     ) -> None:
         self._encoding: str = encoding  # this one has to be set first
         self.method: str = str(method).upper()
+
+        #: Whether URL encoding should be disabled for this request (``False``,
+        #: default), or URL encoding should be skipped (``True``).
+        #:
+        #: When ``True``, the URL is not processed through ``safe_url_string()``,
+        #: which means that special characters in the URL (such as ``/`` in query
+        #: parameters) will not be percent-encoded. This is useful when scraping
+        #: websites that expect unescaped characters in URLs.
+        #:
+        #: .. versionadded:: VERSION
+        self.dont_encode_url: bool = dont_encode_url
         self._set_url(url)
         self._set_body(body)
         if not isinstance(priority, int):
@@ -206,17 +217,6 @@ class Request(object_ref):
         #: default. See :meth:`~scrapy.Spider.start`.
         self.dont_filter: bool = dont_filter
 
-        #: Whether URL encoding should be disabled for this request (``False``,
-        #: default), or URL encoding should be skipped (``True``).
-        #:
-        #: When ``True``, the URL is not processed through ``safe_url_string()``,
-        #: which means that special characters in the URL (such as ``/`` in query
-        #: parameters) will not be percent-encoded. This is useful when scraping
-        #: websites that expect unescaped characters in URLs.
-        #:
-        #: .. versionadded:: VERSION
-        self.dont_encode_url: bool = dont_encode_url
-
         self._meta: dict[str, Any] | None = dict(meta) if meta else None
         self._cb_kwargs: dict[str, Any] | None = dict(cb_kwargs) if cb_kwargs else None
         self.flags: list[str] = [] if flags is None else list(flags)
@@ -241,7 +241,7 @@ class Request(object_ref):
         if not isinstance(url, str):
             raise TypeError(f"Request url must be str, got {type(url).__name__}")
 
-        if hasattr(self, "dont_encode_url") and self.dont_encode_url:
+        if self.dont_encode_url:
             self._url = url
         else:
             self._url = safe_url_string(url, self.encoding)
