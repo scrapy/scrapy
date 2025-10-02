@@ -594,7 +594,7 @@ class FilesPipeline(MediaPipeline):
     ) -> FileInfo:
         referer = referer_str(request)
 
-        if response.status != 200:
+        if not 200 <= response.status < 300:
             logger.warning(
                 "File (code: %(status)s): Error downloading file from "
                 "%(request)s referred in <%(referer)s>",

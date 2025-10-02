@@ -160,6 +160,69 @@ class TestFilesPipeline:
         fullpath = Path(self.tempdir, "some", "image", "key.jpg")
         assert self.pipeline.store._get_filesystem_path(path) == fullpath
 
+    def test_media_downloaded_accepts_201_created(self):
+        request = Request("http://example.com/file.pdf")
+        response = Response(
+            "http://example.com/file.pdf",
+            body=b"content",
+            status=201,
+            request=request,
+        )
+
+        with mock.patch.object(self.pipeline, "inc_stats") as inc_stats:
+            result = self.pipeline.media_downloaded(
+                response,
+                request,
+                self.pipeline.spiderinfo,
+            )
+
+        inc_stats.assert_called_once_with("downloaded")
+        assert result["status"] == "downloaded"
+        assert result["url"] == request.url
+
+    @inlineCallbacks
+    def test_process_item_follows_location_header(self):
+        initial_url = "http://example.com/file.pdf"
+        final_url = "http://example.com/files/final.pdf"
+        item = _create_item_with_files(initial_url)
+        item["file_urls"] = [initial_url]
+
+        download_responses: dict[str, Response] = {
+            initial_url: Response(
+                initial_url,
+                status=201,
+                headers={"Location": "/files/final.pdf"},
+                body=b"",
+                request=Request(initial_url),
+            ),
+            final_url: Response(
+                final_url,
+                status=200,
+                body=b"final-content",
+                request=Request(final_url),
+            ),
+        }
+
+        def download_func(request: Request, spider: DefaultSpider) -> Response:
+            try:
+                return download_responses[request.url]
+            except KeyError as exc:  # pragma: no cover - defensive guard
+                raise AssertionError(f"Unexpected download for {request.url}") from exc
+
+        self.pipeline.download_func = download_func
+
+        processed = yield self.pipeline.process_item(item)
+        files = processed[self.pipeline.files_result_field]
+        assert len(files) == 1
+        entry = files[0]
+
+        assert entry["url"] == final_url
+        assert entry["status"] == "downloaded"
+
+        stored_path = Path(self.tempdir, entry["path"])
+        assert stored_path.exists()
+        assert stored_path.read_bytes() == b"final-content"
+
     @inlineCallbacks
     def test_file_not_expired(self):
         item_url = "http://example.com/file.pdf"

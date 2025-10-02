@@ -6,6 +6,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypedDict, cast
+from urllib.parse import urljoin, urlparse
 
 from twisted import version as twisted_version
 from twisted.internet.defer import (
@@ -16,8 +17,10 @@ from twisted.internet.defer import (
 )
 from twisted.python.failure import Failure
 from twisted.python.versions import Version
+from w3lib.url import safe_url_string
 
 from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.http import Response
 from scrapy.http.request import NO_CALLBACK, Request
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.datatypes import SequenceExclude
@@ -92,6 +95,38 @@ class MediaPipeline(ABC):
         self.handle_httpstatus_list = None
         if allow_redirects:
             self.handle_httpstatus_list = SequenceExclude(range(300, 400))
+
+    def _download_media_request(
+        self, request: Request, info: SpiderInfo
+    ) -> Deferred[Response]:
+        if self.download_func:
+            return maybeDeferred(self.download_func, request, info.spider)
+        self._modify_media_request(request)
+        assert self.crawler.engine
+        return deferred_from_coro(self.crawler.engine.download_async(request))
+
+    def _get_location_redirect_request(
+        self, request: Request, response: Response
+    ) -> Request | None:
+        if response.status != 201:
+            return None
+        raw_location = response.headers.get("Location")
+        if not raw_location:
+            return None
+        location = safe_url_string(raw_location)
+        if isinstance(raw_location, (bytes, bytearray)) and raw_location.startswith(
+            b"//"
+        ):
+            source_scheme = urlparse(request.url).scheme
+            if source_scheme:
+                location = f"{source_scheme}://{location.lstrip('/')}"
+        canonical_url = urljoin(request.url, location)
+        if not canonical_url or canonical_url == request.url:
+            return None
+        parsed = urlparse(canonical_url)
+        if parsed.scheme not in {"http", "https"}:
+            return None
+        return request.replace(url=canonical_url)
 
     def _key_for_pipe(
         self,
@@ -191,16 +226,23 @@ class MediaPipeline(ABC):
         self, request: Request, info: SpiderInfo, item: Any
     ) -> Generator[Deferred[Any], Any, FileInfo]:
         try:
-            if self.download_func:
-                # this ugly code was left only to support tests. TODO: remove
-                response = yield maybeDeferred(self.download_func, request, info.spider)
-            else:
-                self._modify_media_request(request)
-                assert self.crawler.engine
-                response = yield deferred_from_coro(
-                    self.crawler.engine.download_async(request)
+            current_request = request
+            seen_urls = {request.url}
+            max_hops = 5
+            while True:
+                response = yield self._download_media_request(current_request, info)
+                redirect_request = self._get_location_redirect_request(
+                    current_request, response
                 )
-            return self.media_downloaded(response, request, info, item=item)
+                if redirect_request is None:
+                    break
+                if redirect_request.url in seen_urls:
+                    break
+                seen_urls.add(redirect_request.url)
+                if len(seen_urls) > max_hops:
+                    break
+                current_request = redirect_request
+            return self.media_downloaded(response, current_request, info, item=item)
         except Exception:
             failure = self.media_failed(Failure(), request, info)
             if isinstance(failure, Failure):
