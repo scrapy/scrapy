@@ -6,7 +6,12 @@ from typing import TYPE_CHECKING
 import pytest
 from twisted.web.http import H2_ENABLED
 
-from scrapy.utils.reactor import set_asyncio_event_loop_policy
+from scrapy.utils.reactor import (
+    _asyncio_reactor_path,
+    install_reactor,
+    is_reactor_installed,
+    set_asyncio_event_loop_policy,
+)
 from tests.keys import generate_keys
 from tests.mockserver.http import MockServer
 
@@ -16,6 +21,16 @@ if TYPE_CHECKING:
 
 def _py_files(folder):
     return (str(p) for p in Path(folder).rglob("*.py"))
+
+
+def pytest_addoption(parser):
+    group = parser.getgroup("scrapy", "Scrapy test options")
+    group.addoption(
+        "--reactor",
+        action="store",
+        default=None,
+        help="Select Twisted reactor for Scrapy tests (default set via addopts).",
+    )
 
 
 collect_ignore = [
@@ -118,10 +133,15 @@ def requires_boto3(request):
 
 
 def pytest_configure(config):
-    if config.getoption("--reactor") == "asyncio":
+    reactor = config.getoption("--reactor")
+    if reactor == "asyncio":
         # Needed on Windows to switch from proactor to selector for Twisted reactor compatibility.
         # If we decide to run tests with both, we will need to add a new option and check it here.
         set_asyncio_event_loop_policy()
+        if not is_reactor_installed():
+            install_reactor(_asyncio_reactor_path)
+    elif reactor and not is_reactor_installed():
+        install_reactor(reactor)
 
 
 # Generate localhost certificate files, needed by some tests
