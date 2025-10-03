@@ -307,3 +307,13 @@ class UriResource(resource.Resource):
         if request.method != b"CONNECT":
             return request.uri
         return b""
+
+
+class ResponseHeadersResource(resource.Resource):
+    """Return a response with headers set from the JSON request body"""
+
+    def render(self, request):
+        body = json.loads(request.content.read().decode())
+        for header_name, header_value in body.items():
+            request.responseHeaders.addRawHeader(header_name, header_value)
+        return json.dumps(body).encode("utf-8")

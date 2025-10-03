@@ -29,6 +29,7 @@ from .http_resources import (
     PayloadResource,
     Raw,
     RedirectTo,
+    ResponseHeadersResource,
     Status,
 )
 
@@ -76,6 +77,7 @@ class Root(resource.Resource):
         self.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
         self.putChild(b"largechunkedfile", LargeChunkedFileResource())
         self.putChild(b"duplicate-header", DuplicateHeaderResource())
+        self.putChild(b"response-headers", ResponseHeadersResource())
 
     def getChild(self, name, request):
         return self

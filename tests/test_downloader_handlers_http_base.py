@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sys
 from abc import ABC, abstractmethod
+from http import HTTPStatus
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
@@ -92,6 +93,113 @@ class TestHttpBase(ABC):
         )
         response = await download_request(download_handler, request)
         assert response.body == b""
+
+    @pytest.mark.parametrize(
+        "http_status",
+        [
+            pytest.param(http_status, id=f"status={http_status.value}")
+            for http_status in HTTPStatus
+            if http_status.value == 200 or http_status.value // 100 in (4, 5)
+        ],
+    )
+    @deferred_f_from_coro_f
+    async def test_download_has_correct_http_status_code(
+        self,
+        mockserver: MockServer,
+        download_handler: DownloadHandlerProtocol,
+        http_status: HTTPStatus,
+    ) -> None:
+        request = Request(
+            mockserver.url(f"/status?n={http_status.value}", is_secure=self.is_secure)
+        )
+        response = await download_request(download_handler, request)
+        assert response.status == http_status.value
+
+    @deferred_f_from_coro_f
+    async def test_server_receives_correct_request_headers(
+        self,
+        mockserver: MockServer,
+        download_handler: DownloadHandlerProtocol,
+    ) -> None:
+        request_headers = {
+            # common request headers
+            "Accept": "text/html",
+            "Accept-Charset": "utf-8",
+            "Accept-Datetime": "Thu, 31 May 2007 20:35:00 GMT",
+            "Accept-Encoding": "gzip, deflate",
+            # custom headers
+            "X-Custom-Header": "Custom Value",
+        }
+
+        request = Request(
+            mockserver.url("/echo", is_secure=self.is_secure),
+            headers=request_headers,
+        )
+        response = await download_request(download_handler, request)
+        assert response.status == HTTPStatus.OK
+        body = json.loads(response.body.decode("utf-8"))
+        assert "headers" in body
+        for header_name, header_value in request_headers.items():
+            assert header_name in body["headers"]
+            assert body["headers"][header_name] == [header_value]
+
+    @deferred_f_from_coro_f
+    async def test_server_receives_correct_request_body(
+        self,
+        mockserver: MockServer,
+        download_handler: DownloadHandlerProtocol,
+    ) -> None:
+        request_body = {
+            "message": "It works!",
+        }
+        request = Request(
+            mockserver.url("/echo", is_secure=self.is_secure),
+            body=json.dumps(request_body),
+        )
+        response = await download_request(download_handler, request)
+        assert response.status == HTTPStatus.OK
+        body = json.loads(response.body.decode("utf-8"))
+        assert json.loads(body["body"]) == request_body
+
+    @deferred_f_from_coro_f
+    async def test_download_has_correct_response_headers(
+        self,
+        mockserver: MockServer,
+        download_handler: DownloadHandlerProtocol,
+    ) -> None:
+        # these headers will be set on the response in the resource and returned
+        response_headers = {
+            # common response headers
+            "Access-Control-Allow-Origin": "*",
+            "Allow": "Get, Head",
+            "Age": "12",
+            "Cache-Control": "max-age=3600",
+            "Content-Encoding": "gzip",
+            "Content-MD5": "Q2hlY2sgSW50ZWdyaXR5IQ==",
+            "Content-Type": "text/html; charset=utf-8",
+            "Date": "Date: Tue, 15 Nov 1994 08:12:31 GMT",
+            "Pragma": "no-cache",
+            "Retry-After": "120",
+            "Set-Cookie": "CookieName=CookieValue; Max-Age=3600; Version=1",
+            "WWW-Authenticate": "Basic",
+            # custom headers
+            "X-Custom-Header": "Custom Header Value",
+        }
+
+        request = Request(
+            mockserver.url("/response-headers", is_secure=self.is_secure),
+            headers={"content-type": "application/json"},
+            body=json.dumps(response_headers),
+        )
+        response = await download_request(download_handler, request)
+        assert response.status == 200
+        for header_name, header_value in response_headers.items():
+            assert header_name in response.headers, (
+                f"Response was missing expected header {header_name}"
+            )
+            assert response.headers[header_name] == bytes(
+                header_value, encoding="utf-8"
+            )
 
     @deferred_f_from_coro_f
     async def test_redirect_status(
