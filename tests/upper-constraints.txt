@@ -15,3 +15,4 @@ service_identity>=17.0.0
 six>=1.14.0
 sybil>=2.0.0
 Twisted>=19.10.0
+httpx>=0.24.0
