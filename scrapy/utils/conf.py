@@ -13,6 +13,11 @@ from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values
 
+try:
+    import tomllib  # Python 3.11+
+except ImportError:
+    import tomli as tomllib  # For Python <3.11, tomli should be installed
+
 if TYPE_CHECKING:
     from collections.abc import Collection, Iterable, Mapping, MutableMapping
 
@@ -103,6 +108,18 @@ def init_env(project: str = "default", set_syspath: bool = True) -> None:
 
 def get_config(use_closest: bool = True) -> ConfigParser:
     """Get Scrapy config file as a ConfigParser"""
+    pyproject_path = Path("pyproject.toml")
+    if pyproject_path.exists():
+        with pyproject_path.open("rb") as f:
+            data = tomllib.load(f)
+        # Expect [tool.scrapy] section for Scrapy config
+        scrapy_data = data.get("tool", {}).get("scrapy", {})
+        class TomlConfig:
+            def has_option(self, section, option):
+                return section in scrapy_data and option in scrapy_data[section]
+            def get(self, section, option):
+                return scrapy_data[section][option]
+        return TomlConfig()
     sources = get_sources(use_closest)
     cfg = ConfigParser()
     cfg.read(sources)
