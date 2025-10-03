@@ -144,9 +144,7 @@ Log Count extension
 .. module:: scrapy.extensions.logcount
    :synopsis: Basic stats logging
 
-.. class:: LogCount
-
-Collect counts of log messages by level into ``log_count/<level>`` stats.
+.. autoclass:: LogCount
 
 Telnet console extension
 ~~~~~~~~~~~~~~~~~~~~~~~~
