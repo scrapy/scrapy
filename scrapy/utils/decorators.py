@@ -93,8 +93,10 @@ def _warn_spider_arg(
 ):
     """Decorator to warn if a ``spider`` argument is passed to a function."""
 
+    sig = inspect.signature(func)
+
     def check_args(*args: _P.args, **kwargs: _P.kwargs) -> None:
-        bound = inspect.signature(func).bind(*args, **kwargs)
+        bound = sig.bind(*args, **kwargs)
         if "spider" in bound.arguments:
             warnings.warn(
                 f"Passing a 'spider' argument to {func.__qualname__}() is deprecated and "
