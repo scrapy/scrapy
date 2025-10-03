@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import random
 from urllib.parse import urlencode
 
+from twisted.internet.protocol import ClientFactory, Protocol
 from twisted.internet.task import deferLater
 from twisted.web import resource, server
 from twisted.web.server import NOT_DONE_YET
@@ -301,9 +303,124 @@ class UriResource(resource.Resource):
         return self
 
     def render(self, request):
-        # Note: this is an ugly hack for CONNECT request timeout test.
-        #       Returning some data here fail SSL/TLS handshake
-        # ToDo: implement proper HTTPS proxy tests, not faking them.
-        if request.method != b"CONNECT":
-            return request.uri
-        return b""
+        # Handle CONNECT method for HTTPS proxy tunneling
+        if request.method == b"CONNECT":
+            # Parse destination from URI
+            uri = (
+                request.uri.decode("utf-8")
+                if isinstance(request.uri, bytes)
+                else request.uri
+            )
+
+            try:
+                if ":" in uri:
+                    host, port = uri.rsplit(":", 1)
+                    port = int(port)
+                else:
+                    host = uri
+                    port = 443
+            except (ValueError, AttributeError):
+                request.setResponseCode(400, b"Bad Request")
+                return b"Invalid CONNECT request"
+
+            # Send connection established response
+            request.setResponseCode(200, b"Connection Established")
+            request.setHeader(b"Content-Length", b"0")
+            request.write(b"")
+
+            # Import reactor locally to avoid issues
+            from twisted.internet import reactor
+
+            class TunnelProtocol(Protocol):
+                """Forwards data between client and destination."""
+
+                def __init__(self, peer):
+                    self.peer = peer
+                    self.buffer = []
+
+                def dataReceived(self, data):
+                    if (
+                        self.peer
+                        and hasattr(self.peer, "transport")
+                        and self.peer.transport
+                    ):
+                        self.peer.transport.write(data)
+                    else:
+                        self.buffer.append(data)
+
+                def connectionMade(self):
+                    # Flush buffered data when connection is established
+                    if self.buffer and self.peer and hasattr(self.peer, "transport"):
+                        for data in self.buffer:
+                            self.peer.transport.write(data)
+                        self.buffer = []
+
+                def connectionLost(self, reason):
+                    if (
+                        self.peer
+                        and hasattr(self.peer, "transport")
+                        and self.peer.transport
+                    ):
+                        self.peer.transport.loseConnection()
+                    self.peer = None
+
+            class TunnelFactory(ClientFactory):
+                """Factory for creating destination connections."""
+
+                def __init__(self, client_transport):
+                    self.client_transport = client_transport
+                    self.client_protocol = None
+                    self.server_protocol = None
+                    self.connected = False
+
+                def buildProtocol(self, addr):
+                    self.server_protocol = TunnelProtocol(self.client_protocol)
+                    self.client_protocol.peer = self.server_protocol
+                    self.connected = True
+                    return self.server_protocol
+
+                def clientConnectionFailed(self, connector, reason):
+                    # Don't close client connection immediately - let it timeout
+                    # This allows Scrapy's timeout mechanism to work properly
+                    pass
+
+            # Create client-side protocol
+            factory = TunnelFactory(request.channel.transport)
+            factory.client_protocol = TunnelProtocol(None)
+
+            # Buffer for data received before server connection is established
+            data_buffer = []
+
+            # Override client's dataReceived to forward to server
+            def forwardToServer(data):
+                if factory.server_protocol and hasattr(
+                    factory.server_protocol, "transport"
+                ):
+                    factory.server_protocol.transport.write(data)
+                elif factory.connected:
+                    # Connection established but transport not ready yet
+                    data_buffer.append(data)
+                else:
+                    # Store in client protocol buffer
+                    factory.client_protocol.buffer.append(data)
+
+            request.channel.dataReceived = forwardToServer
+
+            # Connect to destination
+            connector = reactor.connectTCP(host, port, factory)
+
+            # Clean up on client disconnect
+            def cleanup_on_client_disconnect(reason):
+                if factory.server_protocol and hasattr(
+                    factory.server_protocol, "transport"
+                ):
+                    factory.server_protocol.transport.loseConnection()
+                if hasattr(connector, "disconnect"):
+                    with contextlib.suppress(Exception):
+                        connector.disconnect()
+
+            request.notifyFinish().addErrback(cleanup_on_client_disconnect)
+
+            return server.NOT_DONE_YET
+
+        return request.uri
