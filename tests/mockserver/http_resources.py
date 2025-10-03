@@ -303,9 +303,8 @@ class UriResource(resource.Resource):
         return self
 
     def render(self, request):
-        # Handle CONNECT method for HTTPS proxy tunneling
         if request.method == b"CONNECT":
-            # Parse destination from URI
+
             uri = (
                 request.uri.decode("utf-8")
                 if isinstance(request.uri, bytes)
@@ -323,12 +322,11 @@ class UriResource(resource.Resource):
                 request.setResponseCode(400, b"Bad Request")
                 return b"Invalid CONNECT request"
 
-            # Send connection established response
+
             request.setResponseCode(200, b"Connection Established")
             request.setHeader(b"Content-Length", b"0")
             request.write(b"")
 
-            # Import reactor locally to avoid issues
             from twisted.internet import reactor
 
             class TunnelProtocol(Protocol):
@@ -349,7 +347,6 @@ class UriResource(resource.Resource):
                         self.buffer.append(data)
 
                 def connectionMade(self):
-                    # Flush buffered data when connection is established
                     if self.buffer and self.peer and hasattr(self.peer, "transport"):
                         for data in self.buffer:
                             self.peer.transport.write(data)
@@ -380,36 +377,29 @@ class UriResource(resource.Resource):
                     return self.server_protocol
 
                 def clientConnectionFailed(self, connector, reason):
-                    # Don't close client connection immediately - let it timeout
-                    # This allows Scrapy's timeout mechanism to work properly
                     pass
 
-            # Create client-side protocol
+
             factory = TunnelFactory(request.channel.transport)
             factory.client_protocol = TunnelProtocol(None)
 
-            # Buffer for data received before server connection is established
             data_buffer = []
-
-            # Override client's dataReceived to forward to server
             def forwardToServer(data):
                 if factory.server_protocol and hasattr(
                     factory.server_protocol, "transport"
                 ):
                     factory.server_protocol.transport.write(data)
                 elif factory.connected:
-                    # Connection established but transport not ready yet
+
                     data_buffer.append(data)
                 else:
-                    # Store in client protocol buffer
                     factory.client_protocol.buffer.append(data)
 
             request.channel.dataReceived = forwardToServer
 
-            # Connect to destination
             connector = reactor.connectTCP(host, port, factory)
 
-            # Clean up on client disconnect
+
             def cleanup_on_client_disconnect(reason):
                 if factory.server_protocol and hasattr(
                     factory.server_protocol, "transport"
