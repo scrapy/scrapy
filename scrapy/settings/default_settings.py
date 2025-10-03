@@ -308,6 +308,7 @@ if sys.platform == "win32":
 EXTENSIONS = {}
 EXTENSIONS_BASE = {
     "scrapy.extensions.corestats.CoreStats": 0,
+    "scrapy.extensions.logcount.LogCount": 0,
     "scrapy.extensions.telnet.TelnetConsole": 0,
     "scrapy.extensions.memusage.MemoryUsage": 0,
     "scrapy.extensions.memdebug.MemoryDebugger": 0,

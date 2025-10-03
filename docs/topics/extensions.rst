@@ -138,6 +138,14 @@ enabled (see :ref:`topics-stats`).
 
 .. _topics-extensions-ref-telnetconsole:
 
+Log Count extension
+~~~~~~~~~~~~~~~~~~~
+
+.. module:: scrapy.extensions.logcount
+   :synopsis: Basic stats logging
+
+.. autoclass:: LogCount
+
 Telnet console extension
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
