@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider, signals
 from scrapy.utils.decorators import _warn_spider_arg
+from scrapy.utils.deprecate import get_spider_attr
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -28,7 +29,7 @@ class UserAgentMiddleware:
         return o
 
     def spider_opened(self, spider: Spider) -> None:
-        self.user_agent = getattr(spider, "user_agent", self.user_agent)
+        self.user_agent = get_spider_attr(spider, "user_agent", self.user_agent, "USER_AGENT")
 
     @_warn_spider_arg
     def process_request(

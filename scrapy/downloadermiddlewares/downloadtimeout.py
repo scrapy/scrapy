@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider, signals
 from scrapy.utils.decorators import _warn_spider_arg
+from scrapy.utils.deprecate import get_spider_attr
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -30,7 +31,9 @@ class DownloadTimeoutMiddleware:
         return o
 
     def spider_opened(self, spider: Spider) -> None:
-        self._timeout = getattr(spider, "download_timeout", self._timeout)
+        self._timeout = get_spider_attr(
+            spider, "download_timeout", self._timeout, "DOWNLOAD_TIMEOUT"
+        )
 
     @_warn_spider_arg
     def process_request(

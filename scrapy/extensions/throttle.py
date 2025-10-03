@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.deprecate import get_spider_attr
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -49,7 +50,7 @@ class AutoThrottle:
 
     def _min_delay(self, spider: Spider) -> float:
         s = self.crawler.settings
-        return getattr(spider, "download_delay", s.getfloat("DOWNLOAD_DELAY"))
+        return get_spider_attr(spider, "download_delay", s.getfloat("DOWNLOAD_DELAY"), "DOWNLOAD_DELAY")
 
     def _max_delay(self, spider: Spider) -> float:
         return self.crawler.settings.getfloat("AUTOTHROTTLE_MAX_DELAY")

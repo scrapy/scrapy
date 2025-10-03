@@ -1,5 +1,3 @@
-"""Some helpers for deprecation messages"""
-
 from __future__ import annotations
 
 import inspect
@@ -11,6 +9,33 @@ from scrapy.utils.python import get_func_args_dict
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+
+def get_spider_attr(spider: object, new_attr: str, default: Any, old_attr: str | None = None) -> Any:
+    """Return spider attribute value checking for deprecated attribute names.
+
+    Preference order:
+    1. New attribute (``new_attr``) if present on the spider.
+    2. Deprecated attribute (``old_attr``) if present on the spider -- emits
+       a ScrapyDeprecationWarning recommending the new attribute name.
+    3. The provided ``default`` value.
+
+    This centralizes the deprecation warning logic so callers don't repeat it.
+    """
+    # Prefer the new attribute if present
+    if hasattr(spider, new_attr):
+        return getattr(spider, new_attr)
+
+    # If old/deprecated attribute is present, warn and return it
+    if old_attr and hasattr(spider, old_attr):
+        message = (
+            f"Spider attribute '{old_attr}' is deprecated, use '{new_attr}' "
+            "attribute instead."
+        )
+        warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=3)
+        return getattr(spider, old_attr)
+
+    return default
 
 
 def attribute(obj: Any, oldattr: str, newattr: str, version: str = "0.12") -> None:

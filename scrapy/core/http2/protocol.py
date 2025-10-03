@@ -34,6 +34,7 @@ from zope.interface import implementer
 
 from scrapy.core.http2.stream import Stream, StreamCloseReason
 from scrapy.http import Request, Response
+from scrapy.utils.deprecate import get_spider_attr
 
 if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
@@ -195,11 +196,11 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
             stream_id=next(self._stream_id_generator),
             request=request,
             protocol=self,
-            download_maxsize=getattr(
-                spider, "download_maxsize", self.metadata["default_download_maxsize"]
+            download_maxsize=get_spider_attr(
+                spider, "download_maxsize", self.metadata["default_download_maxsize"], "DOWNLOAD_MAXSIZE"
             ),
-            download_warnsize=getattr(
-                spider, "download_warnsize", self.metadata["default_download_warnsize"]
+            download_warnsize=get_spider_attr(
+                spider, "download_warnsize", self.metadata["default_download_warnsize"], "DOWNLOAD_WARNSIZE"
             ),
         )
         self.streams[stream.stream_id] = stream

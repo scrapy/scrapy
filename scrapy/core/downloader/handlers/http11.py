@@ -38,6 +38,7 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.url import add_http_if_no_scheme
+from scrapy.utils.deprecate import get_spider_attr
 
 if TYPE_CHECKING:
     from twisted.internet.base import ReactorBase
@@ -95,8 +96,12 @@ class HTTP11DownloadHandler:
         agent = ScrapyAgent(
             contextFactory=self._contextFactory,
             pool=self._pool,
-            maxsize=getattr(spider, "download_maxsize", self._default_maxsize),
-            warnsize=getattr(spider, "download_warnsize", self._default_warnsize),
+            maxsize=get_spider_attr(
+                spider, "download_maxsize", self._default_maxsize, "DOWNLOAD_MAXSIZE"
+            ),
+            warnsize=get_spider_attr(
+                spider, "download_warnsize", self._default_warnsize, "DOWNLOAD_WARNSIZE"
+            ),
             fail_on_dataloss=self._fail_on_dataloss,
             crawler=self._crawler,
         )

@@ -12,6 +12,7 @@ from scrapy.spiders import Spider
 from scrapy.utils._compression import _DecompressionMaxSizeExceeded
 from scrapy.utils.gz import gunzip, gzip_magic_number
 from scrapy.utils.sitemap import Sitemap, sitemap_urls_from_robots
+from scrapy.utils.deprecate import get_spider_attr
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -36,11 +37,11 @@ class SitemapSpider(Spider):
     @classmethod
     def from_crawler(cls, crawler: Crawler, *args: Any, **kwargs: Any) -> Self:
         spider = super().from_crawler(crawler, *args, **kwargs)
-        spider._max_size = getattr(
-            spider, "download_maxsize", spider.settings.getint("DOWNLOAD_MAXSIZE")
+        spider._max_size = get_spider_attr(
+            spider, "download_maxsize", spider.settings.getint("DOWNLOAD_MAXSIZE"), "DOWNLOAD_MAXSIZE"
         )
-        spider._warn_size = getattr(
-            spider, "download_warnsize", spider.settings.getint("DOWNLOAD_WARNSIZE")
+        spider._warn_size = get_spider_attr(
+            spider, "download_warnsize", spider.settings.getint("DOWNLOAD_WARNSIZE"), "DOWNLOAD_WARNSIZE"
         )
         return spider
 
