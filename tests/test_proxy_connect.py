@@ -116,9 +116,7 @@ class TestProxyConnect:
         assert "Proxy-Authorization" not in echo["headers"]
 
     def _assert_got_response_code(self, code, log):
-        print(log)
         assert str(log).count(f"Crawled ({code})") == 1
 
     def _assert_got_tunnel_error(self, log):
-        print(log)
         assert "TunnelError" in str(log)

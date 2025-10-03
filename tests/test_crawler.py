@@ -36,7 +36,11 @@ from scrapy.utils.defer import (
     deferred_from_coro,
     maybe_deferred_to_future,
 )
-from scrapy.utils.log import configure_logging, get_scrapy_root_handler
+from scrapy.utils.log import (
+    _uninstall_scrapy_root_handler,
+    configure_logging,
+    get_scrapy_root_handler,
+)
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests.mockserver.http import MockServer
@@ -543,11 +547,14 @@ class TestCrawlerLogging:
                 return
                 yield
 
-        configure_logging()
-        assert get_scrapy_root_handler().level == logging.DEBUG
-        crawler = get_crawler(MySpider)
-        assert get_scrapy_root_handler().level == logging.INFO
-        await maybe_deferred_to_future(crawler.crawl())
+        try:
+            configure_logging()
+            assert get_scrapy_root_handler().level == logging.DEBUG
+            crawler = get_crawler(MySpider)
+            assert get_scrapy_root_handler().level == logging.INFO
+            await maybe_deferred_to_future(crawler.crawl())
+        finally:
+            _uninstall_scrapy_root_handler()
 
         logged = log_file.read_text(encoding="utf-8")
 
@@ -572,9 +579,12 @@ class TestCrawlerLogging:
                 "LOG_FILE_APPEND": False,
             }
 
-        configure_logging()
-        get_crawler(MySpider)
-        logging.debug("debug message")  # noqa: LOG015
+        try:
+            configure_logging()
+            get_crawler(MySpider)
+            logging.debug("debug message")  # noqa: LOG015
+        finally:
+            _uninstall_scrapy_root_handler()
 
         logged = log_file.read_text(encoding="utf-8")
 
@@ -629,24 +639,24 @@ class TestAsyncCrawlerRunner(TestBaseCrawler):
 
 class TestCrawlerProcess(TestBaseCrawler):
     def test_crawler_process_accepts_dict(self):
-        runner = CrawlerProcess({"foo": "bar"})
+        runner = CrawlerProcess({"foo": "bar"}, install_root_handler=False)
         assert runner.settings["foo"] == "bar"
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
     def test_crawler_process_accepts_None(self):
-        runner = CrawlerProcess()
+        runner = CrawlerProcess(install_root_handler=False)
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
 
 @pytest.mark.only_asyncio
 class TestAsyncCrawlerProcess(TestBaseCrawler):
     def test_crawler_process_accepts_dict(self):
-        runner = AsyncCrawlerProcess({"foo": "bar"})
+        runner = AsyncCrawlerProcess({"foo": "bar"}, install_root_handler=False)
         assert runner.settings["foo"] == "bar"
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
     def test_crawler_process_accepts_None(self):
-        runner = AsyncCrawlerProcess()
+        runner = AsyncCrawlerProcess(install_root_handler=False)
         self.assertOptionIsDefault(runner.settings, "RETRY_ENABLED")
 
 
@@ -1177,7 +1187,7 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
 )
 def test_log_scrapy_info(settings, items, caplog):
     with caplog.at_level("INFO"):
-        CrawlerProcess(settings)
+        CrawlerProcess(settings, install_root_handler=False)
     assert (
         caplog.records[0].getMessage()
         == f"Scrapy {scrapy.__version__} started (bot: scrapybot)"

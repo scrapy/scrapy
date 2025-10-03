@@ -1717,7 +1717,6 @@ class TestFeedExport(TestFeedExportBase):
         with LogCapture() as log:
             await self.exported_data(items, settings)
 
-        print(log)
         for fmt in ["json", "xml", "csv"]:
             assert f"Stored {fmt} feed (2 items)" in str(log)
 
@@ -1738,7 +1737,6 @@ class TestFeedExport(TestFeedExportBase):
         with LogCapture() as log:
             await self.exported_data(items, settings)
 
-        print(log)
         for fmt in ["json", "xml", "csv"]:
             assert f"Error storing {fmt} feed (2 items)" in str(log)
 
