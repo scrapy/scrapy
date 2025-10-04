@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gzip
 import json
 import sys
 from abc import ABC, abstractmethod
@@ -411,6 +412,39 @@ class TestHttp11Base(TestHttpBase):
             if d is not None:
                 await maybe_deferred_to_future(d)
         assert response.flags == ["dataloss"]
+
+    @deferred_f_from_coro_f
+    async def test_download_is_not_automatically_gzip_decoded(
+        self, download_handler: DownloadHandlerProtocol, mockserver: MockServer
+    ) -> None:
+        """Test download handler does not automatically decode content using the scheme provided in Content-Encoding header"""
+
+        data = "compress-me"
+
+        # send a request to mock resource that gzip encodes the "data" url parameter
+        request = Request(
+            mockserver.url(f"/compress?data={data}", is_secure=self.is_secure),
+            headers={
+                "accept-encoding": "gzip",
+            },
+        )
+        response = await download_request(download_handler, request)
+
+        assert response.status == 200
+
+        # check that the Content-Encoding header is gzip
+        content_encoding = response.headers[b"Content-Encoding"]
+        assert content_encoding == b"gzip"
+
+        # check that the response is still encoded
+        # by checking for the magic number that is always included at the start of a gzip encoding
+        # see https://datatracker.ietf.org/doc/html/rfc1952#page-5 section 2.3.1
+        GZIP_MAGIC = b"\x1f\x8b"
+        assert response.body[:2] == GZIP_MAGIC, "Response body was not in gzip format"
+
+        # check that a gzip decoding matches the data sent in the request
+        expected_decoding = bytes(data, encoding="utf-8")
+        assert gzip.decompress(response.body) == expected_decoding
 
     @deferred_f_from_coro_f
     async def test_protocol(

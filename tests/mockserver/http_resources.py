@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import json
 import random
 from urllib.parse import urlencode
@@ -307,3 +308,21 @@ class UriResource(resource.Resource):
         if request.method != b"CONNECT":
             return request.uri
         return b""
+
+
+class Compress(resource.Resource):
+    """Compress the data sent in the request url params and set Content-Encoding header"""
+
+    def render(self, request):
+        data = request.args.get(b"data")[0]
+
+        accept_encoding_header = request.getHeader(b"accept-encoding")
+
+        # include common encoding schemes here
+        if accept_encoding_header == b"gzip":
+            request.setHeader(b"Content-Encoding", b"gzip")
+            return gzip.compress(data)
+
+        # just set this to trigger a test failure if no valid accept-encoding header was set
+        request.setResponseCode(500)
+        return b"Did not receive a valid accept-encoding header"
