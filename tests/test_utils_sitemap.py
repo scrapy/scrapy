@@ -156,7 +156,7 @@ def test_sitemap_wrong_ns2():
 
 
 def test_sitemap_urls_from_robots():
-    robots = """User-agent: *
+    robots = b"""User-agent: *
 Disallow: /aff/
 Disallow: /wl/
 
