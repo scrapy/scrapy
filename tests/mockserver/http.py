@@ -14,6 +14,7 @@ from .http_resources import (
     BrokenChunkedResource,
     BrokenDownloadResource,
     ChunkedResource,
+    Compress,
     ContentLengthHeaderResource,
     Delay,
     Drop,
@@ -75,6 +76,7 @@ class Root(resource.Resource):
         self.putChild(b"contentlength", ContentLengthHeaderResource())
         self.putChild(b"nocontenttype", EmptyContentTypeHeaderResource())
         self.putChild(b"largechunkedfile", LargeChunkedFileResource())
+        self.putChild(b"compress", Compress())
         self.putChild(b"duplicate-header", DuplicateHeaderResource())
 
     def getChild(self, name, request):
