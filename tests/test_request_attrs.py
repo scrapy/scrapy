@@ -33,9 +33,6 @@ def _assert_equal_attribute(obj: Request, attr: str, expected: Any):
     if attr == "headers":
         # Headers object -> dict
         assert dict(val) == dict(expected)
-    elif attr == "body":
-        # body should be bytes
-        assert val == expected
     else:
         assert val == expected
 
