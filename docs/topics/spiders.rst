@@ -628,7 +628,7 @@ XMLFeedSpider
         This method is called for the nodes matching the provided tag name
         (``itertag``).  Receives the response and an
         :class:`~scrapy.Selector` for each node.  Overriding this
-        method is mandatory. Otherwise, you spider won't work.  This method
+        method is mandatory. Otherwise, your spider won't work.  This method
         must return an :ref:`item object <topics-items>`, a
         :class:`~scrapy.Request` object, or an iterable containing any of
         them.
