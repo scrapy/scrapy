@@ -134,14 +134,21 @@ _scrapy_root_handler: logging.Handler | None = None
 def install_scrapy_root_handler(settings: Settings) -> None:
     global _scrapy_root_handler  # noqa: PLW0603  # pylint: disable=global-statement
 
+    _uninstall_scrapy_root_handler()
+    logging.root.setLevel(logging.NOTSET)
+    _scrapy_root_handler = _get_handler(settings)
+    logging.root.addHandler(_scrapy_root_handler)
+
+
+def _uninstall_scrapy_root_handler() -> None:
+    global _scrapy_root_handler  # noqa: PLW0603  # pylint: disable=global-statement
+
     if (
         _scrapy_root_handler is not None
         and _scrapy_root_handler in logging.root.handlers
     ):
         logging.root.removeHandler(_scrapy_root_handler)
-    logging.root.setLevel(logging.NOTSET)
-    _scrapy_root_handler = _get_handler(settings)
-    logging.root.addHandler(_scrapy_root_handler)
+    _scrapy_root_handler = None
 
 
 def get_scrapy_root_handler() -> logging.Handler | None:
