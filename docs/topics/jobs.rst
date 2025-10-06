@@ -39,6 +39,42 @@ a signal), and resume it later by issuing the same command::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
 
+.. _jobdir-contents:
+
+Contents of the job directory (``JOBDIR``)
+------------------------------------------
+
+When you run a spider with the :setting:`JOBDIR` setting enabled, Scrapy
+persists its state on disk so that the crawl can be paused and later resumed.
+
+Example::
+
+    scrapy crawl myspider -s JOBDIR=crawls/myjob
+
+The job directory typically contains files used by the scheduler, the
+duplicate filter, and the stats/engine to keep track of progress. The exact
+filenames may vary depending on your queue/scheduler backend, but commonly
+include:
+
+- ``requests.queue``: pending requests that are yet to be processed.
+- ``requests.seen``: fingerprints of requests already visited (dupefilter).
+- ``spider.state``: internal spider state for resuming from the last checkpoint.
+- ``stats.pickle``: runtime statistics persisted across runs.
+- Backend-specific priority/disk-queue files.
+
+Notes:
+
+* You can safely stop a crawl (for example with ``Ctrl+C``) and run the same
+  spider again with the **same** ``JOBDIR`` path to resume progress::
+
+      scrapy crawl myspider -s JOBDIR=crawls/myjob
+
+* Do not reuse the same job directory for different spiders.
+* Filenames are implementation details and may change between releases.
+
+See also: :doc:`/topics/extensions` (Spider state extension).
+
+
 .. _topics-keeping-persistent-state-between-batches:
 
 Keeping persistent state between batches
