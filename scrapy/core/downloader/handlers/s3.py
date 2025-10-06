@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
+from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.httpobj import urlparse_cached
@@ -29,7 +29,7 @@ class S3DownloadHandler:
         aws_access_key_id: str | None = None,
         aws_secret_access_key: str | None = None,
         aws_session_token: str | None = None,
-        httpdownloadhandler: type[HTTPDownloadHandler] = HTTPDownloadHandler,
+        httpdownloadhandler: type[HTTP11DownloadHandler] = HTTP11DownloadHandler,
         **kw: Any,
     ):
         if not is_botocore_available():
