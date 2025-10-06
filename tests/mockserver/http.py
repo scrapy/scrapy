@@ -30,6 +30,7 @@ from .http_resources import (
     PayloadResource,
     Raw,
     RedirectTo,
+    SetCookie,
     Status,
 )
 
@@ -78,6 +79,7 @@ class Root(resource.Resource):
         self.putChild(b"largechunkedfile", LargeChunkedFileResource())
         self.putChild(b"compress", Compress())
         self.putChild(b"duplicate-header", DuplicateHeaderResource())
+        self.putChild(b"set-cookie", SetCookie())
 
     def getChild(self, name, request):
         return self

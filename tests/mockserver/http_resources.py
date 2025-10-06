@@ -326,3 +326,14 @@ class Compress(resource.Resource):
         # just set this to trigger a test failure if no valid accept-encoding header was set
         request.setResponseCode(500)
         return b"Did not receive a valid accept-encoding header"
+
+
+class SetCookie(resource.Resource):
+    """Return a response with a Set-Cookie header for each request url parameter"""
+
+    def render(self, request):
+        for cookie_name, cookie_values in request.args.items():
+            for cookie_value in cookie_values:
+                cookie = (cookie_name.decode() + "=" + cookie_value.decode()).encode()
+                request.setHeader(b"Set-Cookie", cookie)
+        return b""
