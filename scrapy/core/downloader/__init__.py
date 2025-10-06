@@ -22,11 +22,7 @@ from scrapy.utils.asyncio import (
     create_looping_call,
 )
 from scrapy.utils.decorators import _warn_spider_arg
-from scrapy.utils.defer import (
-    _defer_sleep_async,
-    _schedule_coro,
-    maybe_deferred_to_future,
-)
+from scrapy.utils.defer import _defer_sleep_async, _schedule_coro
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
@@ -236,9 +232,7 @@ class Downloader:
         slot.transferring.add(request)
         try:
             # 1. Download the response
-            response: Response = await maybe_deferred_to_future(
-                self.handlers.download_request(request)
-            )
+            response: Response = await self.handlers.download_request_async(request)
             # 2. Notify response_downloaded listeners about the recent download
             # before querying queue for next request
             self.signals.send_catch_log(

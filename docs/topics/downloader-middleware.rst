@@ -128,9 +128,10 @@ defines one or more of these methods:
 
    .. method:: process_exception(request, exception)
 
-      Scrapy calls :meth:`process_exception` when a download handler
-      or a :meth:`process_request` (from a downloader middleware) raises an
-      exception (including an :exc:`~scrapy.exceptions.IgnoreRequest` exception)
+      Scrapy calls :meth:`process_exception` when a :ref:`download handler
+      <topics-download-handlers>` or a :meth:`process_request` (from a
+      downloader middleware) raises an exception (including an
+      :exc:`~scrapy.exceptions.IgnoreRequest` exception).
 
       :meth:`process_exception` should return: either ``None``,
       a :class:`~scrapy.http.Response` object, or a :class:`~scrapy.Request` object.

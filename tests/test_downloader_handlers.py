@@ -15,22 +15,25 @@ from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
-from scrapy.exceptions import NotConfigured
-from scrapy.http import Request, Response
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.http import Request
 from scrapy.responsetypes import responsetypes
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
 
 class DummyDH:
     lazy = False
 
+    async def download_request(self, request):
+        pass
+
 
 class DummyLazyDH:
     # Default is lazy for backward compatibility
-    pass
+    async def download_request(self, request):
+        pass
 
 
 class OffDH:
@@ -74,7 +77,11 @@ class TestLoad:
     def test_lazy_handlers(self):
         handlers = {"scheme": DummyLazyDH}
         crawler = get_crawler(settings_dict={"DOWNLOAD_HANDLERS": handlers})
-        dh = DownloadHandlers(crawler)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="DummyLazyDH doesn't define a 'lazy' attribute",
+        ):
+            dh = DownloadHandlers(crawler)
         assert "scheme" in dh._schemes
         assert "scheme" not in dh._handlers
         for scheme in handlers:  # force load lazy handler
@@ -88,16 +95,12 @@ class TestFile:
         # add a special char to check that they are handled correctly
         self.fd, self.tmpname = mkstemp(suffix="^")
         Path(self.tmpname).write_text("0123456789", encoding="utf-8")
-        self.download_handler = build_from_crawler(FileDownloadHandler, get_crawler())
+        download_handler = build_from_crawler(FileDownloadHandler, get_crawler())
+        self.download_request = download_handler.download_request
 
     def teardown_method(self):
         os.close(self.fd)
         Path(self.tmpname).unlink()
-
-    async def download_request(self, request: Request) -> Response:
-        return await maybe_deferred_to_future(
-            self.download_handler.download_request(request, DefaultSpider())
-        )
 
     @deferred_f_from_coro_f
     async def test_download(self):
@@ -121,7 +124,7 @@ class HttpDownloadHandlerMock:
     def __init__(self, *args, **kwargs):
         pass
 
-    def download_request(self, request, spider):
+    async def download_request(self, request):
         return request
 
 
@@ -129,18 +132,17 @@ class HttpDownloadHandlerMock:
 class TestS3Anon:
     def setup_method(self):
         crawler = get_crawler()
-        self.s3reqh = build_from_crawler(
-            S3DownloadHandler,
-            crawler,
-            httpdownloadhandler=HttpDownloadHandlerMock,
-            # anon=True, # implicit
-        )
+        with mock.patch(
+            "scrapy.core.downloader.handlers.s3.HTTP11DownloadHandler",
+            HttpDownloadHandlerMock,
+        ):
+            self.s3reqh = build_from_crawler(S3DownloadHandler, crawler)
         self.download_request = self.s3reqh.download_request
-        self.spider = DefaultSpider()
 
-    def test_anon_request(self):
+    @deferred_f_from_coro_f
+    async def test_anon_request(self):
         req = Request("s3://aws-publicdatasets/")
-        httpreq = self.download_request(req, self.spider)
+        httpreq = await self.download_request(req)
         assert hasattr(self.s3reqh, "anon")
         assert self.s3reqh.anon
         assert httpreq.url == "http://aws-publicdatasets.s3.amazonaws.com/"
@@ -148,26 +150,22 @@ class TestS3Anon:
 
 @pytest.mark.requires_botocore
 class TestS3:
-    download_handler_cls: type = S3DownloadHandler
-
-    # test use same example keys than amazon developer guide
-    # http://s3.amazonaws.com/awsdocs/S3/20060301/s3-dg-20060301.pdf
-    # and the tests described here are the examples from that manual
-
-    AWS_ACCESS_KEY_ID = "0PN5J17HBGZHT7JJ3X82"
-    AWS_SECRET_ACCESS_KEY = "uV3F3YluFJax1cknvbcGwgjvx4QpvB+leU8dUj2o"
-
     def setup_method(self):
-        crawler = get_crawler()
-        s3reqh = build_from_crawler(
-            S3DownloadHandler,
-            crawler,
-            aws_access_key_id=self.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=self.AWS_SECRET_ACCESS_KEY,
-            httpdownloadhandler=HttpDownloadHandlerMock,
+        # test use same example keys than amazon developer guide
+        # http://s3.amazonaws.com/awsdocs/S3/20060301/s3-dg-20060301.pdf
+        # and the tests described here are the examples from that manual
+        crawler = get_crawler(
+            settings_dict={
+                "AWS_ACCESS_KEY_ID": "0PN5J17HBGZHT7JJ3X82",
+                "AWS_SECRET_ACCESS_KEY": "uV3F3YluFJax1cknvbcGwgjvx4QpvB+leU8dUj2o",
+            }
         )
+        with mock.patch(
+            "scrapy.core.downloader.handlers.s3.HTTP11DownloadHandler",
+            HttpDownloadHandlerMock,
+        ):
+            s3reqh = build_from_crawler(S3DownloadHandler, crawler)
         self.download_request = s3reqh.download_request
-        self.spider = DefaultSpider()
 
     @contextlib.contextmanager
     def _mocked_date(self, date):
@@ -183,27 +181,20 @@ class TestS3:
                 mock_formatdate.return_value = date
                 yield
 
-    def test_extra_kw(self):
-        crawler = get_crawler()
-        with pytest.raises((TypeError, NotConfigured)):
-            build_from_crawler(
-                S3DownloadHandler,
-                crawler,
-                extra_kw=True,
-            )
-
-    def test_request_signing1(self):
+    @deferred_f_from_coro_f
+    async def test_request_signing1(self):
         # gets an object from the johnsmith bucket.
         date = "Tue, 27 Mar 2007 19:36:42 +0000"
         req = Request("s3://johnsmith/photos/puppy.jpg", headers={"Date": date})
         with self._mocked_date(date):
-            httpreq = self.download_request(req, self.spider)
+            httpreq = await self.download_request(req)
         assert (
             httpreq.headers["Authorization"]
             == b"AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA="
         )
 
-    def test_request_signing2(self):
+    @deferred_f_from_coro_f
+    async def test_request_signing2(self):
         # puts an object into the johnsmith bucket.
         date = "Tue, 27 Mar 2007 21:15:45 +0000"
         req = Request(
@@ -216,13 +207,14 @@ class TestS3:
             },
         )
         with self._mocked_date(date):
-            httpreq = self.download_request(req, self.spider)
+            httpreq = await self.download_request(req)
         assert (
             httpreq.headers["Authorization"]
             == b"AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ="
         )
 
-    def test_request_signing3(self):
+    @deferred_f_from_coro_f
+    async def test_request_signing3(self):
         # lists the content of the johnsmith bucket.
         date = "Tue, 27 Mar 2007 19:42:41 +0000"
         req = Request(
@@ -234,24 +226,26 @@ class TestS3:
             },
         )
         with self._mocked_date(date):
-            httpreq = self.download_request(req, self.spider)
+            httpreq = await self.download_request(req)
         assert (
             httpreq.headers["Authorization"]
             == b"AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4="
         )
 
-    def test_request_signing4(self):
+    @deferred_f_from_coro_f
+    async def test_request_signing4(self):
         # fetches the access control policy sub-resource for the 'johnsmith' bucket.
         date = "Tue, 27 Mar 2007 19:44:46 +0000"
         req = Request("s3://johnsmith/?acl", method="GET", headers={"Date": date})
         with self._mocked_date(date):
-            httpreq = self.download_request(req, self.spider)
+            httpreq = await self.download_request(req)
         assert (
             httpreq.headers["Authorization"]
             == b"AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g="
         )
 
-    def test_request_signing6(self):
+    @deferred_f_from_coro_f
+    async def test_request_signing6(self):
         # uploads an object to a CNAME style virtual hosted bucket with metadata.
         date = "Tue, 27 Mar 2007 21:06:08 +0000"
         req = Request(
@@ -273,13 +267,14 @@ class TestS3:
             },
         )
         with self._mocked_date(date):
-            httpreq = self.download_request(req, self.spider)
+            httpreq = await self.download_request(req)
         assert (
             httpreq.headers["Authorization"]
             == b"AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI="
         )
 
-    def test_request_signing7(self):
+    @deferred_f_from_coro_f
+    async def test_request_signing7(self):
         # ensure that spaces are quoted properly before signing
         date = "Tue, 27 Mar 2007 19:42:41 +0000"
         req = Request(
@@ -288,7 +283,7 @@ class TestS3:
             headers={"Date": date},
         )
         with self._mocked_date(date):
-            httpreq = self.download_request(req, self.spider)
+            httpreq = await self.download_request(req)
         assert (
             httpreq.headers["Authorization"]
             == b"AWS 0PN5J17HBGZHT7JJ3X82:+CfvG8EZ3YccOrRVMXNaK2eKZmM="
@@ -298,12 +293,8 @@ class TestS3:
 class TestDataURI:
     def setup_method(self):
         crawler = get_crawler()
-        self.download_handler = build_from_crawler(DataURIDownloadHandler, crawler)
-
-    async def download_request(self, request: Request) -> Response:
-        return await maybe_deferred_to_future(
-            self.download_handler.download_request(request, DefaultSpider())
-        )
+        download_handler = build_from_crawler(DataURIDownloadHandler, crawler)
+        self.download_request = download_handler.download_request
 
     @deferred_f_from_coro_f
     async def test_response_attrs(self):
