@@ -210,7 +210,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
                 extra = data[: self._truncatedLength]
             self._tunnelReadyDeferred.errback(
                 TunnelError(
-                    "Could not open CONNECT tunnel with proxy "                    
+                    "Could not open CONNECT tunnel with proxy "
                     f"{self._proxyHost}:{self._proxyPort} [{extra!r}]"
                 )
             )
