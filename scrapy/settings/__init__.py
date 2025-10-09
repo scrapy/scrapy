@@ -303,7 +303,7 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
                 return value.split(",")
         if isinstance(value, tuple):
             return list(value)
-        if not isinstane(value, (dict, list)):
+        if not isinstance(value, (dict, list)):
             raise ValueError(
                 f"Setting '{name}' must be a dict, list, tuple, or string, "
                 f"got {type(value).__name__}: {value!r}"
