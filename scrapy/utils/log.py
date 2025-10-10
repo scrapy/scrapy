@@ -116,7 +116,8 @@ def configure_logging(
     observer = twisted_log.PythonLoggingObserver("twisted")
     observer.start()
 
-    dictConfig(DEFAULT_LOGGING)
+    dictConfig(settings.get('LOG_DICT_CONFIG', DEFAULT_LOGGING))
+
 
     if isinstance(settings, dict) or settings is None:
         settings = Settings(settings)
