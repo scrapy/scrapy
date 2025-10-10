@@ -185,7 +185,7 @@ def test_skipped(meta, slot):
         crawler.engine.downloader.slots[slot] = object()
     at._adjust_delay = None  # Raise exception if called.
 
-    at._response_downloaded(None, request, spider)
+    at._response_downloaded(None, request)
 
 
 @pytest.mark.parametrize(
@@ -217,7 +217,7 @@ def test_adjustment(download_latency, target_concurrency, slot_delay, expected):
     slot.delay = slot_delay
     crawler.engine.downloader.slots["foo"] = slot
 
-    at._response_downloaded(response, request, spider)
+    at._response_downloaded(response, request)
 
     assert slot.delay == expected, f"{slot.delay} != {expected}"
 
@@ -253,7 +253,7 @@ def test_adjustment_limits(mindelay, maxdelay, expected):
     slot.delay = slot_delay
     crawler.engine.downloader.slots["foo"] = slot
 
-    at._response_downloaded(response, request, spider)
+    at._response_downloaded(response, request)
 
     assert slot.delay == expected, f"{slot.delay} != {expected}"
 
@@ -285,7 +285,7 @@ def test_adjustment_bad_response(
     slot.delay = slot_delay
     crawler.engine.downloader.slots["foo"] = slot
 
-    at._response_downloaded(response, request, spider)
+    at._response_downloaded(response, request)
 
     assert slot.delay == expected, f"{slot.delay} != {expected}"
 
@@ -310,7 +310,7 @@ def test_debug(caplog):
 
     caplog.clear()
     with caplog.at_level(INFO):
-        at._response_downloaded(response, request, spider)
+        at._response_downloaded(response, request)
 
     assert caplog.record_tuples == [
         (
@@ -340,6 +340,6 @@ def test_debug_disabled(caplog):
 
     caplog.clear()
     with caplog.at_level(INFO):
-        at._response_downloaded(response, request, spider)
+        at._response_downloaded(response, request)
 
     assert caplog.record_tuples == []
