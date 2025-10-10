@@ -7,6 +7,7 @@ from unittest import mock
 import pytest
 
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
+from scrapy.downloadermiddlewares.httpauth import HttpAuthMiddleware
 from scrapy.settings import (
     SETTINGS_PRIORITIES,
     BaseSettings,
@@ -340,6 +341,28 @@ class TestBaseSettings:
         assert set(s.getwithbase("TEST")) == {1, 2, 3}
         assert set(s.getwithbase("HASNOBASE")) == set(s["HASNOBASE"])
         assert s.getwithbase("NONEXISTENT") == {}
+
+    def test_getwithbase_duplicate_keys(self):
+        s = BaseSettings(
+            {
+                "DOWNLOADER_MIDDLEWARES_BASE": BaseSettings(
+                    {"scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": None},
+                    "project",
+                ),
+                "DOWNLOADER_MIDDLEWARES": {HttpAuthMiddleware: None},
+            }
+        )
+        with warnings.catch_warnings(record=True) as warns:
+            warnings.simplefilter("always")
+
+            base = s.getwithbase("DOWNLOADER_MIDDLEWARES")
+
+            assert len(warns) > 0
+            assert (
+                str(warns[0].message)
+                == """Detected a duplicate key due to mixing of import path strings and class objects: scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware and HttpAuthMiddleware. Deleting entry scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware."""
+            )
+            assert dict(base) == {HttpAuthMiddleware: None}
 
     def test_maxpriority(self):
         # Empty settings should return 'default'

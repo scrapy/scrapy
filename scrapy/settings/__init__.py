@@ -319,9 +319,28 @@ class BaseSettings(MutableMapping[_SettingsKeyT, Any]):
         """
         if not isinstance(name, str):
             raise ValueError(f"Base setting key must be a string, got {name}")
+        base_name = name + "_BASE"
         compbs = BaseSettings()
-        compbs.update(self[name + "_BASE"])
+        class_set: set[str] = set()
+        to_delete: set[str] = set()
+        compbs.update(self[base_name])
+        # Default settings contain full import path string
+        for k in compbs:
+            if isinstance(k, str):
+                class_set.add(k)
+
         compbs.update(self[name])
+        for k in compbs:
+            if isinstance(k, type):
+                full_path = f"{k.__module__}.{k.__qualname__}"
+                if full_path in class_set:
+                    message = f"Detected a duplicate key due to mixing of import path strings and class objects: {full_path} and {k.__name__}. Deleting entry {full_path}."
+                    warnings.warn(message)
+                    to_delete.add(full_path)
+
+        for k in to_delete:
+            del compbs[k]
+
         return compbs
 
     def getpriority(self, name: _SettingsKeyT) -> int | None:
