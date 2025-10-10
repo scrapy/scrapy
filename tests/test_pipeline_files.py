@@ -160,6 +160,26 @@ class TestFilesPipeline:
         fullpath = Path(self.tempdir, "some", "image", "key.jpg")
         assert self.pipeline.store._get_filesystem_path(path) == fullpath
 
+    def test_media_downloaded_accepts_201_created(self):
+        request = Request("http://example.com/file.pdf")
+        response = Response(
+            "http://example.com/file.pdf",
+            body=b"content",
+            status=201,
+            request=request,
+        )
+
+        with mock.patch.object(self.pipeline, "inc_stats") as inc_stats:
+            result = self.pipeline.media_downloaded(
+                response,
+                request,
+                self.pipeline.spiderinfo,
+            )
+
+        inc_stats.assert_called_once_with("downloaded")
+        assert result["status"] == "downloaded"
+        assert result["url"] == request.url
+
     @inlineCallbacks
     def test_file_not_expired(self):
         item_url = "http://example.com/file.pdf"
