@@ -20,10 +20,10 @@ jobs:
         - python-version: "3.13"
           env:
             TOXENV: pylint
-        - python-version: "3.9"
+        - python-version: "3.10"
           env:
             TOXENV: typing
-        - python-version: "3.9"
+        - python-version: "3.10"
           env:
             TOXENV: typing-tests
         - python-version: "3.13"  # Keep in sync with .readthedocs.yml
@@ -32,6 +32,9 @@ jobs:
         - python-version: "3.13"
           env:
             TOXENV: twinecheck
+        - python-version: "3.14"
+          env:
+            TOXENV: py
 
     steps:
     - uses: actions/checkout@v4
