@@ -298,70 +298,155 @@ spider arguments are to define the start URLs or to restrict the crawl to
 certain sections of the site, but they can be used to configure any
 functionality of the spider.
 
-Spider arguments are passed through the :command:`crawl` command using the
-``-a`` option. For example::
+Spider arguments can set using:
 
-    scrapy crawl myspider -a category=electronics
+1. the :command:`crawl` command using the ``-a`` option. For example::
 
-Spiders can access arguments in their `__init__` methods:
+       scrapy crawl myspider -a category=electronics
+
+   Spiders can access arguments in their `__init__` methods:
+
+   .. code-block:: python
+
+       import scrapy
+
+
+       class MySpider(scrapy.Spider):
+           name = "myspider"
+
+           def __init__(self, category=None, *args, **kwargs):
+               super(MySpider, self).__init__(*args, **kwargs)
+               self.start_urls = [f"http://www.example.com/categories/{category}"]
+               # ...
+
+   The default `__init__` method will take any spider arguments
+   and copy them to the spider as attributes.
+   The above example can also be written as follows:
+
+   .. code-block:: python
+
+       import scrapy
+
+
+       class MySpider(scrapy.Spider):
+           name = "myspider"
+
+           async def start(self):
+               yield scrapy.Request(f"http://www.example.com/categories/{self.category}")
+
+   If you are :ref:`running Scrapy from a script <run-from-script>`, you can
+   specify spider arguments when calling
+   :class:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
+   :class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`:
+
+   .. skip: next
+   .. code-block:: python
+
+       process = CrawlerProcess()
+       process.crawl(MySpider, category="electronics")
+
+   Keep in mind that spider arguments are only strings.
+   The spider will not do any parsing on its own.
+   If you were to set the ``start_urls`` attribute from the command line,
+   you would have to parse it on your own into a list
+   using something like :func:`ast.literal_eval` or :func:`json.loads`
+   and then set it as an attribute.
+   Otherwise, you would cause iteration over a ``start_urls`` string
+   (a very common Python pitfall)
+   resulting in each character being seen as a separate URL.
+
+   A valid use case is to set the HTTP auth credentials
+   used by :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`
+   or the user agent
+   used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
+
+       scrapy crawl myspider -a http_user=myuser -a http_pass=mypassword -a user_agent=mybot
+
+2. spider-metadata library:
+
+The `scrapy-spider-metadata <https://scrapy-spider-metadata.readthedocs.io/en/latest/>`_ library provides
+a structured, declarative way to describe spiders, their parameters, and validation rules.
+
+**Comparison: Default Scrapy vs Scrapy-spider-metadata**
+
+
+.. list-table::
+   :header-rows: 1
+   :widths: 8 47 47
+
+   * - Feature
+     - Default Scrapy
+     - Scrapy-spider-metadata
+   * - Parameters
+     - Passed via ``-a key=value``
+     - Defined using typed fields (e.g., Pydantic)
+   * - Argument type
+     - All strings
+     - Automatically converted to declared types
+   * - Validation
+     - Manual parsing in ``__init__``
+     - Automatic, via schema validation
+   * - Documentation
+     - None
+     - Generated from field definitions and types
+   * - Metadata
+     - Not standardized
+     - Declaratively defined in the spider class
+   * - Schema for tooling
+     - Not available
+     - Introspectable and exportable as JSON
+   * - Error handling
+     - Fails at runtime if arguments invalid
+     - Raises structured validation errors early
+
+The valid use cases for `scrapy-spider-metadata` include:
+
+- building UIs and services that list available spiders and their parameters
+- automatically generating documentation
+- validating user input before the crawl starts
+
+If we use `scrapy-spider-metadata` and rewrite simple example from `overview <https://docs.scrapy.org/en/latest/intro/overview.html>`_ using it:
 
 .. code-block:: python
 
-    import scrapy
+    from pydantic import BaseModel, Field
+    from scrapy import Spider
+    from scrapy_spider_metadata import Args
 
 
-    class MySpider(scrapy.Spider):
-        name = "myspider"
+    class QuotesParams(BaseModel):
+        # type hinting
+        start_urls: list[str] = ["https://quotes.toscrape.com/tag/humor/"]
 
-        def __init__(self, category=None, *args, **kwargs):
-            super(MySpider, self).__init__(*args, **kwargs)
-            self.start_urls = [f"http://www.example.com/categories/{category}"]
-            # ...
-
-The default `__init__` method will take any spider arguments
-and copy them to the spider as attributes.
-The above example can also be written as follows:
-
-.. code-block:: python
-
-    import scrapy
+        # pydantic default value and description, see: https://docs.pydantic.dev/latest/concepts/fields/
+        pages_scrape: int = Field(default=1, description="Number of pages to scrape")
 
 
-    class MySpider(scrapy.Spider):
-        name = "myspider"
+    class QuotesSpider(Args[QuotesParams], Spider):
+        name: str = "quotes"
 
-        async def start(self):
-            yield scrapy.Request(f"http://www.example.com/categories/{self.category}")
+        # as 'start_urls' attribute has to be defined at class level we need to set them in __init__
+        # or use start_requests method to read it from self.args and yield Requests
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
 
-If you are :ref:`running Scrapy from a script <run-from-script>`, you can
-specify spider arguments when calling
-:class:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
-:class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`:
+            self.start_urls = self.args.start_urls
+            self.pages_scrape = self.args.pages_scrape
 
-.. skip: next
-.. code-block:: python
+        def parse(self, response):
+            page: int = response.meta.get("page", 1)
 
-    process = CrawlerProcess()
-    process.crawl(MySpider, category="electronics")
+            for quote in response.css("div.quote"):
+                yield {
+                    "author": quote.xpath("span/small/text()").get(),
+                    "text": quote.css("span.text::text").get(),
+                }
 
-Keep in mind that spider arguments are only strings.
-The spider will not do any parsing on its own.
-If you were to set the ``start_urls`` attribute from the command line,
-you would have to parse it on your own into a list
-using something like :func:`ast.literal_eval` or :func:`json.loads`
-and then set it as an attribute.
-Otherwise, you would cause iteration over a ``start_urls`` string
-(a very common python pitfall)
-resulting in each character being seen as a separate url.
+            next_page = response.css('li.next a::attr("href")').get()
+            if next_page is not None and page < self.args.pages_scrape:
+                yield response.follow(next_page, self.parse, meta={"page": page + 1})
 
-A valid use case is to set the http auth credentials
-used by :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`
-or the user agent
-used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
-
-    scrapy crawl myspider -a http_user=myuser -a http_pass=mypassword -a user_agent=mybot
-
-Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
+3. the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
 
 .. _start-requests:
