@@ -129,6 +129,12 @@ class TestDecodeRobotsTxt:
         decoded_content = decode_robotstxt(robotstxt_body, spider=None)
         assert decoded_content == "User-agent: *\nDisallow: /\n"
 
+    # UTF-8 BOM at the beginning of the file ignored
+    def test_decode_utf8_bom(self):
+        robotstxt_body = b"\xef\xbb\xbfUser-agent: *\nDisallow: /\n"
+        decoded_content = decode_robotstxt(robotstxt_body, spider=None)
+        assert decoded_content == "User-agent: *\nDisallow: /\n"
+
 
 class TestPythonRobotParser(BaseRobotParserTest):
     def setup_method(self):
