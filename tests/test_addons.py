@@ -149,7 +149,7 @@ class TestAddonManager:
         )
         assert (
             crawler.settings.get(FALLBACK_SETTING)
-            == "scrapy.core.downloader.handlers.http.HTTPDownloadHandler"
+            == "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler"
         )
 
         settings_dict = {
