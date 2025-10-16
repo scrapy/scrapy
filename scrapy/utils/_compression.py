@@ -1,4 +1,3 @@
-import contextlib
 import zlib
 from io import BytesIO
 from warnings import warn
@@ -38,8 +37,24 @@ else:
             return decompressor.process(data)
 
 
-with contextlib.suppress(ImportError):
-    import zstandard
+# Prefer stdlib compression.zstd (Python 3.14+), fallback to zstandard package
+_zstd_module = None
+_use_stdlib_zstd = False
+try:
+    from compression import zstd
+
+    _zstd_module = zstd
+    _use_stdlib_zstd = True
+except ImportError:
+    try:
+        import zstandard
+
+        _zstd_module = zstandard
+        _use_stdlib_zstd = False
+    except ImportError:
+        pass
+
+HAS_ZSTD = _zstd_module is not None
 
 
 _CHUNK_SIZE = 65536  # 64 KiB
@@ -105,8 +120,13 @@ def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
 
 
 def _unzstd(data: bytes, *, max_size: int = 0) -> bytes:
-    decompressor = zstandard.ZstdDecompressor()
-    stream_reader = decompressor.stream_reader(BytesIO(data))
+    if _zstd_module is None:
+        raise ValueError("Zstandard module not available")
+    decompressor = _zstd_module.ZstdDecompressor()
+    if _use_stdlib_zstd:
+        stream_reader = _zstd_module.ZstdFile(BytesIO(data), mode="rb")
+    else:
+        stream_reader = decompressor.stream_reader(BytesIO(data))
     output_stream = BytesIO()
     output_chunk = b"."
     decompressed_size = 0
