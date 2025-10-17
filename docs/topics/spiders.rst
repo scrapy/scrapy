@@ -339,7 +339,7 @@ Spider arguments can set using:
    :class:`CrawlerProcess.crawl <scrapy.crawler.CrawlerProcess.crawl>` or
    :class:`CrawlerRunner.crawl <scrapy.crawler.CrawlerRunner.crawl>`:
 
-   .. skip: next
+       .. skip: next
        .. code-block:: python
 
        process = CrawlerProcess()
