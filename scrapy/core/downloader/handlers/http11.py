@@ -156,6 +156,8 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
     ):
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
         super().__init__(reactor, proxyHost, proxyPort, timeout, bindAddress)
+        self._proxyHost = proxyHost
+        self._proxyPort = proxyPort
         self._tunnelReadyDeferred: Deferred[Protocol] = Deferred()
         self._tunneledHost: str = host
         self._tunneledPort: int = port
@@ -209,7 +211,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
             self._tunnelReadyDeferred.errback(
                 TunnelError(
                     "Could not open CONNECT tunnel with proxy "
-                    f"{self._host}:{self._port} [{extra!r}]"
+                    f"{self._proxyHost}:{self._proxyPort} [{extra!r}]"
                 )
             )
 
