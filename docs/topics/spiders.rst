@@ -408,6 +408,8 @@ The valid use cases for `scrapy-spider-metadata` include:
 
 If we use `scrapy-spider-metadata` and rewrite simple example from `overview <https://docs.scrapy.org/en/latest/intro/overview.html>`_ using it:
 
+.. skip: next
+
 .. code-block:: python
 
     from pydantic import BaseModel, Field
