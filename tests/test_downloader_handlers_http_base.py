@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import gzip
 import json
 import sys
 from abc import ABC, abstractmethod
+from http import HTTPStatus
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
@@ -92,6 +94,113 @@ class TestHttpBase(ABC):
         )
         response = await download_request(download_handler, request)
         assert response.body == b""
+
+    @pytest.mark.parametrize(
+        "http_status",
+        [
+            pytest.param(http_status, id=f"status={http_status.value}")
+            for http_status in HTTPStatus
+            if http_status.value == 200 or http_status.value // 100 in (4, 5)
+        ],
+    )
+    @deferred_f_from_coro_f
+    async def test_download_has_correct_http_status_code(
+        self,
+        mockserver: MockServer,
+        download_handler: DownloadHandlerProtocol,
+        http_status: HTTPStatus,
+    ) -> None:
+        request = Request(
+            mockserver.url(f"/status?n={http_status.value}", is_secure=self.is_secure)
+        )
+        response = await download_request(download_handler, request)
+        assert response.status == http_status.value
+
+    @deferred_f_from_coro_f
+    async def test_server_receives_correct_request_headers(
+        self,
+        mockserver: MockServer,
+        download_handler: DownloadHandlerProtocol,
+    ) -> None:
+        request_headers = {
+            # common request headers
+            "Accept": "text/html",
+            "Accept-Charset": "utf-8",
+            "Accept-Datetime": "Thu, 31 May 2007 20:35:00 GMT",
+            "Accept-Encoding": "gzip, deflate",
+            # custom headers
+            "X-Custom-Header": "Custom Value",
+        }
+
+        request = Request(
+            mockserver.url("/echo", is_secure=self.is_secure),
+            headers=request_headers,
+        )
+        response = await download_request(download_handler, request)
+        assert response.status == HTTPStatus.OK
+        body = json.loads(response.body.decode("utf-8"))
+        assert "headers" in body
+        for header_name, header_value in request_headers.items():
+            assert header_name in body["headers"]
+            assert body["headers"][header_name] == [header_value]
+
+    @deferred_f_from_coro_f
+    async def test_server_receives_correct_request_body(
+        self,
+        mockserver: MockServer,
+        download_handler: DownloadHandlerProtocol,
+    ) -> None:
+        request_body = {
+            "message": "It works!",
+        }
+        request = Request(
+            mockserver.url("/echo", is_secure=self.is_secure),
+            body=json.dumps(request_body),
+        )
+        response = await download_request(download_handler, request)
+        assert response.status == HTTPStatus.OK
+        body = json.loads(response.body.decode("utf-8"))
+        assert json.loads(body["body"]) == request_body
+
+    @deferred_f_from_coro_f
+    async def test_download_has_correct_response_headers(
+        self,
+        mockserver: MockServer,
+        download_handler: DownloadHandlerProtocol,
+    ) -> None:
+        # these headers will be set on the response in the resource and returned
+        response_headers = {
+            # common response headers
+            "Access-Control-Allow-Origin": "*",
+            "Allow": "Get, Head",
+            "Age": "12",
+            "Cache-Control": "max-age=3600",
+            "Content-Encoding": "gzip",
+            "Content-MD5": "Q2hlY2sgSW50ZWdyaXR5IQ==",
+            "Content-Type": "text/html; charset=utf-8",
+            "Date": "Date: Tue, 15 Nov 1994 08:12:31 GMT",
+            "Pragma": "no-cache",
+            "Retry-After": "120",
+            "Set-Cookie": "CookieName=CookieValue; Max-Age=3600; Version=1",
+            "WWW-Authenticate": "Basic",
+            # custom headers
+            "X-Custom-Header": "Custom Header Value",
+        }
+
+        request = Request(
+            mockserver.url("/response-headers", is_secure=self.is_secure),
+            headers={"content-type": "application/json"},
+            body=json.dumps(response_headers),
+        )
+        response = await download_request(download_handler, request)
+        assert response.status == 200
+        for header_name, header_value in response_headers.items():
+            assert header_name in response.headers, (
+                f"Response was missing expected header {header_name}"
+            )
+            assert response.headers[header_name] == bytes(
+                header_value, encoding="utf-8"
+            )
 
     @deferred_f_from_coro_f
     async def test_redirect_status(
@@ -257,6 +366,65 @@ class TestHttpBase(ABC):
         request = Request(mockserver.url("/duplicate-header", is_secure=self.is_secure))
         response = await download_request(download_handler, request)
         assert response.headers.getlist(b"Set-Cookie") == [b"a=b", b"c=d"]
+
+    @deferred_f_from_coro_f
+    async def test_download_is_not_automatically_gzip_decoded(
+        self, download_handler: DownloadHandlerProtocol, mockserver: MockServer
+    ) -> None:
+        """Test download handler does not automatically decode content using the scheme provided in Content-Encoding header"""
+
+        data = "compress-me"
+
+        # send a request to mock resource that gzip encodes the "data" url parameter
+        request = Request(
+            mockserver.url(f"/compress?data={data}", is_secure=self.is_secure),
+            headers={
+                "accept-encoding": "gzip",
+            },
+        )
+        response = await download_request(download_handler, request)
+
+        assert response.status == 200
+
+        # check that the Content-Encoding header is gzip
+        content_encoding = response.headers[b"Content-Encoding"]
+        assert content_encoding == b"gzip"
+
+        # check that the response is still encoded
+        # by checking for the magic number that is always included at the start of a gzip encoding
+        # see https://datatracker.ietf.org/doc/html/rfc1952#page-5 section 2.3.1
+        GZIP_MAGIC = b"\x1f\x8b"
+        assert response.body[:2] == GZIP_MAGIC, "Response body was not in gzip format"
+
+        # check that a gzip decoding matches the data sent in the request
+        expected_decoding = bytes(data, encoding="utf-8")
+        assert gzip.decompress(response.body) == expected_decoding
+
+    @deferred_f_from_coro_f
+    async def test_no_cookie_processing_or_persistence(
+        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
+    ) -> None:
+        cookie_name = "foo"
+        cookie_value = "bar"
+
+        # check that cookies are not modified
+        request = Request(
+            mockserver.url(
+                f"/set-cookie?{cookie_name}={cookie_value}", is_secure=self.is_secure
+            )
+        )
+        response = await download_request(download_handler, request)
+        assert response.status == 200
+        set_cookie = response.headers.get(b"Set-Cookie")
+        assert set_cookie == f"{cookie_name}={cookie_value}".encode()
+
+        # check that cookies are not sent in the next request
+        request = Request(mockserver.url("/echo", is_secure=self.is_secure))
+        response = await download_request(download_handler, request)
+        assert response.status == 200
+        headers = Headers(json.loads(response.text)["headers"])
+        assert "Cookie" not in headers
+        assert "cookie" not in headers
 
 
 class TestHttp11Base(TestHttpBase):

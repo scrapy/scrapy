@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gzip
 import json
 import random
 from urllib.parse import urlencode
@@ -306,4 +307,43 @@ class UriResource(resource.Resource):
         # ToDo: implement proper HTTPS proxy tests, not faking them.
         if request.method != b"CONNECT":
             return request.uri
+        return b""
+
+
+class ResponseHeadersResource(resource.Resource):
+    """Return a response with headers set from the JSON request body"""
+
+    def render(self, request):
+        body = json.loads(request.content.read().decode())
+        for header_name, header_value in body.items():
+            request.responseHeaders.addRawHeader(header_name, header_value)
+        return json.dumps(body).encode("utf-8")
+
+
+class Compress(resource.Resource):
+    """Compress the data sent in the request url params and set Content-Encoding header"""
+
+    def render(self, request):
+        data = request.args.get(b"data")[0]
+
+        accept_encoding_header = request.getHeader(b"accept-encoding")
+
+        # include common encoding schemes here
+        if accept_encoding_header == b"gzip":
+            request.setHeader(b"Content-Encoding", b"gzip")
+            return gzip.compress(data)
+
+        # just set this to trigger a test failure if no valid accept-encoding header was set
+        request.setResponseCode(500)
+        return b"Did not receive a valid accept-encoding header"
+
+
+class SetCookie(resource.Resource):
+    """Return a response with a Set-Cookie header for each request url parameter"""
+
+    def render(self, request):
+        for cookie_name, cookie_values in request.args.items():
+            for cookie_value in cookie_values:
+                cookie = (cookie_name.decode() + "=" + cookie_value.decode()).encode()
+                request.setHeader(b"Set-Cookie", cookie)
         return b""
