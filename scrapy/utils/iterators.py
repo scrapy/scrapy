@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def xmliter(obj: Response | str | bytes, nodename: str) -> Iterator[Selector]:
-    """Return a iterator of Selector's over all nodes of a XML document,
+    """Return an iterator of Selector's over all nodes of an XML document,
        given the name of the node to iterate. Useful for parsing XML feeds.
 
     obj can be:
