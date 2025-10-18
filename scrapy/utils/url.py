@@ -41,7 +41,7 @@ UrlT = Union[str, bytes, ParseResult]
 
 
 def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
-    """Return True if the url belongs to any of the given domains"""
+    """Return True if the url belongs to any of the given domains."""
     host = _parse_url(url).netloc.lower()
     if not host:
         return False
@@ -50,14 +50,14 @@ def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:
 
 
 def url_is_from_spider(url: UrlT, spider: type[Spider]) -> bool:
-    """Return True if the url belongs to the given spider"""
+    """Return True if the url belongs to the given spider."""
     return url_is_from_any_domain(
         url, [spider.name, *getattr(spider, "allowed_domains", [])]
     )
 
 
 def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
-    """Return True if the url ends with one of the extensions provided"""
+    """Return True if the url ends with one of the extensions provided."""
     lowercase_path = _parse_url(url).path.lower()
     return any(lowercase_path.endswith(ext) for ext in extensions)
 
