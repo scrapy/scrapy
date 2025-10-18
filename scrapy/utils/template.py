@@ -29,7 +29,7 @@ CAMELCASE_INVALID_CHARS = re.compile(r"[^a-zA-Z\d]")
 
 
 def string_camelcase(string: str) -> str:
-    """Convert a word  to its CamelCase version and remove invalid chars
+    """Convert a word to its CamelCase version and remove invalid chars
 
     >>> string_camelcase('lost-pound')
     'LostPound'
