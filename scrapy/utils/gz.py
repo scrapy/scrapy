@@ -43,4 +43,15 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
 
 
 def gzip_magic_number(response: Response) -> bool:
+    """Check if response body starts with gzip magic number.
+
+    Returns True if the first three bytes of the response body match
+    the gzip file format magic number (1f 8b 08), False otherwise.
+
+    Args:
+        response: The HTTP response to check
+
+    Returns:
+        bool: True if response appears to be gzip-compressed, False otherwise
+    """
     return response.body[:3] == b"\x1f\x8b\x08"
