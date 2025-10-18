@@ -135,8 +135,8 @@ class TunnelingMixin:
     A mixin class providing HTTP CONNECT tunneling logic for Twisted TCP client
     endpoints.
     It is intended to be inherited by concrete endpoint classes
-    (`TunnelingTCP4ClientEndpoint` or `TunnelingTCP6ClientEndpoint`) after their
-    respective base class.
+    (`TunnelingTCP4ClientEndpoint` or `TunnelingTCP6ClientEndpoint`) together with their
+    base class.
 
     Key behaviors:
     - Overrides `connect` to chain tunnel setup onto the base connection.
@@ -262,20 +262,7 @@ class TunnelingMixin:
         self._tunnelReadyDeferred.errback(reason)
 
     def connect(self, protocolFactory: Factory) -> Deferred[Protocol]:
-        """
-        Establish a connection and set up the tunnel.
-
-        This method overrides the base `connect` to:
-        - Call the base implementation to initiate the raw TCP connection.
-        - On success, issue the HTTP CONNECT request via `requestTunnel`.
-        - On failure, propagate the error via `connectFailed`.
-        - Return the `_tunnelReadyDeferred` which resolves only after successful
-          tunnel negotiation and TLS handshake initiation.
-
-        :param protocolFactory: A `twisted.internet.protocol.Factory` instance.
-        :return: A `Deferred` that fires with the connected `Protocol` instance
-                 once the tunnel is ready, or errbacks on any failure.
-        """
+        """Establish a connection and set up the tunnel."""
         self._protocolFactory = protocolFactory
         connectDeferred = super().connect(protocolFactory)  # type: ignore[misc]
         connectDeferred.addCallback(self.requestTunnel)
@@ -283,7 +270,7 @@ class TunnelingMixin:
         return self._tunnelReadyDeferred
 
 
-class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint, TunnelingMixin):
+class TunnelingTCP4ClientEndpoint(TunnelingMixin, TCP4ClientEndpoint):
     """An endpoint that tunnels through proxies to allow HTTPS downloads. To
     accomplish that, this endpoint sends an HTTP CONNECT to the proxy.
     The HTTP CONNECT is always sent when using this endpoint, I think this could
@@ -315,7 +302,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint, TunnelingMixin):
         super().__init__(reactor, proxyHost, proxyPort, timeout, bindAddress)
 
 
-class TunnelingTCP6ClientEndpoint(TCP6ClientEndpoint, TunnelingMixin):
+class TunnelingTCP6ClientEndpoint(TunnelingMixin, TCP6ClientEndpoint):
     """IPv6 variant of TunnelingTCP4ClientEndpoint."""
 
     def __init__(
@@ -365,9 +352,9 @@ def tunnel_request_data(
 
 
 class TunnelingAgent(Agent):
-    """An agent that uses a L{TunnelingTCP4ClientEndpoint} to make HTTPS
-    downloads. It may look strange that we have chosen to subclass Agent and not
-    ProxyAgent but consider that after the tunnel is opened the proxy is
+    """An agent that uses a L{TunnelingTCP4ClientEndpoint} or L{TunnelingTCP6ClientEndpoint}
+    to make HTTPS downloads. It may look strange that we have chosen to subclass Agent
+    and not ProxyAgent but consider that after the tunnel is opened the proxy is
     transparent to the client; thus the agent should behave like there is no
     proxy involved.
     """
