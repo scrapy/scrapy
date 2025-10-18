@@ -28,6 +28,21 @@ class Root(Resource):
 
 
 def _getarg(request, name: bytes, default: Any = None, type_=str):
+    """Extract and convert an argument from the request.
+
+    Retrieves the first value of a named argument from the request and
+    converts it to the specified type. Returns a default value if the
+    argument is not present in the request.
+
+    Args:
+        request: The HTTP request object
+        name: The argument name to retrieve (as bytes)
+        default: Value to return if argument is not found (default: None)
+        type_: Callable to convert the argument value (default: str)
+
+    Returns:
+        The converted argument value if present, otherwise the default value
+    """
     return type_(request.args[name][0]) if name in request.args else default
 
 
