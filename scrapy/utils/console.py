@@ -13,9 +13,11 @@ KnownShellsT = dict[str, Callable[..., EmbedFuncT]]
 
 
 def _embed_ipython_shell(
-    namespace: dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] | None = None, banner: str = ""
 ) -> EmbedFuncT:
     """Start an IPython Shell"""
+    if namespace is None:
+        namespace = {}
     try:
         from IPython.terminal.embed import InteractiveShellEmbed  # noqa: T100,PLC0415
         from IPython.terminal.ipapp import load_default_config  # noqa: PLC0415
@@ -44,9 +46,11 @@ def _embed_ipython_shell(
 
 
 def _embed_bpython_shell(
-    namespace: dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] | None = None, banner: str = ""
 ) -> EmbedFuncT:
     """Start a bpython shell"""
+    if namespace is None:
+        namespace = {}
     import bpython  # noqa: PLC0415
 
     @wraps(_embed_bpython_shell)
@@ -57,9 +61,11 @@ def _embed_bpython_shell(
 
 
 def _embed_ptpython_shell(
-    namespace: dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] | None = None, banner: str = ""
 ) -> EmbedFuncT:
     """Start a ptpython shell"""
+    if namespace is None:
+        namespace = {}
     import ptpython.repl  # noqa: PLC0415  # pylint: disable=import-error
 
     @wraps(_embed_ptpython_shell)
@@ -71,9 +77,11 @@ def _embed_ptpython_shell(
 
 
 def _embed_standard_shell(
-    namespace: dict[str, Any] = {}, banner: str = ""
+    namespace: dict[str, Any] | None = None, banner: str = ""
 ) -> EmbedFuncT:
     """Start a standard python shell"""
+    if namespace is None:
+        namespace = {}
     try:  # readline module is only available on unix systems
         import readline  # noqa: PLC0415
     except ImportError:
