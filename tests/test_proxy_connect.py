@@ -20,7 +20,7 @@ class MitmProxy:
     auth_user = "scrapy"
     auth_pass = "scrapy"
 
-    def start(self):
+    def start(self, listen_host: str = "127.0.0.1"):
         script = """
 import sys
 from mitmproxy.tools.main import mitmdump
@@ -35,7 +35,7 @@ sys.exit(mitmdump())
                 "-c",
                 script,
                 "--listen-host",
-                "127.0.0.1",
+                listen_host,
                 "--listen-port",
                 "0",
                 "--proxyauth",
@@ -47,7 +47,9 @@ sys.exit(mitmdump())
             stdout=PIPE,
         )
         line = self.proc.stdout.readline().decode("utf-8")
-        host_port = re.search(r"listening at (?:http://)?([^:]+:\d+)", line).group(1)
+        host_port = re.search(
+            r"listening at (?:https?:\/\/)?([^\s.]+(?:\.\S+)*?:\d+)", line
+        ).group(1)
         return f"http://{self.auth_user}:{self.auth_pass}@{host_port}"
 
     def stop(self):
@@ -61,7 +63,7 @@ def _wrong_credentials(proxy_url):
     return urlunsplit(bad_auth_proxy)
 
 
-class TestProxyConnect:
+class BaseTestProxyConnect:
     @classmethod
     def setup_class(cls):
         cls.mockserver = MockServer()
@@ -78,9 +80,8 @@ class TestProxyConnect:
             pytest.skip("mitmproxy is not installed")
 
         self._oldenv = os.environ.copy()
-
         self._proxy = MitmProxy()
-        proxy_url = self._proxy.start()
+        proxy_url = self._proxy.start(listen_host=self.proxy_host)
         os.environ["https_proxy"] = proxy_url
         os.environ["http_proxy"] = proxy_url
 
@@ -101,8 +102,6 @@ class TestProxyConnect:
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
-        # The proxy returns a 407 error code but it does not reach the client;
-        # he just sees a TunnelError.
         self._assert_got_tunnel_error(log)
 
     @inlineCallbacks
@@ -120,3 +119,11 @@ class TestProxyConnect:
 
     def _assert_got_tunnel_error(self, log):
         assert "TunnelError" in str(log)
+
+
+class TestProxyConnect(BaseTestProxyConnect):
+    proxy_host = "127.0.0.1"
+
+
+class TestProxyConnectIPv6(BaseTestProxyConnect):
+    proxy_host = "::1"
