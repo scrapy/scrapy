@@ -144,7 +144,7 @@ class CaseInsensitiveDict(collections.UserDict):
 class LocalCache(OrderedDict[_KT, _VT]):
     """Dictionary with a finite number of keys.
 
-    Older items expires first.
+    Older items expire first.
     """
 
     def __init__(self, limit: int | None = None):
