@@ -11,12 +11,12 @@ class Link:
 
     Using the anchor tag sample below to illustrate the parameters::
 
-            <a href="https://example.com/nofollow.html#foo" rel="nofollow">Dont follow this one</a>
+            <a href="https://example.com/nofollow.html#foo" rel="nofollow">Don't follow this one</a>
 
     :param url: the absolute url being linked to in the anchor tag.
                 From the sample, this is ``https://example.com/nofollow.html``.
 
-    :param text: the text in the anchor tag. From the sample, this is ``Dont follow this one``.
+    :param text: the text in the anchor tag. From the sample, this is ``Don't follow this one``.
 
     :param fragment: the part of the url after the hash symbol. From the sample, this is ``foo``.
 
