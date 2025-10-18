@@ -29,8 +29,8 @@ def ftp_store_file(
     use_active_mode: bool = False,
     overwrite: bool = True,
 ) -> None:
-    """Opens a FTP connection with passed credentials,sets current directory
-    to the directory extracted from given path, then uploads the file to server
+    """Opens an FTP connection with passed credentials, sets current directory
+    to the directory extracted from given path, then uploads the file to server.
     """
     with FTP() as ftp:
         ftp.connect(host, port)
