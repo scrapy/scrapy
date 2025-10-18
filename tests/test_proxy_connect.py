@@ -46,10 +46,15 @@ sys.exit(mitmdump())
             ],
             stdout=PIPE,
         )
+        if self.proc.stdout is None:
+            raise RuntimeError("Failed to capture mitmdump stdout")
+
         line = self.proc.stdout.readline().decode("utf-8")
-        host_port = re.search(
-            r"listening at (?:https?:\/\/)?([^\s.]+(?:\.\S+)*?:\d+)", line
-        ).group(1)
+        m = re.search(r"listening at (?:https?:\/\/)?([^\s.]+(?:\.\S+)*?:\d+)", line)
+        if not m:
+            raise RuntimeError(f"Could not parse mitmproxy output: {line!r}")
+        host_port = m.group(1)
+
         return f"http://{self.auth_user}:{self.auth_pass}@{host_port}"
 
     def stop(self):
