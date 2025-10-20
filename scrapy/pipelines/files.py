@@ -19,11 +19,12 @@ from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Any, NoReturn, Protocol, TypedDict, cast
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.internet.threads import deferToThread
+from w3lib.url import safe_url_string
 
 from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
@@ -645,7 +646,30 @@ class FilesPipeline(MediaPipeline):
     ) -> FileInfo:
         referer = referer_str(request)
 
-        if response.status != 200:
+        canonical_request = request
+        canonical_response = response
+        if response.status == 201:
+            raw_location = response.headers.get("Location")
+            if raw_location:
+                location = safe_url_string(raw_location)
+                if isinstance(
+                    raw_location, (bytes, bytearray)
+                ) and raw_location.startswith(b"//"):
+                    source_scheme = urlparse(request.url).scheme
+                    if source_scheme:
+                        location = f"{source_scheme}://{location.lstrip('/')}"
+                canonical_url = urljoin(request.url, location)
+                if canonical_url and urlparse(canonical_url).scheme in {
+                    "http",
+                    "https",
+                }:
+                    canonical_request = request.replace(url=canonical_url)
+                    canonical_response = response.replace(url=canonical_url)
+
+        request = canonical_request
+        response = canonical_response
+
+        if not 200 <= response.status < 300:
             logger.warning(
                 "File (code: %(status)s): Error downloading file from "
                 "%(request)s referred in <%(referer)s>",
