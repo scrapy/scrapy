@@ -1,3 +1,4 @@
+nano docs/topics/jobs.rst
 .. _topics-jobs:
 
 =================================
@@ -86,3 +87,23 @@ running :class:`~scrapy.Spider` class.
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
 It is ``False`` by default.
+
+Files Stored in JOBDIR
+======================
+
+When Scrapy is configured with the ``JOBDIR`` setting, it stores state information
+that allows spiders to pause and resume crawls later. The directory specified by
+``JOBDIR`` contains several files used internally by Scrapy:
+
+- **requests.queue** – Contains queued requests that are waiting to be processed.
+- **requests.seen** – Stores SHA1 hashes of requests that have already been seen to
+  prevent duplicates.
+- **spider.state** – A pickled dictionary that keeps the spider’s state (for example,
+  the last processed item or page).
+- **active.json** – Contains metadata about the currently active queue used by
+  ``queuelib``.
+- **info.json** – Metadata about the queue files and state.
+
+These files are automatically managed by Scrapy and should not be edited manually.
+They enable Scrapy to resume the crawl process without losing progress if the crawl
+is interrupted or stopped.
