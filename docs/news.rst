@@ -15,6 +15,13 @@ Backward-incompatible changes
     ``True`` when running Scrapy via :ref:`its command-line tool
     <topics-commands-crawlerprocess>` to avoid a reactor mismatch exception.
 
+-   The default value of the :setting:`SCHEDULER_PRIORITY_QUEUE` setting is now
+    ``"scrapy.pqueues.DownloaderAwarePriorityQueue"`` (previously
+    ``"scrapy.pqueues.ScrapyPriorityQueue"``) so that the default configuration
+    performs better when crawling many domains concurrently. Override the
+    setting if you prefer the previous behaviour optimized for single-domain
+    crawls.
+
 -   The ``log_count/*`` stats no longer count some of the early messages that
     they counted before. While the earliest log messages, emitted before the
     counter is initialized, were never counted, the counter initialization now
