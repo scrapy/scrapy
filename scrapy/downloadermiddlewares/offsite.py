@@ -24,14 +24,16 @@ logger = logging.getLogger(__name__)
 class OffsiteMiddleware:
     crawler: Crawler
 
-    def __init__(self, stats: StatsCollector):
+    def __init__(self, stats: StatsCollector, allow_localhost: bool = True):
         self.stats = stats
         self.domains_seen: set[str] = set()
+        self.allow_localhost = allow_localhost
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         assert crawler.stats
-        o = cls(crawler.stats)
+        allow_localhost = crawler.settings.getbool("OFFSITE_ALLOW_LOCALHOST", True)
+        o = cls(crawler.stats, allow_localhost)
         crawler.signals.connect(o.spider_opened, signal=signals.spider_opened)
         crawler.signals.connect(o.request_scheduled, signal=signals.request_scheduled)
         o.crawler = crawler
@@ -68,6 +70,11 @@ class OffsiteMiddleware:
         regex = self.host_regex
         # hostname can be None for wrong urls (like javascript links)
         host = urlparse_cached(request).hostname or ""
+        
+        # Allow localhost and 127.0.0.1 requests to support local development
+        if self.allow_localhost and host in ("localhost", "127.0.0.1"):
+            return True
+            
         return bool(regex.search(host))
 
     def get_host_regex(self, spider: Spider) -> re.Pattern[str]:
