@@ -1,4 +1,3 @@
-nano docs/topics/jobs.rst
 .. _topics-jobs:
 
 =================================
@@ -87,7 +86,6 @@ running :class:`~scrapy.Spider` class.
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
 It is ``False`` by default.
-
 Files Stored in JOBDIR
 ======================
 
