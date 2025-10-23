@@ -49,11 +49,11 @@ this:
 
 4. When the files are downloaded, another field (``files``) will be populated
    with the results. This field will contain a list of dicts with information
-    about the downloaded files, such as the downloaded path, the original
-    scraped URL (taken from the ``file_urls`` field), the file checksum and the
-    file status. The files in the ``files`` field will retain the same order as
-    in the original ``file_urls`` field. If some file failed downloading, an
-    error will be logged and the file won't be present in the ``files`` field.
+   about the downloaded files, such as the downloaded path, the original
+   scraped URL (taken from the ``file_urls`` field), the file checksum and the
+   file status. The files in the ``files`` field will retain the same order as
+   in the original ``file_urls`` field. If some file failed downloading, an
+   error will be logged and the file won't be present in the ``files`` field.
 
 
 .. _images-pipeline:

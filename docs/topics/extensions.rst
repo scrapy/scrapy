@@ -258,7 +258,7 @@ settings:
 
     When a certain closing condition is met, requests that are currently in the
     downloader queue (up to :setting:`CONCURRENT_REQUESTS`
-   requests) are still processed.
+    requests) are still processed.
 
 .. setting:: CLOSESPIDER_TIMEOUT
 
