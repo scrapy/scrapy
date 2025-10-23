@@ -4,13 +4,13 @@
 Scrapy at a glance
 ==================
 
-Scrapy (/ˈskreɪpaɪ/) is an application framework for crawling web sites and extracting
-structured data which can be used for a wide range of useful applications, like
-data mining, information processing or historical archival.
+Scrapy (/ˈskreɪpaɪ/) is an application framework for crawling websites and
+extracting structured data which can be used for a wide range of useful
+applications, like data mining, information processing or historical archival.
 
 Even though Scrapy was originally designed for `web scraping`_, it can also be
 used to extract data using APIs (such as `Amazon Associates Web Services`_) or
-as a general purpose web crawler.
+as a general-purpose web crawler.
 
 
 Walk-through of an example spider
@@ -19,7 +19,7 @@ Walk-through of an example spider
 In order to show you what Scrapy brings to the table, we'll walk you through an
 example of a Scrapy Spider using the simplest way to run a spider.
 
-Here's the code for a spider that scrapes famous quotes from website
+Here's the code for a spider that scrapes famous quotes from the website
 https://quotes.toscrape.com, following the pagination:
 
 .. code-block:: python
@@ -49,8 +49,9 @@ and run the spider using the :command:`runspider` command::
 
     scrapy runspider quotes_spider.py -o quotes.jsonl
 
-When this finishes you will have in the ``quotes.jsonl`` file a list of the
-quotes in JSON Lines format, containing the text and author, which will look like this::
+When this finishes, you will have a list of the quotes in JSON Lines format in
+the ``quotes.jsonl`` file, containing the text and author, which will look like
+this::
 
     {"author": "Jane Austen", "text": "\u201cThe person, be it gentleman or lady, who has not pleasure in a good novel, must be intolerably stupid.\u201d"}
     {"author": "Steve Martin", "text": "\u201cA day without sunshine is like, you know, night.\u201d"}
@@ -73,19 +74,19 @@ look for a link to the next page and schedule another request using the same
 ``parse`` method as callback.
 
 Here you will notice one of the main advantages of Scrapy: requests are
-:ref:`scheduled and processed asynchronously <topics-architecture>`.  This
-means that Scrapy doesn't need to wait for a request to be finished and
-processed, it can send another request or do other things in the meantime. This
-also means that other requests can keep going even if a request fails or an
-error happens while handling it.
+:ref:`scheduled and processed asynchronously <topics-architecture>`. This means
+that Scrapy doesn't need to wait for a request to be finished and processed; it
+can send another request or do other things in the meantime. This also means
+that other requests can keep going even if a request fails or an error happens
+while handling it.
 
 While this enables you to do very fast crawls (sending multiple concurrent
 requests at the same time, in a fault-tolerant way) Scrapy also gives you
 control over the politeness of the crawl through :ref:`a few settings
 <topics-settings-ref>`. You can do things like setting a download delay between
-each request, limiting the amount of concurrent requests per domain or per IP, and
-even :ref:`using an auto-throttling extension <topics-autothrottle>` that tries
-to figure these settings out automatically.
+each request, limiting the number of concurrent requests per domain or per IP,
+and even :ref:`using an auto-throttling extension <topics-autothrottle>` that
+tries to figure these settings out automatically.
 
 .. note::
 
@@ -116,7 +117,7 @@ scraping easy and efficient, such as:
   multiple formats (JSON, CSV, XML) and storing them in multiple backends (FTP,
   S3, local filesystem)
 
-* Robust encoding support and auto-detection, for dealing with foreign,
+* Robust encoding support and auto-detection for dealing with foreign,
   non-standard and broken encoding declarations.
 
 * :ref:`Strong extensibility support <extending-scrapy>`, allowing you to plug
@@ -137,10 +138,10 @@ scraping easy and efficient, such as:
   console running inside your Scrapy process, to introspect and debug your
   crawler
 
-* Plus other goodies like reusable spiders to crawl sites from `Sitemaps`_ and
-  XML/CSV feeds, a media pipeline for :ref:`automatically downloading images
-  <topics-media-pipeline>` (or any other media) associated with the scraped
-  items, a caching DNS resolver, and much more!
+* Plus other goodies such as reusable spiders to crawl sites from `Sitemaps`_
+  and XML/CSV feeds, a media pipeline for :ref:`automatically downloading
+  images <topics-media-pipeline>` (or any other media) associated with the
+  scraped items, a caching DNS resolver, and much more!
 
 What's next?
 ============

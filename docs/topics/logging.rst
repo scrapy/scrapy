@@ -9,9 +9,9 @@ Logging
     explicit calls to the Python standard logging. Keep reading to learn more
     about the new logging system.
 
-Scrapy uses :mod:`logging` for event logging. We'll
-provide some simple examples to get you started, but for more advanced
-use-cases it's strongly suggested to read thoroughly its documentation.
+Scrapy uses :mod:`logging` for event logging. We'll provide some simple
+examples to get you started, but for more advanced use-cases it's strongly
+suggested to read its documentation thoroughly.
 
 Logging works out of the box, and can be configured to some extent with the
 Scrapy settings listed in :ref:`topics-logging-settings`.
@@ -26,8 +26,8 @@ Scrapy from scripts as described in :ref:`run-from-script`.
 Log levels
 ==========
 
-Python's builtin logging defines 5 different levels to indicate the severity of a
-given log message. Here are the standard ones, listed in decreasing order:
+Python's built-in logging defines 5 different levels to indicate the severity
+of a given log message. Here are the standard ones, listed in decreasing order:
 
 1. ``logging.CRITICAL`` - for critical errors (highest severity)
 2. ``logging.ERROR`` - for regular errors
@@ -62,10 +62,10 @@ example, a common practice is to create different loggers for every module).
 These loggers can be configured independently, and they allow hierarchical
 constructions.
 
-The previous examples use the root logger behind the scenes, which is a top level
-logger where all messages are propagated to (unless otherwise specified). Using
-``logging`` helpers is merely a shortcut for getting the root logger
-explicitly, so this is also an equivalent of the last snippets:
+The previous examples use the root logger behind the scenes, which is a
+top-level logger where all messages are propagated to (unless otherwise
+specified). Using ``logging`` helpers is merely a shortcut for getting the root
+logger explicitly, so this is also an equivalent of the last snippets:
 
 .. code-block:: python
 
@@ -85,8 +85,8 @@ You can use a different logger just by getting its name with the
     logger.warning("This is a warning")
 
 Finally, you can ensure having a custom logger for any module you're working on
-by using the ``__name__`` variable, which is populated with current module's
-path:
+by using the ``__name__`` variable, which is populated with the current
+module's path:
 
 .. code-block:: python
 
@@ -284,9 +284,8 @@ filter out unwanted messages:
             if match:
                 return False
 
-A project-level filter may be attached to the root
-handler created by Scrapy, this is a wieldy way to
-filter all loggers in different parts of the project
+A project-level filter may be attached to the root handler created by Scrapy.
+This is a useful way to filter all loggers in different parts of the project
 (middlewares, spider, etc.):
 
 .. code-block:: python

@@ -14,15 +14,15 @@ typically you'll either use the Files Pipeline or the Images Pipeline.
 
 Both pipelines implement these features:
 
-* Avoid re-downloading media that was downloaded recently
-* Specifying where to store the media (filesystem directory, FTP server, Amazon S3 bucket,
-  Google Cloud Storage bucket)
+* Avoid re-downloading media that have been downloaded recently
+* Specify where to store the media (filesystem directory, FTP server, Amazon S3
+  bucket, Google Cloud Storage bucket)
 
 The Images Pipeline has a few extra functions for processing images:
 
-* Convert all downloaded images to a common format (JPG) and mode (RGB)
+* Convert all downloaded images to a common format (JPEG) and mode (RGB)
 * Thumbnail generation
-* Check images width/height to make sure they meet a minimum constraint
+* Check images' width/height to make sure they meet a minimum constraint
 
 The pipelines also keep an internal queue of those media URLs which are currently
 being scheduled for download, and connect those responses that arrive containing
@@ -45,15 +45,15 @@ this:
    Scrapy scheduler and downloader (which means the scheduler and downloader
    middlewares are reused), but with a higher priority, processing them before other
    pages are scraped. The item remains "locked" at that particular pipeline stage
-   until the files have finish downloading (or fail for some reason).
+   until the files have finished downloading (or fail for some reason).
 
 4. When the files are downloaded, another field (``files``) will be populated
    with the results. This field will contain a list of dicts with information
-   about the downloaded files, such as the downloaded path, the original
-   scraped url (taken from the ``file_urls`` field), the file checksum and the file status.
-   The files in the list of the ``files`` field will retain the same order of
-   the original ``file_urls`` field. If some file failed downloading, an
-   error will be logged and the file won't be present in the ``files`` field.
+    about the downloaded files, such as the downloaded path, the original
+    scraped URL (taken from the ``file_urls`` field), the file checksum and the
+    file status. The files in the ``files`` field will retain the same order as
+    in the original ``file_urls`` field. If some file failed downloading, an
+    error will be logged and the file won't be present in the ``files`` field.
 
 
 .. _images-pipeline:
@@ -261,8 +261,8 @@ policy:
 For more information, see `canned ACLs`_ in the Amazon S3 Developer Guide.
 
 You can also use other S3-like storages. Storages like self-hosted `Minio`_ or
-`Zenko CloudServer`_. All you need to do is set endpoint option in you Scrapy
-settings:
+`Zenko CloudServer`_. All you need to do is set the endpoint option in your
+Scrapy settings:
 
 .. code-block:: python
 
@@ -406,13 +406,14 @@ specifies the delay in number of days:
 
 The default value for both settings is 90 days.
 
-If you have pipeline that subclasses FilesPipeline and you'd like to have
-different setting for it you can set setting keys preceded by uppercase
-class name. E.g. given pipeline class called MyPipeline you can set setting key:
+If you have a pipeline that subclasses FilesPipeline and you'd like to have a
+different setting for it, you can set setting keys preceded by the uppercase
+class name. For example, given a pipeline class called MyPipeline you can set
+the setting key:
 
     MYPIPELINE_FILES_EXPIRES = 180
 
-and pipeline class MyPipeline will have expiration time set to 180.
+and the pipeline class MyPipeline will have an expiration time set to 180.
 
 The last modified time from the file is used to determine the age of the file in days,
 which is then compared to the set expiration time to determine if the file is expired.

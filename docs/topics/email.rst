@@ -8,12 +8,11 @@ Sending e-mail
    :synopsis: Email sending facility
 
 Although Python makes sending e-mails relatively easy via the :mod:`smtplib`
-library, Scrapy provides its own facility for sending e-mails which is very
-easy to use and it's implemented using :doc:`Twisted non-blocking IO
+library, Scrapy provides its own facility for sending e-mails that is very easy
+to use and is implemented using :doc:`Twisted non-blocking IO
 <twisted:core/howto/defer-intro>`, to avoid interfering with the non-blocking
-IO of the crawler. It also provides a simple API for sending attachments and
-it's very easy to configure, with a few :ref:`settings
-<topics-email-settings>`.
+IO of the crawler. It also provides a simple API for sending attachments and is
+very easy to configure, with a few :ref:`settings <topics-email-settings>`.
 
 Quick example
 =============
@@ -27,7 +26,7 @@ the standard ``__init__`` method:
 
     mailer = MailSender()
 
-Or you can instantiate it passing a :class:`scrapy.Crawler` instance, which
+Or you can instantiate it by passing a :class:`scrapy.Crawler` instance, which
 will respect the :ref:`settings <topics-email-settings>`:
 
 .. skip: start
@@ -50,8 +49,8 @@ And here is how to use it to send an e-mail (without attachments):
 MailSender class reference
 ==========================
 
-The MailSender :ref:`components <topics-components>` is the preferred class to
-use for sending emails from Scrapy, as it uses :doc:`Twisted non-blocking IO
+The MailSender :ref:`component <topics-components>` is the preferred class to
+use for sending e-mails from Scrapy, as it uses :doc:`Twisted non-blocking IO
 <twisted:core/howto/defer-intro>`, like the rest of the framework.
 
 .. class:: MailSender(smtphost=None, mailfrom=None, smtpuser=None, smtppass=None, smtpport=None)
@@ -67,9 +66,9 @@ use for sending emails from Scrapy, as it uses :doc:`Twisted non-blocking IO
     :param smtpuser: the SMTP user. If omitted, the :setting:`MAIL_USER`
       setting will be used. If not given, no SMTP authentication will be
       performed.
-    :type smtphost: str or bytes
+    :type smtpuser: str or bytes
 
-    :param smtppass: the SMTP pass for authentication.
+    :param smtppass: the SMTP password for authentication.
     :type smtppass: str or bytes
 
     :param smtpport: the SMTP port to connect to
@@ -83,7 +82,7 @@ use for sending emails from Scrapy, as it uses :doc:`Twisted non-blocking IO
 
     .. method:: send(to, subject, body, cc=None, attachs=(), mimetype='text/plain', charset=None)
 
-        Send email to the given recipients.
+        Send an e-mail to the given recipients.
 
         :param to: the e-mail recipients as a string or as a list of strings
         :type to: str or list
@@ -98,10 +97,10 @@ use for sending emails from Scrapy, as it uses :doc:`Twisted non-blocking IO
         :type body: str
 
         :param attachs: an iterable of tuples ``(attach_name, mimetype,
-          file_object)`` where  ``attach_name`` is a string with the name that will
-          appear on the e-mail's attachment, ``mimetype`` is the mimetype of the
-          attachment and ``file_object`` is a readable file object with the
-          contents of the attachment
+          file_object)`` where ``attach_name`` is a string with the name that
+          will appear on the e-mail attachment, ``mimetype`` is the mimetype of
+          the attachment, and ``file_object`` is a readable file object with
+          the contents of the attachment
         :type attachs: collections.abc.Iterable
 
         :param mimetype: the MIME type of the e-mail
@@ -116,9 +115,9 @@ use for sending emails from Scrapy, as it uses :doc:`Twisted non-blocking IO
 Mail settings
 =============
 
-These settings define the default ``__init__`` method values of the :class:`MailSender`
-class, and can be used to configure e-mail notifications in your project without
-writing any code (for those extensions and code that uses :class:`MailSender`).
+These settings define the default arguments passed to :class:`MailSender` and
+can be used to configure e-mail notifications in your project without writing
+any code (for those extensions and code that use :class:`MailSender`).
 
 .. setting:: MAIL_FROM
 
@@ -154,8 +153,8 @@ MAIL_USER
 
 Default: ``None``
 
-User to use for SMTP authentication. If disabled no SMTP authentication will be
-performed.
+User to use for SMTP authentication. If disabled, no SMTP authentication will
+be performed.
 
 .. setting:: MAIL_PASS
 
@@ -173,7 +172,8 @@ MAIL_TLS
 
 Default: ``False``
 
-Enforce using STARTTLS. STARTTLS is a way to take an existing insecure connection, and upgrade it to a secure connection using SSL/TLS.
+Enforce using STARTTLS. STARTTLS is a way to take an existing insecure
+connection and upgrade it to a secure connection using SSL/TLS.
 
 .. setting:: MAIL_SSL
 
@@ -182,4 +182,4 @@ MAIL_SSL
 
 Default: ``False``
 
-Enforce connecting using an SSL encrypted connection
+Enforce connecting using an SSL-encrypted connection.

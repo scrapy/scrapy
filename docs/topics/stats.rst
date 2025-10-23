@@ -5,10 +5,11 @@ Stats Collection
 ================
 
 Scrapy provides a convenient facility for collecting stats in the form of
-key/values, where values are often counters. The facility is called the Stats
-Collector, and can be accessed through the :attr:`~scrapy.crawler.Crawler.stats`
-attribute of the :ref:`topics-api-crawler`, as illustrated by the examples in
-the :ref:`topics-stats-usecases` section below.
+key/value pairs, where values are often counters. The facility is called the
+Stats Collector, and can be accessed through the
+:attr:`~scrapy.crawler.Crawler.stats` attribute of the
+:ref:`topics-api-crawler`, as illustrated by the examples in the
+:ref:`topics-stats-usecases` section below.
 
 However, the Stats Collector is always available, so you can always import it
 in your module and use its API (to increment or set new stat keys), regardless
@@ -19,7 +20,7 @@ collecting stats in your spider, Scrapy extension, or whatever code you're
 using the Stats Collector from.
 
 Another feature of the Stats Collector is that it's very efficient (when
-enabled) and extremely efficient (almost unnoticeable) when disabled.
+enabled) and almost unnoticeable when disabled.
 
 The Stats Collector keeps a stats table per open spider which is automatically
 opened when the spider is opened, and closed when the spider is closed.
@@ -30,7 +31,7 @@ Common Stats Collector uses
 ===========================
 
 Access the stats collector through the :attr:`~scrapy.crawler.Crawler.stats`
-attribute. Here is an example of an extension that access stats:
+attribute. Here is an example of an extension that accesses stats:
 
 .. code-block:: python
 

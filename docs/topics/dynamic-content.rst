@@ -85,16 +85,16 @@ It might be enough to yield a :class:`~scrapy.Request` with the same HTTP
 method and URL. However, you may also need to reproduce the body, headers and
 form parameters (see :class:`~scrapy.FormRequest`) of that request.
 
-As all major browsers allow to export the requests in curl_ format, Scrapy
-incorporates the method :meth:`~scrapy.Request.from_curl` to generate an equivalent
-:class:`~scrapy.Request` from a cURL command. To get more information
-visit :ref:`request from curl <requests-from-curl>` inside the network
-tool section.
+As all major browsers allow you to export requests in curl_ format, Scrapy
+incorporates the method :meth:`~scrapy.Request.from_curl` to generate an
+equivalent :class:`~scrapy.Request` from a cURL command. To get more
+information visit :ref:`request from curl <requests-from-curl>` inside the
+network tool section.
 
 Once you get the expected response, you can :ref:`extract the desired data from
 it <topics-handling-response-formats>`.
 
-You can reproduce any request with Scrapy. However, some times reproducing all
+You can reproduce any request with Scrapy. However, sometimes reproducing all
 necessary requests may not seem efficient in developer time. If that is your
 case, and crawling speed is not a major concern for you, you can alternatively
 consider :ref:`using a headless browser <topics-headless-browsing>`.
@@ -271,8 +271,8 @@ The following is a simple snippet to illustrate its usage within a Scrapy spider
 
 
 However, using `playwright-python`_ directly as in the above example
-circumvents most of the Scrapy components (middlewares, dupefilter, etc).
-We recommend using `scrapy-playwright`_ for a better integration.
+circumvents most of the Scrapy components (middlewares, dupefilter, etc.). We
+recommend using `scrapy-playwright`_ for a better integration.
 
 .. _AJAX: https://en.wikipedia.org/wiki/Ajax_%28programming%29
 .. _CSS: https://en.wikipedia.org/wiki/Cascading_Style_Sheets

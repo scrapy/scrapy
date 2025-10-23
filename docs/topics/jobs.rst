@@ -7,7 +7,7 @@ Jobs: pausing and resuming crawls
 Sometimes, for big sites, it's desirable to pause crawls and be able to resume
 them later.
 
-Scrapy supports this functionality out of the box by providing the following
+Scrapy supports this functionality out of the box through the following
 facilities:
 
 * a scheduler that persists scheduled requests on disk
@@ -20,12 +20,11 @@ facilities:
 Job directory
 =============
 
-To enable persistence support you just need to define a *job directory* through
-the ``JOBDIR`` setting. This directory will be for storing all required data to
-keep the state of a single job (i.e. a spider run).  It's important to note that
-this directory must not be shared by different spiders, or even different
-jobs/runs of the same spider, as it's meant to be used for storing the state of
-a *single* job.
+To enable persistence support, define a *job directory* through the ``JOBDIR``
+setting. This directory stores all required data to keep the state of a single
+job (i.e. a spider run). It's important to note that this directory must not be
+shared with different spiders or with other runs of the same spider, as it's
+meant to store the state of a *single* job.
 
 How to use it
 =============
@@ -34,7 +33,7 @@ To start a spider with persistence support enabled, run it like this::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
 
-Then, you can stop the spider safely at any time (by pressing Ctrl-C or sending
+Then you can stop the spider safely at any time (by pressing Ctrl-C or sending
 a signal), and resume it later by issuing the same command::
 
     scrapy crawl somespider -s JOBDIR=crawls/somespider-1
@@ -44,11 +43,11 @@ a signal), and resume it later by issuing the same command::
 Keeping persistent state between batches
 ========================================
 
-Sometimes you'll want to keep some persistent spider state between pause/resume
-batches. You can use the ``spider.state`` attribute for that, which should be a
-dict. There's :ref:`a built-in extension <topics-extensions-ref-spiderstate>`
-that takes care of serializing, storing and loading that attribute from the job
-directory, when the spider starts and stops.
+Sometimes you'll want to keep persistent spider state between pause/resume
+batches. Use the ``spider.state`` attribute for that. It should be a dict.
+There's :ref:`a built-in extension <topics-extensions-ref-spiderstate>` that
+takes care of serializing, storing and loading that attribute from the job
+directory when the spider starts and stops.
 
 Here's an example of a callback that uses the spider state (other spider code
 is omitted for brevity):
@@ -62,14 +61,14 @@ is omitted for brevity):
 Persistence gotchas
 ===================
 
-There are a few things to keep in mind if you want to be able to use the Scrapy
-persistence support:
+There are a few things to keep in mind if you want to use Scrapy's persistence
+support:
 
-Cookies expiration
-------------------
+Cookie expiration
+-----------------
 
-Cookies may expire. So, if you don't resume your spider quickly the requests
-scheduled may no longer work. This won't be an issue if your spider doesn't rely
+Cookies may expire, so if you don't resume your spider quickly, the scheduled
+requests may no longer work. This won't be an issue if your spider doesn't rely
 on cookies.
 
 
