@@ -370,7 +370,7 @@ scrapy-spider-metadata parameters
 Another alternative to pass spider arguments is the library `scrapy-spider-metadata`_.
 
 This allows for Scrapy spiders to define, validate, document and pre-process
-their arguments as pydantic models.
+their arguments as Pydantic models.
 
 The example shows how to define typed parameters where a string argument
 is automatically converted to an integer:
