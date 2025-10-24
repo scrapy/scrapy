@@ -364,8 +364,8 @@ used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
 
-scrapy-spider-metadata params
------------------------------
+scrapy-spider-metadata parameters
+---------------------------------
 
 Another alternative to pass spider arguments is the library `scrapy-spider-metadata`_.
 
