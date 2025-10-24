@@ -141,6 +141,7 @@ __all__ = [
     "METAREFRESH_IGNORE_TAGS",
     "METAREFRESH_MAXDELAY",
     "NEWSPIDER_MODULE",
+    "OFFSITE_ALLOW_LOCALHOST",
     "PERIODIC_LOG_DELTA",
     "PERIODIC_LOG_STATS",
     "PERIODIC_LOG_TIMING_ENABLED",
@@ -298,6 +299,9 @@ DOWNLOADER_MIDDLEWARES_BASE = {
 }
 
 DOWNLOADER_STATS = True
+
+# Allow localhost and 127.0.0.1 requests to bypass offsite middleware
+OFFSITE_ALLOW_LOCALHOST = True
 
 DUPEFILTER_CLASS = "scrapy.dupefilters.RFPDupeFilter"
 
