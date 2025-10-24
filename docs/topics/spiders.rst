@@ -23,12 +23,13 @@ For spiders, the scraping cycle goes through something like this:
    :attr:`~scrapy.Spider.parse` method set as :attr:`~scrapy.Request.callback`
    function to handle each :class:`~scrapy.http.Response`.
 
-2. In the callback function, you parse the response (web page) and return
+2. In the callback function, you parse the response (web page) and return or yield
    :ref:`item objects <topics-items>`,
    :class:`~scrapy.Request` objects, or an iterable of these objects.
    Those Requests will also contain a callback (maybe
    the same) and will then be downloaded by Scrapy and then their
-   response handled by the specified callback.
+   response handled by the specified callback. For detailed information about
+   what callbacks can return and yield, see :ref:`topics-request-response-ref-request-callbacks`.
 
 3. In callback functions, you parse the page contents, typically using
    :ref:`topics-selectors` (but you can also use BeautifulSoup, lxml or whatever
@@ -197,13 +198,14 @@ scrapy.Spider
        responses, when their requests don't specify a callback.
 
        The ``parse`` method is in charge of processing the response and returning
-       scraped data and/or more URLs to follow. Other Requests callbacks have
+       scraped data and/or more URLs to follow. Other Request callbacks have
        the same requirements as the :class:`Spider` class.
 
-       This method, as well as any other Request callback, must return a
-       :class:`~scrapy.Request` object, an :ref:`item object <topics-items>`, an
-       iterable of :class:`~scrapy.Request` objects and/or :ref:`item objects
-       <topics-items>`, or ``None``.
+       This method, as well as any other Request callback, can return or yield
+       :class:`~scrapy.Request` objects, :ref:`item objects <topics-items>`,
+       iterables containing any of these types, or ``None``. For detailed
+       information about what callbacks can return and how they work, see
+       :ref:`topics-request-response-ref-request-callbacks`.
 
        :param response: the response to parse
        :type response: :class:`~scrapy.http.Response`
@@ -514,11 +516,12 @@ Crawling rules
    ``callback`` is a callable or a string (in which case a method from the spider
    object with that name will be used) to be called for each link extracted with
    the specified link extractor. This callback receives a :class:`~scrapy.http.Response`
-   as its first argument and must return either a single instance or an iterable of
-   :ref:`item objects <topics-items>` and/or :class:`~scrapy.Request` objects
-   (or any subclass of them). As mentioned above, the received :class:`~scrapy.http.Response`
-   object will contain the text of the link that produced the :class:`~scrapy.Request`
-   in its ``meta`` dictionary (under the ``link_text`` key)
+   as its first argument and can return or yield :ref:`item objects <topics-items>`,
+   :class:`~scrapy.Request` objects, or ``None``. For detailed information about
+   callbacks, see :ref:`topics-request-response-ref-request-callbacks`. As mentioned
+   above, the received :class:`~scrapy.http.Response` object will contain the text
+   of the link that produced the :class:`~scrapy.Request` in its ``meta`` dictionary
+   (under the ``link_text`` key)
 
    ``cb_kwargs`` is a dict containing the keyword arguments to be passed to the
    callback function.
