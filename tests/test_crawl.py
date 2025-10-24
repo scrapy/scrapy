@@ -401,7 +401,7 @@ with multiples lines
         assert "Got response 200" in str(log)
 
     @inlineCallbacks
-    def test_crawl_multiple(self):
+    def test_crawl_multiple(self, caplog: pytest.LogCaptureFixture):
         runner = CrawlerRunner(get_reactor_settings())
         runner.crawl(
             SimpleSpider,
@@ -414,11 +414,11 @@ with multiples lines
             mockserver=self.mockserver,
         )
 
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             yield runner.join()
 
-        self._assert_retried(log)
-        assert "Got response 200" in str(log)
+        self._assert_retried(caplog.text)
+        assert "Got response 200" in caplog.text
 
 
 class TestCrawlSpider:

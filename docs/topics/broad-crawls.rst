@@ -138,7 +138,7 @@ To disable cookies use:
 Disable retries
 ===============
 
-Retrying failed HTTP requests can slow down the crawls substantially, specially
+Retrying failed HTTP requests can slow down the crawls substantially, especially
 when sites causes are very slow (or fail) to respond, thus causing a timeout
 error which gets retried many times, unnecessarily, preventing crawler capacity
 to be reused for other domains.
