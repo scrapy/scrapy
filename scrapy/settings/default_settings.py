@@ -124,6 +124,7 @@ __all__ = [
     "LOG_LEVEL",
     "LOG_SHORT_NAMES",
     "LOG_STDOUT",
+    "LOG_TO_SYSTEMD",
     "LOG_VERSIONS",
     "MAIL_FROM",
     "MAIL_HOST",
@@ -399,6 +400,7 @@ LOG_FORMATTER = "scrapy.logformatter.LogFormatter"
 LOG_LEVEL = "DEBUG"
 LOG_SHORT_NAMES = False
 LOG_STDOUT = False
+LOG_TO_SYSTEMD = False
 LOG_VERSIONS = [
     "lxml",
     "libxml2",
