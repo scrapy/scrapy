@@ -170,7 +170,7 @@ These settings can be used to configure the logging:
 * :setting:`LOG_DATEFORMAT`
 * :setting:`LOG_STDOUT`
 * :setting:`LOG_SHORT_NAMES`
-* :setting:`LOG_TO_SYSTEMD`
+* :setting:`LOG_SYSTEMD`
 
 The first couple of settings define a destination for log messages. If
 :setting:`LOG_FILE` is set, messages sent through the root logger will be
@@ -195,7 +195,7 @@ If :setting:`LOG_SHORT_NAMES` is set, then the logs will not display the Scrapy
 component that prints the log. It is unset by default, hence logs contain the
 Scrapy component responsible for that log output.
 
-If :setting:`LOG_TO_SYSTEMD` is set to ``True``, Scrapy will send logs to the
+If :setting:`LOG_SYSTEMD` is set to ``True``, Scrapy will send logs to the
 systemd journal using ``systemd.journal.JournalHandler`` as its logging handler.
 This requires the external Python package ``systemd`` to be installed (minimum
 version 234 recommended). You can install it via pip::
