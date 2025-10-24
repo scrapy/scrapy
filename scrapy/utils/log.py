@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import pprint
 import sys
 from collections.abc import MutableMapping
@@ -20,6 +21,13 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.logformatter import LogFormatterResult
+
+# Check for systemd journal availability
+try:
+    import systemd.journal
+    SYSTEMD_JOURNAL_AVAILABLE = True
+except ImportError:
+    SYSTEMD_JOURNAL_AVAILABLE = False
 
 
 logger = logging.getLogger(__name__)
@@ -164,7 +172,14 @@ def _get_handler(settings: Settings) -> logging.Handler:
         encoding = settings.get("LOG_ENCODING")
         handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
     elif settings.getbool("LOG_ENABLED"):
-        handler = logging.StreamHandler()
+        # Use systemd journal handler if running under systemd
+        if (
+            SYSTEMD_JOURNAL_AVAILABLE
+            and os.getenv("JOURNAL_STREAM")
+        ):
+            handler = systemd.journal.JournalHandler()
+        else:
+            handler = logging.StreamHandler()
     else:
         handler = logging.NullHandler()
 
