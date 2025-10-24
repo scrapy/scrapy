@@ -13,7 +13,7 @@ In addition to this "focused crawl", there is another common type of crawling
 which covers a large (potentially unlimited) number of domains, and is only
 limited by time or other arbitrary constraint, rather than stopping when the
 domain was crawled to completion or when there are no more requests to perform.
-These are called "broad crawls" and is the typical crawlers employed by search
+These are called "broad crawls" and are the typical crawlers employed by search
 engines.
 
 These are some common properties often found in broad crawls:
@@ -44,9 +44,9 @@ efficient broad crawl.
 Use the right :setting:`SCHEDULER_PRIORITY_QUEUE`
 =================================================
 
-Scrapy’s default scheduler priority queue is ``'scrapy.pqueues.ScrapyPriorityQueue'``.
-It works best during single-domain crawl. It does not work well with crawling
-many different domains in parallel
+Scrapy’s default scheduler priority queue is
+``'scrapy.pqueues.ScrapyPriorityQueue'``. It works best during a single-domain
+crawl. It does not work well when crawling many different domains in parallel.
 
 To apply the recommended priority queue use:
 
@@ -87,9 +87,9 @@ Increase Twisted IO thread pool maximum size
 
 Currently Scrapy does DNS resolution in a blocking way with usage of thread
 pool. With higher concurrency levels the crawling could be slow or even fail
-hitting DNS resolver timeouts. Possible solution to increase the number of
-threads handling DNS queries. The DNS queue will be processed faster speeding
-up establishing of connection and crawling overall.
+hitting DNS resolver timeouts. A possible solution is to increase the number of
+threads handling DNS queries. The DNS queue will be processed faster, speeding
+up connection establishment and the crawl overall.
 
 To increase maximum thread pool size use:
 
@@ -100,10 +100,11 @@ To increase maximum thread pool size use:
 Setup your own DNS
 ==================
 
-If you have multiple crawling processes and single central DNS, it can act
-like DoS attack on the DNS server resulting to slow down of entire network or
-even blocking your machines. To avoid this setup your own DNS server with
-local cache and upstream to some large DNS like OpenDNS or Verizon.
+If you have multiple crawling processes and a single central DNS, it can act
+like a DoS attack on the DNS server, resulting in a slowdown of the entire
+network or even blocking your machines. To avoid this, set up your own DNS
+server with a local cache and upstream to some large DNS like OpenDNS or
+Verizon.
 
 Reduce log level
 ================
@@ -124,10 +125,10 @@ To set the log level use:
 Disable cookies
 ===============
 
-Disable cookies unless you *really* need. Cookies are often not needed when
-doing broad crawls (search engine crawlers ignore them), and they improve
-performance by saving some CPU cycles and reducing the memory footprint of your
-Scrapy crawler.
+Disable cookies unless you *really* need them. Cookies are often not needed
+when doing broad crawls (search engine crawlers ignore them), and disabling
+them improves performance by saving some CPU cycles and reducing the memory
+footprint of your Scrapy crawler.
 
 To disable cookies use:
 
@@ -138,10 +139,10 @@ To disable cookies use:
 Disable retries
 ===============
 
-Retrying failed HTTP requests can slow down the crawls substantially, especially
-when sites causes are very slow (or fail) to respond, thus causing a timeout
-error which gets retried many times, unnecessarily, preventing crawler capacity
-to be reused for other domains.
+Retrying failed HTTP requests can slow down the crawls substantially,
+especially when sites are very slow (or fail) to respond, thus causing a
+timeout error that gets retried many times, unnecessarily preventing crawler
+capacity from being reused for other domains.
 
 To disable retries use:
 
@@ -167,8 +168,8 @@ Disable redirects
 
 Consider disabling redirects, unless you are interested in following them. When
 doing broad crawls it's common to save redirects and resolve them when
-revisiting the site at a later crawl. This also help to keep the number of
-request constant per crawl batch, otherwise redirect loops may cause the
+revisiting the site at a later crawl. This also helps to keep the number of
+requests constant per crawl batch, otherwise redirect loops may cause the
 crawler to dedicate too many resources on any specific domain.
 
 To disable redirects use:

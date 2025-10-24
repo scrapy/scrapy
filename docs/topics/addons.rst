@@ -4,7 +4,7 @@
 Add-ons
 =======
 
-Scrapy's add-on system is a framework which unifies managing and configuring
+Scrapy's add-on system is a framework that unifies managing and configuring
 components that extend Scrapy's core functionality, such as middlewares,
 extensions, or pipelines. It provides users with a plug-and-play experience in
 Scrapy extension management, and grants extensive configuration control to
@@ -71,7 +71,7 @@ usually best to leave its priority unchanged. For example, when editing a
 
 If the ``update_settings`` method raises
 :exc:`scrapy.exceptions.NotConfigured`, the add-on will be skipped. This makes
-it easy to enable an add-on only when some conditions are met.
+it easy to enable an add-on only when certain conditions are met.
 
 Fallbacks
 ---------

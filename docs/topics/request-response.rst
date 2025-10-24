@@ -7,8 +7,8 @@ Requests and Responses
 .. module:: scrapy.http
    :synopsis: Request and Response classes
 
-Scrapy uses :class:`~scrapy.Request` and :class:`Response` objects for crawling web
-sites.
+Scrapy uses :class:`~scrapy.Request` and :class:`Response` objects for crawling
+websites.
 
 Typically, :class:`~scrapy.Request` objects are generated in the spiders and pass
 across the system until they reach the Downloader, which executes the request
@@ -325,7 +325,7 @@ Using errbacks to catch exceptions in request processing
 --------------------------------------------------------
 
 The errback of a request is a function that will be called when an exception
-is raise while processing it.
+is raised while processing it.
 
 It receives a :exc:`~twisted.python.failure.Failure` as first parameter and can
 be used to track connection establishment timeouts, DNS errors etc.

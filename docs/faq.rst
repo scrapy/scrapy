@@ -110,7 +110,7 @@ My Scrapy crawler has memory leaks. What can I do?
 
 See :ref:`topics-leaks`.
 
-Also, Python has a builtin memory leak issue which is described in
+Also, Python has a built-in memory leak issue which is described in
 :ref:`topics-leaks-without-leaks`.
 
 How can I make Scrapy consume less memory?
@@ -128,8 +128,8 @@ middleware with a :ref:`custom downloader middleware
 <topics-downloader-middleware-custom>` that requires less memory. For example:
 
 -   If your domain names are similar enough, use your own regular expression
-    instead joining the strings in :attr:`~scrapy.Spider.allowed_domains` into
-    a complex regular expression.
+    instead of joining the strings in :attr:`~scrapy.Spider.allowed_domains`
+    into a complex regular expression.
 
 -   If you can meet the installation requirements, use pyre2_ instead of
     Python’s re_ to compile your URL-filtering regular expression. See
@@ -274,8 +274,8 @@ Parsing big feeds with XPath selectors can be problematic since they need to
 build the DOM of the entire feed in memory, and this can be quite slow and
 consume a lot of memory.
 
-In order to avoid parsing all the entire feed at once in memory, you can use
-the :func:`~scrapy.utils.iterators.xmliter_lxml` and
+In order to avoid parsing the entire feed at once in memory, you can use the
+:func:`~scrapy.utils.iterators.xmliter_lxml` and
 :func:`~scrapy.utils.iterators.csviter` functions. In fact, this is what
 :class:`~scrapy.spiders.XMLFeedSpider` uses.
 
@@ -311,8 +311,8 @@ Should I use spider arguments or settings to configure my spider?
 -----------------------------------------------------------------
 
 Both :ref:`spider arguments <spiderargs>` and :ref:`settings <topics-settings>`
-can be used to configure your spider. There is no strict rule that mandates to
-use one or the other, but settings are more suited for parameters that, once
+can be used to configure your spider. There is no strict rule that mandates
+using one or the other, but settings are more suited for parameters that, once
 set, don't change much, while spider arguments are meant to change more often,
 even on each spider run and sometimes are required for the spider to run at all
 (for example, to set the start url of a spider).

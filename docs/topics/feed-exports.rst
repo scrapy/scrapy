@@ -5,9 +5,9 @@ Feed exports
 ============
 
 One of the most frequently required features when implementing scrapers is
-being able to store the scraped data properly and, quite often, that means
-generating an "export file" with the scraped data (commonly called "export
-feed") to be consumed by other systems.
+properly storing the scraped data and, quite often, that means generating an
+"export file" with the scraped data (commonly called an "export feed") to be
+consumed by other systems.
 
 Scrapy provides this functionality out of the box with the Feed Exports, which
 allows you to generate feeds with the scraped items, using multiple
@@ -31,7 +31,7 @@ For serializing the scraped data, the feed exports use the :ref:`Item exporters
 -   :ref:`topics-feed-format-csv`
 -   :ref:`topics-feed-format-xml`
 
-But you can also extend the supported format through the
+But you can also extend the supported formats through the
 :setting:`FEED_EXPORTERS` setting.
 
 .. _topics-feed-format-json:
@@ -98,9 +98,9 @@ Marshal
 Storages
 ========
 
-When using the feed exports you define where to store the feed using one or multiple URIs_
-(through the :setting:`FEEDS` setting). The feed exports supports multiple
-storage backend types which are defined by the URI scheme.
+When using the feed exports you define where to store the feed using one or
+multiple URIs_ (through the :setting:`FEEDS` setting). The feed exports support
+multiple storage backend types that are defined by the URI scheme.
 
 The storages backends supported out of the box are:
 
@@ -126,8 +126,8 @@ being created. These parameters are:
 -   ``%(time)s`` - gets replaced by a timestamp when the feed is being created
 -   ``%(name)s`` - gets replaced by the spider name
 
-Any other named parameter gets replaced by the spider attribute of the same
-name. For example, ``%(site_id)s`` would get replaced by the ``spider.site_id``
+Any other named parameter is replaced by the spider attribute of the same name.
+For example, ``%(site_id)s`` would be replaced by the ``spider.site_id``
 attribute the moment the feed is being created.
 
 Here are some examples to illustrate:
@@ -160,16 +160,16 @@ The feeds are stored in the local filesystem.
 -   Example URI: ``file:///tmp/export.csv``
 -   Required external libraries: none
 
-Note that for the local filesystem storage (only) you can omit the scheme if
-you specify an absolute path like ``/tmp/export.csv`` (Unix systems only).
-Alternatively you can also use a :class:`pathlib.Path` object.
+Note that for the local filesystem storage you can omit the scheme if you
+specify an absolute path like ``/tmp/export.csv`` (Unix systems only).
+Alternatively, you can use a :class:`pathlib.Path` object.
 
 .. _topics-feed-storage-ftp:
 
 FTP
 ---
 
-The feeds are stored in a FTP server.
+The feeds are stored on an FTP server.
 
 -   URI scheme: ``ftp``
 -   Example URI: ``ftp://user:pass@ftp.example.com/path/to/export.csv``

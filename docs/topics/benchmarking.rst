@@ -78,8 +78,8 @@ You should see an output like this::
 That tells you that Scrapy is able to crawl about 3000 pages per minute in the
 hardware where you run it. Note that this is a very simple spider intended to
 follow links, any custom spider you write will probably do more stuff which
-results in slower crawl rates. How slower depends on how much your spider does
-and how well it's written.
+results in slower crawl rates. How much slower depends on how much your spider
+does and how well it's written.
 
 Use scrapy-bench_ for more complex benchmarking.
 

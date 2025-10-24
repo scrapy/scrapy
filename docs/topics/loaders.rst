@@ -8,17 +8,18 @@ Item Loaders
    :synopsis: Item Loader class
 
 Item Loaders provide a convenient mechanism for populating scraped :ref:`items
-<topics-items>`. Even though items can be populated directly, Item Loaders provide a
-much more convenient API for populating them from a scraping process, by automating
-some common tasks like parsing the raw extracted data before assigning it.
+<topics-items>`. Even though items can be populated directly, Item Loaders
+provide a more convenient API for populating them from a scraping process by
+automating common tasks like parsing the raw extracted data before assigning
+it.
 
 In other words, :ref:`items <topics-items>` provide the *container* of
 scraped data, while Item Loaders provide the mechanism for *populating* that
 container.
 
 Item Loaders are designed to provide a flexible, efficient and easy mechanism
-for extending and overriding different field parsing rules, either by spider,
-or by source format (HTML, XML, etc) without becoming a nightmare to maintain.
+for extending and overriding different field parsing rules, either by spider or
+by source format (HTML, XML, etc.) without becoming a nightmare to maintain.
 
 .. note:: Item Loaders are an extension of the itemloaders_ library that make it
     easier to work with Scrapy by adding support for
@@ -76,13 +77,13 @@ data that will be assigned to the ``name`` field later.
 
 Afterwards, similar calls are used for ``price`` and ``stock`` fields
 (the latter using a CSS selector with the :meth:`~ItemLoader.add_css` method),
-and finally the ``last_update`` field is populated directly with a literal value
+and finally the ``last_updated`` field is populated directly with a literal value
 (``today``) using a different method: :meth:`~ItemLoader.add_value`.
 
 Finally, when all data is collected, the :meth:`ItemLoader.load_item` method is
-called which actually returns the item populated with the data
-previously extracted and collected with the :meth:`~ItemLoader.add_xpath`,
-:meth:`~ItemLoader.add_css`, and :meth:`~ItemLoader.add_value` calls.
+called, which returns the item populated with the data previously extracted and
+collected with the :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css`,
+and :meth:`~ItemLoader.add_value` calls.
 
 
 .. _topics-loaders-dataclass:
@@ -118,15 +119,15 @@ Input and Output processors
 ===========================
 
 An Item Loader contains one input processor and one output processor for each
-(item) field. The input processor processes the extracted data as soon as it's
-received (through the :meth:`~ItemLoader.add_xpath`, :meth:`~ItemLoader.add_css` or
-:meth:`~ItemLoader.add_value` methods) and the result of the input processor is
-collected and kept inside the ItemLoader. After collecting all data, the
-:meth:`ItemLoader.load_item` method is called to populate and get the populated
-:ref:`item object <topics-items>`.  That's when the output processor is
-called with the data previously collected (and processed using the input
-processor). The result of the output processor is the final value that gets
-assigned to the item.
+field. The input processor processes the extracted data as soon as it's
+received (through the :meth:`~ItemLoader.add_xpath`,
+:meth:`~ItemLoader.add_css`, or :meth:`~ItemLoader.add_value` methods), and the
+result of the input processor is collected and kept inside the Item Loader.
+After collecting all data, :meth:`ItemLoader.load_item` is called to populate
+and return the populated :ref:`item object <topics-items>`. That's when the
+output processor is called with the data previously collected and processed by
+the input processor. The result of the output processor is the final value that
+gets assigned to the item.
 
 Let's see an example to illustrate how the input and output processors are
 called for a particular field (the same applies for any other field):
@@ -152,25 +153,24 @@ So what happens is:
    data collected in (1) (if any).
 
 3. This case is similar to the previous ones, except that the data is extracted
-   from the ``css`` CSS selector, and passed through the same *input
-   processor* used in (1) and (2). The result of the input processor is appended to the
+   from the ``css`` CSS selector and passed through the same *input processor*
+   used in (1) and (2). The result of the input processor is appended to the
    data collected in (1) and (2) (if any).
 
 4. This case is also similar to the previous ones, except that the value to be
    collected is assigned directly, instead of being extracted from a XPath
-   expression or a CSS selector.
-   However, the value is still passed through the input processors. In this
-   case, since the value is not iterable it is converted to an iterable of a
-   single element before passing it to the input processor, because input
-   processor always receive iterables.
+   expression or a CSS selector. However, the value is still passed through the
+   input processors. In this case, since the value is not iterable it is
+   converted to an iterable of a single element before passing it to the input
+   processor because input processors always receive iterables.
 
 5. The data collected in steps (1), (2), (3) and (4) is passed through
    the *output processor* of the ``name`` field.
    The result of the output processor is the value assigned to the ``name``
    field in the item.
 
-It's worth noticing that processors are just callable objects, which are called
-with the data to be parsed, and return a parsed value. So you can use any
+It's worth noting that processors are just callable objects that are called
+with the data to be parsed and return a parsed value. So you can use any
 function as input or output processor. The only requirement is that they must
 accept one (and only one) positional argument, which will be an iterable.
 
@@ -179,9 +179,9 @@ accept one (and only one) positional argument, which will be an iterable.
 
 .. note:: Both input and output processors must receive an iterable as their
    first argument. The output of those functions can be anything. The result of
-   input processors will be appended to an internal list (in the Loader)
-   containing the collected values (for that field). The result of the output
-   processors is the value that will be finally assigned to the item.
+   input processors will be appended to an internal list (in the loader)
+   containing the collected values for that field. The result of the output
+   processors is the value that will be assigned to the item.
 
 The other thing you need to keep in mind is that the values returned by input
 processors are collected internally (in lists) and then passed to output
