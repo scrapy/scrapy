@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 from pathlib import Path
 
@@ -47,7 +46,7 @@ class TestGenspiderCommand(TestProjectBase):
         spfile = proj_path / self.project_name / "spiders" / f"{spname}.py"
         _, out, _ = proc("genspider", spname, "test.com", *args, cwd=proj_path)
         assert (
-            f"Created spider {spname!r} using template {tplname!r} in module:{os.linesep}  {spmodule}"
+            f"Created spider {spname!r} using template {tplname!r} in module:\n  {spmodule}"
             in out
         )
         assert spfile.exists()
