@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from io import StringIO
 from typing import TYPE_CHECKING
+from unittest import TestCase
 from unittest.mock import Mock, PropertyMock, call, patch
 
 from scrapy.commands.check import Command, TextTestResult
@@ -11,6 +12,10 @@ from tests.utils.cmdline import proc
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+class DummyTestCase(TestCase):
+    pass
 
 
 class TestCheckCommand(TestProjectBase):
@@ -118,7 +123,7 @@ class CheckSpider(scrapy.Spider):
         result.testsRun = 5
         result.failures = []
         result.errors = []
-        result.unexpectedSuccesses = ["a", "b"]
+        result.unexpectedSuccesses = [DummyTestCase(), DummyTestCase()]
         with patch.object(result.stream, "write") as mock_write:
             result.printSummary(start_time, stop_time)
             mock_write.assert_has_calls([call("FAILED"), call("\n")])
@@ -130,7 +135,7 @@ class CheckSpider(scrapy.Spider):
         start_time = 1.0
         stop_time = 2.0
         result.testsRun = 5
-        result.failures = [(self, "failure")]
+        result.failures = [(DummyTestCase(), "failure")]
         result.errors = []
         with patch.object(result.stream, "writeln") as mock_write:
             result.printSummary(start_time, stop_time)
@@ -142,7 +147,7 @@ class CheckSpider(scrapy.Spider):
         stop_time = 2.0
         result.testsRun = 5
         result.failures = []
-        result.errors = [(self, "error")]
+        result.errors = [(DummyTestCase(), "error")]
         with patch.object(result.stream, "writeln") as mock_write:
             result.printSummary(start_time, stop_time)
             mock_write.assert_called_with(" (errors=1)")
@@ -154,8 +159,8 @@ class CheckSpider(scrapy.Spider):
         start_time = 1.0
         stop_time = 2.0
         result.testsRun = 5
-        result.failures = [(self, "failure")]
-        result.errors = [(self, "error")]
+        result.failures = [(DummyTestCase(), "failure")]
+        result.errors = [(DummyTestCase(), "error")]
         with patch.object(result.stream, "writeln") as mock_write:
             result.printSummary(start_time, stop_time)
             mock_write.assert_called_with(" (failures=1, errors=1)")
