@@ -10,7 +10,16 @@ import warnings
 from asyncio import Future
 from collections.abc import Awaitable, Coroutine, Iterable, Iterator
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Generic, ParamSpec, TypeVar, cast, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Concatenate,
+    Generic,
+    ParamSpec,
+    TypeVar,
+    cast,
+    overload,
+)
 
 from twisted.internet.defer import Deferred, DeferredList, fail, succeed
 from twisted.internet.task import Cooperator
@@ -21,7 +30,6 @@ from scrapy.utils.asyncio import call_later, is_asyncio_available
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
-    from typing import Concatenate
 
     from twisted.python.failure import Failure
 

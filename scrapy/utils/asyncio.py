@@ -6,7 +6,7 @@ import asyncio
 import logging
 import time
 from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
-from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
 from twisted.internet.defer import Deferred
 from twisted.internet.task import LoopingCall
@@ -15,8 +15,6 @@ from scrapy.utils.asyncgen import as_async_generator
 from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_installed
 
 if TYPE_CHECKING:
-    from typing import Concatenate
-
     from twisted.internet.base import DelayedCall
 
     # typing.Self, typing.TypeVarTuple and typing.Unpack require Python 3.11
