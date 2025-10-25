@@ -251,8 +251,8 @@ DOWNLOAD_HANDLERS = {}
 DOWNLOAD_HANDLERS_BASE = {
     "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
     "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
-    "http": "scrapy.core.downloader.handlers.http.HTTPDownloadHandler",
-    "https": "scrapy.core.downloader.handlers.http.HTTPDownloadHandler",
+    "http": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
+    "https": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
     "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
     "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
 }
@@ -308,6 +308,7 @@ if sys.platform == "win32":
 EXTENSIONS = {}
 EXTENSIONS_BASE = {
     "scrapy.extensions.corestats.CoreStats": 0,
+    "scrapy.extensions.logcount.LogCount": 0,
     "scrapy.extensions.telnet.TelnetConsole": 0,
     "scrapy.extensions.memusage.MemoryUsage": 0,
     "scrapy.extensions.memdebug.MemoryDebugger": 0,

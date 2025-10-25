@@ -35,7 +35,7 @@ from scrapy.utils.defer import (
     parallel,
     parallel_async,
 )
-from scrapy.utils.deprecate import argument_is_required, method_is_overridden
+from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
 from scrapy.utils.python import global_object_name
@@ -110,54 +110,46 @@ class Scraper:
             crawler.settings["ITEM_PROCESSOR"]
         )
         self.itemproc: ItemPipelineManager = itemproc_cls.from_crawler(crawler)
-        itemproc_methods = [
+        self._itemproc_has_async: dict[str, bool] = {}
+        for method in [
             "open_spider",
             "close_spider",
-        ]
-        if not hasattr(self.itemproc, "process_item_async"):
-            warnings.warn(
-                f"{global_object_name(itemproc_cls)} doesn't define a process_item_async() method,"
-                f" this is deprecated and the method will be required in future Scrapy versions.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-            itemproc_methods.append("process_item")
-            self._itemproc_has_process_async = False
-        elif (
-            issubclass(itemproc_cls, ItemPipelineManager)
-            and method_is_overridden(itemproc_cls, ItemPipelineManager, "process_item")
-            and not method_is_overridden(
-                itemproc_cls, ItemPipelineManager, "process_item_async"
-            )
-        ):
-            warnings.warn(
-                f"{global_object_name(itemproc_cls)} overrides process_item() but doesn't override process_item_async()."
-                f" This is deprecated. process_item() will be used, but in future Scrapy versions process_item_async() will be used instead.",
-                ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-            itemproc_methods.append("process_item")
-            self._itemproc_has_process_async = False
-        else:
-            self._itemproc_has_process_async = True
-        self._itemproc_needs_spider: dict[str, bool] = {}
-        for method in itemproc_methods:
-            self._itemproc_needs_spider[method] = argument_is_required(
-                getattr(self.itemproc, method), "spider"
-            )
-            if self._itemproc_needs_spider[method]:
-                warnings.warn(
-                    f"The {method}() method of {global_object_name(itemproc_cls)} requires a spider argument,"
-                    f" this is deprecated and the argument will not be passed in future Scrapy versions.",
-                    ScrapyDeprecationWarning,
-                    stacklevel=2,
-                )
+            "process_item",
+        ]:
+            self._check_deprecated_itemproc_method(method)
 
         self.concurrent_items: int = crawler.settings.getint("CONCURRENT_ITEMS")
         self.crawler: Crawler = crawler
         self.signals: SignalManager = crawler.signals
         assert crawler.logformatter
         self.logformatter: LogFormatter = crawler.logformatter
+
+    def _check_deprecated_itemproc_method(self, method: str) -> None:
+        itemproc_cls = type(self.itemproc)
+        if not hasattr(self.itemproc, "process_item_async"):
+            warnings.warn(
+                f"{global_object_name(itemproc_cls)} doesn't define a {method}_async() method,"
+                f" this is deprecated and the method will be required in future Scrapy versions.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            self._itemproc_has_async[method] = False
+        elif (
+            issubclass(itemproc_cls, ItemPipelineManager)
+            and method_is_overridden(itemproc_cls, ItemPipelineManager, method)
+            and not method_is_overridden(
+                itemproc_cls, ItemPipelineManager, f"{method}_async"
+            )
+        ):
+            warnings.warn(
+                f"{global_object_name(itemproc_cls)} overrides {method}() but doesn't override {method}_async()."
+                f" This is deprecated. {method}() will be used, but in future Scrapy versions {method}_async() will be used instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            self._itemproc_has_async[method] = False
+        else:
+            self._itemproc_has_async[method] = True
 
     def open_spider(self, spider: Spider | None = None) -> Deferred[None]:
         warnings.warn(
@@ -177,12 +169,12 @@ class Scraper:
             raise RuntimeError(
                 "Scraper.open_spider() called before Crawler.spider is set."
             )
-        if self._itemproc_needs_spider["open_spider"]:
+        if self._itemproc_has_async["open_spider"]:
+            await self.itemproc.open_spider_async()
+        else:
             await maybe_deferred_to_future(
                 self.itemproc.open_spider(self.crawler.spider)
             )
-        else:
-            await maybe_deferred_to_future(self.itemproc.open_spider())
 
     def close_spider(self, spider: Spider | None = None) -> Deferred[None]:
         warnings.warn(
@@ -202,12 +194,13 @@ class Scraper:
         self.slot.closing = Deferred()
         self._check_if_closing()
         await maybe_deferred_to_future(self.slot.closing)
-        if self._itemproc_needs_spider["close_spider"]:
+        if self._itemproc_has_async["close_spider"]:
+            await self.itemproc.close_spider_async()
+        else:
+            assert self.crawler.spider
             await maybe_deferred_to_future(
                 self.itemproc.close_spider(self.crawler.spider)
             )
-        else:
-            await maybe_deferred_to_future(self.itemproc.close_spider())
 
     def is_idle(self) -> bool:
         """Return True if there isn't any more spiders to process"""
@@ -487,14 +480,12 @@ class Scraper:
         assert self.crawler.spider is not None  # typing
         self.slot.itemproc_size += 1
         try:
-            if self._itemproc_has_process_async:
+            if self._itemproc_has_async["process_item"]:
                 output = await self.itemproc.process_item_async(item)
             else:
-                if self._itemproc_needs_spider["process_item"]:
-                    d = self.itemproc.process_item(item, self.crawler.spider)
-                else:
-                    d = self.itemproc.process_item(item)
-                output = await maybe_deferred_to_future(d)
+                output = await maybe_deferred_to_future(
+                    self.itemproc.process_item(item, self.crawler.spider)
+                )
         except DropItem as ex:
             logkws = self.logformatter.dropped(item, ex, response, self.crawler.spider)
             if logkws is not None:

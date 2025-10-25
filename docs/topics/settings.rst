@@ -711,7 +711,7 @@ connections (for ``HTTP10DownloadHandler``).
     so you can safely ignore this setting,
     unless you really want to use HTTP/1.0 and override
     :setting:`DOWNLOAD_HANDLERS` for ``http(s)`` scheme accordingly,
-    i.e. to ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
+    i.e. to ``'scrapy.core.downloader.handlers.http10.HTTP10DownloadHandler'``.
 
 .. setting:: DOWNLOADER_CLIENTCONTEXTFACTORY
 
@@ -909,8 +909,8 @@ Default:
     {
         "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
         "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
-        "http": "scrapy.core.downloader.handlers.http.HTTPDownloadHandler",
-        "https": "scrapy.core.downloader.handlers.http.HTTPDownloadHandler",
+        "http": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
+        "https": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
         "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
     }
