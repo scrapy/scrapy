@@ -369,7 +369,7 @@ with multiples lines
         est = [x for sublist in est for x in sublist]  # flatten
         est = [x.lstrip().rstrip() for x in est]
         it = iter(est)
-        s = dict(zip(it, it))
+        s = dict(zip(it, it, strict=False))
 
         assert s["engine.spider.name"] == crawler.spider.name
         assert s["len(engine.scraper.slot.active)"] == "1"
