@@ -57,6 +57,7 @@ if not H2_ENABLED:
 
 @pytest.fixture(scope="session")
 def mockserver() -> Generator[MockServer]:
+    """Provide a mock HTTP server for testing."""
     with MockServer() as mockserver:
         yield mockserver
 
@@ -68,6 +69,7 @@ def reactor_pytest(request) -> str:
 
 @pytest.fixture(autouse=True)
 def only_asyncio(request, reactor_pytest):
+    """Skip test if not running with asyncio reactor."""
     if request.node.get_closest_marker("only_asyncio") and reactor_pytest != "asyncio":
         pytest.skip("This test is only run with --reactor=asyncio")
 
@@ -118,6 +120,24 @@ def requires_boto3(request):
 
 
 def pytest_configure(config):
+    """Configure pytest with custom markers and asyncio event loop policy."""
+    # Register custom markers
+    config.addinivalue_line(
+        "markers", "only_asyncio: mark test to run only with asyncio reactor"
+    )
+    config.addinivalue_line(
+        "markers", "only_not_asyncio: mark test to run without asyncio reactor"
+    )
+    config.addinivalue_line(
+        "markers", "requires_uvloop: mark test requiring uvloop"
+    )
+    config.addinivalue_line(
+        "markers", "requires_botocore: mark test requiring botocore"
+    )
+    config.addinivalue_line(
+        "markers", "requires_boto3: mark test requiring boto3"
+    )
+    
     if config.getoption("--reactor") == "asyncio":
         # Needed on Windows to switch from proactor to selector for Twisted reactor compatibility.
         # If we decide to run tests with both, we will need to add a new option and check it here.
