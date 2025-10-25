@@ -8,7 +8,7 @@ See documentation in docs/topics/request-response.rst
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 
 from parsel.csstranslator import HTMLTranslator
@@ -31,9 +31,9 @@ if TYPE_CHECKING:
     from scrapy.http.response.text import TextResponse
 
 
-FormdataVType = Union[str, Iterable[str]]
-FormdataKVType = tuple[str, FormdataVType]
-FormdataType = Optional[Union[dict[str, FormdataVType], list[FormdataKVType]]]
+FormdataVType: TypeAlias = str | Iterable[str]
+FormdataKVType: TypeAlias = tuple[str, FormdataVType]
+FormdataType: TypeAlias = dict[str, FormdataVType] | list[FormdataKVType] | None
 
 
 class FormRequest(Request):

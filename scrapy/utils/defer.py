@@ -10,7 +10,16 @@ import warnings
 from asyncio import Future
 from collections.abc import Awaitable, Coroutine, Iterable, Iterator
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Concatenate,
+    Generic,
+    ParamSpec,
+    TypeVar,
+    cast,
+    overload,
+)
 
 from twisted.internet.defer import Deferred, DeferredList, fail, succeed
 from twisted.internet.task import Cooperator
@@ -24,14 +33,10 @@ if TYPE_CHECKING:
 
     from twisted.python.failure import Failure
 
-    # typing.Concatenate and typing.ParamSpec require Python 3.10
-    from typing_extensions import Concatenate, ParamSpec
-
-    _P = ParamSpec("_P")
-
 
 _T = TypeVar("_T")
 _T2 = TypeVar("_T2")
+_P = ParamSpec("_P")
 
 
 _DEFER_DELAY = 0.1
@@ -327,7 +332,7 @@ def process_chain_both(
         stacklevel=2,
     )
     d: Deferred = Deferred()
-    for cb, eb in zip(callbacks, errbacks):
+    for cb, eb in zip(callbacks, errbacks, strict=False):
         d.addCallback(cb, *a, **kw)
         d.addErrback(eb, *a, **kw)
     if isinstance(input, failure.Failure):

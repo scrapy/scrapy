@@ -6,7 +6,7 @@ import re
 import string
 from ipaddress import IPv4Address
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Any, cast
 from unittest import mock
 from urllib.parse import urlencode
 
@@ -39,7 +39,7 @@ from tests.mockserver.http_resources import LeafResource, Status
 from tests.mockserver.utils import ssl_context_factory
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Coroutine, Generator
+    from collections.abc import AsyncGenerator, Callable, Coroutine, Generator
 
     from scrapy.core.http2.protocol import H2ClientProtocol
 

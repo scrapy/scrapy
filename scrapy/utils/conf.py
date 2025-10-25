@@ -6,7 +6,7 @@ import sys
 from configparser import ConfigParser
 from operator import itemgetter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.exceptions import UsageError
 from scrapy.settings import BaseSettings
@@ -14,7 +14,7 @@ from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Mapping, MutableMapping
+    from collections.abc import Callable, Collection, Iterable, Mapping, MutableMapping
 
 
 def build_component_list(

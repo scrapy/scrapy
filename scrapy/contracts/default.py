@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from itemadapter import ItemAdapter, is_item
 
 from scrapy.contracts import Contract
 from scrapy.exceptions import ContractFail
 from scrapy.http import Request
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 # contracts
