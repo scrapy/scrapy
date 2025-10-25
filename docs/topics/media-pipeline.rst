@@ -238,7 +238,7 @@ Amazon S3 storage
 .. setting:: FILES_STORE_S3_ACL
 .. setting:: IMAGES_STORE_S3_ACL
 
-If botocore_ >= 1.4.87 is installed, :setting:`FILES_STORE` and
+If botocore_ >= 1.13.45 is installed, :setting:`FILES_STORE` and
 :setting:`IMAGES_STORE` can represent an Amazon S3 bucket. Scrapy will
 automatically upload the files to the bucket.
 
