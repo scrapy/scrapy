@@ -34,10 +34,10 @@ jobs:
             TOXENV: default-reactor
 
         # pinned deps
-        - python-version: "3.10.19"
+        - python-version: "3.10.11"
           env:
             TOXENV: pinned
-        - python-version: "3.10.19"
+        - python-version: "3.10.11"
           env:
             TOXENV: extra-deps-pinned
 
