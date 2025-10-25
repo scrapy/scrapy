@@ -319,7 +319,8 @@ instances, etc.) that will be processed by the :ref:`item pipeline <topics-item-
 being taken for that particular return/yield. This is useful when you want
 to conditionally process responses.
 
-**Iterables**: Any iterable containing a mix of the above types.
+**Iterables**: Any iterable containing a mix of the above types. You can return
+   or yield lists, generators, or any other iterable containing items and requests.
 
 **Async generators**: Callbacks can be defined as ``async def`` functions and
 use ``yield`` to produce items and requests asynchronously.
@@ -343,6 +344,12 @@ Examples:
         for link in response.css("a::attr(href)"):
             yield scrapy.Request(response.urljoin(link.get()), self.parse)
             yield {"link": link.get()}
+            
+        # Return/yield an iterable (list, generator, etc.)
+        items = [{"title": "Item 1"}, {"title": "Item 2"}]
+        requests = [scrapy.Request(url, self.parse) for url in ["/page1", "/page2"]]
+        yield items  # Yields the entire list
+        yield requests  # Yields the entire list of requests
 
     # Async callback example
     async def parse_async(self, response):
@@ -418,10 +425,6 @@ string references for callbacks.
 
 Passing additional data to callback functions
 ---------------------------------------------
-
-The callback of a request is a function that will be called when the response
-of that request is downloaded. The callback function will be called with the
-downloaded :class:`Response` object as its first argument.
 
 In some cases you may be interested in passing arguments to those callback
 functions so you can receive the arguments later, in the second callback.
