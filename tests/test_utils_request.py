@@ -13,18 +13,10 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.request import (
     _fingerprint_cache,
     fingerprint,
-    request_authenticate,
     request_httprepr,
     request_to_curl,
 )
 from scrapy.utils.test import get_crawler
-
-
-@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-def test_request_authenticate():
-    r = Request("http://www.example.com")
-    request_authenticate(r, "someuser", "somepass")
-    assert r.headers["Authorization"] == b"Basic c29tZXVzZXI6c29tZXBhc3M="
 
 
 @pytest.mark.parametrize(
@@ -237,24 +229,12 @@ class TestFingerprint:
 
 
 class TestRequestFingerprinter:
-    def test_default_implementation(self):
+    def test_fingerprint(self):
         crawler = get_crawler()
         request = Request("https://example.com")
         assert crawler.request_fingerprinter.fingerprint(request) == fingerprint(
             request
         )
-
-    def test_deprecated_implementation(self):
-        settings = {
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
-        }
-        with warnings.catch_warnings(record=True) as logged_warnings:
-            crawler = get_crawler(settings_dict=settings)
-        request = Request("https://example.com")
-        assert crawler.request_fingerprinter.fingerprint(request) == fingerprint(
-            request
-        )
-        assert logged_warnings
 
 
 class TestCustomRequestFingerprinter:
