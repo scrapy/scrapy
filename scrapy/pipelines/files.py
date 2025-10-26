@@ -159,7 +159,7 @@ class S3FilesStore:
     AWS_USE_SSL = None
     AWS_VERIFY = None
 
-    POLICY = "private"  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_settings
+    POLICY = "private"  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_crawler()
     HEADERS = {
         "Cache-Control": "max-age=172800",
     }
@@ -278,7 +278,7 @@ class GCSFilesStore:
     CACHE_CONTROL = "max-age=172800"
 
     # The bucket's default object ACL will be applied to the object.
-    # Overridden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_settings.
+    # Overridden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_crawler().
     POLICY = None
 
     def __init__(self, uri: str):
