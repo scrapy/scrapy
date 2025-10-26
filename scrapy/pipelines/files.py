@@ -32,7 +32,6 @@ from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
-from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import get_func_args, global_object_name, to_bytes
@@ -497,30 +496,8 @@ class FilesPipeline(MediaPipeline):
         )
 
     @classmethod
-    def from_settings(cls, settings: Settings) -> Self:
-        warnings.warn(
-            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return cls._from_settings(settings, None)
-
-    @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        if method_is_overridden(cls, FilesPipeline, "from_settings"):
-            warnings.warn(
-                f"{global_object_name(cls)} overrides FilesPipeline.from_settings()."
-                f" This method is deprecated and won't be called in future Scrapy versions,"
-                f" please update your code so that it overrides from_crawler() instead.",
-                category=ScrapyDeprecationWarning,
-            )
-            o = cls.from_settings(crawler.settings)
-            o._finish_init(crawler)
-            return o
-        return cls._from_settings(crawler.settings, crawler)
-
-    @classmethod
-    def _from_settings(cls, settings: Settings, crawler: Crawler | None) -> Self:
+        settings = crawler.settings
         cls._update_stores(settings)
         store_uri = settings["FILES_STORE"]
         if "crawler" in get_func_args(cls.__init__):

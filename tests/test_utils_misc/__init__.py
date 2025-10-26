@@ -97,36 +97,28 @@ class TestUtilsMisc:
         assert list(arg_to_iter(TestItem(name="john"))) == [TestItem(name="john")]
 
     def test_build_from_crawler(self):
-        settings = mock.MagicMock()
         crawler = mock.MagicMock(spec_set=["settings"])
         args = (True, 100.0)
         kwargs = {"key": "val"}
 
-        def _test_with_crawler(mock, settings, crawler):
+        def _test_with_crawler(mock, crawler):
             build_from_crawler(mock, crawler, *args, **kwargs)
             if hasattr(mock, "from_crawler"):
                 mock.from_crawler.assert_called_once_with(crawler, *args, **kwargs)
-                if hasattr(mock, "from_settings"):
-                    assert mock.from_settings.call_count == 0
-                assert mock.call_count == 0
-            elif hasattr(mock, "from_settings"):
-                mock.from_settings.assert_called_once_with(settings, *args, **kwargs)
                 assert mock.call_count == 0
             else:
                 mock.assert_called_once_with(*args, **kwargs)
 
-        # Check usage of correct constructor using three mocks:
+        # Check usage of correct constructor using 2 mocks:
         #   1. with no alternative constructors
         #   2. with from_crawler() constructor
-        #   3. with from_settings() and from_crawler() constructor
         spec_sets = (
             ["__qualname__"],
             ["__qualname__", "from_crawler"],
-            ["__qualname__", "from_settings", "from_crawler"],
         )
         for specs in spec_sets:
             m = mock.MagicMock(spec_set=specs)
-            _test_with_crawler(m, settings, crawler)
+            _test_with_crawler(m, crawler)
             m.reset_mock()
 
         # Check adoption of crawler

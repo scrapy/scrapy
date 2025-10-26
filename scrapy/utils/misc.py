@@ -132,7 +132,7 @@ def rel_has_nofollow(rel: str | None) -> bool:
 def build_from_crawler(
     objcls: type[T], crawler: Crawler, /, *args: Any, **kwargs: Any
 ) -> T:
-    """Construct a class instance using its ``from_crawler`` or ``from_settings`` constructor.
+    """Construct a class instance using its ``from_crawler()`` or ``__init__()`` constructor.
 
     .. versionadded:: 2.12
 
@@ -143,17 +143,6 @@ def build_from_crawler(
     if hasattr(objcls, "from_crawler"):
         instance = objcls.from_crawler(crawler, *args, **kwargs)  # type: ignore[attr-defined]
         method_name = "from_crawler"
-    elif hasattr(objcls, "from_settings"):
-        warnings.warn(
-            f"{objcls.__qualname__} has from_settings() but not from_crawler()."
-            " This is deprecated and calling from_settings() will be removed in a future"
-            " Scrapy version. You can implement a simple from_crawler() that calls"
-            " from_settings() with crawler.settings.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        instance = objcls.from_settings(crawler.settings, *args, **kwargs)  # type: ignore[attr-defined]
-        method_name = "from_settings"
     else:
         instance = objcls(*args, **kwargs)
         method_name = "__new__"

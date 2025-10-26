@@ -121,7 +121,8 @@ class ImagesPipeline(FilesPipeline):
         )
 
     @classmethod
-    def _from_settings(cls, settings: Settings, crawler: Crawler | None) -> Self:
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        settings = crawler.settings
         cls._update_stores(settings)
         store_uri = settings["IMAGES_STORE"]
         if "crawler" in get_func_args(cls.__init__):
