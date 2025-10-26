@@ -225,9 +225,12 @@ class Downloader:
                 slot.latercall = call_later(penalty, self._latercall, slot)
                 return
 
+        # Update lastseen atomically before processing to prevent race conditions
+        # This ensures consistent timing for all requests in this batch
+        slot.lastseen = now
+
         # Process enqueued requests if there are free slots to transfer for this slot
         while slot.queue and slot.free_transfer_slots() > 0:
-            slot.lastseen = now
             request, queue_dfd = slot.queue.popleft()
             _schedule_coro(self._wait_for_download(slot, request, queue_dfd))
             # prevent burst if inter-request delays were configured
