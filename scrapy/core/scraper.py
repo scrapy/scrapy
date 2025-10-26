@@ -75,10 +75,16 @@ class Slot:
         # this Deferred will be awaited in enqueue_scrape()
         deferred: Deferred[None] = Deferred()
         self.queue.append((result, request, deferred))
+        
+        # Store actual size for consistent accounting to prevent memory leaks
         if isinstance(result, Response):
-            self.active_size += max(len(result.body), self.MIN_RESPONSE_SIZE)
+            size = max(len(result.body), self.MIN_RESPONSE_SIZE)
+            request.meta['_response_size'] = size
+            self.active_size += size
         else:
-            self.active_size += self.MIN_RESPONSE_SIZE
+            size = self.MIN_RESPONSE_SIZE
+            request.meta['_response_size'] = size
+            self.active_size += size
         return deferred
 
     def next_response_request_deferred(self) -> QueueTuple:
@@ -88,10 +94,13 @@ class Slot:
 
     def finish_response(self, result: Response | Failure, request: Request) -> None:
         self.active.remove(request)
-        if isinstance(result, Response):
-            self.active_size -= max(len(result.body), self.MIN_RESPONSE_SIZE)
-        else:
-            self.active_size -= self.MIN_RESPONSE_SIZE
+        
+        # Use stored size for consistent accounting to prevent memory leaks
+        size = request.meta.get('_response_size', self.MIN_RESPONSE_SIZE)
+        self.active_size -= size
+        
+        # Clean up meta data to prevent accumulation
+        request.meta.pop('_response_size', None)
 
     def is_idle(self) -> bool:
         return not (self.queue or self.active)
