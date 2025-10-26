@@ -418,19 +418,6 @@ class TestBuildFromCrawler:
             assert pipe._fingerprinter
             assert len(w) == 0
 
-    def test_has_old_init(self):
-        class Pipeline(UserDefinedPipeline):
-            def __init__(self):
-                super().__init__()
-                self._init_called = True
-
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 2
-            assert pipe._init_called
-
     def test_has_from_crawler_and_init(self):
         class Pipeline(UserDefinedPipeline):
             _from_crawler_called = False

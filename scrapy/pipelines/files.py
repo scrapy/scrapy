@@ -12,7 +12,6 @@ import hashlib
 import logging
 import mimetypes
 import time
-import warnings
 from collections import defaultdict
 from contextlib import suppress
 from ftplib import FTP
@@ -25,16 +24,15 @@ from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.internet.threads import deferToThread
 
-from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
-from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import get_func_args, global_object_name, to_bytes
+from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:
@@ -48,6 +46,7 @@ if TYPE_CHECKING:
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
 
 
 logger = logging.getLogger(__name__)
@@ -445,9 +444,8 @@ class FilesPipeline(MediaPipeline):
         self,
         store_uri: str | PathLike[str],
         download_func: Callable[[Request, Spider], Response] | None = None,
-        settings: Settings | dict[str, Any] | None = None,
         *,
-        crawler: Crawler | None = None,
+        crawler: Crawler,
     ):
         if not (store_uri and (store_uri := _to_string(store_uri))):
             from scrapy.pipelines.images import ImagesPipeline  # noqa: PLC0415
@@ -460,18 +458,7 @@ class FilesPipeline(MediaPipeline):
                 f"to enable {self.__class__.__name__}."
             )
 
-        if crawler is not None:
-            if settings is not None:
-                warnings.warn(
-                    f"FilesPipeline.__init__() was called with a crawler instance and a settings instance"
-                    f" when creating {global_object_name(self.__class__)}. The settings instance will be ignored"
-                    f" and crawler.settings will be used. The settings argument will be removed in a future Scrapy version.",
-                    category=ScrapyDeprecationWarning,
-                    stacklevel=2,
-                )
-            settings = crawler.settings
-        elif isinstance(settings, dict) or settings is None:
-            settings = Settings(settings)
+        settings = crawler.settings
         cls_name = "FilesPipeline"
         self.store: FilesStoreProtocol = self._get_store(store_uri)
         resolve = functools.partial(
@@ -489,29 +476,14 @@ class FilesPipeline(MediaPipeline):
             resolve("FILES_RESULT_FIELD"), self.FILES_RESULT_FIELD
         )
 
-        super().__init__(
-            download_func=download_func,
-            settings=settings if not crawler else None,
-            crawler=crawler,
-        )
+        super().__init__(download_func=download_func, crawler=crawler)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         settings = crawler.settings
         cls._update_stores(settings)
         store_uri = settings["FILES_STORE"]
-        if "crawler" in get_func_args(cls.__init__):
-            o = cls(store_uri, crawler=crawler)
-        else:
-            o = cls(store_uri, settings=settings)
-            if crawler:
-                o._finish_init(crawler)
-            warnings.warn(
-                f"{global_object_name(cls)}.__init__() doesn't take a crawler argument."
-                " This is deprecated and the argument will be required in future Scrapy versions.",
-                category=ScrapyDeprecationWarning,
-            )
-        return o
+        return cls(store_uri, crawler=crawler)
 
     @classmethod
     def _update_stores(cls, settings: BaseSettings) -> None:
