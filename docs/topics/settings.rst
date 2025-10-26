@@ -1133,7 +1133,7 @@ interface::
         @classmethod
         def from_crawler(cls, crawler):
             """Returns an instance of this duplicate request filtering class
-            based on the current Craeler instance."""
+            based on the current Crawler instance."""
             return cls()
 
         def request_seen(self, request):
