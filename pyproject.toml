@@ -374,8 +374,6 @@ ignore = [
     "SIM115",
     # Yoda condition detected
     "SIM300",
-    # removed in recent ruff
-    "UP038",
 
     # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
 
