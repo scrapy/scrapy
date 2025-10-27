@@ -8,7 +8,7 @@ Items
    :synopsis: Item and Field classes
 
 The main goal in scraping is to extract structured data from unstructured
-sources, typically, web pages. :ref:`Spiders <topics-spiders>` may return the
+sources, typically web pages. :ref:`Spiders <topics-spiders>` may return the
 extracted data as `items`, Python objects that define key-value pairs.
 
 Scrapy supports :ref:`multiple types of items <item-types>`. When you create an
@@ -21,9 +21,10 @@ receives an item, your code should :ref:`work for any item type
 Item Types
 ==========
 
-Scrapy supports the following types of items, via the `itemadapter`_ library:
+Scrapy supports the following types of items via the `itemadapter`_ library:
 :ref:`dictionaries <dict-items>`, :ref:`Item objects <item-objects>`,
-:ref:`dataclass objects <dataclass-items>`, and :ref:`attrs objects <attrs-items>`.
+:ref:`dataclass objects <dataclass-items>`, and :ref:`attrs objects
+<attrs-items>`.
 
 .. _itemadapter: https://github.com/scrapy/itemadapter
 
@@ -49,16 +50,16 @@ make it the most feature-complete item type:
 :class:`Item` objects replicate the standard :class:`dict` API, including
 its ``__init__`` method.
 
-:class:`Item` allows the defining of field names, so that:
+:class:`Item` allows you to define field names, so that:
 
--   :class:`KeyError` is raised when using undefined field names (i.e.
-    prevents typos going unnoticed)
+-   :class:`KeyError` is raised when using undefined field names (i.e. prevents
+    typos from going unnoticed)
 
 -   :ref:`Item exporters <topics-exporters>` can export all fields by
     default even if the first scraped object does not have values for all
     of them
 
-:class:`Item` also allows the defining of field metadata, which can be used to
+:class:`Item` also lets you define field metadata, which can be used to
 :ref:`customize serialization <topics-exporters-field-serialization>`.
 
 :mod:`trackref` tracks :class:`Item` objects to help find memory leaks
@@ -82,11 +83,12 @@ Dataclass objects
 
 .. versionadded:: 2.2
 
-:func:`~dataclasses.dataclass` allows the defining of item classes with field names,
-so that :ref:`item exporters <topics-exporters>` can export all fields by
-default even if the first scraped object does not have values for all of them.
+:func:`~dataclasses.dataclass` allows you to define item classes with field
+names, so that :ref:`item exporters <topics-exporters>` can export all fields
+by default even if the first scraped object does not have values for all of
+them.
 
-Additionally, ``dataclass`` items also allow you to:
+Additionally, ``dataclass`` items allow you to:
 
 * define the type and default value of each defined field.
 
@@ -114,18 +116,18 @@ attr.s objects
 
 .. versionadded:: 2.2
 
-:func:`attr.s` allows the defining of item classes with field names,
-so that :ref:`item exporters <topics-exporters>` can export all fields by
-default even if the first scraped object does not have values for all of them.
+:func:`attr.s` allows you to define item classes with field names, so that
+:ref:`item exporters <topics-exporters>` can export all fields by default even
+if the first scraped object does not have values for all of them.
 
-Additionally, ``attr.s`` items also allow to:
+Additionally, ``attr.s`` items allow you to:
 
 * define the type and default value of each defined field.
 
 * define custom field :ref:`metadata <attrs:metadata>`, which can be used to
   :ref:`customize serialization <topics-exporters-field-serialization>`.
 
-In order to use this type, the :doc:`attrs package <attrs:index>` needs to be installed.
+To use this type, the :doc:`attrs package <attrs:index>` needs to be installed.
 
 Example:
 
@@ -163,9 +165,9 @@ Item subclasses are declared using a simple class definition syntax and
         tags = scrapy.Field()
         last_updated = scrapy.Field(serializer=str)
 
-.. note:: Those familiar with `Django`_ will notice that Scrapy Items are
-   declared similar to `Django Models`_, except that Scrapy Items are much
-   simpler as there is no concept of different field types.
+.. note:: Those familiar with `Django`_ will notice that Scrapy items are
+    declared similarly to `Django Models`_, except that Scrapy items are much
+    simpler as there is no concept of different field types.
 
 .. _Django: https://www.djangoproject.com/
 .. _Django Models: https://docs.djangoproject.com/en/dev/topics/db/models/
@@ -177,19 +179,19 @@ Declaring fields
 ----------------
 
 :class:`Field` objects are used to specify metadata for each field. For
-example, the serializer function for the ``last_updated`` field illustrated in
-the example above.
+example, they can store the serializer function for the ``last_updated`` field
+illustrated above.
 
 You can specify any kind of metadata for each field. There is no restriction on
-the values accepted by :class:`Field` objects. For this same
-reason, there is no reference list of all available metadata keys. Each key
-defined in :class:`Field` objects could be used by a different component, and
-only those components know about it. You can also define and use any other
-:class:`Field` key in your project too, for your own needs. The main goal of
-:class:`Field` objects is to provide a way to define all field metadata in one
-place. Typically, those components whose behaviour depends on each field use
-certain field keys to configure that behaviour. You must refer to their
-documentation to see which metadata keys are used by each component.
+the values accepted by :class:`Field` objects. For this same reason, there is
+no reference list of all available metadata keys. Each key defined in
+:class:`Field` objects could be used by a different component, and only those
+components know about it. You can also define and use any other :class:`Field`
+key in your project too, for your own needs. The main goal of :class:`Field`
+objects is to provide a way to define all field metadata in one place.
+Typically, those components whose behavior depends on each field use certain
+field keys to configure that behavior. You must refer to their documentation to
+see which metadata keys are used by each component.
 
 It's important to note that the :class:`Field` objects used to declare the item
 do not stay assigned as class attributes. Instead, they can be accessed through
@@ -217,7 +219,7 @@ Working with Item objects
 .. skip: start
 
 Here are some examples of common tasks performed with items, using the
-``Product`` item :ref:`declared above  <topics-items-declaring>`. You will
+``Product`` item :ref:`declared above <topics-items-declaring>`. You will
 notice the API is very similar to the :class:`dict` API.
 
 Creating items
@@ -341,7 +343,9 @@ Creating dicts from items:
     >>> dict(product)  # create a dict from all populated values
     {'price': 1000, 'name': 'Desktop PC'}
 
-    Creating items from dicts:
+Creating items from dicts:
+
+.. code-block:: pycon
 
     >>> Product({"name": "Laptop PC", "price": 1500})
     Product(price=1500, name='Laptop PC')
@@ -355,8 +359,8 @@ Creating dicts from items:
 Extending Item subclasses
 -------------------------
 
-You can extend Items (to add more fields or to change some metadata for some
-fields) by declaring a subclass of your original Item.
+You can extend items (to add more fields or to change some metadata for some
+fields) by declaring a subclass of your original item.
 
 For example:
 
@@ -387,7 +391,7 @@ Supporting All Item Types
 
 In code that receives an item, such as methods of :ref:`item pipelines
 <topics-item-pipeline>` or :ref:`spider middlewares
-<topics-spider-middleware>`, it is a good practice to use the
+<topics-spider-middleware>`, it is good practice to use the
 :class:`~itemadapter.ItemAdapter` class to write code that works for any
 supported item type.
 

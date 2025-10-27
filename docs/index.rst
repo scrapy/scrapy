@@ -21,16 +21,16 @@ Having trouble? We'd like to help!
 
 * Try the :doc:`FAQ <faq>` -- it's got answers to some common questions.
 * Looking for specific information? Try the :ref:`genindex` or :ref:`modindex`.
-* Ask or search questions in `StackOverflow using the scrapy tag`_.
+* Ask or search questions on `Stack Overflow using the scrapy tag`_.
 * Ask or search questions in the `Scrapy subreddit`_.
 * Search for questions on the archives of the `scrapy-users mailing list`_.
-* Ask a question in the `#scrapy IRC channel`_,
+* Ask a question in the `#scrapy IRC channel`_.
 * Report bugs with Scrapy in our `issue tracker`_.
 * Join the Discord community `Scrapy Discord`_.
 
 .. _scrapy-users mailing list: https://groups.google.com/forum/#!forum/scrapy-users
 .. _Scrapy subreddit: https://www.reddit.com/r/scrapy/
-.. _StackOverflow using the scrapy tag: https://stackoverflow.com/tags/scrapy
+.. _Stack Overflow using the scrapy tag: https://stackoverflow.com/tags/scrapy
 .. _#scrapy IRC channel: irc://irc.freenode.net/scrapy
 .. _issue tracker: https://github.com/scrapy/scrapy/issues
 .. _Scrapy Discord: https://discord.com/invite/mv3yErfpvq
@@ -132,7 +132,7 @@ Built-in services
    topics/telnetconsole
 
 :doc:`topics/logging`
-    Learn how to use Python's built-in logging on Scrapy.
+    Learn how to use Python's built-in logging in Scrapy.
 
 :doc:`topics/stats`
     Collect statistics about your scraping crawler.
@@ -180,7 +180,7 @@ Solving specific problems
     Get familiar with some Scrapy common practices.
 
 :doc:`topics/broad-crawls`
-    Tune Scrapy for crawling a lot domains in parallel.
+    Tune Scrapy for crawling a lot of domains in parallel.
 
 :doc:`topics/developer-tools`
     Learn how to scrape with your browser's developer tools.
@@ -195,7 +195,7 @@ Solving specific problems
     Download files and/or images associated with your scraped items.
 
 :doc:`topics/deploy`
-    Deploying your Scrapy spiders and run them in a remote server.
+    Deploy your Scrapy spiders and run them on a remote server.
 
 :doc:`topics/autothrottle`
     Adjust crawl rate dynamically based on load.
@@ -246,7 +246,7 @@ Extending Scrapy
     Customize the input and output of your spiders.
 
 :doc:`topics/extensions`
-    Extend Scrapy with your custom functionality
+    Extend Scrapy with your custom functionality.
 
 :doc:`topics/signals`
     See all available signals and how to work with them.
@@ -255,14 +255,14 @@ Extending Scrapy
     Understand the scheduler component.
 
 :doc:`topics/exporters`
-    Quickly export your scraped items to a file (XML, CSV, etc).
+    Quickly export your scraped items to a file (XML, CSV, etc.).
 
 :doc:`topics/components`
     Learn the common API and some good practices when building custom Scrapy
     components.
 
 :doc:`topics/api`
-    Use it on extensions and middlewares to extend Scrapy functionality.
+    Use it in extensions and middlewares to extend Scrapy functionality.
 
 
 All the rest

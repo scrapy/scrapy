@@ -15,7 +15,7 @@ This tutorial will walk you through these tasks:
 1. Creating a new Scrapy project
 2. Writing a :ref:`spider <topics-spiders>` to crawl a site and extract data
 3. Exporting the scraped data using the command line
-4. Changing spider to recursively follow links
+4. Changing the spider to recursively follow links
 5. Using spider arguments
 
 Scrapy is written in Python_. The more you learn about Python, the more you
@@ -76,10 +76,11 @@ This will create a ``tutorial`` directory with the following contents::
 Our first Spider
 ================
 
-Spiders are classes that you define and that Scrapy uses to scrape information from a website
-(or a group of websites). They must subclass :class:`~scrapy.Spider` and define the initial
-requests to be made, and optionally, how to follow links in pages and parse the downloaded
-page content to extract data.
+Spiders are classes that you define and that Scrapy uses to scrape information
+from a website (or a group of websites). They must subclass
+:class:`~scrapy.Spider` and define the initial requests to be made and,
+optionally, how to follow links in pages and parse the downloaded page content
+to extract data.
 
 This is the code for our first Spider. Save it in a file named
 ``quotes_spider.py`` under the ``tutorial/spiders`` directory in your project:
@@ -137,9 +138,9 @@ To put our spider to work, go to the project's top level directory and run::
 
    scrapy crawl quotes
 
-This command runs the spider named ``quotes`` that we've just added, that
-will send some requests for the ``quotes.toscrape.com`` domain. You will get an output
-similar to this::
+This command runs the spider named ``quotes`` that we've just added, which will
+send some requests for the ``quotes.toscrape.com`` domain. You will get an
+output similar to this::
 
     ... (omitted for brevity)
     2016-12-16 21:24:05 [scrapy.core.engine] INFO: Spider opened
@@ -400,8 +401,8 @@ like this:
         </div>
     </div>
 
-Let's open up scrapy shell and play a bit to find out how to extract the data
-we want::
+Let's open up the Scrapy shell and play a bit to find out how to extract the
+data we want::
 
     scrapy shell 'https://quotes.toscrape.com'
 
@@ -668,14 +669,14 @@ As a shortcut for creating Request objects you can use
             if next_page is not None:
                 yield response.follow(next_page, callback=self.parse)
 
-Unlike scrapy.Request, ``response.follow`` supports relative URLs directly - no
-need to call urljoin. Note that ``response.follow`` just returns a Request
-instance; you still have to yield this Request.
+Unlike :class:`scrapy.Request`, ``response.follow`` supports relative URLs
+directly - no need to call urljoin. Note that ``response.follow`` just returns
+a Request instance; you still have to yield this Request.
 
 .. skip: start
 
-You can also pass a selector to ``response.follow`` instead of a string;
-this selector should extract necessary attributes:
+You can also pass a selector to ``response.follow`` instead of a string; this
+selector should extract the necessary attributes:
 
 .. code-block:: python
 
@@ -741,7 +742,7 @@ this time for scraping author information:
             }
 
 This spider will start from the main page, it will follow all the links to the
-authors pages calling the ``parse_author`` callback for each of them, and also
+author pages calling the ``parse_author`` callback for each of them, and also
 the pagination links with the ``parse`` callback as we saw before.
 
 Here we're passing callbacks to
@@ -749,8 +750,8 @@ Here we're passing callbacks to
 arguments to make the code shorter; it also works for
 :class:`~scrapy.Request`.
 
-The ``parse_author`` callback defines a helper function to extract and cleanup the
-data from a CSS query and yields the Python dict with the author data.
+The ``parse_author`` callback defines a helper function to extract and clean up
+the data from a CSS query and yields the Python dict with the author data.
 
 Another interesting thing this spider demonstrates is that, even if there are
 many quotes from the same author, we don't need to worry about visiting the
