@@ -5,7 +5,7 @@ import pprint
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict, deque
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar, cast
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.defer import ensure_awaitable
@@ -18,20 +18,18 @@ if TYPE_CHECKING:
 
     from twisted.internet.defer import Deferred
 
-    # typing.Concatenate and typing.ParamSpec require Python 3.10
     # typing.Self requires Python 3.11
-    from typing_extensions import Concatenate, ParamSpec, Self
+    from typing_extensions import Self
 
     from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.settings import Settings
 
-    _P = ParamSpec("_P")
-
 
 logger = logging.getLogger(__name__)
 
 _T = TypeVar("_T")
+_P = ParamSpec("_P")
 
 
 class MiddlewareManager(ABC):

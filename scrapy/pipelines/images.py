@@ -66,7 +66,7 @@ class ImagesPipeline(FilesPipeline):
             self._ImageOps = ImageOps
         except ImportError:
             raise NotConfigured(
-                "ImagesPipeline requires installing Pillow 8.0.0 or later"
+                "ImagesPipeline requires installing Pillow 8.3.2 or later"
             )
 
         super().__init__(store_uri, download_func=download_func, crawler=crawler)

@@ -12,7 +12,7 @@ import weakref
 from collections.abc import AsyncIterator, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar, overload
 
 from scrapy.utils.asyncgen import as_async_generator
 
@@ -20,15 +20,14 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from re import Pattern
 
-    # typing.Concatenate and typing.ParamSpec require Python 3.10
     # typing.Self requires Python 3.11
-    from typing_extensions import Concatenate, ParamSpec, Self
+    from typing_extensions import Self
 
-    _P = ParamSpec("_P")
 
 _T = TypeVar("_T")
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
+_P = ParamSpec("_P")
 
 
 def is_listlike(x: Any) -> bool:
@@ -243,7 +242,7 @@ def get_spec(func: Callable[..., Any]) -> tuple[list[str], dict[str, Any]]:
 
     firstdefault = len(spec.args) - len(defaults)
     args = spec.args[:firstdefault]
-    kwargs = dict(zip(spec.args[firstdefault:], defaults))
+    kwargs = dict(zip(spec.args[firstdefault:], defaults, strict=False))
     return args, kwargs
 
 

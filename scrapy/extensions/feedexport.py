@@ -16,7 +16,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
-from typing import IO, TYPE_CHECKING, Any, Optional, Protocol, cast
+from typing import IO, TYPE_CHECKING, Any, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urlparse
 
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
@@ -48,7 +48,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-UriParamsCallableT = Callable[[dict[str, Any], Spider], Optional[dict[str, Any]]]
+UriParamsCallableT: TypeAlias = Callable[
+    [dict[str, Any], Spider], dict[str, Any] | None
+]
 
 
 class ItemFilter:

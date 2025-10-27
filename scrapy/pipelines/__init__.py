@@ -7,7 +7,7 @@ See documentation in docs/item-pipeline.rst
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet.defer import Deferred, DeferredList
 
@@ -22,7 +22,7 @@ from scrapy.utils.defer import (
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable
 
     from twisted.python.failure import Failure
 

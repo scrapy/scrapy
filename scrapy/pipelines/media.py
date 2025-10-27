@@ -5,7 +5,7 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Literal, TypedDict, Union, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypedDict, cast
 
 from twisted import version as twisted_version
 from twisted.internet.defer import (
@@ -47,7 +47,9 @@ class FileInfo(TypedDict):
     status: str
 
 
-FileInfoOrError = Union[tuple[Literal[True], FileInfo], tuple[Literal[False], Failure]]
+FileInfoOrError: TypeAlias = (
+    tuple[Literal[True], FileInfo] | tuple[Literal[False], Failure]
+)
 
 logger = logging.getLogger(__name__)
 
