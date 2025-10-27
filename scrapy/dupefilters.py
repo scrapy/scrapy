@@ -73,7 +73,11 @@ class RFPDupeFilter(BaseDupeFilter):
         self.debug = debug
         self.logger = logging.getLogger(__name__)
         if path:
-            self.file = Path(path, "requests.seen").open("a+", encoding="utf-8")
+            # line-by-line writing, see: https://github.com/scrapy/scrapy/issues/6019
+            self.file = Path(path, "requests.seen").open(
+                "a+", buffering=1, encoding="utf-8"
+            )
+            self.file.reconfigure(write_through=True)
             self.file.seek(0)
             self.fingerprints.update(x.rstrip() for x in self.file)
 
