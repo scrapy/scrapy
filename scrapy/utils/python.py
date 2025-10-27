@@ -8,14 +8,12 @@ import gc
 import inspect
 import re
 import sys
-import warnings
 import weakref
 from collections.abc import AsyncIterator, Iterable, Mapping
 from functools import partial, wraps
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar, overload
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncgen import as_async_generator
 
 if TYPE_CHECKING:
@@ -30,47 +28,6 @@ _T = TypeVar("_T")
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
 _P = ParamSpec("_P")
-
-
-def flatten(x: Iterable[Any]) -> list[Any]:
-    """flatten(sequence) -> list
-
-    Returns a single, flat list which contains all elements retrieved
-    from the sequence and all recursively contained sub-sequences
-    (iterables).
-
-    Examples:
-    >>> [1, 2, [3,4], (5,6)]
-    [1, 2, [3, 4], (5, 6)]
-    >>> flatten([[[1,2,3], (42,None)], [4,5], [6], 7, (8,9,10)])
-    [1, 2, 3, 42, None, 4, 5, 6, 7, 8, 9, 10]
-    >>> flatten(["foo", "bar"])
-    ['foo', 'bar']
-    >>> flatten(["foo", ["baz", 42], "bar"])
-    ['foo', 'baz', 42, 'bar']
-    """
-    warnings.warn(
-        "The flatten function is deprecated and will be removed in a future version of Scrapy.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    return list(iflatten(x))
-
-
-def iflatten(x: Iterable[Any]) -> Iterable[Any]:
-    """iflatten(sequence) -> iterator
-
-    Similar to ``.flatten()``, but returns iterator instead"""
-    warnings.warn(
-        "The iflatten function is deprecated and will be removed in a future version of Scrapy.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    for el in x:
-        if is_listlike(el):
-            yield from iflatten(el)
-        else:
-            yield el
 
 
 def is_listlike(x: Any) -> bool:
@@ -287,31 +244,6 @@ def get_spec(func: Callable[..., Any]) -> tuple[list[str], dict[str, Any]]:
     args = spec.args[:firstdefault]
     kwargs = dict(zip(spec.args[firstdefault:], defaults, strict=False))
     return args, kwargs
-
-
-def equal_attributes(
-    obj1: Any, obj2: Any, attributes: list[str | Callable[[Any], Any]] | None
-) -> bool:
-    """Compare two objects attributes"""
-    warnings.warn(
-        "The equal_attributes function is deprecated and will be removed in a future version of Scrapy.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    # not attributes given return False by default
-    if not attributes:
-        return False
-
-    temp1, temp2 = object(), object()
-    for attr in attributes:
-        # support callables like itemgetter
-        if callable(attr):
-            if attr(obj1) != attr(obj2):
-                return False
-        elif getattr(obj1, attr, temp1) != getattr(obj2, attr, temp2):
-            return False
-    # all attributes equal
-    return True
 
 
 @overload

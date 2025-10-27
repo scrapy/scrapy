@@ -126,7 +126,7 @@ coverage_ignore_pyobjects = [
     # The interface methods of duplicate request filtering classes are already
     # covered in the interface documentation part of the DUPEFILTER_CLASS
     # setting documentation.
-    r"^scrapy\.dupefilters\.[A-Z]\w*?\.(from_settings|request_seen|open|close|log)$",
+    r"^scrapy\.dupefilters\.[A-Z]\w*?\.(from_crawler|request_seen|open|close|log)$",
     # Private exception used by the command-line interface implementation.
     r"^scrapy\.exceptions\.UsageError",
     # Methods of BaseItemExporter subclasses are only documented in

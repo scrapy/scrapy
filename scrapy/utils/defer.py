@@ -317,31 +317,6 @@ def process_chain(
     return d
 
 
-def process_chain_both(
-    callbacks: Iterable[Callable[Concatenate[_T, _P], Any]],
-    errbacks: Iterable[Callable[Concatenate[Failure, _P], Any]],
-    input: Any,  # noqa: A002
-    *a: _P.args,
-    **kw: _P.kwargs,
-) -> Deferred:
-    """Return a Deferred built by chaining the given callbacks and errbacks"""
-    warnings.warn(
-        "process_chain_both() is deprecated and will be removed in a future"
-        " Scrapy version.",
-        ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    d: Deferred = Deferred()
-    for cb, eb in zip(callbacks, errbacks, strict=False):
-        d.addCallback(cb, *a, **kw)
-        d.addErrback(eb, *a, **kw)
-    if isinstance(input, failure.Failure):
-        d.errback(input)
-    else:
-        d.callback(input)
-    return d
-
-
 def process_parallel(
     callbacks: Iterable[Callable[Concatenate[_T, _P], _T2]],
     input: _T,  # noqa: A002
