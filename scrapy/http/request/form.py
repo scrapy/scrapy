@@ -8,16 +8,10 @@ See documentation in docs/topics/request-response.rst
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 from urllib.parse import urlencode, urljoin, urlsplit, urlunsplit
 
-from lxml.html import (
-    FormElement,
-    InputElement,
-    MultipleSelectOptions,
-    SelectElement,
-    TextareaElement,
-)
+from parsel.csstranslator import HTMLTranslator
 from w3lib.html import strip_html5_whitespace
 
 from scrapy.http.request import Request
@@ -25,14 +19,21 @@ from scrapy.utils.python import is_listlike, to_bytes
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
+    from lxml.html import (
+        FormElement,
+        InputElement,
+        MultipleSelectOptions,
+        SelectElement,
+        TextareaElement,
+    )
     from typing_extensions import Self
 
     from scrapy.http.response.text import TextResponse
 
 
-FormdataVType = Union[str, Iterable[str]]
-FormdataKVType = tuple[str, FormdataVType]
-FormdataType = Optional[Union[dict[str, FormdataVType], list[FormdataKVType]]]
+FormdataVType: TypeAlias = str | Iterable[str]
+FormdataKVType: TypeAlias = tuple[str, FormdataVType]
+FormdataType: TypeAlias = dict[str, FormdataVType] | list[FormdataKVType] | None
 
 
 class FormRequest(Request):
@@ -76,8 +77,6 @@ class FormRequest(Request):
         kwargs.setdefault("encoding", response.encoding)
 
         if formcss is not None:
-            from parsel.csstranslator import HTMLTranslator
-
             formxpath = HTMLTranslator().css_to_xpath(formcss)
 
         form = _get_form(response, formname, formid, formnumber, formxpath)
@@ -107,7 +106,7 @@ def _urlencode(seq: Iterable[FormdataKVType], enc: str) -> str:
     values = [
         (to_bytes(k, enc), to_bytes(v, enc))
         for k, vs in seq
-        for v in (cast(Iterable[str], vs) if is_listlike(vs) else [cast(str, vs)])
+        for v in (cast("Iterable[str]", vs) if is_listlike(vs) else [cast("str", vs)])
     ]
     return urlencode(values, doseq=True)
 
@@ -128,12 +127,12 @@ def _get_form(
     if formname is not None:
         f = root.xpath(f'//form[@name="{formname}"]')
         if f:
-            return cast(FormElement, f[0])
+            return cast("FormElement", f[0])
 
     if formid is not None:
         f = root.xpath(f'//form[@id="{formid}"]')
         if f:
-            return cast(FormElement, f[0])
+            return cast("FormElement", f[0])
 
     # Get form element from xpath, if not found, go up
     if formxpath is not None:
@@ -142,7 +141,7 @@ def _get_form(
             el = nodes[0]
             while True:
                 if el.tag == "form":
-                    return cast(FormElement, el)
+                    return cast("FormElement", el)
                 el = el.getparent()
                 if el is None:
                     break
@@ -153,7 +152,7 @@ def _get_form(
         form = forms[formnumber]
     except IndexError:
         raise IndexError(f"Form number {formnumber} not found in {response}")
-    return cast(FormElement, form)
+    return cast("FormElement", form)
 
 
 def _get_inputs(
@@ -201,7 +200,7 @@ def _value(
     n = ele.name
     v = ele.value
     if ele.tag == "select":
-        return _select_value(cast(SelectElement, ele), n, v)
+        return _select_value(cast("SelectElement", ele), n, v)
     return n, v
 
 
@@ -251,7 +250,7 @@ def _get_clickable(
         except IndexError:
             pass
         else:
-            return (el.get("name"), el.get("value") or "")
+            return (cast("str", el.get("name")), el.get("value") or "")
 
     # We didn't find it, so now we build an XPath expression out of the other
     # arguments, because they can be used as such

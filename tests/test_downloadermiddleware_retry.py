@@ -10,6 +10,8 @@ from twisted.internet.error import (
     DNSLookupError,
     TCPTimedOutError,
 )
+from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
+from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.web.client import ResponseFailed
 
 from scrapy.downloadermiddlewares.retry import RetryMiddleware, get_retry_request
@@ -17,20 +19,21 @@ from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.settings.default_settings import RETRY_EXCEPTIONS
 from scrapy.spiders import Spider
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
 
 class TestRetry:
     def setup_method(self):
-        self.crawler = get_crawler(Spider)
-        self.spider = self.crawler._create_spider("foo")
+        self.crawler = get_crawler(DefaultSpider)
+        self.crawler.spider = self.crawler._create_spider()
         self.mw = RetryMiddleware.from_crawler(self.crawler)
         self.mw.max_retry_times = 2
 
     def test_priority_adjust(self):
         req = Request("http://www.scrapytest.org/503")
         rsp = Response("http://www.scrapytest.org/503", body=b"", status=503)
-        req2 = self.mw.process_response(req, rsp, self.spider)
+        req2 = self.mw.process_response(req, rsp)
         assert req2.priority < req.priority
 
     def test_404(self):
@@ -38,14 +41,14 @@ class TestRetry:
         rsp = Response("http://www.scrapytest.org/404", body=b"", status=404)
 
         # dont retry 404s
-        assert self.mw.process_response(req, rsp, self.spider) is rsp
+        assert self.mw.process_response(req, rsp) is rsp
 
     def test_dont_retry(self):
         req = Request("http://www.scrapytest.org/503", meta={"dont_retry": True})
         rsp = Response("http://www.scrapytest.org/503", body=b"", status=503)
 
         # first retry
-        r = self.mw.process_response(req, rsp, self.spider)
+        r = self.mw.process_response(req, rsp)
         assert r is rsp
 
         # Test retry when dont_retry set to False
@@ -53,13 +56,13 @@ class TestRetry:
         rsp = Response("http://www.scrapytest.org/503")
 
         # first retry
-        r = self.mw.process_response(req, rsp, self.spider)
+        r = self.mw.process_response(req, rsp)
         assert r is rsp
 
     def test_dont_retry_exc(self):
         req = Request("http://www.scrapytest.org/503", meta={"dont_retry": True})
 
-        r = self.mw.process_exception(req, DNSLookupError(), self.spider)
+        r = self.mw.process_exception(req, DNSLookupError())
         assert r is None
 
     def test_503(self):
@@ -67,17 +70,17 @@ class TestRetry:
         rsp = Response("http://www.scrapytest.org/503", body=b"", status=503)
 
         # first retry
-        req = self.mw.process_response(req, rsp, self.spider)
+        req = self.mw.process_response(req, rsp)
         assert isinstance(req, Request)
         assert req.meta["retry_times"] == 1
 
         # second retry
-        req = self.mw.process_response(req, rsp, self.spider)
+        req = self.mw.process_response(req, rsp)
         assert isinstance(req, Request)
         assert req.meta["retry_times"] == 2
 
         # discard it
-        assert self.mw.process_response(req, rsp, self.spider) is rsp
+        assert self.mw.process_response(req, rsp) is rsp
 
         assert self.crawler.stats.get_value("retry/max_reached") == 1
         assert (
@@ -91,12 +94,12 @@ class TestRetry:
             ConnectError,
             ConnectionDone,
             ConnectionLost,
-            ConnectionRefusedError,
+            TxConnectionRefusedError,
             defer.TimeoutError,
             DNSLookupError,
             ResponseFailed,
             TCPTimedOutError,
-            TimeoutError,
+            TxTimeoutError,
         ]
 
         for exc in exceptions:
@@ -116,7 +119,8 @@ class TestRetry:
         settings_dict = {
             "RETRY_EXCEPTIONS": [*RETRY_EXCEPTIONS, exc],
         }
-        crawler = get_crawler(Spider, settings_dict=settings_dict)
+        crawler = get_crawler(DefaultSpider, settings_dict=settings_dict)
+        crawler.spider = crawler._create_spider()
         mw = RetryMiddleware.from_crawler(crawler)
         req = Request(f"http://www.scrapytest.org/{exc.__name__}")
         self._test_retry_exception(req, exc("foo"), mw)
@@ -126,65 +130,61 @@ class TestRetry:
             mw = self.mw
 
         # first retry
-        req = mw.process_exception(req, exception, self.spider)
+        req = mw.process_exception(req, exception)
         assert isinstance(req, Request)
         assert req.meta["retry_times"] == 1
 
         # second retry
-        req = mw.process_exception(req, exception, self.spider)
+        req = mw.process_exception(req, exception)
         assert isinstance(req, Request)
         assert req.meta["retry_times"] == 2
 
         # discard it
-        req = mw.process_exception(req, exception, self.spider)
+        req = mw.process_exception(req, exception)
         assert req is None
 
 
 class TestMaxRetryTimes:
     invalid_url = "http://www.scrapytest.org/invalid_url"
 
-    def get_spider_and_middleware(self, settings=None):
-        crawler = get_crawler(Spider, settings or {})
-        spider = crawler._create_spider("foo")
-        middleware = RetryMiddleware.from_crawler(crawler)
-        return spider, middleware
+    def get_middleware(self, settings=None):
+        crawler = get_crawler(DefaultSpider, settings or {})
+        crawler.spider = crawler._create_spider()
+        return RetryMiddleware.from_crawler(crawler)
 
     def test_with_settings_zero(self):
         max_retry_times = 0
         settings = {"RETRY_TIMES": max_retry_times}
-        spider, middleware = self.get_spider_and_middleware(settings)
+        middleware = self.get_middleware(settings)
         req = Request(self.invalid_url)
         self._test_retry(
             req,
             DNSLookupError("foo"),
             max_retry_times,
-            spider=spider,
             middleware=middleware,
         )
 
     def test_with_metakey_zero(self):
         max_retry_times = 0
-        spider, middleware = self.get_spider_and_middleware()
+        middleware = self.get_middleware()
         meta = {"max_retry_times": max_retry_times}
         req = Request(self.invalid_url, meta=meta)
         self._test_retry(
             req,
             DNSLookupError("foo"),
             max_retry_times,
-            spider=spider,
             middleware=middleware,
         )
 
     def test_without_metakey(self):
         max_retry_times = 5
         settings = {"RETRY_TIMES": max_retry_times}
-        spider, middleware = self.get_spider_and_middleware(settings)
+        middleware = self.get_middleware(settings)
         req = Request(self.invalid_url)
         self._test_retry(
             req,
             DNSLookupError("foo"),
             max_retry_times,
-            spider=spider,
             middleware=middleware,
         )
 
@@ -196,20 +196,18 @@ class TestMaxRetryTimes:
         req2 = Request(self.invalid_url)
 
         settings = {"RETRY_TIMES": middleware_max_retry_times}
-        spider, middleware = self.get_spider_and_middleware(settings)
+        middleware = self.get_middleware(settings)
 
         self._test_retry(
             req1,
             DNSLookupError("foo"),
             meta_max_retry_times,
-            spider=spider,
             middleware=middleware,
         )
         self._test_retry(
             req2,
             DNSLookupError("foo"),
             middleware_max_retry_times,
-            spider=spider,
             middleware=middleware,
         )
 
@@ -221,26 +219,24 @@ class TestMaxRetryTimes:
         req2 = Request(self.invalid_url)
 
         settings = {"RETRY_TIMES": middleware_max_retry_times}
-        spider, middleware = self.get_spider_and_middleware(settings)
+        middleware = self.get_middleware(settings)
 
         self._test_retry(
             req1,
             DNSLookupError("foo"),
             meta_max_retry_times,
-            spider=spider,
             middleware=middleware,
         )
         self._test_retry(
             req2,
             DNSLookupError("foo"),
             middleware_max_retry_times,
-            spider=spider,
             middleware=middleware,
         )
 
     def test_with_dont_retry(self):
         max_retry_times = 4
-        spider, middleware = self.get_spider_and_middleware()
+        middleware = self.get_middleware()
         meta = {
             "max_retry_times": max_retry_times,
             "dont_retry": True,
@@ -250,7 +246,6 @@ class TestMaxRetryTimes:
             req,
             DNSLookupError("foo"),
             0,
-            spider=spider,
             middleware=middleware,
         )
 
@@ -259,18 +254,16 @@ class TestMaxRetryTimes:
         req,
         exception,
         max_retry_times,
-        spider=None,
         middleware=None,
     ):
-        spider = spider or self.spider
         middleware = middleware or self.mw
 
         for i in range(max_retry_times):
-            req = middleware.process_exception(req, exception, spider)
+            req = middleware.process_exception(req, exception)
             assert isinstance(req, Request)
 
         # discard it
-        req = middleware.process_exception(req, exception, spider)
+        req = middleware.process_exception(req, exception)
         assert req is None
 
 

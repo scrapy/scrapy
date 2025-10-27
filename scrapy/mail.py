@@ -7,7 +7,6 @@ See documentation in docs/topics/email.rst
 from __future__ import annotations
 
 import logging
-import warnings
 from email import encoders as Encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
@@ -20,7 +19,6 @@ from typing import IO, TYPE_CHECKING, Any
 from twisted.internet import ssl
 from twisted.internet.defer import Deferred
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
 
@@ -35,7 +33,6 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
-    from scrapy.settings import BaseSettings
 
 
 logger = logging.getLogger(__name__)
@@ -74,20 +71,8 @@ class MailSender:
         self.debug: bool = debug
 
     @classmethod
-    def from_settings(cls, settings: BaseSettings) -> Self:
-        warnings.warn(
-            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return cls._from_settings(settings)
-
-    @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        return cls._from_settings(crawler.settings)
-
-    @classmethod
-    def _from_settings(cls, settings: BaseSettings) -> Self:
+        settings = crawler.settings
         return cls(
             smtphost=settings["MAIL_HOST"],
             mailfrom=settings["MAIL_FROM"],
@@ -223,7 +208,8 @@ class MailSender:
     def _create_sender_factory(
         self, to_addrs: list[str], msg: IO[bytes], d: Deferred[Any]
     ) -> ESMTPSenderFactory:
-        from twisted.mail.smtp import ESMTPSenderFactory
+        # imports twisted.internet.reactor
+        from twisted.mail.smtp import ESMTPSenderFactory  # noqa: PLC0415
 
         factory_keywords: dict[str, Any] = {
             "heloFallback": True,

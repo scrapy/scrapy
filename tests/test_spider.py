@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 import gzip
+import re
 import warnings
+from datetime import datetime
 from io import BytesIO
 from logging import ERROR, WARNING
 from pathlib import Path
@@ -9,7 +13,6 @@ from unittest import mock
 import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
 from w3lib.url import safe_url_string
 
 from scrapy import signals
@@ -31,14 +34,8 @@ from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import get_testdata, tests_datadir
 
 
-class TestSpider(unittest.TestCase):
+class TestSpider:
     spider_class = Spider
-
-    def setUp(self):
-        warnings.simplefilter("always")
-
-    def tearDown(self):
-        warnings.resetwarnings()
 
     def test_base_spider(self):
         spider = self.spider_class("example.com")
@@ -234,7 +231,7 @@ class TestCSVFeedSpider(TestSpider):
 
 
 class TestCrawlSpider(TestSpider):
-    test_body = b"""<html><head><title>Page title<title>
+    test_body = b"""<html><head><title>Page title</title></head>
     <body>
     <p><a href="item/12.html">Item 12</a></p>
     <div class='links'>
@@ -295,8 +292,6 @@ class TestCrawlSpider(TestSpider):
         )
 
         class _CrawlSpider(self.spider_class):
-            import re
-
             name = "test"
             allowed_domains = ["example.org"]
             rules = (Rule(LinkExtractor(), process_links="filter_process_links"),)
@@ -531,7 +526,7 @@ class TestSitemapSpider(TestSpider):
     g.close()
     GZBODY = f.getvalue()
 
-    def assertSitemapBody(self, response, body):
+    def assertSitemapBody(self, response: Response, body: bytes | None) -> None:
         crawler = get_crawler()
         spider = self.spider_class.from_crawler(crawler, "example.com")
         assert spider._get_sitemap_body(response) == body
@@ -633,8 +628,6 @@ Sitemap: /sitemap-relative-url.xml
 
         class FilteredSitemapSpider(self.spider_class):
             def sitemap_filter(self, entries):
-                from datetime import datetime
-
                 for entry in entries:
                     date_time = datetime.strptime(entry["lastmod"], "%Y-%m-%d")
                     if date_time.year > 2008:
@@ -704,8 +697,6 @@ Sitemap: /sitemap-relative-url.xml
 
         class FilteredSitemapSpider(self.spider_class):
             def sitemap_filter(self, entries):
-                from datetime import datetime
-
                 for entry in entries:
                     date_time = datetime.strptime(
                         entry["lastmod"].split("T")[0], "%Y-%m-%d"
@@ -735,6 +726,7 @@ Sitemap: /sitemap-relative-url.xml
         response = Response(url="https://example.com", body=body, request=request)
         assert spider._get_sitemap_body(response) is None
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr(self):
         class DownloadMaxSizeSpider(self.spider_class):
             download_maxsize = 10_000_000
@@ -782,6 +774,7 @@ Sitemap: /sitemap-relative-url.xml
             ),
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr(self):
         class DownloadWarnSizeSpider(self.spider_class):
             download_warnsize = 10_000_000

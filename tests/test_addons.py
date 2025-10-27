@@ -3,7 +3,6 @@ from typing import Any
 from unittest.mock import patch
 
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial import unittest
 
 from scrapy import Spider
 from scrapy.crawler import Crawler, CrawlerRunner
@@ -52,7 +51,7 @@ class TestAddon:
         assert settings["KEY3"] == "addon"
 
 
-class TestAddonManager(unittest.TestCase):
+class TestAddonManager:
     def test_load_settings(self):
         settings_dict = {
             "ADDONS": {"tests.test_addons.SimpleAddon": 0},
@@ -150,7 +149,7 @@ class TestAddonManager(unittest.TestCase):
         )
         assert (
             crawler.settings.get(FALLBACK_SETTING)
-            == "scrapy.core.downloader.handlers.http.HTTPDownloadHandler"
+            == "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler"
         )
 
         settings_dict = {

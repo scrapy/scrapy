@@ -17,9 +17,183 @@ import sys
 from importlib import import_module
 from pathlib import Path
 
+__all__ = [
+    "ADDONS",
+    "AJAXCRAWL_ENABLED",
+    "AJAXCRAWL_MAXSIZE",
+    "ASYNCIO_EVENT_LOOP",
+    "AUTOTHROTTLE_DEBUG",
+    "AUTOTHROTTLE_ENABLED",
+    "AUTOTHROTTLE_MAX_DELAY",
+    "AUTOTHROTTLE_START_DELAY",
+    "AUTOTHROTTLE_TARGET_CONCURRENCY",
+    "BOT_NAME",
+    "CLOSESPIDER_ERRORCOUNT",
+    "CLOSESPIDER_ITEMCOUNT",
+    "CLOSESPIDER_PAGECOUNT",
+    "CLOSESPIDER_TIMEOUT",
+    "COMMANDS_MODULE",
+    "COMPRESSION_ENABLED",
+    "CONCURRENT_ITEMS",
+    "CONCURRENT_REQUESTS",
+    "CONCURRENT_REQUESTS_PER_DOMAIN",
+    "COOKIES_DEBUG",
+    "COOKIES_ENABLED",
+    "CRAWLSPIDER_FOLLOW_LINKS",
+    "DEFAULT_DROPITEM_LOG_LEVEL",
+    "DEFAULT_ITEM_CLASS",
+    "DEFAULT_REQUEST_HEADERS",
+    "DEPTH_LIMIT",
+    "DEPTH_PRIORITY",
+    "DEPTH_STATS_VERBOSE",
+    "DNSCACHE_ENABLED",
+    "DNSCACHE_SIZE",
+    "DNS_RESOLVER",
+    "DNS_TIMEOUT",
+    "DOWNLOADER",
+    "DOWNLOADER_CLIENTCONTEXTFACTORY",
+    "DOWNLOADER_CLIENT_TLS_CIPHERS",
+    "DOWNLOADER_CLIENT_TLS_METHOD",
+    "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING",
+    "DOWNLOADER_HTTPCLIENTFACTORY",
+    "DOWNLOADER_MIDDLEWARES",
+    "DOWNLOADER_MIDDLEWARES_BASE",
+    "DOWNLOADER_STATS",
+    "DOWNLOAD_DELAY",
+    "DOWNLOAD_FAIL_ON_DATALOSS",
+    "DOWNLOAD_HANDLERS",
+    "DOWNLOAD_HANDLERS_BASE",
+    "DOWNLOAD_MAXSIZE",
+    "DOWNLOAD_TIMEOUT",
+    "DOWNLOAD_WARNSIZE",
+    "DUPEFILTER_CLASS",
+    "EDITOR",
+    "EXTENSIONS",
+    "EXTENSIONS_BASE",
+    "FEEDS",
+    "FEED_EXPORTERS",
+    "FEED_EXPORTERS_BASE",
+    "FEED_EXPORT_BATCH_ITEM_COUNT",
+    "FEED_EXPORT_ENCODING",
+    "FEED_EXPORT_FIELDS",
+    "FEED_EXPORT_INDENT",
+    "FEED_FORMAT",
+    "FEED_STORAGES",
+    "FEED_STORAGES_BASE",
+    "FEED_STORAGE_FTP_ACTIVE",
+    "FEED_STORAGE_GCS_ACL",
+    "FEED_STORAGE_S3_ACL",
+    "FEED_STORE_EMPTY",
+    "FEED_TEMPDIR",
+    "FEED_URI_PARAMS",
+    "FILES_STORE_GCS_ACL",
+    "FILES_STORE_S3_ACL",
+    "FORCE_CRAWLER_PROCESS",
+    "FTP_PASSIVE_MODE",
+    "FTP_PASSWORD",
+    "FTP_USER",
+    "GCS_PROJECT_ID",
+    "HTTPCACHE_ALWAYS_STORE",
+    "HTTPCACHE_DBM_MODULE",
+    "HTTPCACHE_DIR",
+    "HTTPCACHE_ENABLED",
+    "HTTPCACHE_EXPIRATION_SECS",
+    "HTTPCACHE_GZIP",
+    "HTTPCACHE_IGNORE_HTTP_CODES",
+    "HTTPCACHE_IGNORE_MISSING",
+    "HTTPCACHE_IGNORE_RESPONSE_CACHE_CONTROLS",
+    "HTTPCACHE_IGNORE_SCHEMES",
+    "HTTPCACHE_POLICY",
+    "HTTPCACHE_STORAGE",
+    "HTTPPROXY_AUTH_ENCODING",
+    "HTTPPROXY_ENABLED",
+    "IMAGES_STORE_GCS_ACL",
+    "IMAGES_STORE_S3_ACL",
+    "ITEM_PIPELINES",
+    "ITEM_PIPELINES_BASE",
+    "ITEM_PROCESSOR",
+    "JOBDIR",
+    "LOGSTATS_INTERVAL",
+    "LOG_DATEFORMAT",
+    "LOG_ENABLED",
+    "LOG_ENCODING",
+    "LOG_FILE",
+    "LOG_FILE_APPEND",
+    "LOG_FORMAT",
+    "LOG_FORMATTER",
+    "LOG_LEVEL",
+    "LOG_SHORT_NAMES",
+    "LOG_STDOUT",
+    "LOG_VERSIONS",
+    "MAIL_FROM",
+    "MAIL_HOST",
+    "MAIL_PASS",
+    "MAIL_PORT",
+    "MAIL_USER",
+    "MEMDEBUG_ENABLED",
+    "MEMDEBUG_NOTIFY",
+    "MEMUSAGE_CHECK_INTERVAL_SECONDS",
+    "MEMUSAGE_ENABLED",
+    "MEMUSAGE_LIMIT_MB",
+    "MEMUSAGE_NOTIFY_MAIL",
+    "MEMUSAGE_WARNING_MB",
+    "METAREFRESH_ENABLED",
+    "METAREFRESH_IGNORE_TAGS",
+    "METAREFRESH_MAXDELAY",
+    "NEWSPIDER_MODULE",
+    "PERIODIC_LOG_DELTA",
+    "PERIODIC_LOG_STATS",
+    "PERIODIC_LOG_TIMING_ENABLED",
+    "RANDOMIZE_DOWNLOAD_DELAY",
+    "REACTOR_THREADPOOL_MAXSIZE",
+    "REDIRECT_ENABLED",
+    "REDIRECT_MAX_TIMES",
+    "REDIRECT_PRIORITY_ADJUST",
+    "REFERER_ENABLED",
+    "REFERRER_POLICY",
+    "REQUEST_FINGERPRINTER_CLASS",
+    "RETRY_ENABLED",
+    "RETRY_EXCEPTIONS",
+    "RETRY_HTTP_CODES",
+    "RETRY_PRIORITY_ADJUST",
+    "RETRY_TIMES",
+    "ROBOTSTXT_OBEY",
+    "ROBOTSTXT_PARSER",
+    "ROBOTSTXT_USER_AGENT",
+    "SCHEDULER",
+    "SCHEDULER_DEBUG",
+    "SCHEDULER_DISK_QUEUE",
+    "SCHEDULER_MEMORY_QUEUE",
+    "SCHEDULER_PRIORITY_QUEUE",
+    "SCHEDULER_START_DISK_QUEUE",
+    "SCHEDULER_START_MEMORY_QUEUE",
+    "SCRAPER_SLOT_MAX_ACTIVE_SIZE",
+    "SPIDER_CONTRACTS",
+    "SPIDER_CONTRACTS_BASE",
+    "SPIDER_LOADER_CLASS",
+    "SPIDER_LOADER_WARN_ONLY",
+    "SPIDER_MIDDLEWARES",
+    "SPIDER_MIDDLEWARES_BASE",
+    "SPIDER_MODULES",
+    "STATSMAILER_RCPTS",
+    "STATS_CLASS",
+    "STATS_DUMP",
+    "TELNETCONSOLE_ENABLED",
+    "TELNETCONSOLE_HOST",
+    "TELNETCONSOLE_PASSWORD",
+    "TELNETCONSOLE_PORT",
+    "TELNETCONSOLE_USERNAME",
+    "TEMPLATES_DIR",
+    "TWISTED_REACTOR",
+    "URLLENGTH_LIMIT",
+    "USER_AGENT",
+    "WARN_ON_GENERATOR_RETURN_VALUE",
+]
+
 ADDONS = {}
 
 AJAXCRAWL_ENABLED = False
+AJAXCRAWL_MAXSIZE = 32768
 
 ASYNCIO_EVENT_LOOP = None
 
@@ -44,10 +218,11 @@ CONCURRENT_ITEMS = 100
 
 CONCURRENT_REQUESTS = 16
 CONCURRENT_REQUESTS_PER_DOMAIN = 8
-CONCURRENT_REQUESTS_PER_IP = 0
 
 COOKIES_ENABLED = True
 COOKIES_DEBUG = False
+
+CRAWLSPIDER_FOLLOW_LINKS = True
 
 DEFAULT_DROPITEM_LOG_LEVEL = "WARNING"
 
@@ -75,8 +250,8 @@ DOWNLOAD_HANDLERS = {}
 DOWNLOAD_HANDLERS_BASE = {
     "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
     "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
-    "http": "scrapy.core.downloader.handlers.http.HTTPDownloadHandler",
-    "https": "scrapy.core.downloader.handlers.http.HTTPDownloadHandler",
+    "http": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
+    "https": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
     "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
     "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
 }
@@ -132,6 +307,7 @@ if sys.platform == "win32":
 EXTENSIONS = {}
 EXTENSIONS_BASE = {
     "scrapy.extensions.corestats.CoreStats": 0,
+    "scrapy.extensions.logcount.LogCount": 0,
     "scrapy.extensions.telnet.TelnetConsole": 0,
     "scrapy.extensions.memusage.MemoryUsage": 0,
     "scrapy.extensions.memdebug.MemoryDebugger": 0,
@@ -158,6 +334,7 @@ FEED_EXPORTERS_BASE = {
     "marshal": "scrapy.exporters.MarshalItemExporter",
     "pickle": "scrapy.exporters.PickleItemExporter",
 }
+FEED_FORMAT = "jsonlines"
 FEED_STORE_EMPTY = True
 FEED_STORAGES = {}
 FEED_STORAGES_BASE = {
@@ -273,7 +450,6 @@ REFERER_ENABLED = True
 REFERRER_POLICY = "scrapy.spidermiddlewares.referer.DefaultReferrerPolicy"
 
 REQUEST_FINGERPRINTER_CLASS = "scrapy.utils.request.RequestFingerprinter"
-REQUEST_FINGERPRINTER_IMPLEMENTATION = "SENTINEL"
 
 RETRY_ENABLED = True
 RETRY_EXCEPTIONS = [
@@ -354,3 +530,19 @@ URLLENGTH_LIMIT = 2083
 USER_AGENT = f"Scrapy/{import_module('scrapy').__version__} (+https://scrapy.org)"
 
 WARN_ON_GENERATOR_RETURN_VALUE = True
+
+
+def __getattr__(name: str):
+    if name == "CONCURRENT_REQUESTS_PER_IP":
+        import warnings  # noqa: PLC0415
+
+        from scrapy.exceptions import ScrapyDeprecationWarning  # noqa: PLC0415
+
+        warnings.warn(
+            "The scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_IP attribute is deprecated, use scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_DOMAIN instead.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return 0
+
+    raise AttributeError

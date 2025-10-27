@@ -191,7 +191,7 @@ shorter and cleaner:
             adapter["field"] = data
             return item
 
-        def process_item(self, item, spider):
+        def process_item(self, item):
             adapter = ItemAdapter(item)
             dfd = db.get_some_data(adapter["id"])
             dfd.addCallback(self._update_item, item)
@@ -205,7 +205,7 @@ becomes:
 
 
     class DbPipeline:
-        async def process_item(self, item, spider):
+        async def process_item(self, item):
             adapter = ItemAdapter(item)
             adapter["field"] = await db.get_some_data(adapter["id"])
             return item
@@ -266,7 +266,6 @@ within a spider callback:
 .. code-block:: python
 
     from scrapy import Spider, Request
-    from scrapy.utils.defer import maybe_deferred_to_future
 
 
     class SingleRequestSpider(Spider):
@@ -275,8 +274,9 @@ within a spider callback:
 
         async def parse(self, response, **kwargs):
             additional_request = Request("https://example.org/price")
-            deferred = self.crawler.engine.download(additional_request)
-            additional_response = await maybe_deferred_to_future(deferred)
+            additional_response = await self.crawler.engine.download_async(
+                additional_request
+            )
             yield {
                 "h1": response.css("h1").get(),
                 "price": additional_response.css("#price").get(),
@@ -286,9 +286,9 @@ You can also send multiple requests in parallel:
 
 .. code-block:: python
 
+    import asyncio
+
     from scrapy import Spider, Request
-    from scrapy.utils.defer import maybe_deferred_to_future
-    from twisted.internet.defer import DeferredList
 
 
     class MultipleRequestsSpider(Spider):
@@ -300,11 +300,11 @@ You can also send multiple requests in parallel:
                 Request("https://example.com/price"),
                 Request("https://example.com/color"),
             ]
-            deferreds = []
+            tasks = []
             for r in additional_requests:
-                deferred = self.crawler.engine.download(r)
-                deferreds.append(deferred)
-            responses = await maybe_deferred_to_future(DeferredList(deferreds))
+                task = self.crawler.engine.download_async(r)
+                tasks.append(task)
+            responses = await asyncio.gather(*tasks)
             yield {
                 "h1": response.css("h1::text").get(),
                 "price": responses[0][1].css(".price::text").get(),
@@ -421,12 +421,12 @@ For example:
 .. code-block:: python
 
     class UniversalSpiderMiddleware:
-        def process_spider_output(self, response, result, spider):
+        def process_spider_output(self, response, result):
             for r in result:
                 # ... do something with r
                 yield r
 
-        async def process_spider_output_async(self, response, result, spider):
+        async def process_spider_output_async(self, response, result):
             async for r in result:
                 # ... do something with r
                 yield r

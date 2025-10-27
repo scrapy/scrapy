@@ -2,7 +2,6 @@ import warnings
 from asyncio import sleep
 
 import pytest
-from twisted.trial.unittest import TestCase
 
 from scrapy import Spider, signals
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -106,7 +105,7 @@ class DeprecatedWrapSpiderMiddleware:
         yield ITEM_C
 
 
-class TestMain(TestCase):
+class TestMain:
     async def _test(self, spider_middlewares, spider_cls, expected_items):
         actual_items = []
 

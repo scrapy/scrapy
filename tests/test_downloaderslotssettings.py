@@ -1,13 +1,13 @@
 import time
 
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import TestCase
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot
 from scrapy.crawler import CrawlerRunner
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import MetaSpider
 
 
@@ -49,17 +49,17 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         self.times[slot].append(time.time())
 
 
-class TestCrawl(TestCase):
+class TestCrawl:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    def setUp(self):
+    def setup_method(self):
         self.runner = CrawlerRunner()
 
     @inlineCallbacks
@@ -90,11 +90,12 @@ def test_params():
             "example.com": params,
         },
     }
-    crawler = get_crawler(settings_dict=settings)
+    crawler = get_crawler(DefaultSpider, settings_dict=settings)
+    crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
     downloader._slot_gc_loop.stop()  # Prevent an unclean reactor.
     request = Request("https://example.com")
-    _, actual = downloader._get_slot(request, spider=None)
+    _, actual = downloader._get_slot(request)
     expected = Slot(**params)
     for param in params:
         assert getattr(expected, param) == getattr(actual, param), (

@@ -24,7 +24,7 @@ If you have `IPython`_ installed, the Scrapy shell will use it (instead of the
 standard Python console). The `IPython`_ console is much more powerful and
 provides smart auto-completion and colorized output, among other things.
 
-We highly recommend you install `IPython`_, specially if you're working on
+We highly recommend you install `IPython`_, especially if you're working on
 Unix systems (where `IPython`_ excels). See the `IPython installation guide`_
 for more info.
 
@@ -142,6 +142,8 @@ Those objects are:
 Example of shell session
 ========================
 
+.. skip: start
+
 Here's an example of a typical shell session where we start by scraping the
 https://scrapy.org page, and then proceed to scrape the https://old.reddit.com/
 page. Finally, we modify the (Reddit) request method to POST and re-fetch it
@@ -232,6 +234,8 @@ After that, we can start playing with the objects:
     'X-Ua-Compatible': ['IE=edge'],
     'X-Xss-Protection': ['1; mode=block']}
 
+.. skip: end
+
 
 .. _topics-shell-inspect-response:
 
@@ -268,6 +272,8 @@ Here's an example of how you would call it from your spider:
 
             # Rest of parsing code.
 
+.. skip: start
+
 When you run the spider, you will get something similar to this::
 
     2014-01-23 17:48:31-0400 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://example.com> (referer: None)
@@ -300,6 +306,8 @@ crawling::
     >>> ^D
     2014-01-23 17:50:03-0400 [scrapy.core.engine] DEBUG: Crawled (200) <GET http://example.net> (referer: None)
     ...
+
+.. skip: end
 
 Note that you can't use the ``fetch`` shortcut here since the Scrapy engine is
 blocked by the shell. However, after you leave the shell, the spider will

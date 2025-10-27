@@ -8,9 +8,8 @@ from scrapy.downloadermiddlewares.defaultheaders import DefaultHeadersMiddleware
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
-from scrapy.settings import Settings
-from scrapy.spiders import Spider
 from scrapy.utils.python import to_bytes
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
 UNSET = object()
@@ -60,9 +59,10 @@ class TestCookiesMiddleware:
         assert split_cookies(first) == split_cookies(second), msg
 
     def setup_method(self):
-        self.spider = Spider("foo")
-        self.mw = CookiesMiddleware()
-        self.redirect_middleware = RedirectMiddleware(settings=Settings())
+        crawler = get_crawler(DefaultSpider)
+        crawler.spider = crawler._create_spider()
+        self.mw = CookiesMiddleware.from_crawler(crawler)
+        self.redirect_middleware = RedirectMiddleware.from_crawler(crawler)
 
     def teardown_method(self):
         del self.mw
@@ -70,15 +70,15 @@ class TestCookiesMiddleware:
 
     def test_basic(self):
         req = Request("http://scrapytest.org/")
-        assert self.mw.process_request(req, self.spider) is None
+        assert self.mw.process_request(req) is None
         assert "Cookie" not in req.headers
 
         headers = {"Set-Cookie": "C1=value1; path=/"}
         res = Response("http://scrapytest.org/", headers=headers)
-        assert self.mw.process_response(req, res, self.spider) is res
+        assert self.mw.process_response(req, res) is res
 
         req2 = Request("http://scrapytest.org/sub1/")
-        assert self.mw.process_request(req2, self.spider) is None
+        assert self.mw.process_request(req2) is None
         assert req2.headers.get("Cookie") == b"C1=value1"
 
     def test_setting_false_cookies_enabled(self):
@@ -112,9 +112,9 @@ class TestCookiesMiddleware:
             res = Response(
                 "http://scrapytest.org/", headers={"Set-Cookie": "C1=value1; path=/"}
             )
-            mw.process_response(req, res, crawler.spider)
+            mw.process_response(req, res)
             req2 = Request("http://scrapytest.org/sub1/")
-            mw.process_request(req2, crawler.spider)
+            mw.process_request(req2)
 
             log.check(
                 (
@@ -143,23 +143,23 @@ class TestCookiesMiddleware:
             res = Response(
                 "http://scrapytest.org/", headers={"Set-Cookie": "C1=value1; path=/"}
             )
-            mw.process_response(req, res, crawler.spider)
+            mw.process_response(req, res)
             req2 = Request("http://scrapytest.org/sub1/")
-            mw.process_request(req2, crawler.spider)
+            mw.process_request(req2)
 
             log.check()
 
     def test_do_not_break_on_non_utf8_header(self):
         req = Request("http://scrapytest.org/")
-        assert self.mw.process_request(req, self.spider) is None
+        assert self.mw.process_request(req) is None
         assert "Cookie" not in req.headers
 
         headers = {"Set-Cookie": b"C1=in\xa3valid; path=/", "Other": b"ignore\xa3me"}
         res = Response("http://scrapytest.org/", headers=headers)
-        assert self.mw.process_response(req, res, self.spider) is res
+        assert self.mw.process_response(req, res) is res
 
         req2 = Request("http://scrapytest.org/sub1/")
-        assert self.mw.process_request(req2, self.spider) is None
+        assert self.mw.process_request(req2) is None
         assert "Cookie" in req2.headers
 
     def test_dont_merge_cookies(self):
@@ -167,11 +167,11 @@ class TestCookiesMiddleware:
         headers = {"Set-Cookie": "C1=value1; path=/"}
         req = Request("http://scrapytest.org/")
         res = Response("http://scrapytest.org/", headers=headers)
-        assert self.mw.process_response(req, res, self.spider) is res
+        assert self.mw.process_response(req, res) is res
 
         # test Cookie header is not seted to request
         req = Request("http://scrapytest.org/dontmerge", meta={"dont_merge_cookies": 1})
-        assert self.mw.process_request(req, self.spider) is None
+        assert self.mw.process_request(req) is None
         assert "Cookie" not in req.headers
 
         # check that returned cookies are not merged back to jar
@@ -179,16 +179,16 @@ class TestCookiesMiddleware:
             "http://scrapytest.org/dontmerge",
             headers={"Set-Cookie": "dont=mergeme; path=/"},
         )
-        assert self.mw.process_response(req, res, self.spider) is res
+        assert self.mw.process_response(req, res) is res
 
         # check that cookies are merged back
         req = Request("http://scrapytest.org/mergeme")
-        assert self.mw.process_request(req, self.spider) is None
+        assert self.mw.process_request(req) is None
         assert req.headers.get("Cookie") == b"C1=value1"
 
         # check that cookies are merged when dont_merge_cookies is passed as 0
         req = Request("http://scrapytest.org/mergeme", meta={"dont_merge_cookies": 0})
-        assert self.mw.process_request(req, self.spider) is None
+        assert self.mw.process_request(req) is None
         assert req.headers.get("Cookie") == b"C1=value1"
 
     def test_complex_cookies(self):
@@ -216,11 +216,11 @@ class TestCookiesMiddleware:
         ]
 
         req = Request("http://scrapytest.org/", cookies=cookies)
-        self.mw.process_request(req, self.spider)
+        self.mw.process_request(req)
 
         # embed C1 and C3 for scrapytest.org/foo
         req = Request("http://scrapytest.org/foo")
-        self.mw.process_request(req, self.spider)
+        self.mw.process_request(req)
         assert req.headers.get("Cookie") in (
             b"C1=value1; C3=value3",
             b"C3=value3; C1=value1",
@@ -228,25 +228,25 @@ class TestCookiesMiddleware:
 
         # embed C2 for scrapytest.org/bar
         req = Request("http://scrapytest.org/bar")
-        self.mw.process_request(req, self.spider)
+        self.mw.process_request(req)
         assert req.headers.get("Cookie") == b"C2=value2"
 
         # embed nothing for scrapytest.org/baz
         req = Request("http://scrapytest.org/baz")
-        self.mw.process_request(req, self.spider)
+        self.mw.process_request(req)
         assert "Cookie" not in req.headers
 
     def test_merge_request_cookies(self):
         req = Request("http://scrapytest.org/", cookies={"galleta": "salada"})
-        assert self.mw.process_request(req, self.spider) is None
+        assert self.mw.process_request(req) is None
         assert req.headers.get("Cookie") == b"galleta=salada"
 
         headers = {"Set-Cookie": "C1=value1; path=/"}
         res = Response("http://scrapytest.org/", headers=headers)
-        assert self.mw.process_response(req, res, self.spider) is res
+        assert self.mw.process_response(req, res) is res
 
         req2 = Request("http://scrapytest.org/sub1/")
-        assert self.mw.process_request(req2, self.spider) is None
+        assert self.mw.process_request(req2) is None
 
         self.assertCookieValEqual(
             req2.headers.get("Cookie"), b"C1=value1; galleta=salada"
@@ -258,15 +258,15 @@ class TestCookiesMiddleware:
             cookies={"galleta": "salada"},
             meta={"cookiejar": "store1"},
         )
-        assert self.mw.process_request(req, self.spider) is None
+        assert self.mw.process_request(req) is None
         assert req.headers.get("Cookie") == b"galleta=salada"
 
         headers = {"Set-Cookie": "C1=value1; path=/"}
         res = Response("http://scrapytest.org/", headers=headers, request=req)
-        assert self.mw.process_response(req, res, self.spider) is res
+        assert self.mw.process_response(req, res) is res
 
         req2 = Request("http://scrapytest.org/", meta=res.meta)
-        assert self.mw.process_request(req2, self.spider) is None
+        assert self.mw.process_request(req2) is None
         self.assertCookieValEqual(
             req2.headers.get("Cookie"), b"C1=value1; galleta=salada"
         )
@@ -276,45 +276,45 @@ class TestCookiesMiddleware:
             cookies={"galleta": "dulce"},
             meta={"cookiejar": "store2"},
         )
-        assert self.mw.process_request(req3, self.spider) is None
+        assert self.mw.process_request(req3) is None
         assert req3.headers.get("Cookie") == b"galleta=dulce"
 
         headers = {"Set-Cookie": "C2=value2; path=/"}
         res2 = Response("http://scrapytest.org/", headers=headers, request=req3)
-        assert self.mw.process_response(req3, res2, self.spider) is res2
+        assert self.mw.process_response(req3, res2) is res2
 
         req4 = Request("http://scrapytest.org/", meta=res2.meta)
-        assert self.mw.process_request(req4, self.spider) is None
+        assert self.mw.process_request(req4) is None
         self.assertCookieValEqual(
             req4.headers.get("Cookie"), b"C2=value2; galleta=dulce"
         )
 
         # cookies from hosts with port
         req5_1 = Request("http://scrapytest.org:1104/")
-        assert self.mw.process_request(req5_1, self.spider) is None
+        assert self.mw.process_request(req5_1) is None
 
         headers = {"Set-Cookie": "C1=value1; path=/"}
         res5_1 = Response(
             "http://scrapytest.org:1104/", headers=headers, request=req5_1
         )
-        assert self.mw.process_response(req5_1, res5_1, self.spider) is res5_1
+        assert self.mw.process_response(req5_1, res5_1) is res5_1
 
         req5_2 = Request("http://scrapytest.org:1104/some-redirected-path")
-        assert self.mw.process_request(req5_2, self.spider) is None
+        assert self.mw.process_request(req5_2) is None
         assert req5_2.headers.get("Cookie") == b"C1=value1"
 
         req5_3 = Request("http://scrapytest.org/some-redirected-path")
-        assert self.mw.process_request(req5_3, self.spider) is None
+        assert self.mw.process_request(req5_3) is None
         assert req5_3.headers.get("Cookie") == b"C1=value1"
 
         # skip cookie retrieval for not http request
         req6 = Request("file:///scrapy/sometempfile")
-        assert self.mw.process_request(req6, self.spider) is None
+        assert self.mw.process_request(req6) is None
         assert req6.headers.get("Cookie") is None
 
     def test_local_domain(self):
         request = Request("http://example-host/", cookies={"currencyCookie": "USD"})
-        assert self.mw.process_request(request, self.spider) is None
+        assert self.mw.process_request(request) is None
         assert "Cookie" in request.headers
         assert request.headers["Cookie"] == b"currencyCookie=USD"
 
@@ -324,15 +324,15 @@ class TestCookiesMiddleware:
         mw_default_headers = DefaultHeadersMiddleware(DEFAULT_REQUEST_HEADERS.items())
         # overwrite with values from 'cookies' request argument
         req1 = Request("http://example.org", cookies={"default": "something"})
-        assert mw_default_headers.process_request(req1, self.spider) is None
-        assert self.mw.process_request(req1, self.spider) is None
+        assert mw_default_headers.process_request(req1) is None
+        assert self.mw.process_request(req1) is None
         self.assertCookieValEqual(
             req1.headers["Cookie"], b"default=something; asdf=qwerty"
         )
         # keep both
         req2 = Request("http://example.com", cookies={"a": "b"})
-        assert mw_default_headers.process_request(req2, self.spider) is None
-        assert self.mw.process_request(req2, self.spider) is None
+        assert mw_default_headers.process_request(req2) is None
+        assert self.mw.process_request(req2) is None
         self.assertCookieValEqual(
             req2.headers["Cookie"], b"default=value; a=b; asdf=qwerty"
         )
@@ -341,13 +341,13 @@ class TestCookiesMiddleware:
     def test_keep_cookie_header(self):
         # keep only cookies from 'Cookie' request header
         req1 = Request("http://scrapytest.org", headers={"Cookie": "a=b; c=d"})
-        assert self.mw.process_request(req1, self.spider) is None
+        assert self.mw.process_request(req1) is None
         self.assertCookieValEqual(req1.headers["Cookie"], "a=b; c=d")
         # keep cookies from both 'Cookie' request header and 'cookies' keyword
         req2 = Request(
             "http://scrapytest.org", headers={"Cookie": "a=b; c=d"}, cookies={"e": "f"}
         )
-        assert self.mw.process_request(req2, self.spider) is None
+        assert self.mw.process_request(req2) is None
         self.assertCookieValEqual(req2.headers["Cookie"], "a=b; c=d; e=f")
         # overwrite values from 'Cookie' request header with 'cookies' keyword
         req3 = Request(
@@ -355,40 +355,40 @@ class TestCookiesMiddleware:
             headers={"Cookie": "a=b; c=d"},
             cookies={"a": "new", "e": "f"},
         )
-        assert self.mw.process_request(req3, self.spider) is None
+        assert self.mw.process_request(req3) is None
         self.assertCookieValEqual(req3.headers["Cookie"], "a=new; c=d; e=f")
 
     def test_request_cookies_encoding(self):
         # 1) UTF8-encoded bytes
         req1 = Request("http://example.org", cookies={"a": "á".encode()})
-        assert self.mw.process_request(req1, self.spider) is None
+        assert self.mw.process_request(req1) is None
         self.assertCookieValEqual(req1.headers["Cookie"], b"a=\xc3\xa1")
 
         # 2) Non UTF8-encoded bytes
         req2 = Request("http://example.org", cookies={"a": "á".encode("latin1")})
-        assert self.mw.process_request(req2, self.spider) is None
+        assert self.mw.process_request(req2) is None
         self.assertCookieValEqual(req2.headers["Cookie"], b"a=\xc3\xa1")
 
         # 3) String
         req3 = Request("http://example.org", cookies={"a": "á"})
-        assert self.mw.process_request(req3, self.spider) is None
+        assert self.mw.process_request(req3) is None
         self.assertCookieValEqual(req3.headers["Cookie"], b"a=\xc3\xa1")
 
     @pytest.mark.xfail(reason="Cookie header is not currently being processed")
     def test_request_headers_cookie_encoding(self):
         # 1) UTF8-encoded bytes
         req1 = Request("http://example.org", headers={"Cookie": "a=á".encode()})
-        assert self.mw.process_request(req1, self.spider) is None
+        assert self.mw.process_request(req1) is None
         self.assertCookieValEqual(req1.headers["Cookie"], b"a=\xc3\xa1")
 
         # 2) Non UTF8-encoded bytes
         req2 = Request("http://example.org", headers={"Cookie": "a=á".encode("latin1")})
-        assert self.mw.process_request(req2, self.spider) is None
+        assert self.mw.process_request(req2) is None
         self.assertCookieValEqual(req2.headers["Cookie"], b"a=\xc3\xa1")
 
         # 3) String
         req3 = Request("http://example.org", headers={"Cookie": "a=á"})
-        assert self.mw.process_request(req3, self.spider) is None
+        assert self.mw.process_request(req3) is None
         self.assertCookieValEqual(req3.headers["Cookie"], b"a=\xc3\xa1")
 
     def test_invalid_cookies(self):
@@ -402,13 +402,13 @@ class TestCookiesMiddleware:
         ) as lc:
             cookies1 = [{"value": "bar"}, {"name": "key", "value": "value1"}]
             req1 = Request("http://example.org/1", cookies=cookies1)
-            assert self.mw.process_request(req1, self.spider) is None
+            assert self.mw.process_request(req1) is None
             cookies2 = [{"name": "foo"}, {"name": "key", "value": "value2"}]
             req2 = Request("http://example.org/2", cookies=cookies2)
-            assert self.mw.process_request(req2, self.spider) is None
+            assert self.mw.process_request(req2) is None
             cookies3 = [{"name": "foo", "value": None}, {"name": "key", "value": ""}]
             req3 = Request("http://example.org/3", cookies=cookies3)
-            assert self.mw.process_request(req3, self.spider) is None
+            assert self.mw.process_request(req3) is None
             lc.check(
                 (
                     "scrapy.downloadermiddlewares.cookies",
@@ -436,22 +436,22 @@ class TestCookiesMiddleware:
     def test_primitive_type_cookies(self):
         # Boolean
         req1 = Request("http://example.org", cookies={"a": True})
-        assert self.mw.process_request(req1, self.spider) is None
+        assert self.mw.process_request(req1) is None
         self.assertCookieValEqual(req1.headers["Cookie"], b"a=True")
 
         # Float
         req2 = Request("http://example.org", cookies={"a": 9.5})
-        assert self.mw.process_request(req2, self.spider) is None
+        assert self.mw.process_request(req2) is None
         self.assertCookieValEqual(req2.headers["Cookie"], b"a=9.5")
 
         # Integer
         req3 = Request("http://example.org", cookies={"a": 10})
-        assert self.mw.process_request(req3, self.spider) is None
+        assert self.mw.process_request(req3) is None
         self.assertCookieValEqual(req3.headers["Cookie"], b"a=10")
 
         # String
         req4 = Request("http://example.org", cookies={"a": "b"})
-        assert self.mw.process_request(req4, self.spider) is None
+        assert self.mw.process_request(req4) is None
         self.assertCookieValEqual(req4.headers["Cookie"], b"a=b")
 
     def _test_cookie_redirect(
@@ -471,7 +471,7 @@ class TestCookiesMiddleware:
         target.setdefault("status", 301)
 
         request1 = Request(cookies=input_cookies, **source)
-        self.mw.process_request(request1, self.spider)
+        self.mw.process_request(request1)
         cookies = request1.headers.get("Cookie")
         assert cookies == (b"a=b" if cookies1 else None)
 
@@ -481,16 +481,12 @@ class TestCookiesMiddleware:
             },
             **target,
         )
-        assert self.mw.process_response(request1, response, self.spider) == response
+        assert self.mw.process_response(request1, response) == response
 
-        request2 = self.redirect_middleware.process_response(
-            request1,
-            response,
-            self.spider,
-        )
+        request2 = self.redirect_middleware.process_response(request1, response)
         assert isinstance(request2, Request)
 
-        self.mw.process_request(request2, self.spider)
+        self.mw.process_request(request2)
         cookies = request2.headers.get("Cookie")
         assert cookies == (b"a=b" if cookies2 else None)
 
@@ -564,11 +560,7 @@ class TestCookiesMiddleware:
             **target,
         )
 
-        request2 = self.redirect_middleware.process_response(
-            request1,
-            response,
-            self.spider,
-        )
+        request2 = self.redirect_middleware.process_response(request1, response)
         assert isinstance(request2, Request)
 
         cookies = request2.headers.get("Cookie")
@@ -620,12 +612,12 @@ class TestCookiesMiddleware:
         ]
 
         request1 = Request(url1, cookies=input_cookies)
-        self.mw.process_request(request1, self.spider)
+        self.mw.process_request(request1)
         cookies = request1.headers.get("Cookie")
         assert cookies == (b"a=b" if cookies1 else None)
 
         request2 = Request(url2)
-        self.mw.process_request(request2, self.spider)
+        self.mw.process_request(request2)
         cookies = request2.headers.get("Cookie")
         assert cookies == (b"a=b" if cookies2 else None)
 
@@ -674,7 +666,7 @@ class TestCookiesMiddleware:
         cookies,
     ):
         request1 = Request(url1)
-        self.mw.process_request(request1, self.spider)
+        self.mw.process_request(request1)
 
         input_cookies = [
             {
@@ -688,10 +680,10 @@ class TestCookiesMiddleware:
             "Set-Cookie": _cookies_to_set_cookie_list(input_cookies),
         }
         response = Response(url1, status=200, headers=headers)
-        assert self.mw.process_response(request1, response, self.spider) == response
+        assert self.mw.process_response(request1, response) == response
 
         request2 = Request(url2)
-        self.mw.process_request(request2, self.spider)
+        self.mw.process_request(request2)
         actual_cookies = request2.headers.get("Cookie")
         assert actual_cookies == (b"a=b" if cookies else None)
 
@@ -743,7 +735,7 @@ class TestCookiesMiddleware:
         input_cookies = [{"name": "a", "value": "b", **cookie_kwargs}]
 
         request1 = Request(f"{from_scheme}://a.example", cookies=input_cookies)
-        self.mw.process_request(request1, self.spider)
+        self.mw.process_request(request1)
         cookies = request1.headers.get("Cookie")
         assert cookies == (b"a=b" if cookies1 else None)
 
@@ -752,18 +744,14 @@ class TestCookiesMiddleware:
             headers={"Location": f"{to_scheme}://a.example"},
             status=301,
         )
-        assert self.mw.process_response(request1, response, self.spider) == response
+        assert self.mw.process_response(request1, response) == response
 
-        request2 = self.redirect_middleware.process_response(
-            request1,
-            response,
-            self.spider,
-        )
+        request2 = self.redirect_middleware.process_response(request1, response)
         assert isinstance(request2, Request)
         cookies = request2.headers.get("Cookie")
         assert cookies == (b"a=b" if cookies2 else None)
 
-        self.mw.process_request(request2, self.spider)
+        self.mw.process_request(request2)
         cookies = request2.headers.get("Cookie")
         assert cookies == (b"a=b" if cookies3 else None)
 

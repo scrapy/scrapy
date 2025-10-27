@@ -6,7 +6,7 @@ import asyncio
 import logging
 import time
 from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
 from twisted.internet.defer import Deferred
 from twisted.internet.task import LoopingCall
@@ -17,15 +17,14 @@ from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_instal
 if TYPE_CHECKING:
     from twisted.internet.base import DelayedCall
 
-    # typing.Concatenate and typing.ParamSpec require Python 3.10
     # typing.Self, typing.TypeVarTuple and typing.Unpack require Python 3.11
-    from typing_extensions import Concatenate, ParamSpec, Self, TypeVarTuple, Unpack
+    from typing_extensions import Self, TypeVarTuple, Unpack
 
-    _P = ParamSpec("_P")
     _Ts = TypeVarTuple("_Ts")
 
 
 _T = TypeVar("_T")
+_P = ParamSpec("_P")
 
 
 logger = logging.getLogger(__name__)
@@ -69,7 +68,7 @@ def is_asyncio_available() -> bool:
 async def _parallel_asyncio(
     iterable: Iterable[_T] | AsyncIterator[_T],
     count: int,
-    callable: Callable[Concatenate[_T, _P], Coroutine[Any, Any, None]],
+    callable_: Callable[Concatenate[_T, _P], Coroutine[Any, Any, None]],
     *args: _P.args,
     **kwargs: _P.kwargs,
 ) -> None:
@@ -89,7 +88,7 @@ async def _parallel_asyncio(
             if item is None:
                 break
             try:
-                await callable(item, *args, **kwargs)
+                await callable_(item, *args, **kwargs)
             finally:
                 queue.task_done()
 

@@ -4,6 +4,9 @@ import logging
 import sys
 from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING
+from urllib.robotparser import RobotFileParser
+
+from protego import Protego
 
 from scrapy.utils.python import to_unicode
 
@@ -25,7 +28,7 @@ def decode_robotstxt(
         if to_native_str_type:
             body_decoded = to_unicode(robotstxt_body)
         else:
-            body_decoded = robotstxt_body.decode("utf-8", errors="ignore")
+            body_decoded = robotstxt_body.decode("utf-8-sig", errors="ignore")
     except UnicodeDecodeError:
         # If we found garbage or robots.txt in an encoding other than UTF-8, disregard it.
         # Switch to 'allow all' state.
@@ -67,8 +70,6 @@ class RobotParser(metaclass=ABCMeta):
 
 class PythonRobotParser(RobotParser):
     def __init__(self, robotstxt_body: bytes, spider: Spider | None):
-        from urllib.robotparser import RobotFileParser
-
         self.spider: Spider | None = spider
         body_decoded = decode_robotstxt(robotstxt_body, spider, to_native_str_type=True)
         self.rp: RobotFileParser = RobotFileParser()
@@ -87,7 +88,7 @@ class PythonRobotParser(RobotParser):
 
 class RerpRobotParser(RobotParser):
     def __init__(self, robotstxt_body: bytes, spider: Spider | None):
-        from robotexclusionrulesparser import RobotExclusionRulesParser
+        from robotexclusionrulesparser import RobotExclusionRulesParser  # noqa: PLC0415
 
         self.spider: Spider | None = spider
         self.rp: RobotExclusionRulesParser = RobotExclusionRulesParser()
@@ -107,8 +108,6 @@ class RerpRobotParser(RobotParser):
 
 class ProtegoRobotParser(RobotParser):
     def __init__(self, robotstxt_body: bytes, spider: Spider | None):
-        from protego import Protego
-
         self.spider: Spider | None = spider
         body_decoded = decode_robotstxt(robotstxt_body, spider)
         self.rp = Protego.parse(body_decoded)

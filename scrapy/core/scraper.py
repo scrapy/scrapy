@@ -7,9 +7,9 @@ import logging
 import warnings
 from collections import deque
 from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar
 
-from twisted.internet.defer import Deferred, inlineCallbacks, maybeDeferred
+from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
@@ -21,19 +21,24 @@ from scrapy.exceptions import (
     ScrapyDeprecationWarning,
 )
 from scrapy.http import Request, Response
+from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import _parallel_asyncio, is_asyncio_available
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
-    _defer_sleep,
+    _defer_sleep_async,
+    _schedule_coro,
     aiter_errback,
-    deferred_f_from_coro_f,
     deferred_from_coro,
+    ensure_awaitable,
     iter_errback,
     maybe_deferred_to_future,
     parallel,
     parallel_async,
 )
+from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.log import failure_to_exc_info, logformatter_adapter
 from scrapy.utils.misc import load_object, warn_on_generator_with_return_value
+from scrapy.utils.python import global_object_name
 from scrapy.utils.spider import iterate_spider_output
 
 if TYPE_CHECKING:
@@ -41,7 +46,6 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.logformatter import LogFormatter
-    from scrapy.pipelines import ItemPipelineManager
     from scrapy.signalmanager import SignalManager
 
 
@@ -49,7 +53,7 @@ logger = logging.getLogger(__name__)
 
 
 _T = TypeVar("_T")
-QueueTuple = tuple[Union[Response, Failure], Request, Deferred[None]]
+QueueTuple: TypeAlias = tuple[Response | Failure, Request, Deferred[None]]
 
 
 class Slot:
@@ -106,33 +110,97 @@ class Scraper:
             crawler.settings["ITEM_PROCESSOR"]
         )
         self.itemproc: ItemPipelineManager = itemproc_cls.from_crawler(crawler)
+        self._itemproc_has_async: dict[str, bool] = {}
+        for method in [
+            "open_spider",
+            "close_spider",
+            "process_item",
+        ]:
+            self._check_deprecated_itemproc_method(method)
+
         self.concurrent_items: int = crawler.settings.getint("CONCURRENT_ITEMS")
         self.crawler: Crawler = crawler
         self.signals: SignalManager = crawler.signals
         assert crawler.logformatter
         self.logformatter: LogFormatter = crawler.logformatter
 
-    @deferred_f_from_coro_f
-    async def open_spider(self, spider: Spider) -> None:
-        """Open the given spider for scraping and allocate resources for it"""
-        self.slot = Slot(self.crawler.settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE"))
-        await maybe_deferred_to_future(self.itemproc.open_spider(spider))
-
-    def close_spider(self, spider: Spider | None = None) -> Deferred[Spider]:
-        """Close a spider being scraped and release its resources"""
-        if spider is not None:
+    def _check_deprecated_itemproc_method(self, method: str) -> None:
+        itemproc_cls = type(self.itemproc)
+        if not hasattr(self.itemproc, "process_item_async"):
             warnings.warn(
-                "Passing a 'spider' argument to Scraper.close_spider() is deprecated.",
-                category=ScrapyDeprecationWarning,
+                f"{global_object_name(itemproc_cls)} doesn't define a {method}_async() method,"
+                f" this is deprecated and the method will be required in future Scrapy versions.",
+                ScrapyDeprecationWarning,
                 stacklevel=2,
             )
+            self._itemproc_has_async[method] = False
+        elif (
+            issubclass(itemproc_cls, ItemPipelineManager)
+            and method_is_overridden(itemproc_cls, ItemPipelineManager, method)
+            and not method_is_overridden(
+                itemproc_cls, ItemPipelineManager, f"{method}_async"
+            )
+        ):
+            warnings.warn(
+                f"{global_object_name(itemproc_cls)} overrides {method}() but doesn't override {method}_async()."
+                f" This is deprecated. {method}() will be used, but in future Scrapy versions {method}_async() will be used instead.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            self._itemproc_has_async[method] = False
+        else:
+            self._itemproc_has_async[method] = True
 
+    def open_spider(self, spider: Spider | None = None) -> Deferred[None]:
+        warnings.warn(
+            "Scraper.open_spider() is deprecated, use open_spider_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return deferred_from_coro(self.open_spider_async())
+
+    async def open_spider_async(self) -> None:
+        """Open the spider for scraping and allocate resources for it.
+
+        .. versionadded:: VERSION
+        """
+        self.slot = Slot(self.crawler.settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE"))
+        if not self.crawler.spider:
+            raise RuntimeError(
+                "Scraper.open_spider() called before Crawler.spider is set."
+            )
+        if self._itemproc_has_async["open_spider"]:
+            await self.itemproc.open_spider_async()
+        else:
+            await maybe_deferred_to_future(
+                self.itemproc.open_spider(self.crawler.spider)
+            )
+
+    def close_spider(self, spider: Spider | None = None) -> Deferred[None]:
+        warnings.warn(
+            "Scraper.close_spider() is deprecated, use close_spider_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
+        return deferred_from_coro(self.close_spider_async())
+
+    async def close_spider_async(self) -> None:
+        """Close the spider being scraped and release its resources.
+
+        .. versionadded:: VERSION
+        """
         if self.slot is None:
             raise RuntimeError("Scraper slot not assigned")
         self.slot.closing = Deferred()
-        self.slot.closing.addCallback(self.itemproc.close_spider)
         self._check_if_closing()
-        return self.slot.closing
+        await maybe_deferred_to_future(self.slot.closing)
+        if self._itemproc_has_async["close_spider"]:
+            await self.itemproc.close_spider_async()
+        else:
+            assert self.crawler.spider
+            await maybe_deferred_to_future(
+                self.itemproc.close_spider(self.crawler.spider)
+            )
 
     def is_idle(self) -> bool:
         """Return True if there isn't any more spiders to process"""
@@ -140,28 +208,21 @@ class Scraper:
 
     def _check_if_closing(self) -> None:
         assert self.slot is not None  # typing
-        assert self.crawler.spider
         if self.slot.closing and self.slot.is_idle():
             assert self.crawler.spider
             self.slot.closing.callback(self.crawler.spider)
 
     @inlineCallbacks
+    @_warn_spider_arg
     def enqueue_scrape(
         self, result: Response | Failure, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, None]:
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to Scraper.enqueue_scrape() is deprecated.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-
         if self.slot is None:
             raise RuntimeError("Scraper slot not assigned")
         dfd = self.slot.add_response_request(result, request)
         self._scrape_next()
         try:
-            yield dfd
+            yield dfd  # fired in _wait_for_processing()
         except Exception:
             logger.error(
                 "Scraper bug processing %(request)s",
@@ -177,10 +238,9 @@ class Scraper:
     def _scrape_next(self) -> None:
         assert self.slot is not None  # typing
         while self.slot.queue:
-            result, request, deferred = self.slot.next_response_request_deferred()
-            self._scrape(result, request).chainDeferred(deferred)
+            result, request, queue_dfd = self.slot.next_response_request_deferred()
+            _schedule_coro(self._wait_for_processing(result, request, queue_dfd))
 
-    @deferred_f_from_coro_f
     async def _scrape(self, result: Response | Failure, request: Request) -> None:
         """Handle the downloaded response or failure through the spider callback/errback."""
         if not isinstance(result, (Response, Failure)):
@@ -188,13 +248,12 @@ class Scraper:
                 f"Incorrect type: expected Response or Failure, got {type(result)}: {result!r}"
             )
 
-        assert self.crawler.spider
         output: Iterable[Any] | AsyncIterator[Any]
         if isinstance(result, Response):
             try:
                 # call the spider middlewares and the request callback with the response
                 output = await self.spidermw.scrape_response_async(
-                    self.call_spider, result, request, self.crawler.spider
+                    self.call_spider_async, result, request
                 )
             except Exception:
                 self.handle_spider_error(Failure(), request, result)
@@ -207,6 +266,7 @@ class Scraper:
             output = await self.call_spider_async(result, request)
         except Exception as spider_exc:
             # the errback didn't silence the exception
+            assert self.crawler.spider
             if not result.check(IgnoreRequest):
                 logkws = self.logformatter.download_error(
                     result, request, self.crawler.spider
@@ -222,22 +282,34 @@ class Scraper:
         else:
             await self.handle_spider_output_async(output, request, result)
 
+    async def _wait_for_processing(
+        self, result: Response | Failure, request: Request, queue_dfd: Deferred[None]
+    ) -> None:
+        try:
+            await self._scrape(result, request)
+        except Exception:
+            queue_dfd.errback(Failure())
+        else:
+            queue_dfd.callback(None)  # awaited in enqueue_scrape()
+
     def call_spider(
         self, result: Response | Failure, request: Request, spider: Spider | None = None
     ) -> Deferred[Iterable[Any] | AsyncIterator[Any]]:
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to Scraper.call_spider() is deprecated.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
+        warnings.warn(
+            "Scraper.call_spider() is deprecated, use call_spider_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return deferred_from_coro(self.call_spider_async(result, request))
 
     async def call_spider_async(
         self, result: Response | Failure, request: Request
     ) -> Iterable[Any] | AsyncIterator[Any]:
-        """Call the request callback or errback with the response or failure."""
-        await maybe_deferred_to_future(_defer_sleep())
+        """Call the request callback or errback with the response or failure.
+
+        .. versionadded:: 2.13
+        """
+        await _defer_sleep_async()
         assert self.crawler.spider
         if isinstance(result, Response):
             if getattr(result, "request", None) is None:
@@ -257,10 +329,9 @@ class Scraper:
                 output.raiseException()
             # else the errback returned actual output (like a callback),
             # which needs to be passed to iterate_spider_output()
-        return await maybe_deferred_to_future(
-            maybeDeferred(iterate_spider_output, output)
-        )
+        return await ensure_awaitable(iterate_spider_output(output))
 
+    @_warn_spider_arg
     def handle_spider_error(
         self,
         _failure: Failure,
@@ -269,19 +340,12 @@ class Scraper:
         spider: Spider | None = None,
     ) -> None:
         """Handle an exception raised by a spider callback or errback."""
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to Scraper.handle_spider_error() is deprecated.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-
         assert self.crawler.spider
         exc = _failure.value
         if isinstance(exc, CloseSpider):
             assert self.crawler.engine is not None  # typing
-            self.crawler.engine.close_spider(
-                self.crawler.spider, exc.reason or "cancelled"
+            _schedule_coro(
+                self.crawler.engine.close_spider_async(reason=exc.reason or "cancelled")
             )
             return
         logkws = self.logformatter.spider_error(
@@ -299,12 +363,9 @@ class Scraper:
             spider=self.crawler.spider,
         )
         assert self.crawler.stats
+        self.crawler.stats.inc_value("spider_exceptions/count")
         self.crawler.stats.inc_value(
-            "spider_exceptions/count", spider=self.crawler.spider
-        )
-        self.crawler.stats.inc_value(
-            f"spider_exceptions/{_failure.value.__class__.__name__}",
-            spider=self.crawler.spider,
+            f"spider_exceptions/{_failure.value.__class__.__name__}"
         )
 
     def handle_spider_output(
@@ -315,12 +376,11 @@ class Scraper:
         spider: Spider | None = None,
     ) -> Deferred[None]:
         """Pass items/requests produced by a callback to ``_process_spidermw_output()`` in parallel."""
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to Scraper.handle_spider_output() is deprecated.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
+        warnings.warn(
+            "Scraper.handle_spider_output() is deprecated, use handle_spider_output_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return deferred_from_coro(
             self.handle_spider_output_async(result, request, response)
         )
@@ -331,7 +391,10 @@ class Scraper:
         request: Request,
         response: Response | Failure,
     ) -> None:
-        """Pass items/requests produced by a callback to ``_process_spidermw_output()`` in parallel."""
+        """Pass items/requests produced by a callback to ``_process_spidermw_output()`` in parallel.
+
+        .. versionadded:: 2.13
+        """
         it: Iterable[_T] | AsyncIterator[_T]
         if is_asyncio_available():
             if isinstance(result, AsyncIterator):
@@ -396,6 +459,11 @@ class Scraper:
         *response* is the source of the item data. If the item does not come
         from response data, e.g. it was hard-coded, set it to ``None``.
         """
+        warnings.warn(
+            "Scraper.start_itemproc() is deprecated, use start_itemproc_async() instead",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return deferred_from_coro(self.start_itemproc_async(item, response=response))
 
     async def start_itemproc_async(
@@ -405,14 +473,19 @@ class Scraper:
 
         *response* is the source of the item data. If the item does not come
         from response data, e.g. it was hard-coded, set it to ``None``.
+
+        .. versionadded:: VERSION
         """
         assert self.slot is not None  # typing
         assert self.crawler.spider is not None  # typing
         self.slot.itemproc_size += 1
         try:
-            output = await maybe_deferred_to_future(
-                self.itemproc.process_item(item, self.crawler.spider)
-            )
+            if self._itemproc_has_async["process_item"]:
+                output = await self.itemproc.process_item_async(item)
+            else:
+                output = await maybe_deferred_to_future(
+                    self.itemproc.process_item(item, self.crawler.spider)
+                )
         except DropItem as ex:
             logkws = self.logformatter.dropped(item, ex, response, self.crawler.spider)
             if logkws is not None:

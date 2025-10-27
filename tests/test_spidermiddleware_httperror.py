@@ -1,16 +1,16 @@
+from __future__ import annotations
+
 import logging
 
 import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import TestCase
 
 from scrapy.http import Request, Response
-from scrapy.settings import Settings
 from scrapy.spidermiddlewares.httperror import HttpError, HttpErrorMiddleware
-from scrapy.spiders import Spider
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import MockServerSpider
 
 
@@ -49,111 +49,132 @@ class _HttpErrorSpider(MockServerSpider):
         return failure
 
 
-def _responses(request, status_codes):
-    responses = []
-    for code in status_codes:
-        response = Response(request.url, status=code)
-        response.request = request
-        responses.append(response)
-    return responses
+req = Request("http://scrapytest.org")
+
+
+def _response(request: Request, status_code: int) -> Response:
+    return Response(request.url, status=status_code, request=request)
+
+
+@pytest.fixture
+def res200() -> Response:
+    return _response(req, 200)
+
+
+@pytest.fixture
+def res402() -> Response:
+    return _response(req, 402)
+
+
+@pytest.fixture
+def res404() -> Response:
+    return _response(req, 404)
 
 
 class TestHttpErrorMiddleware:
-    def setup_method(self):
-        crawler = get_crawler(Spider)
-        self.spider = Spider.from_crawler(crawler, name="foo")
-        self.mw = HttpErrorMiddleware(Settings({}))
-        self.req = Request("http://scrapytest.org")
-        self.res200, self.res404 = _responses(self.req, [200, 404])
+    @pytest.fixture
+    def mw(self) -> HttpErrorMiddleware:
+        crawler = get_crawler(DefaultSpider)
+        crawler.spider = crawler._create_spider()
+        return HttpErrorMiddleware.from_crawler(crawler)
 
-    def test_process_spider_input(self):
-        assert self.mw.process_spider_input(self.res200, self.spider) is None
+    def test_process_spider_input(
+        self, mw: HttpErrorMiddleware, res200: Response, res404: Response
+    ) -> None:
+        mw.process_spider_input(res200)
         with pytest.raises(HttpError):
-            self.mw.process_spider_input(self.res404, self.spider)
+            mw.process_spider_input(res404)
 
-    def test_process_spider_exception(self):
-        assert (
-            self.mw.process_spider_exception(
-                self.res404, HttpError(self.res404), self.spider
-            )
-            == []
-        )
-        assert (
-            self.mw.process_spider_exception(self.res404, Exception(), self.spider)
-            is None
-        )
+    def test_process_spider_exception(
+        self, mw: HttpErrorMiddleware, res404: Response
+    ) -> None:
+        assert mw.process_spider_exception(res404, HttpError(res404)) == []
+        assert mw.process_spider_exception(res404, Exception()) is None
 
-    def test_handle_httpstatus_list(self):
-        res = self.res404.copy()
-        res.request = Request(
+    def test_handle_httpstatus_list(
+        self, mw: HttpErrorMiddleware, res404: Response
+    ) -> None:
+        request = Request(
             "http://scrapytest.org", meta={"handle_httpstatus_list": [404]}
         )
-        assert self.mw.process_spider_input(res, self.spider) is None
+        res = _response(request, 404)
+        mw.process_spider_input(res)
 
-        self.spider.handle_httpstatus_list = [404]
-        assert self.mw.process_spider_input(self.res404, self.spider) is None
+        assert mw.crawler.spider
+        mw.crawler.spider.handle_httpstatus_list = [404]  # type: ignore[attr-defined]
+        mw.process_spider_input(res404)
 
 
 class TestHttpErrorMiddlewareSettings:
     """Similar test, but with settings"""
 
-    def setup_method(self):
-        self.spider = Spider("foo")
-        self.mw = HttpErrorMiddleware(Settings({"HTTPERROR_ALLOWED_CODES": (402,)}))
-        self.req = Request("http://scrapytest.org")
-        self.res200, self.res404, self.res402 = _responses(self.req, [200, 404, 402])
+    @pytest.fixture
+    def mw(self) -> HttpErrorMiddleware:
+        crawler = get_crawler(DefaultSpider, {"HTTPERROR_ALLOWED_CODES": (402,)})
+        crawler.spider = crawler._create_spider()
+        return HttpErrorMiddleware.from_crawler(crawler)
 
-    def test_process_spider_input(self):
-        assert self.mw.process_spider_input(self.res200, self.spider) is None
+    def test_process_spider_input(
+        self,
+        mw: HttpErrorMiddleware,
+        res200: Response,
+        res402: Response,
+        res404: Response,
+    ) -> None:
+        mw.process_spider_input(res200)
         with pytest.raises(HttpError):
-            self.mw.process_spider_input(self.res404, self.spider)
-        assert self.mw.process_spider_input(self.res402, self.spider) is None
+            mw.process_spider_input(res404)
+        mw.process_spider_input(res402)
 
-    def test_meta_overrides_settings(self):
+    def test_meta_overrides_settings(self, mw: HttpErrorMiddleware) -> None:
         request = Request(
             "http://scrapytest.org", meta={"handle_httpstatus_list": [404]}
         )
-        res404 = self.res404.copy()
-        res404.request = request
-        res402 = self.res402.copy()
-        res402.request = request
+        res404 = _response(request, 404)
+        res402 = _response(request, 402)
 
-        assert self.mw.process_spider_input(res404, self.spider) is None
+        mw.process_spider_input(res404)
         with pytest.raises(HttpError):
-            self.mw.process_spider_input(res402, self.spider)
+            mw.process_spider_input(res402)
 
-    def test_spider_override_settings(self):
-        self.spider.handle_httpstatus_list = [404]
-        assert self.mw.process_spider_input(self.res404, self.spider) is None
+    def test_spider_override_settings(
+        self, mw: HttpErrorMiddleware, res402: Response, res404: Response
+    ) -> None:
+        assert mw.crawler.spider
+        mw.crawler.spider.handle_httpstatus_list = [404]  # type: ignore[attr-defined]
+        mw.process_spider_input(res404)
         with pytest.raises(HttpError):
-            self.mw.process_spider_input(self.res402, self.spider)
+            mw.process_spider_input(res402)
 
 
 class TestHttpErrorMiddlewareHandleAll:
-    def setup_method(self):
-        self.spider = Spider("foo")
-        self.mw = HttpErrorMiddleware(Settings({"HTTPERROR_ALLOW_ALL": True}))
-        self.req = Request("http://scrapytest.org")
-        self.res200, self.res404, self.res402 = _responses(self.req, [200, 404, 402])
+    @pytest.fixture
+    def mw(self) -> HttpErrorMiddleware:
+        crawler = get_crawler(DefaultSpider, {"HTTPERROR_ALLOW_ALL": True})
+        crawler.spider = crawler._create_spider()
+        return HttpErrorMiddleware.from_crawler(crawler)
 
-    def test_process_spider_input(self):
-        assert self.mw.process_spider_input(self.res200, self.spider) is None
-        assert self.mw.process_spider_input(self.res404, self.spider) is None
+    def test_process_spider_input(
+        self,
+        mw: HttpErrorMiddleware,
+        res200: Response,
+        res404: Response,
+    ) -> None:
+        mw.process_spider_input(res200)
+        mw.process_spider_input(res404)
 
-    def test_meta_overrides_settings(self):
+    def test_meta_overrides_settings(self, mw: HttpErrorMiddleware) -> None:
         request = Request(
             "http://scrapytest.org", meta={"handle_httpstatus_list": [404]}
         )
-        res404 = self.res404.copy()
-        res404.request = request
-        res402 = self.res402.copy()
-        res402.request = request
+        res404 = _response(request, 404)
+        res402 = _response(request, 402)
 
-        assert self.mw.process_spider_input(res404, self.spider) is None
+        mw.process_spider_input(res404)
         with pytest.raises(HttpError):
-            self.mw.process_spider_input(res402, self.spider)
+            mw.process_spider_input(res402)
 
-    def test_httperror_allow_all_false(self):
+    def test_httperror_allow_all_false(self) -> None:
         crawler = get_crawler(_HttpErrorSpider)
         mw = HttpErrorMiddleware.from_crawler(crawler)
         request_httpstatus_false = Request(
@@ -162,31 +183,29 @@ class TestHttpErrorMiddlewareHandleAll:
         request_httpstatus_true = Request(
             "http://scrapytest.org", meta={"handle_httpstatus_all": True}
         )
-        res404 = self.res404.copy()
-        res404.request = request_httpstatus_false
-        res402 = self.res402.copy()
-        res402.request = request_httpstatus_true
+        res404 = _response(request_httpstatus_false, 404)
+        res402 = _response(request_httpstatus_true, 402)
 
         with pytest.raises(HttpError):
-            mw.process_spider_input(res404, self.spider)
-        assert mw.process_spider_input(res402, self.spider) is None
+            mw.process_spider_input(res404)
+        mw.process_spider_input(res402)
 
 
-class TestHttpErrorMiddlewareIntegrational(TestCase):
+class TestHttpErrorMiddlewareIntegrational:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
     @inlineCallbacks
     def test_middleware_works(self):
         crawler = get_crawler(_HttpErrorSpider)
         yield crawler.crawl(mockserver=self.mockserver)
-        assert not crawler.spider.skipped, crawler.spider.skipped
+        assert not crawler.spider.skipped
         assert crawler.spider.parsed == {"200"}
         assert crawler.spider.failed == {"404", "402", "500"}
 

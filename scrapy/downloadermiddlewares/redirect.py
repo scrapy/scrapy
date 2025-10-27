@@ -8,6 +8,7 @@ from w3lib.url import safe_url_string
 
 from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import HtmlResponse, Response
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.response import get_meta_refresh
 
@@ -79,6 +80,7 @@ def _build_redirect_request(
 
 
 class BaseRedirectMiddleware:
+    crawler: Crawler
     enabled_setting: str = "REDIRECT_ENABLED"
 
     def __init__(self, settings: BaseSettings):
@@ -90,11 +92,11 @@ class BaseRedirectMiddleware:
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        return cls(crawler.settings)
+        o = cls(crawler.settings)
+        o.crawler = crawler
+        return o
 
-    def _redirect(
-        self, redirected: Request, request: Request, spider: Spider, reason: Any
-    ) -> Request:
+    def _redirect(self, redirected: Request, request: Request, reason: Any) -> Request:
         ttl = request.meta.setdefault("redirect_ttl", self.max_redirect_times)
         redirects = request.meta.get("redirect_times", 0) + 1
 
@@ -114,13 +116,13 @@ class BaseRedirectMiddleware:
             logger.debug(
                 "Redirecting (%(reason)s) to %(redirected)s from %(request)s",
                 {"reason": reason, "redirected": redirected, "request": request},
-                extra={"spider": spider},
+                extra={"spider": self.crawler.spider},
             )
             return redirected
         logger.debug(
             "Discarding %(request)s: max redirections reached",
             {"request": request},
-            extra={"spider": spider},
+            extra={"spider": self.crawler.spider},
         )
         raise IgnoreRequest("max redirections reached")
 
@@ -144,12 +146,14 @@ class RedirectMiddleware(BaseRedirectMiddleware):
     and meta-refresh html tag.
     """
 
+    @_warn_spider_arg
     def process_response(
-        self, request: Request, response: Response, spider: Spider
+        self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
         if (
             request.meta.get("dont_redirect", False)
-            or response.status in getattr(spider, "handle_httpstatus_list", [])
+            or response.status
+            in getattr(self.crawler.spider, "handle_httpstatus_list", [])
             or response.status in request.meta.get("handle_httpstatus_list", [])
             or request.meta.get("handle_httpstatus_all", False)
         ):
@@ -171,10 +175,10 @@ class RedirectMiddleware(BaseRedirectMiddleware):
             return response
 
         if response.status in (301, 307, 308) or request.method == "HEAD":
-            return self._redirect(redirected, request, spider, response.status)
+            return self._redirect(redirected, request, response.status)
 
         redirected = self._redirect_request_using_get(request, redirected_url)
-        return self._redirect(redirected, request, spider, response.status)
+        return self._redirect(redirected, request, response.status)
 
 
 class MetaRefreshMiddleware(BaseRedirectMiddleware):
@@ -185,8 +189,9 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
         self._ignore_tags: list[str] = settings.getlist("METAREFRESH_IGNORE_TAGS")
         self._maxdelay: int = settings.getint("METAREFRESH_MAXDELAY")
 
+    @_warn_spider_arg
     def process_response(
-        self, request: Request, response: Response, spider: Spider
+        self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
         if (
             request.meta.get("dont_redirect", False)
@@ -202,6 +207,6 @@ class MetaRefreshMiddleware(BaseRedirectMiddleware):
         redirected = self._redirect_request_using_get(request, url)
         if urlparse_cached(redirected).scheme not in {"http", "https"}:
             return response
-        if cast(float, interval) < self._maxdelay:
-            return self._redirect(redirected, request, spider, "meta refresh")
+        if cast("float", interval) < self._maxdelay:
+            return self._redirect(redirected, request, "meta refresh")
         return response

@@ -32,7 +32,8 @@ class CaselessDict(dict):
     __slots__ = ()
 
     def __new__(cls, *args: Any, **kwargs: Any) -> Self:
-        from scrapy.http.headers import Headers
+        # circular import
+        from scrapy.http.headers import Headers  # noqa: PLC0415
 
         if issubclass(cls, CaselessDict) and not issubclass(cls, Headers):
             warnings.warn(

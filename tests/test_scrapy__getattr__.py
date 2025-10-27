@@ -1,13 +1,15 @@
 import warnings
 
 
-def test_deprecated_twisted_version():
+def test_deprecated_concurrent_requests_per_ip_attribute():
     with warnings.catch_warnings(record=True) as warns:
-        from scrapy import twisted_version  # pylint: disable=no-name-in-module
+        from scrapy.settings.default_settings import (  # noqa: PLC0415
+            CONCURRENT_REQUESTS_PER_IP,
+        )
 
-        assert twisted_version is not None
-        assert isinstance(twisted_version, tuple)
+        assert CONCURRENT_REQUESTS_PER_IP is not None
+        assert isinstance(CONCURRENT_REQUESTS_PER_IP, int)
         assert (
-            "The scrapy.twisted_version attribute is deprecated, use twisted.version instead"
+            "The scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_IP attribute is deprecated, use scrapy.settings.default_settings.CONCURRENT_REQUESTS_PER_DOMAIN instead."
             in warns[0].message.args
         )

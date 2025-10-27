@@ -16,6 +16,7 @@ from twisted.internet import defer, threads
 from twisted.python import threadable
 from w3lib.url import any_to_uri
 
+import scrapy
 from scrapy.crawler import Crawler
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request, Response
@@ -24,7 +25,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.conf import get_config
 from scrapy.utils.console import DEFAULT_PYTHON_SHELLS, start_python_console
 from scrapy.utils.datatypes import SequenceExclude
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import _schedule_coro, deferred_f_from_coro_f
 from scrapy.utils.misc import load_object
 from scrapy.utils.reactor import is_asyncio_reactor_installed, set_asyncio_event_loop
 from scrapy.utils.response import open_in_browser
@@ -125,10 +126,8 @@ class Shell:
 
         self.crawler.spider = spider
         assert self.crawler.engine
-        await maybe_deferred_to_future(
-            self.crawler.engine.open_spider(spider, close_if_idle=False)
-        )
-        self.crawler.engine._start_request_processing()
+        await self.crawler.engine.open_spider_async(close_if_idle=False)
+        _schedule_coro(self.crawler.engine._start_request_processing())
         self.spider = spider
 
     def fetch(
@@ -164,8 +163,6 @@ class Shell:
         request: Request | None = None,
         spider: Spider | None = None,
     ) -> None:
-        import scrapy
-
         self.vars["scrapy"] = scrapy
         self.vars["crawler"] = self.crawler
         self.vars["item"] = self.item_class()
@@ -206,7 +203,7 @@ class Shell:
         b.append("  shelp()           Shell help (print this help)")
         b.append("  view(response)    View response in a browser")
 
-        return "\n".join(f"[s] {line}" for line in b)
+        return "\n".join(f"[s] {line}" for line in b) + "\n"
 
     def _is_relevant(self, value: Any) -> bool:
         return isinstance(value, self.relevant_classes) or is_item(value)

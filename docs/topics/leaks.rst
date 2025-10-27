@@ -60,6 +60,8 @@ in control.
 Debugging memory leaks with ``trackref``
 ========================================
 
+.. skip: start
+
 :mod:`trackref` is a module provided by Scrapy to debug the most common cases of
 memory leaks. It basically tracks the references to all live Request,
 Response, Item, Spider and Selector objects.
@@ -160,7 +162,7 @@ Too many spiders?
 -----------------
 
 If your project has too many spiders executed in parallel,
-the output of :func:`prefs()` can be difficult to read.
+the output of :func:`prefs` can be difficult to read.
 For this reason, that function has a ``ignore`` argument which can be used to
 ignore a particular class (and all its subclasses). For
 example, this won't show any live references to spiders:
@@ -203,6 +205,8 @@ Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
     ``None`` if none is found. Use :func:`print_live_refs` first to get a list
     of all tracked live objects per class name.
 
+.. skip: end
+
 .. _topics-leaks-muppy:
 
 Debugging memory leaks with muppy
@@ -226,6 +230,7 @@ If you use ``pip``, you can install muppy with the following command::
 Here's an example to view all Python objects available in
 the heap using muppy:
 
+.. skip: start
 .. code-block:: pycon
 
     >>> from pympler import muppy
@@ -252,6 +257,8 @@ the heap using muppy:
                      <class 'abc.ABCMeta |          62 |     59.96 KB
                             <class 'list |         446 |     58.52 KB
                              <class 'int |        1425 |     43.20 KB
+
+.. skip: end
 
 For more info about muppy, refer to the `muppy documentation`_.
 

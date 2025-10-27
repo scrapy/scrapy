@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import warnings
 from itertools import chain
 from logging import getLogger
 from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
-from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.utils._compression import (
@@ -14,6 +15,7 @@ from scrapy.utils._compression import (
     _unbrotli,
     _unzstd,
 )
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.gz import gunzip
 
 if TYPE_CHECKING:
@@ -74,18 +76,34 @@ class HttpCompressionMiddleware:
 
     def open_spider(self, spider: Spider) -> None:
         if hasattr(spider, "download_maxsize"):
+            warnings.warn(
+                "The 'download_maxsize' spider attribute is deprecated. "
+                "Use Spider.custom_settings or Spider.update_settings() instead. "
+                "The corresponding setting name is 'DOWNLOAD_MAXSIZE'.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
             self._max_size = spider.download_maxsize
         if hasattr(spider, "download_warnsize"):
+            warnings.warn(
+                "The 'download_warnsize' spider attribute is deprecated. "
+                "Use Spider.custom_settings or Spider.update_settings() instead. "
+                "The corresponding setting name is 'DOWNLOAD_WARNSIZE'.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
             self._warn_size = spider.download_warnsize
 
+    @_warn_spider_arg
     def process_request(
-        self, request: Request, spider: Spider
+        self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
         request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
         return None
 
+    @_warn_spider_arg
     def process_response(
-        self, request: Request, response: Response, spider: Spider
+        self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
         if request.method == "HEAD":
             return response
@@ -118,11 +136,8 @@ class HttpCompressionMiddleware:
                     self.stats.inc_value(
                         "httpcompression/response_bytes",
                         len(decoded_body),
-                        spider=spider,
                     )
-                    self.stats.inc_value(
-                        "httpcompression/response_count", spider=spider
-                    )
+                    self.stats.inc_value("httpcompression/response_count")
                 respcls = responsetypes.from_args(
                     headers=response.headers, url=response.url, body=decoded_body
                 )

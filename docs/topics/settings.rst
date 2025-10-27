@@ -517,7 +517,7 @@ performed by the Scrapy downloader.
 CONCURRENT_REQUESTS_PER_DOMAIN
 ------------------------------
 
-Default: ``8``
+Default: ``1`` (:ref:`fallback <default-settings>`: ``8``)
 
 The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed to any single domain.
@@ -525,23 +525,6 @@ performed to any single domain.
 See also: :ref:`topics-autothrottle` and its
 :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` option.
 
-
-.. setting:: CONCURRENT_REQUESTS_PER_IP
-
-CONCURRENT_REQUESTS_PER_IP
---------------------------
-
-Default: ``0``
-
-The maximum number of concurrent (i.e. simultaneous) requests that will be
-performed to any single IP. If non-zero, the
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting is ignored, and this one is
-used instead. In other words, concurrency limits will be applied per IP, not
-per domain.
-
-This setting also affects :setting:`DOWNLOAD_DELAY` and
-:ref:`topics-autothrottle`: if :setting:`CONCURRENT_REQUESTS_PER_IP`
-is non-zero, download delay is enforced per IP, not per domain.
 
 .. setting:: DEFAULT_DROPITEM_LOG_LEVEL
 
@@ -571,7 +554,7 @@ When writing an item pipeline, you can force a different log level by setting
 
 
    class MyPipeline:
-       def process_item(self, item, spider):
+       def process_item(self, item):
            if not item.get("price"):
                raise DropItem("Missing price data", log_level="INFO")
            return item
@@ -728,7 +711,7 @@ connections (for ``HTTP10DownloadHandler``).
     so you can safely ignore this setting,
     unless you really want to use HTTP/1.0 and override
     :setting:`DOWNLOAD_HANDLERS` for ``http(s)`` scheme accordingly,
-    i.e. to ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
+    i.e. to ``'scrapy.core.downloader.handlers.http10.HTTP10DownloadHandler'``.
 
 .. setting:: DOWNLOADER_CLIENTCONTEXTFACTORY
 
@@ -869,7 +852,7 @@ Whether to enable downloader stats collection.
 DOWNLOAD_DELAY
 --------------
 
-Default: ``0``
+Default: ``1`` (:ref:`fallback <default-settings>`: ``0``)
 
 Minimum seconds to wait between 2 consecutive requests to the same domain.
 
@@ -883,9 +866,6 @@ every 10 seconds::
 
 This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
 setting, which is enabled by default.
-
-When :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, delays are enforced
-per IP address instead of per domain.
 
 Note that :setting:`DOWNLOAD_DELAY` can lower the effective per-domain
 concurrency below :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. If the response
@@ -929,8 +909,8 @@ Default:
     {
         "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
         "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
-        "http": "scrapy.core.downloader.handlers.http.HTTPDownloadHandler",
-        "https": "scrapy.core.downloader.handlers.http.HTTPDownloadHandler",
+        "http": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
+        "https": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
         "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
     }
@@ -1151,9 +1131,9 @@ interface::
     class MyDupeFilter:
 
         @classmethod
-        def from_settings(cls, settings):
+        def from_crawler(cls, crawler):
             """Returns an instance of this duplicate request filtering class
-            based on the current crawl settings."""
+            based on the current Crawler instance."""
             return cls()
 
         def request_seen(self, request):
@@ -1765,8 +1745,7 @@ Type of priority queue used by the scheduler. Another available type is
 ``scrapy.pqueues.DownloaderAwarePriorityQueue``.
 ``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
 ``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
-domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
-does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
+domains in parallel.
 
 
 .. setting:: SCHEDULER_START_DISK_QUEUE
@@ -2024,6 +2003,7 @@ reactor is installed.
 
 In order to use the reactor installed by Scrapy:
 
+.. skip: next
 .. code-block:: python
 
     import scrapy

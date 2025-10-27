@@ -9,11 +9,10 @@ from urllib.parse import urlsplit, urlunsplit
 import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import TestCase
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import SimpleSpider, SingleRequestSpider
 
 
@@ -62,19 +61,19 @@ def _wrong_credentials(proxy_url):
     return urlunsplit(bad_auth_proxy)
 
 
-class TestProxyConnect(TestCase):
+class TestProxyConnect:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    def setUp(self):
+    def setup_method(self):
         try:
-            import mitmproxy  # noqa: F401
+            import mitmproxy  # noqa: F401,PLC0415
         except ImportError:
             pytest.skip("mitmproxy is not installed")
 
@@ -85,7 +84,7 @@ class TestProxyConnect(TestCase):
         os.environ["https_proxy"] = proxy_url
         os.environ["http_proxy"] = proxy_url
 
-    def tearDown(self):
+    def teardown_method(self):
         self._proxy.stop()
         os.environ = self._oldenv
 
@@ -117,9 +116,7 @@ class TestProxyConnect(TestCase):
         assert "Proxy-Authorization" not in echo["headers"]
 
     def _assert_got_response_code(self, code, log):
-        print(log)
         assert str(log).count(f"Crawled ({code})") == 1
 
     def _assert_got_tunnel_error(self, log):
-        print(log)
         assert "TunnelError" in str(log)

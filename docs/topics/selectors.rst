@@ -308,6 +308,7 @@ Examples:
 
 * ``*::text`` selects all descendant text nodes of the current selector context:
 
+..skip: next
 .. code-block:: pycon
 
     >>> response.css("#images *::text").getall()
@@ -878,7 +879,7 @@ Example selecting links in list item with a "class" attribute ending with a digi
     >>> sel = Selector(text=doc, type="html")
     >>> sel.xpath("//li//@href").getall()
     ['link1.html', 'link2.html', 'link3.html', 'link4.html', 'link5.html']
-    >>> sel.xpath('//li[re:test(@class, "item-\d$")]//@href').getall()
+    >>> sel.xpath(r'//li[re:test(@class, "item-\d$")]//@href').getall()
     ['link1.html', 'link2.html', 'link4.html', 'link5.html']
 
 .. warning:: C library ``libxslt`` doesn't natively support EXSLT regular

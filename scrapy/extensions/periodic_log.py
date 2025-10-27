@@ -6,10 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from scrapy import Spider, signals
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.asyncio import (
-    AsyncioLoopingCall,
-    create_looping_call,
-)
+from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.serialize import ScrapyJSONEncoder
 
 if TYPE_CHECKING:
@@ -78,7 +75,7 @@ class PeriodicLog:
             )
 
         ext_timing_enabled: bool = crawler.settings.getbool(
-            "PERIODIC_LOG_TIMING_ENABLED", False
+            "PERIODIC_LOG_TIMING_ENABLED"
         )
         if not (ext_stats or ext_delta or ext_timing_enabled):
             raise NotConfigured

@@ -6,16 +6,17 @@ import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
-from twisted.trial import unittest
 
 from scrapy import signals
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException
 from scrapy.pipelines.media import MediaPipeline
-from scrapy.spiders import Spider
+from scrapy.utils.asyncio import call_later
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
 
@@ -36,27 +37,26 @@ class UserDefinedPipeline(MediaPipeline):
         return {}
 
     def media_failed(self, failure, request, info):
-        return failure
+        failure.raiseException()
 
     def file_path(self, request, response=None, info=None, *, item=None):
         return ""
 
 
-class TestBaseMediaPipeline(unittest.TestCase):
+class TestBaseMediaPipeline:
     pipeline_class = UserDefinedPipeline
     settings = None
 
-    def setUp(self):
-        spider_cls = Spider
-        self.spider = spider_cls("media.com")
-        crawler = get_crawler(spider_cls, self.settings)
+    def setup_method(self):
+        crawler = get_crawler(DefaultSpider, self.settings)
+        crawler.spider = crawler._create_spider()
         self.pipe = self.pipeline_class.from_crawler(crawler)
         self.pipe.download_func = _mocked_download_func
-        self.pipe.open_spider(self.spider)
+        self.pipe.open_spider()
         self.info = self.pipe.spiderinfo
         self.fingerprint = crawler.request_fingerprinter.fingerprint
 
-    def tearDown(self):
+    def teardown_method(self):
         for name, signal in vars(signals).items():
             if not name.startswith("_"):
                 disconnect_all(signal)
@@ -161,7 +161,7 @@ class TestBaseMediaPipeline(unittest.TestCase):
     @inlineCallbacks
     def test_default_process_item(self):
         item = {"name": "name"}
-        new_item = yield self.pipe.process_item(item, self.spider)
+        new_item = yield self.pipe.process_item(item)
         assert new_item is item
 
 
@@ -215,7 +215,7 @@ class TestMediaPipeline(TestBaseMediaPipeline):
             errback=self._errback,
         )
         item = {"requests": req}
-        new_item = yield self.pipe.process_item(item, self.spider)
+        new_item = yield self.pipe.process_item(item)
         assert new_item["results"] == [(True, {})]
         assert self.pipe._mockcalled == [
             "get_media_requests",
@@ -227,15 +227,19 @@ class TestMediaPipeline(TestBaseMediaPipeline):
     @inlineCallbacks
     def test_result_failure(self):
         self.pipe.LOG_FAILED_RESULTS = False
-        fail = Failure(Exception())
+        exc = Exception("foo")
+        fail = Failure(exc)
         req = Request(
             "http://url1",
             meta={"response": fail},
             errback=self._errback,
         )
         item = {"requests": req}
-        new_item = yield self.pipe.process_item(item, self.spider)
-        assert new_item["results"] == [(False, fail)]
+        new_item = yield self.pipe.process_item(item)
+        assert len(new_item["results"]) == 1
+        assert new_item["results"][0][0] is False
+        assert isinstance(new_item["results"][0][1], Failure)
+        assert new_item["results"][0][1].value == exc
         assert self.pipe._mockcalled == [
             "get_media_requests",
             "media_to_download",
@@ -249,11 +253,16 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         self.pipe.LOG_FAILED_RESULTS = False
         rsp1 = Response("http://url1")
         req1 = Request("http://url1", meta={"response": rsp1})
-        fail = Failure(Exception())
+        exc = Exception("foo")
+        fail = Failure(exc)
         req2 = Request("http://url2", meta={"response": fail})
         item = {"requests": [req1, req2]}
-        new_item = yield self.pipe.process_item(item, self.spider)
-        assert new_item["results"] == [(True, {}), (False, fail)]
+        new_item = yield self.pipe.process_item(item)
+        assert len(new_item["results"]) == 2
+        assert new_item["results"][0] == (True, {})
+        assert new_item["results"][1][0] is False
+        assert isinstance(new_item["results"][1][1], Failure)
+        assert new_item["results"][1][1].value == exc
         m = self.pipe._mockcalled
         # only once
         assert m[0] == "get_media_requests"  # first hook called
@@ -271,7 +280,7 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         # returns single Request (without callback)
         req = Request("http://url")
         item = {"requests": req}  # pass a single item
-        new_item = yield self.pipe.process_item(item, self.spider)
+        new_item = yield self.pipe.process_item(item)
         assert new_item is item
         assert self.fingerprint(req) in self.info.downloaded
 
@@ -279,7 +288,7 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         req1 = Request("http://url1")
         req2 = Request("http://url2")
         item = {"requests": iter([req1, req2])}
-        new_item = yield self.pipe.process_item(item, self.spider)
+        new_item = yield self.pipe.process_item(item)
         assert new_item is item
         assert self.fingerprint(req1) in self.info.downloaded
         assert self.fingerprint(req2) in self.info.downloaded
@@ -289,7 +298,7 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         rsp1 = Response("http://url1")
         req1 = Request("http://url1", meta={"response": rsp1})
         item = {"requests": req1}
-        new_item = yield self.pipe.process_item(item, self.spider)
+        new_item = yield self.pipe.process_item(item)
         assert new_item is item
         assert new_item["results"] == [(True, {})]
 
@@ -298,7 +307,7 @@ class TestMediaPipeline(TestBaseMediaPipeline):
             req1.url, meta={"response": Response("http://donot.download.me")}
         )
         item = {"requests": req2}
-        new_item = yield self.pipe.process_item(item, self.spider)
+        new_item = yield self.pipe.process_item(item)
         assert new_item is item
         assert self.fingerprint(req1) == self.fingerprint(req2)
         assert new_item["results"] == [(True, {})]
@@ -311,7 +320,7 @@ class TestMediaPipeline(TestBaseMediaPipeline):
             req1.url, meta={"response": Response("http://donot.download.me")}
         )
         item = {"requests": [req1, req2]}
-        new_item = yield self.pipe.process_item(item, self.spider)
+        new_item = yield self.pipe.process_item(item)
         assert new_item is item
         assert new_item["results"] == [(True, {}), (True, {})]
 
@@ -328,10 +337,8 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         rsp1 = Response("http://url")
 
         def rsp1_func():
-            from twisted.internet import reactor
-
             dfd = Deferred().addCallback(_check_downloading)
-            reactor.callLater(0.1, dfd.callback, rsp1)
+            call_later(0.1, dfd.callback, rsp1)
             return dfd
 
         def rsp2_func():
@@ -340,14 +347,14 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         req1 = Request("http://url", meta={"response": rsp1_func})
         req2 = Request(req1.url, meta={"response": rsp2_func})
         item = {"requests": [req1, req2]}
-        new_item = yield self.pipe.process_item(item, self.spider)
+        new_item = yield self.pipe.process_item(item)
         assert new_item["results"] == [(True, {}), (True, {})]
 
     @inlineCallbacks
     def test_use_media_to_download_result(self):
         req = Request("http://url", meta={"result": "ITSME"})
         item = {"requests": req}
-        new_item = yield self.pipe.process_item(item, self.spider)
+        new_item = yield self.pipe.process_item(item)
         assert new_item["results"] == [(True, "ITSME")]
         assert self.pipe._mockcalled == [
             "get_media_requests",
@@ -411,84 +418,6 @@ class TestBuildFromCrawler:
             assert pipe._fingerprinter
             assert len(w) == 0
 
-    def test_has_old_init(self):
-        class Pipeline(UserDefinedPipeline):
-            def __init__(self):
-                super().__init__()
-                self._init_called = True
-
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 2
-            assert pipe._init_called
-
-    def test_has_from_settings(self):
-        class Pipeline(UserDefinedPipeline):
-            _from_settings_called = False
-
-            @classmethod
-            def from_settings(cls, settings):
-                o = cls()
-                o._from_settings_called = True
-                return o
-
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 2
-            assert pipe._from_settings_called
-
-    def test_has_from_settings_and_from_crawler(self):
-        class Pipeline(UserDefinedPipeline):
-            _from_settings_called = False
-            _from_crawler_called = False
-
-            @classmethod
-            def from_settings(cls, settings):
-                o = cls()
-                o._from_settings_called = True
-                return o
-
-            @classmethod
-            def from_crawler(cls, crawler):
-                o = super().from_crawler(crawler)
-                o._from_crawler_called = True
-                return o
-
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 2
-            assert pipe._from_settings_called
-            assert pipe._from_crawler_called
-
-    def test_has_from_settings_and_init(self):
-        class Pipeline(UserDefinedPipeline):
-            _from_settings_called = False
-
-            def __init__(self, store_uri, settings):
-                super().__init__()
-                self._init_called = True
-
-            @classmethod
-            def from_settings(cls, settings):
-                store_uri = settings["FILES_STORE"]
-                o = cls(store_uri, settings=settings)
-                o._from_settings_called = True
-                return o
-
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 2
-            assert pipe._from_settings_called
-            assert pipe._init_called
-
     def test_has_from_crawler_and_init(self):
         class Pipeline(UserDefinedPipeline):
             _from_crawler_called = False
@@ -532,3 +461,61 @@ class TestBuildFromCrawler:
             assert pipe._fingerprinter
             assert len(w) == 0
             assert pipe._from_crawler_called
+
+
+class MediaFailedFailurePipeline(MockedMediaPipeline):
+    def media_failed(self, failure, request, info):
+        self._mockcalled.append("media_failed")
+        return failure  # deprecated
+
+
+class TestMediaFailedFailure:
+    """Test that media_failed() can return a failure instead of raising."""
+
+    pipeline_class = MediaFailedFailurePipeline
+    settings = None
+
+    def setup_method(self):
+        crawler = get_crawler(DefaultSpider, self.settings)
+        crawler.spider = crawler._create_spider()
+        self.pipe = self.pipeline_class.from_crawler(crawler)
+        self.pipe.download_func = _mocked_download_func
+        self.pipe.open_spider()
+        self.info = self.pipe.spiderinfo
+        self.fingerprint = crawler.request_fingerprinter.fingerprint
+
+    def teardown_method(self):
+        for name, signal in vars(signals).items():
+            if not name.startswith("_"):
+                disconnect_all(signal)
+
+    def _errback(self, result):
+        self.pipe._mockcalled.append("request_errback")
+        return result
+
+    @inlineCallbacks
+    def test_result_failure(self):
+        self.pipe.LOG_FAILED_RESULTS = False
+        exc = Exception("foo")
+        fail = Failure(exc)
+        req = Request(
+            "http://url1",
+            meta={"response": fail},
+            errback=self._errback,
+        )
+        item = {"requests": req}
+        with pytest.warns(
+            ScrapyDeprecationWarning, match="media_failed returned a Failure instance"
+        ):
+            new_item = yield self.pipe.process_item(item)
+        assert len(new_item["results"]) == 1
+        assert new_item["results"][0][0] is False
+        assert isinstance(new_item["results"][0][1], Failure)
+        assert new_item["results"][0][1].value == exc
+        assert self.pipe._mockcalled == [
+            "get_media_requests",
+            "media_to_download",
+            "media_failed",
+            "request_errback",
+            "item_completed",
+        ]

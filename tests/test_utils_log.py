@@ -22,7 +22,9 @@ from scrapy.utils.test import get_crawler
 from tests.spiders import LogSpider
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, MutableMapping
+    from collections.abc import Generator, Mapping, MutableMapping
+
+    from scrapy.crawler import Crawler
 
 
 class TestFailureToExcInfo:
@@ -70,33 +72,41 @@ class TestTopLevelFormatter:
 
 
 class TestLogCounterHandler:
-    def setup_method(self):
+    @pytest.fixture
+    def crawler(self) -> Crawler:
         settings = {"LOG_LEVEL": "WARNING"}
-        self.logger = logging.getLogger("test")
-        self.logger.setLevel(logging.NOTSET)
-        self.logger.propagate = False
-        self.crawler = get_crawler(settings_dict=settings)
-        self.handler = LogCounterHandler(self.crawler)
-        self.logger.addHandler(self.handler)
+        return get_crawler(settings_dict=settings)
 
-    def teardown_method(self):
-        self.logger.propagate = True
-        self.logger.removeHandler(self.handler)
+    @pytest.fixture
+    def logger(self, crawler: Crawler) -> Generator[logging.Logger]:
+        logger = logging.getLogger("test")
+        logger.setLevel(logging.NOTSET)
+        logger.propagate = False
+        handler = LogCounterHandler(crawler)
+        logger.addHandler(handler)
 
-    def test_init(self):
-        assert self.crawler.stats.get_value("log_count/DEBUG") is None
-        assert self.crawler.stats.get_value("log_count/INFO") is None
-        assert self.crawler.stats.get_value("log_count/WARNING") is None
-        assert self.crawler.stats.get_value("log_count/ERROR") is None
-        assert self.crawler.stats.get_value("log_count/CRITICAL") is None
+        yield logger
 
-    def test_accepted_level(self):
-        self.logger.error("test log msg")
-        assert self.crawler.stats.get_value("log_count/ERROR") == 1
+        logger.propagate = True
+        logger.removeHandler(handler)
 
-    def test_filtered_out_level(self):
-        self.logger.debug("test log msg")
-        assert self.crawler.stats.get_value("log_count/INFO") is None
+    def test_init(self, crawler: Crawler, logger: logging.Logger) -> None:
+        assert crawler.stats
+        assert crawler.stats.get_value("log_count/DEBUG") is None
+        assert crawler.stats.get_value("log_count/INFO") is None
+        assert crawler.stats.get_value("log_count/WARNING") is None
+        assert crawler.stats.get_value("log_count/ERROR") is None
+        assert crawler.stats.get_value("log_count/CRITICAL") is None
+
+    def test_accepted_level(self, crawler: Crawler, logger: logging.Logger) -> None:
+        logger.error("test log msg")
+        assert crawler.stats
+        assert crawler.stats.get_value("log_count/ERROR") == 1
+
+    def test_filtered_out_level(self, crawler: Crawler, logger: logging.Logger) -> None:
+        logger.debug("test log msg")
+        assert crawler.stats
+        assert crawler.stats.get_value("log_count/INFO") is None
 
 
 class TestStreamLogger:
@@ -135,7 +145,7 @@ class TestStreamLogger:
 )
 def test_spider_logger_adapter_process(
     base_extra: Mapping[str, Any], log_extra: MutableMapping, expected_extra: dict
-):
+) -> None:
     logger = logging.getLogger("test")
     spider_logger_adapter = SpiderLoggerAdapter(logger, base_extra)
 
@@ -149,59 +159,75 @@ def test_spider_logger_adapter_process(
 
 
 class TestLogging:
-    def setup_method(self):
-        self.log_stream = StringIO()
-        handler = logging.StreamHandler(self.log_stream)
+    @pytest.fixture
+    def log_stream(self) -> StringIO:
+        return StringIO()
+
+    @pytest.fixture
+    def spider(self) -> LogSpider:
+        return LogSpider()
+
+    @pytest.fixture(autouse=True)
+    def logger(self, log_stream: StringIO) -> Generator[logging.Logger]:
+        handler = logging.StreamHandler(log_stream)
         logger = logging.getLogger("log_spider")
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
-        self.handler = handler
-        self.logger = logger
-        self.spider = LogSpider()
 
-    def teardown_method(self):
-        self.logger.removeHandler(self.handler)
+        yield logger
 
-    def test_debug_logging(self):
+        logger.removeHandler(handler)
+
+    def test_debug_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
         log_message = "Foo message"
-        self.spider.log_debug(log_message)
-        log_contents = self.log_stream.getvalue()
+        spider.log_debug(log_message)
+        log_contents = log_stream.getvalue()
 
         assert log_contents == f"{log_message}\n"
 
-    def test_info_logging(self):
+    def test_info_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
         log_message = "Bar message"
-        self.spider.log_info(log_message)
-        log_contents = self.log_stream.getvalue()
+        spider.log_info(log_message)
+        log_contents = log_stream.getvalue()
 
         assert log_contents == f"{log_message}\n"
 
-    def test_warning_logging(self):
+    def test_warning_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
         log_message = "Baz message"
-        self.spider.log_warning(log_message)
-        log_contents = self.log_stream.getvalue()
+        spider.log_warning(log_message)
+        log_contents = log_stream.getvalue()
 
         assert log_contents == f"{log_message}\n"
 
-    def test_error_logging(self):
+    def test_error_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
         log_message = "Foo bar message"
-        self.spider.log_error(log_message)
-        log_contents = self.log_stream.getvalue()
+        spider.log_error(log_message)
+        log_contents = log_stream.getvalue()
 
         assert log_contents == f"{log_message}\n"
 
-    def test_critical_logging(self):
+    def test_critical_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
         log_message = "Foo bar baz message"
-        self.spider.log_critical(log_message)
-        log_contents = self.log_stream.getvalue()
+        spider.log_critical(log_message)
+        log_contents = log_stream.getvalue()
 
         assert log_contents == f"{log_message}\n"
 
 
 class TestLoggingWithExtra:
-    def setup_method(self):
-        self.log_stream = StringIO()
-        handler = logging.StreamHandler(self.log_stream)
+    regex_pattern = re.compile(r"^<LogSpider\s'log_spider'\sat\s[^>]+>$")
+
+    @pytest.fixture
+    def log_stream(self) -> StringIO:
+        return StringIO()
+
+    @pytest.fixture
+    def spider(self) -> LogSpider:
+        return LogSpider()
+
+    @pytest.fixture(autouse=True)
+    def logger(self, log_stream: StringIO) -> Generator[logging.Logger]:
+        handler = logging.StreamHandler(log_stream)
         formatter = logging.Formatter(
             '{"levelname": "%(levelname)s", "message": "%(message)s", "spider": "%(spider)s", "important_info": "%(important_info)s"}'
         )
@@ -209,80 +235,79 @@ class TestLoggingWithExtra:
         logger = logging.getLogger("log_spider")
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
-        self.handler = handler
-        self.logger = logger
-        self.spider = LogSpider()
-        self.regex_pattern = re.compile(r"^<LogSpider\s'log_spider'\sat\s[^>]+>$")
 
-    def teardown_method(self):
-        self.logger.removeHandler(self.handler)
+        yield logger
 
-    def test_debug_logging(self):
+        logger.removeHandler(handler)
+
+    def test_debug_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
         log_message = "Foo message"
         extra = {"important_info": "foo"}
-        self.spider.log_debug(log_message, extra)
-        log_contents = self.log_stream.getvalue()
-        log_contents = json.loads(log_contents)
+        spider.log_debug(log_message, extra)
+        log_contents_str = log_stream.getvalue()
+        log_contents = json.loads(log_contents_str)
 
         assert log_contents["levelname"] == "DEBUG"
         assert log_contents["message"] == log_message
         assert self.regex_pattern.match(log_contents["spider"])
         assert log_contents["important_info"] == extra["important_info"]
 
-    def test_info_logging(self):
+    def test_info_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
         log_message = "Bar message"
         extra = {"important_info": "bar"}
-        self.spider.log_info(log_message, extra)
-        log_contents = self.log_stream.getvalue()
-        log_contents = json.loads(log_contents)
+        spider.log_info(log_message, extra)
+        log_contents_str = log_stream.getvalue()
+        log_contents = json.loads(log_contents_str)
 
         assert log_contents["levelname"] == "INFO"
         assert log_contents["message"] == log_message
         assert self.regex_pattern.match(log_contents["spider"])
         assert log_contents["important_info"] == extra["important_info"]
 
-    def test_warning_logging(self):
+    def test_warning_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
         log_message = "Baz message"
         extra = {"important_info": "baz"}
-        self.spider.log_warning(log_message, extra)
-        log_contents = self.log_stream.getvalue()
-        log_contents = json.loads(log_contents)
+        spider.log_warning(log_message, extra)
+        log_contents_str = log_stream.getvalue()
+        log_contents = json.loads(log_contents_str)
 
         assert log_contents["levelname"] == "WARNING"
         assert log_contents["message"] == log_message
         assert self.regex_pattern.match(log_contents["spider"])
         assert log_contents["important_info"] == extra["important_info"]
 
-    def test_error_logging(self):
+    def test_error_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
         log_message = "Foo bar message"
         extra = {"important_info": "foo bar"}
-        self.spider.log_error(log_message, extra)
-        log_contents = self.log_stream.getvalue()
-        log_contents = json.loads(log_contents)
+        spider.log_error(log_message, extra)
+        log_contents_str = log_stream.getvalue()
+        log_contents = json.loads(log_contents_str)
 
         assert log_contents["levelname"] == "ERROR"
         assert log_contents["message"] == log_message
         assert self.regex_pattern.match(log_contents["spider"])
         assert log_contents["important_info"] == extra["important_info"]
 
-    def test_critical_logging(self):
+    def test_critical_logging(self, log_stream: StringIO, spider: LogSpider) -> None:
         log_message = "Foo bar baz message"
         extra = {"important_info": "foo bar baz"}
-        self.spider.log_critical(log_message, extra)
-        log_contents = self.log_stream.getvalue()
-        log_contents = json.loads(log_contents)
+        spider.log_critical(log_message, extra)
+        log_contents_str = log_stream.getvalue()
+        log_contents = json.loads(log_contents_str)
 
         assert log_contents["levelname"] == "CRITICAL"
         assert log_contents["message"] == log_message
         assert self.regex_pattern.match(log_contents["spider"])
         assert log_contents["important_info"] == extra["important_info"]
 
-    def test_overwrite_spider_extra(self):
+    def test_overwrite_spider_extra(
+        self, log_stream: StringIO, spider: LogSpider
+    ) -> None:
         log_message = "Foo message"
         extra = {"important_info": "foo", "spider": "shouldn't change"}
-        self.spider.log_error(log_message, extra)
-        log_contents = self.log_stream.getvalue()
-        log_contents = json.loads(log_contents)
+        spider.log_error(log_message, extra)
+        log_contents_str = log_stream.getvalue()
+        log_contents = json.loads(log_contents_str)
 
         assert log_contents["levelname"] == "ERROR"
         assert log_contents["message"] == log_message

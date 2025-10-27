@@ -6,7 +6,7 @@ import sys
 from configparser import ConfigParser
 from operator import itemgetter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from scrapy.exceptions import UsageError
 from scrapy.settings import BaseSettings
@@ -14,7 +14,7 @@ from scrapy.utils.deprecate import update_classpath
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterable, Mapping, MutableMapping
+    from collections.abc import Callable, Collection, Iterable, Mapping, MutableMapping
 
 
 def build_component_list(
@@ -153,7 +153,7 @@ def feed_process_params_from_cli(
     suitable to be used as the FEEDS setting.
     """
     valid_output_formats: Iterable[str] = without_none_values(
-        cast(dict[str, str], settings.getwithbase("FEED_EXPORTERS"))
+        cast("dict[str, str]", settings.getwithbase("FEED_EXPORTERS"))
     ).keys()
 
     def check_valid_format(output_format: str) -> None:

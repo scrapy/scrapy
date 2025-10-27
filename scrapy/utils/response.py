@@ -48,7 +48,7 @@ def get_meta_refresh(
     if response not in _metaref_cache:
         text = response.text[0:4096]
         _metaref_cache[response] = html.get_meta_refresh(
-            text, response.url, response.encoding, ignore_tags=ignore_tags
+            text, get_base_url(response), response.encoding, ignore_tags=ignore_tags
         )
     return _metaref_cache[response]
 
@@ -91,7 +91,8 @@ def open_in_browser(
             if "item name" not in response.body:
                 open_in_browser(response)
     """
-    from scrapy.http import HtmlResponse, TextResponse
+    # circular imports
+    from scrapy.http import HtmlResponse, TextResponse  # noqa: PLC0415
 
     # XXX: this implementation is a bit dirty and could be improved
     body = response.body

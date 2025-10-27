@@ -2,7 +2,6 @@ import asyncio
 import warnings
 
 import pytest
-from twisted.trial.unittest import TestCase
 
 from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.reactor import (
@@ -13,11 +12,10 @@ from scrapy.utils.reactor import (
 )
 
 
-@pytest.mark.usefixtures("reactor_pytest")
-class TestAsyncio(TestCase):
-    def test_is_asyncio_reactor_installed(self):
+class TestAsyncio:
+    def test_is_asyncio_reactor_installed(self, reactor_pytest: str) -> None:
         # the result should depend only on the pytest --reactor argument
-        assert is_asyncio_reactor_installed() == (self.reactor_pytest != "default")
+        assert is_asyncio_reactor_installed() == (reactor_pytest == "asyncio")
 
     def test_install_asyncio_reactor(self):
         from twisted.internet import reactor as original_reactor
