@@ -121,4 +121,3 @@ DummyStatsCollector
     setting, to disable stats collect in order to improve performance. However,
     the performance penalty of stats collection is usually marginal compared to
     other Scrapy workload like parsing pages.
-

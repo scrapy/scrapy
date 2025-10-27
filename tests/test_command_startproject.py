@@ -232,7 +232,7 @@ class TestStartprojectTemplates:
         project_dir.mkdir(parents=True)
 
         existing_nodes = {
-            oct(permissions)[2:] + extension: permissions
+            f"{permissions:o}{extension}": permissions
             for extension in ("", ".d")
             for permissions in (
                 0o444,

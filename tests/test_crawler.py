@@ -785,7 +785,7 @@ class ScriptRunnerMixin(ABC):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        stdout, stderr = p.communicate()
+        _, stderr = p.communicate()
         return stderr.decode("utf-8")
 
 

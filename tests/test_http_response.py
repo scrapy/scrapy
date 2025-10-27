@@ -813,7 +813,7 @@ class TestTextResponse(TestResponseBase):
         text_body = b"""<html><body>text</body></html>"""
         text_response = self.response_class("http://www.example.com", body=text_body)
         with pytest.raises(
-            ValueError, match="(Expecting value|Unexpected '<'): line 1"
+            ValueError, match=r"(Expecting value|Unexpected '<'): line 1"
         ):
             text_response.json()
 
