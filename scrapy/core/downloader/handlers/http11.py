@@ -41,7 +41,7 @@ from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.url import add_http_if_no_scheme
 
 if TYPE_CHECKING:
-    from typing import Callable
+    from collections.abc import Callable
 
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IConsumer
