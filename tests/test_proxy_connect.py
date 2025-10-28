@@ -14,6 +14,7 @@ from scrapy.http import Request
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import SimpleSpider, SingleRequestSpider
+from tests.utils import ipv6_loopback_available
 
 
 class MitmProxy:
@@ -130,5 +131,8 @@ class TestProxyConnect(BaseTestProxyConnect):
     proxy_host = "127.0.0.1"
 
 
+@pytest.mark.skipif(
+    not ipv6_loopback_available(), reason="IPv6 loopback is not available"
+)
 class TestProxyConnectIPv6(BaseTestProxyConnect):
     proxy_host = "::1"
