@@ -9,7 +9,7 @@ import socket
 from contextlib import suppress
 from io import BytesIO
 from time import time
-from typing import TYPE_CHECKING, Any, Callable, TypedDict, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
@@ -41,6 +41,8 @@ from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.url import add_http_if_no_scheme
 
 if TYPE_CHECKING:
+    from typing import Callable
+
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IConsumer
 
@@ -359,7 +361,7 @@ class TunnelingAgent(Agent):
     def _getEndpoint(
         self, uri: URI
     ) -> TunnelingTCP4ClientEndpoint | TunnelingTCP6ClientEndpoint:
-        proxyHost, proxyPort, proxyAuthHeader = self._proxyConf
+        proxyHost, _, _ = self._proxyConf
         if is_ipv6(proxyHost):
             return TunnelingTCP6ClientEndpoint(
                 reactor=self._reactor,
