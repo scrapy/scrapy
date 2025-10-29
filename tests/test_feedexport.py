@@ -2775,7 +2775,7 @@ class TestFeedExporterSignals:
     with tempfile.NamedTemporaryFile(suffix="json") as tmp:
         settings = {
             "FEEDS": {
-                f"file://{tmp.name}": {
+                printf_escape(path_to_url(tmp.name)): {
                     "format": "json",
                 },
             },
