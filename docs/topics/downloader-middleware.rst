@@ -339,6 +339,7 @@ If cookie middleware is enabled, ``get_cookiejar(response_or_request)`` method a
 
       It allows a bit easier access to cookiejar object:
 
+      .. skip: next
       .. code-block:: python
 
           ...
