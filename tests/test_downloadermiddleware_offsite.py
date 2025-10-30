@@ -219,3 +219,49 @@ def test_request_scheduled_invalid_domains():
         request = Request(f"https://{letter}.example")
         with pytest.raises(IgnoreRequest):
             mw.request_scheduled(request, crawler.spider)
+
+
+@pytest.mark.parametrize(
+    ("url", "allowed"),
+    [
+        ("http://localhost/", True),
+        ("http://localhost:8080/", True),
+        ("http://localhost:8080/url=example.com", True),
+        ("http://127.0.0.1/", True),
+        ("http://127.0.0.1:8080/", True),
+        ("http://127.0.0.1:8080/url=example.com", True),
+        ("https://localhost/", True),
+        ("https://127.0.0.1/", True),
+        ("http://example.com/", False),
+    ],
+)
+def test_localhost_allowed_by_default(url, allowed):
+    """Test that localhost and 127.0.0.1 are allowed by default even without allowed_domains"""
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider(name="a", allowed_domains=["example.org"])
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw.spider_opened(crawler.spider)
+    request = Request(url)
+    if allowed:
+        assert mw.process_request(request) is None
+    else:
+        with pytest.raises(IgnoreRequest):
+            mw.process_request(request)
+
+
+def test_localhost_can_be_disabled():
+    """Test that localhost bypass can be disabled via settings"""
+    crawler = get_crawler(Spider, {"OFFSITE_ALLOW_LOCALHOST": False})
+    crawler.spider = crawler._create_spider(name="a", allowed_domains=["example.org"])
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw.spider_opened(crawler.spider)
+    
+    # localhost should now be blocked
+    request = Request("http://localhost:8080/")
+    with pytest.raises(IgnoreRequest):
+        mw.process_request(request)
+    
+    # 127.0.0.1 should also be blocked
+    request = Request("http://127.0.0.1:8080/")
+    with pytest.raises(IgnoreRequest):
+        mw.process_request(request)
