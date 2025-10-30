@@ -342,15 +342,14 @@ If cookie middleware is enabled, ``get_cookiejar(response_or_request)`` method a
 
       It allows a bit easier access to cookiejar object:
 
-      .. skip: start
-      .. code-block:: python
+
+      .. code-block:: none
 
           self.logger.info(self.get_cookiejar(response))  # scrapy.http.cookies.CookieJar object
           self.logger.info(self.get_cookiejar(response).jar)  # http.cookiejar object
           locale_cookie = (
               self.get_cookiejar(response).jar._cookies["quotes.toscrape.com"]["/"].get("session")
           )
-      .. skip: end
 
 Known use cases where direct access to cookiejar objects can be useful:
 
