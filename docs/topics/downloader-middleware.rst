@@ -277,6 +277,7 @@ Direct access to cookiejars from spider
 In some cases it is required to directly set specific values in an existing
 cookiejar.
 
+.. skip: next
 .. code-block:: python
 
     import scrapy
