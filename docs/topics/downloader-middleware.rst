@@ -345,7 +345,6 @@ If cookie middleware is enabled, ``get_cookiejar(response_or_request)`` method a
       .. skip: start
       .. code-block:: python
 
-          ...
           self.logger.info(self.get_cookiejar(response))  # scrapy.http.cookies.CookieJar object
           self.logger.info(self.get_cookiejar(response).jar)  # http.cookiejar object
           locale_cookie = (
