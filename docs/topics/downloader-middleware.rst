@@ -277,7 +277,7 @@ Direct access to cookiejars from spider
 In some cases it is required to directly set specific values in an existing
 cookiejar.
 
-.. skip: next
+.. skip: start
 .. code-block:: python
 
     import scrapy
@@ -308,6 +308,8 @@ cookiejar.
         p = CrawlerProcess()
         p.crawl(Quotes)
         p.start()
+
+.. skip: end
 
 .. note::
 
@@ -340,7 +342,7 @@ If cookie middleware is enabled, ``get_cookiejar(response_or_request)`` method a
 
       It allows a bit easier access to cookiejar object:
 
-      .. skip: next
+      .. skip: start
       .. code-block:: python
 
           ...
@@ -349,6 +351,7 @@ If cookie middleware is enabled, ``get_cookiejar(response_or_request)`` method a
           locale_cookie = (
               self.get_cookiejar(response).jar._cookies["quotes.toscrape.com"]["/"].get("session")
           )
+      .. skip: end
 
 Known use cases where direct access to cookiejar objects can be useful:
 
