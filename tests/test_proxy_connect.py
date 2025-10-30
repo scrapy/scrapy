@@ -10,17 +10,19 @@ import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import inlineCallbacks
 
+from scrapy.core.downloader.handlers import http11
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import SimpleSpider, SingleRequestSpider
+from tests.utils import ipv6_loopback_available
 
 
 class MitmProxy:
     auth_user = "scrapy"
     auth_pass = "scrapy"
 
-    def start(self):
+    def start(self, listen_host: str = "127.0.0.1"):
         script = """
 import sys
 from mitmproxy.tools.main import mitmdump
@@ -35,7 +37,7 @@ sys.exit(mitmdump())
                 "-c",
                 script,
                 "--listen-host",
-                "127.0.0.1",
+                listen_host,
                 "--listen-port",
                 "0",
                 "--proxyauth",
@@ -46,8 +48,15 @@ sys.exit(mitmdump())
             ],
             stdout=PIPE,
         )
+        if self.proc.stdout is None:
+            raise RuntimeError("Failed to capture mitmdump stdout")
+
         line = self.proc.stdout.readline().decode("utf-8")
-        host_port = re.search(r"listening at (?:http://)?([^:]+:\d+)", line).group(1)
+        m = re.search(r"listening at (?:https?:\/\/)?([^\s.]+(?:\.\S+)*?:\d+)", line)
+        if not m:
+            raise RuntimeError(f"Could not parse mitmproxy output: {line!r}")
+        host_port = m.group(1)
+
         return f"http://{self.auth_user}:{self.auth_pass}@{host_port}"
 
     def stop(self):
@@ -61,7 +70,7 @@ def _wrong_credentials(proxy_url):
     return urlunsplit(bad_auth_proxy)
 
 
-class TestProxyConnect:
+class BaseTestProxyConnect:
     @classmethod
     def setup_class(cls):
         cls.mockserver = MockServer()
@@ -78,9 +87,8 @@ class TestProxyConnect:
             pytest.skip("mitmproxy is not installed")
 
         self._oldenv = os.environ.copy()
-
         self._proxy = MitmProxy()
-        proxy_url = self._proxy.start()
+        proxy_url = self._proxy.start(listen_host=self.proxy_host)
         os.environ["https_proxy"] = proxy_url
         os.environ["http_proxy"] = proxy_url
 
@@ -101,8 +109,6 @@ class TestProxyConnect:
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
-        # The proxy returns a 407 error code but it does not reach the client;
-        # he just sees a TunnelError.
         self._assert_got_tunnel_error(log)
 
     @inlineCallbacks
@@ -120,3 +126,49 @@ class TestProxyConnect:
 
     def _assert_got_tunnel_error(self, log):
         assert "TunnelError" in str(log)
+
+
+class TestProxyConnect(BaseTestProxyConnect):
+    proxy_host = "127.0.0.1"
+
+
+@pytest.mark.skipif(
+    not ipv6_loopback_available(), reason="IPv6 loopback is not available"
+)
+class TestProxyConnectIPv6(BaseTestProxyConnect):
+    proxy_host = "::1"
+
+
+@pytest.mark.skipif(
+    not ipv6_loopback_available(), reason="IPv6 loopback is not available"
+)
+def test_format_host_ipv6_literal_wrap():
+    assert http11.TunnelingMixin._format_host("::1") == "[::1]"
+
+
+def test_format_host_hostname_and_ipv4_unchanged():
+    assert http11.TunnelingMixin._format_host("example.com") == "example.com"
+    assert http11.TunnelingMixin._format_host("127.0.0.1") == "127.0.0.1"
+
+
+@pytest.mark.skipif(
+    not ipv6_loopback_available(), reason="IPv6 loopback is not available"
+)
+def test_is_ipv6_with_literals():
+    # loopback shorthand
+    assert http11.is_ipv6("::1") is True
+
+    # zero compression
+    assert http11.is_ipv6("2001:0db8:0000:0000:0000:ff00:0042:8329") is True
+
+    # IPv4-mapped IPv6 address
+    assert http11.is_ipv6("::ffff:192.168.0.1") is True
+
+    # link local with zone index
+    assert http11.is_ipv6("fe80::1ff:fe23:4567:890a%eth0") is True
+
+    # ipv4 loopback
+    assert http11.is_ipv6("127.0.0.1") is False
+
+    # octal confusion
+    assert http11.is_ipv6("010.000.000.001") is False
