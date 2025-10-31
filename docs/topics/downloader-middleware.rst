@@ -274,8 +274,7 @@ Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
 Direct access to cookiejars from spider
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In some cases it is required to directly set specific values in an existing
-cookiejar.
+In some cases it is required to directly set specific values in an existing :class:`scrapy.http.cookies.CookieJar` object where :class:`http.cookies.CookieJar` from python standard library used here)
 
 .. skip: start
 .. code-block:: python
@@ -295,7 +294,7 @@ cookiejar.
 
         def login(self, response):
             self.logger.info(self.cookie_jars[None])  # scrapy.http.cookies.CookieJar object
-            self.logger.info(self.cookie_jars[None].jar)  # http.cookiejar object
+            self.logger.info(self.cookie_jars[None].jar)  # http.cookiejar.CookieJar object
 
             locale_cookie = (
                 self.cookie_jars[None]._cookies["quotes.toscrape.com"]["/"].get("session")
@@ -346,7 +345,7 @@ If cookie middleware is enabled, ``get_cookiejar(response_or_request)`` method a
       .. code-block:: none
 
           self.logger.info(self.get_cookiejar(response))  # scrapy.http.cookies.CookieJar object
-          self.logger.info(self.get_cookiejar(response).jar)  # http.cookiejar object
+          self.logger.info(self.get_cookiejar(response).jar)  # http.cookiejar.CookieJar object
           locale_cookie = (
               self.get_cookiejar(response).jar._cookies["quotes.toscrape.com"]["/"].get("session")
           )
