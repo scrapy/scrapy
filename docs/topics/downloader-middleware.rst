@@ -274,7 +274,7 @@ Here's an example of a log with :setting:`COOKIES_DEBUG` enabled::
 Direct access to cookiejars from spider
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In some cases it is required to directly set specific values in an existing :class:`scrapy.http.cookies.CookieJar` object where :class:`http.cookies.CookieJar` from python standard library used here)
+In some cases it is required to directly set specific values in an existing :class:`scrapy.http.cookies.CookieJar` object where :class:`http.cookiejar.CookieJar` from python standard library used here)
 
 .. skip: start
 .. code-block:: python
@@ -355,7 +355,7 @@ Known use cases where direct access to cookiejar objects can be useful:
 1. Modifying specific cookie value (as provided on example code sample above).
 2. Delete cookiejar. On some cases this can re-initialise session.
 
-.. warning:: ``http.cookiejar`` object from python standart lib https://docs.python.org/3/library/http.cookies.html doesn't provide option to individually access/modify specific cookie values. It is possible to change it only using it's private attributes as provided on code sample above.
+.. warning:: ``http.cookiejar.CookieJar`` object from python standard lib https://docs.python.org/3/library/http.cookies.html doesn't provide option to individually access/modify specific cookie values. It is possible to change it only using it's private attributes as provided on code sample above.
 
 DefaultHeadersMiddleware
 ------------------------
