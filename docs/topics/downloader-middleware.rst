@@ -1189,6 +1189,37 @@ implementing the methods described below.
 
 .. _robots.txt: https://www.robotstxt.org/
 
+Lenient HTTP Downloader Middleware
+----------------------------------
+
+.. module:: scrapy.downloadermiddlewares.error_headers
+   :synopsis: Lenient Http Downloader Middleware
+.. class:: LenientHttpDownloaderMiddleware
+
+
+When a remote server sends a malformed HTTP response header, Twisted raises
+:class:`twisted.web._newclient.ResponseFailed` and Scrapy aborts the
+request, even though the body may be perfectly usable.
+
+``LenientHttpDownloaderMiddleware`` intercepts that exact exception,
+re-issues the request with a **raw socket GET**, parses the response skipping malformed headers,
+and returns a normal :class:`scrapy.http.Response` so the spider can continue.
+
+* Works for both ``http`` and ``https``.
+* Keeps every valid ``name: value`` header; silently drops malformed headers.
+* Adds the flag ``BAD_HEADER_FALLBACK`` to the response for later inspection.
+
+
+**Configuration**
+
+.. code-block:: python
+
+   # settings.py
+   DOWNLOADER_MIDDLEWARES = {
+       "myproject.middlewares.LenientHttpDownloaderMiddleware": 600,
+   }
+
+
 DownloaderStats
 ---------------
 
