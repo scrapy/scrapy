@@ -1458,8 +1458,10 @@ then it displays the component responsible for the log output.
 LOG_SYSTEMD
 --------------
 
-Type: boolean
-Default: False
+LOG_SYSTEMD
+--------------
+
+Default: ``False``
 
 If enabled, Scrapy sends logs to the systemd journal using the
 `systemd.journal.JournalHandler` as its logging handler. This
@@ -1469,12 +1471,13 @@ feature requires the external `systemd` Python package to be installed.
 
     pip install systemd
 
-Note:
-- This setting is disabled by default.
-- When enabled, Scrapy will raise an ImportError if the required
-  `systemd` package is not installed.
-- Ensure you use at least version 234 of the `systemd` package for
-  compatibility.
+.. note::
+
+    - This setting is disabled by default.
+    - When enabled, Scrapy will raise an ImportError if the required
+      `systemd` package is not installed.
+    - Ensure you use at least version 234 of the `systemd` package for
+      compatibility.
 
 This setting is useful when running Scrapy under systemd to integrate
 with `journalctl` and benefit from structured logging and filtering.
