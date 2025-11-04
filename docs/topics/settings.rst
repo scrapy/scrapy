@@ -1458,9 +1458,6 @@ then it displays the component responsible for the log output.
 LOG_SYSTEMD
 --------------
 
-LOG_SYSTEMD
---------------
-
 Default: ``False``
 
 If enabled, Scrapy sends logs to the systemd journal using the
