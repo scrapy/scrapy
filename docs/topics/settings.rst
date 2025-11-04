@@ -1131,9 +1131,9 @@ interface::
     class MyDupeFilter:
 
         @classmethod
-        def from_settings(cls, settings):
+        def from_crawler(cls, crawler):
             """Returns an instance of this duplicate request filtering class
-            based on the current crawl settings."""
+            based on the current Crawler instance."""
             return cls()
 
         def request_seen(self, request):

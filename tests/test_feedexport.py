@@ -2628,7 +2628,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         data = await self.exported_data(items, settings)
         for fmt, expected in formats.items():
-            for expected_batch, got_batch in zip(expected, data[fmt]):
+            for expected_batch, got_batch in zip(expected, data[fmt], strict=False):
                 assert got_batch == expected_batch
 
     @deferred_f_from_coro_f
@@ -2652,7 +2652,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         data = await self.exported_data(items, settings)
         for fmt, expected in formats.items():
-            for expected_batch, got_batch in zip(expected, data[fmt]):
+            for expected_batch, got_batch in zip(expected, data[fmt], strict=False):
                 assert got_batch == expected_batch
 
     @deferred_f_from_coro_f

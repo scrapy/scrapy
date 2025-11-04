@@ -6,14 +6,14 @@ import pprint
 import sys
 from collections.abc import MutableMapping
 from logging.config import dictConfig
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet import asyncioreactor
 from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.settings import Settings, _SettingsKeyT
+from scrapy.settings import Settings, _SettingsKey
 from scrapy.utils.versions import get_versions
 
 if TYPE_CHECKING:
@@ -36,7 +36,7 @@ def failure_to_exc_info(
         return (
             failure.type,
             failure.value,
-            cast("Optional[TracebackType]", failure.getTracebackObject()),
+            cast("TracebackType | None", failure.getTracebackObject()),
         )
     return None
 
@@ -84,7 +84,7 @@ DEFAULT_LOGGING = {
 
 
 def configure_logging(
-    settings: Settings | dict[_SettingsKeyT, Any] | None = None,
+    settings: Settings | dict[_SettingsKey, Any] | None = None,
     install_root_handler: bool = True,
 ) -> None:
     """

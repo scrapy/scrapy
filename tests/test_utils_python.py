@@ -14,7 +14,6 @@ from scrapy.utils.python import (
     MutableAsyncChain,
     MutableChain,
     binary_is_text,
-    equal_attributes,
     get_func_args,
     memoizemethod_noargs,
     to_bytes,
@@ -148,56 +147,6 @@ def test_memoizemethod_noargs():
 )
 def test_binaryistext(value: bytes, expected: bool) -> None:
     assert binary_is_text(value) is expected
-
-
-@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-def test_equal_attributes():
-    class Obj:
-        pass
-
-    a = Obj()
-    b = Obj()
-    # no attributes given return False
-    assert not equal_attributes(a, b, [])
-    # nonexistent attributes
-    assert not equal_attributes(a, b, ["x", "y"])
-
-    a.x = 1
-    b.x = 1
-    # equal attribute
-    assert equal_attributes(a, b, ["x"])
-
-    b.y = 2
-    # obj1 has no attribute y
-    assert not equal_attributes(a, b, ["x", "y"])
-
-    a.y = 2
-    # equal attributes
-    assert equal_attributes(a, b, ["x", "y"])
-
-    a.y = 1
-    # different attributes
-    assert not equal_attributes(a, b, ["x", "y"])
-
-    # test callable
-    a.meta = {}
-    b.meta = {}
-    assert equal_attributes(a, b, ["meta"])
-
-    # compare ['meta']['a']
-    a.meta["z"] = 1
-    b.meta["z"] = 1
-
-    get_z = operator.itemgetter("z")
-    get_meta = operator.attrgetter("meta")
-
-    def compare_z(obj):
-        return get_z(get_meta(obj))
-
-    assert equal_attributes(a, b, [compare_z, "x"])
-    # fail z equality
-    a.meta["z"] = 2
-    assert not equal_attributes(a, b, [compare_z, "x"])
 
 
 def test_get_func_args():

@@ -371,13 +371,13 @@ class TestMiddlewareManagerSpider:
             ),
             pytest.raises(
                 ValueError,
-                match="ItemPipelineManager needs to access self.crawler.spider but it is None",
+                match=r"ItemPipelineManager needs to access self\.crawler\.spider but it is None",
             ),
         ):
             mwman.open_spider(DefaultSpider())
         with pytest.raises(
             ValueError,
-            match="ItemPipelineManager needs to access self.crawler.spider but it is None",
+            match=r"ItemPipelineManager needs to access self\.crawler\.spider but it is None",
         ):
             await mwman.open_spider_async()
         with (
@@ -387,13 +387,13 @@ class TestMiddlewareManagerSpider:
             ),
             pytest.raises(
                 ValueError,
-                match="ItemPipelineManager needs to access self.crawler.spider but it is None",
+                match=r"ItemPipelineManager needs to access self\.crawler\.spider but it is None",
             ),
         ):
             mwman.close_spider(DefaultSpider())
         with pytest.raises(
             ValueError,
-            match="ItemPipelineManager needs to access self.crawler.spider but it is None",
+            match=r"ItemPipelineManager needs to access self\.crawler\.spider but it is None",
         ):
             await mwman.close_spider_async()
 
