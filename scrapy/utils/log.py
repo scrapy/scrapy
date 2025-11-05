@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import pprint
 import sys
 from collections.abc import MutableMapping
@@ -167,7 +166,8 @@ def _get_handler(settings: Settings) -> logging.Handler:
     elif settings.getbool("LOG_ENABLED"):
         if settings.getbool("LOG_SYSTEMD", False):
             # Opt-in systemd journal logging, will raise if systemd.journal is missing
-            import systemd.journal
+            import systemd.journal  # noqa: PLC0415
+
             handler = systemd.journal.JournalHandler()
         else:
             handler = logging.StreamHandler()
