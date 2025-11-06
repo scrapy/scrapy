@@ -512,8 +512,9 @@ class TestHttpCompression:
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")
-        with pytest.raises(IgnoreRequest):
+        with pytest.raises(IgnoreRequest) as e:
             mw.process_response(response.request, response)
+            assert e.__cause__.decompressed_size < 11_511_612
 
     def test_compression_bomb_setting_br(self):
         _skip_if_no_br()

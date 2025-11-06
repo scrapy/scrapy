@@ -2,10 +2,8 @@ import contextlib
 import zlib
 from io import BytesIO
 
-try:
+with contextlib.suppress(ImportError):
     import brotli
-except ImportError:
-    pass
 
 with contextlib.suppress(ImportError):
     import zstandard
@@ -15,16 +13,21 @@ _CHUNK_SIZE = 65536  # 64 KiB
 
 
 class _DecompressionMaxSizeExceeded(ValueError):
-    pass
+    def __init__(self, decompressed_size: int, max_size: int) -> None:
+        self.decompressed_size = decompressed_size
+        self.max_size = max_size
+
+    def __str__(self) -> str:
+        return (
+            f"The number of bytes decompressed so far "
+            f"({self.decompressed_size} B) exceeds the specified maximum "
+            f"({self.max_size} B)."
+        )
 
 
 def _check_max_size(decompressed_size: int, max_size: int) -> None:
     if max_size and decompressed_size > max_size:
-        raise _DecompressionMaxSizeExceeded(
-            f"The number of bytes decompressed so far "
-            f"({decompressed_size} B) exceeds the specified maximum "
-            f"({max_size} B)."
-        )
+        raise _DecompressionMaxSizeExceeded(decompressed_size, max_size)
 
 
 def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
