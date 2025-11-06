@@ -54,18 +54,16 @@ def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
 
 def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
     decompressor = brotli.Decompressor()
-    output_stream = BytesIO()
-    output_chunk = decompressor.process(data, output_buffer_limit=_CHUNK_SIZE)
-    decompressed_size = len(output_chunk)
+    first_chunk = decompressor.process(data, output_buffer_limit=_CHUNK_SIZE)
+    decompressed_size = len(first_chunk)
     _check_max_size(decompressed_size, max_size)
-    output_stream.write(output_chunk)
+    output_stream = BytesIO(first_chunk)
     while not decompressor.is_finished():
         output_chunk = decompressor.process(b"", output_buffer_limit=_CHUNK_SIZE)
         decompressed_size += len(output_chunk)
         _check_max_size(decompressed_size, max_size)
         output_stream.write(output_chunk)
-    output_stream.seek(0)
-    return output_stream.read()
+    return output_stream.getvalue()
 
 
 def _unzstd(data: bytes, *, max_size: int = 0) -> bytes:
@@ -79,5 +77,4 @@ def _unzstd(data: bytes, *, max_size: int = 0) -> bytes:
         decompressed_size += len(output_chunk)
         _check_max_size(decompressed_size, max_size)
         output_stream.write(output_chunk)
-    output_stream.seek(0)
-    return output_stream.read()
+    return output_stream.getvalue()

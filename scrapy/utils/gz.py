@@ -33,8 +33,7 @@ def gunzip(data: bytes, *, max_size: int = 0) -> bytes:
         decompressed_size += len(chunk)
         _check_max_size(decompressed_size, max_size)
         output_stream.write(chunk)
-    output_stream.seek(0)
-    return output_stream.read()
+    return output_stream.getvalue()
 
 
 def gzip_magic_number(response: Response) -> bool:
