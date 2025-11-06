@@ -32,12 +32,19 @@ ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate"]
 
 try:
     import brotli  # noqa: F401
-
-    brotli.Decompressor.can_accept_more_data
-except (ImportError, AttributeError):
+except ImportError:
     pass
 else:
-    ACCEPTED_ENCODINGS.append(b"br")
+    try:
+        brotli.Decompressor.can_accept_more_data
+    except AttributeError:
+        warnings.warn(
+            "You have brotli installed. But 'br' encoding support now requires "
+            "brotli version >= 1.2.0. Please upgrade brotli version to make Scrapy "
+            "decode 'br' encoded responses.",
+        )
+    else:
+        ACCEPTED_ENCODINGS.append(b"br")
 
 try:
     import zstandard  # noqa: F401
