@@ -29,31 +29,27 @@ def _check_max_size(decompressed_size: int, max_size: int) -> None:
 
 def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
     decompressor = zlib.decompressobj()
-    raw_decompressor = zlib.decompressobj(wbits=-15)
-    input_stream = BytesIO(data)
-    output_stream = BytesIO()
-    output_chunk = b"."
-    decompressed_size = 0
-    while output_chunk:
-        input_chunk = input_stream.read(_CHUNK_SIZE)
-        try:
-            output_chunk = decompressor.decompress(input_chunk)
-        except zlib.error:
-            if decompressor != raw_decompressor:
-                # ugly hack to work with raw deflate content that may
-                # be sent by microsoft servers. For more information, see:
-                # http://carsten.codimi.de/gzip.yaws/
-                # http://www.port80software.com/200ok/archive/2005/10/31/868.aspx
-                # http://www.gzip.org/zlib/zlib_faq.html#faq38
-                decompressor = raw_decompressor
-                output_chunk = decompressor.decompress(input_chunk)
-            else:
-                raise
+    try:
+        first_chunk = decompressor.decompress(data, max_length=_CHUNK_SIZE)
+    except zlib.error:
+        # to work with raw deflate content that may sent by microsoft servers.
+        decompressor = zlib.decompressobj(wbits=-15)
+        first_chunk = decompressor.decompress(data, max_length=_CHUNK_SIZE)
+    decompressed_size = len(first_chunk)
+    _check_max_size(decompressed_size, max_size)
+    output_stream = BytesIO(first_chunk)
+    while decompressor.unconsumed_tail:
+        output_chunk = decompressor.decompress(
+            decompressor.unconsumed_tail, max_length=_CHUNK_SIZE
+        )
         decompressed_size += len(output_chunk)
         _check_max_size(decompressed_size, max_size)
         output_stream.write(output_chunk)
-    output_stream.seek(0)
-    return output_stream.read()
+    if tail := decompressor.flush():
+        decompressed_size += len(tail)
+        _check_max_size(decompressed_size, max_size)
+        output_stream.write(tail)
+    return output_stream.getvalue()
 
 
 def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
