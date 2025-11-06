@@ -53,7 +53,9 @@ FORMAT = {
 def _skip_if_no_br() -> None:
     try:
         import brotli  # noqa: F401,PLC0415
-    except ImportError:
+
+        brotli.Decompressor.can_accept_more_data
+    except (ImportError, AttributeError):
         pytest.skip("no brotli support")
 
 
