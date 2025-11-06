@@ -52,7 +52,7 @@ FORMAT = {
 
 def _skip_if_no_br() -> None:
     try:
-        import brotli  # noqa: F401,PLC0415
+        import brotli  # noqa: PLC0415
 
         brotli.Decompressor.can_accept_more_data
     except (ImportError, AttributeError):
@@ -61,7 +61,7 @@ def _skip_if_no_br() -> None:
 
 def _skip_if_no_zstd() -> None:
     try:
-        import zstandard  # noqa: PLC0415
+        import zstandard  # noqa: F401,PLC0415
     except ImportError:
         pytest.skip("no zstd support (zstandard)")
 
