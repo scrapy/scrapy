@@ -37,7 +37,8 @@ def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
         first_chunk = decompressor.decompress(data, max_length=_CHUNK_SIZE)
     decompressed_size = len(first_chunk)
     _check_max_size(decompressed_size, max_size)
-    output_stream = BytesIO(first_chunk)
+    output_stream = BytesIO()
+    output_stream.write(first_chunk)
     while decompressor.unconsumed_tail:
         output_chunk = decompressor.decompress(
             decompressor.unconsumed_tail, max_length=_CHUNK_SIZE
@@ -57,7 +58,8 @@ def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
     first_chunk = decompressor.process(data, output_buffer_limit=_CHUNK_SIZE)
     decompressed_size = len(first_chunk)
     _check_max_size(decompressed_size, max_size)
-    output_stream = BytesIO(first_chunk)
+    output_stream = BytesIO()
+    output_stream.write(first_chunk)
     while not decompressor.is_finished():
         output_chunk = decompressor.process(b"", output_buffer_limit=_CHUNK_SIZE)
         decompressed_size += len(output_chunk)
