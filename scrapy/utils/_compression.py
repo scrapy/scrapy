@@ -65,6 +65,8 @@ def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
     output_stream.write(first_chunk)
     while not decompressor.is_finished():
         output_chunk = decompressor.process(b"", output_buffer_limit=_CHUNK_SIZE)
+        if not output_chunk:
+            raise ValueError("Truncated brotli compressed data")
         decompressed_size += len(output_chunk)
         _check_max_size(decompressed_size, max_size)
         output_stream.write(output_chunk)
