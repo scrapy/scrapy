@@ -1,42 +1,11 @@
 import contextlib
 import zlib
 from io import BytesIO
-from warnings import warn
-
-from scrapy.exceptions import ScrapyDeprecationWarning
 
 try:
-    try:
-        import brotli
-    except ImportError:
-        import brotlicffi as brotli
+    import brotli
 except ImportError:
     pass
-else:
-    try:
-        brotli.Decompressor.process
-    except AttributeError:
-        warn(
-            (
-                "You have brotlipy installed, and Scrapy will use it, but "
-                "Scrapy support for brotlipy is deprecated and will stop "
-                "working in a future version of Scrapy. brotlipy itself is "
-                "deprecated, it has been superseded by brotlicffi. Please, "
-                "uninstall brotlipy and install brotli or brotlicffi instead. "
-                "brotlipy has the same import name as brotli, so keeping both "
-                "installed is strongly discouraged."
-            ),
-            ScrapyDeprecationWarning,
-        )
-
-        def _brotli_decompress(decompressor, data):
-            return decompressor.decompress(data)
-
-    else:
-
-        def _brotli_decompress(decompressor, data):
-            return decompressor.process(data)
-
 
 with contextlib.suppress(ImportError):
     import zstandard
@@ -47,6 +16,15 @@ _CHUNK_SIZE = 65536  # 64 KiB
 
 class _DecompressionMaxSizeExceeded(ValueError):
     pass
+
+
+def _check_max_size(decompressed_size: int, max_size: int) -> None:
+    if max_size and decompressed_size > max_size:
+        raise _DecompressionMaxSizeExceeded(
+            f"The number of bytes decompressed so far "
+            f"({decompressed_size} B) exceeds the specified maximum "
+            f"({max_size} B)."
+        )
 
 
 def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
@@ -72,12 +50,7 @@ def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
             else:
                 raise
         decompressed_size += len(output_chunk)
-        if max_size and decompressed_size > max_size:
-            raise _DecompressionMaxSizeExceeded(
-                f"The number of bytes decompressed so far "
-                f"({decompressed_size} B) exceed the specified maximum "
-                f"({max_size} B)."
-            )
+        _check_max_size(decompressed_size, max_size)
         output_stream.write(output_chunk)
     output_stream.seek(0)
     return output_stream.read()
@@ -85,20 +58,15 @@ def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
 
 def _unbrotli(data: bytes, *, max_size: int = 0) -> bytes:
     decompressor = brotli.Decompressor()
-    input_stream = BytesIO(data)
     output_stream = BytesIO()
-    output_chunk = b"."
-    decompressed_size = 0
-    while output_chunk:
-        input_chunk = input_stream.read(_CHUNK_SIZE)
-        output_chunk = _brotli_decompress(decompressor, input_chunk)
+    output_chunk = decompressor.process(data, output_buffer_limit=_CHUNK_SIZE)
+    decompressed_size = len(output_chunk)
+    _check_max_size(decompressed_size, max_size)
+    output_stream.write(output_chunk)
+    while not decompressor.is_finished():
+        output_chunk = decompressor.process(b"", output_buffer_limit=_CHUNK_SIZE)
         decompressed_size += len(output_chunk)
-        if max_size and decompressed_size > max_size:
-            raise _DecompressionMaxSizeExceeded(
-                f"The number of bytes decompressed so far "
-                f"({decompressed_size} B) exceed the specified maximum "
-                f"({max_size} B)."
-            )
+        _check_max_size(decompressed_size, max_size)
         output_stream.write(output_chunk)
     output_stream.seek(0)
     return output_stream.read()
@@ -113,12 +81,7 @@ def _unzstd(data: bytes, *, max_size: int = 0) -> bytes:
     while output_chunk:
         output_chunk = stream_reader.read(_CHUNK_SIZE)
         decompressed_size += len(output_chunk)
-        if max_size and decompressed_size > max_size:
-            raise _DecompressionMaxSizeExceeded(
-                f"The number of bytes decompressed so far "
-                f"({decompressed_size} B) exceed the specified maximum "
-                f"({max_size} B)."
-            )
+        _check_max_size(decompressed_size, max_size)
         output_stream.write(output_chunk)
     output_stream.seek(0)
     return output_stream.read()

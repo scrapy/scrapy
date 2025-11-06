@@ -31,11 +31,9 @@ logger = getLogger(__name__)
 ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate"]
 
 try:
-    try:
-        import brotli  # noqa: F401
-    except ImportError:
-        import brotlicffi  # noqa: F401
-except ImportError:
+    import brotli  # noqa: F401
+    brotli.Decompressor.can_accept_more_data
+except (ImportError, AttributeError):
     pass
 else:
     ACCEPTED_ENCODINGS.append(b"br")
@@ -202,7 +200,7 @@ class HttpCompressionMiddleware:
             f"from unsupported encoding(s) '{encodings_str}'."
         )
         if b"br" in encodings:
-            msg += " You need to install brotli or brotlicffi to decode 'br'."
+            msg += " You need to install brotli >= 1.2.0 to decode 'br'."
         if b"zstd" in encodings:
             msg += " You need to install zstandard to decode 'zstd'."
         logger.warning(msg)
