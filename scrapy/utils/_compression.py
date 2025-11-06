@@ -20,7 +20,7 @@ class _DecompressionMaxSizeExceeded(ValueError):
     def __str__(self) -> str:
         return (
             "The number of bytes decompressed so far "
-            f"({self.decompressed_size} B) exceeds the specified maximum "
+            f"({self.decompressed_size} B) exceeded the specified maximum "
             f"({self.max_size} B)."
         )
 
