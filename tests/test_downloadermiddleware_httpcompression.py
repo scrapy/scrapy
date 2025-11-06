@@ -61,7 +61,7 @@ def _skip_if_no_br() -> None:
 
 def _skip_if_no_zstd() -> None:
     try:
-        import zstandard  # noqa: F401,PLC0415
+        import zstandard  # noqa: PLC0415
     except ImportError:
         pytest.skip("no zstd support (zstandard)")
 
@@ -514,7 +514,7 @@ class TestHttpCompression:
         response = self._getresponse(f"bomb-{compression_id}")
         with pytest.raises(IgnoreRequest) as e:
             mw.process_response(response.request, response)
-            assert e.__cause__.decompressed_size < 11_511_612
+        assert e.__cause__.decompressed_size < 11_511_612
 
     def test_compression_bomb_setting_br(self):
         _skip_if_no_br()
