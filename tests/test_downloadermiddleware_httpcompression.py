@@ -506,16 +506,16 @@ class TestHttpCompression:
         self.assertStatsEqual("httpcompression/response_bytes", None)
 
     def _test_compression_bomb_setting(self, compression_id):
-        settings = {"DOWNLOAD_MAXSIZE": 10_000_000}
+        settings = {"DOWNLOAD_MAXSIZE": 1_000_000}
         crawler = get_crawler(Spider, settings_dict=settings)
         spider = crawler._create_spider("scrapytest.org")
         mw = HttpCompressionMiddleware.from_crawler(crawler)
         mw.open_spider(spider)
 
-        response = self._getresponse(f"bomb-{compression_id}")
+        response = self._getresponse(f"bomb-{compression_id}")  # 11_511_612 B
         with pytest.raises(IgnoreRequest) as exc_info:
             mw.process_response(response.request, response)
-        assert exc_info.value.__cause__.decompressed_size < 11_511_612
+        assert exc_info.value.__cause__.decompressed_size < 1_100_000
 
     def test_compression_bomb_setting_br(self):
         _skip_if_no_br()
@@ -535,7 +535,7 @@ class TestHttpCompression:
 
     def _test_compression_bomb_spider_attr(self, compression_id):
         class DownloadMaxSizeSpider(Spider):
-            download_maxsize = 10_000_000
+            download_maxsize = 1_000_000
 
         crawler = get_crawler(DownloadMaxSizeSpider)
         spider = crawler._create_spider("scrapytest.org")
@@ -543,8 +543,9 @@ class TestHttpCompression:
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")
-        with pytest.raises(IgnoreRequest):
+        with pytest.raises(IgnoreRequest) as exc_info:
             mw.process_response(response.request, response)
+        assert exc_info.value.__cause__.decompressed_size < 1_100_000
 
     @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr_br(self):
@@ -573,9 +574,10 @@ class TestHttpCompression:
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")
-        response.meta["download_maxsize"] = 10_000_000
-        with pytest.raises(IgnoreRequest):
+        response.meta["download_maxsize"] = 1_000_000
+        with pytest.raises(IgnoreRequest) as exc_info:
             mw.process_response(response.request, response)
+        assert exc_info.value.__cause__.decompressed_size < 1_100_000
 
     def test_compression_bomb_request_meta_br(self):
         _skip_if_no_br()
