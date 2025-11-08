@@ -76,6 +76,7 @@ class Crawler:
         self._init_reactor: bool = init_reactor
         self.crawling: bool = False
         self._started: bool = False
+        self.initialization_failed: bool = False
 
         self.extensions: ExtensionManager | None = None
         self.stats: StatsCollector | None = None
@@ -157,6 +158,7 @@ class Crawler:
             yield deferred_from_coro(self.engine.start_async())
         except Exception:
             self.crawling = False
+            self.initialization_failed = True
             if self.engine is not None:
                 yield deferred_from_coro(self.engine.close_async())
             raise
@@ -193,6 +195,7 @@ class Crawler:
             await self.engine.start_async()
         except Exception:
             self.crawling = False
+            self.initialization_failed = True
             if self.engine is not None:
                 await self.engine.close_async()
             raise
@@ -431,7 +434,10 @@ class CrawlerRunner(CrawlerRunnerBase):
         finally:
             self.crawlers.discard(crawler)
             self._active.discard(d)
-            self.bootstrap_failed |= not getattr(crawler, "spider", None)
+            self.bootstrap_failed |= (
+                not getattr(crawler, "spider", None)
+                or getattr(crawler, "initialization_failed", False)
+            )
 
     def stop(self) -> Deferred[Any]:
         """
@@ -524,7 +530,10 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         def _done(_: asyncio.Task[None]) -> None:
             self.crawlers.discard(crawler)
             self._active.discard(task)
-            self.bootstrap_failed |= not getattr(crawler, "spider", None)
+            self.bootstrap_failed |= (
+                not getattr(crawler, "spider", None)
+                or getattr(crawler, "initialization_failed", False)
+            )
 
         task.add_done_callback(_done)
         return task
