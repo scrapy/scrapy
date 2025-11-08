@@ -752,12 +752,8 @@ class TestCrawlerRunnerHasSpider:
     def test_crawler_runner_bootstrap_failed_pipeline_exception(self):
         runner = self._runner()
 
-        try:
+        with pytest.raises(ValueError):
             yield self._crawl(runner, PipelineExceptionSpider)
-        except ValueError:
-            pass
-        else:
-            pytest.fail("Exception should be raised from pipeline")
 
         assert runner.bootstrap_failed
 
