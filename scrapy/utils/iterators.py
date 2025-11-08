@@ -212,7 +212,7 @@ def csviter(
                 },
             )
             continue
-        yield dict(zip(headers, row))
+        yield dict(zip(headers, row, strict=False))
 
 
 @overload

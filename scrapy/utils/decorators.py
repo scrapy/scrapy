@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 import warnings
 from functools import wraps
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar, overload
 
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.internet.threads import deferToThread
@@ -13,13 +13,9 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Coroutine
 
-    # typing.ParamSpec requires Python 3.10
-    from typing_extensions import ParamSpec
-
-    _P = ParamSpec("_P")
-
 
 _T = TypeVar("_T")
+_P = ParamSpec("_P")
 
 
 def deprecated(
@@ -93,8 +89,10 @@ def _warn_spider_arg(
 ):
     """Decorator to warn if a ``spider`` argument is passed to a function."""
 
+    sig = inspect.signature(func)
+
     def check_args(*args: _P.args, **kwargs: _P.kwargs) -> None:
-        bound = inspect.signature(func).bind(*args, **kwargs)
+        bound = sig.bind(*args, **kwargs)
         if "spider" in bound.arguments:
             warnings.warn(
                 f"Passing a 'spider' argument to {func.__qualname__}() is deprecated and "

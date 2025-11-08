@@ -489,6 +489,7 @@ class TestEngine(TestEngineBase):
         )
         p = subprocess.Popen(
             args,
+            stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
         )
 
