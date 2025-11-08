@@ -668,6 +668,19 @@ class ExceptionSpider(scrapy.Spider):
         raise ValueError("Exception in from_crawler method")
 
 
+class ExceptionPipeline:
+    @classmethod
+    def from_crawler(cls, crawler):
+        raise ValueError("Exception in pipeline from_crawler")
+
+
+class PipelineExceptionSpider(scrapy.Spider):
+    name = "pipeline_exception"
+
+    def start_requests(self):
+        return []
+
+
 class NoRequestsSpider(scrapy.Spider):
     name = "no_request"
 
@@ -727,6 +740,23 @@ class TestCrawlerRunnerHasSpider:
         assert runner.bootstrap_failed
 
     @inlineCallbacks
+    def test_crawler_runner_bootstrap_failed_pipeline_exception(self):
+        # Test with pipeline that raises exception in from_crawler
+        runner = self._runner()
+        try:
+            crawler = runner.create_crawler(PipelineExceptionSpider)
+            crawler.settings.set("ITEM_PIPELINES", {"tests.test_crawler.ExceptionPipeline": 1})
+            yield runner._crawl(crawler)
+        except ValueError:
+            # Exception should be raised from the pipeline's from_crawler method
+            pass
+        else:
+            pytest.fail("Exception should be raised from pipeline")
+
+        # The bootstrap_failed flag should be True due to pipeline initialization failure
+        assert runner.bootstrap_failed
+
+    @inlineCallbacks
     def test_crawler_runner_asyncio_enabled_true(
         self, reactor_pytest: str
     ) -> Generator[Deferred[Any], Any, None]:
@@ -761,6 +791,23 @@ class TestAsyncCrawlerRunnerHasSpider(TestCrawlerRunnerHasSpider):
 
     def test_crawler_runner_asyncio_enabled_true(self):
         pytest.skip("This test is only for CrawlerRunner")
+
+    @inlineCallbacks
+    def test_crawler_runner_bootstrap_failed_pipeline_exception(self):
+        # Test with pipeline that raises exception in from_crawler
+        runner = self._runner()
+        try:
+            crawler = runner.create_crawler(PipelineExceptionSpider)
+            crawler.settings.set("ITEM_PIPELINES", {"tests.test_crawler.ExceptionPipeline": 1})
+            yield deferred_from_coro(runner._crawl(crawler))
+        except ValueError:
+            # Exception should be raised from the pipeline's from_crawler method
+            pass
+        else:
+            pytest.fail("Exception should be raised from pipeline")
+
+        # The bootstrap_failed flag should be True due to pipeline initialization failure
+        assert runner.bootstrap_failed
 
 
 class ScriptRunnerMixin(ABC):
