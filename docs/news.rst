@@ -168,8 +168,14 @@ Deprecations
         - ``process_item()`` (use
           :meth:`~scrapy.pipelines.ItemPipelineManager.process_item_async`)
 
+        - ``open_spider()`` (use
+          :meth:`~scrapy.pipelines.ItemPipelineManager.open_spider_async`)
+
+        - ``close_spider()`` (use
+          :meth:`~scrapy.pipelines.ItemPipelineManager.close_spider_async`)
+
     (:issue:`6791`, :issue:`6842`, :issue:`6979`, :issue:`6997`, :issue:`6999`,
-    :issue:`7005`)
+    :issue:`7005`, :issue:`7043`)
 
 -   The following spider attributes are deprecated in favor of settings:
 
@@ -188,10 +194,6 @@ Deprecations
     - :meth:`scrapy.core.downloader.middleware.DownloaderMiddlewareManager.download`
 
     - :meth:`scrapy.core.spidermw.SpiderMiddlewareManager.process_start`
-
-    - :meth:`scrapy.pipelines.ItemPipelineManager.open_spider`
-
-    - :meth:`scrapy.pipelines.ItemPipelineManager.close_spider`
 
     - :meth:`scrapy.core.downloader.Downloader.fetch`
 
@@ -212,7 +214,7 @@ Deprecations
     - :meth:`scrapy.pipelines.media.MediaPipeline.process_item`
 
     (:issue:`6750`, :issue:`6927`, :issue:`6984`, :issue:`7006`, :issue:`7011`,
-    :issue:`7033`, :issue:`7037`)
+    :issue:`7033`, :issue:`7037`, :issue:`7045`)
 
 -   Instantiating subclasses of :class:`scrapy.middleware.MiddlewareManager`
     without a :class:`~scrapy.crawler.Crawler` instance is deprecated.
@@ -235,22 +237,27 @@ Deprecations
 
     - the ``fetch()`` method of a custom :setting:`DOWNLOADER`
 
-    - the ``open_spider()`` and ``close_spider()`` methods of a custom
-      :setting:`ITEM_PROCESSOR`
-
     - a custom function passed as the ``download_func`` argument to
       :meth:`scrapy.core.downloader.middleware.DownloaderMiddlewareManager.download`
 
     (:issue:`6927`, :issue:`6984`, :issue:`7006`, :issue:`7037`)
 
--   Custom implementations of :setting:`ITEM_PROCESSOR` should now define a
-    ``process_item_async()`` method instead of, or in addition to,
-    ``process_item()``.
-    (:issue:`7005`)
+-   Custom implementations of :setting:`ITEM_PROCESSOR` should now define
+    ``process_item_async()``, ``open_spider_async()`` and
+    ``close_spider_async()`` methods instead of, or in addition to,
+    ``process_item()``, ``open_spider()`` and ``close_spider()``.
+    (:issue:`7005`, :issue:`7043`)
 
 -   The ``CONCURRENT_REQUESTS_PER_IP`` setting is deprecated, use
     :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` instead.
     (:issue:`6917`, :issue:`6921`)
+
+-   The ``scrapy.core.downloader.handlers.http`` module is deprecated. You
+    should import
+    :class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`
+    directly instead of importing the
+    ``scrapy.core.downloader.handlers.http.HTTPDownloadHandler`` alias.
+    (:issue:`7079`)
 
 -   ``scrapy.spiders.CrawlSpider._parse_response()`` is deprecated, use
     :meth:`scrapy.spiders.CrawlSpider.parse_with_rules` instead.
@@ -338,6 +345,11 @@ New features
     (:issue:`6781`, :issue:`6792`, :issue:`6795`, :issue:`6801`, :issue:`6817`,
     :issue:`6997`, :issue:`7005`)
 
+-   Added :class:`scrapy.extensions.logcount.LogCount`, an enabled by default
+    extension that is responsible for the ``log_count/*`` stats. Previously,
+    this code was in :class:`scrapy.crawler.Crawler` and couldn't be disabled.
+    (:issue:`7046`)
+
 -   Added :meth:`scrapy.spiders.CrawlSpider.parse_with_rules` as a public
     replacement for ``_parse_response()``.
     (:issue:`4463`, :issue:`6804`)
@@ -372,12 +384,24 @@ Bug fixes
     a relative URL.
     (:issue:`7042`, :issue:`7047`)
 
+-   Fixed parsing of the first line of ``robots.txt`` files that have a BOM.
+    (:issue:`6195`, :issue:`7095`)
+
 Documentation
 ~~~~~~~~~~~~~
+
+-   Added a section about the `scrapy-spider-metadata`_ library to the
+    :ref:`spider argument docs <spiderargs-scrapy-spider-metadata>`.
+    (:issue:`6676`, :issue:`6957`, :issue:`7116`)
+
+    .. _scrapy-spider-metadata: https://scrapy-spider-metadata.readthedocs.io/en/latest/
 
 -   Removed the documentation build dependency on the deprecated
     ``sphinx-hoverxref`` module.
     (:issue:`6786`, :issue:`6922`)
+
+-   Other documentation improvements and fixes.
+    (:issue:`7058`, :issue:`7076`, :issue:`7109`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
@@ -415,20 +439,26 @@ Quality assurance
     :issue:`6968`,
     :issue:`6972`,
     :issue:`6974`,
+    :issue:`6996`,
     :issue:`7003`,
     :issue:`7012`,
     :issue:`7013`,
-    :issue:`7050`)
+    :issue:`7050`,
+    :issue:`7059`,
+    :issue:`7070`,
+    :issue:`7073`)
 
 -   Code cleanups.
     (:issue:`6803`,
     :issue:`6838`,
     :issue:`6849`,
     :issue:`6875`,
+    :issue:`6876`,
     :issue:`6892`,
     :issue:`6930`,
     :issue:`6949`,
     :issue:`6970`,
+    :issue:`6977`,
     :issue:`6986`,
     :issue:`7008`)
 
