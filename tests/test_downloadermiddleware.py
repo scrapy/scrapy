@@ -32,8 +32,10 @@ class TestManagerBase:
         mwman = DownloaderMiddlewareManager.from_crawler(crawler)
         crawler.engine = crawler._create_engine()
         await crawler.engine.open_spider_async()
-        yield mwman
-        await crawler.engine.close_spider_async()
+        try:
+            yield mwman
+        finally:
+            await crawler.engine.close_spider_async()
 
     @staticmethod
     async def _download(
@@ -309,7 +311,8 @@ class TestDownloadDeprecated(TestManagerBase):
         async with self.get_mwman() as mwman:
             with pytest.warns(
                 ScrapyDeprecationWarning,
-                match=r"Passing a spider argument to DownloaderMiddlewareManager.download\(\) is deprecated",
+                match=r"Passing a spider argument to DownloaderMiddlewareManager.download\(\)"
+                r" is deprecated and the passed value is ignored.",
             ):
                 ret = await maybe_deferred_to_future(
                     mwman.download(download_func, req, mwman.crawler.spider)

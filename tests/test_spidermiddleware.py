@@ -16,6 +16,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.asyncgen import collect_asyncgen
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
@@ -567,7 +568,8 @@ class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
 
     async def _test_asyncgen_nodowngrade(self, *mw_classes: type[Any]) -> None:
         with pytest.raises(
-            _InvalidOutput, match="Async iterable returned from .+ cannot be downgraded"
+            _InvalidOutput,
+            match=r"Async iterable returned from .+ cannot be downgraded",
         ):
             await self._get_middleware_result(*mw_classes)
 
@@ -604,7 +606,7 @@ class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
 
 class TestDeprecatedSpiderArg(TestSpiderMiddleware):
     @deferred_f_from_coro_f
-    async def test_deprecated_spider_arg(self):
+    async def test_deprecated_mw_spider_arg(self):
         class DeprecatedSpiderArgMiddleware:
             def process_spider_input(self, response, spider):
                 return None
@@ -631,3 +633,26 @@ class TestDeprecatedSpiderArg(TestSpiderMiddleware):
         ):
             self.mwman._add_middleware(DeprecatedSpiderArgMiddleware())
         await self._scrape_response()
+
+    @deferred_f_from_coro_f
+    async def test_deprecated_mwman_spider_arg(self):
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"Passing a spider argument to SpiderMiddlewareManager.process_start\(\)"
+            r" is deprecated and the passed value is ignored",
+        ):
+            await self.mwman.process_start(DefaultSpider())
+
+    @deferred_f_from_coro_f
+    async def test_deprecated_mwman_spider_arg_no_crawler(self):
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"MiddlewareManager.__init__\(\) was called without the crawler argument",
+        ):
+            mwman = SpiderMiddlewareManager()
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match=r"Passing a spider argument to SpiderMiddlewareManager.process_start\(\)"
+            r" is deprecated, SpiderMiddlewareManager should be instantiated with a Crawler",
+        ):
+            await mwman.process_start(DefaultSpider())

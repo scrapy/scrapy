@@ -28,7 +28,7 @@ def decode_robotstxt(
         if to_native_str_type:
             body_decoded = to_unicode(robotstxt_body)
         else:
-            body_decoded = robotstxt_body.decode("utf-8", errors="ignore")
+            body_decoded = robotstxt_body.decode("utf-8-sig", errors="ignore")
     except UnicodeDecodeError:
         # If we found garbage or robots.txt in an encoding other than UTF-8, disregard it.
         # Switch to 'allow all' state.

@@ -28,9 +28,15 @@ class StatsCollector:
         self._crawler: Crawler = crawler
 
     def __getattribute__(self, name):
+        cached_name = f"_cached_{name}"
+        try:
+            return super().__getattribute__(cached_name)
+        except AttributeError:
+            pass
+
         original_attr = super().__getattribute__(name)
 
-        if name in (
+        if name in {
             "get_value",
             "get_stats",
             "set_value",
@@ -41,8 +47,10 @@ class StatsCollector:
             "clear_stats",
             "open_spider",
             "close_spider",
-        ) and callable(original_attr):
-            return _warn_spider_arg(original_attr)
+        } and callable(original_attr):
+            wrapped = _warn_spider_arg(original_attr)
+            setattr(self, cached_name, wrapped)
+            return wrapped
 
         return original_attr
 

@@ -17,9 +17,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - python-version: "3.9"
-          env:
-            TOXENV: py
         - python-version: "3.10"
           env:
             TOXENV: py
@@ -37,10 +34,10 @@ jobs:
             TOXENV: default-reactor
 
         # pinned deps
-        - python-version: "3.9.13"
+        - python-version: "3.10.11"
           env:
             TOXENV: pinned
-        - python-version: "3.9.13"
+        - python-version: "3.10.11"
           env:
             TOXENV: extra-deps-pinned
 
@@ -49,10 +46,10 @@ jobs:
             TOXENV: extra-deps
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
 
