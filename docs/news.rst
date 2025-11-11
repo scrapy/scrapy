@@ -15,6 +15,14 @@ Backward-incompatible changes
     ``True`` when running Scrapy via :ref:`its command-line tool
     <topics-commands-crawlerprocess>` to avoid a reactor mismatch exception.
 
+-   The ``log_count/*`` stats no longer count some of the early messages that
+    they counted before. While the earliest log messages, emitted before the
+    counter is initialized, were never counted, the counter initialization now
+    happens later than in previous Scrapy versions. You may need to adjust
+    expected values if you retrieve and compare values of these stats in your
+    code.
+    (:issue:`7046`)
+
 -   The classes listed below are now :term:`abstract base classes <abstract
     base class>`. They cannot be instantiated directly and their subclasses
     need to override the abstract methods listed below to be able to be

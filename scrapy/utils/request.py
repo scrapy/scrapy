@@ -7,16 +7,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import warnings
 from typing import TYPE_CHECKING, Any, Protocol
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
 
-from w3lib.http import basic_auth_header
 from w3lib.url import canonicalize_url
 
 from scrapy import Request, Spider
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
@@ -120,39 +117,10 @@ class RequestFingerprinter:
         return cls(crawler)
 
     def __init__(self, crawler: Crawler | None = None):
-        if crawler:
-            implementation = crawler.settings.get(
-                "REQUEST_FINGERPRINTER_IMPLEMENTATION"
-            )
-        else:
-            implementation = "SENTINEL"
-
-        if implementation != "SENTINEL":
-            message = (
-                "'REQUEST_FINGERPRINTER_IMPLEMENTATION' is a deprecated setting.\n"
-                "It will be removed in a future version of Scrapy."
-            )
-            warnings.warn(message, category=ScrapyDeprecationWarning, stacklevel=2)
         self._fingerprint = fingerprint
 
     def fingerprint(self, request: Request) -> bytes:
         return self._fingerprint(request)
-
-
-def request_authenticate(
-    request: Request,
-    username: str,
-    password: str,
-) -> None:
-    """Authenticate the given request (in place) using the HTTP basic access
-    authentication mechanism (RFC 2617) and the given username and password
-    """
-    warnings.warn(
-        "The request_authenticate function is deprecated and will be removed in a future version of Scrapy.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    request.headers["Authorization"] = basic_auth_header(username, password)
 
 
 def request_httprepr(request: Request) -> bytes:

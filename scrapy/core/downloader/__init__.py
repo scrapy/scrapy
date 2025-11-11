@@ -95,13 +95,6 @@ def _get_concurrency_delay(
 ) -> tuple[int, float]:
     delay: float = settings.getfloat("DOWNLOAD_DELAY")
     if hasattr(spider, "download_delay"):
-        warnings.warn(
-            "The 'download_delay' spider attribute is deprecated. "
-            "Use Spider.custom_settings or Spider.update_settings() instead. "
-            "The corresponding setting name is 'DOWNLOAD_DELAY'.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         delay = spider.download_delay
 
     if hasattr(spider, "max_concurrent_requests"):
@@ -188,14 +181,6 @@ class Downloader:
             key = dnscache.get(key, key)
 
         return key
-
-    def _get_slot_key(self, request: Request, spider: Spider | None) -> str:
-        warnings.warn(
-            "Use of this protected method is deprecated. Consider using its corresponding public method get_slot_key() instead.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return self.get_slot_key(request)
 
     # passed as download_func into self.middleware.download() in self.fetch()
     @inlineCallbacks
