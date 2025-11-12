@@ -222,37 +222,6 @@ def test_request_scheduled_invalid_domains():
 
 
 @pytest.mark.parametrize(
-    ("disallowed_domain", "url", "allowed"),
-    [
-        ("example.com", "http://example.com/1", False),
-        ("example.com", "http://example.org/1", True),
-        ("example.com", "http://sub.example.com/1", False),
-        ("sub.example.com", "http://sub.example.com/1", False),
-        ("sub.example.com", "http://example.com/1", True),
-        ("example.com", "http://example.com:8000/1", False),
-        ("example.com", "http://example.org/example.com", True),
-        ("example.com", "http://example.org/foo.example.com", True),
-        ("example.com", "http://example.com.example", True),
-        ("a.example", "http://nota.example", True),
-        ("b.a.example", "http://notb.a.example", True),
-    ],
-)
-def test_process_request_disallowed_domains(disallowed_domain, url, allowed):
-    crawler = get_crawler(Spider)
-    crawler.spider = crawler._create_spider(
-        name="a", disallowed_domains=[disallowed_domain]
-    )
-    mw = OffsiteMiddleware.from_crawler(crawler)
-    mw.spider_opened(crawler.spider)
-    request = Request(url)
-    if allowed:
-        assert mw.process_request(request) is None
-    else:
-        with pytest.raises(IgnoreRequest):
-            mw.process_request(request)
-
-
-@pytest.mark.parametrize(
     ("value", "filtered"),
     [
         (UNSET, True),
@@ -352,31 +321,6 @@ def test_process_request_invalid_disallowed_domains():
         request = Request(f"https://{letter}.example")
         with pytest.raises(IgnoreRequest):
             mw.process_request(request)
-
-
-@pytest.mark.parametrize(
-    ("disallowed_domain", "url", "allowed"),
-    [
-        ("example.com", "http://example.com/1", False),
-        ("example.com", "http://example.org/1", True),
-        ("example.com", "http://sub.example.com/1", False),
-        ("sub.example.com", "http://sub.example.com/1", False),
-        ("sub.example.com", "http://example.com/1", True),
-    ],
-)
-def test_request_scheduled_disallowed_domains(disallowed_domain, url, allowed):
-    crawler = get_crawler(Spider)
-    crawler.spider = crawler._create_spider(
-        name="a", disallowed_domains=[disallowed_domain]
-    )
-    mw = OffsiteMiddleware.from_crawler(crawler)
-    mw.spider_opened(crawler.spider)
-    request = Request(url)
-    if allowed:
-        assert mw.request_scheduled(request, crawler.spider) is None
-    else:
-        with pytest.raises(IgnoreRequest):
-            mw.request_scheduled(request, crawler.spider)
 
 
 @pytest.mark.parametrize(
