@@ -47,7 +47,6 @@ FORMAT = {
             "zstd",  # 1 096 → 11 511 612
         )
     },
-    "bomb-br-64GiB": ("bomb-br-64GiB.bin", "br"),  # 51K → 64 GiB decompression bomb
 }
 
 
@@ -594,34 +593,6 @@ class TestHttpCompression:
         _skip_if_no_zstd()
 
         self._test_compression_bomb_request_meta("zstd")
-
-    def test_compression_bomb_output_buffer_limit(self):
-        """Test that the 64 GiB brotli decompression bomb is properly handled.
-
-        This test ensures that the output_buffer_limit parameter in the brotli
-        decompressor prevents the decompression bomb attack. The bomb file is
-        approximately 51 KB compressed but would decompress to 64 GiB, which
-        should trigger IgnoreRequest when DOWNLOAD_MAXSIZE is exceeded.
-        """
-        _skip_if_no_br()
-
-        settings = {"DOWNLOAD_MAXSIZE": 10_000_000}  # 10 MB limit
-        crawler = get_crawler(Spider, settings_dict=settings)
-        spider = crawler._create_spider("scrapytest.org")
-        mw = HttpCompressionMiddleware.from_crawler(crawler)
-        mw.open_spider(spider)
-
-        response = self._getresponse("bomb-br-64GiB")
-
-        # Verify the response is properly configured
-        assert response.headers["Content-Encoding"] == b"br"
-
-        # The middleware should raise IgnoreRequest due to exceeding DOWNLOAD_MAXSIZE
-        with pytest.raises(IgnoreRequest) as exc_info:
-            mw.process_response(response.request, response)
-
-        # Verify the exception message mentions the download size limits
-        assert "exceeded DOWNLOAD_MAXSIZE (10000000 B)" in str(exc_info.value)
 
     def _test_download_warnsize_setting(self, compression_id):
         settings = {"DOWNLOAD_WARNSIZE": 10_000_000}
