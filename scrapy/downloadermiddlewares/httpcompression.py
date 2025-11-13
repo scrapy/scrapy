@@ -37,7 +37,7 @@ except ImportError:
 else:
     try:
         brotli.Decompressor.can_accept_more_data
-    except AttributeError:
+    except AttributeError:  # pragma: no cover
         warnings.warn(
             "You have brotli installed. But 'br' encoding support now requires "
             "brotli version >= 1.2.0. Please upgrade brotli version to make Scrapy "
