@@ -725,3 +725,28 @@ class TestHttpCompression:
         _skip_if_no_zstd()
 
         self._test_download_warnsize_request_meta("zstd")
+
+    def _test_process_truncated_response(self, compression_id):
+        crawler = get_crawler(Spider)
+        spider = crawler._create_spider("scrapytest.org")
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw.open_spider(spider)
+        response = self._getresponse(compression_id)
+        truncated_body = response.body[: len(response.body) // 2]
+        truncated_response = response.replace(body=truncated_body)
+        newresponse = mw.process_response(truncated_response.request, truncated_response)
+        assert newresponse.body.startswith(b"<!DOCTYPE")
+
+    def test_process_truncated_response_br(self):
+        _skip_if_no_br()
+        self._test_process_truncated_response("br")
+
+    def test_process_truncated_response_zlibdeflate(self):
+        self._test_process_truncated_response("zlibdeflate")
+
+    def test_process_truncated_response_gzip(self):
+        self._test_process_truncated_response("gzip")
+
+    def test_process_truncated_response_zstd_streaming(self):
+        _skip_if_no_zstd()
+        self._test_process_truncated_response("zstd-streaming-no-content-size")
