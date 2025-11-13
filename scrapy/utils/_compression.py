@@ -19,7 +19,7 @@ class _DecompressionMaxSizeExceeded(ValueError):
 
     def __str__(self) -> str:
         return (
-            "The number of bytes decompressed so far "
+            f"The number of bytes decompressed so far "
             f"({self.decompressed_size} B) exceeded the specified maximum "
             f"({self.max_size} B)."
         )
@@ -35,7 +35,7 @@ def _inflate(data: bytes, *, max_size: int = 0) -> bytes:
     try:
         first_chunk = decompressor.decompress(data, max_length=_CHUNK_SIZE)
     except zlib.error:
-        # to work with raw deflate content that may sent by microsoft servers.
+        # to work with raw deflate content that may be sent by microsoft servers.
         decompressor = zlib.decompressobj(wbits=-15)
         first_chunk = decompressor.decompress(data, max_length=_CHUNK_SIZE)
     decompressed_size = len(first_chunk)
