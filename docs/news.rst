@@ -12,11 +12,24 @@ Highlights:
 
 -   More coroutine-based replacements for Deferred-based APIs
 
+-   Dropped support for Python 3.9 and PyPy 3.10.
+
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
 
+-   Dropped support for Python 3.9.
+    (:issue:`7121`)
+
 -   Dropped support for PyPy 3.10.
     (:issue:`7050`)
+
+-   Increased the minimum versions of the following dependencies:
+
+    - lxml_: 4.6.0 → 4.6.4
+
+    - Pillow_ (optional dependency): 8.0.0 → 8.3.2
+
+    - botocore_ (optional dependency): 1.4.87 → 1.13.45
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,6 +117,68 @@ Backward-incompatible changes
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
+-   The ``from_settings()`` method of the following components, deprecated in
+    Scrapy 2.12.0, is removed. You should use ``from_crawler()`` instead.
+
+    - :class:`scrapy.dupefilters.RFPDupeFilter`
+    - :class:`scrapy.mail.MailSender`
+    - :class:`scrapy.middleware.MiddlewareManager`
+    - :class:`scrapy.core.downloader.contextfactory.ScrapyClientContextFactory`
+    - :class:`scrapy.pipelines.files.FilesPipeline`
+    - :class:`scrapy.pipelines.images.ImagesPipeline`
+
+    (:issue:`7126`)
+
+-   Scrapy no longer calls ``from_settings()`` methods of 3rd-party
+    :ref:`components <topics-components>`, deprecated in Scrapy 2.12.0. You
+    should define a ``from_crawler()`` method instead.
+    (:issue:`7126`)
+
+-   The initialization flow of :class:`scrapy.pipelines.media.MediaPipeline`
+    and its subclasses was simplified, it now mandates ``from_crawler()``
+    methods and ``crawler`` arguments of ``__init__()`` methods. Not using
+    these was deprecated in Scrapy 2.12.0.
+    (:issue:`7126`)
+
+-   The ``REQUEST_FINGERPRINTER_IMPLEMENTATION`` setting, deprecated in Scrapy
+    2.12.0, is removed.
+    (:issue:`7126`)
+
+-   The ``scrapy.utils.misc.create_instance()`` function, deprecated in Scrapy
+    2.12.0, is removed. Use :func:`scrapy.utils.misc.build_from_crawler`
+    instead.
+    (:issue:`7126`)
+
+-   The ``scrapy.core.downloader.Downloader._get_slot_key()`` function,
+    deprecated in Scrapy 2.12.0, is removed. Use
+    :meth:`scrapy.core.downloader.Downloader.get_slot_key` instead.
+    (:issue:`7126`)
+
+-   The ``scrapy.twisted_version`` attribute, deprecated in Scrapy 2.12.0, is
+    removed. You should instead use the :attr:`twisted.version` attribute
+    directly.
+    (:issue:`7126`)
+
+-   The following utility functions, deprecated in Scrapy 2.12.0, are removed:
+
+    - ``scrapy.utils.defer.process_chain_both()``
+    - ``scrapy.utils.python.equal_attributes()``
+    - ``scrapy.utils.python.flatten()``
+    - ``scrapy.utils.python.iflatten()``
+    - ``scrapy.utils.request.request_authenticate()``
+    - ``scrapy.utils.test.assert_samelines()``
+
+    (:issue:`7126`)
+
+-   ``scrapy.utils.serialize.ScrapyJSONDecoder``, deprecated in Scrapy 2.12.0,
+    is removed.
+    (:issue:`7126`)
+
+-   The ``scrapy.extensions.feedexport.build_storage()`` function, deprecated
+    in Scrapy 2.12.0, is removed, you can instead call the builder callable
+    directly.
+    (:issue:`7126`)
+
 -   ``scrapy.spidermiddlewares.offsite.OffsiteMiddleware``, deprecated in
     Scrapy 2.11.2, is removed.
     :class:`scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` should be
@@ -179,15 +254,13 @@ Deprecations
 
 -   The following spider attributes are deprecated in favor of settings:
 
-    - ``download_delay`` (use :setting:`DOWNLOAD_DELAY`)
-
     - ``download_maxsize`` (use :setting:`DOWNLOAD_MAXSIZE`)
 
     - ``download_warnsize`` (use :setting:`DOWNLOAD_WARNSIZE`)
 
     - ``max_concurrent_requests`` (use :setting:`CONCURRENT_REQUESTS`)
 
-    (:issue:`6988`, :issue:`6994`)
+    (:issue:`6988`, :issue:`6994`, :issue:`7117`)
 
 -   Passing a ``spider`` argument to the following methods is deprecated:
 
@@ -359,6 +432,16 @@ New features
     future-proof name and semantics.
     (:issue:`6827`)
 
+-   The ``requests.seen`` file, written by
+    :class:`~scrapy.dupefilters.RFPDupeFilter` when :ref:`the job persistence
+    <topics-jobs>` is enabled, now uses line buffering to reduce data loss in
+    spider crashes.
+    (:issue:`6019`, :issue:`7094`)
+
+-   Images downloaded by :class:`~scrapy.pipelines.images.ImagesPipeline` are
+    now automatically transposed based on the EXIF value.
+    (:issue:`6525`, :issue:`6975`)
+
 Improvements
 ~~~~~~~~~~~~
 
@@ -446,7 +529,9 @@ Quality assurance
     :issue:`7050`,
     :issue:`7059`,
     :issue:`7070`,
-    :issue:`7073`)
+    :issue:`7073`,
+    :issue:`7118`,
+    :issue:`7127`)
 
 -   Code cleanups.
     (:issue:`6803`,
