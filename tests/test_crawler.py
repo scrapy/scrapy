@@ -668,6 +668,28 @@ class ExceptionSpider(scrapy.Spider):
         raise ValueError("Exception in from_crawler method")
 
 
+class ExceptionPipeline:
+    @classmethod
+    def from_crawler(cls, crawler):
+        raise ValueError("Exception in pipeline from_crawler")
+
+    def process_item(self, item, spider):
+        return item
+
+
+class PipelineExceptionSpider(scrapy.Spider):
+    name = "pipeline_exception"
+    custom_settings = {
+        "ITEM_PIPELINES": {
+            "tests.test_crawler.ExceptionPipeline": 100,
+        }
+    }
+
+    async def start(self):
+        return
+        yield
+
+
 class NoRequestsSpider(scrapy.Spider):
     name = "no_request"
 
@@ -723,6 +745,15 @@ class TestCrawlerRunnerHasSpider:
             pytest.fail("Exception should be raised from spider")
 
         yield self._crawl(runner, NoRequestsSpider)
+
+        assert runner.bootstrap_failed
+
+    @inlineCallbacks
+    def test_crawler_runner_bootstrap_failed_pipeline_exception(self):
+        runner = self._runner()
+
+        with pytest.raises(ValueError):
+            yield self._crawl(runner, PipelineExceptionSpider)
 
         assert runner.bootstrap_failed
 

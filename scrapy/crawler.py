@@ -76,6 +76,7 @@ class Crawler:
         self._init_reactor: bool = init_reactor
         self.crawling: bool = False
         self._started: bool = False
+        self.initialization_failed: bool = False
 
         self.extensions: ExtensionManager | None = None
         self.stats: StatsCollector | None = None
@@ -152,7 +153,11 @@ class Crawler:
             self.spider = self._create_spider(*args, **kwargs)
             self._apply_settings()
             self._update_root_log_handler()
-            self.engine = self._create_engine()
+            try:
+                self.engine = self._create_engine()
+            except Exception:
+                self.initialization_failed = True
+                raise
             yield deferred_from_coro(self.engine.open_spider_async())
             yield deferred_from_coro(self.engine.start_async())
         except Exception:
@@ -188,7 +193,11 @@ class Crawler:
             self.spider = self._create_spider(*args, **kwargs)
             self._apply_settings()
             self._update_root_log_handler()
-            self.engine = self._create_engine()
+            try:
+                self.engine = self._create_engine()
+            except Exception:
+                self.initialization_failed = True
+                raise
             await self.engine.open_spider_async()
             await self.engine.start_async()
         except Exception:
@@ -431,7 +440,9 @@ class CrawlerRunner(CrawlerRunnerBase):
         finally:
             self.crawlers.discard(crawler)
             self._active.discard(d)
-            self.bootstrap_failed |= not getattr(crawler, "spider", None)
+            self.bootstrap_failed |= (
+                crawler.spider is None or crawler.initialization_failed
+            )
 
     def stop(self) -> Deferred[Any]:
         """
@@ -524,7 +535,9 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         def _done(_: asyncio.Task[None]) -> None:
             self.crawlers.discard(crawler)
             self._active.discard(task)
-            self.bootstrap_failed |= not getattr(crawler, "spider", None)
+            self.bootstrap_failed |= (
+                crawler.spider is None or crawler.initialization_failed
+            )
 
         task.add_done_callback(_done)
         return task
