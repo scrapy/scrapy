@@ -40,7 +40,7 @@ Modified requirements
 Other changes
 ~~~~~~~~~~~~~
 
--   Restricted the maximum supported Twisted version to 25.5.0, as Scrapy
+-   Restricted the maximum supported Twisted version to ``25.5.0``, as Scrapy
     currently uses some private APIs changed in later Twisted versions.
     (:issue:`7142`)
 
