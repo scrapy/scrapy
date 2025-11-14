@@ -4,7 +4,7 @@
 Settings
 ========
 
-The Scrapy settings allows you to customize the behaviour of all Scrapy
+The Scrapy settings allow you to customize the behaviour of all Scrapy
 components, including the core, extensions, pipelines and spiders themselves.
 
 The infrastructure of the settings provides a global namespace of key-value mappings
@@ -1058,12 +1058,12 @@ Default: ``True``
 
 Whether or not to fail on broken responses, that is, declared
 ``Content-Length`` does not match content sent by the server or chunked
-response was not properly finish. If ``True``, these responses raise a
-``ResponseFailed([_DataLoss])`` error. If ``False``, these responses
-are passed through and the flag ``dataloss`` is added to the response, i.e.:
-``'dataloss' in response.flags`` is ``True``.
+response was not properly finished. If ``True``, these responses raise a
+``ResponseFailed([_DataLoss])`` error. If ``False``, these responses are passed
+through and the flag ``dataloss`` is added to the response, i.e.: ``'dataloss'
+in response.flags`` is ``True``.
 
-Optionally, this can be set per-request basis by using the
+Optionally, this can be set on a per-request basis by using the
 :reqmeta:`download_fail_on_dataloss` Request.meta key to ``False``.
 
 .. note::

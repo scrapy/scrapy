@@ -48,8 +48,8 @@ tasks triggered by them.
 Sample extension
 ----------------
 
-Here we will implement a simple extension to illustrate the concepts described
-in the previous section. This extension will log a message every time:
+Here we implement a simple extension to illustrate the concepts described in
+the previous section. This extension will log a message every time:
 
 * a spider is opened
 * a spider is closed
@@ -58,7 +58,7 @@ in the previous section. This extension will log a message every time:
 The extension will be enabled through the ``MYEXT_ENABLED`` setting and the
 number of items will be specified through the ``MYEXT_ITEMCOUNT`` setting.
 
-Here is the code of such extension:
+Here is the code for that extension:
 
 .. code-block:: python
 
@@ -158,7 +158,7 @@ Provides a telnet console for getting into a Python interpreter inside the
 currently running Scrapy process, which can be very useful for debugging.
 
 The telnet console must be enabled by the :setting:`TELNETCONSOLE_ENABLED`
-setting, and the server will listen in the port specified in
+setting, and the server will listen on the port specified in
 :setting:`TELNETCONSOLE_PORT`.
 
 .. _topics-extensions-ref-memusage:
@@ -180,7 +180,7 @@ Monitors the memory used by the Scrapy process that runs the spider and:
 
 The notification e-mails can be triggered when a certain warning value is
 reached (:setting:`MEMUSAGE_WARNING_MB`) and when the maximum value is reached
-(:setting:`MEMUSAGE_LIMIT_MB`) which will also cause the spider to be closed
+(:setting:`MEMUSAGE_LIMIT_MB`), which will also cause the spider to be closed
 and the Scrapy process to be terminated.
 
 This extension is enabled by the :setting:`MEMUSAGE_ENABLED` setting and
@@ -202,7 +202,8 @@ Memory debugger extension
 An extension for debugging memory usage. It collects information about:
 
 * objects uncollected by the Python garbage collector
-* objects left alive that shouldn't. For more info, see :ref:`topics-leaks-trackrefs`
+* objects left alive that shouldn't be. For more info, see
+  :ref:`topics-leaks-trackrefs`
 
 To enable this extension, turn on the :setting:`MEMDEBUG_ENABLED` setting. The
 info will be stored in the stats.
@@ -255,9 +256,9 @@ settings:
 
 .. note::
 
-   When a certain closing condition is met, requests which are
-   currently in the downloader queue (up to :setting:`CONCURRENT_REQUESTS`
-   requests) are still processed.
+    When a certain closing condition is met, requests that are currently in the
+    downloader queue (up to :setting:`CONCURRENT_REQUESTS`
+    requests) are still processed.
 
 .. setting:: CLOSESPIDER_TIMEOUT
 
@@ -268,8 +269,8 @@ Default: ``0``
 
 An integer which specifies a number of seconds. If the spider remains open for
 more than that number of seconds, it will be automatically closed with the
-reason ``closespider_timeout``. If zero (or non set), spiders won't be closed by
-timeout.
+reason ``closespider_timeout``. If zero (or not set), spiders won't be closed
+by timeout.
 
 .. setting:: CLOSESPIDER_TIMEOUT_NO_ITEM
 
@@ -280,8 +281,8 @@ Default: ``0``
 
 An integer which specifies a number of seconds. If the spider has not produced
 any items in the last number of seconds, it will be closed with the reason
-``closespider_timeout_no_item``. If zero (or non set), spiders won't be closed
-regardless if it hasn't produced any items.
+``closespider_timeout_no_item``. If zero (or not set), spiders won't be closed
+even if they have not produced any items.
 
 .. setting:: CLOSESPIDER_ITEMCOUNT
 
@@ -291,9 +292,9 @@ CLOSESPIDER_ITEMCOUNT
 Default: ``0``
 
 An integer which specifies a number of items. If the spider scrapes more than
-that amount and those items are passed by the item pipeline, the
-spider will be closed with the reason ``closespider_itemcount``.
-If zero (or non set), spiders won't be closed by number of passed items.
+that amount and those items are passed by the item pipeline, the spider will be
+closed with the reason ``closespider_itemcount``. If zero (or not set), spiders
+won't be closed by the number of passed items.
 
 .. setting:: CLOSESPIDER_PAGECOUNT
 
@@ -304,7 +305,7 @@ Default: ``0``
 
 An integer which specifies the maximum number of responses to crawl. If the spider
 crawls more than that, the spider will be closed with the reason
-``closespider_pagecount``. If zero (or non set), spiders won't be closed by
+``closespider_pagecount``. If zero (or not set), spiders won't be closed by the
 number of crawled responses.
 
 .. setting:: CLOSESPIDER_PAGECOUNT_NO_ITEM
@@ -318,7 +319,7 @@ An integer which specifies the maximum number of consecutive responses to crawl
 without items scraped. If the spider crawls more consecutive responses than that
 and no items are scraped in the meantime, the spider will be closed with the
 reason ``closespider_pagecount_no_item``. If zero (or not set), spiders won't be
-closed by number of crawled responses with no items.
+closed by the number of crawled responses with no items.
 
 .. setting:: CLOSESPIDER_ERRORCOUNT
 
@@ -329,8 +330,8 @@ Default: ``0``
 
 An integer which specifies the maximum number of errors to receive before
 closing the spider. If the spider generates more than that number of errors,
-it will be closed with the reason ``closespider_errorcount``. If zero (or non
-set), spiders won't be closed by number of errors.
+it will be closed with the reason ``closespider_errorcount``. If zero (or not
+set), spiders won't be closed by the number of errors.
 
 StatsMailer extension
 ~~~~~~~~~~~~~~~~~~~~~
@@ -341,7 +342,7 @@ StatsMailer extension
 .. class:: StatsMailer
 
 This simple extension can be used to send a notification e-mail every time a
-domain has finished scraping, including the Scrapy stats collected. The email
+domain has finished scraping, including the Scrapy stats collected. The e-mail
 will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
 setting.
 
