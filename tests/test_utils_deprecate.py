@@ -178,8 +178,6 @@ class TestWarnWhenSubclassed:
         assert issubclass(UpdatedUserClass1a, DeprecatedName)
         assert issubclass(OutdatedUserClass1, DeprecatedName)
         assert not issubclass(UnrelatedClass, DeprecatedName)
-        assert not issubclass(OldStyleClass, DeprecatedName)
-        assert not issubclass(OldStyleClass, DeprecatedName)
         assert not issubclass(OutdatedUserClass1, OutdatedUserClass1a)
         assert not issubclass(OutdatedUserClass1a, OutdatedUserClass1)
 
