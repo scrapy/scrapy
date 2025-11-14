@@ -117,6 +117,16 @@ def requires_boto3(request):
         pytest.skip("boto3 is not installed")
 
 
+@pytest.fixture(autouse=True)
+def requires_mitmproxy(request):
+    if not request.node.get_closest_marker("requires_mitmproxy"):
+        return
+    try:
+        import mitmproxy  # noqa: F401, PLC0415
+    except ImportError:
+        pytest.skip("mitmproxy is not installed")
+
+
 def pytest_configure(config):
     if config.getoption("--reactor") == "asyncio":
         # Needed on Windows to switch from proactor to selector for Twisted reactor compatibility.
