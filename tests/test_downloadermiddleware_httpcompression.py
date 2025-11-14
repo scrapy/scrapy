@@ -734,8 +734,7 @@ class TestHttpCompression:
         response = self._getresponse(compression_id)
         truncated_body = response.body[: len(response.body) // 2]
         response = response.replace(body=truncated_body)
-        newresponse = mw.process_response(response.request, response)
-        return newresponse
+        return mw.process_response(response.request, response)
 
     def test_process_truncated_response_br(self):
         _skip_if_no_br()
