@@ -5,6 +5,7 @@ from __future__ import annotations
 import ipaddress
 import logging
 import re
+import socket
 from contextlib import suppress
 from io import BytesIO
 from time import time
@@ -13,7 +14,7 @@ from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
 from twisted.internet.defer import CancelledError, Deferred, succeed
-from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.endpoints import TCP4ClientEndpoint, TCP6ClientEndpoint
 from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
@@ -40,6 +41,8 @@ from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.url import add_http_if_no_scheme
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from twisted.internet.base import ReactorBase
     from twisted.internet.interfaces import IConsumer
 
@@ -129,14 +132,27 @@ class TunnelError(Exception):
     """An HTTP CONNECT tunnel could not be established by the proxy."""
 
 
-class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
-    """An endpoint that tunnels through proxies to allow HTTPS downloads. To
-    accomplish that, this endpoint sends an HTTP CONNECT to the proxy.
-    The HTTP CONNECT is always sent when using this endpoint, I think this could
-    be improved as the CONNECT will be redundant if the connection associated
-    with this endpoint comes from the pool and a CONNECT has already been issued
-    for it.
+class TunnelingMixin:
     """
+    A mixin class providing HTTP CONNECT tunneling logic for Twisted TCP client
+    endpoints.
+    It is intended to be inherited by concrete endpoint classes
+    (`TunnelingTCP4ClientEndpoint` or `TunnelingTCP6ClientEndpoint`) together with their
+    base class.
+    """
+
+    _tunnelReadyDeferred: Deferred[Protocol]
+    _tunneledHost: str
+    _tunneledPort: int
+    _contextFactory: IPolicyForHTTPS
+    _formattedTunneledHost: str
+    _proxyAuthHeader: bytes | None
+    _connectBuffer: bytearray
+    _protocol: Protocol
+    _protocolDataReceived: Callable[[bytes], None] | None = None
+    _protocolFactory: Factory
+    _proxyHost: str
+    _proxyPort: int
 
     _truncatedLength = 1000
     _responseAnswer = (
@@ -155,21 +171,49 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         bindAddress: tuple[str, int] | None = None,
     ):
         proxyHost, proxyPort, self._proxyAuthHeader = proxyConf
-        super().__init__(reactor, proxyHost, proxyPort, timeout, bindAddress)
-        self._tunnelReadyDeferred: Deferred[Protocol] = Deferred()
-        self._tunneledHost: str = host
-        self._tunneledPort: int = port
-        self._contextFactory: IPolicyForHTTPS = contextFactory
-        self._connectBuffer: bytearray = bytearray()
+        self._proxyHost = proxyHost
+        self._proxyPort = proxyPort
+        self._tunnelReadyDeferred = Deferred()
+        self._tunneledHost = host
+        self._tunneledPort = port
+        self._contextFactory = contextFactory
+        self._formattedTunneledHost = self._format_host(host)
+        self._connectBuffer = bytearray()
+
+        # Delegate to the concrete TCP endpoint initializer (TCP4 or TCP6)
+        cast("Any", super()).__init__(
+            reactor, proxyHost, proxyPort, timeout, bindAddress
+        )
+
+    @staticmethod
+    def _format_host(host: str) -> str:
+        """
+        Format the host string for use in the CONNECT request authority.
+
+        For literal IPv6 addresses, wraps the host in square brackets per
+        RFC 2732. Hostnames and IPv4 addresses are returned unchanged.
+
+        :param host: The target host (hostname or IP address).
+        :return: The formatted host string.
+        """
+        try:
+            ip = ipaddress.ip_address(host)
+            if isinstance(ip, ipaddress.IPv6Address):
+                return f"[{host}]"
+        except ValueError:
+            pass  # hostname, leave as-is
+        return host
 
     def requestTunnel(self, protocol: Protocol) -> Protocol:
         """Asks the proxy to open a tunnel."""
         assert protocol.transport
         tunnelReq = tunnel_request_data(
-            self._tunneledHost, self._tunneledPort, self._proxyAuthHeader
+            self._formattedTunneledHost,
+            self._tunneledPort,
+            self._proxyAuthHeader,
         )
         protocol.transport.write(tunnelReq)
-        self._protocolDataReceived = protocol.dataReceived
+        self._protocolDataReceived = protocol.dataReceived  # type: ignore[assignment]
         protocol.dataReceived = self.processProxyResponse  # type: ignore[method-assign]
         self._protocol = protocol
         return protocol
@@ -188,14 +232,14 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         # see https://github.com/scrapy/scrapy/issues/2491
         if b"\r\n\r\n" not in self._connectBuffer:
             return
-        self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign]
-        respm = TunnelingTCP4ClientEndpoint._responseMatcher.match(self._connectBuffer)
+        self._protocol.dataReceived = self._protocolDataReceived  # type: ignore[method-assign, assignment]
+        respm = type(self)._responseMatcher.match(self._connectBuffer)
         if respm and int(respm.group("status")) == 200:
             # set proper Server Name Indication extension
             sslOptions = self._contextFactory.creatorForNetloc(  # type: ignore[call-arg,misc]
                 self._tunneledHost, self._tunneledPort
             )
-            self._protocol.transport.startTLS(sslOptions, self._protocolFactory)
+            self._protocol.transport.startTLS(sslOptions)
             self._tunnelReadyDeferred.callback(self._protocol)
         else:
             extra: Any
@@ -209,7 +253,7 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
             self._tunnelReadyDeferred.errback(
                 TunnelError(
                     "Could not open CONNECT tunnel with proxy "
-                    f"{self._host}:{self._port} [{extra!r}]"
+                    f"{self._proxyHost}:{self._proxyPort} [{extra!r}]"
                 )
             )
 
@@ -218,11 +262,26 @@ class TunnelingTCP4ClientEndpoint(TCP4ClientEndpoint):
         self._tunnelReadyDeferred.errback(reason)
 
     def connect(self, protocolFactory: Factory) -> Deferred[Protocol]:
+        """Establish a connection and set up the tunnel."""
         self._protocolFactory = protocolFactory
-        connectDeferred = super().connect(protocolFactory)
+        connectDeferred = super().connect(protocolFactory)  # type: ignore[misc]
         connectDeferred.addCallback(self.requestTunnel)
         connectDeferred.addErrback(self.connectFailed)
         return self._tunnelReadyDeferred
+
+
+class TunnelingTCP4ClientEndpoint(TunnelingMixin, TCP4ClientEndpoint):
+    """An endpoint that tunnels through proxies to allow HTTPS downloads. To
+    accomplish that, this endpoint sends an HTTP CONNECT to the proxy.
+    The HTTP CONNECT is always sent when using this endpoint, I think this could
+    be improved as the CONNECT will be redundant if the connection associated
+    with this endpoint comes from the pool and a CONNECT has already been issued
+    for it.
+    """
+
+
+class TunnelingTCP6ClientEndpoint(TunnelingMixin, TCP6ClientEndpoint):
+    """IPv6 variant of TunnelingTCP4ClientEndpoint."""
 
 
 def tunnel_request_data(
@@ -248,10 +307,39 @@ def tunnel_request_data(
     return tunnel_req
 
 
+def is_ipv6(host: str) -> bool:
+    """
+    Determine if the host is an IPv6 address or resolves to an IPv6 address.
+
+    For literal IP addresses, checks if it is IPv6. For hostnames, performs DNS
+    resolution using getaddrinfo and checks if any returned address family is
+    AF_INET6. If resolution fails (e.g., DNS error), returns False to fallback
+    to IPv4.
+
+    :param host: The host string (IP literal or hostname).
+    :return: True if IPv6 is applicable, False otherwise.
+    """
+    try:
+        ip = ipaddress.ip_address(host)
+        if isinstance(ip, ipaddress.IPv6Address):
+            return True
+    except ValueError:
+        pass  # hostname or invalid IP literal
+
+    # For hostname, resolve
+    try:
+        addrs = socket.getaddrinfo(
+            host, None, family=socket.AF_UNSPEC, type=socket.SOCK_STREAM
+        )
+        return any(addr[0] == socket.AF_INET6 for addr in addrs)
+    except (socket.gaierror, OSError):
+        return False  # fallback to IPv4 on resolution failure
+
+
 class TunnelingAgent(Agent):
-    """An agent that uses a L{TunnelingTCP4ClientEndpoint} to make HTTPS
-    downloads. It may look strange that we have chosen to subclass Agent and not
-    ProxyAgent but consider that after the tunnel is opened the proxy is
+    """An agent that uses a L{TunnelingTCP4ClientEndpoint} or L{TunnelingTCP6ClientEndpoint}
+    to make HTTPS downloads. It may look strange that we have chosen to subclass Agent
+    and not ProxyAgent but consider that after the tunnel is opened the proxy is
     transparent to the client; thus the agent should behave like there is no
     proxy involved.
     """
@@ -270,7 +358,21 @@ class TunnelingAgent(Agent):
         self._proxyConf: tuple[str, int, bytes | None] = proxyConf
         self._contextFactory: IPolicyForHTTPS = contextFactory
 
-    def _getEndpoint(self, uri: URI) -> TunnelingTCP4ClientEndpoint:
+    def _getEndpoint(
+        self, uri: URI
+    ) -> TunnelingTCP4ClientEndpoint | TunnelingTCP6ClientEndpoint:
+        proxyHost, _, _ = self._proxyConf
+        if is_ipv6(proxyHost):
+            return TunnelingTCP6ClientEndpoint(
+                reactor=self._reactor,
+                host=uri.host,
+                port=uri.port,
+                proxyConf=self._proxyConf,
+                contextFactory=self._contextFactory,
+                timeout=self._endpointFactory._connectTimeout,
+                bindAddress=self._endpointFactory._bindAddress,
+            )
+
         return TunnelingTCP4ClientEndpoint(
             reactor=self._reactor,
             host=uri.host,
@@ -322,6 +424,34 @@ class ScrapyProxyAgent(Agent):
             pool=pool,
         )
         self._proxyURI: URI = URI.fromBytes(proxyURI)
+
+    def _getEndpoint(self, uri: URI) -> TCP4ClientEndpoint | TCP6ClientEndpoint:
+        """
+        Select TCP6ClientEndpoint when the proxy host is an IPv6 literal (or resolves
+        to IPv6), otherwise use TCP4ClientEndpoint. This avoids attempting an IPv4
+        resolution on an IPv6 literal like '::1'.
+        """
+        proxy_host = self._proxyURI.host
+        if isinstance(proxy_host, bytes):
+            proxy_host = proxy_host.decode()
+        proxy_port = self._proxyURI.port
+
+        if is_ipv6(proxy_host):
+            return TCP6ClientEndpoint(
+                reactor=self._reactor,
+                host=proxy_host,
+                port=proxy_port,
+                timeout=self._endpointFactory._connectTimeout,
+                bindAddress=self._endpointFactory._bindAddress,
+            )
+
+        return TCP4ClientEndpoint(
+            reactor=self._reactor,
+            host=proxy_host,
+            port=proxy_port,
+            timeout=self._endpointFactory._connectTimeout,
+            bindAddress=self._endpointFactory._bindAddress,
+        )
 
     def request(
         self,
