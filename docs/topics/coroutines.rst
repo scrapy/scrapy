@@ -77,36 +77,35 @@ In the future we plan to add support for the ``async def`` syntax to these APIs
 or replace them with other APIs where changing the existing ones is
 possible.
 
-The following Scrapy methods return :class:`~twisted.internet.defer.Deferred`
-objects (this list is not complete as it only includes methods that we think
-may be useful for user code):
-
--   :class:`scrapy.crawler.Crawler`:
-
-    - :meth:`~scrapy.crawler.Crawler.crawl`
-
-    - :meth:`~scrapy.crawler.Crawler.stop`
-
--   :class:`scrapy.crawler.CrawlerRunner` (also inherited by
-    :class:`scrapy.crawler.CrawlerProcess`):
-
-    - :meth:`~scrapy.crawler.CrawlerRunner.crawl`
-
-    - :meth:`~scrapy.crawler.CrawlerRunner.stop`
-
-    - :meth:`~scrapy.crawler.CrawlerRunner.join`
-
--   :class:`scrapy.core.engine.ExecutionEngine`:
-
-    - :meth:`~scrapy.core.engine.ExecutionEngine.download`
-
--   :class:`scrapy.signalmanager.SignalManager`:
-
-    - :meth:`~scrapy.signalmanager.SignalManager.send_catch_log_deferred`
+These APIs don't have a coroutine-based counterpart:
 
 -   :class:`~scrapy.mail.MailSender`
 
     - :meth:`~scrapy.mail.MailSender.send`
+
+These APIs have a coroutine-based implementation and a Deferred-based one:
+
+-   :class:`scrapy.crawler.Crawler`:
+
+    - :meth:`~scrapy.crawler.Crawler.crawl_async` (coroutine-based) and
+      :meth:`~scrapy.crawler.Crawler.crawl` (Deferred-based): the former
+      doesn't support non-default reactors and so the latter should be used
+      with those.
+
+-   :class:`scrapy.crawler.AsyncCrawlerRunner` and its subclass
+    :class:`scrapy.crawler.AsyncCrawlerProcess` (coroutine-based) and
+    :class:`scrapy.crawler.CrawlerRunner` and its subclass
+    :class:`scrapy.crawler.CrawlerProcess` (Deferred-based): the former
+    doesn't support non-default reactors and so the latter should be used
+    with those.
+
+-   :class:`scrapy.signalmanager.SignalManager`:
+
+    - :meth:`~scrapy.signalmanager.SignalManager.send_catch_log_async`
+      (coroutine-based) and
+      :meth:`~scrapy.signalmanager.SignalManager.send_catch_log_deferred`
+      (Deferred-based): the latter will be deprecated in a later Scrapy
+      version.
 
 The following user-supplied methods can return
 :class:`~twisted.internet.defer.Deferred` objects (the methods that can also
@@ -158,11 +157,10 @@ more information about this.
 
 For example:
 
--   The :meth:`ExecutionEngine.download()
-    <scrapy.core.engine.ExecutionEngine.download>` method returns a
-    :class:`~twisted.internet.defer.Deferred` object that fires with the
-    downloaded response. You can use this object directly in Deferred-based
-    code or convert it into a :class:`~asyncio.Future` object with
+-   The :meth:`MailSender.send() <scrapy.mail.MailSender.send>` method returns
+    a :class:`~twisted.internet.defer.Deferred` object that fires when the
+    email is sent. You can use this object directly in Deferred-based code or
+    convert it into a :class:`~asyncio.Future` object with
     :func:`~scrapy.utils.defer.maybe_deferred_to_future`.
 -   A custom download handler needs to define a ``download_request()`` method
     that returns a :class:`~twisted.internet.defer.Deferred` object. You can
