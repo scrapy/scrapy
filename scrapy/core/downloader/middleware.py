@@ -77,10 +77,12 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 method = cast("Callable", method)
                 if method in self._mw_methods_requiring_spider:
                     response = await ensure_awaitable(
-                        method(request=request, spider=self._spider)
+                        method(request=request, spider=self._spider), _warn=repr(method)
                     )
                 else:
-                    response = await ensure_awaitable(method(request=request))
+                    response = await ensure_awaitable(
+                        method(request=request), _warn=repr(method)
+                    )
                 if response is not None and not isinstance(
                     response, (Response, Request)
                 ):
@@ -102,11 +104,12 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 method = cast("Callable", method)
                 if method in self._mw_methods_requiring_spider:
                     response = await ensure_awaitable(
-                        method(request=request, response=response, spider=self._spider)
+                        method(request=request, response=response, spider=self._spider),
+                        _warn=repr(method),
                     )
                 else:
                     response = await ensure_awaitable(
-                        method(request=request, response=response)
+                        method(request=request, response=response), _warn=repr(method)
                     )
                 if not isinstance(response, (Response, Request)):
                     raise _InvalidOutput(
@@ -124,11 +127,12 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     response = await ensure_awaitable(
                         method(
                             request=request, exception=exception, spider=self._spider
-                        )
+                        ),
+                        _warn=repr(method),
                     )
                 else:
                     response = await ensure_awaitable(
-                        method(request=request, exception=exception)
+                        method(request=request, exception=exception), _warn=repr(method)
                     )
                 if response is not None and not isinstance(
                     response, (Response, Request)

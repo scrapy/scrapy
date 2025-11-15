@@ -219,7 +219,7 @@ class TestInvalidOutput(TestManagerBase):
 
 
 class TestMiddlewareUsingDeferreds(TestManagerBase):
-    """Middlewares using Deferreds should work"""
+    """Middlewares using Deferreds (deprecated) should work"""
 
     @deferred_f_from_coro_f
     async def test_deferred(self):
@@ -239,7 +239,11 @@ class TestMiddlewareUsingDeferreds(TestManagerBase):
 
         async with self.get_mwman() as mwman:
             mwman._add_middleware(DeferredMiddleware())
-            result = await mwman.download_async(download_func, req)
+            with pytest.warns(
+                ScrapyDeprecationWarning,
+                match="returned a Deferred, this is deprecated",
+            ):
+                result = await mwman.download_async(download_func, req)
         assert result is resp
         assert not download_func.called
 
