@@ -436,7 +436,17 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self, spider: Spider | None = None
     ) -> AsyncIterator[Any] | None:
         if spider:
-            self._warn_spider_arg("process_start")
+            if self.crawler:
+                msg = (
+                    "Passing a spider argument to SpiderMiddlewareManager.process_start() is deprecated"
+                    " and the passed value is ignored."
+                )
+            else:
+                msg = (
+                    "Passing a spider argument to SpiderMiddlewareManager.process_start() is deprecated,"
+                    " SpiderMiddlewareManager should be instantiated with a Crawler instance instead."
+                )
+            warn(msg, category=ScrapyDeprecationWarning, stacklevel=2)
             self._set_compat_spider(spider)
         self._check_deprecated_start_requests_use()
         if self._use_start_requests:

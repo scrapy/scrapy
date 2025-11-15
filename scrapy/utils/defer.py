@@ -517,14 +517,14 @@ def _schedule_coro(coro: Coroutine[Any, Any, Any]) -> None:
 
 
 @overload
-def ensure_awaitable(o: Awaitable[_T]) -> Awaitable[_T]: ...
+def ensure_awaitable(o: Awaitable[_T], _warn: str | None = None) -> Awaitable[_T]: ...
 
 
 @overload
-def ensure_awaitable(o: _T) -> Awaitable[_T]: ...
+def ensure_awaitable(o: _T, _warn: str | None = None) -> Awaitable[_T]: ...
 
 
-def ensure_awaitable(o: _T | Awaitable[_T]) -> Awaitable[_T]:
+def ensure_awaitable(o: _T | Awaitable[_T], _warn: str | None = None) -> Awaitable[_T]:
     """Convert any value to an awaitable object.
 
     For a :class:`~twisted.internet.defer.Deferred` object, use
@@ -535,6 +535,13 @@ def ensure_awaitable(o: _T | Awaitable[_T]) -> Awaitable[_T]:
     .. versionadded:: VERSION
     """
     if isinstance(o, Deferred):
+        if _warn:
+            warnings.warn(
+                f"{_warn} returned a Deferred, this is deprecated."
+                f" Please refactor this function to return a coroutine.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         return maybe_deferred_to_future(o)
     if inspect.isawaitable(o):
         return o

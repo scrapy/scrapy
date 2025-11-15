@@ -50,10 +50,10 @@ class TestManagerBase:
         if not response:
             response = Response(request.url)
 
-        def download_func(request: Request) -> Deferred[Response]:
-            return succeed(response)
+        async def download_func(request: Request) -> Response:
+            return response
 
-        return await maybe_deferred_to_future(mwman.download(download_func, request))
+        return await mwman.download_async(download_func, request)
 
 
 class TestDefaults(TestManagerBase):
@@ -135,7 +135,7 @@ class TestResponseFromProcessRequest(TestManagerBase):
 
         async with self.get_mwman() as mwman:
             mwman._add_middleware(ResponseMiddleware())
-            result = await maybe_deferred_to_future(mwman.download(download_func, req))
+            result = await mwman.download_async(download_func, req)
         assert result is resp
         assert not download_func.called
 
@@ -163,7 +163,7 @@ class TestResponseFromProcessException(TestManagerBase):
 
         async with self.get_mwman() as mwman:
             mwman._add_middleware(ResponseMiddleware())
-            result = await maybe_deferred_to_future(mwman.download(download_func, req))
+            result = await mwman.download_async(download_func, req)
         assert result is resp
         assert calls == [
             "process_exception",
@@ -219,7 +219,7 @@ class TestInvalidOutput(TestManagerBase):
 
 
 class TestMiddlewareUsingDeferreds(TestManagerBase):
-    """Middlewares using Deferreds should work"""
+    """Middlewares using Deferreds (deprecated) should work"""
 
     @deferred_f_from_coro_f
     async def test_deferred(self):
@@ -239,7 +239,11 @@ class TestMiddlewareUsingDeferreds(TestManagerBase):
 
         async with self.get_mwman() as mwman:
             mwman._add_middleware(DeferredMiddleware())
-            result = await maybe_deferred_to_future(mwman.download(download_func, req))
+            with pytest.warns(
+                ScrapyDeprecationWarning,
+                match="returned a Deferred, this is deprecated",
+            ):
+                result = await mwman.download_async(download_func, req)
         assert result is resp
         assert not download_func.called
 
@@ -260,7 +264,7 @@ class TestMiddlewareUsingCoro(TestManagerBase):
 
         async with self.get_mwman() as mwman:
             mwman._add_middleware(CoroMiddleware())
-            result = await maybe_deferred_to_future(mwman.download(download_func, req))
+            result = await mwman.download_async(download_func, req)
         assert result is resp
         assert not download_func.called
 
@@ -278,14 +282,14 @@ class TestMiddlewareUsingCoro(TestManagerBase):
 
         async with self.get_mwman() as mwman:
             mwman._add_middleware(CoroMiddleware())
-            result = await maybe_deferred_to_future(mwman.download(download_func, req))
+            result = await mwman.download_async(download_func, req)
         assert result is resp
         assert not download_func.called
 
 
 class TestDownloadDeprecated(TestManagerBase):
     @deferred_f_from_coro_f
-    async def test_download_func_spider_arg(self):
+    async def test_mwman_download(self):
         req = Request("http://example.com/index.html")
         resp = Response(req.url, status=200)
 
@@ -295,24 +299,7 @@ class TestDownloadDeprecated(TestManagerBase):
         async with self.get_mwman() as mwman:
             with pytest.warns(
                 ScrapyDeprecationWarning,
-                match="The spider argument of download_func is deprecated",
-            ):
-                ret = await maybe_deferred_to_future(mwman.download(download_func, req))
-        assert isinstance(ret, Response)
-
-    @deferred_f_from_coro_f
-    async def test_mwman_download_spider_arg(self):
-        req = Request("http://example.com/index.html")
-        resp = Response(req.url, status=200)
-
-        def download_func(request: Request) -> Deferred[Response]:
-            return succeed(resp)
-
-        async with self.get_mwman() as mwman:
-            with pytest.warns(
-                ScrapyDeprecationWarning,
-                match=r"Passing a spider argument to DownloaderMiddlewareManager.download\(\)"
-                r" is deprecated and the passed value is ignored.",
+                match=r"DownloaderMiddlewareManager.download\(\) is deprecated, use download_async\(\) instead",
             ):
                 ret = await maybe_deferred_to_future(
                     mwman.download(download_func, req, mwman.crawler.spider)
@@ -353,6 +340,6 @@ class TestDeprecatedSpiderArg(TestManagerBase):
                 ),
             ):
                 mwman._add_middleware(DeprecatedSpiderArgMiddleware())
-            result = await maybe_deferred_to_future(mwman.download(download_func, req))
+            result = await mwman.download_async(download_func, req)
         assert result is resp
         assert not download_func.called
