@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 
-from scrapy import Spider, signals
+from scrapy import Spider
 from scrapy.addons import AddonManager
 from scrapy.core.engine import ExecutionEngine
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -22,7 +22,6 @@ from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import (
-    LogCounterHandler,
     configure_logging,
     get_scrapy_root_handler,
     install_scrapy_root_handler,
@@ -96,13 +95,6 @@ class Crawler:
 
         self.addons.load_settings(self.settings)
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
-
-        handler = LogCounterHandler(self, level=self.settings.get("LOG_LEVEL"))
-        logging.root.addHandler(handler)
-        # lambda is assigned to Crawler attribute because this way it is not
-        # garbage collected after leaving the scope
-        self.__remove_handler = lambda: logging.root.removeHandler(handler)
-        self.signals.connect(self.__remove_handler, signals.engine_stopped)
 
         lf_cls: type[LogFormatter] = load_object(self.settings["LOG_FORMATTER"])
         self.logformatter = lf_cls.from_crawler(self)

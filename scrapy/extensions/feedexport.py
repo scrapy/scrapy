@@ -16,7 +16,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
-from typing import IO, TYPE_CHECKING, Any, Optional, Protocol, TypeVar, cast
+from typing import IO, TYPE_CHECKING, Any, Protocol, TypeAlias, cast
 from urllib.parse import unquote, urlparse
 
 from twisted.internet.defer import Deferred, DeferredList, maybeDeferred
@@ -35,8 +35,6 @@ from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     from _typeshed import OpenBinaryMode
     from twisted.python.failure import Failure
 
@@ -50,26 +48,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-UriParamsCallableT = Callable[[dict[str, Any], Spider], Optional[dict[str, Any]]]
-
-_StorageT = TypeVar("_StorageT", bound="FeedStorageProtocol")
-
-
-def build_storage(
-    builder: Callable[..., _StorageT],
-    uri: str,
-    *args: Any,
-    feed_options: dict[str, Any] | None = None,
-    preargs: Iterable[Any] = (),
-    **kwargs: Any,
-) -> _StorageT:
-    warnings.warn(
-        "scrapy.extensions.feedexport.build_storage() is deprecated, call the builder directly.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    kwargs["feed_options"] = feed_options
-    return builder(*preargs, uri, *args, **kwargs)
+UriParamsCallableT: TypeAlias = Callable[
+    [dict[str, Any], Spider], dict[str, Any] | None
+]
 
 
 class ItemFilter:

@@ -7,7 +7,7 @@ import logging
 import warnings
 from collections import deque
 from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING, Any, TypeVar, Union
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 
 
 _T = TypeVar("_T")
-QueueTuple = tuple[Union[Response, Failure], Request, Deferred[None]]
+QueueTuple: TypeAlias = tuple[Response | Failure, Request, Deferred[None]]
 
 
 class Slot:

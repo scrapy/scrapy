@@ -756,37 +756,6 @@ class TestBuildFromCrawler:
             assert len(w) == 0
             assert pipe.store
 
-    def test_has_old_init(self):
-        class Pipeline(FilesPipeline):
-            def __init__(self, store_uri, download_func=None, settings=None):
-                super().__init__(store_uri, download_func, settings)
-                self._init_called = True
-
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 2
-            assert pipe._init_called
-
-    def test_has_from_settings(self):
-        class Pipeline(FilesPipeline):
-            _from_settings_called = False
-
-            @classmethod
-            def from_settings(cls, settings):
-                o = super().from_settings(settings)
-                o._from_settings_called = True
-                return o
-
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 3
-            assert pipe.store
-            assert pipe._from_settings_called
-
     def test_has_from_crawler_and_init(self):
         class Pipeline(FilesPipeline):
             _from_crawler_called = False

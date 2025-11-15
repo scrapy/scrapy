@@ -369,7 +369,7 @@ with multiples lines
         est = [x for sublist in est for x in sublist]  # flatten
         est = [x.lstrip().rstrip() for x in est]
         it = iter(est)
-        s = dict(zip(it, it))
+        s = dict(zip(it, it, strict=False))
 
         assert s["engine.spider.name"] == crawler.spider.name
         assert s["len(engine.scraper.slot.active)"] == "1"
@@ -401,7 +401,7 @@ with multiples lines
         assert "Got response 200" in str(log)
 
     @inlineCallbacks
-    def test_crawl_multiple(self):
+    def test_crawl_multiple(self, caplog: pytest.LogCaptureFixture):
         runner = CrawlerRunner(get_reactor_settings())
         runner.crawl(
             SimpleSpider,
@@ -414,11 +414,11 @@ with multiples lines
             mockserver=self.mockserver,
         )
 
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             yield runner.join()
 
-        self._assert_retried(log)
-        assert "Got response 200" in str(log)
+        self._assert_retried(caplog.text)
+        assert "Got response 200" in caplog.text
 
 
 class TestCrawlSpider:
@@ -612,7 +612,7 @@ class TestCrawlSpider:
     @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
     async def test_async_def_deferred_wrapped(self):
-        log, items, _ = await self._run_spider(AsyncDefDeferredWrappedSpider)
+        _, items, _ = await self._run_spider(AsyncDefDeferredWrappedSpider)
         assert items == [{"code": 200}]
 
     @deferred_f_from_coro_f

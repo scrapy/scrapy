@@ -14,7 +14,7 @@ class TestCmdlineCrawlPipeline:
         return proc.returncode, stderr
 
     def test_open_spider_normally_in_pipeline(self):
-        returncode, stderr = self._execute("normal")
+        returncode, _ = self._execute("normal")
         assert returncode == 0
 
     def test_exception_at_open_spider_in_pipeline(self):

@@ -1717,7 +1717,6 @@ class TestFeedExport(TestFeedExportBase):
         with LogCapture() as log:
             await self.exported_data(items, settings)
 
-        print(log)
         for fmt in ["json", "xml", "csv"]:
             assert f"Stored {fmt} feed (2 items)" in str(log)
 
@@ -1738,7 +1737,6 @@ class TestFeedExport(TestFeedExportBase):
         with LogCapture() as log:
             await self.exported_data(items, settings)
 
-        print(log)
         for fmt in ["json", "xml", "csv"]:
             assert f"Error storing {fmt} feed (2 items)" in str(log)
 
@@ -2630,7 +2628,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         data = await self.exported_data(items, settings)
         for fmt, expected in formats.items():
-            for expected_batch, got_batch in zip(expected, data[fmt]):
+            for expected_batch, got_batch in zip(expected, data[fmt], strict=False):
                 assert got_batch == expected_batch
 
     @deferred_f_from_coro_f
@@ -2654,7 +2652,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         data = await self.exported_data(items, settings)
         for fmt, expected in formats.items():
-            for expected_batch, got_batch in zip(expected, data[fmt]):
+            for expected_batch, got_batch in zip(expected, data[fmt], strict=False):
                 assert got_batch == expected_batch
 
     @deferred_f_from_coro_f
