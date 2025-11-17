@@ -166,7 +166,7 @@ def _get_handler(settings: Settings) -> logging.Handler:
     elif settings.getbool("LOG_ENABLED"):
         if settings.getbool("LOG_SYSTEMD", False):
             # Opt-in systemd journal logging, will raise if systemd.journal is missing
-            import systemd.journal  # noqa: PLC0415
+            import systemd.journal  # noqa: PLC0415, pylint: disable=import-error
 
             handler = systemd.journal.JournalHandler()
         else:
