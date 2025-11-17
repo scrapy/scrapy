@@ -51,6 +51,22 @@ FORMAT = {
 }
 
 
+def _skip_if_no_br() -> None:
+    try:
+        import brotli
+
+        brotli.Decompressor.can_accept_more_data
+    except (ImportError, AttributeError):
+        pytest.skip("no brotli support")
+
+
+def _skip_if_no_zstd() -> None:
+    try:
+        import zstandard  # noqa: F401
+    except ImportError:
+        pytest.skip("no zstd support (zstandard)")
+
+
 class TestHttpCompression:
     def setup_method(self):
         self.crawler = get_crawler(Spider)
@@ -124,13 +140,7 @@ class TestHttpCompression:
         self.assertStatsEqual("httpcompression/response_bytes", 74837)
 
     def test_process_response_br(self):
-        try:
-            try:
-                import brotli  # noqa: F401
-            except ImportError:
-                import brotlicffi  # noqa: F401
-        except ImportError:
-            raise SkipTest("no brotli")
+        _skip_if_no_br()
         response = self._getresponse("br")
         request = response.request
         assert response.headers["Content-Encoding"] == b"br"
@@ -143,14 +153,9 @@ class TestHttpCompression:
 
     def test_process_response_br_unsupported(self):
         try:
-            try:
-                import brotli  # noqa: F401
+            import brotli  # noqa: F401
 
-                raise SkipTest("Requires not having brotli support")
-            except ImportError:
-                import brotlicffi  # noqa: F401
-
-                raise SkipTest("Requires not having brotli support")
+            raise SkipTest("Requires not having brotli support")
         except ImportError:
             pass
         response = self._getresponse("br")
@@ -169,7 +174,7 @@ class TestHttpCompression:
                 (
                     "HttpCompressionMiddleware cannot decode the response for"
                     " http://scrapytest.org/ from unsupported encoding(s) 'br'."
-                    " You need to install brotli or brotlicffi to decode 'br'."
+                    " You need to install brotli >= 1.2.0 to decode 'br'."
                 ),
             ),
         )
@@ -177,10 +182,7 @@ class TestHttpCompression:
         assert newresponse.headers.getlist("Content-Encoding") == [b"br"]
 
     def test_process_response_zstd(self):
-        try:
-            import zstandard  # noqa: F401
-        except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+        _skip_if_no_zstd()
         raw_content = None
         for check_key in FORMAT:
             if not check_key.startswith("zstd-"):
@@ -503,24 +505,19 @@ class TestHttpCompression:
         self.assertStatsEqual("httpcompression/response_bytes", None)
 
     def _test_compression_bomb_setting(self, compression_id):
-        settings = {"DOWNLOAD_MAXSIZE": 10_000_000}
+        settings = {"DOWNLOAD_MAXSIZE": 1_000_000}
         crawler = get_crawler(Spider, settings_dict=settings)
         spider = crawler._create_spider("scrapytest.org")
         mw = HttpCompressionMiddleware.from_crawler(crawler)
         mw.open_spider(spider)
 
-        response = self._getresponse(f"bomb-{compression_id}")
-        with pytest.raises(IgnoreRequest):
+        response = self._getresponse(f"bomb-{compression_id}")  # 11_511_612 B
+        with pytest.raises(IgnoreRequest) as exc_info:
             mw.process_response(response.request, response, spider)
+        assert exc_info.value.__cause__.decompressed_size < 1_100_000
 
     def test_compression_bomb_setting_br(self):
-        try:
-            try:
-                import brotli  # noqa: F401
-            except ImportError:
-                import brotlicffi  # noqa: F401
-        except ImportError:
-            raise SkipTest("no brotli")
+        _skip_if_no_br()
         self._test_compression_bomb_setting("br")
 
     def test_compression_bomb_setting_deflate(self):
@@ -530,15 +527,12 @@ class TestHttpCompression:
         self._test_compression_bomb_setting("gzip")
 
     def test_compression_bomb_setting_zstd(self):
-        try:
-            import zstandard  # noqa: F401
-        except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+        _skip_if_no_zstd()
         self._test_compression_bomb_setting("zstd")
 
     def _test_compression_bomb_spider_attr(self, compression_id):
         class DownloadMaxSizeSpider(Spider):
-            download_maxsize = 10_000_000
+            download_maxsize = 1_000_000
 
         crawler = get_crawler(DownloadMaxSizeSpider)
         spider = crawler._create_spider("scrapytest.org")
@@ -546,17 +540,12 @@ class TestHttpCompression:
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")
-        with pytest.raises(IgnoreRequest):
+        with pytest.raises(IgnoreRequest) as exc_info:
             mw.process_response(response.request, response, spider)
+        assert exc_info.value.__cause__.decompressed_size < 1_100_000
 
     def test_compression_bomb_spider_attr_br(self):
-        try:
-            try:
-                import brotli  # noqa: F401
-            except ImportError:
-                import brotlicffi  # noqa: F401
-        except ImportError:
-            raise SkipTest("no brotli")
+        _skip_if_no_br()
         self._test_compression_bomb_spider_attr("br")
 
     def test_compression_bomb_spider_attr_deflate(self):
@@ -566,10 +555,7 @@ class TestHttpCompression:
         self._test_compression_bomb_spider_attr("gzip")
 
     def test_compression_bomb_spider_attr_zstd(self):
-        try:
-            import zstandard  # noqa: F401
-        except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+        _skip_if_no_zstd()
         self._test_compression_bomb_spider_attr("zstd")
 
     def _test_compression_bomb_request_meta(self, compression_id):
@@ -579,18 +565,13 @@ class TestHttpCompression:
         mw.open_spider(spider)
 
         response = self._getresponse(f"bomb-{compression_id}")
-        response.meta["download_maxsize"] = 10_000_000
-        with pytest.raises(IgnoreRequest):
+        response.meta["download_maxsize"] = 1_000_000
+        with pytest.raises(IgnoreRequest) as exc_info:
             mw.process_response(response.request, response, spider)
+        assert exc_info.value.__cause__.decompressed_size < 1_100_000
 
     def test_compression_bomb_request_meta_br(self):
-        try:
-            try:
-                import brotli  # noqa: F401
-            except ImportError:
-                import brotlicffi  # noqa: F401
-        except ImportError:
-            raise SkipTest("no brotli")
+        _skip_if_no_br()
         self._test_compression_bomb_request_meta("br")
 
     def test_compression_bomb_request_meta_deflate(self):
@@ -600,10 +581,7 @@ class TestHttpCompression:
         self._test_compression_bomb_request_meta("gzip")
 
     def test_compression_bomb_request_meta_zstd(self):
-        try:
-            import zstandard  # noqa: F401
-        except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+        _skip_if_no_zstd()
         self._test_compression_bomb_request_meta("zstd")
 
     def _test_download_warnsize_setting(self, compression_id):
@@ -633,13 +611,7 @@ class TestHttpCompression:
         )
 
     def test_download_warnsize_setting_br(self):
-        try:
-            try:
-                import brotli  # noqa: F401
-            except ImportError:
-                import brotlicffi  # noqa: F401
-        except ImportError:
-            raise SkipTest("no brotli")
+        _skip_if_no_br()
         self._test_download_warnsize_setting("br")
 
     def test_download_warnsize_setting_deflate(self):
@@ -649,10 +621,7 @@ class TestHttpCompression:
         self._test_download_warnsize_setting("gzip")
 
     def test_download_warnsize_setting_zstd(self):
-        try:
-            import zstandard  # noqa: F401
-        except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+        _skip_if_no_zstd()
         self._test_download_warnsize_setting("zstd")
 
     def _test_download_warnsize_spider_attr(self, compression_id):
@@ -684,13 +653,7 @@ class TestHttpCompression:
         )
 
     def test_download_warnsize_spider_attr_br(self):
-        try:
-            try:
-                import brotli  # noqa: F401
-            except ImportError:
-                import brotlicffi  # noqa: F401
-        except ImportError:
-            raise SkipTest("no brotli")
+        _skip_if_no_br()
         self._test_download_warnsize_spider_attr("br")
 
     def test_download_warnsize_spider_attr_deflate(self):
@@ -700,10 +663,7 @@ class TestHttpCompression:
         self._test_download_warnsize_spider_attr("gzip")
 
     def test_download_warnsize_spider_attr_zstd(self):
-        try:
-            import zstandard  # noqa: F401
-        except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+        _skip_if_no_zstd()
         self._test_download_warnsize_spider_attr("zstd")
 
     def _test_download_warnsize_request_meta(self, compression_id):
@@ -733,13 +693,7 @@ class TestHttpCompression:
         )
 
     def test_download_warnsize_request_meta_br(self):
-        try:
-            try:
-                import brotli  # noqa: F401
-            except ImportError:
-                import brotlicffi  # noqa: F401
-        except ImportError:
-            raise SkipTest("no brotli")
+        _skip_if_no_br()
         self._test_download_warnsize_request_meta("br")
 
     def test_download_warnsize_request_meta_deflate(self):
@@ -749,8 +703,36 @@ class TestHttpCompression:
         self._test_download_warnsize_request_meta("gzip")
 
     def test_download_warnsize_request_meta_zstd(self):
-        try:
-            import zstandard  # noqa: F401
-        except ImportError:
-            raise SkipTest("no zstd support (zstandard)")
+        _skip_if_no_zstd()
         self._test_download_warnsize_request_meta("zstd")
+
+    def _get_truncated_response(self, compression_id):
+        crawler = get_crawler(Spider)
+        spider = crawler._create_spider("scrapytest.org")
+        mw = HttpCompressionMiddleware.from_crawler(crawler)
+        mw.open_spider(spider)
+        response = self._getresponse(compression_id)
+        truncated_body = response.body[: len(response.body) // 2]
+        response = response.replace(body=truncated_body)
+        return mw.process_response(response.request, response, spider)
+
+    def test_process_truncated_response_br(self):
+        _skip_if_no_br()
+        resp = self._get_truncated_response("br")
+        assert resp.body.startswith(b"<!DOCTYPE")
+
+    def test_process_truncated_response_zlibdeflate(self):
+        resp = self._get_truncated_response("zlibdeflate")
+        assert resp.body.startswith(b"<!DOCTYPE")
+
+    def test_process_truncated_response_gzip(self):
+        resp = self._get_truncated_response("gzip")
+        assert resp.body.startswith(b"<!DOCTYPE")
+
+    def test_process_truncated_response_zstd(self):
+        _skip_if_no_zstd()
+        for check_key in FORMAT:
+            if not check_key.startswith("zstd-"):
+                continue
+            resp = self._get_truncated_response(check_key)
+            assert len(resp.body) == 0
