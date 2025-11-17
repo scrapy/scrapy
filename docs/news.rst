@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.13.4:
 
-Scrapy 2.13.4 (unreleased)
+Scrapy 2.13.4 (2025-11-17)
 --------------------------
 
 Security bug fixes
