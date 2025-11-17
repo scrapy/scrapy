@@ -93,12 +93,12 @@ signal handler to indicate that no further bytes should be downloaded for a resp
 The ``fail`` boolean parameter controls which method will handle the resulting
 response:
 
-* If ``fail=True`` (default), the request errback is called. The response object is
-  available as the ``response`` attribute of the ``StopDownload`` exception,
-  which is in turn stored as the ``value`` attribute of the received
-  :class:`~twisted.python.failure.Failure` object. This means that in an errback
-  defined as ``def errback(self, failure)``, the response can be accessed though
-  ``failure.value.response``.
+* If ``fail=True`` (default), the request errback is called. The response
+  object is available as the ``response`` attribute of the ``StopDownload``
+  exception, which is in turn stored as the ``value`` attribute of the received
+  :class:`~twisted.python.failure.Failure` object. This means that in an
+  errback defined as ``def errback(self, failure)``, the response can be
+  accessed through ``failure.value.response``.
 
 * If ``fail=False``, the request callback is called instead.
 

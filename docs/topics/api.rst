@@ -22,9 +22,9 @@ functionality into Scrapy.
    :synopsis: The Scrapy crawler
 
 The Extension Manager is responsible for loading and keeping track of installed
-extensions and it's configured through the :setting:`EXTENSIONS` setting which
-contains a dictionary of all available extensions and their order similar to
-how you :ref:`configure the downloader middlewares
+extensions, and it's configured through the :setting:`EXTENSIONS` setting,
+which contains a dictionary of all available extensions and their order similar
+to how you :ref:`configure the downloader middlewares
 <topics-downloader-middleware-setting>`.
 
 .. autoclass:: Crawler
@@ -89,7 +89,7 @@ how you :ref:`configure the downloader middlewares
         The execution engine, which coordinates the core crawling logic
         between the scheduler, downloader and spiders.
 
-        Some extension may want to access the Scrapy engine, to inspect  or
+        Some extensions may want to access the Scrapy engine to inspect or
         modify the downloader and scheduler behaviour, although this is an
         advanced use and this API is not yet stable.
 

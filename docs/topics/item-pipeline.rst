@@ -7,10 +7,10 @@ Item Pipeline
 After an item has been scraped by a spider, it is sent to the Item Pipeline
 which processes it through several components that are executed sequentially.
 
-Each item pipeline component (sometimes referred as just "Item Pipeline") is a
-Python class that implements a simple method. They receive an item and perform
-an action over it, also deciding if the item should continue through the
-pipeline or be dropped and no longer processed.
+Each item pipeline component (sometimes referred to as just "Item Pipeline") is
+a Python class that implements a simple method. Each component receives an item
+and performs an action on it while deciding whether the item should continue
+through the pipeline or be dropped and no longer processed.
 
 Typical uses of item pipelines are:
 
@@ -28,7 +28,7 @@ implement the following method:
 
 .. method:: process_item(self, item)
 
-   This method is called for every item pipeline component.
+   Scrapy calls this method for every item processed by the pipeline component.
 
    `item` is an :ref:`item object <item-types>`, see
    :ref:`supporting-item-types`.
@@ -42,7 +42,7 @@ implement the following method:
    :param item: the scraped item
    :type item: :ref:`item object <item-types>`
 
-Additionally, they may also implement the following methods:
+Additionally, a component may implement the following methods:
 
 .. method:: open_spider(self)
 
@@ -61,8 +61,8 @@ Price validation and dropping items with no prices
 
 Let's take a look at the following hypothetical pipeline that adjusts the
 ``price`` attribute for those items that do not include VAT
-(``price_excludes_vat`` attribute), and drops those items which don't
-contain a price:
+(``price_excludes_vat`` attribute), and drops those items that don't contain a
+price:
 
 .. code-block:: python
 
@@ -109,16 +109,16 @@ format:
            self.file.write(line)
            return item
 
-.. note:: The purpose of JsonWriterPipeline is just to introduce how to write
-   item pipelines. If you really want to store all scraped items into a JSON
-   file you should use the :ref:`Feed exports <topics-feed-exports>`.
+.. note:: The JsonWriterPipeline example simply introduces how to write item
+    pipelines. If you really want to store all scraped items in a JSON file,
+    you should use the :ref:`Feed exports <topics-feed-exports>`.
 
 Write items to MongoDB
 ----------------------
 
-In this example we'll write items to MongoDB_ using pymongo_.
-MongoDB address and database name are specified in Scrapy settings;
-MongoDB collection is named after item class.
+In this example, we'll write items to MongoDB_ using pymongo_. The MongoDB
+address and database name are specified in the Scrapy settings; the MongoDB
+collection is named after the item class.
 
 The main point of this example is to show how to :ref:`get the crawler
 <from-crawler>` and how to clean up the resources properly.
@@ -161,13 +161,13 @@ The main point of this example is to show how to :ref:`get the crawler
 
 .. _ScreenshotPipeline:
 
-Take screenshot of item
------------------------
+Take a screenshot of an item
+----------------------------
 
 This example demonstrates how to use :doc:`coroutine syntax <coroutines>` in
 the :meth:`process_item` method.
 
-This item pipeline makes a request to a locally-running instance of Splash_ to
+This item pipeline makes a request to a locally running instance of Splash_ to
 render a screenshot of the item URL. After the request response is downloaded,
 the item pipeline saves the screenshot to a file and adds the filename to the
 item.
@@ -184,12 +184,12 @@ item.
 
 
     class ScreenshotPipeline:
-        """Pipeline that uses Splash to render screenshot of
-        every Scrapy item."""
+        """Pipeline that uses Splash to render a screenshot of every Scrapy
+        item."""
 
         SPLASH_URL = "http://localhost:8050/render.png?url={}"
 
-        def __init__(crawler):
+        def __init__(self, crawler):
             self.crawler = crawler
 
         @classmethod
@@ -204,16 +204,17 @@ item.
             response = await self.crawler.engine.download_async(request)
 
             if response.status != 200:
-                # Error happened, return item.
+                # An error occurred, so return the item.
                 return item
 
-            # Save screenshot to file, filename will be hash of url.
+            # Save the screenshot to a file; the filename is the hash of the
+            # URL.
             url = adapter["url"]
             url_hash = hashlib.md5(url.encode("utf8")).hexdigest()
             filename = f"{url_hash}.png"
             Path(filename).write_bytes(response.body)
 
-            # Store filename in item.
+            # Store the filename in the item.
             adapter["screenshot_filename"] = filename
             return item
 
@@ -222,9 +223,9 @@ item.
 Duplicates filter
 -----------------
 
-A filter that looks for duplicate items, and drops those items that were
-already processed. Let's say that our items have a unique id, but our spider
-returns multiples items with the same id:
+This filter looks for duplicate items and drops those that were already
+processed. Let's say that our items have a unique id, but our spider returns
+multiple items with the same id:
 
 .. code-block:: python
 

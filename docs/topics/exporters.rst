@@ -11,34 +11,34 @@ Once you have scraped your items, you often want to persist or export those
 items, to use the data in some other application. That is, after all, the whole
 purpose of the scraping process.
 
-For this purpose Scrapy provides a collection of Item Exporters for different
+For this purpose, Scrapy provides a collection of Item Exporters for different
 output formats, such as XML, CSV or JSON.
 
 Using Item Exporters
 ====================
 
 If you are in a hurry, and just want to use an Item Exporter to output scraped
-data see the :ref:`topics-feed-exports`. Otherwise, if you want to know how
+data, see the :ref:`topics-feed-exports`. Otherwise, if you want to know how
 Item Exporters work or need more custom functionality (not covered by the
 default exports), continue reading below.
 
-In order to use an Item Exporter, you  must instantiate it with its required
-args. Each Item Exporter requires different arguments, so check each exporter
-documentation to be sure, in :ref:`topics-exporters-reference`. After you have
+In order to use an Item Exporter, you must instantiate it with its required
+args. Each Item Exporter requires different arguments, so check each exporter's
+documentation in :ref:`topics-exporters-reference` to be sure. After you have
 instantiated your exporter, you have to:
 
-1. call the method :meth:`~BaseItemExporter.start_exporting` in order to
-signal the beginning of the exporting process
+1. Call the method :meth:`~BaseItemExporter.start_exporting` in order to
+   signal the beginning of the exporting process
 
-2. call the :meth:`~BaseItemExporter.export_item` method for each item you want
-to export
+2. Call the :meth:`~BaseItemExporter.export_item` method for each item you want
+   to export
 
-3. and finally call the :meth:`~BaseItemExporter.finish_exporting` to signal
-the end of the exporting process
+3. Finally, call the :meth:`~BaseItemExporter.finish_exporting` method to
+   signal the end of the exporting process
 
-Here you can see an :doc:`Item Pipeline <item-pipeline>` which uses multiple
-Item Exporters to group scraped items to different files according to the
-value of one of their fields:
+Here you can see an :doc:`Item Pipeline <item-pipeline>` that uses multiple
+Item Exporters to distribute scraped items into different files according to
+the value of one of their fields:
 
 .. code-block:: python
 
@@ -159,9 +159,10 @@ BaseItemExporter
    defining what fields to export, whether to export empty fields, or which
    encoding to use.
 
-   These features can be configured through the ``__init__`` method arguments which
-   populate their respective instance attributes: :attr:`fields_to_export`,
-   :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
+   These features can be configured through the ``__init__`` method arguments,
+   which populate their respective instance attributes:
+   :attr:`fields_to_export`, :attr:`export_empty_fields`, :attr:`encoding`,
+   :attr:`indent`.
 
    .. versionadded:: 2.0
       The *dont_fail* parameter.
@@ -263,8 +264,9 @@ XmlItemExporter
 
    Exports items in XML format to the specified file object.
 
-   :param file: the file-like object to use for exporting the data. Its ``write`` method should
-                accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
+   :param file: the file-like object to use for exporting the data. Its
+      ``write`` method should accept ``bytes`` (a disk file opened in binary
+      mode, an ``io.BytesIO`` object, etc)
 
    :param root_element: The name of root element in the exported XML.
    :type root_element: str
@@ -297,7 +299,7 @@ XmlItemExporter
 
         Item(name=['John', 'Doe'], age='23')
 
-   Would be serialized as::
+   It would be serialized as::
 
        <?xml version="1.0" encoding="utf-8"?>
        <items>
@@ -320,8 +322,9 @@ CsvItemExporter
    CSV columns, their order and their column names. The
    :attr:`export_empty_fields` attribute has no effect on this exporter.
 
-   :param file: the file-like object to use for exporting the data. Its ``write`` method should
-                accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
+   :param file: the file-like object to use for exporting the data. Its
+      ``write`` method should accept ``bytes`` (a disk file opened in binary
+      mode, an ``io.BytesIO`` object, etc)
 
    :param include_headers_line: If enabled, makes the exporter output a header
       line with the field names taken from
@@ -355,8 +358,9 @@ PickleItemExporter
 
    Exports items in pickle format to the given file-like object.
 
-   :param file: the file-like object to use for exporting the data. Its ``write`` method should
-                accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
+   :param file: the file-like object to use for exporting the data. Its
+      ``write`` method should accept ``bytes`` (a disk file opened in binary
+      mode, an ``io.BytesIO`` object, etc)
 
    :param protocol: The pickle protocol to use.
    :type protocol: int
@@ -366,7 +370,7 @@ PickleItemExporter
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method.
 
-   Pickle isn't a human readable format, so no output examples are provided.
+   Pickle isn't a human-readable format, so no output examples are provided.
 
 PprintItemExporter
 ------------------
@@ -375,8 +379,9 @@ PprintItemExporter
 
    Exports items in pretty print format to the specified file object.
 
-   :param file: the file-like object to use for exporting the data. Its ``write`` method should
-                accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
+   :param file: the file-like object to use for exporting the data. Its
+      ``write`` method should accept ``bytes`` (a disk file opened in binary
+      mode, an ``io.BytesIO`` object, etc)
 
    The additional keyword arguments of this ``__init__`` method are passed to the
    :class:`BaseItemExporter` ``__init__`` method.
@@ -399,8 +404,9 @@ JsonItemExporter
    arguments to the :class:`~json.JSONEncoder` ``__init__`` method, so you can use any
    :class:`~json.JSONEncoder` ``__init__`` method argument to customize this exporter.
 
-   :param file: the file-like object to use for exporting the data. Its ``write`` method should
-                accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
+   :param file: the file-like object to use for exporting the data. Its
+      ``write`` method should accept ``bytes`` (a disk file opened in binary
+      mode, an ``io.BytesIO`` object, etc)
 
    A typical output of this exporter would be::
 
@@ -409,10 +415,10 @@ JsonItemExporter
 
    .. _json-with-large-data:
 
-   .. warning:: JSON is very simple and flexible serialization format, but it
-      doesn't scale well for large amounts of data since incremental (aka.
+   .. warning:: JSON is a very simple and flexible serialization format, but it
+      doesn't scale well for large amounts of data because incremental (aka
       stream-mode) parsing is not well supported (if at all) among JSON parsers
-      (on any language), and most of them just parse the entire object in
+      in any language, and most of them just parse the entire object in
       memory. If you want the power and simplicity of JSON with a more
       stream-friendly format, consider using :class:`JsonLinesItemExporter`
       instead, or splitting the output in multiple chunks.
@@ -428,8 +434,9 @@ JsonLinesItemExporter
    the :class:`~json.JSONEncoder` ``__init__`` method, so you can use any
    :class:`~json.JSONEncoder` ``__init__`` method argument to customize this exporter.
 
-   :param file: the file-like object to use for exporting the data. Its ``write`` method should
-                accept ``bytes`` (a disk file opened in binary mode, a ``io.BytesIO`` object, etc)
+   :param file: the file-like object to use for exporting the data. Its
+      ``write`` method should accept ``bytes`` (a disk file opened in binary
+      mode, an ``io.BytesIO`` object, etc)
 
    A typical output of this exporter would be::
 
