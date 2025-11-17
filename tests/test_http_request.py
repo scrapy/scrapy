@@ -741,6 +741,16 @@ class TestFormRequest(TestRequest):
         assert fs[b"one"] == [b"1"]
         assert fs[b"two"] == [b"2"]
 
+    def test_clickable_value_preserved(self):
+        response = _buildresponse(
+            """<form>
+            <input type="submit" name="i1" value="i1v">
+            </form>"""
+        )
+        req = self.request_class.from_response(response)
+        fs = _qs(req)
+        assert fs[b"i1"] == [b"i1v"]
+
     def test_from_response_dont_submit_image_as_input(self):
         response = _buildresponse(
             """<form>
