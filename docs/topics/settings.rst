@@ -1188,6 +1188,15 @@ The editor to use for editing spiders with the :command:`edit` command.
 Additionally, if the ``EDITOR`` environment variable is set, the :command:`edit`
 command will prefer it over the default setting.
 
+.. setting:: EXECUTION_ENGINE_CLASS
+
+EXECUTION_ENGINE_CLASS
+------
+
+Default: 'scrapy.core.engine.ExecutionEngine'
+
+The engine class to be used for crawling.
+
 .. setting:: EXTENSIONS
 
 EXTENSIONS

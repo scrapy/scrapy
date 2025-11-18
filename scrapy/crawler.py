@@ -201,7 +201,14 @@ class Crawler:
         return self.spidercls.from_crawler(self, *args, **kwargs)
 
     def _create_engine(self) -> ExecutionEngine:
-        return ExecutionEngine(self, lambda _: self.stop_async())
+        engine_class: str = self.settings.get("EXECUTION_ENGINE_CLASS", "scrapy.core.engine.ExecutionEngine")
+        engine_cls = load_object(engine_class)
+        if not issubclass(engine_cls, ExecutionEngine):
+            raise TypeError(
+                f"The provided engine class ({self.settings['EXECUTION_ENGINE_CLASS']})"
+                " does not fully implement the engine interface"
+            )
+        return engine_cls(self, lambda _: self.stop_async())
 
     def stop(self) -> Deferred[None]:
         """Start a graceful stop of the crawler and return a deferred that is

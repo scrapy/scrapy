@@ -61,6 +61,7 @@ __all__ = [
     "DOWNLOADER_STATS",
     "DOWNLOAD_DELAY",
     "DOWNLOAD_FAIL_ON_DATALOSS",
+    "EXECUTION_ENGINE_CLASS",
     "DOWNLOAD_HANDLERS",
     "DOWNLOAD_HANDLERS_BASE",
     "DOWNLOAD_MAXSIZE",
@@ -243,6 +244,8 @@ DNS_RESOLVER = "scrapy.resolver.CachingThreadedResolver"
 DNS_TIMEOUT = 60
 
 DOWNLOAD_DELAY = 0
+
+EXECUTION_ENGINE_CLASS = "scrapy.core.engine.ExecutionEngine"
 
 DOWNLOAD_FAIL_ON_DATALOSS = True
 
