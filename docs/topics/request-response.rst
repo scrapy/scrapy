@@ -1135,7 +1135,13 @@ Response objects
     .. automethod:: Response.follow
 
     .. automethod:: Response.follow_all
+.. warning::
 
+   When using the ``cb_kwargs`` parameter with :meth:`~scrapy.http.Response.follow_all`,
+   the dictionary is created only once and is **shared** across all generated Request objects.
+   If you modify the dictionary inside a callback, the changes will be visible to subsequent
+   Requests. To avoid this behavior, consider creating a deep copy of ``cb_kwargs``
+   or use a manual loop with :meth:`~scrapy.http.Response.follow`.
 
 .. _topics-request-response-ref-response-subclasses:
 
