@@ -80,7 +80,7 @@ class OffsiteMiddleware:
         disallowed_domains = ['example2.com']
         This will allow crawling all subdomains of example.com (eg. foo.example.com,
         bar.example.com). But it won't allow crawling example2.com or any subdomain
-        (eg. www.example2.com).
+        (eg. foo.example2.com, bar.example2.com).
         """
         allowed_domains_arg = getattr(spider, "allowed_domains", None)
         disallowed_domains_arg = getattr(spider, "disallowed_domains", None)
