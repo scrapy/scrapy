@@ -20,6 +20,7 @@ from scrapy.utils.defer import (
     ensure_awaitable,
     maybe_deferred_to_future,
 )
+from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
@@ -77,11 +78,12 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 method = cast("Callable", method)
                 if method in self._mw_methods_requiring_spider:
                     response = await ensure_awaitable(
-                        method(request=request, spider=self._spider), _warn=repr(method)
+                        method(request=request, spider=self._spider),
+                        _warn=global_object_name(method),
                     )
                 else:
                     response = await ensure_awaitable(
-                        method(request=request), _warn=repr(method)
+                        method(request=request), _warn=global_object_name(method)
                     )
                 if response is not None and not isinstance(
                     response, (Response, Request)
@@ -105,11 +107,12 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                 if method in self._mw_methods_requiring_spider:
                     response = await ensure_awaitable(
                         method(request=request, response=response, spider=self._spider),
-                        _warn=repr(method),
+                        _warn=global_object_name(method),
                     )
                 else:
                     response = await ensure_awaitable(
-                        method(request=request, response=response), _warn=repr(method)
+                        method(request=request, response=response),
+                        _warn=global_object_name(method),
                     )
                 if not isinstance(response, (Response, Request)):
                     raise _InvalidOutput(
@@ -128,11 +131,12 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                         method(
                             request=request, exception=exception, spider=self._spider
                         ),
-                        _warn=repr(method),
+                        _warn=global_object_name(method),
                     )
                 else:
                     response = await ensure_awaitable(
-                        method(request=request, exception=exception), _warn=repr(method)
+                        method(request=request, exception=exception),
+                        _warn=global_object_name(method),
                     )
                 if response is not None and not isinstance(
                     response, (Response, Request)
