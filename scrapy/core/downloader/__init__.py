@@ -179,14 +179,6 @@ class Downloader:
 
         return key
 
-    def _get_slot_key(self, request: Request, spider: Spider | None) -> str:
-        warnings.warn(
-            "Use of this protected method is deprecated. Consider using its corresponding public method get_slot_key() instead.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return self.get_slot_key(request)
-
     # passed as download_func into self.middleware.download() in self.fetch()
     @inlineCallbacks
     def _enqueue_request(

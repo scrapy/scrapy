@@ -17,9 +17,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - python-version: "3.9"
-          env:
-            TOXENV: py
         - python-version: "3.10"
           env:
             TOXENV: py
@@ -40,19 +37,19 @@ jobs:
             TOXENV: pypy3
 
         # pinned deps
-        - python-version: "3.9.21"
+        - python-version: "3.10.19"
           env:
             TOXENV: pinned
-        - python-version: "3.9.21"
+        - python-version: "3.10.19"
           env:
             TOXENV: default-reactor-pinned
         - python-version: pypy3.11
           env:
             TOXENV: pypy3-pinned
-        - python-version: "3.9.21"
+        - python-version: "3.10.19"
           env:
             TOXENV: extra-deps-pinned
-        - python-version: "3.9.21"
+        - python-version: "3.10.19"
           env:
             TOXENV: botocore-pinned
 
@@ -65,12 +62,15 @@ jobs:
         - python-version: "3.13"
           env:
             TOXENV: botocore
+        - python-version: "3.13"
+          env:
+            TOXENV: mitmproxy
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
 

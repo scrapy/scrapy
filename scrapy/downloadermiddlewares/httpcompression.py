@@ -31,14 +31,20 @@ logger = getLogger(__name__)
 ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate"]
 
 try:
-    try:
-        import brotli  # noqa: F401
-    except ImportError:
-        import brotlicffi  # noqa: F401
+    import brotli
 except ImportError:
     pass
 else:
-    ACCEPTED_ENCODINGS.append(b"br")
+    try:
+        brotli.Decompressor.can_accept_more_data
+    except AttributeError:  # pragma: no cover
+        warnings.warn(
+            "You have brotli installed. But 'br' encoding support now requires "
+            "brotli version >= 1.2.0. Please upgrade brotli version to make Scrapy "
+            "decode 'br' encoded responses.",
+        )
+    else:
+        ACCEPTED_ENCODINGS.append(b"br")
 
 try:
     import zstandard  # noqa: F401
@@ -106,13 +112,13 @@ class HttpCompressionMiddleware:
                     decoded_body, content_encoding = self._handle_encoding(
                         response.body, content_encoding, max_size
                     )
-                except _DecompressionMaxSizeExceeded:
+                except _DecompressionMaxSizeExceeded as e:
                     raise IgnoreRequest(
                         f"Ignored response {response} because its body "
-                        f"({len(response.body)} B compressed) exceeded "
-                        f"DOWNLOAD_MAXSIZE ({max_size} B) during "
-                        f"decompression."
-                    )
+                        f"({len(response.body)} B compressed, "
+                        f"{e.decompressed_size} B decompressed so far) exceeded "
+                        f"DOWNLOAD_MAXSIZE ({max_size} B) during decompression."
+                    ) from e
                 if len(response.body) < warn_size <= len(decoded_body):
                     logger.warning(
                         f"{response} body size after decompression "
@@ -192,7 +198,7 @@ class HttpCompressionMiddleware:
             f"from unsupported encoding(s) '{encodings_str}'."
         )
         if b"br" in encodings:
-            msg += " You need to install brotli or brotlicffi to decode 'br'."
+            msg += " You need to install brotli >= 1.2.0 to decode 'br'."
         if b"zstd" in encodings:
             msg += " You need to install zstandard to decode 'zstd'."
         logger.warning(msg)

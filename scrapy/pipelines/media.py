@@ -5,7 +5,7 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Literal, TypedDict, Union, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypedDict, cast
 
 from twisted import version as twisted_version
 from twisted.internet.defer import (
@@ -19,14 +19,13 @@ from twisted.python.versions import Version
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http.request import NO_CALLBACK, Request
-from scrapy.settings import Settings
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.datatypes import SequenceExclude
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import _DEFER_DELAY, _defer_sleep, deferred_from_coro
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
-from scrapy.utils.python import get_func_args, global_object_name
+from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
@@ -37,6 +36,7 @@ if TYPE_CHECKING:
     from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.http import Response
+    from scrapy.settings import Settings
     from scrapy.utils.request import RequestFingerprinterProtocol
 
 
@@ -47,16 +47,14 @@ class FileInfo(TypedDict):
     status: str
 
 
-FileInfoOrError = Union[tuple[Literal[True], FileInfo], tuple[Literal[False], Failure]]
+FileInfoOrError: TypeAlias = (
+    tuple[Literal[True], FileInfo] | tuple[Literal[False], Failure]
+)
 
 logger = logging.getLogger(__name__)
 
 
 class MediaPipeline(ABC):
-    crawler: Crawler
-    _fingerprinter: RequestFingerprinterProtocol
-    _modern_init = False
-
     LOG_FAILED_RESULTS: bool = True
 
     class SpiderInfo:
@@ -71,24 +69,17 @@ class MediaPipeline(ABC):
     def __init__(
         self,
         download_func: Callable[[Request, Spider], Response] | None = None,
-        settings: Settings | dict[str, Any] | None = None,
         *,
-        crawler: Crawler | None = None,
+        crawler: Crawler,
     ):
+        self.crawler: Crawler = crawler
+        assert crawler.request_fingerprinter
+        self._fingerprinter: RequestFingerprinterProtocol = (
+            crawler.request_fingerprinter
+        )
         self.download_func = download_func
 
-        if crawler is not None:
-            if settings is not None:
-                warnings.warn(
-                    f"MediaPipeline.__init__() was called with a crawler instance and a settings instance"
-                    f" when creating {global_object_name(self.__class__)}. The settings instance will be ignored"
-                    f" and crawler.settings will be used. The settings argument will be removed in a future Scrapy version.",
-                    category=ScrapyDeprecationWarning,
-                    stacklevel=2,
-                )
-            settings = crawler.settings
-        elif isinstance(settings, dict) or settings is None:
-            settings = Settings(settings)
+        settings = crawler.settings
         resolve = functools.partial(
             self._key_for_pipe, base_class_name="MediaPipeline", settings=settings
         )
@@ -96,27 +87,6 @@ class MediaPipeline(ABC):
             resolve("MEDIA_ALLOW_REDIRECTS"), False
         )
         self._handle_statuses(self.allow_redirects)
-
-        if crawler:
-            self._finish_init(crawler)
-            self._modern_init = True
-        else:
-            warnings.warn(
-                f"MediaPipeline.__init__() was called without the crawler argument"
-                f" when creating {global_object_name(self.__class__)}."
-                f" This is deprecated and the argument will be required in future Scrapy versions.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
-
-    def _finish_init(self, crawler: Crawler) -> None:
-        # This was done in from_crawler() before 2.12, now it's done in __init__()
-        # if the crawler was passed to it and may be needed to be called in other
-        # deprecated code paths explicitly too. After the crawler argument of __init__()
-        # becomes mandatory this should be inlined there.
-        self.crawler = crawler
-        assert crawler.request_fingerprinter
-        self._fingerprinter = crawler.request_fingerprinter
 
     def _handle_statuses(self, allow_redirects: bool) -> None:
         self.handle_httpstatus_list = None
@@ -141,30 +111,7 @@ class MediaPipeline(ABC):
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        pipe: Self
-        if hasattr(cls, "from_settings"):
-            pipe = cls.from_settings(crawler.settings)  # type: ignore[attr-defined]
-            warnings.warn(
-                f"{global_object_name(cls)} has from_settings() and either doesn't have"
-                " from_crawler() or calls MediaPipeline.from_crawler() from it,"
-                " so from_settings() was used to create the instance of it."
-                " This is deprecated and calling from_settings() will be removed"
-                " in a future Scrapy version. Please move the initialization code into"
-                " from_crawler() or __init__().",
-                category=ScrapyDeprecationWarning,
-            )
-        elif "crawler" in get_func_args(cls.__init__):
-            pipe = cls(crawler=crawler)
-        else:
-            pipe = cls()
-            warnings.warn(
-                f"{global_object_name(cls)}.__init__() doesn't take a crawler argument."
-                " This is deprecated and the argument will be required in future Scrapy versions.",
-                category=ScrapyDeprecationWarning,
-            )
-        if not pipe._modern_init:
-            pipe._finish_init(crawler)
-        return pipe
+        return cls(crawler=crawler)
 
     @_warn_spider_arg
     def open_spider(self, spider: Spider | None = None) -> None:

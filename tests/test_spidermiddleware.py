@@ -568,7 +568,8 @@ class TestProcessSpiderException(TestBaseAsyncSpiderMiddleware):
 
     async def _test_asyncgen_nodowngrade(self, *mw_classes: type[Any]) -> None:
         with pytest.raises(
-            _InvalidOutput, match="Async iterable returned from .+ cannot be downgraded"
+            _InvalidOutput,
+            match=r"Async iterable returned from .+ cannot be downgraded",
         ):
             await self._get_middleware_result(*mw_classes)
 
