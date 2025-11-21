@@ -453,28 +453,29 @@ class TestHttp11Base(TestHttpBase):
         assert type(response) is TextResponse  # pylint: disable=unidiomatic-typecheck
 
     @deferred_f_from_coro_f
-    async def test_download_with_maxsize(
-        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
-    ) -> None:
+    async def test_download_with_maxsize(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
 
         # 10 is minimal size for this request and the limit is only counted on
         # response body. (regardless of headers)
-        response = await download_request(
-            download_handler, request, Spider("foo", download_maxsize=5)
-        )
+        crawler = get_crawler(settings_dict={"DOWNLOAD_MAXSIZE": 5})
+        download_handler = build_from_crawler(self.download_handler_cls, crawler)
+        response = await download_request(download_handler, request, Spider("foo"))
         assert response.body == b"Works"
 
+        crawler = get_crawler(settings_dict={"DOWNLOAD_MAXSIZE": 4})
+        download_handler = build_from_crawler(self.download_handler_cls, crawler)
+
         with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
-            await download_request(
-                download_handler, request, Spider("foo", download_maxsize=4)
-            )
+            await download_request(download_handler, request, Spider("foo"))
 
     @deferred_f_from_coro_f
     async def test_download_with_maxsize_very_large_file(
-        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
+        self, mockserver: MockServer
     ) -> None:
         # TODO: the logger check is specific to scrapy.core.downloader.handlers.http11
+        crawler = get_crawler(settings_dict={"DOWNLOAD_MAXSIZE": 1_500})
+        download_handler = build_from_crawler(self.download_handler_cls, crawler)
         with mock.patch("scrapy.core.downloader.handlers.http11.logger") as logger:
             request = Request(
                 mockserver.url("/largechunkedfile", is_secure=self.is_secure)
@@ -484,9 +485,7 @@ class TestHttp11Base(TestHttpBase):
                 logger.warning.assert_called_once_with(mock.ANY, mock.ANY)
 
             with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
-                await download_request(
-                    download_handler, request, Spider("foo", download_maxsize=1500)
-                )
+                await download_request(download_handler, request, Spider("foo"))
 
             # As the error message is logged in the dataReceived callback, we
             # have to give a bit of time to the reactor to process the queue
@@ -506,23 +505,23 @@ class TestHttp11Base(TestHttpBase):
             await download_request(download_handler, request)
 
     @deferred_f_from_coro_f
-    async def test_download_with_small_maxsize_per_spider(
-        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
+    async def test_download_with_small_maxsize_via_setting(
+        self, mockserver: MockServer
     ) -> None:
+        crawler = get_crawler(settings_dict={"DOWNLOAD_MAXSIZE": 2})
+        download_handler = build_from_crawler(self.download_handler_cls, crawler)
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
         with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
-            await download_request(
-                download_handler, request, Spider("foo", download_maxsize=2)
-            )
+            await download_request(download_handler, request, Spider("foo"))
 
     @deferred_f_from_coro_f
-    async def test_download_with_large_maxsize_per_spider(
-        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
+    async def test_download_with_large_maxsize_via_setting(
+        self, mockserver: MockServer
     ) -> None:
+        crawler = get_crawler(settings_dict={"DOWNLOAD_MAXSIZE": 5})
+        download_handler = build_from_crawler(self.download_handler_cls, crawler)
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
-        response = await download_request(
-            download_handler, request, Spider("foo", download_maxsize=100)
-        )
+        response = await download_request(download_handler, request, Spider("foo"))
         assert response.body == b"Works"
 
     @deferred_f_from_coro_f

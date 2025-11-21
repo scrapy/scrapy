@@ -27,6 +27,7 @@ from scrapy.utils.defer import (
     _schedule_coro,
     maybe_deferred_to_future,
 )
+from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
@@ -98,12 +99,8 @@ def _get_concurrency_delay(
         delay = spider.download_delay
 
     if hasattr(spider, "max_concurrent_requests"):
-        warnings.warn(
-            "The 'max_concurrent_requests' spider attribute is deprecated. "
-            "Use Spider.custom_settings or Spider.update_settings() instead. "
-            "The corresponding setting name is 'CONCURRENT_REQUESTS'.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
+        warn_on_deprecated_spider_attribute(
+            "max_concurrent_requests", "CONCURRENT_REQUESTS"
         )
         concurrency = spider.max_concurrent_requests
 

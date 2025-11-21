@@ -40,9 +40,10 @@ class HttpErrorMiddleware:
 
     def __init__(self, settings: BaseSettings):
         self.handle_httpstatus_all: bool = settings.getbool("HTTPERROR_ALLOW_ALL")
-        self.handle_httpstatus_list: list[int] = settings.getlist(
-            "HTTPERROR_ALLOWED_CODES"
-        )
+        self.handle_httpstatus_list: list[int] = [
+            *settings.getlist("HTTPERROR_ALLOWED_CODES"),
+            *settings.getlist("REDIRECT_ALLOWED_HTTP_CODES"),
+        ]
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
