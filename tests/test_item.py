@@ -299,3 +299,12 @@ class TestItemMetaClassCellRegression:
                 # TypeError: __class__ set to <class '__main__.MyItem'>
                 # defining 'MyItem' as <class '__main__.MyItem'>
                 super().__init__(*args, **kwargs)
+
+
+def test_item_fields_definition_order():
+    class MyItem(Item):
+        name = Field()
+        age = Field()
+        city = Field()
+
+    assert list(MyItem.fields.keys()) == ["name", "age", "city"]
