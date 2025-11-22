@@ -53,11 +53,11 @@ FORMAT = {
 def _skip_if_no_br() -> None:
     try:
         try:
-            import brotli  # noqa: F401,PLC0415
+            import brotli  # noqa: PLC0415
 
             brotli.Decompressor.can_accept_more_data
         except (ImportError, AttributeError):
-            import brotlicffi  # noqa: F401,PLC0415
+            import brotlicffi  # noqa: PLC0415
 
             brotlicffi.Decompressor.can_accept_more_data
     except (ImportError, AttributeError):
