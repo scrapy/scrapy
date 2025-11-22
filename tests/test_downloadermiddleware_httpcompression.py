@@ -52,9 +52,14 @@ FORMAT = {
 
 def _skip_if_no_br() -> None:
     try:
-        import brotli  # noqa: PLC0415
+        try:
+            import brotli  # noqa: F401,PLC0415
 
-        brotli.Decompressor.can_accept_more_data
+            brotli.Decompressor.can_accept_more_data
+        except (ImportError, AttributeError):
+            import brotlicffi  # noqa: F401,PLC0415
+
+            brotlicffi.Decompressor.can_accept_more_data
     except (ImportError, AttributeError):
         pytest.skip("no brotli support")
 
@@ -152,9 +157,14 @@ class TestHttpCompression:
 
     def test_process_response_br_unsupported(self):
         try:
-            import brotli  # noqa: F401,PLC0415
+            try:
+                import brotli  # noqa: F401,PLC0415
 
-            pytest.skip("Requires not having brotli support")
+                pytest.skip("Requires not having brotli support")
+            except ImportError:
+                import brotlicffi  # noqa: F401,PLC0415
+
+                pytest.skip("Requires not having brotli support")
         except ImportError:
             pass
         response = self._getresponse("br")
@@ -171,9 +181,9 @@ class TestHttpCompression:
                 "scrapy.downloadermiddlewares.httpcompression",
                 "WARNING",
                 (
-                    "HttpCompressionMiddleware cannot decode the response for"
-                    " http://scrapytest.org/ from unsupported encoding(s) 'br'."
-                    " You need to install brotli >= 1.2.0 to decode 'br'."
+                    "HttpCompressionMiddleware cannot decode the response for "
+                    "http://scrapytest.org/ from unsupported encoding(s) 'br'. "
+                    "You need to install brotli or brotlicffi >= 1.2.0 to decode 'br'."
                 ),
             ),
         )
