@@ -2762,6 +2762,12 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert len(CustomS3FeedStorage.stubs) == len(items)
         for stub in CustomS3FeedStorage.stubs[:-1]:
             stub.assert_no_pending_responses()
+        assert (
+            "feedexport/success_count/CustomS3FeedStorage" in crawler.stats.get_stats()
+        )
+        assert (
+            crawler.stats.get_value("feedexport/success_count/CustomS3FeedStorage") == 3
+        )
 
 
 # Test that the FeedExporer sends the feed_exporter_closed and feed_slot_closed signals
