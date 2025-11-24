@@ -546,3 +546,7 @@ def __getattr__(name: str):
         return 0
 
     raise AttributeError
+# Optional crawl order setting
+# DFO = Depth-First (default)
+# BFO = Breadth-First (user-selected)
+CRAWL_ORDER = 'DFO'
