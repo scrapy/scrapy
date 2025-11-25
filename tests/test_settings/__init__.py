@@ -1,10 +1,12 @@
 # pylint: disable=unsubscriptable-object,unsupported-membership-test,use-implicit-booleaness-not-comparison
 # (too many false positives)
 
+import warnings
 from unittest import mock
 
 import pytest
 
+from scrapy.core.downloader.handlers.file import FileDownloadHandler
 from scrapy.settings import (
     SETTINGS_PRIORITIES,
     BaseSettings,
@@ -12,6 +14,8 @@ from scrapy.settings import (
     SettingsAttribute,
     get_settings_priority,
 )
+from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.test import get_crawler
 
 from . import default_settings
 
@@ -307,7 +311,7 @@ class TestBaseSettings:
         assert settings.getdict("TEST_DICT3", {"key1": 5}) == {"key1": 5}
         with pytest.raises(
             ValueError,
-            match="dictionary update sequence element #0 has length 3; 2 is required|sequence of pairs expected",
+            match=r"dictionary update sequence element #0 has length 3; 2 is required|sequence of pairs expected",
         ):
             settings.getdict("TEST_LIST1")
         with pytest.raises(
@@ -446,12 +450,8 @@ class TestSettings:
         assert mydict["key"] == "val"
 
     def test_passing_objects_as_values(self):
-        from scrapy.core.downloader.handlers.file import FileDownloadHandler
-        from scrapy.utils.misc import build_from_crawler
-        from scrapy.utils.test import get_crawler
-
         class TestPipeline:
-            def process_item(self, i, s):
+            def process_item(self, i):
                 return i
 
         settings = Settings(
@@ -471,7 +471,7 @@ class TestSettings:
         assert priority == 800
         assert mypipeline == TestPipeline
         assert isinstance(mypipeline(), TestPipeline)
-        assert mypipeline().process_item("item", None) == "item"
+        assert mypipeline().process_item("item") == "item"
 
         myhandler = settings.getdict("DOWNLOAD_HANDLERS").pop("ftp")
         assert myhandler == FileDownloadHandler
@@ -557,6 +557,17 @@ def test_remove_from_list(before, name, item, after):
         f"{settings[name]=} != {expected_settings[name]=}"
     )
     assert settings.getpriority(name) == expected_settings.getpriority(name)
+
+
+def test_deprecated_concurrent_requests_per_ip_setting():
+    with warnings.catch_warnings(record=True) as warns:
+        settings = Settings({"CONCURRENT_REQUESTS_PER_IP": 1})
+        settings.get("CONCURRENT_REQUESTS_PER_IP")
+
+    assert (
+        str(warns[0].message)
+        == "The CONCURRENT_REQUESTS_PER_IP setting is deprecated, use CONCURRENT_REQUESTS_PER_DOMAIN instead."
+    )
 
 
 class Component1:

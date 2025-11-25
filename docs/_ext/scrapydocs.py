@@ -29,14 +29,14 @@ def is_setting_index(node: Node) -> bool:
     if node.tagname == "index" and node["entries"]:  # type: ignore[index,attr-defined]
         # index entries for setting directives look like:
         # [('pair', 'SETTING_NAME; setting', 'std:setting-SETTING_NAME', '')]
-        entry_type, info, refid = node["entries"][0][:3]  # type: ignore[index]
+        entry_type, info, _ = node["entries"][0][:3]  # type: ignore[index]
         return entry_type == "pair" and info.endswith("; setting")
     return False
 
 
 def get_setting_name_and_refid(node: Node) -> tuple[str, str]:
     """Extract setting name from directive index node"""
-    entry_type, info, refid = node["entries"][0][:3]  # type: ignore[index]
+    _, info, refid = node["entries"][0][:3]  # type: ignore[index]
     return info.replace("; setting", ""), refid
 
 

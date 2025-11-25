@@ -4,35 +4,23 @@ from __future__ import annotations
 
 import contextlib
 import os
-import shutil
-import sys
 from pathlib import Path
 from tempfile import mkdtemp, mkstemp
 from unittest import mock
 
 import pytest
-from twisted.cred import checkers, credentials, portal
-from twisted.internet.defer import inlineCallbacks
-from twisted.protocols.ftp import FTPFactory, FTPRealm
-from twisted.trial import unittest
 from w3lib.url import path_to_file_uri
 
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.handlers.datauri import DataURIDownloadHandler
 from scrapy.core.downloader.handlers.file import FileDownloadHandler
-from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.exceptions import NotConfigured
-from scrapy.http import HtmlResponse, Request, Response
-from scrapy.http.response.text import TextResponse
+from scrapy.http import Request, Response
 from scrapy.responsetypes import responsetypes
-from scrapy.spiders import Spider
-from scrapy.utils.defer import (
-    deferred_f_from_coro_f,
-    maybe_deferred_to_future,
-)
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.python import to_bytes
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
 
@@ -95,27 +83,27 @@ class TestLoad:
         assert "scheme" not in dh._notconfigured
 
 
-class TestFile(unittest.TestCase):
-    def setUp(self):
+class TestFile:
+    def setup_method(self):
         # add a special char to check that they are handled correctly
         self.fd, self.tmpname = mkstemp(suffix="^")
         Path(self.tmpname).write_text("0123456789", encoding="utf-8")
         self.download_handler = build_from_crawler(FileDownloadHandler, get_crawler())
 
-    def tearDown(self):
+    def teardown_method(self):
         os.close(self.fd)
         Path(self.tmpname).unlink()
 
-    async def download_request(self, request: Request, spider: Spider) -> Response:
+    async def download_request(self, request: Request) -> Response:
         return await maybe_deferred_to_future(
-            self.download_handler.download_request(request, spider)
+            self.download_handler.download_request(request, DefaultSpider())
         )
 
     @deferred_f_from_coro_f
     async def test_download(self):
         request = Request(path_to_file_uri(self.tmpname))
         assert request.url.upper().endswith("%5E")
-        response = await self.download_request(request, Spider("foo"))
+        response = await self.download_request(request)
         assert response.url == request.url
         assert response.status == 200
         assert response.body == b"0123456789"
@@ -126,7 +114,7 @@ class TestFile(unittest.TestCase):
         request = Request(path_to_file_uri(mkdtemp()))
         # the specific exception differs between platforms
         with pytest.raises(OSError):  # noqa: PT011
-            await self.download_request(request, Spider("foo"))
+            await self.download_request(request)
 
 
 class HttpDownloadHandlerMock:
@@ -148,7 +136,7 @@ class TestS3Anon:
             # anon=True, # implicit
         )
         self.download_request = self.s3reqh.download_request
-        self.spider = Spider("foo")
+        self.spider = DefaultSpider()
 
     def test_anon_request(self):
         req = Request("s3://aws-publicdatasets/")
@@ -179,12 +167,12 @@ class TestS3:
             httpdownloadhandler=HttpDownloadHandlerMock,
         )
         self.download_request = s3reqh.download_request
-        self.spider = Spider("foo")
+        self.spider = DefaultSpider()
 
     @contextlib.contextmanager
     def _mocked_date(self, date):
         try:
-            import botocore.auth  # noqa: F401
+            import botocore.auth  # noqa: F401,PLC0415
         except ImportError:
             yield
         else:
@@ -307,209 +295,28 @@ class TestS3:
         )
 
 
-class TestFTPBase(unittest.TestCase):
-    username = "scrapy"
-    password = "passwd"
-    req_meta = {"ftp_user": username, "ftp_password": password}
-
-    test_files = (
-        ("file.txt", b"I have the power!"),
-        ("file with spaces.txt", b"Moooooooooo power!"),
-        ("html-file-without-extension", b"<!DOCTYPE html>\n<title>.</title>"),
-    )
-
-    def setUp(self):
-        from twisted.internet import reactor
-
-        # setup dirs and test file
-        self.directory = Path(mkdtemp())
-        userdir = self.directory / self.username
-        userdir.mkdir()
-        for filename, content in self.test_files:
-            (userdir / filename).write_bytes(content)
-
-        # setup server
-        realm = FTPRealm(
-            anonymousRoot=str(self.directory), userHome=str(self.directory)
-        )
-        p = portal.Portal(realm)
-        users_checker = checkers.InMemoryUsernamePasswordDatabaseDontUse()
-        users_checker.addUser(self.username, self.password)
-        p.registerChecker(users_checker, credentials.IUsernamePassword)
-        self.factory = FTPFactory(portal=p)
-        self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
-        self.portNum = self.port.getHost().port
-        crawler = get_crawler()
-        self.download_handler = build_from_crawler(FTPDownloadHandler, crawler)
-
-    @inlineCallbacks
-    def tearDown(self):
-        yield self.port.stopListening()
-        shutil.rmtree(self.directory)
-
-    def _add_test_callbacks(self, deferred, callback=None, errback=None):
-        def _clean(data):
-            self.download_handler.client.transport.loseConnection()
-            return data
-
-        deferred.addCallback(_clean)
-        if callback:
-            deferred.addCallback(callback)
-        if errback:
-            deferred.addErrback(errback)
-        return deferred
-
-    def test_ftp_download_success(self):
-        request = Request(
-            url=f"ftp://127.0.0.1:{self.portNum}/file.txt", meta=self.req_meta
-        )
-        d = self.download_handler.download_request(request, None)
-
-        def _test(r):
-            assert r.status == 200
-            assert r.body == b"I have the power!"
-            assert r.headers == {b"Local Filename": [b""], b"Size": [b"17"]}
-            assert r.protocol is None
-
-        return self._add_test_callbacks(d, _test)
-
-    def test_ftp_download_path_with_spaces(self):
-        request = Request(
-            url=f"ftp://127.0.0.1:{self.portNum}/file with spaces.txt",
-            meta=self.req_meta,
-        )
-        d = self.download_handler.download_request(request, None)
-
-        def _test(r):
-            assert r.status == 200
-            assert r.body == b"Moooooooooo power!"
-            assert r.headers == {b"Local Filename": [b""], b"Size": [b"18"]}
-
-        return self._add_test_callbacks(d, _test)
-
-    def test_ftp_download_nonexistent(self):
-        request = Request(
-            url=f"ftp://127.0.0.1:{self.portNum}/nonexistent.txt", meta=self.req_meta
-        )
-        d = self.download_handler.download_request(request, None)
-
-        def _test(r):
-            assert r.status == 404
-
-        return self._add_test_callbacks(d, _test)
-
-    def test_ftp_local_filename(self):
-        f, local_fname = mkstemp()
-        fname_bytes = to_bytes(local_fname)
-        local_fname = Path(local_fname)
-        os.close(f)
-        meta = {"ftp_local_filename": fname_bytes}
-        meta.update(self.req_meta)
-        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/file.txt", meta=meta)
-        d = self.download_handler.download_request(request, None)
-
-        def _test(r):
-            assert r.body == fname_bytes
-            assert r.headers == {b"Local Filename": [fname_bytes], b"Size": [b"17"]}
-            assert local_fname.exists()
-            assert local_fname.read_bytes() == b"I have the power!"
-            local_fname.unlink()
-
-        return self._add_test_callbacks(d, _test)
-
-    def _test_response_class(self, filename, response_class):
-        f, local_fname = mkstemp()
-        local_fname = Path(local_fname)
-        os.close(f)
-        meta = {}
-        meta.update(self.req_meta)
-        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/{filename}", meta=meta)
-        d = self.download_handler.download_request(request, None)
-
-        def _test(r):
-            assert type(r) is response_class  # pylint: disable=unidiomatic-typecheck
-            local_fname.unlink()
-
-        return self._add_test_callbacks(d, _test)
-
-    def test_response_class_from_url(self):
-        return self._test_response_class("file.txt", TextResponse)
-
-    def test_response_class_from_body(self):
-        return self._test_response_class("html-file-without-extension", HtmlResponse)
-
-
-class TestFTP(TestFTPBase):
-    def test_invalid_credentials(self):
-        if self.reactor_pytest != "default" and sys.platform == "win32":
-            pytest.skip(
-                "This test produces DirtyReactorAggregateError on Windows with asyncio"
-            )
-        from twisted.protocols.ftp import ConnectionLost
-
-        meta = dict(self.req_meta)
-        meta.update({"ftp_password": "invalid"})
-        request = Request(url=f"ftp://127.0.0.1:{self.portNum}/file.txt", meta=meta)
-        d = self.download_handler.download_request(request, None)
-
-        def _test(r):
-            assert r.type == ConnectionLost
-
-        return self._add_test_callbacks(d, errback=_test)
-
-
-class TestAnonymousFTP(TestFTPBase):
-    username = "anonymous"
-    req_meta = {}
-
-    def setUp(self):
-        from twisted.internet import reactor
-
-        # setup dir and test file
-        self.directory = Path(mkdtemp())
-        for filename, content in self.test_files:
-            (self.directory / filename).write_bytes(content)
-
-        # setup server for anonymous access
-        realm = FTPRealm(anonymousRoot=str(self.directory))
-        p = portal.Portal(realm)
-        p.registerChecker(checkers.AllowAnonymousAccess(), credentials.IAnonymous)
-
-        self.factory = FTPFactory(portal=p, userAnonymous=self.username)
-        self.port = reactor.listenTCP(0, self.factory, interface="127.0.0.1")
-        self.portNum = self.port.getHost().port
-        crawler = get_crawler()
-        self.download_handler = build_from_crawler(FTPDownloadHandler, crawler)
-
-    @inlineCallbacks
-    def tearDown(self):
-        yield self.port.stopListening()
-        shutil.rmtree(self.directory)
-
-
-class TestDataURI(unittest.TestCase):
-    def setUp(self):
+class TestDataURI:
+    def setup_method(self):
         crawler = get_crawler()
         self.download_handler = build_from_crawler(DataURIDownloadHandler, crawler)
-        self.spider = Spider("foo")
 
-    async def download_request(self, request: Request, spider: Spider) -> Response:
+    async def download_request(self, request: Request) -> Response:
         return await maybe_deferred_to_future(
-            self.download_handler.download_request(request, spider)
+            self.download_handler.download_request(request, DefaultSpider())
         )
 
     @deferred_f_from_coro_f
     async def test_response_attrs(self):
         uri = "data:,A%20brief%20note"
         request = Request(uri)
-        response = await self.download_request(request, self.spider)
+        response = await self.download_request(request)
         assert response.url == uri
         assert not response.headers
 
     @deferred_f_from_coro_f
     async def test_default_mediatype_encoding(self):
         request = Request("data:,A%20brief%20note")
-        response = await self.download_request(request, self.spider)
+        response = await self.download_request(request)
         assert response.text == "A brief note"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
         assert response.encoding == "US-ASCII"
@@ -517,7 +324,7 @@ class TestDataURI(unittest.TestCase):
     @deferred_f_from_coro_f
     async def test_default_mediatype(self):
         request = Request("data:;charset=iso-8859-7,%be%d3%be")
-        response = await self.download_request(request, self.spider)
+        response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
         assert response.encoding == "iso-8859-7"
@@ -525,7 +332,7 @@ class TestDataURI(unittest.TestCase):
     @deferred_f_from_coro_f
     async def test_text_charset(self):
         request = Request("data:text/plain;charset=iso-8859-7,%be%d3%be")
-        response = await self.download_request(request, self.spider)
+        response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert response.body == b"\xbe\xd3\xbe"
         assert response.encoding == "iso-8859-7"
@@ -537,7 +344,7 @@ class TestDataURI(unittest.TestCase):
             "charset=utf-8;bar=%22foo;%5C%22 foo ;/,%22"
             ",%CE%8E%CE%A3%CE%8E"
         )
-        response = await self.download_request(request, self.spider)
+        response = await self.download_request(request)
         assert response.text == "\u038e\u03a3\u038e"
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
         assert response.encoding == "utf-8"
@@ -545,11 +352,11 @@ class TestDataURI(unittest.TestCase):
     @deferred_f_from_coro_f
     async def test_base64(self):
         request = Request("data:text/plain;base64,SGVsbG8sIHdvcmxkLg%3D%3D")
-        response = await self.download_request(request, self.spider)
+        response = await self.download_request(request)
         assert response.text == "Hello, world."
 
     @deferred_f_from_coro_f
     async def test_protocol(self):
         request = Request("data:,")
-        response = await self.download_request(request, self.spider)
+        response = await self.download_request(request)
         assert response.protocol is None

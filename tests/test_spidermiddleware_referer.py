@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlparse
 
 import pytest
@@ -31,7 +31,13 @@ from scrapy.spidermiddlewares.referer import (
     StrictOriginWhenCrossOriginPolicy,
     UnsafeUrlPolicy,
 )
-from scrapy.spiders import Spider
+from scrapy.utils.spider import DefaultSpider
+from scrapy.utils.test import get_crawler
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from scrapy.crawler import Crawler
 
 
 class TestRefererMiddleware:
@@ -42,22 +48,22 @@ class TestRefererMiddleware:
         ("http://scrapytest.org", "http://scrapytest.org/", b"http://scrapytest.org"),
     ]
 
-    def setup_method(self):
-        self.spider = Spider("foo")
+    @pytest.fixture
+    def mw(self) -> RefererMiddleware:
         settings = Settings(self.settings)
-        self.mw = RefererMiddleware(settings)
+        return RefererMiddleware(settings)
 
-    def get_request(self, target):
+    def get_request(self, target: str) -> Request:
         return Request(target, meta=self.req_meta)
 
-    def get_response(self, origin):
+    def get_response(self, origin: str) -> Response:
         return Response(origin, headers=self.resp_headers)
 
-    def test(self):
+    def test(self, mw: RefererMiddleware) -> None:
         for origin, target, referrer in self.scenarii:
             response = self.get_response(origin)
             request = self.get_request(target)
-            out = list(self.mw.process_spider_output(response, [request], self.spider))
+            out = list(mw.process_spider_output(response, [request]))
             assert out[0].headers.get("Referer") == referrer
 
 
@@ -966,7 +972,7 @@ class TestPolicyHeaderPrecedence004(
 
 class TestReferrerOnRedirect(TestRefererMiddleware):
     settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.UnsafeUrlPolicy"}
-    scenarii: list[
+    scenarii: Sequence[
         tuple[str, str, tuple[tuple[int, str], ...], bytes | None, bytes | None]
     ] = [  # type: ignore[assignment]
         (
@@ -1002,13 +1008,26 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
         ),
     ]
 
-    def setup_method(self):
-        self.spider = Spider("foo")
-        settings = Settings(self.settings)
-        self.referrermw = RefererMiddleware(settings)
-        self.redirectmw = RedirectMiddleware(settings)
+    @pytest.fixture
+    def crawler(self) -> Crawler:
+        crawler = get_crawler(DefaultSpider, self.settings)
+        crawler.spider = crawler._create_spider()
+        return crawler
 
-    def test(self):
+    @pytest.fixture
+    def referrermw(self, crawler: Crawler) -> RefererMiddleware:
+        return RefererMiddleware.from_crawler(crawler)
+
+    @pytest.fixture
+    def redirectmw(self, crawler: Crawler) -> RedirectMiddleware:
+        return RedirectMiddleware.from_crawler(crawler)
+
+    def test(  # type: ignore[override]
+        self,
+        crawler: Crawler,
+        referrermw: RefererMiddleware,
+        redirectmw: RedirectMiddleware,
+    ) -> None:
         for (
             parent,
             target,
@@ -1019,19 +1038,18 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
             response = self.get_response(parent)
             request = self.get_request(target)
 
-            out = list(
-                self.referrermw.process_spider_output(response, [request], self.spider)
-            )
+            out = list(referrermw.process_spider_output(response, [request]))
             assert out[0].headers.get("Referer") == init_referrer
 
             for status, url in redirections:
                 response = Response(
                     request.url, headers={"Location": url}, status=status
                 )
-                request = self.redirectmw.process_response(
-                    request, response, self.spider
+                request = cast(
+                    "Request", redirectmw.process_response(request, response)
                 )
-                self.referrermw.request_scheduled(request, self.spider)
+                assert crawler.spider
+                referrermw.request_scheduled(request, crawler.spider)
 
             assert isinstance(request, Request)
             assert request.headers.get("Referer") == final_referrer

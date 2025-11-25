@@ -364,6 +364,52 @@ used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
 
+scrapy-spider-metadata parameters
+---------------------------------
+
+Another alternative to pass spider arguments is the library `scrapy-spider-metadata`_.
+
+This allows for Scrapy spiders to define, validate, document and pre-process
+their arguments as Pydantic models.
+
+The example shows how to define typed parameters where a string argument
+is automatically converted to an integer:
+
+.. code-block:: python
+
+    import scrapy
+    from pydantic import BaseModel
+    from scrapy_spider_metadata import Args
+
+
+    class MyParams(BaseModel):
+        pages: int
+
+
+    class BookSpider(Args[MyParams], scrapy.Spider):
+        name = "bookspider"
+        start_urls = ["http://books.toscrape.com/catalogue"]
+
+        async def start(self):
+            for start_url in self.start_urls:
+                for index in range(1, self.args.pages + 1):
+                    yield scrapy.Request(f"{start_url}/page-{index}.html")
+
+        def parse(self, response):
+            book_links = response.css("article.product_pod h3 a::attr(href)").getall()
+            for book_link in book_links:
+                yield response.follow(book_link, self.parse_book)
+
+        def parse_book(self, response):
+            yield {
+                "title": response.css("h1::text").get(),
+                "price": response.css("p.price_color::text").get(),
+            }
+
+This spider can be called from the command line::
+
+    scrapy crawl bookspider -a pages=2
+
 .. _start-requests:
 
 Start requests
@@ -628,7 +674,7 @@ XMLFeedSpider
         This method is called for the nodes matching the provided tag name
         (``itertag``).  Receives the response and an
         :class:`~scrapy.Selector` for each node.  Overriding this
-        method is mandatory. Otherwise, you spider won't work.  This method
+        method is mandatory. Otherwise, your spider won't work.  This method
         must return an :ref:`item object <topics-items>`, a
         :class:`~scrapy.Request` object, or an iterable containing any of
         them.
@@ -938,6 +984,7 @@ Combine SitemapSpider with other sources of urls:
         def parse_other(self, response):
             pass  # ... scrape other here ...
 
+.. _scrapy-spider-metadata: https://scrapy-spider-metadata.readthedocs.io/en/latest/params.html
 .. _Sitemaps: https://www.sitemaps.org/index.html
 .. _Sitemap index files: https://www.sitemaps.org/protocol.html#index
 .. _robots.txt: https://www.robotstxt.org/

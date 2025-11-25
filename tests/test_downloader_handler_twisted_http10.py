@@ -8,12 +8,16 @@ import pytest
 
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.http import Request
-from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_f_from_coro_f
-from tests.test_downloader_handlers_http_base import TestHttpBase, TestHttpProxyBase
+from tests.test_downloader_handlers_http_base import (
+    TestHttpBase,
+    TestHttpProxyBase,
+    download_request,
+)
 
 if TYPE_CHECKING:
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
+    from tests.mockserver.http import MockServer
 
 
 class HTTP10DownloadHandlerMixin:
@@ -27,20 +31,26 @@ class TestHttp10(HTTP10DownloadHandlerMixin, TestHttpBase):
     """HTTP 1.0 test case"""
 
     @deferred_f_from_coro_f
-    async def test_protocol(self):
-        request = Request(self.getURL("host"), method="GET")
-        response = await self.download_request(request, Spider("foo"))
+    async def test_protocol(
+        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
+    ) -> None:
+        request = Request(
+            mockserver.url("/host", is_secure=self.is_secure), method="GET"
+        )
+        response = await download_request(download_handler, request)
         assert response.protocol == "HTTP/1.0"
 
 
 class TestHttps10(TestHttp10):
-    scheme = "https"
+    is_secure = True
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestHttp10Proxy(HTTP10DownloadHandlerMixin, TestHttpProxyBase):
-    def test_download_with_proxy_https_timeout(self):
+    @deferred_f_from_coro_f
+    async def test_download_with_proxy_https_timeout(self):
         pytest.skip("Not implemented")
 
-    def test_download_with_proxy_without_http_scheme(self):
+    @deferred_f_from_coro_f
+    async def test_download_with_proxy_without_http_scheme(self):
         pytest.skip("Not implemented")

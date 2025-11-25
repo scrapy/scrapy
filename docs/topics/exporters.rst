@@ -67,7 +67,7 @@ value of one of their fields:
                 self.year_to_exporter[year] = (exporter, xml_file)
             return self.year_to_exporter[year][0]
 
-        def process_item(self, item, spider):
+        def process_item(self, item):
             exporter = self._exporter_for_item(item)
             exporter.export_item(item)
             return item
@@ -116,10 +116,10 @@ Example:
 2. Overriding the serialize_field() method
 ------------------------------------------
 
-You can also override the :meth:`~BaseItemExporter.serialize_field()` method to
+You can also override the :meth:`~BaseItemExporter.serialize_field` method to
 customize how your field value will be exported.
 
-Make sure you call the base class :meth:`~BaseItemExporter.serialize_field()` method
+Make sure you call the base class :meth:`~BaseItemExporter.serialize_field` method
 after your custom code.
 
 Example:

@@ -26,7 +26,6 @@ author = "Scrapy developers"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "hoverxref.extension",
     "notfound.extension",
     "scrapydocs",
     "sphinx.ext.autodoc",
@@ -68,6 +67,14 @@ html_last_updated_fmt = "%b %d, %Y"
 html_css_files = [
     "custom.css",
 ]
+
+html_context = {
+    "display_github": True,
+    "github_user": "scrapy",
+    "github_repo": "scrapy",
+    "github_version": "master",
+    "conf_py_path": "/docs/",
+}
 
 # Set canonical URL from the Read the Docs Domain
 html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
@@ -119,7 +126,7 @@ coverage_ignore_pyobjects = [
     # The interface methods of duplicate request filtering classes are already
     # covered in the interface documentation part of the DUPEFILTER_CLASS
     # setting documentation.
-    r"^scrapy\.dupefilters\.[A-Z]\w*?\.(from_settings|request_seen|open|close|log)$",
+    r"^scrapy\.dupefilters\.[A-Z]\w*?\.(from_crawler|request_seen|open|close|log)$",
     # Private exception used by the command-line interface implementation.
     r"^scrapy\.exceptions\.UsageError",
     # Methods of BaseItemExporter subclasses are only documented in
@@ -157,22 +164,5 @@ intersphinx_mapping = {
 }
 intersphinx_disabled_reftypes: Sequence[str] = []
 
-
-# -- Options for sphinx-hoverxref extension ----------------------------------
-# https://sphinx-hoverxref.readthedocs.io/en/latest/configuration.html
-
-hoverxref_auto_ref = True
-hoverxref_role_types = {
-    "class": "tooltip",
-    "command": "tooltip",
-    "confval": "tooltip",
-    "hoverxref": "tooltip",
-    "mod": "tooltip",
-    "ref": "tooltip",
-    "reqmeta": "tooltip",
-    "setting": "tooltip",
-    "signal": "tooltip",
-}
-hoverxref_roles = ["command", "reqmeta", "setting", "signal"]
-
+# -- Other options ------------------------------------------------------------
 default_dark_mode = False

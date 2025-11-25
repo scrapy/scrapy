@@ -3,16 +3,15 @@ from __future__ import annotations
 import json
 import random
 import re
-import shutil
 import string
 from ipaddress import IPv4Address
 from pathlib import Path
-from tempfile import mkdtemp
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, cast
 from unittest import mock
 from urllib.parse import urlencode
 
 import pytest
+from pytest_twisted import async_yield_fixture
 from twisted.internet.defer import (
     CancelledError,
     Deferred,
@@ -20,9 +19,8 @@ from twisted.internet.defer import (
     inlineCallbacks,
 )
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
-from twisted.internet.error import TimeoutError
+from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.internet.ssl import Certificate, PrivateCertificate, optionsForClientTLS
-from twisted.trial.unittest import TestCase
 from twisted.web.client import URI, ResponseFailed
 from twisted.web.http import H2_ENABLED
 from twisted.web.http import Request as TxRequest
@@ -37,10 +35,18 @@ from scrapy.utils.defer import (
     deferred_from_coro,
     maybe_deferred_to_future,
 )
-from tests.mockserver import LeafResource, Status, ssl_context_factory
+from tests.mockserver.http_resources import LeafResource, Status
+from tests.mockserver.utils import ssl_context_factory
 
 if TYPE_CHECKING:
-    from collections.abc import Coroutine
+    from collections.abc import AsyncGenerator, Callable, Coroutine, Generator
+
+    from scrapy.core.http2.protocol import H2ClientProtocol
+
+
+pytestmark = pytest.mark.skipif(
+    not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
+)
 
 
 def generate_random_string(size: int) -> str:
@@ -178,24 +184,23 @@ class RequestHeaders(LeafResource):
         return bytes(json.dumps(headers), "utf-8")
 
 
-def get_client_certificate(
-    key_file: Path, certificate_file: Path
-) -> PrivateCertificate:
-    pem = key_file.read_text(encoding="utf-8") + certificate_file.read_text(
-        encoding="utf-8"
-    )
-    return PrivateCertificate.loadPEM(pem)
+def make_request_dfd(client: H2ClientProtocol, request: Request) -> Deferred[Response]:
+    return client.request(request, DummySpider())
 
 
-@pytest.mark.skipif(not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled")
-class TestHttps2ClientProtocol(TestCase):
+async def make_request(client: H2ClientProtocol, request: Request) -> Response:
+    return await maybe_deferred_to_future(make_request_dfd(client, request))
+
+
+class TestHttps2ClientProtocol:
     scheme = "https"
+    host = "localhost"
     key_file = Path(__file__).parent / "keys" / "localhost.key"
     certificate_file = Path(__file__).parent / "keys" / "localhost.crt"
 
-    def _init_resource(self):
-        self.temp_directory = mkdtemp()
-        r = File(self.temp_directory)
+    @pytest.fixture
+    def site(self, tmp_path):
+        r = File(str(tmp_path))
         r.putChild(b"get-data-html-small", GetDataHtmlSmall())
         r.putChild(b"get-data-html-large", GetDataHtmlLarge())
 
@@ -208,72 +213,65 @@ class TestHttps2ClientProtocol(TestCase):
         r.putChild(b"query-params", QueryParams())
         r.putChild(b"timeout", TimeoutResponse())
         r.putChild(b"request-headers", RequestHeaders())
-        return r
+        return Site(r, timeout=None)
 
-    @inlineCallbacks
-    def setUp(self):
+    @async_yield_fixture
+    async def server_port(self, site: Site) -> AsyncGenerator[int]:
         from twisted.internet import reactor
 
-        # Initialize resource tree
-        root = self._init_resource()
-        self.site = Site(root, timeout=None)
-
-        # Start server for testing
-        self.hostname = "localhost"
         context_factory = ssl_context_factory(
             str(self.key_file), str(self.certificate_file)
         )
-
         server_endpoint = SSL4ServerEndpoint(
-            reactor, 0, context_factory, interface=self.hostname
+            reactor, 0, context_factory, interface=self.host
         )
-        self.server = yield server_endpoint.listen(self.site)
-        self.port_number = self.server.getHost().port
+        server = await server_endpoint.listen(site)
 
-        # Connect H2 client with server
-        self.client_certificate = get_client_certificate(
-            self.key_file, self.certificate_file
-        )
+        yield server.getHost().port
+
+        await server.stopListening()
+
+    @pytest.fixture
+    def client_certificate(self) -> PrivateCertificate:
+        pem = self.key_file.read_text(
+            encoding="utf-8"
+        ) + self.certificate_file.read_text(encoding="utf-8")
+        return PrivateCertificate.loadPEM(pem)
+
+    @async_yield_fixture
+    async def client(
+        self, server_port: int, client_certificate: PrivateCertificate
+    ) -> AsyncGenerator[H2ClientProtocol]:
+        from twisted.internet import reactor
+
+        from scrapy.core.http2.protocol import H2ClientFactory  # noqa: PLC0415
+
         client_options = optionsForClientTLS(
-            hostname=self.hostname,
-            trustRoot=self.client_certificate,
+            hostname=self.host,
+            trustRoot=client_certificate,
             acceptableProtocols=[b"h2"],
         )
-        uri = URI.fromBytes(bytes(self.get_url("/"), "utf-8"))
-
-        self.conn_closed_deferred = Deferred()
-
-        from scrapy.core.http2.protocol import H2ClientFactory
-
-        h2_client_factory = H2ClientFactory(uri, Settings(), self.conn_closed_deferred)
+        uri = URI.fromBytes(bytes(self.get_url(server_port, "/"), "utf-8"))
+        h2_client_factory = H2ClientFactory(uri, Settings(), Deferred())
         client_endpoint = SSL4ClientEndpoint(
-            reactor, self.hostname, self.port_number, client_options
+            reactor, self.host, server_port, client_options
         )
-        self.client = yield client_endpoint.connect(h2_client_factory)
+        client = await client_endpoint.connect(h2_client_factory)
 
-    @inlineCallbacks
-    def tearDown(self):
-        if self.client.connected:
-            yield self.client.transport.loseConnection()
-            yield self.client.transport.abortConnection()
-        yield self.server.stopListening()
-        shutil.rmtree(self.temp_directory)
-        self.conn_closed_deferred = None
+        yield client
 
-    def get_url(self, path: str) -> str:
+        if client.connected:
+            client.transport.loseConnection()
+            client.transport.abortConnection()
+
+    def get_url(self, portno: int, path: str) -> str:
         """
         :param path: Should have / at the starting compulsorily if not empty
         :return: Complete url
         """
         assert len(path) > 0
         assert path[0] == "/" or path[0] == "&"
-        return f"{self.scheme}://{self.hostname}:{self.port_number}{path}"
-
-    async def make_request(self, request: Request) -> Response:
-        return await maybe_deferred_to_future(self.make_request_dfd(request))
-
-    def make_request_dfd(self, request: Request) -> Deferred[Response]:
-        return self.client.request(request, DummySpider())
+        return f"{self.scheme}://{self.host}:{portno}{path}"
 
     @staticmethod
     async def _check_repeat(
@@ -287,9 +285,13 @@ class TestHttps2ClientProtocol(TestCase):
         await maybe_deferred_to_future(DeferredList(d_list, fireOnOneErrback=True))
 
     async def _check_GET(
-        self, request: Request, expected_body: bytes, expected_status: int
+        self,
+        client: H2ClientProtocol,
+        request: Request,
+        expected_body: bytes,
+        expected_status: int,
     ) -> None:
-        response = await self.make_request(request)
+        response = await make_request(client, request)
         assert response.status == expected_status
         assert response.body == expected_body
         assert response.request == request
@@ -300,43 +302,62 @@ class TestHttps2ClientProtocol(TestCase):
         assert len(response.body) == content_length
 
     @deferred_f_from_coro_f
-    async def test_GET_small_body(self):
-        request = Request(self.get_url("/get-data-html-small"))
-        await self._check_GET(request, Data.HTML_SMALL, 200)
+    async def test_GET_small_body(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
+        request = Request(self.get_url(server_port, "/get-data-html-small"))
+        await self._check_GET(client, request, Data.HTML_SMALL, 200)
 
     @deferred_f_from_coro_f
-    async def test_GET_large_body(self):
-        request = Request(self.get_url("/get-data-html-large"))
-        await self._check_GET(request, Data.HTML_LARGE, 200)
+    async def test_GET_large_body(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
+        request = Request(self.get_url(server_port, "/get-data-html-large"))
+        await self._check_GET(client, request, Data.HTML_LARGE, 200)
 
     async def _check_GET_x10(
-        self, request: Request, expected_body: bytes, expected_status: int
+        self,
+        client: H2ClientProtocol,
+        request: Request,
+        expected_body: bytes,
+        expected_status: int,
     ) -> None:
         async def get_coro() -> None:
-            await self._check_GET(request, expected_body, expected_status)
+            await self._check_GET(client, request, expected_body, expected_status)
 
         await self._check_repeat(get_coro, 10)
 
     @deferred_f_from_coro_f
-    async def test_GET_small_body_x10(self):
+    async def test_GET_small_body_x10(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
         await self._check_GET_x10(
-            Request(self.get_url("/get-data-html-small")), Data.HTML_SMALL, 200
+            client,
+            Request(self.get_url(server_port, "/get-data-html-small")),
+            Data.HTML_SMALL,
+            200,
         )
 
     @deferred_f_from_coro_f
-    async def test_GET_large_body_x10(self):
+    async def test_GET_large_body_x10(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
         await self._check_GET_x10(
-            Request(self.get_url("/get-data-html-large")), Data.HTML_LARGE, 200
+            client,
+            Request(self.get_url(server_port, "/get-data-html-large")),
+            Data.HTML_LARGE,
+            200,
         )
 
+    @staticmethod
     async def _check_POST_json(
-        self,
+        client: H2ClientProtocol,
         request: Request,
         expected_request_body: dict[str, str],
         expected_extra_data: str,
         expected_status: int,
     ) -> None:
-        response = await self.make_request(request)
+        response = await make_request(client, request)
 
         assert response.status == expected_status
         assert response.request == request
@@ -369,22 +390,30 @@ class TestHttps2ClientProtocol(TestCase):
             assert request_headers[k_str] == str(v[0], "utf-8")
 
     @deferred_f_from_coro_f
-    async def test_POST_small_json(self):
+    async def test_POST_small_json(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
         request = JsonRequest(
-            url=self.get_url("/post-data-json-small"),
+            url=self.get_url(server_port, "/post-data-json-small"),
             method="POST",
             data=Data.JSON_SMALL,
         )
-        await self._check_POST_json(request, Data.JSON_SMALL, Data.EXTRA_SMALL, 200)
+        await self._check_POST_json(
+            client, request, Data.JSON_SMALL, Data.EXTRA_SMALL, 200
+        )
 
     @deferred_f_from_coro_f
-    async def test_POST_large_json(self):
+    async def test_POST_large_json(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
         request = JsonRequest(
-            url=self.get_url("/post-data-json-large"),
+            url=self.get_url(server_port, "/post-data-json-large"),
             method="POST",
             data=Data.JSON_LARGE,
         )
-        await self._check_POST_json(request, Data.JSON_LARGE, Data.EXTRA_LARGE, 200)
+        await self._check_POST_json(
+            client, request, Data.JSON_LARGE, Data.EXTRA_LARGE, 200
+        )
 
     async def _check_POST_json_x10(self, *args, **kwargs):
         async def get_coro() -> None:
@@ -393,48 +422,63 @@ class TestHttps2ClientProtocol(TestCase):
         await self._check_repeat(get_coro, 10)
 
     @deferred_f_from_coro_f
-    async def test_POST_small_json_x10(self):
+    async def test_POST_small_json_x10(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
         request = JsonRequest(
-            url=self.get_url("/post-data-json-small"),
+            url=self.get_url(server_port, "/post-data-json-small"),
             method="POST",
             data=Data.JSON_SMALL,
         )
-        await self._check_POST_json_x10(request, Data.JSON_SMALL, Data.EXTRA_SMALL, 200)
+        await self._check_POST_json_x10(
+            client, request, Data.JSON_SMALL, Data.EXTRA_SMALL, 200
+        )
 
     @deferred_f_from_coro_f
-    async def test_POST_large_json_x10(self):
+    async def test_POST_large_json_x10(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
         request = JsonRequest(
-            url=self.get_url("/post-data-json-large"),
+            url=self.get_url(server_port, "/post-data-json-large"),
             method="POST",
             data=Data.JSON_LARGE,
         )
-        await self._check_POST_json_x10(request, Data.JSON_LARGE, Data.EXTRA_LARGE, 200)
+        await self._check_POST_json_x10(
+            client, request, Data.JSON_LARGE, Data.EXTRA_LARGE, 200
+        )
 
     @inlineCallbacks
-    def test_invalid_negotiated_protocol(self):
+    def test_invalid_negotiated_protocol(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> Generator[Deferred[Any], Any, None]:
         with mock.patch(
             "scrapy.core.http2.protocol.PROTOCOL_NAME", return_value=b"not-h2"
         ):
-            request = Request(url=self.get_url("/status?n=200"))
+            request = Request(url=self.get_url(server_port, "/status?n=200"))
             with pytest.raises(ResponseFailed):
-                yield self.make_request_dfd(request)
+                yield make_request_dfd(client, request)
 
     @inlineCallbacks
-    def test_cancel_request(self):
-        request = Request(url=self.get_url("/get-data-html-large"))
-        d = self.make_request_dfd(request)
+    def test_cancel_request(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> Generator[Deferred[Any], Any, None]:
+        request = Request(url=self.get_url(server_port, "/get-data-html-large"))
+        d = make_request_dfd(client, request)
         d.cancel()
-        response = yield d
+        response = cast("Response", (yield d))
         assert response.status == 499
         assert response.request == request
 
     @deferred_f_from_coro_f
-    async def test_download_maxsize_exceeded(self):
+    async def test_download_maxsize_exceeded(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
         request = Request(
-            url=self.get_url("/get-data-html-large"), meta={"download_maxsize": 1000}
+            url=self.get_url(server_port, "/get-data-html-large"),
+            meta={"download_maxsize": 1000},
         )
         with pytest.raises(CancelledError) as exc_info:
-            await self.make_request(request)
+            await make_request(client, request)
         error_pattern = re.compile(
             rf"Cancelling download of {request.url}: received response "
             rf"size \(\d*\) larger than download max size \(1000\)"
@@ -442,14 +486,16 @@ class TestHttps2ClientProtocol(TestCase):
         assert len(re.findall(error_pattern, str(exc_info.value))) == 1
 
     @inlineCallbacks
-    def test_received_dataloss_response(self):
+    def test_received_dataloss_response(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> Generator[Deferred[Any], Any, None]:
         """In case when value of Header Content-Length != len(Received Data)
         ProtocolError is raised"""
-        from h2.exceptions import InvalidBodyLengthError
+        from h2.exceptions import InvalidBodyLengthError  # noqa: PLC0415
 
-        request = Request(url=self.get_url("/dataloss"))
+        request = Request(url=self.get_url(server_port, "/dataloss"))
         with pytest.raises(ResponseFailed) as exc_info:
-            yield self.make_request_dfd(request)
+            yield make_request_dfd(client, request)
         assert len(exc_info.value.reasons) > 0
         assert any(
             isinstance(error, InvalidBodyLengthError)
@@ -457,42 +503,62 @@ class TestHttps2ClientProtocol(TestCase):
         )
 
     @deferred_f_from_coro_f
-    async def test_missing_content_length_header(self):
-        request = Request(url=self.get_url("/no-content-length-header"))
-        response = await self.make_request(request)
+    async def test_missing_content_length_header(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
+        request = Request(url=self.get_url(server_port, "/no-content-length-header"))
+        response = await make_request(client, request)
         assert response.status == 200
         assert response.body == Data.NO_CONTENT_LENGTH
         assert response.request == request
         assert "Content-Length" not in response.headers
 
     async def _check_log_warnsize(
-        self, request: Request, warn_pattern: re.Pattern[str], expected_body: bytes
+        self,
+        client: H2ClientProtocol,
+        request: Request,
+        warn_pattern: re.Pattern[str],
+        expected_body: bytes,
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
-        with self.assertLogs("scrapy.core.http2.stream", level="WARNING") as cm:
-            response = await self.make_request(request)
-            assert response.status == 200
-            assert response.request == request
-            assert response.body == expected_body
+        with caplog.at_level("WARNING", "scrapy.core.http2.stream"):
+            response = await make_request(client, request)
+        assert response.status == 200
+        assert response.request == request
+        assert response.body == expected_body
 
-            # Check the warning is raised only once for this request
-            assert sum(len(re.findall(warn_pattern, log)) for log in cm.output) == 1
+        # Check the warning is raised only once for this request
+        assert len(re.findall(warn_pattern, caplog.text)) == 1
 
     @deferred_f_from_coro_f
-    async def test_log_expected_warnsize(self):
+    async def test_log_expected_warnsize(
+        self,
+        server_port: int,
+        client: H2ClientProtocol,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
         request = Request(
-            url=self.get_url("/get-data-html-large"), meta={"download_warnsize": 1000}
+            url=self.get_url(server_port, "/get-data-html-large"),
+            meta={"download_warnsize": 1000},
         )
         warn_pattern = re.compile(
             rf"Expected response size \(\d*\) larger than "
             rf"download warn size \(1000\) in request {request}"
         )
 
-        await self._check_log_warnsize(request, warn_pattern, Data.HTML_LARGE)
+        await self._check_log_warnsize(
+            client, request, warn_pattern, Data.HTML_LARGE, caplog
+        )
 
     @deferred_f_from_coro_f
-    async def test_log_received_warnsize(self):
+    async def test_log_received_warnsize(
+        self,
+        server_port: int,
+        client: H2ClientProtocol,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
         request = Request(
-            url=self.get_url("/no-content-length-header"),
+            url=self.get_url(server_port, "/no-content-length-header"),
             meta={"download_warnsize": 10},
         )
         warn_pattern = re.compile(
@@ -500,23 +566,32 @@ class TestHttps2ClientProtocol(TestCase):
             rf"warn size \(10\) in request {request}"
         )
 
-        await self._check_log_warnsize(request, warn_pattern, Data.NO_CONTENT_LENGTH)
+        await self._check_log_warnsize(
+            client, request, warn_pattern, Data.NO_CONTENT_LENGTH, caplog
+        )
 
     @deferred_f_from_coro_f
-    async def test_max_concurrent_streams(self):
+    async def test_max_concurrent_streams(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
         """Send 500 requests at one to check if we can handle
         very large number of request.
         """
 
         async def get_coro() -> None:
             await self._check_GET(
-                Request(self.get_url("/get-data-html-small")), Data.HTML_SMALL, 200
+                client,
+                Request(self.get_url(server_port, "/get-data-html-small")),
+                Data.HTML_SMALL,
+                200,
             )
 
         await self._check_repeat(get_coro, 500)
 
     @inlineCallbacks
-    def test_inactive_stream(self):
+    def test_inactive_stream(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> Generator[Deferred[Any], Any, None]:
         """Here we send 110 requests considering the MAX_CONCURRENT_STREAMS
         by default is 100. After sending the first 100 requests we close the
         connection."""
@@ -525,7 +600,7 @@ class TestHttps2ClientProtocol(TestCase):
         def assert_inactive_stream(failure):
             assert failure.check(ResponseFailed) is not None
 
-            from scrapy.core.http2.stream import InactiveStreamClosed
+            from scrapy.core.http2.stream import InactiveStreamClosed  # noqa: PLC0415
 
             assert any(
                 isinstance(e, InactiveStreamClosed) for e in failure.value.reasons
@@ -533,38 +608,47 @@ class TestHttps2ClientProtocol(TestCase):
 
         # Send 100 request (we do not check the result)
         for _ in range(100):
-            d = self.make_request_dfd(Request(self.get_url("/get-data-html-small")))
+            d = make_request_dfd(
+                client, Request(self.get_url(server_port, "/get-data-html-small"))
+            )
             d.addBoth(lambda _: None)
             d_list.append(d)
 
         # Now send 10 extra request and save the response deferred in a list
         for _ in range(10):
-            d = self.make_request_dfd(Request(self.get_url("/get-data-html-small")))
+            d = make_request_dfd(
+                client, Request(self.get_url(server_port, "/get-data-html-small"))
+            )
             d.addCallback(lambda _: pytest.fail("This request should have failed"))
             d.addErrback(assert_inactive_stream)
             d_list.append(d)
 
         # Close the connection now to fire all the extra 10 requests errback
         # with InactiveStreamClosed
-        self.client.transport.loseConnection()
+        assert client.transport
+        client.transport.loseConnection()
 
         yield DeferredList(d_list, consumeErrors=True, fireOnOneErrback=True)
 
     @deferred_f_from_coro_f
-    async def test_invalid_request_type(self):
+    async def test_invalid_request_type(self, client: H2ClientProtocol):
         with pytest.raises(TypeError):
-            await self.make_request("https://InvalidDataTypePassed.com")
+            await make_request(client, "https://InvalidDataTypePassed.com")  # type: ignore[arg-type]
 
     @deferred_f_from_coro_f
-    async def test_query_parameters(self):
+    async def test_query_parameters(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
         params = {
             "a": generate_random_string(20),
             "b": generate_random_string(20),
             "c": generate_random_string(20),
             "d": generate_random_string(20),
         }
-        request = Request(self.get_url(f"/query-params?{urlencode(params)}"))
-        response = await self.make_request(request)
+        request = Request(
+            self.get_url(server_port, f"/query-params?{urlencode(params)}")
+        )
+        response = await make_request(client, request)
         content_encoding_header = response.headers[b"Content-Encoding"]
         assert content_encoding_header is not None
         content_encoding = str(content_encoding_header, "utf-8")
@@ -572,67 +656,83 @@ class TestHttps2ClientProtocol(TestCase):
         assert data == params
 
     @deferred_f_from_coro_f
-    async def test_status_codes(self):
+    async def test_status_codes(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
         for status in [200, 404]:
-            request = Request(self.get_url(f"/status?n={status}"))
-            response = await self.make_request(request)
+            request = Request(self.get_url(server_port, f"/status?n={status}"))
+            response = await make_request(client, request)
             assert response.status == status
 
     @deferred_f_from_coro_f
-    async def test_response_has_correct_certificate_ip_address(self):
-        request = Request(self.get_url("/status?n=200"))
-        response = await self.make_request(request)
+    async def test_response_has_correct_certificate_ip_address(
+        self,
+        server_port: int,
+        client: H2ClientProtocol,
+        client_certificate: PrivateCertificate,
+    ) -> None:
+        request = Request(self.get_url(server_port, "/status?n=200"))
+        response = await make_request(client, request)
         assert response.request == request
         assert isinstance(response.certificate, Certificate)
         assert response.certificate.original is not None
-        assert response.certificate.getIssuer() == self.client_certificate.getIssuer()
+        assert response.certificate.getIssuer() == client_certificate.getIssuer()
         assert response.certificate.getPublicKey().matches(
-            self.client_certificate.getPublicKey()
+            client_certificate.getPublicKey()
         )
         assert isinstance(response.ip_address, IPv4Address)
         assert str(response.ip_address) == "127.0.0.1"
 
-    async def _check_invalid_netloc(self, url: str) -> None:
-        from scrapy.core.http2.stream import InvalidHostname
+    @staticmethod
+    async def _check_invalid_netloc(client: H2ClientProtocol, url: str) -> None:
+        from scrapy.core.http2.stream import InvalidHostname  # noqa: PLC0415
 
         request = Request(url)
         with pytest.raises(InvalidHostname) as exc_info:
-            await self.make_request(request)
+            await make_request(client, request)
         error_msg = str(exc_info.value)
         assert "localhost" in error_msg
         assert "127.0.0.1" in error_msg
         assert str(request) in error_msg
 
     @deferred_f_from_coro_f
-    async def test_invalid_hostname(self):
-        await self._check_invalid_netloc("https://notlocalhost.notlocalhostdomain")
+    async def test_invalid_hostname(self, client: H2ClientProtocol) -> None:
+        await self._check_invalid_netloc(
+            client, "https://notlocalhost.notlocalhostdomain"
+        )
 
     @deferred_f_from_coro_f
-    async def test_invalid_host_port(self):
-        port = self.port_number + 1
-        await self._check_invalid_netloc(f"https://127.0.0.1:{port}")
+    async def test_invalid_host_port(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
+        port = server_port + 1
+        await self._check_invalid_netloc(client, f"https://127.0.0.1:{port}")
 
     @deferred_f_from_coro_f
-    async def test_connection_stays_with_invalid_requests(self):
-        await maybe_deferred_to_future(self.test_invalid_hostname())
-        await maybe_deferred_to_future(self.test_invalid_host_port())
-        await maybe_deferred_to_future(self.test_GET_small_body())
-        await maybe_deferred_to_future(self.test_POST_small_json())
+    async def test_connection_stays_with_invalid_requests(
+        self, server_port: int, client: H2ClientProtocol
+    ):
+        await maybe_deferred_to_future(self.test_invalid_hostname(client))
+        await maybe_deferred_to_future(self.test_invalid_host_port(server_port, client))
+        await maybe_deferred_to_future(self.test_GET_small_body(server_port, client))
+        await maybe_deferred_to_future(self.test_POST_small_json(server_port, client))
 
     @inlineCallbacks
-    def test_connection_timeout(self):
-        request = Request(self.get_url("/timeout"))
+    def test_connection_timeout(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> Generator[Deferred[Any], Any, None]:
+        request = Request(self.get_url(server_port, "/timeout"))
 
         # Update the timer to 1s to test connection timeout
-        self.client.setTimeout(1)
+        client.setTimeout(1)
 
         with pytest.raises(ResponseFailed) as exc_info:
-            yield self.make_request_dfd(request)
+            yield make_request_dfd(client, request)
 
         for err in exc_info.value.reasons:
-            from scrapy.core.http2.protocol import H2ClientProtocol
+            from scrapy.core.http2.protocol import H2ClientProtocol  # noqa: PLC0415
 
-            if isinstance(err, TimeoutError):
+            if isinstance(err, TxTimeoutError):
                 assert (
                     f"Connection was IDLE for more than {H2ClientProtocol.IDLE_TIMEOUT}s"
                     in str(err)
@@ -642,18 +742,20 @@ class TestHttps2ClientProtocol(TestCase):
             pytest.fail("No TimeoutError raised.")
 
     @deferred_f_from_coro_f
-    async def test_request_headers_received(self):
+    async def test_request_headers_received(
+        self, server_port: int, client: H2ClientProtocol
+    ) -> None:
         request = Request(
-            self.get_url("/request-headers"),
+            self.get_url(server_port, "/request-headers"),
             headers={"header-1": "header value 1", "header-2": "header value 2"},
         )
-        response = await self.make_request(request)
+        response = await make_request(client, request)
         assert response.status == 200
         assert response.request == request
 
         response_headers = json.loads(str(response.body, "utf-8"))
         assert isinstance(response_headers, dict)
         for k, v in request.headers.items():
-            k, v = str(k, "utf-8"), str(v[0], "utf-8")
-            assert k in response_headers
-            assert v == response_headers[k]
+            k_decoded, v_decoded = str(k, "utf-8"), str(v[0], "utf-8")
+            assert k_decoded in response_headers
+            assert v_decoded == response_headers[k_decoded]

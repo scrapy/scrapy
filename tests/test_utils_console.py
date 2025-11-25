@@ -18,23 +18,24 @@ except ImportError:
     ipy = False
 
 
-class TestUtilsConsole:
-    def test_get_shell_embed_func(self):
-        shell = get_shell_embed_func(["invalid"])
-        assert shell is None
+def test_get_shell_embed_func():
+    shell = get_shell_embed_func(["invalid"])
+    assert shell is None
 
-        shell = get_shell_embed_func(["invalid", "python"])
-        assert callable(shell)
-        assert shell.__name__ == "_embed_standard_shell"
+    shell = get_shell_embed_func(["invalid", "python"])
+    assert callable(shell)
+    assert shell.__name__ == "_embed_standard_shell"
 
-    @pytest.mark.skipif(not bpy, reason="bpython not available in testenv")
-    def test_get_shell_embed_func2(self):
-        shell = get_shell_embed_func(["bpython"])
-        assert callable(shell)
-        assert shell.__name__ == "_embed_bpython_shell"
 
-    @pytest.mark.skipif(not ipy, reason="IPython not available in testenv")
-    def test_get_shell_embed_func3(self):
-        # default shell should be 'ipython'
-        shell = get_shell_embed_func()
-        assert shell.__name__ == "_embed_ipython_shell"
+@pytest.mark.skipif(not bpy, reason="bpython not available in testenv")
+def test_get_shell_embed_func_bpython():
+    shell = get_shell_embed_func(["bpython"])
+    assert callable(shell)
+    assert shell.__name__ == "_embed_bpython_shell"
+
+
+@pytest.mark.skipif(not ipy, reason="IPython not available in testenv")
+def test_get_shell_embed_func_ipython():
+    # default shell should be 'ipython'
+    shell = get_shell_embed_func()
+    assert shell.__name__ == "_embed_ipython_shell"

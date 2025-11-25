@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import warnings
 from asyncio import sleep
+from typing import Any
 
 import pytest
 from testfixtures import LogCapture
-from twisted.trial.unittest import TestCase
 
 from scrapy import Spider, signals
 from scrapy.exceptions import ScrapyDeprecationWarning
@@ -18,8 +20,10 @@ ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}
 
 
-class TestMain(TestCase):
-    async def _test_spider(self, spider, expected_items=None):
+class TestMain:
+    async def _test_spider(
+        self, spider: type[Spider], expected_items: list[Any] | None = None
+    ) -> None:
         actual_items = []
         expected_items = [] if expected_items is None else expected_items
 
@@ -29,6 +33,7 @@ class TestMain(TestCase):
         crawler = get_crawler(spider)
         crawler.signals.connect(track_item, signals.item_scraped)
         await maybe_deferred_to_future(crawler.crawl())
+        assert crawler.stats
         assert crawler.stats.get_value("finish_reason") == "finished"
         assert actual_items == expected_items
 

@@ -9,6 +9,7 @@ from twisted.internet import defer
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured, NotSupported
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
@@ -93,14 +94,18 @@ class DownloadHandlers:
         self._handlers[scheme] = dh
         return dh
 
-    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
+    @_warn_spider_arg
+    def download_request(
+        self, request: Request, spider: Spider | None = None
+    ) -> Deferred[Response]:
         scheme = urlparse_cached(request).scheme
         handler = self._get_handler(scheme)
         if not handler:
             raise NotSupported(
                 f"Unsupported URL scheme '{scheme}': {self._notconfigured[scheme]}"
             )
-        return handler.download_request(request, spider)
+        assert self._crawler.spider
+        return handler.download_request(request, self._crawler.spider)
 
     @defer.inlineCallbacks
     def _close(self, *_a: Any, **_kw: Any) -> Generator[Deferred[Any], Any, None]:

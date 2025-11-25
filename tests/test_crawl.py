@@ -5,14 +5,13 @@ import logging
 from ipaddress import IPv4Address
 from socket import gethostbyname
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 
 import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase
 
 from scrapy import Spider, signals
 from scrapy.crawler import CrawlerRunner
@@ -20,10 +19,11 @@ from scrapy.exceptions import CloseSpider, StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.engine import format_engine_status, get_engine_status
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import NON_EXISTING_RESOLVABLE
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import (
     AsyncDefAsyncioGenComplexSpider,
     AsyncDefAsyncioGenExcSpider,
@@ -60,16 +60,16 @@ if TYPE_CHECKING:
     from scrapy.statscollectors import StatsCollector
 
 
-class TestCrawl(TestCase):
+class TestCrawl:
     mockserver: MockServer
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
     @inlineCallbacks
@@ -255,8 +255,6 @@ class TestCrawl(TestCase):
     def test_unbounded_response(self):
         # Completeness of responses without Content-Length or Transfer-Encoding
         # can not be determined, we treat them as valid but flagged as "partial"
-        from urllib.parse import urlencode
-
         query = urlencode(
             {
                 "raw": """\
@@ -339,8 +337,6 @@ with multiples lines
 
     @inlineCallbacks
     def test_engine_status(self):
-        from scrapy.utils.engine import get_engine_status
-
         est = []
 
         def cb(response):
@@ -357,8 +353,6 @@ with multiples lines
 
     @inlineCallbacks
     def test_format_engine_status(self):
-        from scrapy.utils.engine import format_engine_status
-
         est = []
 
         def cb(response):
@@ -375,7 +369,7 @@ with multiples lines
         est = [x for sublist in est for x in sublist]  # flatten
         est = [x.lstrip().rstrip() for x in est]
         it = iter(est)
-        s = dict(zip(it, it))
+        s = dict(zip(it, it, strict=False))
 
         assert s["engine.spider.name"] == crawler.spider.name
         assert s["len(engine.scraper.slot.active)"] == "1"
@@ -407,7 +401,7 @@ with multiples lines
         assert "Got response 200" in str(log)
 
     @inlineCallbacks
-    def test_crawl_multiple(self):
+    def test_crawl_multiple(self, caplog: pytest.LogCaptureFixture):
         runner = CrawlerRunner(get_reactor_settings())
         runner.crawl(
             SimpleSpider,
@@ -420,23 +414,23 @@ with multiples lines
             mockserver=self.mockserver,
         )
 
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             yield runner.join()
 
-        self._assert_retried(log)
-        assert "Got response 200" in str(log)
+        self._assert_retried(caplog.text)
+        assert "Got response 200" in caplog.text
 
 
-class TestCrawlSpider(TestCase):
+class TestCrawlSpider:
     mockserver: MockServer
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
     async def _run_spider(
@@ -618,7 +612,7 @@ class TestCrawlSpider(TestCase):
     @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
     async def test_async_def_deferred_wrapped(self):
-        log, items, _ = await self._run_spider(AsyncDefDeferredWrappedSpider)
+        _, items, _ = await self._run_spider(AsyncDefDeferredWrappedSpider)
         assert items == [{"code": 200}]
 
     @deferred_f_from_coro_f

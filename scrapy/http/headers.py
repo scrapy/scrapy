@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any, AnyStr, Union, cast
+from typing import TYPE_CHECKING, Any, AnyStr, TypeAlias, cast
 
 from w3lib.http import headers_dict_to_raw
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-_RawValueT = Union[bytes, str, int]
+_RawValue: TypeAlias = bytes | str | int
 
 
 # isn't fully compatible typing-wise with either dict or CaselessDict,
@@ -44,9 +44,9 @@ class Headers(CaselessDict):
         """Normalize key to bytes"""
         return self._tobytes(key.title())
 
-    def normvalue(self, value: _RawValueT | Iterable[_RawValueT]) -> list[bytes]:
+    def normvalue(self, value: _RawValue | Iterable[_RawValue]) -> list[bytes]:
         """Normalize values to bytes"""
-        _value: Iterable[_RawValueT]
+        _value: Iterable[_RawValue]
         if value is None:
             _value = []
         elif isinstance(value, (str, bytes)):
@@ -58,7 +58,7 @@ class Headers(CaselessDict):
 
         return [self._tobytes(x) for x in _value]
 
-    def _tobytes(self, x: _RawValueT) -> bytes:
+    def _tobytes(self, x: _RawValue) -> bytes:
         if isinstance(x, bytes):
             return x
         if isinstance(x, str):
@@ -69,33 +69,33 @@ class Headers(CaselessDict):
 
     def __getitem__(self, key: AnyStr) -> bytes | None:
         try:
-            return cast(list[bytes], super().__getitem__(key))[-1]
+            return cast("list[bytes]", super().__getitem__(key))[-1]
         except IndexError:
             return None
 
     def get(self, key: AnyStr, def_val: Any = None) -> bytes | None:
         try:
-            return cast(list[bytes], super().get(key, def_val))[-1]
+            return cast("list[bytes]", super().get(key, def_val))[-1]
         except IndexError:
             return None
 
     def getlist(self, key: AnyStr, def_val: Any = None) -> list[bytes]:
         try:
-            return cast(list[bytes], super().__getitem__(key))
+            return cast("list[bytes]", super().__getitem__(key))
         except KeyError:
             if def_val is not None:
                 return self.normvalue(def_val)
             return []
 
-    def setlist(self, key: AnyStr, list_: Iterable[_RawValueT]) -> None:
+    def setlist(self, key: AnyStr, list_: Iterable[_RawValue]) -> None:
         self[key] = list_
 
     def setlistdefault(
-        self, key: AnyStr, default_list: Iterable[_RawValueT] = ()
+        self, key: AnyStr, default_list: Iterable[_RawValue] = ()
     ) -> Any:
         return self.setdefault(key, default_list)
 
-    def appendlist(self, key: AnyStr, value: Iterable[_RawValueT]) -> None:
+    def appendlist(self, key: AnyStr, value: Iterable[_RawValue]) -> None:
         lst = self.getlist(key)
         lst.extend(self.normvalue(value))
         self[key] = lst

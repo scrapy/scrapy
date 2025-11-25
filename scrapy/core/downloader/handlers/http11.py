@@ -14,7 +14,7 @@ from urllib.parse import urldefrag, urlparse
 from twisted.internet import ssl
 from twisted.internet.defer import CancelledError, Deferred, succeed
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.internet.error import TimeoutError
+from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
 from twisted.web.client import (
@@ -386,6 +386,7 @@ class ScrapyAgent:
             if not proxy_port:
                 proxy_port = 443 if proxy_parsed.scheme == "https" else 80
             if urlparse_cached(request).scheme == "https":
+                assert proxy_host is not None
                 proxyAuth = request.headers.get(b"Proxy-Authorization", None)
                 proxyConf = (proxy_host, proxy_port, proxyAuth)
                 return self._TunnelingAgent(
@@ -430,7 +431,7 @@ class ScrapyAgent:
             method,
             to_bytes(url, encoding="ascii"),
             headers,
-            cast(IBodyProducer, bodyproducer),
+            cast("IBodyProducer", bodyproducer),
         )
         # set download latency
         d.addCallback(self._cb_latency, request, start_time)
@@ -451,7 +452,7 @@ class ScrapyAgent:
         if self._txresponse:
             self._txresponse._transport.stopProducing()
 
-        raise TimeoutError(f"Getting {url} took longer than {timeout} seconds.")
+        raise TxTimeoutError(f"Getting {url} took longer than {timeout} seconds.")
 
     def _cb_latency(self, result: _T, request: Request, start_time: float) -> _T:
         request.meta["download_latency"] = time() - start_time

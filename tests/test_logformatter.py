@@ -4,7 +4,6 @@ import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import inlineCallbacks
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase
 
 from scrapy.exceptions import DropItem
 from scrapy.http import Request, Response
@@ -12,7 +11,7 @@ from scrapy.item import Field, Item
 from scrapy.logformatter import LogFormatter
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
 
 
@@ -110,7 +109,7 @@ class TestLogFormatter:
         assert logkws["level"] == unsupported_value
 
         with pytest.raises(TypeError):
-            logging.log(logkws["level"], "message")
+            logging.log(logkws["level"], "message")  # noqa: LOG015
 
     def test_dropitem_custom_log_level(self):
         item = {}
@@ -247,24 +246,24 @@ class SkipMessagesLogFormatter(LogFormatter):
 class DropSomeItemsPipeline:
     drop = True
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         if self.drop:
             self.drop = False
             raise DropItem("Ignoring item")
         self.drop = True
 
 
-class TestShowOrSkipMessages(TestCase):
+class TestShowOrSkipMessages:
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    def setUp(self):
+    def setup_method(self):
         self.base_settings = {
             "LOG_LEVEL": "DEBUG",
             "ITEM_PIPELINES": {

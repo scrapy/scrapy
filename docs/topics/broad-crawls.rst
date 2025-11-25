@@ -61,12 +61,7 @@ Increase concurrency
 
 Concurrency is the number of requests that are processed in parallel. There is
 a global limit (:setting:`CONCURRENT_REQUESTS`) and an additional limit that
-can be set either per domain (:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`) or per
-IP (:setting:`CONCURRENT_REQUESTS_PER_IP`).
-
-.. note:: The scheduler priority queue :ref:`recommended for broad crawls
-          <broad-crawls-scheduler-priority-queue>` does not support
-          :setting:`CONCURRENT_REQUESTS_PER_IP`.
+can be set per domain (:setting:`CONCURRENT_REQUESTS_PER_DOMAIN`).
 
 The default global concurrency limit in Scrapy is not suitable for crawling
 many different domains in parallel, so you will want to increase it. How much
@@ -143,7 +138,7 @@ To disable cookies use:
 Disable retries
 ===============
 
-Retrying failed HTTP requests can slow down the crawls substantially, specially
+Retrying failed HTTP requests can slow down the crawls substantially, especially
 when sites causes are very slow (or fail) to respond, thus causing a timeout
 error which gets retried many times, unnecessarily, preventing crawler capacity
 to be reused for other domains.

@@ -7,14 +7,17 @@ from __future__ import annotations
 import asyncio
 import os
 import warnings
+from ftplib import FTP
 from importlib import import_module
 from pathlib import Path
 from posixpath import split
 from typing import TYPE_CHECKING, Any, TypeVar, cast
-from unittest import TestCase, mock
+from unittest import mock
 
 from twisted.trial.unittest import SkipTest
+from twisted.web.client import Agent
 
+from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.deprecate import create_deprecated_class
@@ -59,7 +62,7 @@ def skip_if_no_boto() -> None:
 def get_gcs_content_and_delete(
     bucket: Any, path: str
 ) -> tuple[bytes, list[dict[str, str]], Any]:
-    from google.cloud import storage
+    from google.cloud import storage  # noqa: PLC0415
 
     warnings.warn(
         "The get_gcs_content_and_delete() function is deprecated and will be removed in a future version of Scrapy.",
@@ -83,8 +86,6 @@ def get_ftp_content_and_delete(
     password: str,
     use_active_mode: bool = False,
 ) -> bytes:
-    from ftplib import FTP
-
     warnings.warn(
         "The get_ftp_content_and_delete() function is deprecated and will be removed in a future version of Scrapy.",
         category=ScrapyDeprecationWarning,
@@ -137,8 +138,6 @@ def get_crawler(
     will be used to populate the crawler settings with a project level
     priority.
     """
-    from scrapy.crawler import CrawlerRunner
-
     # When needed, useful settings can be added here, e.g. ones that prevent
     # deprecation warnings.
     settings: dict[str, Any] = {
@@ -167,20 +166,6 @@ def get_testenv() -> dict[str, str]:
     return env
 
 
-def assert_samelines(
-    testcase: TestCase, text1: str, text2: str, msg: str | None = None
-) -> None:
-    """Asserts text1 and text2 have the same lines, ignoring differences in
-    line endings between platforms
-    """
-    warnings.warn(
-        "The assert_samelines function is deprecated and will be removed in a future version of Scrapy.",
-        category=ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    testcase.assertEqual(text1.splitlines(), text2.splitlines(), msg)  # noqa: PT009
-
-
 def get_from_asyncio_queue(value: _T) -> Awaitable[_T]:
     q: asyncio.Queue[_T] = asyncio.Queue()
     getter = q.get()
@@ -192,7 +177,7 @@ def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
     """Creates autospec mocks for google-cloud-storage Client, Bucket and Blob
     classes and set their proper return values.
     """
-    from google.cloud.storage import Blob, Bucket, Client
+    from google.cloud.storage import Blob, Bucket, Client  # noqa: PLC0415
 
     warnings.warn(
         "The mock_google_cloud_storage() function is deprecated and will be removed in a future version of Scrapy.",
@@ -213,7 +198,6 @@ def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
 
 def get_web_client_agent_req(url: str) -> Deferred[TxResponse]:
     from twisted.internet import reactor
-    from twisted.web.client import Agent  # imports twisted.internet.reactor
 
     agent = Agent(reactor)
     return cast("Deferred[TxResponse]", agent.request(b"GET", url.encode("utf-8")))

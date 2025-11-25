@@ -1,39 +1,56 @@
-from testfixtures import LogCapture
+from __future__ import annotations
+
+from logging import INFO
+from typing import TYPE_CHECKING
+
+import pytest
 
 from scrapy.http import Request, Response
 from scrapy.spidermiddlewares.urllength import UrlLengthMiddleware
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 
+if TYPE_CHECKING:
+    from scrapy.crawler import Crawler
+    from scrapy.statscollectors import StatsCollector
 
-class TestUrlLengthMiddleware:
-    def setup_method(self):
-        self.maxlength = 25
-        crawler = get_crawler(Spider, {"URLLENGTH_LIMIT": self.maxlength})
-        self.spider = crawler._create_spider("foo")
-        self.stats = crawler.stats
-        self.mw = UrlLengthMiddleware.from_crawler(crawler)
 
-        self.response = Response("http://scrapytest.org")
-        self.short_url_req = Request("http://scrapytest.org/")
-        self.long_url_req = Request("http://scrapytest.org/this_is_a_long_url")
-        self.reqs = [self.short_url_req, self.long_url_req]
+maxlength = 25
+response = Response("http://scrapytest.org")
+short_url_req = Request("http://scrapytest.org/")
+long_url_req = Request("http://scrapytest.org/this_is_a_long_url")
+reqs: list[Request] = [short_url_req, long_url_req]
 
-    def process_spider_output(self):
-        return list(
-            self.mw.process_spider_output(self.response, self.reqs, self.spider)
-        )
 
-    def test_middleware_works(self):
-        assert self.process_spider_output() == [self.short_url_req]
+@pytest.fixture
+def crawler() -> Crawler:
+    return get_crawler(Spider, {"URLLENGTH_LIMIT": maxlength})
 
-    def test_logging(self):
-        with LogCapture() as log:
-            self.process_spider_output()
 
-        ric = self.stats.get_value(
-            "urllength/request_ignored_count", spider=self.spider
-        )
-        assert ric == 1
+@pytest.fixture
+def stats(crawler: Crawler) -> StatsCollector:
+    assert crawler.stats is not None
+    return crawler.stats
 
-        assert f"Ignoring link (url length > {self.maxlength})" in str(log)
+
+@pytest.fixture
+def mw(crawler: Crawler) -> UrlLengthMiddleware:
+    return UrlLengthMiddleware.from_crawler(crawler)
+
+
+def process_spider_output(mw: UrlLengthMiddleware) -> list[Request]:
+    return list(mw.process_spider_output(response, reqs))
+
+
+def test_middleware_works(mw: UrlLengthMiddleware) -> None:
+    assert process_spider_output(mw) == [short_url_req]
+
+
+def test_logging(
+    stats: StatsCollector, mw: UrlLengthMiddleware, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level(INFO):
+        process_spider_output(mw)
+    ric = stats.get_value("urllength/request_ignored_count")
+    assert ric == 1
+    assert f"Ignoring link (url length > {maxlength})" in caplog.text

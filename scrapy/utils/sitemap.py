@@ -24,7 +24,7 @@ class Sitemap:
         xmlp = lxml.etree.XMLParser(
             recover=True, remove_comments=True, resolve_entities=False
         )
-        self._root = lxml.etree.fromstring(xmltext, parser=xmlp)  # noqa: S320
+        self._root = lxml.etree.fromstring(xmltext, parser=xmlp)
         rt = self._root.tag
         assert isinstance(rt, str)
         self.type = rt.split("}", 1)[1] if "}" in rt else rt
