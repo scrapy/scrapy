@@ -7,7 +7,8 @@ name = "Scrapy"
 dynamic = ["version"]
 description = "A high-level Web Crawling and Web Scraping framework"
 dependencies = [
-    "Twisted>=21.7.0",
+    # Twisted pinned until Scrapy is updated for its internal TLS API changes
+    "Twisted>=21.7.0,<=25.5.0",
     "cryptography>=37.0.0",
     "cssselect>=0.9.1",
     "defusedxml>=0.7.1",
@@ -110,7 +111,7 @@ module = "twisted"
 implicit_reexport = true
 
 [tool.bumpversion]
-current_version = "2.13.3"
+current_version = "2.13.4"
 commit = true
 tag = true
 tag_name = "{new_version}"
@@ -231,6 +232,7 @@ markers = [
     "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
     "requires_botocore: marks tests that need botocore (but not boto3)",
     "requires_boto3: marks tests that need botocore and boto3",
+    "requires_mitmproxy: marks tests that need mitmproxy",
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:twisted.web.static"
