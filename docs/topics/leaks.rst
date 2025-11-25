@@ -5,55 +5,53 @@ Debugging memory leaks
 ======================
 
 In Scrapy, objects such as requests, responses and items have a finite
-lifetime: they are created, used for a while, and finally destroyed.
+lifetime: they are created, used for a while and finally destroyed.
 
-From all those objects, the Request is probably the one with the longest
-lifetime, as it stays waiting in the Scheduler queue until it's time to process
-it. For more info see :ref:`topics-architecture`.
+Of all those objects, the Request usually has the longest lifetime because it
+waits in the Scheduler queue until it's time to process it. For more
+information, see :ref:`topics-architecture`.
 
-As these Scrapy objects have a (rather long) lifetime, there is always the risk
-of accumulating them in memory without releasing them properly and thus causing
-what is known as a "memory leak".
+Because these Scrapy objects have a comparatively long lifetime, there is
+always the risk of accumulating them in memory without releasing them properly
+and thus causing what is known as a "memory leak".
 
-To help debugging memory leaks, Scrapy provides a built-in mechanism for
-tracking objects references called :ref:`trackref <topics-leaks-trackrefs>`,
-and you can also use a third-party library called :ref:`muppy
-<topics-leaks-muppy>` for more advanced memory debugging (see below for more
-info). Both mechanisms must be used from the :ref:`Telnet Console
-<topics-telnetconsole>`.
+To help debug memory leaks, Scrapy provides a built-in mechanism for tracking
+object references called :ref:`trackref <topics-leaks-trackrefs>`, and you can
+also use a third-party library called :ref:`muppy <topics-leaks-muppy>` for
+more advanced memory debugging (see below for more information). Both
+mechanisms must be used from the :ref:`Telnet Console <topics-telnetconsole>`.
 
 Common causes of memory leaks
 =============================
 
 It happens quite often (sometimes by accident, sometimes on purpose) that the
-Scrapy developer passes objects referenced in Requests (for example, using the
-:attr:`~scrapy.Request.cb_kwargs` or :attr:`~scrapy.Request.meta`
-attributes or the request callback function) and that effectively bounds the
-lifetime of those referenced objects to the lifetime of the Request. This is,
-by far, the most common cause of memory leaks in Scrapy projects, and a quite
-difficult one to debug for newcomers.
+Scrapy developer passes objects referenced in requests—for example, through the
+:attr:`~scrapy.Request.cb_kwargs` or :attr:`~scrapy.Request.meta` attributes or
+the request callback function—and that effectively ties the lifetime of those
+referenced objects to the lifetime of the request. This is, by far, the most
+common cause of memory leaks in Scrapy projects, and it can be quite difficult
+for newcomers to debug.
 
-In big projects, the spiders are typically written by different people and some
-of those spiders could be "leaking" and thus affecting the rest of the other
-(well-written) spiders when they get to run concurrently, which, in turn,
-affects the whole crawling process.
+In big projects, spiders are typically written by different people, and some of
+those spiders could be "leaking" and thus affecting the rest of the
+(well-written) spiders when they run concurrently, which, in turn, affects the
+whole crawling process.
 
-The leak could also come from a custom middleware, pipeline or extension that
-you have written, if you are not releasing the (previously allocated) resources
-properly. For example, allocating resources on :signal:`spider_opened`
-but not releasing them on :signal:`spider_closed` may cause problems if
-you're running :ref:`multiple spiders per process <run-multiple-spiders>`.
+The leak could also come from a custom middleware, pipeline, or extension that
+you wrote if you are not releasing the previously allocated resources properly.
+For example, allocating resources on :signal:`spider_opened` but not releasing
+them on :signal:`spider_closed` may cause problems if you're running
+:ref:`multiple spiders per process <run-multiple-spiders>`.
 
 Too Many Requests?
 ------------------
 
 By default Scrapy keeps the request queue in memory; it includes
-:class:`~scrapy.Request` objects and all objects
-referenced in Request attributes (e.g. in :attr:`~scrapy.Request.cb_kwargs`
-and :attr:`~scrapy.Request.meta`).
-While not necessarily a leak, this can take a lot of memory. Enabling
-:ref:`persistent job queue <topics-jobs>` could help keeping memory usage
-in control.
+:class:`~scrapy.Request` objects and all objects referenced in request
+attributes (for example, :attr:`~scrapy.Request.cb_kwargs` and
+:attr:`~scrapy.Request.meta`). While this is not necessarily a leak, it can
+consume a lot of memory. Enabling the :ref:`persistent job queue <topics-jobs>`
+can help keep memory usage under control.
 
 .. _topics-leaks-trackrefs:
 
@@ -62,9 +60,9 @@ Debugging memory leaks with ``trackref``
 
 .. skip: start
 
-:mod:`trackref` is a module provided by Scrapy to debug the most common cases of
-memory leaks. It basically tracks the references to all live Request,
-Response, Item, Spider and Selector objects.
+:mod:`trackref` is a module provided by Scrapy to debug the most common cases
+of memory leaks. It tracks the references to all live Request, Response, Item,
+Spider and Selector objects.
 
 You can enter the telnet console and inspect how many objects (of the classes
 mentioned above) are currently alive using the ``prefs()`` function which is an
@@ -83,16 +81,15 @@ alias to the :func:`~scrapy.utils.trackref.print_live_refs` function::
         FormRequest                       878   oldest: 7s ago
 
 As you can see, that report also shows the "age" of the oldest object in each
-class. If you're running multiple spiders per process chances are you can
-figure out which spider is leaking by looking at the oldest request or response.
-You can get the oldest object of each class using the
+class. If you're running multiple spiders per process, chances are you can
+figure out which spider is leaking by looking at the oldest request or
+response. You can get the oldest object of each class using the
 :func:`~scrapy.utils.trackref.get_oldest` function (from the telnet console).
 
 Which objects are tracked?
 --------------------------
 
-The objects tracked by ``trackrefs`` are all from these classes (and all its
-subclasses):
+``trackref`` tracks objects from these classes (and all their subclasses):
 
 * :class:`scrapy.Request`
 * :class:`scrapy.http.Response`
@@ -109,9 +106,9 @@ Suppose we have some spider with a line similar to this one::
     return Request(f"http://www.somenastyspider.com/product.php?pid={product_id}",
                    callback=self.parse, cb_kwargs={'referer': response})
 
-That line is passing a response reference inside a request which effectively
-ties the response lifetime to the requests' one, and that would definitely
-cause memory leaks.
+That line passes a response reference inside a request, which effectively ties
+the response lifetime to the request's lifetime, and that will definitely cause
+memory leaks.
 
 Let's see how we can discover the cause (without knowing it
 a priori, of course) by using the ``trackref`` tool.
@@ -132,10 +129,10 @@ references:
 
 The fact that there are so many live responses (and that they're so old) is
 definitely suspicious, as responses should have a relatively short lifetime
-compared to Requests. The number of responses is similar to the number
-of requests, so it looks like they are tied in a some way. We can now go
-and check the code of the spider to discover the nasty line that is
-generating the leaks (passing response references inside requests).
+compared to requests. The number of responses is similar to the number of
+requests, so it looks like they are tied in some way. We can now check the code
+of the spider to discover the line that is generating the leaks (passing
+response references inside requests).
 
 Sometimes extra information about live objects can be helpful.
 Let's check the oldest response:
@@ -147,8 +144,8 @@ Let's check the oldest response:
     >>> r.url
     'http://www.somenastyspider.com/product.php?pid=123'
 
-If you want to iterate over all objects, instead of getting the oldest one, you
-can use the :func:`scrapy.utils.trackref.iter_all` function:
+If you want to iterate over all objects instead of getting only the oldest one,
+you can use the :func:`scrapy.utils.trackref.iter_all` function:
 
 .. code-block:: pycon
 
@@ -161,11 +158,10 @@ can use the :func:`scrapy.utils.trackref.iter_all` function:
 Too many spiders?
 -----------------
 
-If your project has too many spiders executed in parallel,
-the output of :func:`prefs` can be difficult to read.
-For this reason, that function has a ``ignore`` argument which can be used to
-ignore a particular class (and all its subclasses). For
-example, this won't show any live references to spiders:
+If your project has too many spiders executed in parallel, the output of
+:func:`prefs` can be difficult to read. For this reason, that function has an
+``ignore`` argument that you can use to omit a particular class (and all its
+subclasses). For example, this won't show any live references to spiders:
 
 .. code-block:: pycon
 
@@ -212,14 +208,13 @@ Here are the functions available in the :mod:`~scrapy.utils.trackref` module.
 Debugging memory leaks with muppy
 =================================
 
-``trackref`` provides a very convenient mechanism for tracking down memory
-leaks, but it only keeps track of the objects that are more likely to cause
-memory leaks. However, there are other cases where the memory leaks could come
-from other (more or less obscure) objects. If this is your case, and you can't
-find your leaks using ``trackref``, you still have another resource: the muppy
-library.
+``trackref`` provides a convenient mechanism for tracking down memory leaks,
+but it only keeps track of the objects that are more likely to cause them.
+However, sometimes leaks come from other (more or less obscure) objects. If
+that happens and you can't find your leaks using ``trackref``, you still have
+another resource: the muppy library.
 
-You can use muppy from `Pympler`_.
+muppy is available as part of `Pympler`_.
 
 .. _Pympler: https://pypi.org/project/Pympler/
 
@@ -227,8 +222,8 @@ If you use ``pip``, you can install muppy with the following command::
 
     pip install Pympler
 
-Here's an example to view all Python objects available in
-the heap using muppy:
+Here's an example that shows all Python objects available in the heap using
+muppy:
 
 .. skip: start
 .. code-block:: pycon
@@ -260,7 +255,7 @@ the heap using muppy:
 
 .. skip: end
 
-For more info about muppy, refer to the `muppy documentation`_.
+For more information about muppy, refer to the `muppy documentation`_.
 
 .. _muppy documentation: https://pythonhosted.org/Pympler/muppy.html
 
@@ -269,10 +264,10 @@ For more info about muppy, refer to the `muppy documentation`_.
 Leaks without leaks
 ===================
 
-Sometimes, you may notice that the memory usage of your Scrapy process will
-only increase, but never decrease. Unfortunately, this could happen even
-though neither Scrapy nor your project are leaking memory. This is due to a
-(not so well) known problem of Python, which may not return released memory to
+Sometimes you may notice that the memory usage of your Scrapy process only
+increases and never decreases. Unfortunately, this could happen even though
+neither Scrapy nor your project are leaking memory. This is due to a
+not-so-well-known problem in Python, which may not return released memory to
 the operating system in some cases. For more information on this issue see:
 
 * `Python Memory Management <https://www.evanjones.ca/python-memory.html>`_
@@ -293,6 +288,6 @@ completely. To quote the paper:
 
 .. _this paper: https://www.evanjones.ca/memoryallocator/
 
-To keep memory consumption reasonable you can split the job into several
-smaller jobs or enable :ref:`persistent job queue <topics-jobs>`
-and stop/start spider from time to time.
+To keep memory consumption reasonable, you can split the job into several
+smaller jobs or enable the :ref:`persistent job queue <topics-jobs>` and stop
+and start the spider from time to time.

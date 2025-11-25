@@ -62,9 +62,9 @@ this:
    :ref:`Spider Middleware <component-spider-middleware>` (see
    :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output`).
 
-8. The :ref:`Engine <component-engine>` sends processed items to
-   :ref:`Item Pipelines <component-pipelines>`, then send processed Requests to
-   the :ref:`Scheduler <component-scheduler>` and asks for possible next Requests
+8. The :ref:`Engine <component-engine>` sends processed items to :ref:`Item
+   Pipelines <component-pipelines>`, then sends processed Requests to the
+   :ref:`Scheduler <component-scheduler>` and asks for possible next Requests
    to crawl.
 
 9. The process repeats (from step 3) until there are no more requests from the

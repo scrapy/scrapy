@@ -143,7 +143,7 @@ scheduler_empty
     Sent whenever the engine asks for a pending request from the
     :ref:`scheduler <topics-scheduler>` (i.e. calls its
     :meth:`~scrapy.core.scheduler.BaseScheduler.next_request` method) and the
-    scheduler returns none.
+    scheduler returns None.
 
     See :ref:`start-requests-lazy` for an example.
 
@@ -154,12 +154,11 @@ Item signals
 ------------
 
 .. note::
-    As at max :setting:`CONCURRENT_ITEMS` items are processed in
-    parallel, many deferreds are fired together using
-    :class:`~twisted.internet.defer.DeferredList`. Hence the next
-    batch waits for the :class:`~twisted.internet.defer.DeferredList`
-    to fire and then runs the respective item signal handler for
-    the next batch of scraped items.
+    At most :setting:`CONCURRENT_ITEMS` items are processed in parallel, many
+    deferreds are fired together using
+    :class:`~twisted.internet.defer.DeferredList`. Hence the next batch waits
+    for the :class:`~twisted.internet.defer.DeferredList` to fire and then runs
+    the respective item signal handler for the next batch of scraped items.
 
 item_scraped
 ~~~~~~~~~~~~
@@ -251,12 +250,12 @@ spider_closed
     :param spider: the spider which has been closed
     :type spider: :class:`~scrapy.Spider` object
 
-    :param reason: a string which describes the reason why the spider was closed. If
-        it was closed because the spider has completed scraping, the reason
-        is ``'finished'``. Otherwise, if the spider was manually closed by
-        calling the ``close_spider`` engine method, then the reason is the one
-        passed in the ``reason`` argument of that method (which defaults to
-        ``'cancelled'``). If the engine was shutdown (for example, by hitting
+    :param reason: a string which describes the reason why the spider was
+        closed. If it was closed because the spider has completed scraping, the
+        reason is ``'finished'``. Otherwise, if the spider was manually closed
+        by calling the ``close_spider`` engine method, then the reason is the
+        one passed in the ``reason`` argument of that method (which defaults to
+        ``'cancelled'``). If the engine was shut down (for example, by hitting
         Ctrl-C to stop it) the reason will be ``'shutdown'``.
     :type reason: str
 
@@ -407,11 +406,11 @@ request_reached_downloader
 .. signal:: request_reached_downloader
 .. function:: request_reached_downloader(request, spider)
 
-    Sent when a :class:`~scrapy.Request` reached downloader.
+    Sent when a :class:`~scrapy.Request` reached the downloader.
 
     This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
 
-    :param request: the request that reached downloader
+    :param request: the request that reached the downloader
     :type request: :class:`~scrapy.Request` object
 
     :param spider: the spider that yielded the request
@@ -445,10 +444,10 @@ bytes_received
     .. versionadded:: 2.2
 
     Sent by the HTTP 1.1 and S3 download handlers when a group of bytes is
-    received for a specific request. This signal might be fired multiple
-    times for the same request, with partial data each time. For instance,
-    a possible scenario for a 25 kb response would be two signals fired
-    with 10 kb of data, and a final one with 5 kb of data.
+    received for a specific request. This signal might be fired multiple times
+    for the same request, with partial data each time. For instance, a possible
+    scenario for a 25 KB response would be two signals fired with 10 KB of
+    data, and a final one with 5 KB of data.
 
     Handlers for this signal can stop the download of a response while it
     is in progress by raising the :exc:`~scrapy.exceptions.StopDownload`

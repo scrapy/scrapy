@@ -26,13 +26,14 @@ used with HTML. `CSS`_ is a language for applying styles to HTML documents. It
 defines selectors to associate those styles with specific HTML elements.
 
 .. note::
-    Scrapy Selectors is a thin wrapper around `parsel`_ library; the purpose of
-    this wrapper is to provide better integration with Scrapy Response objects.
+    Scrapy selectors are a thin wrapper around the `parsel`_ library; the
+    purpose of this wrapper is to provide better integration with Scrapy
+    Response objects.
 
     `parsel`_ is a stand-alone web scraping library which can be used without
-    Scrapy. It uses `lxml`_ library under the hood, and implements an
-    easy API on top of lxml API. It means Scrapy selectors are very similar
-    in speed and parsing accuracy to lxml.
+    Scrapy. It uses the `lxml`_ library under the hood and implements an easy
+    API on top of the lxml API. This means Scrapy selectors have similar speed
+    and parsing accuracy to lxml.
 
 .. _BeautifulSoup: https://www.crummy.com/software/BeautifulSoup/
 .. _lxml: https://lxml.de/

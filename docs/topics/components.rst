@@ -97,8 +97,8 @@ For example:
                 print("log is enabled!")
 
 Components do not need to declare their custom settings programmatically.
-However, they should document them, so that users know they exist and how to
-use them.
+However, they should document them so that users know they exist and how to use
+them.
 
 It is a good practice to prefix custom settings with the name of the component,
 to avoid collisions with custom settings of other existing (or future)
@@ -114,8 +114,8 @@ initialization, and if ``False``, raise
 :exc:`~scrapy.exceptions.NotConfigured`.
 
 When choosing a name for a custom setting, it is also a good idea to have a
-look at the names of :ref:`built-in settings <topics-settings-ref>`, to try to
-maintain consistency with them.
+look at the names of :ref:`built-in settings <topics-settings-ref>` to maintain
+consistency with them.
 
 .. _enforce-component-requirements:
 
@@ -135,7 +135,7 @@ In the case of :ref:`downloader middlewares <topics-downloader-middleware>`,
 <topics-item-pipeline>`, and :ref:`spider middlewares
 <topics-spider-middleware>`, you should raise
 :exc:`~scrapy.exceptions.NotConfigured`, passing a description of the issue as
-a parameter to the exception so that it is printed in the logs, for the user to
+a parameter to the exception so that it is printed in the logs for the user to
 see. For other components, feel free to raise whatever other exception feels
 right to you; for example, :exc:`RuntimeError` would make sense for a Scrapy
 version mismatch, while :exc:`ValueError` may be better if the issue is the
@@ -156,7 +156,7 @@ If your requirement is a minimum Scrapy version, you may use
             if parse_version(scrapy.__version__) < parse_version("2.7"):
                 raise RuntimeError(
                     f"{MyComponent.__qualname__} requires Scrapy 2.7 or "
-                    f"later, which allow defining the process_spider_output "
+                    f"later, which allows defining the process_spider_output "
                     f"method of spider middlewares as an asynchronous "
                     f"generator."
                 )
@@ -168,7 +168,7 @@ The following function can be used to create an instance of a component class:
 
 .. autofunction:: scrapy.utils.misc.build_from_crawler
 
-The following function can also be useful when implementing a component, to
+The following function can also be useful when implementing a component to
 report the import path of the component class, e.g. when reporting problems:
 
 .. autofunction:: scrapy.utils.python.global_object_name
