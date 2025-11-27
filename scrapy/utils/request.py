@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Iterable, Protocol
 from urllib.parse import urlunparse
 from weakref import WeakKeyDictionary
 
@@ -19,17 +19,51 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import to_bytes, to_unicode
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
     from scrapy.crawler import Crawler
 
 
-_fingerprint_cache: WeakKeyDictionary[
-    Request, dict[tuple[tuple[bytes, ...] | None, bool], bytes]
-] = WeakKeyDictionary()
+class FingerprintBuilder:
+    """Helper to assemble request fingerprint data and hash."""
+
+    def __init__(
+        self,
+        request: Request,
+        processed_headers: tuple[bytes, ...] | None,
+        keep_fragments: bool,
+    ) -> None:
+        self.request = request
+        self.processed_headers = processed_headers
+        self.keep_fragments = keep_fragments
+
+    def _build_headers(self) -> dict[str, list[str]]:
+        headers: dict[str, list[str]] = {}
+        if not self.processed_headers:
+            return headers
+
+        for header in self.processed_headers:
+            if header in self.request.headers:
+                headers[header.hex()] = [
+                    header_value.hex()
+                    for header_value in self.request.headers.getlist(header)
+                ]
+        return headers
+
+    def build_payload(self) -> dict[str, Any]:
+        return {
+            "method": to_unicode(self.request.method),
+            "url": canonicalize_url(
+                self.request.url, keep_fragments=self.keep_fragments
+            ),
+            "body": (self.request.body or b"").hex(),
+            "headers": self._build_headers(),
+        }
+
+    def build_hash(self) -> bytes:
+        fingerprint_json = json.dumps(self.build_payload(), sort_keys=True)
+        return hashlib.sha1(fingerprint_json.encode()).digest()  # noqa: S324
 
 
 def fingerprint(
@@ -66,35 +100,11 @@ def fingerprint(
     If you want to include them, set the keep_fragments argument to True
     (for instance when handling requests with a headless browser).
     """
-    processed_include_headers: tuple[bytes, ...] | None = None
-    if include_headers:
-        processed_include_headers = tuple(
-            to_bytes(h.lower()) for h in sorted(include_headers)
-        )
-    cache = _fingerprint_cache.setdefault(request, {})
-    cache_key = (processed_include_headers, keep_fragments)
-    if cache_key not in cache:
-        # To decode bytes reliably (JSON does not support bytes), regardless of
-        # character encoding, we use bytes.hex()
-        headers: dict[str, list[str]] = {}
-        if processed_include_headers:
-            for header in processed_include_headers:
-                if header in request.headers:
-                    headers[header.hex()] = [
-                        header_value.hex()
-                        for header_value in request.headers.getlist(header)
-                    ]
-        fingerprint_data = {
-            "method": to_unicode(request.method),
-            "url": canonicalize_url(request.url, keep_fragments=keep_fragments),
-            "body": (request.body or b"").hex(),
-            "headers": headers,
-        }
-        fingerprint_json = json.dumps(fingerprint_data, sort_keys=True)
-        cache[cache_key] = hashlib.sha1(  # noqa: S324
-            fingerprint_json.encode()
-        ).digest()
-    return cache[cache_key]
+    return _DEFAULT_FINGERPRINTER.fingerprint(
+        request,
+        include_headers=include_headers,
+        keep_fragments=keep_fragments,
+    )
 
 
 class RequestFingerprinterProtocol(Protocol):
@@ -117,10 +127,39 @@ class RequestFingerprinter:
         return cls(crawler)
 
     def __init__(self, crawler: Crawler | None = None):
-        self._fingerprint = fingerprint
+        self._cache: WeakKeyDictionary[
+            Request, dict[tuple[tuple[bytes, ...] | None, bool], bytes]
+        ] = WeakKeyDictionary()
 
-    def fingerprint(self, request: Request) -> bytes:
-        return self._fingerprint(request)
+    def _process_headers(
+        self, include_headers: Iterable[bytes | str] | None
+    ) -> tuple[bytes, ...] | None:
+        if include_headers is None:
+            return None
+        return tuple(to_bytes(h.lower()) for h in sorted(include_headers))
+
+    def fingerprint(
+        self,
+        request: Request,
+        *,
+        include_headers: Iterable[bytes | str] | None = None,
+        keep_fragments: bool = False,
+    ) -> bytes:
+        processed_include_headers = self._process_headers(include_headers)
+        cache = self._cache.setdefault(request, {})
+        cache_key = (processed_include_headers, keep_fragments)
+        if cache_key not in cache:
+            cache[cache_key] = FingerprintBuilder(
+                request,
+                processed_include_headers,
+                keep_fragments,
+            ).build_hash()
+        return cache[cache_key]
+
+
+_DEFAULT_FINGERPRINTER = RequestFingerprinter()
+
+_fingerprint_cache = _DEFAULT_FINGERPRINTER._cache
 
 
 def request_httprepr(request: Request) -> bytes:

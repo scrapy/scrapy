@@ -68,7 +68,7 @@ def is_asyncio_available() -> bool:
 async def _parallel_asyncio(
     iterable: Iterable[_T] | AsyncIterator[_T],
     count: int,
-    callable_: Callable[Concatenate[_T, _P], Coroutine[Any, Any, None]],
+    worker_func: Callable[Concatenate[_T, _P], Coroutine[Any, Any, None]],
     *args: _P.args,
     **kwargs: _P.kwargs,
 ) -> None:
@@ -88,7 +88,7 @@ async def _parallel_asyncio(
             if item is None:
                 break
             try:
-                await callable_(item, *args, **kwargs)
+                await worker_func(item, *args, **kwargs)
             finally:
                 queue.task_done()
 
@@ -205,13 +205,40 @@ def call_later(
     This uses either ``loop.call_later()`` or ``reactor.callLater()``, depending
     on whether asyncio support is available.
     """
-    if is_asyncio_available():
+    return _select_call_later_scheduler().schedule(delay, func, *args)
+
+
+class _BaseCallLaterScheduler:
+    def schedule(
+        self, delay: float, func: Callable[[Unpack[_Ts]], object], *args: Unpack[_Ts]
+    ) -> CallLaterResult:
+        raise NotImplementedError
+
+
+class _AsyncioCallLaterScheduler(_BaseCallLaterScheduler):
+    def schedule(
+        self, delay: float, func: Callable[[Unpack[_Ts]], object], *args: Unpack[_Ts]
+    ) -> CallLaterResult:
         loop = asyncio.get_event_loop()
         return CallLaterResult.from_asyncio(loop.call_later(delay, func, *args))
 
-    from twisted.internet import reactor
 
-    return CallLaterResult.from_twisted(reactor.callLater(delay, func, *args))
+class _TwistedCallLaterScheduler(_BaseCallLaterScheduler):
+    def schedule(
+        self, delay: float, func: Callable[[Unpack[_Ts]], object], *args: Unpack[_Ts]
+    ) -> CallLaterResult:
+        from twisted.internet import reactor
+
+        return CallLaterResult.from_twisted(reactor.callLater(delay, func, *args))
+
+
+_ASYNCIO_SCHEDULER = _AsyncioCallLaterScheduler()
+_TWISTED_SCHEDULER = _TwistedCallLaterScheduler()
+
+
+def _select_call_later_scheduler() -> _BaseCallLaterScheduler:
+    use_asyncio = is_asyncio_available()
+    return _ASYNCIO_SCHEDULER if use_asyncio else _TWISTED_SCHEDULER
 
 
 class CallLaterResult:
