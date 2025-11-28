@@ -80,7 +80,7 @@ async def _parallel_asyncio(
     assumes that neither *callable* nor iterating *iterable* will raise an
     exception.
     """
-    queue: asyncio.Queue[_T | None] = asyncio.Queue()
+    queue: asyncio.Queue[_T | None] = asyncio.Queue(count * 2)
 
     async def worker() -> None:
         while True:
