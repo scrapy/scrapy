@@ -53,7 +53,7 @@ class SignalManager:
 
     def send_catch_log_deferred(
         self, signal: Any, **kwargs: Any
-    ) -> Deferred[list[tuple[Any, Any]]]:
+    ) -> Deferred[list[tuple[Any, Any]]]:  # pragma: no cover
         """
         Like :meth:`send_catch_log` but supports :ref:`asynchronous signal
         handlers <signal-deferred>`.
