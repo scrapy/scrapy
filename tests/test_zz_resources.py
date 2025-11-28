@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
+
+import pytest
 
 from scrapy.utils.log import LogCounterHandler
 
@@ -25,3 +28,9 @@ def test_stderr_log_handler() -> None:
     """
     c = sum(1 for h in logging.root.handlers if type(h) is logging.StreamHandler)  # pylint: disable=unidiomatic-typecheck
     assert c == 0
+
+
+@pytest.mark.only_asyncio
+def test_pending_asyncio_tasks() -> None:
+    """Test that there are no pending asyncio tasks."""
+    assert not asyncio.all_tasks()

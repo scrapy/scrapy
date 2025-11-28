@@ -74,7 +74,7 @@ In addition to native coroutine APIs Scrapy has some APIs that return a
 function that returns a :class:`~twisted.internet.defer.Deferred` object. These
 APIs are also asynchronous but don't yet support native ``async def`` syntax.
 In the future we plan to add support for the ``async def`` syntax to these APIs
-or replace them with other APIs where changing the existing ones is
+or replace them with other APIs where changing the existing ones isn't
 possible.
 
 These APIs don't have a coroutine-based counterpart:
@@ -98,14 +98,6 @@ These APIs have a coroutine-based implementation and a Deferred-based one:
     :class:`scrapy.crawler.CrawlerProcess` (Deferred-based): the former
     doesn't support non-default reactors and so the latter should be used
     with those.
-
--   :class:`scrapy.signalmanager.SignalManager`:
-
-    - :meth:`~scrapy.signalmanager.SignalManager.send_catch_log_async`
-      (coroutine-based) and
-      :meth:`~scrapy.signalmanager.SignalManager.send_catch_log_deferred`
-      (Deferred-based): the latter will be deprecated in a later Scrapy
-      version.
 
 The following user-supplied methods can return
 :class:`~twisted.internet.defer.Deferred` objects (the methods that can also
