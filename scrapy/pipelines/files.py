@@ -678,7 +678,10 @@ class FilesPipeline(MediaPipeline):
         buf = BytesIO(response.body)
         checksum = _md5sum(buf)
         buf.seek(0)
-        self.store.persist_file(path, buf, info)
+        headers = {}
+        if content_type := response.headers.get(b"Content-Type"):
+            headers["Content-Type"] = content_type.decode("utf-8", errors="ignore")
+        self.store.persist_file(path, buf, info, meta=None, headers=headers)
         return checksum
 
     def item_completed(

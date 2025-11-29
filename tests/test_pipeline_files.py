@@ -634,6 +634,43 @@ class TestS3FilesStore:
 
             stub.assert_no_pending_responses()
 
+    @inlineCallbacks
+    def test_persist_with_meta_none(self):
+        """Test that persist_file works correctly when meta=None"""
+        bucket = "mybucket"
+        key = "export.csv"
+        uri = f"s3://{bucket}/{key}"
+        buffer = mock.MagicMock()
+        path = ""
+
+        store = S3FilesStore(uri)
+        from botocore.stub import Stubber  # noqa: PLC0415
+
+        with Stubber(store.s3_client) as stub:
+            stub.add_response(
+                "put_object",
+                expected_params={
+                    "ACL": S3FilesStore.POLICY,
+                    "Body": buffer,
+                    "Bucket": bucket,
+                    "CacheControl": S3FilesStore.HEADERS["Cache-Control"],
+                    "Key": key,
+                    "Metadata": {},  # meta=None should result in empty dict
+                },
+                service_response={},
+            )
+
+            yield store.persist_file(
+                path,
+                buffer,
+                info=None,
+                meta=None,
+                headers=None,
+            )
+
+            stub.assert_no_pending_responses()
+            assert buffer.method_calls == [mock.call.seek(0)]
+
 
 @pytest.mark.skipif(
     "GCS_PROJECT_ID" not in os.environ, reason="GCS_PROJECT_ID not found"
