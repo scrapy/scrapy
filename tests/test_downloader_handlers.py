@@ -18,6 +18,7 @@ from scrapy.core.downloader.handlers.s3 import S3DownloadHandler
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.responsetypes import responsetypes
+from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
@@ -47,6 +48,17 @@ class OffDH:
         return cls(crawler)
 
 
+class BuggyDH:
+    lazy = False
+
+    def __init__(self, crawler):
+        raise ValueError
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
+
+
 class TestLoad:
     def test_enabled_handler(self):
         handlers = {"scheme": DummyDH}
@@ -63,6 +75,18 @@ class TestLoad:
         assert "scheme" in dh._schemes
         assert "scheme" not in dh._handlers
         assert "scheme" in dh._notconfigured
+
+    def test_buggy_handler(self, caplog: pytest.LogCaptureFixture) -> None:
+        handlers = {"scheme": BuggyDH}
+        crawler = get_crawler(settings_dict={"DOWNLOAD_HANDLERS": handlers})
+        dh = DownloadHandlers(crawler)
+        assert "scheme" in dh._schemes
+        assert "scheme" not in dh._handlers
+        assert "scheme" in dh._notconfigured
+        assert (
+            'Loading "<class \'tests.test_downloader_handlers.BuggyDH\'>" for scheme "scheme"'
+            in caplog.text
+        )
 
     def test_disabled_handler(self):
         handlers = {"scheme": None}
@@ -288,6 +312,13 @@ class TestS3:
             httpreq.headers["Authorization"]
             == b"AWS 0PN5J17HBGZHT7JJ3X82:+CfvG8EZ3YccOrRVMXNaK2eKZmM="
         )
+
+
+@pytest.mark.skipif(is_botocore_available(), reason="Requires not having botocore")
+def test_s3_no_botocore() -> None:
+    crawler = get_crawler()
+    with pytest.raises(NotConfigured, match="missing botocore library"):
+        build_from_crawler(S3DownloadHandler, crawler)
 
 
 class TestDataURI:
