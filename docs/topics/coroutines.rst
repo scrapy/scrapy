@@ -63,6 +63,10 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
 -   :ref:`Signal handlers that support deferreds <signal-deferred>`.
 
+-   Methods of :ref:`download handlers <topics-download-handlers>`.
+
+    .. versionadded:: VERSION
+
 
 .. _coroutine-deferred-apis:
 
@@ -111,12 +115,6 @@ The following user-supplied methods can return
 :class:`~twisted.internet.defer.Deferred` objects (the methods that can also
 return coroutines are listed in :ref:`coroutine-support`):
 
--   Custom download handlers (see :setting:`DOWNLOAD_HANDLERS`):
-
-    - ``download_request()``
-
-    - ``close()``
-
 -   Custom downloader implementations (see :setting:`DOWNLOADER`):
 
     - ``fetch()``
@@ -162,11 +160,11 @@ For example:
     email is sent. You can use this object directly in Deferred-based code or
     convert it into a :class:`~asyncio.Future` object with
     :func:`~scrapy.utils.defer.maybe_deferred_to_future`.
--   A custom download handler needs to define a ``download_request()`` method
-    that returns a :class:`~twisted.internet.defer.Deferred` object. You can
-    write a method that works with Deferreds and returns one directly, or you
-    can write a coroutine and convert it into a function that returns a
-    Deferred with :func:`~scrapy.utils.defer.deferred_f_from_coro_f`.
+-   A custom scheduler needs to define an ``open()`` method that can return a
+    :class:`~twisted.internet.defer.Deferred` object. You can write a method
+    that works with Deferreds and returns one directly, or you can write a
+    coroutine and convert it into a function that returns a Deferred with
+    :func:`~scrapy.utils.defer.deferred_f_from_coro_f`.
 
 
 General usage

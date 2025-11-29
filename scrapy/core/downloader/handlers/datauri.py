@@ -4,19 +4,18 @@ from typing import TYPE_CHECKING, Any
 
 from w3lib.url import parse_data_uri
 
+from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
-from scrapy.utils.decorators import defers
 
 if TYPE_CHECKING:
-    from scrapy import Request, Spider
+    from scrapy import Request
 
 
-class DataURIDownloadHandler:
+class DataURIDownloadHandler(BaseDownloadHandler):
     lazy = False
 
-    @defers
-    def download_request(self, request: Request, spider: Spider) -> Response:
+    async def download_request(self, request: Request) -> Response:
         uri = parse_data_uri(request.url)
         respcls = responsetypes.from_mimetype(uri.media_type)
 

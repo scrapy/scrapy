@@ -420,6 +420,12 @@ with multiples lines
         self._assert_retried(caplog.text)
         assert "Got response 200" in caplog.text
 
+    @deferred_f_from_coro_f
+    async def test_unknown_url_scheme(self, caplog: pytest.LogCaptureFixture) -> None:
+        crawler = get_crawler(SimpleSpider)
+        await maybe_deferred_to_future(crawler.crawl("foo://bar"))
+        assert "NotSupported: Unsupported URL scheme 'foo'" in caplog.text
+
 
 class TestCrawlSpider:
     mockserver: MockServer

@@ -8,7 +8,9 @@ from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.web.client import URI
 
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
+from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.core.http2.agent import H2Agent, H2ConnectionPool, ScrapyProxyH2Agent
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
 
@@ -17,37 +19,35 @@ if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
     from twisted.web.iweb import IPolicyForHTTPS
 
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
     from scrapy.crawler import Crawler
     from scrapy.http import Request, Response
-    from scrapy.settings import Settings
     from scrapy.spiders import Spider
 
 
-class H2DownloadHandler:
-    def __init__(self, settings: Settings, crawler: Crawler):
+class H2DownloadHandler(BaseDownloadHandler):
+    def __init__(self, crawler: Crawler):
+        super().__init__(crawler)
         self._crawler = crawler
 
         from twisted.internet import reactor
 
-        self._pool = H2ConnectionPool(reactor, settings)
-        self._context_factory = load_context_factory_from_settings(settings, crawler)
+        self._pool = H2ConnectionPool(reactor, crawler.settings)
+        self._context_factory = load_context_factory_from_settings(
+            crawler.settings, crawler
+        )
 
-    @classmethod
-    def from_crawler(cls, crawler: Crawler) -> Self:
-        return cls(crawler.settings, crawler)
-
-    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
+    async def download_request(self, request: Request) -> Response:
         agent = ScrapyH2Agent(
             context_factory=self._context_factory,
             pool=self._pool,
             crawler=self._crawler,
         )
-        return agent.download_request(request, spider)
+        assert self._crawler.spider
+        return await maybe_deferred_to_future(
+            agent.download_request(request, self._crawler.spider)
+        )
 
-    def close(self) -> None:
+    async def close(self) -> None:
         self._pool.close_connections()
 
 

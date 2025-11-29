@@ -894,7 +894,9 @@ DOWNLOAD_HANDLERS
 
 Default: ``{}``
 
-A dict containing the request downloader handlers enabled in your project.
+A dict containing the :ref:`download handlers <topics-download-handlers>`
+enabled in your project.
+
 See :setting:`DOWNLOAD_HANDLERS_BASE` for example format.
 
 .. setting:: DOWNLOAD_HANDLERS_BASE
@@ -916,9 +918,9 @@ Default:
     }
 
 
-A dict containing the request download handlers enabled by default in Scrapy.
-You should never modify this setting in your project, modify
-:setting:`DOWNLOAD_HANDLERS` instead.
+A dict containing the :ref:`download handlers <topics-download-handlers>`
+enabled by default in Scrapy. You should never modify this setting in your
+project, modify :setting:`DOWNLOAD_HANDLERS` instead.
 
 You can disable any of these download handlers by assigning ``None`` to their
 URI scheme in :setting:`DOWNLOAD_HANDLERS`. E.g., to disable the built-in FTP
@@ -930,46 +932,6 @@ handler (without replacement), place this in your ``settings.py``:
         "ftp": None,
     }
 
-.. _http2:
-
-The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
-
-#.  Install ``Twisted[http2]>=17.9.0`` to install the packages required to
-    enable HTTP/2 support in Twisted.
-
-#.  Update :setting:`DOWNLOAD_HANDLERS` as follows:
-
-    .. code-block:: python
-
-        DOWNLOAD_HANDLERS = {
-            "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler",
-        }
-
-.. warning::
-
-    HTTP/2 support in Scrapy is experimental, and not yet recommended for
-    production environments. Future Scrapy versions may introduce related
-    changes without a deprecation period or warning.
-
-.. note::
-
-    Known limitations of the current HTTP/2 implementation of Scrapy include:
-
-    -   No support for HTTP/2 Cleartext (h2c), since no major browser supports
-        HTTP/2 unencrypted (refer `http2 faq`_).
-
-    -   No setting to specify a maximum `frame size`_ larger than the default
-        value, 16384. Connections to servers that send a larger frame will
-        fail.
-
-    -   No support for `server pushes`_, which are ignored.
-
-    -   No support for the :signal:`bytes_received` and
-        :signal:`headers_received` signals.
-
-.. _frame size: https://datatracker.ietf.org/doc/html/rfc7540#section-4.2
-.. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
-.. _server pushes: https://datatracker.ietf.org/doc/html/rfc7540#section-8.2
 
 .. setting:: DOWNLOAD_SLOTS
 
@@ -1079,7 +1041,7 @@ Optionally, this can be set per-request basis by using the
 
     This setting is ignored by the
     :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
-    download handler (see :setting:`DOWNLOAD_HANDLERS`). In case of a data loss
+    :ref:`download handler <topics-download-handlers>`. In case of a data loss
     error, the corresponding HTTP/2 connection may be corrupted, affecting other
     requests that use the same connection; hence, a ``ResponseFailed([InvalidBodyLengthError])``
     failure is always raised for every request that was using that connection.
