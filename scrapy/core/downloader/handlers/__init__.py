@@ -117,7 +117,7 @@ class DownloadHandlers:
             self._notconfigured[scheme] = str(ex)
             return None
         self._handlers[scheme] = dh
-        if not inspect.iscoroutinefunction(dh.download_request):
+        if not inspect.iscoroutinefunction(dh.download_request):  # pragma: no cover
             warnings.warn(
                 f"{global_object_name(dh.download_request)} is not a coroutine function."
                 f" This is deprecated, please rewrite it to return a coroutine and remove"
@@ -130,7 +130,7 @@ class DownloadHandlers:
 
     def download_request(
         self, request: Request, spider: Spider | None = None
-    ) -> Deferred[Response]:
+    ) -> Deferred[Response]:  # pragma: no cover
         warnings.warn(
             "DownloadHandlers.download_request() is deprecated, use download_request_async() instead",
             category=ScrapyDeprecationWarning,
@@ -146,7 +146,7 @@ class DownloadHandlers:
                 f"Unsupported URL scheme '{scheme}': {self._notconfigured[scheme]}"
             )
         assert self._crawler.spider
-        if scheme in self._old_style_handlers:
+        if scheme in self._old_style_handlers:  # pragma: no cover
             return await maybe_deferred_to_future(
                 cast(
                     "Deferred[Response]",
@@ -157,7 +157,7 @@ class DownloadHandlers:
 
     async def _close(self) -> None:
         for dh in self._handlers.values():
-            if not hasattr(dh, "close"):
+            if not hasattr(dh, "close"):  # pragma: no cover
                 warnings.warn(
                     f"{global_object_name(dh)} doesn't define a close() method."
                     f" This is deprecated, please add an empty 'async def close()' method.",
@@ -168,7 +168,7 @@ class DownloadHandlers:
 
             if inspect.iscoroutinefunction(dh.close):
                 await dh.close()
-            else:
+            else:  # pragma: no cover
                 warnings.warn(
                     f"{global_object_name(dh.close)} is not a coroutine function."
                     f" This is deprecated, please rewrite it to return a coroutine.",
