@@ -7,7 +7,7 @@ from email.utils import mktime_tz, parsedate_tz
 from importlib import import_module
 from pathlib import Path
 from time import time
-from typing import IO, TYPE_CHECKING, Any, cast
+from typing import IO, TYPE_CHECKING, Any, Concatenate, cast
 from weakref import WeakKeyDictionary
 
 from w3lib.http import headers_dict_to_raw, headers_raw_to_dict
@@ -22,9 +22,6 @@ if TYPE_CHECKING:
     import os
     from collections.abc import Callable
     from types import ModuleType
-
-    # typing.Concatenate requires Python 3.10
-    from typing_extensions import Concatenate
 
     from scrapy.http.request import Request
     from scrapy.settings import BaseSettings

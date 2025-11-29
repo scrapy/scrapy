@@ -35,7 +35,7 @@ class MinimalScheduler:
 
     def next_request(self) -> Request | None:
         if self.has_pending_requests():
-            fp, request = self.requests.popitem()
+            _, request = self.requests.popitem()
             return request
         return None
 

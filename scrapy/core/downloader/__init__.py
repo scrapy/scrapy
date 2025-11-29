@@ -8,6 +8,7 @@ from time import time
 from typing import TYPE_CHECKING, Any, cast
 
 from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.python.failure import Failure
 
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
@@ -20,9 +21,10 @@ from scrapy.utils.asyncio import (
     call_later,
     create_looping_call,
 )
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _defer_sleep_async,
-    deferred_from_coro,
+    _schedule_coro,
     maybe_deferred_to_future,
 )
 from scrapy.utils.httpobj import urlparse_cached
@@ -93,13 +95,6 @@ def _get_concurrency_delay(
 ) -> tuple[int, float]:
     delay: float = settings.getfloat("DOWNLOAD_DELAY")
     if hasattr(spider, "download_delay"):
-        warnings.warn(
-            "The 'download_delay' spider attribute is deprecated. "
-            "Use Spider.custom_settings or Spider.update_settings() instead. "
-            "The corresponding setting name is 'DOWNLOAD_DELAY'.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
         delay = spider.download_delay
 
     if hasattr(spider, "max_concurrent_requests"):
@@ -143,15 +138,10 @@ class Downloader:
         )
 
     @inlineCallbacks
+    @_warn_spider_arg
     def fetch(
         self, request: Request, spider: Spider | None = None
     ) -> Generator[Deferred[Any], Any, Response | Request]:
-        if spider is not None:
-            warnings.warn(
-                "Passing a 'spider' argument to Downloader.fetch() is deprecated.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
         self.active.add(request)
         try:
             return (yield self.middleware.download(self._enqueue_request, request))
@@ -192,14 +182,7 @@ class Downloader:
 
         return key
 
-    def _get_slot_key(self, request: Request, spider: Spider | None) -> str:
-        warnings.warn(
-            "Use of this protected method is deprecated. Consider using its corresponding public method get_slot_key() instead.",
-            ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return self.get_slot_key(request)
-
+    # passed as download_func into self.middleware.download() in self.fetch()
     @inlineCallbacks
     def _enqueue_request(
         self, request: Request
@@ -216,7 +199,7 @@ class Downloader:
         slot.queue.append((request, d))
         self._process_queue(slot)
         try:
-            return (yield d)
+            return (yield d)  # fired in _wait_for_download()
         finally:
             slot.active.remove(request)
 
@@ -237,9 +220,8 @@ class Downloader:
         # Process enqueued requests if there are free slots to transfer for this slot
         while slot.queue and slot.free_transfer_slots() > 0:
             slot.lastseen = now
-            request, deferred = slot.queue.popleft()
-            dfd = deferred_from_coro(self._download(slot, request))
-            dfd.chainDeferred(deferred)
+            request, queue_dfd = slot.queue.popleft()
+            _schedule_coro(self._wait_for_download(slot, request, queue_dfd))
             # prevent burst if inter-request delays were configured
             if delay:
                 self._process_queue(slot)
@@ -281,6 +263,16 @@ class Downloader:
                 request=request,
                 spider=self.crawler.spider,
             )
+
+    async def _wait_for_download(
+        self, slot: Slot, request: Request, queue_dfd: Deferred[Response]
+    ) -> None:
+        try:
+            response = await self._download(slot, request)
+        except Exception:
+            queue_dfd.errback(Failure())
+        else:
+            queue_dfd.callback(response)  # awaited in _enqueue_request()
 
     def close(self) -> None:
         self._slot_gc_loop.stop()

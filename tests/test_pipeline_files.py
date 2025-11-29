@@ -19,6 +19,7 @@ import attr
 import pytest
 from itemadapter import ItemAdapter
 
+from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import (
@@ -28,6 +29,8 @@ from scrapy.pipelines.files import (
     GCSFilesStore,
     S3FilesStore,
 )
+from scrapy.settings import Settings
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
 from tests.utils.decorators import inlineCallbacks
@@ -78,10 +81,11 @@ class TestFilesPipeline:
     def setup_method(self):
         self.tempdir = mkdtemp()
         settings_dict = {"FILES_STORE": self.tempdir}
-        crawler = get_crawler(spidercls=None, settings_dict=settings_dict)
+        crawler = get_crawler(DefaultSpider, settings_dict=settings_dict)
+        crawler.spider = crawler._create_spider()
         self.pipeline = FilesPipeline.from_crawler(crawler)
         self.pipeline.download_func = _mocked_download_func
-        self.pipeline.open_spider(None)
+        self.pipeline.open_spider()
 
     def teardown_method(self):
         rmtree(self.tempdir)
@@ -176,7 +180,7 @@ class TestFilesPipeline:
         for p in patchers:
             p.start()
 
-        result = yield self.pipeline.process_item(item, None)
+        result = yield self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] == "abc"
         assert result["files"][0]["status"] == "uptodate"
 
@@ -207,7 +211,7 @@ class TestFilesPipeline:
         for p in patchers:
             p.start()
 
-        result = yield self.pipeline.process_item(item, None)
+        result = yield self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "downloaded"
 
@@ -238,7 +242,7 @@ class TestFilesPipeline:
         for p in patchers:
             p.start()
 
-        result = yield self.pipeline.process_item(item, None)
+        result = yield self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "cached"
 
@@ -752,37 +756,6 @@ class TestBuildFromCrawler:
             assert len(w) == 0
             assert pipe.store
 
-    def test_has_old_init(self):
-        class Pipeline(FilesPipeline):
-            def __init__(self, store_uri, download_func=None, settings=None):
-                super().__init__(store_uri, download_func, settings)
-                self._init_called = True
-
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 2
-            assert pipe._init_called
-
-    def test_has_from_settings(self):
-        class Pipeline(FilesPipeline):
-            _from_settings_called = False
-
-            @classmethod
-            def from_settings(cls, settings):
-                o = super().from_settings(settings)
-                o._from_settings_called = True
-                return o
-
-        with warnings.catch_warnings(record=True) as w:
-            pipe = Pipeline.from_crawler(self.crawler)
-            assert pipe.crawler == self.crawler
-            assert pipe._fingerprinter
-            assert len(w) == 3
-            assert pipe.store
-            assert pipe._from_settings_called
-
     def test_has_from_crawler_and_init(self):
         class Pipeline(FilesPipeline):
             _from_crawler_called = False
@@ -802,3 +775,14 @@ class TestBuildFromCrawler:
             assert len(w) == 0
             assert pipe.store
             assert pipe._from_crawler_called
+
+
+@pytest.mark.parametrize("store", [None, ""])
+def test_files_pipeline_raises_notconfigured_when_files_store_invalid(store):
+    settings = Settings()
+    settings.clear()
+    settings.set("FILES_STORE", store, priority="cmdline")
+    crawler = get_crawler(settings_dict=settings)
+
+    with pytest.raises(NotConfigured):
+        FilesPipeline.from_crawler(crawler)

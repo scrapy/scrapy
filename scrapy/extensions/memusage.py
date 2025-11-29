@@ -115,7 +115,7 @@ class MemoryUsage:
                     self.crawler.engine.close_spider_async(reason="memusage_exceeded")
                 )
             else:
-                self.crawler.stop()
+                _schedule_coro(self.crawler.stop_async())
         else:
             logger.info(
                 "Peak memory usage is %(virtualsize)dMiB",

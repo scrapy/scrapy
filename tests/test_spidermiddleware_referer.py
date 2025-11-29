@@ -31,15 +31,13 @@ from scrapy.spidermiddlewares.referer import (
     StrictOriginWhenCrossOriginPolicy,
     UnsafeUrlPolicy,
 )
-from scrapy.spiders import Spider
+from scrapy.utils.spider import DefaultSpider
+from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-
-@pytest.fixture
-def spider() -> Spider:
-    return Spider("foo")
+    from scrapy.crawler import Crawler
 
 
 class TestRefererMiddleware:
@@ -61,11 +59,11 @@ class TestRefererMiddleware:
     def get_response(self, origin: str) -> Response:
         return Response(origin, headers=self.resp_headers)
 
-    def test(self, mw: RefererMiddleware, spider: Spider) -> None:
+    def test(self, mw: RefererMiddleware) -> None:
         for origin, target, referrer in self.scenarii:
             response = self.get_response(origin)
             request = self.get_request(target)
-            out = list(mw.process_spider_output(response, [request], spider))
+            out = list(mw.process_spider_output(response, [request]))
             assert out[0].headers.get("Referer") == referrer
 
 
@@ -1011,20 +1009,24 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
     ]
 
     @pytest.fixture
-    def referrermw(self) -> RefererMiddleware:
-        settings = Settings(self.settings)
-        return RefererMiddleware(settings)
+    def crawler(self) -> Crawler:
+        crawler = get_crawler(DefaultSpider, self.settings)
+        crawler.spider = crawler._create_spider()
+        return crawler
 
     @pytest.fixture
-    def redirectmw(self) -> RedirectMiddleware:
-        settings = Settings(self.settings)
-        return RedirectMiddleware(settings)
+    def referrermw(self, crawler: Crawler) -> RefererMiddleware:
+        return RefererMiddleware.from_crawler(crawler)
+
+    @pytest.fixture
+    def redirectmw(self, crawler: Crawler) -> RedirectMiddleware:
+        return RedirectMiddleware.from_crawler(crawler)
 
     def test(  # type: ignore[override]
         self,
+        crawler: Crawler,
         referrermw: RefererMiddleware,
         redirectmw: RedirectMiddleware,
-        spider: Spider,
     ) -> None:
         for (
             parent,
@@ -1036,7 +1038,7 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
             response = self.get_response(parent)
             request = self.get_request(target)
 
-            out = list(referrermw.process_spider_output(response, [request], spider))
+            out = list(referrermw.process_spider_output(response, [request]))
             assert out[0].headers.get("Referer") == init_referrer
 
             for status, url in redirections:
@@ -1044,9 +1046,10 @@ class TestReferrerOnRedirect(TestRefererMiddleware):
                     request.url, headers={"Location": url}, status=status
                 )
                 request = cast(
-                    "Request", redirectmw.process_response(request, response, spider)
+                    "Request", redirectmw.process_response(request, response)
                 )
-                referrermw.request_scheduled(request, spider)
+                assert crawler.spider
+                referrermw.request_scheduled(request, crawler.spider)
 
             assert isinstance(request, Request)
             assert request.headers.get("Referer") == final_referrer

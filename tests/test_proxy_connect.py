@@ -61,6 +61,7 @@ def _wrong_credentials(proxy_url):
     return urlunsplit(bad_auth_proxy)
 
 
+@pytest.mark.requires_mitmproxy
 class TestProxyConnect:
     @classmethod
     def setup_class(cls):
@@ -72,13 +73,7 @@ class TestProxyConnect:
         cls.mockserver.__exit__(None, None, None)
 
     def setup_method(self):
-        try:
-            import mitmproxy  # noqa: F401,PLC0415
-        except ImportError:
-            pytest.skip("mitmproxy is not installed")
-
         self._oldenv = os.environ.copy()
-
         self._proxy = MitmProxy()
         proxy_url = self._proxy.start()
         os.environ["https_proxy"] = proxy_url
@@ -116,9 +111,7 @@ class TestProxyConnect:
         assert "Proxy-Authorization" not in echo["headers"]
 
     def _assert_got_response_code(self, code, log):
-        print(log)
         assert str(log).count(f"Crawled ({code})") == 1
 
     def _assert_got_tunnel_error(self, log):
-        print(log)
         assert "TunnelError" in str(log)

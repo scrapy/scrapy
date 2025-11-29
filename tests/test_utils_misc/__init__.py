@@ -9,7 +9,6 @@ from scrapy.item import Field, Item
 from scrapy.utils.misc import (
     arg_to_iter,
     build_from_crawler,
-    create_instance,
     load_object,
     rel_has_nofollow,
     set_environ,
@@ -97,98 +96,29 @@ class TestUtilsMisc:
         assert list(arg_to_iter({"a": 1})) == [{"a": 1}]
         assert list(arg_to_iter(TestItem(name="john"))) == [TestItem(name="john")]
 
-    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-    def test_create_instance(self):
-        settings = mock.MagicMock()
-        crawler = mock.MagicMock(spec_set=["settings"])
-        args = (True, 100.0)
-        kwargs = {"key": "val"}
-
-        def _test_with_settings(mock, settings):
-            create_instance(mock, settings, None, *args, **kwargs)
-            if hasattr(mock, "from_crawler"):
-                assert mock.from_crawler.call_count == 0
-            if hasattr(mock, "from_settings"):
-                mock.from_settings.assert_called_once_with(settings, *args, **kwargs)
-                assert mock.call_count == 0
-            else:
-                mock.assert_called_once_with(*args, **kwargs)
-
-        def _test_with_crawler(mock, settings, crawler):
-            create_instance(mock, settings, crawler, *args, **kwargs)
-            if hasattr(mock, "from_crawler"):
-                mock.from_crawler.assert_called_once_with(crawler, *args, **kwargs)
-                if hasattr(mock, "from_settings"):
-                    assert mock.from_settings.call_count == 0
-                assert mock.call_count == 0
-            elif hasattr(mock, "from_settings"):
-                mock.from_settings.assert_called_once_with(settings, *args, **kwargs)
-                assert mock.call_count == 0
-            else:
-                mock.assert_called_once_with(*args, **kwargs)
-
-        # Check usage of correct constructor using four mocks:
-        #   1. with no alternative constructors
-        #   2. with from_settings() constructor
-        #   3. with from_crawler() constructor
-        #   4. with from_settings() and from_crawler() constructor
-        spec_sets = (
-            ["__qualname__"],
-            ["__qualname__", "from_settings"],
-            ["__qualname__", "from_crawler"],
-            ["__qualname__", "from_settings", "from_crawler"],
-        )
-        for specs in spec_sets:
-            m = mock.MagicMock(spec_set=specs)
-            _test_with_settings(m, settings)
-            m.reset_mock()
-            _test_with_crawler(m, settings, crawler)
-
-        # Check adoption of crawler settings
-        m = mock.MagicMock(spec_set=["__qualname__", "from_settings"])
-        create_instance(m, None, crawler, *args, **kwargs)
-        m.from_settings.assert_called_once_with(crawler.settings, *args, **kwargs)
-
-        with pytest.raises(
-            ValueError, match="Specify at least one of settings and crawler"
-        ):
-            create_instance(m, None, None)
-
-        m.from_settings.return_value = None
-        with pytest.raises(TypeError):
-            create_instance(m, settings, None)
-
     def test_build_from_crawler(self):
-        settings = mock.MagicMock()
         crawler = mock.MagicMock(spec_set=["settings"])
         args = (True, 100.0)
         kwargs = {"key": "val"}
 
-        def _test_with_crawler(mock, settings, crawler):
+        def _test_with_crawler(mock, crawler):
             build_from_crawler(mock, crawler, *args, **kwargs)
             if hasattr(mock, "from_crawler"):
                 mock.from_crawler.assert_called_once_with(crawler, *args, **kwargs)
-                if hasattr(mock, "from_settings"):
-                    assert mock.from_settings.call_count == 0
-                assert mock.call_count == 0
-            elif hasattr(mock, "from_settings"):
-                mock.from_settings.assert_called_once_with(settings, *args, **kwargs)
                 assert mock.call_count == 0
             else:
                 mock.assert_called_once_with(*args, **kwargs)
 
-        # Check usage of correct constructor using three mocks:
+        # Check usage of correct constructor using 2 mocks:
         #   1. with no alternative constructors
         #   2. with from_crawler() constructor
-        #   3. with from_settings() and from_crawler() constructor
         spec_sets = (
             ["__qualname__"],
             ["__qualname__", "from_crawler"],
-            ["__qualname__", "from_settings", "from_crawler"],
         )
         for specs in spec_sets:
             m = mock.MagicMock(spec_set=specs)
-            _test_with_crawler(m, settings, crawler)
+            _test_with_crawler(m, crawler)
             m.reset_mock()
 
         # Check adoption of crawler

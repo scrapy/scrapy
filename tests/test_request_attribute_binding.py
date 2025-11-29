@@ -11,18 +11,18 @@ OVERRIDDEN_URL = "https://example.org"
 
 
 class ProcessResponseMiddleware:
-    def process_response(self, request, response, spider):
+    def process_response(self, request, response):
         return response.replace(request=Request(OVERRIDDEN_URL))
 
 
 class RaiseExceptionRequestMiddleware:
-    def process_request(self, request, spider):
+    def process_request(self, request):
         1 / 0
         return request
 
 
 class CatchExceptionOverrideRequestMiddleware:
-    def process_exception(self, request, exception, spider):
+    def process_exception(self, request, exception):
         return Response(
             url="http://localhost/",
             body=b"Caught " + exception.__class__.__name__.encode("utf-8"),
@@ -31,7 +31,7 @@ class CatchExceptionOverrideRequestMiddleware:
 
 
 class CatchExceptionDoNotOverrideRequestMiddleware:
-    def process_exception(self, request, exception, spider):
+    def process_exception(self, request, exception):
         return Response(
             url="http://localhost/",
             body=b"Caught " + exception.__class__.__name__.encode("utf-8"),
@@ -46,10 +46,17 @@ class AlternativeCallbacksSpider(SingleRequestSpider):
 
 
 class AlternativeCallbacksMiddleware:
-    def process_response(self, request, response, spider):
+    def __init__(self, crawler):
+        self.crawler = crawler
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
+
+    def process_response(self, request, response):
         new_request = request.replace(
             url=OVERRIDDEN_URL,
-            callback=spider.alt_callback,
+            callback=self.crawler.spider.alt_callback,
             cb_kwargs={"foo": "bar"},
         )
         return response.replace(request=new_request)
