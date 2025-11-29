@@ -99,6 +99,7 @@ class MockCrawler(Crawler):
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
 
+@pytest.mark.requires_reactor  # needs a reactor or an event loop for is_asyncio_available()
 class SchedulerHandler(ABC):
     jobdir = None
 
@@ -243,6 +244,7 @@ _URLS_WITH_SLOTS = [
 
 
 class TestMigration:
+    @pytest.mark.requires_reactor  # needs a reactor or an event loop for is_asyncio_available()
     def test_migration(self, tmpdir):
         class PrevSchedulerHandler(SchedulerHandler):
             jobdir = tmpdir
