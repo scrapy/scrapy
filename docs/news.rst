@@ -74,6 +74,12 @@ Backward-incompatible changes
     :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` or
     calls its methods directly.
 
+-   The built-in :ref:`download handlers <download-handlers-ref>` were
+    refactored, changing signatures of their methods. This change should only
+    affect user code that subclasses any of these handlers or calls their
+    methods directly.
+    (:issue:`6778`, :issue:`7164`)
+
 .. _release-2.13.4:
 
 Scrapy 2.13.4 (2025-11-17)
