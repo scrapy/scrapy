@@ -23,6 +23,9 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
 
 
+pytestmark = pytest.mark.requires_reactor
+
+
 class TestFTPBase:
     username = "scrapy"
     password = "passwd"

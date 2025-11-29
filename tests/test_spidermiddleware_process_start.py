@@ -5,11 +5,12 @@ import pytest
 
 from scrapy import Spider, signals
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 from tests.test_spider_start import SLEEP_SECONDS
 
 from .utils import twisted_sleep
+from .utils.decorators import deferred_f_from_coro_f
 
 ITEM_A = {"id": "a"}
 ITEM_B = {"id": "b"}

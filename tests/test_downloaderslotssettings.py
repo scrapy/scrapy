@@ -1,6 +1,6 @@
 import time
 
-from twisted.internet.defer import inlineCallbacks
+import pytest
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot
@@ -9,6 +9,7 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import MetaSpider
+from tests.utils.decorators import inlineCallbacks
 
 
 class DownloaderSlotsSettingsTestSpider(MetaSpider):
@@ -79,6 +80,7 @@ class TestCrawl:
         assert max(list(error_delta.values())) < tolerance
 
 
+@pytest.mark.requires_reactor  # needs a reactor or an event loop for Downloader._slot_gc_loop
 def test_params():
     params = {
         "concurrency": 1,

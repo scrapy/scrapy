@@ -18,7 +18,6 @@ from urllib.parse import urlparse
 import attr
 import pytest
 from itemadapter import ItemAdapter
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
@@ -34,6 +33,7 @@ from scrapy.settings import Settings
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
+from tests.utils.decorators import inlineCallbacks
 
 from .test_pipeline_media import _mocked_download_func
 

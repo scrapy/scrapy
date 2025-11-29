@@ -9,6 +9,7 @@ from twisted.web.http import H2_ENABLED
 from scrapy.utils.reactor import set_asyncio_event_loop_policy
 from tests.keys import generate_keys
 from tests.mockserver.http import MockServer
+from tests.utils.reactorless import install_reactor_import_hook
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -55,6 +56,17 @@ if not H2_ENABLED:
     )
 
 
+def pytest_addoption(parser, pluginmanager):
+    if pluginmanager.hasplugin("twisted"):
+        return
+    # add the full choice set so that pytest doesn't complain about invalid choices in some cases
+    parser.addoption(
+        "--reactor",
+        default="none",
+        choices=["asyncio", "default", "none"],
+    )
+
+
 @pytest.fixture(scope="session")
 def mockserver() -> Generator[MockServer]:
     with MockServer() as mockserver:
@@ -79,6 +91,12 @@ def only_not_asyncio(request, reactor_pytest):
         and reactor_pytest == "asyncio"
     ):
         pytest.skip("This test is only run without --reactor=asyncio")
+
+
+@pytest.fixture(autouse=True)
+def requires_reactor(request, reactor_pytest):
+    if request.node.get_closest_marker("requires_reactor") and reactor_pytest == "none":
+        pytest.skip("This test requires a reactor")
 
 
 @pytest.fixture(autouse=True)
@@ -132,6 +150,8 @@ def pytest_configure(config):
         # Needed on Windows to switch from proactor to selector for Twisted reactor compatibility.
         # If we decide to run tests with both, we will need to add a new option and check it here.
         set_asyncio_event_loop_policy()
+    elif config.getoption("--reactor") == "none":
+        install_reactor_import_hook()
 
 
 # Generate localhost certificate files, needed by some tests

@@ -1,7 +1,7 @@
 import asyncio
 
 import pytest
-from twisted.internet.defer import Deferred, inlineCallbacks, succeed
+from twisted.internet.defer import Deferred, succeed
 
 from scrapy import Request, Spider, signals
 from scrapy.crawler import Crawler
@@ -9,14 +9,11 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.defer import (
-    deferred_f_from_coro_f,
-    deferred_to_future,
-    maybe_deferred_to_future,
-)
+from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.mockserver.http import MockServer
+from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
 
 
 class SimplePipeline:
@@ -172,6 +169,7 @@ class TestPipeline:
 
 
 class TestCustomPipelineManager:
+    @pytest.mark.requires_reactor  # needs a reactor or an event loop for is_asyncio_available()
     def test_deprecated_process_item_spider_arg(self) -> None:
         class CustomPipelineManager(ItemPipelineManager):
             def process_item(self, item, spider):  # pylint: disable=useless-parent-delegation
