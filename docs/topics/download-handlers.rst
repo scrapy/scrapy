@@ -39,7 +39,6 @@ for additional schemes and to replace or disable default ones:
         "sftp": "my.download_handlers.SftpHandler",
     }
 
-
 .. _lazy-download-handlers:
 
 Lazy instantiation of download handlers
