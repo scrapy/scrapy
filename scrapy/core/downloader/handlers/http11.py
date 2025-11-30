@@ -93,9 +93,9 @@ class HTTP11DownloadHandler:
 
     def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         """Return a deferred for the HTTP download"""
-        if hasattr(spider, "download_maxsize"):
+        if hasattr(spider, "download_maxsize"):  # pragma: no cover
             warn_on_deprecated_spider_attribute("download_maxsize", "DOWNLOAD_MAXSIZE")
-        if hasattr(spider, "download_warnsize"):
+        if hasattr(spider, "download_warnsize"):  # pragma: no cover
             warn_on_deprecated_spider_attribute(
                 "download_warnsize", "DOWNLOAD_WARNSIZE"
             )

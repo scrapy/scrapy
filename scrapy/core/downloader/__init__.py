@@ -96,7 +96,7 @@ def _get_concurrency_delay(
     if hasattr(spider, "download_delay"):
         delay = spider.download_delay
 
-    if hasattr(spider, "max_concurrent_requests"):
+    if hasattr(spider, "max_concurrent_requests"):  # pragma: no cover
         warn_on_deprecated_spider_attribute(
             "max_concurrent_requests", "CONCURRENT_REQUESTS"
         )

@@ -192,9 +192,9 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
     def _new_stream(self, request: Request, spider: Spider) -> Stream:
         """Instantiates a new Stream object"""
-        if hasattr(spider, "download_maxsize"):
+        if hasattr(spider, "download_maxsize"):  # pragma: no cover
             warn_on_deprecated_spider_attribute("download_maxsize", "DOWNLOAD_MAXSIZE")
-        if hasattr(spider, "download_warnsize"):
+        if hasattr(spider, "download_warnsize"):  # pragma: no cover
             warn_on_deprecated_spider_attribute(
                 "download_warnsize", "DOWNLOAD_WARNSIZE"
             )

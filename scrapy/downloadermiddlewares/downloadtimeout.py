@@ -31,7 +31,7 @@ class DownloadTimeoutMiddleware:
         return o
 
     def spider_opened(self, spider: Spider) -> None:
-        if hasattr(spider, "download_timeout"):
+        if hasattr(spider, "download_timeout"):  # pragma: no cover
             warn_on_deprecated_spider_attribute("download_timeout", "DOWNLOAD_TIMEOUT")
         self._timeout = getattr(spider, "download_timeout", self._timeout)
 

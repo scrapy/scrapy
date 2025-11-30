@@ -29,7 +29,7 @@ class UserAgentMiddleware:
         return o
 
     def spider_opened(self, spider: Spider) -> None:
-        if hasattr(spider, "user_agent"):
+        if hasattr(spider, "user_agent"):  # pragma: no cover
             warn_on_deprecated_spider_attribute("user_agent", "USER_AGENT")
 
         self.user_agent = getattr(spider, "user_agent", self.user_agent)
