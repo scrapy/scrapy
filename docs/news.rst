@@ -12,7 +12,7 @@ Highlights:
 
 -   More coroutine-based replacements for Deferred-based APIs
 
--   Dropped support for Python 3.9 and PyPy 3.10.
+-   Dropped support for Python 3.9 and PyPy 3.10
 
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
@@ -30,6 +30,10 @@ Modified requirements
     - Pillow_ (optional dependency): 8.0.0 → 8.3.2
 
     - botocore_ (optional dependency): 1.4.87 → 1.13.45
+
+-   Restored support for ``brotlicffi`` dropped in Scrapy 2.13.4. Its minimum
+    supported version is now ``1.2.0.0``.
+    (:issue:`7160`)
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -479,9 +483,9 @@ Documentation
 
     .. _scrapy-spider-metadata: https://scrapy-spider-metadata.readthedocs.io/en/latest/
 
--   Removed the documentation build dependency on the deprecated
-    ``sphinx-hoverxref`` module.
-    (:issue:`6786`, :issue:`6922`)
+-   Improved :ref:`the docs <coroutine-deferred-apis>` about coroutine-based
+    and Deferred-based APIs.
+    (:issue:`6800`, :issue:`7146`)
 
 -   Other documentation improvements and fixes.
     (:issue:`7058`, :issue:`7076`, :issue:`7109`)
@@ -531,7 +535,9 @@ Quality assurance
     :issue:`7070`,
     :issue:`7073`,
     :issue:`7118`,
-    :issue:`7127`)
+    :issue:`7127`,
+    :issue:`7143`,
+    :issue:`7145`)
 
 -   Code cleanups.
     (:issue:`6803`,
