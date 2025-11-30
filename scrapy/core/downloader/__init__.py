@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import random
-import warnings
 from collections import deque
 from datetime import datetime
 from time import time
@@ -13,7 +12,6 @@ from twisted.python.failure import Failure
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.resolver import dnscache
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
