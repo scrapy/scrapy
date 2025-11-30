@@ -35,6 +35,7 @@ from scrapy.core.downloader.contextfactory import load_context_factory_from_sett
 from scrapy.exceptions import StopDownload
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
+from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.url import add_http_if_no_scheme
@@ -92,6 +93,13 @@ class HTTP11DownloadHandler:
 
     def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
         """Return a deferred for the HTTP download"""
+        if hasattr(spider, "download_maxsize"):  # pragma: no cover
+            warn_on_deprecated_spider_attribute("download_maxsize", "DOWNLOAD_MAXSIZE")
+        if hasattr(spider, "download_warnsize"):  # pragma: no cover
+            warn_on_deprecated_spider_attribute(
+                "download_warnsize", "DOWNLOAD_WARNSIZE"
+            )
+
         agent = ScrapyAgent(
             contextFactory=self._contextFactory,
             pool=self._pool,
