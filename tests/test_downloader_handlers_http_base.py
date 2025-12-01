@@ -447,7 +447,7 @@ class TestHttp11Base(TestHttpBase):
             def check(logger: mock.Mock) -> None:
                 logger.warning.assert_called_once_with(mock.ANY, mock.ANY)
 
-            async with self.get_dh({"DOWNLOAD_MAXSIZE": 1500}) as download_handler:
+            async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
                 with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
                     await download_handler.download_request(request)
 
@@ -468,7 +468,7 @@ class TestHttp11Base(TestHttpBase):
                 await download_handler.download_request(request)
 
     @deferred_f_from_coro_f
-    async def test_download_with_small_maxsize_per_spider(
+    async def test_download_with_small_maxsize_via_setting(
         self, mockserver: MockServer
     ) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
@@ -477,7 +477,7 @@ class TestHttp11Base(TestHttpBase):
                 await download_handler.download_request(request)
 
     @deferred_f_from_coro_f
-    async def test_download_with_large_maxsize_per_spider(
+    async def test_download_with_large_maxsize_via_setting(
         self, mockserver: MockServer
     ) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))

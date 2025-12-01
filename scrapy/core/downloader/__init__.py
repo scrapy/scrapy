@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import random
-import warnings
 from collections import deque
 from datetime import datetime
 from time import time
@@ -13,7 +12,6 @@ from twisted.python.failure import Failure
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.resolver import dnscache
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
@@ -23,6 +21,7 @@ from scrapy.utils.asyncio import (
 )
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import _defer_sleep_async, _schedule_coro
+from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
@@ -93,13 +92,9 @@ def _get_concurrency_delay(
     if hasattr(spider, "download_delay"):
         delay = spider.download_delay
 
-    if hasattr(spider, "max_concurrent_requests"):
-        warnings.warn(
-            "The 'max_concurrent_requests' spider attribute is deprecated. "
-            "Use Spider.custom_settings or Spider.update_settings() instead. "
-            "The corresponding setting name is 'CONCURRENT_REQUESTS'.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
+    if hasattr(spider, "max_concurrent_requests"):  # pragma: no cover
+        warn_on_deprecated_spider_attribute(
+            "max_concurrent_requests", "CONCURRENT_REQUESTS"
         )
         concurrency = spider.max_concurrent_requests
 

@@ -29,7 +29,6 @@ if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
     from tests.mockserver.proxy_echo import ProxyEchoMockServer
 
-
 pytestmark = pytest.mark.skipif(
     not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
 )
@@ -72,7 +71,7 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
             def check(logger: mock.Mock) -> None:
                 logger.error.assert_called_once_with(mock.ANY)
 
-            async with self.get_dh({"DOWNLOAD_MAXSIZE": 1500}) as download_handler:
+            async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
                 with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
                     await download_handler.download_request(request)
 

@@ -23,16 +23,14 @@ class TestDownloadTimeoutMiddleware:
         assert mw.process_request(req) is None
         assert req.meta.get("download_timeout") == 20.1
 
-    def test_spider_has_download_timeout(self):
-        req, spider, mw = self.get_request_spider_mw()
-        spider.download_timeout = 2
+    def test_setting_has_download_timeout(self):
+        req, spider, mw = self.get_request_spider_mw({"DOWNLOAD_TIMEOUT": 2})
         mw.spider_opened(spider)
         assert mw.process_request(req) is None
         assert req.meta.get("download_timeout") == 2
 
     def test_request_has_download_timeout(self):
-        req, spider, mw = self.get_request_spider_mw()
-        spider.download_timeout = 2
+        req, spider, mw = self.get_request_spider_mw({"DOWNLOAD_TIMEOUT": 2})
         mw.spider_opened(spider)
         req.meta["download_timeout"] = 1
         assert mw.process_request(req) is None
