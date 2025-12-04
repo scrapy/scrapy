@@ -44,6 +44,11 @@ def arg_to_iter(arg: Any) -> Iterable[Any]:
     return [arg]
 
 
+
+class LoadObjectError(Exception):
+    """Custom exception for errors in load_object."""
+    pass
+
 def load_object(path: str | Callable[..., Any]) -> Any:
     """Load an object given its absolute object path, and return it.
 
@@ -52,27 +57,28 @@ def load_object(path: str | Callable[..., Any]) -> Any:
 
     If ``path`` is not a string, but is a callable object, such as a class or
     a function, then return it as is.
+    Raises LoadObjectError with context on failure.
     """
-
     if not isinstance(path, str):
         if callable(path):
             return path
-        raise TypeError(
-            f"Unexpected argument type, expected string or object, got: {type(path)}"
-        )
+        raise LoadObjectError(f"Unexpected argument type, expected string or object, got: {type(path)}")
 
     try:
         dot = path.rindex(".")
-    except ValueError:
-        raise ValueError(f"Error loading object '{path}': not a full path")
+    except ValueError as e:
+        raise LoadObjectError(f"Error loading object '{path}': not a full path") from e
 
     module, name = path[:dot], path[dot + 1 :]
-    mod = import_module(module)
+    try:
+        mod = import_module(module)
+    except Exception as e:
+        raise LoadObjectError(f"Error importing module '{module}' for object '{name}': {e}") from e
 
     try:
         obj = getattr(mod, name)
-    except AttributeError:
-        raise NameError(f"Module '{module}' doesn't define any object named '{name}'")
+    except AttributeError as e:
+        raise LoadObjectError(f"Module '{module}' doesn't define any object named '{name}'") from e
 
     return obj
 
@@ -99,6 +105,9 @@ def walk_modules(path: str) -> list[ModuleType]:
     return mods
 
 
+
+MD5SUM_BUFFER_SIZE = 8096
+
 def md5sum(file: IO[bytes]) -> str:
     """Calculate the md5 checksum of a file-like object without reading its
     whole content in memory.
@@ -117,7 +126,7 @@ def md5sum(file: IO[bytes]) -> str:
     )
     m = hashlib.md5()  # noqa: S324
     while True:
-        d = file.read(8096)
+        d = file.read(MD5SUM_BUFFER_SIZE)
         if not d:
             break
         m.update(d)

@@ -18,12 +18,24 @@ _T = TypeVar("_T")
 _P = ParamSpec("_P")
 
 
+
 def deprecated(
     use_instead: Any = None,
 ) -> Callable[[Callable[_P, _T]], Callable[_P, _T]]:
-    """This is a decorator which can be used to mark functions
-    as deprecated. It will result in a warning being emitted
-    when the function is used."""
+    """
+    Decorator para marcar funções como depreciadas.
+
+    Args:
+        use_instead: Função ou nome da alternativa recomendada.
+
+    Returns:
+        Função decorada que emite um aviso de depreciação ao ser chamada.
+
+    Exemplo:
+        @deprecated('nova_funcao')
+        def antiga_funcao():
+            pass
+    """
 
     def deco(func: Callable[_P, _T]) -> Callable[_P, _T]:
         @wraps(func)

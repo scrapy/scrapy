@@ -125,9 +125,7 @@ class Crawler:
         self.settings.freeze()
 
         d = dict(overridden_settings(self.settings))
-        logger.info(
-            "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
-        )
+        logger.info("Overridden settings:\n%s", pprint.pformat(d))
 
     # Cannot use @deferred_f_from_coro_f because that relies on the reactor
     # being installed already, which is done within _apply_settings(), inside

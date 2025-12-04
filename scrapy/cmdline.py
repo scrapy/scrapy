@@ -159,29 +159,41 @@ def _run_print_help(
         sys.exit(2)
 
 
-def execute(argv: list[str] | None = None, settings: Settings | None = None) -> None:
-    if argv is None:
-        argv = sys.argv
 
-    if settings is None:
-        settings = get_project_settings()
-        # set EDITOR from environment if available
-        try:
-            editor = os.environ["EDITOR"]
-        except KeyError:
-            pass
+def _get_editor_from_env(settings: Settings) -> None:
+    """Set EDITOR from environment if available."""
+    editor = os.environ.get("EDITOR")
+    if editor:
+        settings["EDITOR"] = editor
+
+def _handle_no_command(settings: Settings, inproject: bool) -> None:
+    _print_commands(settings, inproject)
+    sys.exit(0)
+
+def _handle_unknown_command(settings: Settings, cmdname: str, inproject: bool) -> None:
+    _print_unknown_command(settings, cmdname, inproject)
+    sys.exit(2)
+
+def _setup_crawler_process(cmd, settings):
+    if cmd.requires_crawler_process:
+        if settings["TWISTED_REACTOR"] == _asyncio_reactor_path and not settings.getbool("FORCE_CRAWLER_PROCESS"):
+            cmd.crawler_process = AsyncCrawlerProcess(settings)
         else:
-            settings["EDITOR"] = editor
+            cmd.crawler_process = CrawlerProcess(settings)
+
+def execute(argv: list[str] | None = None, settings: Settings | None = None) -> None:
+    argv = argv or sys.argv
+    settings = settings or get_project_settings()
+    _get_editor_from_env(settings)
 
     inproject = inside_project()
     cmds = _get_commands_dict(settings, inproject)
     cmdname = _pop_command_name(argv)
+
     if not cmdname:
-        _print_commands(settings, inproject)
-        sys.exit(0)
-    elif cmdname not in cmds:
-        _print_unknown_command(settings, cmdname, inproject)
-        sys.exit(2)
+        _handle_no_command(settings, inproject)
+    if cmdname not in cmds:
+        _handle_unknown_command(settings, cmdname, inproject)
 
     cmd = cmds[cmdname]
     parser = ScrapyArgumentParser(
@@ -196,13 +208,7 @@ def execute(argv: list[str] | None = None, settings: Settings | None = None) -> 
     opts, args = parser.parse_known_args(args=argv[1:])
     _run_print_help(parser, cmd.process_options, args, opts)
 
-    if cmd.requires_crawler_process:
-        if settings[
-            "TWISTED_REACTOR"
-        ] == _asyncio_reactor_path and not settings.getbool("FORCE_CRAWLER_PROCESS"):
-            cmd.crawler_process = AsyncCrawlerProcess(settings)
-        else:
-            cmd.crawler_process = CrawlerProcess(settings)
+    _setup_crawler_process(cmd, settings)
     _run_print_help(parser, _run_command, cmd, args, opts)
     sys.exit(cmd.exitcode)
 
