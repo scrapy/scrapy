@@ -4,8 +4,11 @@ import json
 import logging
 import re
 import sys
+import tempfile
+import os
 from io import StringIO
 from typing import TYPE_CHECKING, Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 from testfixtures import LogCapture
@@ -17,7 +20,9 @@ from scrapy.utils.log import (
     StreamLogger,
     TopLevelFormatter,
     failure_to_exc_info,
+    configure_logging,
 )
+from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler
 from tests.spiders import LogSpider
 
@@ -313,3 +318,349 @@ class TestLoggingWithExtra:
         assert log_contents["message"] == log_message
         assert self.regex_pattern.match(log_contents["spider"])
         assert log_contents["important_info"] == extra["important_info"]
+
+
+# ==============================================================================
+# NEW TESTS FOR SYSTEMD LOGGING FEATURE
+# ==============================================================================
+
+
+class TestSystemdLogging:
+    """Tests for systemd journal logging feature"""
+
+    @pytest.fixture(autouse=True)
+    def reset_logging(self) -> Generator:
+        """Reset logging configuration before and after each test"""
+        # Remove all handlers from root logger before test
+        root = logging.getLogger()
+        original_handlers = root.handlers[:]
+        original_level = root.level
+        for handler in original_handlers:
+            root.removeHandler(handler)
+
+        yield
+
+        # Restore original handlers and level after test
+        root.setLevel(original_level)
+        for handler in root.handlers[:]:
+            root.removeHandler(handler)
+        for handler in original_handlers:
+            root.addHandler(handler)
+
+    def test_systemd_disabled_by_default(self) -> None:
+        """Test that systemd logging is disabled by default"""
+        settings = Settings()
+        configure_logging(settings)
+
+        root = logging.getLogger()
+        handlers = root.handlers
+
+        # Should have at least one handler (StreamHandler)
+        assert len(handlers) > 0
+
+        # Should NOT have JournalHandler
+        handler_types = [type(h).__name__ for h in handlers]
+        assert 'JournalHandler' not in handler_types
+
+        # Should have StreamHandler
+        assert 'StreamHandler' in handler_types
+
+    def test_systemd_enabled_with_module_available(self) -> None:
+        """Test systemd logging when LOG_SYSTEMD=True and systemd module is available"""
+        # Create a handler class that properly inherits from logging.Handler
+        class MockJournalHandler(logging.Handler):
+            instances = []
+            
+            def __init__(self):
+                super().__init__()
+                MockJournalHandler.instances.append(self)
+
+        # Clear previous instances
+        MockJournalHandler.instances = []
+
+        # Create mock module
+        mock_systemd = MagicMock()
+        mock_journal = MagicMock()
+        mock_journal.JournalHandler = MockJournalHandler
+        mock_systemd.journal = mock_journal
+
+        with patch.dict('sys.modules', {'systemd': mock_systemd, 'systemd.journal': mock_journal}):
+            settings = Settings({
+                'LOG_ENABLED': True,
+                'LOG_SYSTEMD': True,
+            })
+
+            configure_logging(settings)
+
+            # Verify at least one JournalHandler instance was created
+            assert len(MockJournalHandler.instances) >= 1
+
+            # Verify a MockJournalHandler was added to the root logger
+            root = logging.getLogger()
+            mock_handlers = [h for h in root.handlers if isinstance(h, MockJournalHandler)]
+            assert len(mock_handlers) >= 1
+
+    def test_systemd_enabled_without_module_raises_import_error(self) -> None:
+        """Test that enabling LOG_SYSTEMD without systemd-python raises ImportError"""
+        # Ensure systemd.journal is not available
+        with patch.dict('sys.modules', {'systemd.journal': None}):
+            settings = Settings({
+                'LOG_ENABLED': True,
+                'LOG_SYSTEMD': True,
+            })
+
+            # Should raise ImportError when trying to import systemd.journal
+            with pytest.raises(ImportError):
+                configure_logging(settings)
+
+    def test_systemd_disabled_uses_stream_handler(self) -> None:
+        """Test that LOG_SYSTEMD=False uses StreamHandler"""
+        settings = Settings({
+            'LOG_ENABLED': True,
+            'LOG_SYSTEMD': False,
+        })
+
+        configure_logging(settings)
+
+        root = logging.getLogger()
+        handlers = root.handlers
+
+        # Should have StreamHandler
+        handler_types = [type(h).__name__ for h in handlers]
+        assert 'StreamHandler' in handler_types
+        assert 'JournalHandler' not in handler_types
+
+    def test_systemd_with_log_file_uses_file_handler(self) -> None:
+        """Test that LOG_FILE takes precedence over LOG_SYSTEMD"""
+        # Create a temporary log file
+        fd, log_file = tempfile.mkstemp(suffix='.log')
+        os.close(fd)
+
+        try:
+            settings = Settings({
+                'LOG_ENABLED': True,
+                'LOG_SYSTEMD': True,
+                'LOG_FILE': log_file,
+            })
+
+            configure_logging(settings)
+
+            root = logging.getLogger()
+            handlers = root.handlers
+
+            # Should have FileHandler, not JournalHandler
+            handler_types = [type(h).__name__ for h in handlers]
+            assert 'FileHandler' in handler_types
+            assert 'JournalHandler' not in handler_types
+        finally:
+            # Clean up
+            if os.path.exists(log_file):
+                os.remove(log_file)
+
+    def test_systemd_logging_disabled_when_log_disabled(self) -> None:
+        """Test that systemd logging is not used when LOG_ENABLED=False"""
+        class MockJournalHandler(logging.Handler):
+            instances = []
+            
+            def __init__(self):
+                super().__init__()
+                MockJournalHandler.instances.append(self)
+
+        # Clear previous instances
+        MockJournalHandler.instances = []
+
+        mock_systemd = MagicMock()
+        mock_journal = MagicMock()
+        mock_journal.JournalHandler = MockJournalHandler
+        mock_systemd.journal = mock_journal
+
+        with patch.dict('sys.modules', {'systemd': mock_systemd, 'systemd.journal': mock_journal}):
+            settings = Settings({
+                'LOG_ENABLED': False,
+                'LOG_SYSTEMD': True,
+            })
+
+            configure_logging(settings)
+
+            # JournalHandler should NOT be instantiated when logging is disabled
+            assert len(MockJournalHandler.instances) == 0
+
+    def test_systemd_handler_receives_log_messages(self) -> None:
+        """Test that log messages are sent to JournalHandler when enabled"""
+        # Create a mock JournalHandler that captures log records
+        captured_records = []
+
+        class MockJournalHandler(logging.Handler):
+            def __init__(self):
+                super().__init__()
+            
+            def emit(self, record):
+                captured_records.append(record)
+
+        mock_systemd = MagicMock()
+        mock_journal = MagicMock()
+        mock_journal.JournalHandler = MockJournalHandler
+        mock_systemd.journal = mock_journal
+
+        with patch.dict('sys.modules', {'systemd': mock_systemd, 'systemd.journal': mock_journal}):
+            settings = Settings({
+                'LOG_ENABLED': True,
+                'LOG_SYSTEMD': True,
+                'LOG_LEVEL': 'INFO',
+            })
+
+            configure_logging(settings)
+
+            # Log a test message
+            logger = logging.getLogger('test_logger')
+            test_message = "Test systemd log message"
+            logger.info(test_message)
+
+            # Verify the message was captured
+            assert len(captured_records) >= 1
+            # Find the test message in captured records
+            test_records = [r for r in captured_records if r.getMessage() == test_message]
+            assert len(test_records) == 1
+            assert test_records[0].levelname == 'INFO'
+
+    def test_systemd_respects_log_level(self) -> None:
+        """Test that LOG_LEVEL setting is respected with systemd logging"""
+        captured_records = []
+
+        class MockJournalHandler(logging.Handler):
+            def __init__(self):
+                super().__init__()
+            
+            def emit(self, record):
+                captured_records.append(record)
+
+        mock_systemd = MagicMock()
+        mock_journal = MagicMock()
+        mock_journal.JournalHandler = MockJournalHandler
+        mock_systemd.journal = mock_journal
+
+        with patch.dict('sys.modules', {'systemd': mock_systemd, 'systemd.journal': mock_journal}):
+            settings = Settings({
+                'LOG_ENABLED': True,
+                'LOG_SYSTEMD': True,
+                'LOG_LEVEL': 'WARNING',
+            })
+
+            configure_logging(settings)
+
+            logger = logging.getLogger('test_logger')
+
+            # These should be logged
+            logger.warning("Warning message")
+            logger.error("Error message")
+
+            # This should NOT be logged (below threshold)
+            logger.info("Info message")
+
+            # Filter to only our test messages
+            warning_records = [r for r in captured_records if r.getMessage() == "Warning message"]
+            error_records = [r for r in captured_records if r.getMessage() == "Error message"]
+            info_records = [r for r in captured_records if r.getMessage() == "Info message"]
+
+            # Should have warning and error, but not info
+            assert len(warning_records) == 1
+            assert len(error_records) == 1
+            assert len(info_records) == 0
+
+    def test_systemd_import_error_message_is_helpful(self) -> None:
+        """Test that ImportError provides helpful guidance when systemd-python is missing"""
+        with patch.dict('sys.modules', {'systemd.journal': None}):
+            settings = Settings({
+                'LOG_ENABLED': True,
+                'LOG_SYSTEMD': True,
+            })
+
+            with pytest.raises(ImportError) as exc_info:
+                configure_logging(settings)
+
+            # The error should mention systemd or give installation hint
+            error_msg = str(exc_info.value).lower()
+            assert 'systemd' in error_msg or 'journal' in error_msg
+
+
+class TestSystemdLoggingIntegration:
+    """Integration tests for systemd logging with other Scrapy features"""
+
+    @pytest.fixture(autouse=True)
+    def reset_logging(self) -> Generator:
+        """Reset logging configuration before and after each test"""
+        root = logging.getLogger()
+        original_handlers = root.handlers[:]
+        original_level = root.level
+        for handler in original_handlers:
+            root.removeHandler(handler)
+
+        yield
+
+        root.setLevel(original_level)
+        for handler in root.handlers[:]:
+            root.removeHandler(handler)
+        for handler in original_handlers:
+            root.addHandler(handler)
+
+    def test_systemd_with_log_format(self) -> None:
+        """Test that LOG_FORMAT is applied to systemd handler"""
+        class MockJournalHandler(logging.Handler):
+            def __init__(self):
+                super().__init__()
+
+        mock_systemd = MagicMock()
+        mock_journal = MagicMock()
+        mock_journal.JournalHandler = MockJournalHandler
+        mock_systemd.journal = mock_journal
+
+        custom_format = '[%(name)s] %(message)s'
+
+        with patch.dict('sys.modules', {'systemd': mock_systemd, 'systemd.journal': mock_journal}):
+            settings = Settings({
+                'LOG_ENABLED': True,
+                'LOG_SYSTEMD': True,
+                'LOG_FORMAT': custom_format,
+            })
+
+            configure_logging(settings)
+
+            # Get the handler and check its formatter
+            root = logging.getLogger()
+            journal_handlers = [h for h in root.handlers if isinstance(h, MockJournalHandler)]
+            assert len(journal_handlers) == 1
+
+            handler = journal_handlers[0]
+            if handler.formatter:
+                assert handler.formatter._fmt == custom_format
+
+    def test_systemd_with_log_dateformat(self) -> None:
+        """Test that LOG_DATEFORMAT is applied to systemd handler"""
+        class MockJournalHandler(logging.Handler):
+            def __init__(self):
+                super().__init__()
+
+        mock_systemd = MagicMock()
+        mock_journal = MagicMock()
+        mock_journal.JournalHandler = MockJournalHandler
+        mock_systemd.journal = mock_journal
+
+        custom_date_format = '%Y-%m-%d %H:%M:%S'
+
+        with patch.dict('sys.modules', {'systemd': mock_systemd, 'systemd.journal': mock_journal}):
+            settings = Settings({
+                'LOG_ENABLED': True,
+                'LOG_SYSTEMD': True,
+                'LOG_DATEFORMAT': custom_date_format,
+            })
+
+            configure_logging(settings)
+
+            # Get the handler and check its formatter's date format
+            root = logging.getLogger()
+            journal_handlers = [h for h in root.handlers if isinstance(h, MockJournalHandler)]
+            assert len(journal_handlers) == 1
+
+            handler = journal_handlers[0]
+            if handler.formatter:
+                assert handler.formatter.datefmt == custom_date_format
