@@ -453,6 +453,7 @@ REQUEST_FINGERPRINTER_CLASS = "scrapy.utils.request.RequestFingerprinter"
 
 RETRY_ENABLED = True
 RETRY_EXCEPTIONS = [
+    "scrapy.exceptions.DownloadTimeoutError",
     "twisted.internet.defer.TimeoutError",
     "twisted.internet.error.TimeoutError",
     "twisted.internet.error.DNSLookupError",

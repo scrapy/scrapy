@@ -54,6 +54,10 @@ class StopDownload(Exception):
         self.fail = fail
 
 
+class DownloadTimeoutError(Exception):
+    """Indicates that a request download has timed out."""
+
+
 # Items
 
 

@@ -17,6 +17,7 @@ from twisted.internet import defer, error
 from twisted.web._newclient import ResponseFailed
 from twisted.web.http import _DataLoss
 
+from scrapy.exceptions import DownloadTimeoutError
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import (
@@ -208,7 +209,7 @@ class TestHttpBase(ABC):
         request = Request(mockserver.url("/wait", is_secure=self.is_secure), meta=meta)
         async with self.get_dh() as download_handler:
             d = deferred_from_coro(download_handler.download_request(request))
-            with pytest.raises((defer.TimeoutError, error.TimeoutError)):
+            with pytest.raises(DownloadTimeoutError):
                 await maybe_deferred_to_future(d)
 
     @deferred_f_from_coro_f
@@ -229,7 +230,7 @@ class TestHttpBase(ABC):
         )
         async with self.get_dh() as download_handler:
             d = deferred_from_coro(download_handler.download_request(request))
-            with pytest.raises((defer.TimeoutError, error.TimeoutError)):
+            with pytest.raises(DownloadTimeoutError):
                 await maybe_deferred_to_future(d)
 
     @pytest.mark.parametrize("send_header", [True, False])
@@ -734,9 +735,9 @@ class TestHttpProxyBase(ABC):
         domain = "https://no-such-domain.nosuch"
         request = Request(domain, meta={"proxy": http_proxy, "download_timeout": 0.2})
         async with self.get_dh() as download_handler:
-            with pytest.raises(error.TimeoutError) as exc_info:
+            with pytest.raises(DownloadTimeoutError) as exc_info:
                 await download_handler.download_request(request)
-        assert domain in exc_info.value.osError
+        assert domain in str(exc_info.value)
 
     @deferred_f_from_coro_f
     async def test_download_with_proxy_without_http_scheme(

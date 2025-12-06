@@ -15,7 +15,7 @@ from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.web.client import ResponseFailed
 
 from scrapy.downloadermiddlewares.retry import RetryMiddleware, get_retry_request
-from scrapy.exceptions import IgnoreRequest
+from scrapy.exceptions import DownloadTimeoutError, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.settings.default_settings import RETRY_EXCEPTIONS
 from scrapy.spiders import Spider
@@ -100,6 +100,7 @@ class TestRetry:
             ResponseFailed,
             TCPTimedOutError,
             TxTimeoutError,
+            DownloadTimeoutError,
         ]
 
         for exc in exceptions:

@@ -1013,6 +1013,7 @@ RETRY_EXCEPTIONS
 Default::
 
     [
+        'scrapy.exceptions.DownloadTimeoutError',
         'twisted.internet.defer.TimeoutError',
         'twisted.internet.error.TimeoutError',
         'twisted.internet.error.DNSLookupError',
