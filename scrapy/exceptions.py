@@ -58,6 +58,10 @@ class DownloadTimeoutError(Exception):
     """Indicates that a request download has timed out."""
 
 
+class DownloadCancelledError(Exception):
+    """Indicates that a request download was cancelled."""
+
+
 # Items
 
 

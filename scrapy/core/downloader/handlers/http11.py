@@ -32,7 +32,7 @@ from zope.interface import implementer
 from scrapy import Request, signals
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
-from scrapy.exceptions import DownloadTimeoutError, StopDownload
+from scrapy.exceptions import DownloadCancelledError, DownloadTimeoutError, StopDownload
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -109,7 +109,10 @@ class HTTP11DownloadHandler(BaseDownloadHandler):
             fail_on_dataloss=self._fail_on_dataloss,
             crawler=self._crawler,
         )
-        return await maybe_deferred_to_future(agent.download_request(request))
+        try:
+            return await maybe_deferred_to_future(agent.download_request(request))
+        except CancelledError as e:
+            raise DownloadCancelledError(str(e)) from e
 
     async def close(self) -> None:
         from twisted.internet import reactor
@@ -533,7 +536,7 @@ class ScrapyAgent:
             logger.warning(warning_msg, warning_args)
 
             txresponse._transport.loseConnection()
-            raise CancelledError(warning_msg % warning_args)
+            raise DownloadCancelledError(warning_msg % warning_args)
 
         if warnsize and expected_size > warnsize:
             logger.warning(

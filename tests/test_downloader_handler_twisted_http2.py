@@ -12,6 +12,7 @@ from twisted.internet import defer
 from twisted.web.error import SchemeNotSupported
 from twisted.web.http import H2_ENABLED
 
+from scrapy.exceptions import DownloadCancelledError
 from scrapy.http import Request
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from tests.test_downloader_handlers_http_base import (
@@ -72,7 +73,7 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
                 logger.error.assert_called_once_with(mock.ANY)
 
             async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
-                with pytest.raises(defer.CancelledError):
+                with pytest.raises(DownloadCancelledError):
                     await download_handler.download_request(request)
 
             # As the error message is logged in the dataReceived callback, we
