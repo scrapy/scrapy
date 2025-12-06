@@ -8,7 +8,7 @@ from unittest import mock
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet import defer, error
+from twisted.internet import defer
 from twisted.web.error import SchemeNotSupported
 from twisted.web.http import H2_ENABLED
 
@@ -72,7 +72,7 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
                 logger.error.assert_called_once_with(mock.ANY)
 
             async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
-                with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
+                with pytest.raises(defer.CancelledError):
                     await download_handler.download_request(request)
 
             # As the error message is logged in the dataReceived callback, we

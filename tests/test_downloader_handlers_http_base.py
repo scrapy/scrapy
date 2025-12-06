@@ -13,7 +13,7 @@ from unittest import mock
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet import defer, error
+from twisted.internet import defer
 from twisted.web._newclient import ResponseFailed
 from twisted.web.http import _DataLoss
 
@@ -432,7 +432,7 @@ class TestHttp11Base(TestHttpBase):
         assert response.body == b"Works"
 
         async with self.get_dh({"DOWNLOAD_MAXSIZE": 4}) as download_handler:
-            with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
+            with pytest.raises(defer.CancelledError):
                 await download_handler.download_request(request)
 
     @deferred_f_from_coro_f
@@ -449,7 +449,7 @@ class TestHttp11Base(TestHttpBase):
                 logger.warning.assert_called_once_with(mock.ANY, mock.ANY)
 
             async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
-                with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
+                with pytest.raises(defer.CancelledError):
                     await download_handler.download_request(request)
 
             # As the error message is logged in the dataReceived callback, we
@@ -465,7 +465,7 @@ class TestHttp11Base(TestHttpBase):
         meta = {"download_maxsize": 2}
         request = Request(mockserver.url("/text", is_secure=self.is_secure), meta=meta)
         async with self.get_dh() as download_handler:
-            with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
+            with pytest.raises(defer.CancelledError):
                 await download_handler.download_request(request)
 
     @deferred_f_from_coro_f
@@ -474,7 +474,7 @@ class TestHttp11Base(TestHttpBase):
     ) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
         async with self.get_dh({"DOWNLOAD_MAXSIZE": 2}) as download_handler:
-            with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
+            with pytest.raises(defer.CancelledError):
                 await download_handler.download_request(request)
 
     @deferred_f_from_coro_f
