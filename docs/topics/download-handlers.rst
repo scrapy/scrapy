@@ -39,6 +39,23 @@ for additional schemes and to replace or disable default ones:
         "sftp": "my.download_handlers.SftpHandler",
     }
 
+Replacing HTTP(S) download handlers
+-----------------------------------
+
+While Scrapy provides a default handler for ``http`` and ``https`` schemes,
+users may want to use a different handler, provided by Scrapy or by some
+3rd-party package. There are several considerations to keep in mind related to
+this.
+
+First of all, as ``http`` and ``https`` are separate schemes, they need
+separate entries in the :setting:`DOWNLOAD_HANDLERS` setting, even though it's
+likely that the same handler class will be used for both schemes.
+
+Additionally, some of the Scrapy settings, like :setting:`DOWNLOAD_MAXSIZE`,
+are honored by the default HTTP(S) handler but not necessarily by alternative
+ones. The same may apply to other Scrapy features, e.g. the
+:signal:`bytes_received` and :signal:`headers_received` signals.
+
 .. _lazy-download-handlers:
 
 Lazy instantiation of download handlers
@@ -48,7 +65,8 @@ A download handler can be marked as "lazy" by setting its ``lazy`` class
 attribute to ``True``. Such handlers are only instantiated when they need to
 download their first request. This may be useful when the instantiation is slow
 or requires dependencies that are not always available, and the handler is not
-needed on every spider run. For example, the built-in S3 handler is lazy.
+needed on every spider run. For example, :class:`the built-in S3 handler
+<.S3DownloadHandler>` is lazy.
 
 Writing your own download handler
 =================================
