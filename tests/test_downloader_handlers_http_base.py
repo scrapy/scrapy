@@ -14,10 +14,12 @@ from unittest import mock
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.web._newclient import ResponseFailed
-from twisted.web.http import _DataLoss
 
-from scrapy.exceptions import DownloadCancelledError, DownloadTimeoutError
+from scrapy.exceptions import (
+    DownloadCancelledError,
+    DownloadTimeoutError,
+    ResponseDataLoss,
+)
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import (
@@ -498,12 +500,10 @@ class TestHttp11Base(TestHttpBase):
     async def test_download_cause_data_loss(
         self, url: str, mockserver: MockServer
     ) -> None:
-        # TODO: this one checks for Twisted-specific exceptions
         request = Request(mockserver.url(f"/{url}", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
-            with pytest.raises(ResponseFailed) as exc_info:
+            with pytest.raises(ResponseDataLoss):
                 await download_handler.download_request(request)
-        assert any(r.check(_DataLoss) for r in exc_info.value.reasons)
 
     @pytest.mark.parametrize("url", ["broken", "broken-chunked"])
     @deferred_f_from_coro_f

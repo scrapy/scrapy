@@ -1014,6 +1014,7 @@ Default::
 
     [
         'scrapy.exceptions.DownloadTimeoutError',
+        'scrapy.exceptions.ResponseDataLoss',
         'twisted.internet.defer.TimeoutError',
         'twisted.internet.error.TimeoutError',
         'twisted.internet.error.DNSLookupError',
