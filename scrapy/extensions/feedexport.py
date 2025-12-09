@@ -431,8 +431,6 @@ class FeedSlot:
 
 
 class FeedExporter:
-    _pending_close_coros: list[Coroutine[Any, Any, None]] = []
-
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
         exporter = cls(crawler)
@@ -447,6 +445,7 @@ class FeedExporter:
         self.feeds = {}
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
+        self._pending_close_coros: list[Coroutine[Any, Any, None]] = []
 
         if not self.settings["FEEDS"] and not self.settings["FEED_URI"]:
             raise NotConfigured
