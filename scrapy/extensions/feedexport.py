@@ -562,13 +562,6 @@ class FeedExporter:
             signals.feed_slot_closed, slot=slot
         )
 
-    def _handle_store_success(
-        self, result: Any, logmsg: str, spider: Spider, slot_type: str
-    ) -> None:
-        logger.info("Stored %s", logmsg, extra={"spider": spider})
-        assert self.crawler.stats
-        self.crawler.stats.inc_value(f"feedexport/success_count/{slot_type}")
-
     def _start_new_batch(
         self,
         batch_id: int,
