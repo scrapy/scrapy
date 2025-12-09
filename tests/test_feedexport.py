@@ -29,7 +29,6 @@ import lxml.etree
 import pytest
 from packaging.version import Version
 from testfixtures import LogCapture
-from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks
 from w3lib.url import file_uri_to_path, path_to_file_uri
 from zope.interface import implementer
@@ -2793,17 +2792,11 @@ class TestFeedExporterSignals:
     def feed_slot_closed_signal_handler(self, slot):
         self.feed_slot_closed_received = True
 
-    def feed_exporter_closed_signal_handler_deferred(self):
-        d = defer.Deferred()
-        d.addCallback(lambda _: setattr(self, "feed_exporter_closed_received", True))
-        d.callback(None)
-        return d
+    async def feed_exporter_closed_signal_handler_async(self):
+        self.feed_exporter_closed_received = True
 
-    def feed_slot_closed_signal_handler_deferred(self, slot):
-        d = defer.Deferred()
-        d.addCallback(lambda _: setattr(self, "feed_slot_closed_received", True))
-        d.callback(None)
-        return d
+    async def feed_slot_closed_signal_handler_async(self, slot):
+        self.feed_slot_closed_received = True
 
     async def run_signaled_feed_exporter(
         self, feed_exporter_signal_handler: Callable, feed_slot_signal_handler: Callable
@@ -2837,13 +2830,13 @@ class TestFeedExporterSignals:
         assert self.feed_exporter_closed_received
 
     @deferred_f_from_coro_f
-    async def test_feed_exporter_signals_sent_deferred(self) -> None:
+    async def test_feed_exporter_signals_sent_async(self) -> None:
         self.feed_exporter_closed_received = False
         self.feed_slot_closed_received = False
 
         await self.run_signaled_feed_exporter(
-            self.feed_exporter_closed_signal_handler_deferred,
-            self.feed_slot_closed_signal_handler_deferred,
+            self.feed_exporter_closed_signal_handler_async,
+            self.feed_slot_closed_signal_handler_async,
         )
         assert self.feed_slot_closed_received
         assert self.feed_exporter_closed_received

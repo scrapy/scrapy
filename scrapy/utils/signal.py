@@ -27,6 +27,7 @@ from scrapy.utils.defer import (
     maybeDeferred_coro,
 )
 from scrapy.utils.log import failure_to_exc_info
+from scrapy.utils.python import global_object_name
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +186,8 @@ async def _send_catch_log_asyncio(
                 result = await ensure_awaitable(
                     robustApply(
                         receiver, signal=signal, sender=sender, *arguments, **named
-                    )
+                    ),
+                    _warn=global_object_name(receiver),
                 )
             except dont_log as ex:  # pylint: disable=catching-non-exception
                 result = ex

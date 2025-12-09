@@ -5,17 +5,16 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
-from twisted.internet import defer
-
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured, NotSupported
 from scrapy.utils.decorators import _warn_spider_arg
+from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
+    from collections.abc import Callable
 
     from twisted.internet.defer import Deferred
 
@@ -107,8 +106,9 @@ class DownloadHandlers:
         assert self._crawler.spider
         return handler.download_request(request, self._crawler.spider)
 
-    @defer.inlineCallbacks
-    def _close(self, *_a: Any, **_kw: Any) -> Generator[Deferred[Any], Any, None]:
+    async def _close(self) -> None:
         for dh in self._handlers.values():
-            if hasattr(dh, "close"):
-                yield dh.close()
+            if not hasattr(dh, "close"):
+                continue
+
+            await ensure_awaitable(dh.close())

@@ -103,6 +103,7 @@ class TestSendCatchLogAsync(TestSendCatchLog):
         return deferred_from_coro(send_catch_log_async(signal, *a, **kw))
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestSendCatchLogAsync2(TestSendCatchLogAsync):
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
