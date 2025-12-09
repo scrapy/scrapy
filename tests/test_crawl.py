@@ -9,13 +9,13 @@ from urllib.parse import urlencode, urlparse
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, succeed
 from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
 from scrapy.crawler import CrawlerRunner
-from scrapy.exceptions import CloseSpider, StopDownload
+from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
@@ -721,6 +721,18 @@ class TestCrawlSpider:
         ].value.response.headers == crawler.spider.meta.get("headers_received")
 
     @inlineCallbacks
+    def test_spider_callback_deferred_deprecated(self):
+        def cb(response: Response) -> Any:
+            return succeed(None)
+
+        crawler = get_crawler(SingleRequestSpider)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="Returning Deferreds from spider callbacks is deprecated",
+        ):
+            yield crawler.crawl(seed=self.mockserver.url("/"), callback_func=cb)
+
+    @inlineCallbacks
     def test_spider_errback(self):
         failures = []
 
@@ -850,6 +862,20 @@ class TestCrawlSpider:
         assert "HTTP status code is not handled or not allowed" not in str(log)
         assert "Spider error processing" not in str(log)
         assert "Crawled (200)" in str(log)
+
+    @inlineCallbacks
+    def test_spider_errback_deferred_deprecated(self):
+        def eb(failure: Failure) -> Any:
+            return succeed(None)
+
+        crawler = get_crawler(SingleRequestSpider)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="Returning Deferreds from spider errbacks is deprecated",
+        ):
+            yield crawler.crawl(
+                seed=self.mockserver.url("/status?n=400"), errback_func=eb
+            )
 
     @inlineCallbacks
     def test_raise_closespider(self):
