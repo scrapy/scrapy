@@ -23,6 +23,7 @@ from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _defer_sleep_async,
     _schedule_coro,
+    deferred_from_coro,
     maybe_deferred_to_future,
 )
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
@@ -139,7 +140,11 @@ class Downloader:
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
         try:
-            return (yield self.middleware.download(self._enqueue_request, request))
+            return (
+                yield deferred_from_coro(
+                    self.middleware.download_async(self._enqueue_request, request)
+                )
+            )
         finally:
             self.active.remove(request)
 
@@ -178,10 +183,7 @@ class Downloader:
         return key
 
     # passed as download_func into self.middleware.download() in self.fetch()
-    @inlineCallbacks
-    def _enqueue_request(
-        self, request: Request
-    ) -> Generator[Deferred[Any], Any, Response]:
+    async def _enqueue_request(self, request: Request) -> Response:
         key, slot = self._get_slot(request)
         request.meta[self.DOWNLOAD_SLOT] = key
         slot.active.add(request)
@@ -194,7 +196,7 @@ class Downloader:
         slot.queue.append((request, d))
         self._process_queue(slot)
         try:
-            return (yield d)  # fired in _wait_for_download()
+            return await maybe_deferred_to_future(d)  # fired in _wait_for_download()
         finally:
             slot.active.remove(request)
 
