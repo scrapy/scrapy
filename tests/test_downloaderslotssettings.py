@@ -1,10 +1,12 @@
 import time
 
+import pytest
 from twisted.internet.defer import inlineCallbacks
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot
 from scrapy.crawler import CrawlerRunner
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
@@ -103,28 +105,25 @@ def test_params():
         )
 
 
-class TestNoneSlotHandling(TestCase):
+class TestNoneSlotHandling:
     """Test specific cases for None slot handling with different priority queues."""
 
-    @classmethod
-    def setUpClass(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.mockserver.__exit__(None, None, None)
-
-    def setUp(self):
-        self.runner = CrawlerRunner()
-
-    @inlineCallbacks
-    def _test_none_slot_with_priority_queue(self, priority_queue_class):
+    @pytest.mark.parametrize(
+        "priority_queue_class",
+        [
+            "scrapy.pqueues.ScrapyPriorityQueue",
+            "scrapy.pqueues.DownloaderAwarePriorityQueue",
+        ],
+    )
+    @deferred_f_from_coro_f
+    async def test_none_slot_with_priority_queue(
+        self, mockserver: MockServer, priority_queue_class: str
+    ) -> None:
         crawler = get_crawler(
             DownloaderSlotsSettingsTestSpider,
             settings_dict={"SCHEDULER_PRIORITY_QUEUE": priority_queue_class},
         )
-        yield crawler.crawl(mockserver=self.mockserver)
+        await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
 
         assert hasattr(crawler.spider, "times")
         assert None in crawler.spider.times
@@ -133,15 +132,3 @@ class TestNoneSlotHandling(TestCase):
         stats = crawler.stats
         assert stats.get_value("spider_exceptions", 0) == 0
         assert stats.get_value("downloader/exception_count", 0) == 0
-
-    @inlineCallbacks
-    def test_none_slot_with_scrapy_priority_queue(self):
-        yield self._test_none_slot_with_priority_queue(
-            "scrapy.pqueues.ScrapyPriorityQueue"
-        )
-
-    @inlineCallbacks
-    def test_none_slot_with_downloader_aware_priority_queue(self):
-        yield self._test_none_slot_with_priority_queue(
-            "scrapy.pqueues.DownloaderAwarePriorityQueue"
-        )
