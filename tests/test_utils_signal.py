@@ -6,8 +6,8 @@ from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks
 from twisted.python.failure import Failure
-from twisted.trial import unittest
 
+from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.signal import (
     send_catch_log,
@@ -17,7 +17,10 @@ from scrapy.utils.signal import (
 from scrapy.utils.test import get_from_asyncio_queue
 
 
-class TestSendCatchLog(unittest.TestCase):
+class TestSendCatchLog:
+    # whether the function being tested returns exceptions or failures
+    returns_exceptions: bool = False
+
     @inlineCallbacks
     def test_send_catch_log(self):
         test_signal = object()
@@ -40,7 +43,9 @@ class TestSendCatchLog(unittest.TestCase):
         assert "error_handler" in record.getMessage()
         assert record.levelname == "ERROR"
         assert result[0][0] == self.error_handler  # pylint: disable=comparison-with-callable
-        assert isinstance(result[0][1], Failure)
+        assert isinstance(
+            result[0][1], Exception if self.returns_exceptions else Failure
+        )
         assert result[1] == (self.ok_handler, "OK")
 
         dispatcher.disconnect(self.error_handler, signal=test_signal)
@@ -59,6 +64,7 @@ class TestSendCatchLog(unittest.TestCase):
         return "OK"
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestSendCatchLogDeferred(TestSendCatchLog):
     def _get_result(self, signal, *a, **kw):
         return send_catch_log_deferred(signal, *a, **kw)
@@ -66,16 +72,13 @@ class TestSendCatchLogDeferred(TestSendCatchLog):
 
 class TestSendCatchLogDeferred2(TestSendCatchLogDeferred):
     def ok_handler(self, arg, handlers_called):
-        from twisted.internet import reactor
-
         handlers_called.add(self.ok_handler)
         assert arg == "test"
         d = defer.Deferred()
-        reactor.callLater(0, d.callback, "OK")
+        call_later(0, d.callback, "OK")
         return d
 
 
-@pytest.mark.usefixtures("reactor_pytest")
 class TestSendCatchLogDeferredAsyncDef(TestSendCatchLogDeferred):
     async def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)
@@ -94,22 +97,22 @@ class TestSendCatchLogDeferredAsyncio(TestSendCatchLogDeferred):
 
 
 class TestSendCatchLogAsync(TestSendCatchLog):
+    returns_exceptions = True
+
     def _get_result(self, signal, *a, **kw):
         return deferred_from_coro(send_catch_log_async(signal, *a, **kw))
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestSendCatchLogAsync2(TestSendCatchLogAsync):
     def ok_handler(self, arg, handlers_called):
-        from twisted.internet import reactor
-
         handlers_called.add(self.ok_handler)
         assert arg == "test"
         d = defer.Deferred()
-        reactor.callLater(0, d.callback, "OK")
+        call_later(0, d.callback, "OK")
         return d
 
 
-@pytest.mark.usefixtures("reactor_pytest")
 class TestSendCatchLogAsyncAsyncDef(TestSendCatchLogAsync):
     async def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, overload
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_from_coro
@@ -76,7 +76,7 @@ def spidercls_for_request(
 def spidercls_for_request(
     spider_loader: SpiderLoaderProtocol,
     request: Request,
-    default_spidercls: Literal[None],
+    default_spidercls: None,
     log_none: bool = ...,
     log_multiple: bool = ...,
 ) -> type[Spider] | None: ...

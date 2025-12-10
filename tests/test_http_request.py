@@ -881,7 +881,7 @@ class TestFormRequest(TestRequest):
         )
         with pytest.raises(
             ValueError,
-            match="Multiple elements found .* matching the criteria in clickdata",
+            match=r"Multiple elements found .* matching the criteria in clickdata",
         ):
             self.request_class.from_response(response, clickdata={"type": "submit"})
 
@@ -1441,7 +1441,7 @@ class TestXmlRpcRequest(TestRequest):
         )
         assert r.method == "POST"
         assert r.encoding == kwargs.get("encoding", "utf-8")
-        assert r.dont_filter, True
+        assert r.dont_filter
 
     def test_xmlrpc_dumps(self):
         self._test_request(params=("value",))
@@ -1465,12 +1465,6 @@ class TestJsonRequest(TestRequest):
         b"Content-Type": [b"application/json"],
         b"Accept": [b"application/json, text/javascript, */*; q=0.01"],
     }
-
-    def setup_method(self):
-        warnings.simplefilter("always")
-
-    def teardown_method(self):
-        warnings.resetwarnings()
 
     def test_data(self):
         r1 = self.request_class(url="http://www.example.com/")

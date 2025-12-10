@@ -159,7 +159,7 @@ class TestImagesPipeline:
         self.pipeline.thumbs = {"small": (20, 20)}
 
         orig_im, buf = _create_image("JPEG", "RGB", (50, 50), (0, 0, 0))
-        orig_thumb, orig_thumb_buf = _create_image("JPEG", "RGB", (20, 20), (0, 0, 0))
+        _, orig_thumb_buf = _create_image("JPEG", "RGB", (20, 20), (0, 0, 0))
         resp = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf.getvalue())
         req = Request(url="https://dev.mydeco.com/mydeco.gif")
 
@@ -169,12 +169,32 @@ class TestImagesPipeline:
 
         path, new_im, new_buf = next(get_images_gen)
         assert path == "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
-        assert orig_im == new_im
+        assert orig_im.copy() == new_im
         assert buf.getvalue() == new_buf.getvalue()
 
-        thumb_path, thumb_img, thumb_buf = next(get_images_gen)
+        thumb_path, _, thumb_buf = next(get_images_gen)
         assert thumb_path == "thumbs/small/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
         assert orig_thumb_buf.getvalue() == thumb_buf.getvalue()
+
+    def test_get_transposed_images(self):
+        orig_im = Image.new("RGB", (2, 2), (0, 0, 0))
+        orig_im.putpixel((1, 1), (255, 0, 0))
+        exif = orig_im.getexif()
+        exif[274] = 3
+        buf = io.BytesIO()
+        orig_im.save(buf, "PNG", exif=exif)
+        buf.seek(0)
+
+        resp = Response(url="https://dev.mydeco.com/mydeco.gif", body=buf.getvalue())
+        req = Request(url="https://dev.mydeco.com/mydeco.gif")
+
+        get_images_gen = self.pipeline.get_images(
+            response=resp, request=req, info=object()
+        )
+
+        path, new_im, _ = next(get_images_gen)
+        assert path == "full/3fd165099d8e71b8a48b2683946e64dbfad8b52d.jpg"
+        assert new_im.getpixel((0, 0)) == (255, 0, 0)
 
     def test_convert_image(self):
         SIZE = (100, 100)
@@ -208,6 +228,26 @@ class TestImagesPipeline:
         converted, _ = self.pipeline.convert_image(im, response_body=buf)
         assert converted.mode == "RGB"
         assert converted.getcolors() == [(10000, (205, 230, 255))]
+
+    @pytest.mark.parametrize(
+        "bad_type",
+        [
+            "http://example.com/file.jpg",
+            ("http://example.com/file.jpg",),
+            {"url": "http://example.com/file.jpg"},
+            123,
+            None,
+        ],
+    )
+    def test_rejects_non_list_image_urls(self, tmp_path, bad_type):
+        pipeline = ImagesPipeline.from_crawler(
+            get_crawler(None, {"IMAGES_STORE": str(tmp_path)})
+        )
+        item = ImagesPipelineTestItem()
+        item["image_urls"] = bad_type
+
+        with pytest.raises(TypeError, match="image_urls must be a list of URLs"):
+            list(pipeline.get_media_requests(item, None))
 
 
 class TestImagesPipelineFieldsMixin(ABC):
@@ -502,8 +542,8 @@ class TestImagesPipelineCustomSettings:
             assert getattr(pipeline_cls, pipe_attr.lower()) == expected_value
 
 
-def _create_image(format, *a, **kw):
+def _create_image(format_, *a, **kw):
     buf = io.BytesIO()
-    Image.new(*a, **kw).save(buf, format)
+    Image.new(*a, **kw).save(buf, format_)
     buf.seek(0)
     return Image.open(buf), buf

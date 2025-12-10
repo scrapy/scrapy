@@ -74,39 +74,30 @@ In addition to native coroutine APIs Scrapy has some APIs that return a
 function that returns a :class:`~twisted.internet.defer.Deferred` object. These
 APIs are also asynchronous but don't yet support native ``async def`` syntax.
 In the future we plan to add support for the ``async def`` syntax to these APIs
-or replace them with other APIs where changing the existing ones is
+or replace them with other APIs where changing the existing ones isn't
 possible.
 
-The following Scrapy methods return :class:`~twisted.internet.defer.Deferred`
-objects (this list is not complete as it only includes methods that we think
-may be useful for user code):
-
--   :class:`scrapy.crawler.Crawler`:
-
-    - :meth:`~scrapy.crawler.Crawler.crawl`
-
-    - :meth:`~scrapy.crawler.Crawler.stop`
-
--   :class:`scrapy.crawler.CrawlerRunner` (also inherited by
-    :class:`scrapy.crawler.CrawlerProcess`):
-
-    - :meth:`~scrapy.crawler.CrawlerRunner.crawl`
-
-    - :meth:`~scrapy.crawler.CrawlerRunner.stop`
-
-    - :meth:`~scrapy.crawler.CrawlerRunner.join`
-
--   :class:`scrapy.core.engine.ExecutionEngine`:
-
-    - :meth:`~scrapy.core.engine.ExecutionEngine.download`
-
--   :class:`scrapy.signalmanager.SignalManager`:
-
-    - :meth:`~scrapy.signalmanager.SignalManager.send_catch_log_deferred`
+These APIs don't have a coroutine-based counterpart:
 
 -   :class:`~scrapy.mail.MailSender`
 
     - :meth:`~scrapy.mail.MailSender.send`
+
+These APIs have a coroutine-based implementation and a Deferred-based one:
+
+-   :class:`scrapy.crawler.Crawler`:
+
+    - :meth:`~scrapy.crawler.Crawler.crawl_async` (coroutine-based) and
+      :meth:`~scrapy.crawler.Crawler.crawl` (Deferred-based): the former
+      doesn't support non-default reactors and so the latter should be used
+      with those.
+
+-   :class:`scrapy.crawler.AsyncCrawlerRunner` and its subclass
+    :class:`scrapy.crawler.AsyncCrawlerProcess` (coroutine-based) and
+    :class:`scrapy.crawler.CrawlerRunner` and its subclass
+    :class:`scrapy.crawler.CrawlerProcess` (Deferred-based): the former
+    doesn't support non-default reactors and so the latter should be used
+    with those.
 
 The following user-supplied methods can return
 :class:`~twisted.internet.defer.Deferred` objects (the methods that can also
@@ -158,11 +149,10 @@ more information about this.
 
 For example:
 
--   The :meth:`ExecutionEngine.download()
-    <scrapy.core.engine.ExecutionEngine.download>` method returns a
-    :class:`~twisted.internet.defer.Deferred` object that fires with the
-    downloaded response. You can use this object directly in Deferred-based
-    code or convert it into a :class:`~asyncio.Future` object with
+-   The :meth:`MailSender.send() <scrapy.mail.MailSender.send>` method returns
+    a :class:`~twisted.internet.defer.Deferred` object that fires when the
+    email is sent. You can use this object directly in Deferred-based code or
+    convert it into a :class:`~asyncio.Future` object with
     :func:`~scrapy.utils.defer.maybe_deferred_to_future`.
 -   A custom download handler needs to define a ``download_request()`` method
     that returns a :class:`~twisted.internet.defer.Deferred` object. You can
@@ -191,7 +181,7 @@ shorter and cleaner:
             adapter["field"] = data
             return item
 
-        def process_item(self, item, spider):
+        def process_item(self, item):
             adapter = ItemAdapter(item)
             dfd = db.get_some_data(adapter["id"])
             dfd.addCallback(self._update_item, item)
@@ -205,7 +195,7 @@ becomes:
 
 
     class DbPipeline:
-        async def process_item(self, item, spider):
+        async def process_item(self, item):
             adapter = ItemAdapter(item)
             adapter["field"] = await db.get_some_data(adapter["id"])
             return item
@@ -266,7 +256,6 @@ within a spider callback:
 .. code-block:: python
 
     from scrapy import Spider, Request
-    from scrapy.utils.defer import maybe_deferred_to_future
 
 
     class SingleRequestSpider(Spider):
@@ -275,8 +264,9 @@ within a spider callback:
 
         async def parse(self, response, **kwargs):
             additional_request = Request("https://example.org/price")
-            deferred = self.crawler.engine.download(additional_request)
-            additional_response = await maybe_deferred_to_future(deferred)
+            additional_response = await self.crawler.engine.download_async(
+                additional_request
+            )
             yield {
                 "h1": response.css("h1").get(),
                 "price": additional_response.css("#price").get(),
@@ -286,9 +276,9 @@ You can also send multiple requests in parallel:
 
 .. code-block:: python
 
+    import asyncio
+
     from scrapy import Spider, Request
-    from scrapy.utils.defer import maybe_deferred_to_future
-    from twisted.internet.defer import DeferredList
 
 
     class MultipleRequestsSpider(Spider):
@@ -300,11 +290,11 @@ You can also send multiple requests in parallel:
                 Request("https://example.com/price"),
                 Request("https://example.com/color"),
             ]
-            deferreds = []
+            tasks = []
             for r in additional_requests:
-                deferred = self.crawler.engine.download(r)
-                deferreds.append(deferred)
-            responses = await maybe_deferred_to_future(DeferredList(deferreds))
+                task = self.crawler.engine.download_async(r)
+                tasks.append(task)
+            responses = await asyncio.gather(*tasks)
             yield {
                 "h1": response.css("h1::text").get(),
                 "price": responses[0][1].css(".price::text").get(),
@@ -421,12 +411,12 @@ For example:
 .. code-block:: python
 
     class UniversalSpiderMiddleware:
-        def process_spider_output(self, response, result, spider):
+        def process_spider_output(self, response, result):
             for r in result:
                 # ... do something with r
                 yield r
 
-        async def process_spider_output_async(self, response, result, spider):
+        async def process_spider_output_async(self, response, result):
             async for r in result:
                 # ... do something with r
                 yield r

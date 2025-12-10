@@ -315,7 +315,7 @@ def _load_policy_class(
     from https://www.w3.org/TR/referrer-policy/#referrer-policies
     """
     try:
-        return cast(type[ReferrerPolicy], load_object(policy))
+        return cast("type[ReferrerPolicy]", load_object(policy))
     except ValueError:
         tokens = [token.strip() for token in policy.lower().split(",")]
         # https://www.w3.org/TR/referrer-policy/#parse-referrer-policy-from-header

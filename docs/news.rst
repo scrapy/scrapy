@@ -15,6 +15,14 @@ Backward-incompatible changes
     ``True`` when running Scrapy via :ref:`its command-line tool
     <topics-commands-crawlerprocess>` to avoid a reactor mismatch exception.
 
+-   The ``log_count/*`` stats no longer count some of the early messages that
+    they counted before. While the earliest log messages, emitted before the
+    counter is initialized, were never counted, the counter initialization now
+    happens later than in previous Scrapy versions. You may need to adjust
+    expected values if you retrieve and compare values of these stats in your
+    code.
+    (:issue:`7046`)
+
 -   The classes listed below are now :term:`abstract base classes <abstract
     base class>`. They cannot be instantiated directly and their subclasses
     need to override the abstract methods listed below to be able to be
@@ -44,6 +52,77 @@ Backward-incompatible changes
 
         - :meth:`~scrapy.spidermiddlewares.referer.ReferrerPolicy.referrer`
 
+-   :class:`scrapy.middleware.MiddlewareManager` no longer includes code for
+    handling ``open_spider()`` and ``close_spider()`` component methods. As
+    this code was only used for pipelines it was moved into
+    :class:`scrapy.pipelines.ItemPipelineManager`. This change should only
+    affect custom subclasses of :class:`~scrapy.middleware.MiddlewareManager`.
+    The following code was moved:
+
+    - ``scrapy.middleware.MiddlewareManager.open_spider()``
+
+    - ``scrapy.middleware.MiddlewareManager.close_spider()``
+
+    - Code in ``scrapy.middleware.MiddlewareManager._add_middleware()`` that
+      processes ``open_spider()`` and ``close_spider()`` component methods.
+
+-   :meth:`scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware.process_request`
+    now returns a coroutine, previously it returned a
+    :class:`~twisted.internet.defer.Deferred` object or ``None``. The
+    ``robot_parser()`` method was also changed to return a coroutine. This
+    change only impacts code that subclasses
+    :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` or
+    calls its methods directly.
+
+.. _release-2.13.4:
+
+Scrapy 2.13.4 (2025-11-17)
+--------------------------
+
+Security bug fixes
+~~~~~~~~~~~~~~~~~~
+
+-   Improved protection against decompression bombs in
+    :class:`~scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware`
+    for responses compressed using the ``br`` and ``deflate`` methods: if a
+    single compressed chunk would be larger than the response size limit (see
+    :setting:`DOWNLOAD_MAXSIZE`) when decompressed, decompression is no longer
+    carried out. This is especially important for the ``br`` (Brotli) method
+    that can provide a very high compression ratio. Please, see the
+    `CVE-2025-6176`_ and `GHSA-2qfp-q593-8484`_ security advisories for more
+    information.
+    (:issue:`7134`)
+
+    .. _CVE-2025-6176: https://nvd.nist.gov/vuln/detail/CVE-2025-6176
+    .. _GHSA-2qfp-q593-8484: https://github.com/advisories/GHSA-2qfp-q593-8484
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   The minimum supported version of the optional ``brotli`` package is now
+    ``1.2.0``.
+    (:issue:`7134`)
+
+-   The ``brotlicffi`` and ``brotlipy`` packages can no longer be used to
+    decompress Brotli-compressed responses. Please install the ``brotli``
+    package instead.
+    (:issue:`7134`)
+
+Other changes
+~~~~~~~~~~~~~
+
+-   Restricted the maximum supported Twisted version to ``25.5.0``, as Scrapy
+    currently uses some private APIs changed in later Twisted versions.
+    (:issue:`7142`)
+
+-   Stopped setting the ``COVERAGE_CORE`` environment variable in tests, it
+    didn't have an effect but caused the ``coverage`` module to produce a
+    warning or an error.
+    (:issue:`7137`)
+
+-   Removed the documentation build dependency on the deprecated
+    ``sphinx-hoverxref`` module.
+    (:issue:`6786`, :issue:`6922`)
 
 .. _release-2.13.3:
 

@@ -88,7 +88,7 @@ recommend that such custom components should be written in the following way:
 
 1. The custom component (e.g. ``MyDownloadHandler``) shouldn't inherit from the
    default Scrapy one (e.g.
-   ``scrapy.core.downloader.handlers.http.HTTPDownloadHandler``), but instead
+   ``scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler``), but instead
    be able to load the class of the fallback component from a special setting
    (e.g. ``MY_FALLBACK_DOWNLOAD_HANDLER``), create an instance of it and use
    it.
@@ -166,7 +166,6 @@ Use a fallback component:
 
 .. code-block:: python
 
-    from scrapy.core.downloader.handlers.http import HTTPDownloadHandler
     from scrapy.utils.misc import build_from_crawler
 
 

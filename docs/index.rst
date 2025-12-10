@@ -132,7 +132,7 @@ Built-in services
    topics/telnetconsole
 
 :doc:`topics/logging`
-    Learn how to use Python's builtin logging on Scrapy.
+    Learn how to use Python's built-in logging on Scrapy.
 
 :doc:`topics/stats`
     Collect statistics about your scraping crawler.

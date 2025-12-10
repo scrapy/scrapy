@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import AsyncIterator, Iterable
 from typing import TYPE_CHECKING, Any, cast
 
-from scrapy import Request
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.spiders import Spider
 from scrapy.utils.spider import iterate_spider_output
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncIterator, Iterable
+
+    from scrapy import Request
     from scrapy.http import Response
 
 
@@ -39,7 +40,7 @@ class InitSpider(Spider):
 
     def start_requests(self) -> Iterable[Request]:
         self._postinit_reqs: Iterable[Request] = super().start_requests()
-        return cast(Iterable[Request], iterate_spider_output(self.init_request()))
+        return cast("Iterable[Request]", iterate_spider_output(self.init_request()))
 
     def initialized(self, response: Response | None = None) -> Any:
         """This method must be set as the callback of your last initialization

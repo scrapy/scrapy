@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import sys
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, ParamSpec, TypeVar
 from warnings import catch_warnings, filterwarnings
 
 from twisted.internet import asyncioreactor, error
@@ -13,23 +13,20 @@ from scrapy.utils.misc import load_object
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
-    from asyncio import AbstractEventLoop, AbstractEventLoopPolicy
+    from asyncio import AbstractEventLoop
     from collections.abc import Callable
 
     from twisted.internet.protocol import ServerFactory
     from twisted.internet.tcp import Port
 
-    # typing.ParamSpec requires Python 3.10
-    from typing_extensions import ParamSpec
-
     from scrapy.utils.asyncio import CallLaterResult
 
-    _P = ParamSpec("_P")
 
 _T = TypeVar("_T")
+_P = ParamSpec("_P")
 
 
-def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]  # pylint: disable=inconsistent-return-statements
+def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]  # pylint: disable=inconsistent-return-statements  # noqa: RET503
     """Like reactor.listenTCP but tries different ports in a range."""
     from twisted.internet import reactor
 
@@ -39,7 +36,7 @@ def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:
         return reactor.listenTCP(0, factory, interface=host)
     if len(portrange) == 1:
         return reactor.listenTCP(portrange[0], factory, interface=host)
-    for x in range(portrange[0], portrange[1] + 1):  # noqa: RET503
+    for x in range(portrange[0], portrange[1] + 1):
         try:
             return reactor.listenTCP(x, factory, interface=host)
         except error.CannotListenError:
@@ -60,7 +57,8 @@ class CallLaterOnce(Generic[_T]):
         self._deferreds: list[Deferred] = []
 
     def schedule(self, delay: float = 0) -> None:
-        from scrapy.utils.asyncio import call_later
+        # circular import
+        from scrapy.utils.asyncio import call_later  # noqa: PLC0415
 
         if self._call is None:
             self._call = call_later(delay, self)
@@ -70,7 +68,8 @@ class CallLaterOnce(Generic[_T]):
             self._call.cancel()
 
     def __call__(self) -> _T:
-        from scrapy.utils.asyncio import call_later
+        # circular import
+        from scrapy.utils.asyncio import call_later  # noqa: PLC0415
 
         self._call = None
         result = self._func(*self._a, **self._kw)
@@ -82,7 +81,8 @@ class CallLaterOnce(Generic[_T]):
         return result
 
     async def wait(self):
-        from scrapy.utils.defer import maybe_deferred_to_future
+        # circular import
+        from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
 
         d = Deferred()
         self._deferreds.append(d)
@@ -97,17 +97,12 @@ def set_asyncio_event_loop_policy() -> None:
     so we restrict their use to the absolutely essential case.
     This should only be used to install the reactor.
     """
-    _get_asyncio_event_loop_policy()
-
-
-def _get_asyncio_event_loop_policy() -> AbstractEventLoopPolicy:
     policy = asyncio.get_event_loop_policy()
     if sys.platform == "win32" and not isinstance(
         policy, asyncio.WindowsSelectorEventLoopPolicy
     ):
         policy = asyncio.WindowsSelectorEventLoopPolicy()
         asyncio.set_event_loop_policy(policy)
-    return policy
 
 
 def install_reactor(reactor_path: str, event_loop_path: str | None = None) -> None:

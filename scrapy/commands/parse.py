@@ -15,7 +15,7 @@ from scrapy.exceptions import UsageError
 from scrapy.http import Request, Response
 from scrapy.utils import display
 from scrapy.utils.asyncgen import collect_asyncgen
-from scrapy.utils.defer import aiter_errback, deferred_from_coro
+from scrapy.utils.defer import _schedule_coro, aiter_errback, deferred_from_coro
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.spider import spidercls_for_request
@@ -284,8 +284,12 @@ class Command(BaseRunSpiderCommand):
         if opts.pipelines:
             assert self.pcrawler.engine
             itemproc = self.pcrawler.engine.scraper.itemproc
-            for item in items:
-                itemproc.process_item(item, spider)
+            if hasattr(itemproc, "process_item_async"):
+                for item in items:
+                    _schedule_coro(itemproc.process_item_async(item))
+            else:
+                for item in items:
+                    itemproc.process_item(item, spider)
         self.add_items(depth, items)
         self.add_requests(depth, requests)
 

@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import datetime
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from scrapy.extensions.periodic_log import PeriodicLog
 from scrapy.utils.test import get_crawler
 
 from .spiders import MetaSpider
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 
 stats_dump_1 = {
     "log_count/INFO": 10,

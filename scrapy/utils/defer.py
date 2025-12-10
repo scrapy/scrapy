@@ -10,14 +10,18 @@ import warnings
 from asyncio import Future
 from collections.abc import Awaitable, Coroutine, Iterable, Iterator
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast, overload
-
-from twisted.internet.defer import (
-    Deferred,
-    DeferredList,
-    fail,
-    succeed,
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Concatenate,
+    Generic,
+    ParamSpec,
+    TypeVar,
+    cast,
+    overload,
 )
+
+from twisted.internet.defer import Deferred, DeferredList, fail, succeed
 from twisted.internet.task import Cooperator
 from twisted.python import failure
 
@@ -29,14 +33,10 @@ if TYPE_CHECKING:
 
     from twisted.python.failure import Failure
 
-    # typing.Concatenate and typing.ParamSpec require Python 3.10
-    from typing_extensions import Concatenate, ParamSpec
-
-    _P = ParamSpec("_P")
-
 
 _T = TypeVar("_T")
 _T2 = TypeVar("_T2")
+_P = ParamSpec("_P")
 
 
 _DEFER_DELAY = 0.1
@@ -162,7 +162,7 @@ def mustbe_deferred(
 def parallel(
     iterable: Iterable[_T],
     count: int,
-    callable: Callable[Concatenate[_T, _P], _T2],
+    callable: Callable[Concatenate[_T, _P], _T2],  # noqa: A002
     *args: _P.args,
     **named: _P.kwargs,
 ) -> Deferred[list[tuple[bool, Iterator[_T2]]]]:
@@ -225,12 +225,12 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
     def __init__(
         self,
         aiterable: AsyncIterator[_T],
-        callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],
+        callable_: Callable[Concatenate[_T, _P], Deferred[Any] | None],
         *callable_args: _P.args,
         **callable_kwargs: _P.kwargs,
     ):
         self.aiterator: AsyncIterator[_T] = aiterable.__aiter__()
-        self.callable: Callable[Concatenate[_T, _P], Deferred[Any] | None] = callable
+        self.callable: Callable[Concatenate[_T, _P], Deferred[Any] | None] = callable_
         self.callable_args: tuple[Any, ...] = callable_args
         self.callable_kwargs: dict[str, Any] = callable_kwargs
         self.finished: bool = False
@@ -283,7 +283,7 @@ class _AsyncCooperatorAdapter(Iterator, Generic[_T]):
 def parallel_async(
     async_iterable: AsyncIterator[_T],
     count: int,
-    callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],
+    callable: Callable[Concatenate[_T, _P], Deferred[Any] | None],  # noqa: A002
     *args: _P.args,
     **named: _P.kwargs,
 ) -> Deferred[list[tuple[bool, Iterator[Deferred[Any]]]]]:
@@ -300,11 +300,16 @@ def parallel_async(
 
 def process_chain(
     callbacks: Iterable[Callable[Concatenate[_T, _P], _T]],
-    input: _T,
+    input: _T,  # noqa: A002
     *a: _P.args,
     **kw: _P.kwargs,
 ) -> Deferred[_T]:
     """Return a Deferred built by chaining the given callbacks"""
+    warnings.warn(
+        "process_chain() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     d: Deferred[_T] = Deferred()
     for x in callbacks:
         d.addCallback(x, *a, **kw)
@@ -312,40 +317,20 @@ def process_chain(
     return d
 
 
-def process_chain_both(
-    callbacks: Iterable[Callable[Concatenate[_T, _P], Any]],
-    errbacks: Iterable[Callable[Concatenate[Failure, _P], Any]],
-    input: Any,
-    *a: _P.args,
-    **kw: _P.kwargs,
-) -> Deferred:
-    """Return a Deferred built by chaining the given callbacks and errbacks"""
-    warnings.warn(
-        "process_chain_both() is deprecated and will be removed in a future"
-        " Scrapy version.",
-        ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    d: Deferred = Deferred()
-    for cb, eb in zip(callbacks, errbacks):
-        d.addCallback(cb, *a, **kw)
-        d.addErrback(eb, *a, **kw)
-    if isinstance(input, failure.Failure):
-        d.errback(input)
-    else:
-        d.callback(input)
-    return d
-
-
 def process_parallel(
     callbacks: Iterable[Callable[Concatenate[_T, _P], _T2]],
-    input: _T,
+    input: _T,  # noqa: A002
     *a: _P.args,
     **kw: _P.kwargs,
-) -> Deferred[list[_T2]]:
+) -> Deferred[list[_T2]]:  # pragma: no cover
     """Return a Deferred with the output of all successful calls to the given
     callbacks
     """
+    warnings.warn(
+        "process_parallel() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     dfds = [succeed(input).addCallback(x, *a, **kw) for x in callbacks]
     d: Deferred[list[tuple[bool, _T2]]] = DeferredList(
         dfds, fireOnOneErrback=True, consumeErrors=True
@@ -365,7 +350,7 @@ def iter_errback(
     *a: _P.args,
     **kw: _P.kwargs,
 ) -> Iterable[_T]:
-    """Wraps an iterable calling an errback if an error is caught while
+    """Wrap an iterable calling an errback if an error is caught while
     iterating it.
     """
     it = iter(iterable)
@@ -384,7 +369,7 @@ async def aiter_errback(
     *a: _P.args,
     **kw: _P.kwargs,
 ) -> AsyncIterator[_T]:
-    """Wraps an async iterable calling an errback if an error is caught while
+    """Wrap an async iterable calling an errback if an error is caught while
     iterating it. Similar to :func:`scrapy.utils.defer.iter_errback`.
     """
     it = aiterable.__aiter__()
@@ -406,15 +391,15 @@ def deferred_from_coro(o: _T2) -> _T2: ...
 
 
 def deferred_from_coro(o: Awaitable[_T] | _T2) -> Deferred[_T] | _T2:
-    """Converts a coroutine or other awaitable object into a Deferred,
-    or returns the object as is if it isn't a coroutine."""
+    """Convert a coroutine or other awaitable object into a Deferred,
+    or return the object as is if it isn't a coroutine."""
     if isinstance(o, Deferred):
         return o
     if inspect.isawaitable(o):
         if not is_asyncio_available():
             # wrapping the coroutine directly into a Deferred, this doesn't work correctly with coroutines
             # that use asyncio, e.g. "await asyncio.sleep(1)"
-            return Deferred.fromCoroutine(cast(Coroutine[Deferred[Any], Any, _T], o))
+            return Deferred.fromCoroutine(cast("Coroutine[Deferred[Any], Any, _T]", o))
         # wrapping the coroutine into a Future and then into a Deferred, this requires AsyncioSelectorReactor
         return Deferred.fromFuture(asyncio.ensure_future(o))
     return o
@@ -423,7 +408,7 @@ def deferred_from_coro(o: Awaitable[_T] | _T2) -> Deferred[_T] | _T2:
 def deferred_f_from_coro_f(
     coro_f: Callable[_P, Awaitable[_T]],
 ) -> Callable[_P, Deferred[_T]]:
-    """Converts a coroutine function into a function that returns a Deferred.
+    """Convert a coroutine function into a function that returns a Deferred.
 
     The coroutine function will be called at the time when the wrapper is called. Wrapper args will be passed to it.
     This is useful for callback chains, as callback functions are called with the previous callback result.
@@ -455,10 +440,7 @@ def maybeDeferred_coro(
 
 
 def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
-    """
-    .. versionadded:: 2.6.0
-
-    Return an :class:`asyncio.Future` object that wraps *d*.
+    """Return an :class:`asyncio.Future` object that wraps *d*.
 
     This function requires
     :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
@@ -477,6 +459,8 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
                 deferred = self.crawler.engine.download(additional_request)
                 additional_response = await deferred_to_future(deferred)
 
+    .. versionadded:: 2.6.0
+
     .. versionchanged:: VERSION
         This function no longer installs an asyncio loop if called before the
         Twisted asyncio reactor is installed. A :exc:`RuntimeError` is raised
@@ -488,10 +472,7 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
 
 
 def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
-    """
-    .. versionadded:: 2.6.0
-
-    Return *d* as an object that can be awaited from a :ref:`Scrapy callable
+    """Return *d* as an object that can be awaited from a :ref:`Scrapy callable
     defined as a coroutine <coroutine-support>`.
 
     What you can await in Scrapy callables defined as coroutines depends on the
@@ -512,7 +493,60 @@ def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
                 additional_request = scrapy.Request('https://example.org/price')
                 deferred = self.crawler.engine.download(additional_request)
                 additional_response = await maybe_deferred_to_future(deferred)
+
+    .. versionadded:: 2.6.0
     """
     if not is_asyncio_available():
         return d
     return deferred_to_future(d)
+
+
+def _schedule_coro(coro: Coroutine[Any, Any, Any]) -> None:
+    """Schedule the coroutine as a task or a Deferred.
+
+    This doesn't store the reference to the task/Deferred, so a better
+    alternative is calling :func:`scrapy.utils.defer.deferred_from_coro`,
+    keeping the result, and adding proper exception handling (e.g. errbacks) to
+    it.
+    """
+    if not is_asyncio_available():
+        Deferred.fromCoroutine(coro)
+        return
+    loop = asyncio.get_event_loop()
+    loop.create_task(coro)  # noqa: RUF006
+
+
+@overload
+def ensure_awaitable(o: Awaitable[_T], _warn: str | None = None) -> Awaitable[_T]: ...
+
+
+@overload
+def ensure_awaitable(o: _T, _warn: str | None = None) -> Awaitable[_T]: ...
+
+
+def ensure_awaitable(o: _T | Awaitable[_T], _warn: str | None = None) -> Awaitable[_T]:
+    """Convert any value to an awaitable object.
+
+    For a :class:`~twisted.internet.defer.Deferred` object, use
+    :func:`maybe_deferred_to_future` to wrap it into a suitable object. For an
+    awaitable object of a different type, return it as is. For any other
+    value, return a coroutine that completes with that value.
+
+    .. versionadded:: VERSION
+    """
+    if isinstance(o, Deferred):
+        if _warn:
+            warnings.warn(
+                f"{_warn} returned a Deferred, this is deprecated."
+                f" Please refactor this function to return a coroutine.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+        return maybe_deferred_to_future(o)
+    if inspect.isawaitable(o):
+        return o
+
+    async def coro() -> _T:
+        return o
+
+    return coro()

@@ -5,17 +5,19 @@ import pprint
 import sys
 from collections.abc import MutableMapping
 from logging.config import dictConfig
-from types import TracebackType
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
+from twisted.internet import asyncioreactor
 from twisted.python import log as twisted_log
 from twisted.python.failure import Failure
 
 import scrapy
-from scrapy.settings import Settings, _SettingsKeyT
+from scrapy.settings import Settings, _SettingsKey
 from scrapy.utils.versions import get_versions
 
 if TYPE_CHECKING:
+    from types import TracebackType
+
     from scrapy.crawler import Crawler
     from scrapy.logformatter import LogFormatterResult
 
@@ -33,7 +35,7 @@ def failure_to_exc_info(
         return (
             failure.type,
             failure.value,
-            cast(Optional[TracebackType], failure.getTracebackObject()),
+            cast("TracebackType | None", failure.getTracebackObject()),
         )
     return None
 
@@ -81,7 +83,7 @@ DEFAULT_LOGGING = {
 
 
 def configure_logging(
-    settings: Settings | dict[_SettingsKeyT, Any] | None = None,
+    settings: Settings | dict[_SettingsKey, Any] | None = None,
     install_root_handler: bool = True,
 ) -> None:
     """
@@ -132,14 +134,21 @@ _scrapy_root_handler: logging.Handler | None = None
 def install_scrapy_root_handler(settings: Settings) -> None:
     global _scrapy_root_handler  # noqa: PLW0603  # pylint: disable=global-statement
 
+    _uninstall_scrapy_root_handler()
+    logging.root.setLevel(logging.NOTSET)
+    _scrapy_root_handler = _get_handler(settings)
+    logging.root.addHandler(_scrapy_root_handler)
+
+
+def _uninstall_scrapy_root_handler() -> None:
+    global _scrapy_root_handler  # noqa: PLW0603  # pylint: disable=global-statement
+
     if (
         _scrapy_root_handler is not None
         and _scrapy_root_handler in logging.root.handlers
     ):
         logging.root.removeHandler(_scrapy_root_handler)
-    logging.root.setLevel(logging.NOTSET)
-    _scrapy_root_handler = _get_handler(settings)
-    logging.root.addHandler(_scrapy_root_handler)
+    _scrapy_root_handler = None
 
 
 def get_scrapy_root_handler() -> logging.Handler | None:
@@ -182,7 +191,7 @@ def log_scrapy_info(settings: Settings) -> None:
 
 
 def log_reactor_info() -> None:
-    from twisted.internet import asyncioreactor, reactor
+    from twisted.internet import reactor
 
     logger.debug("Using reactor: %s.%s", reactor.__module__, reactor.__class__.__name__)
     if isinstance(reactor, asyncioreactor.AsyncioSelectorReactor):
@@ -240,7 +249,7 @@ def logformatter_adapter(
     message = logkws.get("msg") or ""
     # NOTE: This also handles 'args' being an empty dict, that case doesn't
     # play well in logger.log calls
-    args = cast(dict[str, Any], logkws) if not logkws.get("args") else logkws["args"]
+    args = cast("dict[str, Any]", logkws) if not logkws.get("args") else logkws["args"]
 
     return (level, message, args)
 

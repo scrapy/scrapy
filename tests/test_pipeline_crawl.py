@@ -8,13 +8,12 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from testfixtures import LogCapture
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import TestCase
 from w3lib.url import add_or_replace_parameter
 
 from scrapy import Spider, signals
 from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import SimpleSpider
 
 if TYPE_CHECKING:
@@ -58,7 +57,7 @@ class RedirectedMediaDownloadSpider(MediaDownloadSpider):
         )
 
 
-class TestFileDownloadCrawl(TestCase):
+class TestFileDownloadCrawl:
     pipeline_class = "scrapy.pipelines.files.FilesPipeline"
     store_setting_key = "FILES_STORE"
     media_key = "files"
@@ -70,15 +69,15 @@ class TestFileDownloadCrawl(TestCase):
     }
 
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         cls.mockserver = MockServer()
         cls.mockserver.__enter__()
 
     @classmethod
-    def tearDownClass(cls):
+    def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    def setUp(self):
+    def setup_method(self):
         # prepare a directory for storing files
         self.tmpmediastore = Path(mkdtemp())
         self.settings = {
@@ -87,7 +86,7 @@ class TestFileDownloadCrawl(TestCase):
         }
         self.items = []
 
-    def tearDown(self):
+    def teardown_method(self):
         shutil.rmtree(self.tmpmediastore)
         self.items = []
 
@@ -150,7 +149,7 @@ class TestFileDownloadCrawl(TestCase):
         crawler = self._create_crawler(MediaDownloadSpider)
         with LogCapture() as log:
             yield crawler.crawl(
-                self.mockserver.url("/files/images/"),
+                self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
             )
@@ -161,7 +160,7 @@ class TestFileDownloadCrawl(TestCase):
         crawler = self._create_crawler(BrokenLinksMediaDownloadSpider)
         with LogCapture() as log:
             yield crawler.crawl(
-                self.mockserver.url("/files/images/"),
+                self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
             )
@@ -172,7 +171,7 @@ class TestFileDownloadCrawl(TestCase):
         crawler = self._create_crawler(RedirectedMediaDownloadSpider)
         with LogCapture() as log:
             yield crawler.crawl(
-                self.mockserver.url("/files/images/"),
+                self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
                 mockserver=self.mockserver,
@@ -188,7 +187,7 @@ class TestFileDownloadCrawl(TestCase):
         crawler = self._create_crawler(RedirectedMediaDownloadSpider, settings)
         with LogCapture() as log:
             yield crawler.crawl(
-                self.mockserver.url("/files/images/"),
+                self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
                 mockserver=self.mockserver,
@@ -211,7 +210,7 @@ class TestFileDownloadCrawl(TestCase):
         crawler = self._create_crawler(MediaDownloadSpider, settings)
         with LogCapture() as log:
             yield crawler.crawl(
-                self.mockserver.url("/files/images/"),
+                self.mockserver.url("/static/files/images/"),
                 media_key=self.media_key,
                 media_urls_key=self.media_urls_key,
                 mockserver=self.mockserver,

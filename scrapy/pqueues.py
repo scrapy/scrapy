@@ -4,7 +4,6 @@ import hashlib
 import logging
 from typing import TYPE_CHECKING, Protocol, cast
 
-from scrapy import Request
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
@@ -13,6 +12,7 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
+    from scrapy import Request
     from scrapy.core.downloader import Downloader
     from scrapy.crawler import Crawler
 
@@ -211,7 +211,7 @@ class ScrapyPriorityQueue:
         except KeyError:
             queue = self.queues[self.curprio]
         # Protocols can't declare optional members
-        return cast(Request, queue.peek())  # type: ignore[attr-defined]
+        return cast("Request", queue.peek())  # type: ignore[attr-defined]
 
     def close(self) -> list[int]:
         active: set[int] = set()

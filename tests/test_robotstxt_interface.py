@@ -1,21 +1,19 @@
 import pytest
 
-from scrapy.robotstxt import decode_robotstxt
+from scrapy.robotstxt import (
+    ProtegoRobotParser,
+    PythonRobotParser,
+    RerpRobotParser,
+    decode_robotstxt,
+)
 
 
 def rerp_available():
     # check if robotexclusionrulesparser is installed
     try:
-        from robotexclusionrulesparser import RobotExclusionRulesParser  # noqa: F401
-    except ImportError:
-        return False
-    return True
-
-
-def protego_available():
-    # check if protego parser is installed
-    try:
-        from protego import Protego  # noqa: F401
+        from robotexclusionrulesparser import (  # noqa: PLC0415
+            RobotExclusionRulesParser,  # noqa: F401
+        )
     except ImportError:
         return False
     return True
@@ -131,11 +129,15 @@ class TestDecodeRobotsTxt:
         decoded_content = decode_robotstxt(robotstxt_body, spider=None)
         assert decoded_content == "User-agent: *\nDisallow: /\n"
 
+    # UTF-8 BOM at the beginning of the file ignored
+    def test_decode_utf8_bom(self):
+        robotstxt_body = b"\xef\xbb\xbfUser-agent: *\nDisallow: /\n"
+        decoded_content = decode_robotstxt(robotstxt_body, spider=None)
+        assert decoded_content == "User-agent: *\nDisallow: /\n"
+
 
 class TestPythonRobotParser(BaseRobotParserTest):
     def setup_method(self):
-        from scrapy.robotstxt import PythonRobotParser
-
         super()._setUp(PythonRobotParser)
 
     def test_length_based_precedence(self):
@@ -150,19 +152,14 @@ class TestPythonRobotParser(BaseRobotParserTest):
 @pytest.mark.skipif(not rerp_available(), reason="Rerp parser is not installed")
 class TestRerpRobotParser(BaseRobotParserTest):
     def setup_method(self):
-        from scrapy.robotstxt import RerpRobotParser
-
         super()._setUp(RerpRobotParser)
 
     def test_length_based_precedence(self):
         pytest.skip("Rerp does not support length based directives precedence.")
 
 
-@pytest.mark.skipif(not protego_available(), reason="Protego parser is not installed")
 class TestProtegoRobotParser(BaseRobotParserTest):
     def setup_method(self):
-        from scrapy.robotstxt import ProtegoRobotParser
-
         super()._setUp(ProtegoRobotParser)
 
     def test_order_based_precedence(self):

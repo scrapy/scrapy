@@ -9,17 +9,17 @@ from typing import Any, NamedTuple
 
 import pytest
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import TestCase
 
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import BaseScheduler, Scheduler
 from scrapy.crawler import Crawler
 from scrapy.http import Request
 from scrapy.spiders import Spider
+from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 
 
 class MemoryScheduler(BaseScheduler):
@@ -115,7 +115,7 @@ class SchedulerHandler(ABC):
 
     def close_scheduler(self):
         self.scheduler.close("finished")
-        self.mock_crawler.stop()
+        _schedule_coro(self.mock_crawler.stop_async())
         self.mock_crawler.engine.downloader.close()
 
     def setup_method(self):
@@ -353,8 +353,8 @@ class StartUrlsSpider(Spider):
         pass
 
 
-class TestIntegrationWithDownloaderAwareInMemory(TestCase):
-    def setUp(self):
+class TestIntegrationWithDownloaderAwareInMemory:
+    def setup_method(self):
         self.crawler = get_crawler(
             spidercls=StartUrlsSpider,
             settings_dict={
@@ -362,10 +362,6 @@ class TestIntegrationWithDownloaderAwareInMemory(TestCase):
                 "DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter",
             },
         )
-
-    @inlineCallbacks
-    def tearDown(self):
-        yield self.crawler.stop()
 
     @inlineCallbacks
     def test_integration_downloader_aware_priority_queue(self):

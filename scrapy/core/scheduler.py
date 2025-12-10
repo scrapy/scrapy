@@ -348,11 +348,11 @@ class Scheduler(BaseScheduler):
         dqok = self._dqpush(request)
         assert self.stats is not None
         if dqok:
-            self.stats.inc_value("scheduler/enqueued/disk", spider=self.spider)
+            self.stats.inc_value("scheduler/enqueued/disk")
         else:
             self._mqpush(request)
-            self.stats.inc_value("scheduler/enqueued/memory", spider=self.spider)
-        self.stats.inc_value("scheduler/enqueued", spider=self.spider)
+            self.stats.inc_value("scheduler/enqueued/memory")
+        self.stats.inc_value("scheduler/enqueued")
         return True
 
     def next_request(self) -> Request | None:
@@ -367,13 +367,13 @@ class Scheduler(BaseScheduler):
         request: Request | None = self.mqs.pop()
         assert self.stats is not None
         if request is not None:
-            self.stats.inc_value("scheduler/dequeued/memory", spider=self.spider)
+            self.stats.inc_value("scheduler/dequeued/memory")
         else:
             request = self._dqpop()
             if request is not None:
-                self.stats.inc_value("scheduler/dequeued/disk", spider=self.spider)
+                self.stats.inc_value("scheduler/dequeued/disk")
         if request is not None:
-            self.stats.inc_value("scheduler/dequeued", spider=self.spider)
+            self.stats.inc_value("scheduler/dequeued")
         return request
 
     def __len__(self) -> int:
@@ -402,7 +402,7 @@ class Scheduler(BaseScheduler):
                 )
                 self.logunser = False
             assert self.stats is not None
-            self.stats.inc_value("scheduler/unserializable", spider=self.spider)
+            self.stats.inc_value("scheduler/unserializable")
             return False
         return True
 
@@ -491,7 +491,7 @@ class Scheduler(BaseScheduler):
         if not path.exists():
             return []
         with path.open(encoding="utf-8") as f:
-            return cast(list[int], json.load(f))
+            return cast("list[int]", json.load(f))
 
     def _write_dqs_state(self, dqdir: str, state: list[int]) -> None:
         with Path(dqdir, "active.json").open("w", encoding="utf-8") as f:

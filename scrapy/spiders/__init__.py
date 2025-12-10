@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
     from scrapy.crawler import Crawler
     from scrapy.http.request import CallbackT
-    from scrapy.settings import BaseSettings, _SettingsKeyT
+    from scrapy.settings import BaseSettings, _SettingsKey
     from scrapy.utils.log import SpiderLoggerAdapter
 
 
@@ -39,7 +39,7 @@ class Spider(object_ref):
     """
 
     name: str
-    custom_settings: dict[_SettingsKeyT, Any] | None = None
+    custom_settings: dict[_SettingsKey, Any] | None = None
 
     #: Start URLs. See :meth:`start`.
     start_urls: list[str]
@@ -55,7 +55,8 @@ class Spider(object_ref):
 
     @property
     def logger(self) -> SpiderLoggerAdapter:
-        from scrapy.utils.log import SpiderLoggerAdapter
+        # circular import
+        from scrapy.utils.log import SpiderLoggerAdapter  # noqa: PLC0415
 
         logger = logging.getLogger(self.name)
         return SpiderLoggerAdapter(logger, {"spider": self})

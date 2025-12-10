@@ -7,8 +7,6 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 from twisted.internet.defer import Deferred, inlineCallbacks, succeed
-from twisted.python.failure import Failure
-from twisted.trial import unittest
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import (
@@ -20,8 +18,6 @@ from scrapy.utils.defer import (
     maybe_deferred_to_future,
     mustbe_deferred,
     parallel_async,
-    process_chain,
-    process_parallel,
 )
 
 if TYPE_CHECKING:
@@ -29,7 +25,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-class TestMustbeDeferred(unittest.TestCase):
+class TestMustbeDeferred:
     @inlineCallbacks
     def test_success_function(self) -> Generator[Deferred[Any], Any, None]:
         steps: list[int] = []
@@ -80,31 +76,11 @@ def cb3(value, arg1, arg2):
 
 
 def cb_fail(value, arg1, arg2):
-    return Failure(TypeError())
+    raise TypeError
 
 
 def eb1(failure, arg1, arg2):
     return f"(eb1 {failure.value.__class__.__name__} {arg1} {arg2})"
-
-
-class TestDeferUtils(unittest.TestCase):
-    @inlineCallbacks
-    def test_process_chain(self):
-        x = yield process_chain([cb1, cb2, cb3], "res", "v1", "v2")
-        assert x == "(cb3 (cb2 (cb1 res v1 v2) v1 v2) v1 v2)"
-
-        with pytest.raises(TypeError):
-            yield process_chain([cb1, cb_fail, cb3], "res", "v1", "v2")
-
-    @inlineCallbacks
-    def test_process_parallel(self):
-        x = yield process_parallel([cb1, cb2, cb3], "res", "v1", "v2")
-        assert x == ["(cb1 res v1 v2)", "(cb2 res v1 v2)", "(cb3 res v1 v2)"]
-
-    @inlineCallbacks
-    def test_process_parallel_failure(self):
-        with pytest.raises(TypeError):
-            yield process_parallel([cb1, cb_fail, cb3], "res", "v1", "v2")
 
 
 class TestIterErrback:
@@ -131,7 +107,7 @@ class TestIterErrback:
         assert isinstance(errors[0].value, ZeroDivisionError)
 
 
-class TestAiterErrback(unittest.TestCase):
+class TestAiterErrback:
     @deferred_f_from_coro_f
     async def test_aiter_errback_good(self):
         async def itergood() -> AsyncGenerator[int, None]:
@@ -158,7 +134,7 @@ class TestAiterErrback(unittest.TestCase):
         assert isinstance(errors[0].value, ZeroDivisionError)
 
 
-class TestAsyncDefTestsuite(unittest.TestCase):
+class TestAsyncDefTestsuite:
     @deferred_f_from_coro_f
     async def test_deferred_f_from_coro_f(self):
         pass
@@ -173,7 +149,7 @@ class TestAsyncDefTestsuite(unittest.TestCase):
         raise RuntimeError("This is expected to be raised")
 
 
-class TestParallelAsync(unittest.TestCase):
+class TestParallelAsync:
     """This tests _AsyncCooperatorAdapter by testing parallel_async which is its only usage.
 
     parallel_async is called with the results of a callback (so an iterable of items, requests and None,
@@ -283,7 +259,7 @@ class TestParallelAsync(unittest.TestCase):
             assert max_parallel_count[0] <= self.CONCURRENT_ITEMS, max_parallel_count[0]
 
 
-class TestDeferredFromCoro(unittest.TestCase):
+class TestDeferredFromCoro:
     def test_deferred(self):
         d = Deferred()
         result = deferred_from_coro(d)
@@ -327,7 +303,7 @@ class TestDeferredFromCoro(unittest.TestCase):
         assert future_result == 42
 
 
-class TestDeferredFFromCoroF(unittest.TestCase):
+class TestDeferredFFromCoroF:
     @inlineCallbacks
     def _assert_result(
         self, c_f: Callable[[], Awaitable[int]]
@@ -364,7 +340,7 @@ class TestDeferredFFromCoroF(unittest.TestCase):
 
 
 @pytest.mark.only_asyncio
-class TestDeferredToFuture(unittest.TestCase):
+class TestDeferredToFuture:
     @deferred_f_from_coro_f
     async def test_deferred(self):
         d = Deferred()
@@ -399,7 +375,7 @@ class TestDeferredToFuture(unittest.TestCase):
 
 
 @pytest.mark.only_asyncio
-class TestMaybeDeferredToFutureAsyncio(unittest.TestCase):
+class TestMaybeDeferredToFutureAsyncio:
     @deferred_f_from_coro_f
     async def test_deferred(self):
         d = Deferred()
