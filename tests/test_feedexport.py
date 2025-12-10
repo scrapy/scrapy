@@ -29,7 +29,6 @@ import lxml.etree
 import pytest
 from packaging.version import Version
 from testfixtures import LogCapture
-from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks
 from w3lib.url import file_uri_to_path, path_to_file_uri
 from zope.interface import implementer
@@ -59,7 +58,7 @@ from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable
     from os import PathLike
 
 
@@ -2762,6 +2761,12 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert len(CustomS3FeedStorage.stubs) == len(items)
         for stub in CustomS3FeedStorage.stubs[:-1]:
             stub.assert_no_pending_responses()
+        assert (
+            "feedexport/success_count/CustomS3FeedStorage" in crawler.stats.get_stats()
+        )
+        assert (
+            crawler.stats.get_value("feedexport/success_count/CustomS3FeedStorage") == 3
+        )
 
 
 # Test that the FeedExporer sends the feed_exporter_closed and feed_slot_closed signals
@@ -2787,21 +2792,15 @@ class TestFeedExporterSignals:
     def feed_slot_closed_signal_handler(self, slot):
         self.feed_slot_closed_received = True
 
-    def feed_exporter_closed_signal_handler_deferred(self):
-        d = defer.Deferred()
-        d.addCallback(lambda _: setattr(self, "feed_exporter_closed_received", True))
-        d.callback(None)
-        return d
+    async def feed_exporter_closed_signal_handler_async(self):
+        self.feed_exporter_closed_received = True
 
-    def feed_slot_closed_signal_handler_deferred(self, slot):
-        d = defer.Deferred()
-        d.addCallback(lambda _: setattr(self, "feed_slot_closed_received", True))
-        d.callback(None)
-        return d
+    async def feed_slot_closed_signal_handler_async(self, slot):
+        self.feed_slot_closed_received = True
 
-    def run_signaled_feed_exporter(
-        self, feed_exporter_signal_handler, feed_slot_signal_handler
-    ):
+    async def run_signaled_feed_exporter(
+        self, feed_exporter_signal_handler: Callable, feed_slot_signal_handler: Callable
+    ) -> None:
         crawler = get_crawler(settings_dict=self.settings)
         feed_exporter = FeedExporter.from_crawler(crawler)
         spider = scrapy.Spider("default")
@@ -2816,26 +2815,28 @@ class TestFeedExporterSignals:
         feed_exporter.open_spider(spider)
         for item in self.items:
             feed_exporter.item_scraped(item, spider)
-        defer.ensureDeferred(feed_exporter.close_spider(spider))
+        await feed_exporter.close_spider(spider)
 
-    def test_feed_exporter_signals_sent(self):
+    @deferred_f_from_coro_f
+    async def test_feed_exporter_signals_sent(self) -> None:
         self.feed_exporter_closed_received = False
         self.feed_slot_closed_received = False
 
-        self.run_signaled_feed_exporter(
+        await self.run_signaled_feed_exporter(
             self.feed_exporter_closed_signal_handler,
             self.feed_slot_closed_signal_handler,
         )
         assert self.feed_slot_closed_received
         assert self.feed_exporter_closed_received
 
-    def test_feed_exporter_signals_sent_deferred(self):
+    @deferred_f_from_coro_f
+    async def test_feed_exporter_signals_sent_async(self) -> None:
         self.feed_exporter_closed_received = False
         self.feed_slot_closed_received = False
 
-        self.run_signaled_feed_exporter(
-            self.feed_exporter_closed_signal_handler_deferred,
-            self.feed_slot_closed_signal_handler_deferred,
+        await self.run_signaled_feed_exporter(
+            self.feed_exporter_closed_signal_handler_async,
+            self.feed_slot_closed_signal_handler_async,
         )
         assert self.feed_slot_closed_received
         assert self.feed_exporter_closed_received

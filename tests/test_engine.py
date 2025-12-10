@@ -659,6 +659,7 @@ class TestEngineCloseSpider:
         engine = ExecutionEngine(crawler, lambda _: None)
         with pytest.raises(RuntimeError, match="Spider not opened"):
             await engine.close_spider_async()
+        engine.downloader.close()  # cleanup
 
     @deferred_f_from_coro_f
     async def test_exception_slot(
