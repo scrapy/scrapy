@@ -4,7 +4,6 @@ from collections import deque
 from logging import ERROR
 from typing import TYPE_CHECKING
 
-import pytest
 from twisted.internet.defer import Deferred
 
 from scrapy import Request, Spider, signals
@@ -14,6 +13,8 @@ from tests.mockserver.http import MockServer
 from tests.test_scheduler import MemoryScheduler
 
 if TYPE_CHECKING:
+    import pytest
+
     from scrapy.http import Response
 
 
@@ -85,7 +86,6 @@ class TestMain:
         expected_urls = ["data:,a", "data:,b", "data:,c", "data:,d"]
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
-    @pytest.mark.skip(reason="Hangs")  # requires changes from #7161
     @deferred_f_from_coro_f
     async def test_close_during_start_iteration(
         self, caplog: pytest.LogCaptureFixture
