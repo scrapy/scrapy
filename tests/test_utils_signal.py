@@ -18,6 +18,9 @@ from scrapy.utils.test import get_from_asyncio_queue
 
 
 class TestSendCatchLog:
+    # whether the function being tested returns exceptions or failures
+    returns_exceptions: bool = False
+
     @inlineCallbacks
     def test_send_catch_log(self):
         test_signal = object()
@@ -40,7 +43,9 @@ class TestSendCatchLog:
         assert "error_handler" in record.getMessage()
         assert record.levelname == "ERROR"
         assert result[0][0] == self.error_handler  # pylint: disable=comparison-with-callable
-        assert isinstance(result[0][1], Failure)
+        assert isinstance(
+            result[0][1], Exception if self.returns_exceptions else Failure
+        )
         assert result[1] == (self.ok_handler, "OK")
 
         dispatcher.disconnect(self.error_handler, signal=test_signal)
@@ -59,6 +64,7 @@ class TestSendCatchLog:
         return "OK"
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestSendCatchLogDeferred(TestSendCatchLog):
     def _get_result(self, signal, *a, **kw):
         return send_catch_log_deferred(signal, *a, **kw)
@@ -91,10 +97,13 @@ class TestSendCatchLogDeferredAsyncio(TestSendCatchLogDeferred):
 
 
 class TestSendCatchLogAsync(TestSendCatchLog):
+    returns_exceptions = True
+
     def _get_result(self, signal, *a, **kw):
         return deferred_from_coro(send_catch_log_async(signal, *a, **kw))
 
 
+@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestSendCatchLogAsync2(TestSendCatchLogAsync):
     def ok_handler(self, arg, handlers_called):
         handlers_called.add(self.ok_handler)

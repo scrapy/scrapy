@@ -68,7 +68,8 @@ defines one or more of these methods:
 
 .. class:: DownloaderMiddleware
 
-   .. note::  Any of the downloader middleware methods may also return a deferred.
+   .. note::  Any of the downloader middleware methods may be defined as a
+        coroutine function (``async def``).
 
    .. method:: process_request(request)
 
