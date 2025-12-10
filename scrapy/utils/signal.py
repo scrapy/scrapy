@@ -182,7 +182,6 @@ async def _send_catch_log_asyncio(
         async def handler(receiver: Callable) -> TypingAny:
             result: TypingAny
             try:
-                # TODO _warn
                 result = await ensure_awaitable(
                     robustApply(
                         receiver, signal=signal, sender=sender, *arguments, **named
