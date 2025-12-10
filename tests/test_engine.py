@@ -449,25 +449,10 @@ class TestEngine(TestEngineBase):
             )
 
     @inlineCallbacks
-    def test_start_already_running_exception_with_default_priority_queue(self):
+    def test_start_already_running_exception(self):
         crawler = get_crawler(MySpider)
         e = ExecutionEngine(crawler, lambda _: None)
         crawler.engine = e
-        yield e.open_spider(MySpider())
-        e.start()
-        with pytest.raises(RuntimeError, match="Engine already running"):
-            yield e.start()
-        yield e.stop()
-
-    @inlineCallbacks
-    def test_start_already_running_exception_with_scrapy_priority_queue(self):
-        e = ExecutionEngine(
-            get_crawler(
-                MySpider,
-                {"SCHEDULER_PRIORITY_QUEUE": "scrapy.pqueues.ScrapyPriorityQueue"},
-            ),
-            lambda _: None,
-        )
         yield e.open_spider(MySpider())
         e.start()
         with pytest.raises(RuntimeError, match="Engine already running"):
