@@ -1,4 +1,5 @@
 import time
+from typing import Any
 
 import pytest
 from twisted.internet.defer import inlineCallbacks
@@ -30,24 +31,26 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         },
     }
 
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.default_slot = self.mockserver.host
+        self.times: dict[str, list[float]] = {}
+
     async def start(self):
-        self.times = {None: []}
-
         slots = [*self.custom_settings.get("DOWNLOAD_SLOTS", {}), None]
-
         for slot in slots:
             url = self.mockserver.url(f"/?downloader_slot={slot}")
-            self.times[slot] = []
+            self.times[slot or self.default_slot] = []
             yield Request(url, callback=self.parse, meta={"download_slot": slot})
 
     def parse(self, response):
-        slot = response.meta.get("download_slot", None)
+        slot = response.meta.get("download_slot", self.default_slot)
         self.times[slot].append(time.time())
         url = self.mockserver.url(f"/?downloader_slot={slot}&req=2")
         yield Request(url, callback=self.not_parse, meta={"download_slot": slot})
 
     def not_parse(self, response):
-        slot = response.meta.get("download_slot", None)
+        slot = response.meta.get("download_slot", self.default_slot)
         self.times[slot].append(time.time())
 
 
