@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -66,72 +67,37 @@ def reactor_pytest(request) -> str:
     return request.config.getoption("--reactor")
 
 
-@pytest.fixture(autouse=True)
-def only_asyncio(request, reactor_pytest):
-    if request.node.get_closest_marker("only_asyncio") and reactor_pytest != "asyncio":
-        pytest.skip("This test is only run with --reactor=asyncio")
-
-
-@pytest.fixture(autouse=True)
-def only_not_asyncio(request, reactor_pytest):
-    if (
-        request.node.get_closest_marker("only_not_asyncio")
-        and reactor_pytest == "asyncio"
-    ):
-        pytest.skip("This test is only run without --reactor=asyncio")
-
-
-@pytest.fixture(autouse=True)
-def requires_uvloop(request):
-    if not request.node.get_closest_marker("requires_uvloop"):
-        return
-    try:
-        import uvloop  # noqa: PLC0415
-
-        del uvloop
-    except ImportError:
-        pytest.skip("uvloop is not installed")
-
-
-@pytest.fixture(autouse=True)
-def requires_botocore(request):
-    if not request.node.get_closest_marker("requires_botocore"):
-        return
-    try:
-        import botocore  # noqa: PLC0415
-
-        del botocore
-    except ImportError:
-        pytest.skip("botocore is not installed")
-
-
-@pytest.fixture(autouse=True)
-def requires_boto3(request):
-    if not request.node.get_closest_marker("requires_boto3"):
-        return
-    try:
-        import boto3  # noqa: PLC0415
-
-        del boto3
-    except ImportError:
-        pytest.skip("boto3 is not installed")
-
-
-@pytest.fixture(autouse=True)
-def requires_mitmproxy(request):
-    if not request.node.get_closest_marker("requires_mitmproxy"):
-        return
-    try:
-        import mitmproxy  # noqa: F401, PLC0415
-    except ImportError:
-        pytest.skip("mitmproxy is not installed")
-
-
 def pytest_configure(config):
     if config.getoption("--reactor") == "asyncio":
         # Needed on Windows to switch from proactor to selector for Twisted reactor compatibility.
         # If we decide to run tests with both, we will need to add a new option and check it here.
         set_asyncio_event_loop_policy()
+
+
+def pytest_runtest_setup(item):
+    # Skip tests based on reactor markers
+    reactor = item.config.getoption("--reactor")
+
+    if item.get_closest_marker("only_asyncio") and reactor != "asyncio":
+        pytest.skip("This test is only run with --reactor=asyncio")
+
+    if item.get_closest_marker("only_not_asyncio") and reactor == "asyncio":
+        pytest.skip("This test is only run without --reactor=asyncio")
+
+    # Skip tests requiring optional dependencies
+    optional_deps = [
+        "uvloop",
+        "botocore",
+        "boto3",
+        "mitmproxy",
+    ]
+
+    for module in optional_deps:
+        if item.get_closest_marker(f"requires_{module}"):
+            try:
+                importlib.import_module(module)
+            except ImportError:
+                pytest.skip(f"{module} is not installed")
 
 
 # Generate localhost certificate files, needed by some tests

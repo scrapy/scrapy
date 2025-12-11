@@ -1,10 +1,13 @@
 import time
+from typing import Any
 
+import pytest
 from twisted.internet.defer import inlineCallbacks
 
 from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot
 from scrapy.crawler import CrawlerRunner
+from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
@@ -28,24 +31,26 @@ class DownloaderSlotsSettingsTestSpider(MetaSpider):
         },
     }
 
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.default_slot = self.mockserver.host
+        self.times: dict[str, list[float]] = {}
+
     async def start(self):
-        self.times = {None: []}
-
         slots = [*self.custom_settings.get("DOWNLOAD_SLOTS", {}), None]
-
         for slot in slots:
             url = self.mockserver.url(f"/?downloader_slot={slot}")
-            self.times[slot] = []
+            self.times[slot or self.default_slot] = []
             yield Request(url, callback=self.parse, meta={"download_slot": slot})
 
     def parse(self, response):
-        slot = response.meta.get("download_slot", None)
+        slot = response.meta.get("download_slot", self.default_slot)
         self.times[slot].append(time.time())
         url = self.mockserver.url(f"/?downloader_slot={slot}&req=2")
         yield Request(url, callback=self.not_parse, meta={"download_slot": slot})
 
     def not_parse(self, response):
-        slot = response.meta.get("download_slot", None)
+        slot = response.meta.get("download_slot", self.default_slot)
         self.times[slot].append(time.time())
 
 
@@ -101,3 +106,33 @@ def test_params():
         assert getattr(expected, param) == getattr(actual, param), (
             f"Slot.{param}: {getattr(expected, param)!r} != {getattr(actual, param)!r}"
         )
+
+
+@pytest.mark.parametrize(
+    "priority_queue_class",
+    [
+        "scrapy.pqueues.ScrapyPriorityQueue",
+        "scrapy.pqueues.DownloaderAwarePriorityQueue",
+    ],
+)
+@deferred_f_from_coro_f
+async def test_none_slot_with_priority_queue(
+    mockserver: MockServer, priority_queue_class: str
+) -> None:
+    """Test specific cases for None slot handling with different priority queues."""
+    crawler = get_crawler(
+        DownloaderSlotsSettingsTestSpider,
+        settings_dict={"SCHEDULER_PRIORITY_QUEUE": priority_queue_class},
+    )
+    await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+    assert isinstance(crawler.spider, DownloaderSlotsSettingsTestSpider)
+
+    assert hasattr(crawler.spider, "times")
+    assert None not in crawler.spider.times
+    assert crawler.spider.default_slot in crawler.spider.times
+    assert len(crawler.spider.times[crawler.spider.default_slot]) == 2
+
+    assert crawler.stats
+    stats = crawler.stats
+    assert stats.get_value("spider_exceptions", 0) == 0
+    assert stats.get_value("downloader/exception_count", 0) == 0

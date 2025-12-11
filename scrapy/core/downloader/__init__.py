@@ -4,7 +4,7 @@ import random
 from collections import deque
 from datetime import datetime
 from time import time
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
@@ -173,8 +173,8 @@ class Downloader:
         return key, self.slots[key]
 
     def get_slot_key(self, request: Request) -> str:
-        if self.DOWNLOAD_SLOT in request.meta:
-            return cast("str", request.meta[self.DOWNLOAD_SLOT])
+        if (meta_slot := request.meta.get(self.DOWNLOAD_SLOT)) is not None:
+            return meta_slot
 
         key = urlparse_cached(request).hostname or ""
         if self.ip_concurrency:
