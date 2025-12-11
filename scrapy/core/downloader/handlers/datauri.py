@@ -13,8 +13,6 @@ if TYPE_CHECKING:
 
 
 class DataURIDownloadHandler(BaseDownloadHandler):
-    lazy = False
-
     async def download_request(self, request: Request) -> Response:
         uri = parse_data_uri(request.url)
         respcls = responsetypes.from_mimetype(uri.media_type)

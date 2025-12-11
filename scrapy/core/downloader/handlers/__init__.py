@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 # This is the official API but we temporarily support the old deprecated one:
-# * lazy is not mandatory.
+# * lazy is not mandatory (defaults to True).
 # * download_request() can return a Deferred[Response] instead of a coroutine,
 # and takes a spider argument in this case.
 # * close() can return None or Deferred[None] instead of a coroutine.

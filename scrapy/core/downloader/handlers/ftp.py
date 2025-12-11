@@ -78,8 +78,6 @@ _CODE_RE = re.compile(r"\d+")
 
 
 class FTPDownloadHandler(BaseDownloadHandler):
-    lazy = False
-
     CODE_MAPPING: dict[str, int] = {
         "550": 404,
         "default": 503,

@@ -32,7 +32,7 @@ class DummyDH:
 
 
 class DummyLazyDH:
-    # Default is lazy for backward compatibility
+    # Default (but deprecated) is lazy for backward compatibility
     async def download_request(self, request):
         pass
 

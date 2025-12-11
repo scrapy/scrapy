@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
 
 class S3DownloadHandler(BaseDownloadHandler):
+    lazy = True
+
     def __init__(self, crawler: Crawler):
         if not is_botocore_available():
             raise NotConfigured("missing botocore library")

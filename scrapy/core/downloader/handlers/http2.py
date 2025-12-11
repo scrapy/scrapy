@@ -25,6 +25,8 @@ if TYPE_CHECKING:
 
 
 class H2DownloadHandler(BaseDownloadHandler):
+    lazy = True
+
     def __init__(self, crawler: Crawler):
         super().__init__(crawler)
         self._crawler = crawler

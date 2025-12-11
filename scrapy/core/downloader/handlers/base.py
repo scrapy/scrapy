@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class BaseDownloadHandler(ABC):
     """Optional base class for download handlers."""
 
-    lazy: bool = True
+    lazy: bool = False
 
     def __init__(self, crawler: Crawler):
         self.crawler = crawler

@@ -67,8 +67,6 @@ class _ResultT(TypedDict):
 
 
 class HTTP11DownloadHandler(BaseDownloadHandler):
-    lazy = False
-
     def __init__(self, crawler: Crawler):
         super().__init__(crawler)
         self._crawler = crawler

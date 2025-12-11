@@ -14,8 +14,6 @@ if TYPE_CHECKING:
 
 
 class FileDownloadHandler(BaseDownloadHandler):
-    lazy = False
-
     async def download_request(self, request: Request) -> Response:
         filepath = file_uri_to_path(request.url)
         body = Path(filepath).read_bytes()
