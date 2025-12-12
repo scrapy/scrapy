@@ -58,7 +58,9 @@ class ItemPipelineManager(MiddlewareManager):
         return deferred_from_coro(self.process_item_async(item))
 
     async def process_item_async(self, item: Any) -> Any:
-        return await self._process_chain("process_item", item, add_spider=True)
+        return await self._process_chain(
+            "process_item", item, add_spider=True, warn_deferred=True
+        )
 
     def _process_parallel(self, methodname: str) -> Deferred[list[None]]:
         methods = cast("Iterable[Callable[..., None]]", self.methods[methodname])

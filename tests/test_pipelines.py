@@ -143,7 +143,6 @@ class TestPipeline:
         "pipeline_class",
         [
             SimplePipeline,
-            DeferredPipeline,
             AsyncDefPipeline,
             pytest.param(AsyncDefAsyncioPipeline, marks=pytest.mark.only_asyncio),
             pytest.param(
@@ -155,6 +154,16 @@ class TestPipeline:
     async def test_pipeline(self, mockserver: MockServer, pipeline_class: type) -> None:
         crawler = self._create_crawler(pipeline_class)
         await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+        assert len(self.items) == 1
+
+    @deferred_f_from_coro_f
+    async def test_pipeline_deferred(self, mockserver: MockServer) -> None:
+        crawler = self._create_crawler(DeferredPipeline)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="DeferredPipeline.process_item returned a Deferred",
+        ):
+            await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
         assert len(self.items) == 1
 
     @deferred_f_from_coro_f
@@ -182,7 +191,12 @@ class TestPipeline:
         "pipeline_class",
         [
             ProcessItemExceptionPipeline,
-            ProcessItemExceptionDeferredPipeline,
+            pytest.param(
+                ProcessItemExceptionDeferredPipeline,
+                marks=pytest.mark.filterwarnings(
+                    "ignore::scrapy.exceptions.ScrapyDeprecationWarning"
+                ),
+            ),
             ProcessItemExceptionAsyncPipeline,
         ],
     )
