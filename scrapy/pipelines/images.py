@@ -21,7 +21,7 @@ from scrapy.pipelines.files import FileException, FilesPipeline, _md5sum
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Coroutine, Iterable
     from os import PathLike
 
     from PIL import Image
@@ -29,7 +29,6 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.pipelines.media import FileInfoOrError, MediaPipeline
 
@@ -55,7 +54,7 @@ class ImagesPipeline(FilesPipeline):
     def __init__(
         self,
         store_uri: str | PathLike[str],
-        download_func: Callable[[Request, Spider], Response] | None = None,
+        download_func: Callable[[Request], Coroutine[Any, Any, Response]] | None = None,
         *,
         crawler: Crawler,
     ):

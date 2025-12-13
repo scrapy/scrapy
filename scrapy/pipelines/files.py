@@ -36,7 +36,7 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Coroutine
     from os import PathLike
 
     from twisted.python.failure import Failure
@@ -44,7 +44,6 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
 
@@ -443,7 +442,7 @@ class FilesPipeline(MediaPipeline):
     def __init__(
         self,
         store_uri: str | PathLike[str],
-        download_func: Callable[[Request, Spider], Response] | None = None,
+        download_func: Callable[[Request], Coroutine[Any, Any, Response]] | None = None,
         *,
         crawler: Crawler,
     ):
