@@ -30,8 +30,6 @@ from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine
-
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
@@ -70,16 +68,22 @@ class MediaPipeline(ABC):
 
     def __init__(
         self,
-        download_func: Callable[[Request], Coroutine[Any, Any, Response]] | None = None,
+        download_func: None = None,
         *,
         crawler: Crawler,
     ):
+        if download_func is not None:
+            warnings.warn(
+                "The download_func argument of MediaPipeline.__init__() is ignored"
+                " and will be removed in a future Scrapy version.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         self.crawler: Crawler = crawler
         assert crawler.request_fingerprinter
         self._fingerprinter: RequestFingerprinterProtocol = (
             crawler.request_fingerprinter
         )
-        self.download_func = download_func
 
         settings = crawler.settings
         resolve = functools.partial(
@@ -202,13 +206,9 @@ class MediaPipeline(ABC):
         self, request: Request, info: SpiderInfo, item: Any
     ) -> FileInfo:
         try:
-            if self.download_func:
-                # this ugly code was left only to support tests. TODO: remove
-                response = await self.download_func(request)
-            else:
-                self._modify_media_request(request)
-                assert self.crawler.engine
-                response = await self.crawler.engine.download_async(request)
+            self._modify_media_request(request)
+            assert self.crawler.engine
+            response = await self.crawler.engine.download_async(request)
             return self.media_downloaded(response, request, info, item=item)
         except Exception:
             failure = self.media_failed(Failure(), request, info)

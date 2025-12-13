@@ -13,6 +13,7 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from typing import Any
 from unittest import mock
+from unittest.mock import MagicMock
 from urllib.parse import urlparse
 
 import attr
@@ -84,8 +85,8 @@ class TestFilesPipeline:
         settings_dict = {"FILES_STORE": self.tempdir}
         crawler = get_crawler(DefaultSpider, settings_dict=settings_dict)
         crawler.spider = crawler._create_spider()
+        crawler.engine = MagicMock(download_async=_mocked_download_func)
         self.pipeline = FilesPipeline.from_crawler(crawler)
-        self.pipeline.download_func = _mocked_download_func
         self.pipeline.open_spider()
 
     def teardown_method(self):

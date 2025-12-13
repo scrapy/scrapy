@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from unittest.mock import MagicMock
 
 import pytest
 from testfixtures import LogCapture
@@ -54,8 +55,8 @@ class TestBaseMediaPipeline:
     def setup_method(self):
         crawler = get_crawler(DefaultSpider, self.settings)
         crawler.spider = crawler._create_spider()
+        crawler.engine = MagicMock(download_async=_mocked_download_func)
         self.pipe = self.pipeline_class.from_crawler(crawler)
-        self.pipe.download_func = _mocked_download_func
         self.pipe.open_spider()
         self.info = self.pipe.spiderinfo
         self.fingerprint = crawler.request_fingerprinter.fingerprint
@@ -470,25 +471,10 @@ class MediaFailedFailurePipeline(MockedMediaPipeline):
         return failure  # deprecated
 
 
-class TestMediaFailedFailure:
+class TestMediaFailedFailure(TestBaseMediaPipeline):
     """Test that media_failed() can return a failure instead of raising."""
 
     pipeline_class = MediaFailedFailurePipeline
-    settings = None
-
-    def setup_method(self):
-        crawler = get_crawler(DefaultSpider, self.settings)
-        crawler.spider = crawler._create_spider()
-        self.pipe = self.pipeline_class.from_crawler(crawler)
-        self.pipe.download_func = _mocked_download_func
-        self.pipe.open_spider()
-        self.info = self.pipe.spiderinfo
-        self.fingerprint = crawler.request_fingerprinter.fingerprint
-
-    def teardown_method(self):
-        for name, signal in vars(signals).items():
-            if not name.startswith("_"):
-                disconnect_all(signal)
 
     def _errback(self, result):
         self.pipe._mockcalled.append("request_errback")
