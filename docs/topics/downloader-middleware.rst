@@ -290,13 +290,12 @@ DownloadTimeoutMiddleware
 .. class:: DownloadTimeoutMiddleware
 
     This middleware sets the download timeout for requests specified in the
-    :setting:`DOWNLOAD_TIMEOUT` setting or :attr:`download_timeout`
-    spider attribute.
+    :setting:`DOWNLOAD_TIMEOUT` setting.
 
 .. note::
 
-    You can also set download timeout per-request using
-    :reqmeta:`download_timeout` Request.meta key; this is supported
+    You can also set download timeout per-request using the
+    :reqmeta:`download_timeout` :attr:`.Request.meta` key; this is supported
     even when DownloadTimeoutMiddleware is disabled.
 
 HttpAuthMiddleware
@@ -1212,9 +1211,8 @@ UserAgentMiddleware
 
 .. class:: UserAgentMiddleware
 
-   Middleware that allows spiders to override the default user agent.
+   Middleware that sets the ``User-Agent`` header.
 
-   In order for a spider to override the default user agent, its ``user_agent``
-   attribute must be set.
+   The header value is taken from the :setting:`USER_AGENT` setting.
 
 .. _DBM: https://en.wikipedia.org/wiki/Dbm
