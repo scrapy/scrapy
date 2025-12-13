@@ -125,7 +125,7 @@ class MediaPipeline(ABC):
         self.spiderinfo = self.SpiderInfo(self.crawler.spider)
 
     @_warn_spider_arg
-    async def process_item(self, item: Any, spider: Spider | None = None) -> list[Any]:
+    async def process_item(self, item: Any, spider: Spider | None = None) -> Any:
         info = self.spiderinfo
         requests = arg_to_iter(self.get_media_requests(item, info))
         coros = [self._process_request(r, info, item) for r in requests]
