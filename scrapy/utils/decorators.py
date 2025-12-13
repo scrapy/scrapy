@@ -42,8 +42,13 @@ def deprecated(
     return deco
 
 
-def defers(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:
+def defers(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:  # pragma: no cover
     """Decorator to make sure a function always returns a deferred"""
+    warnings.warn(
+        "@defers is deprecated, you can use maybeDeferred() directly if needed.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
 
     @wraps(func)
     def wrapped(*a: _P.args, **kw: _P.kwargs) -> Deferred[_T]:
