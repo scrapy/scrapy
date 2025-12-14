@@ -43,6 +43,12 @@ class DeferredPipeline:
         item["pipeline_passed"] = True
         return item
 
+    def open_spider(self):
+        return succeed(None)
+
+    def close_spider(self):
+        return succeed(None)
+
     def process_item(self, item):
         d = Deferred()
         d.addCallback(self.cb)
@@ -159,9 +165,19 @@ class TestPipeline:
     @deferred_f_from_coro_f
     async def test_pipeline_deferred(self, mockserver: MockServer) -> None:
         crawler = self._create_crawler(DeferredPipeline)
-        with pytest.warns(
-            ScrapyDeprecationWarning,
-            match="DeferredPipeline.process_item returned a Deferred",
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match="DeferredPipeline.open_spider returned a Deferred",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match="DeferredPipeline.close_spider returned a Deferred",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match="DeferredPipeline.process_item returned a Deferred",
+            ),
         ):
             await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
         assert len(self.items) == 1
@@ -216,7 +232,12 @@ class TestPipeline:
         "pipeline_class",
         [
             OpenSpiderExceptionPipeline,
-            OpenSpiderExceptionDeferredPipeline,
+            pytest.param(
+                OpenSpiderExceptionDeferredPipeline,
+                marks=pytest.mark.filterwarnings(
+                    "ignore::scrapy.exceptions.ScrapyDeprecationWarning"
+                ),
+            ),
             OpenSpiderExceptionAsyncPipeline,
         ],
     )
@@ -432,7 +453,7 @@ class TestMiddlewareManagerSpider:
                 match=r"ItemPipelineManager needs to access self\.crawler\.spider but it is None",
             ),
         ):
-            mwman.open_spider(DefaultSpider())
+            await maybe_deferred_to_future(mwman.open_spider(DefaultSpider()))
         with pytest.raises(
             ValueError,
             match=r"ItemPipelineManager needs to access self\.crawler\.spider but it is None",
@@ -448,7 +469,7 @@ class TestMiddlewareManagerSpider:
                 match=r"ItemPipelineManager needs to access self\.crawler\.spider but it is None",
             ),
         ):
-            mwman.close_spider(DefaultSpider())
+            await maybe_deferred_to_future(mwman.close_spider(DefaultSpider()))
         with pytest.raises(
             ValueError,
             match=r"ItemPipelineManager needs to access self\.crawler\.spider but it is None",
