@@ -59,7 +59,7 @@ class ImagesPipeline(FilesPipeline):
         *,
         crawler: Crawler,
     ):
-        if download_func is not None:
+        if download_func is not None:  # pragma: no cover
             warnings.warn(
                 "The download_func argument of ImagesPipeline.__init__() is ignored"
                 " and will be removed in a future Scrapy version.",
