@@ -5,7 +5,6 @@ from unittest.mock import MagicMock
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import signals
@@ -163,10 +162,10 @@ class TestBaseMediaPipeline:
         assert new_item is item
         assert len(log.records) == 0
 
-    @inlineCallbacks
-    def test_default_process_item(self):
+    @deferred_f_from_coro_f
+    async def test_default_process_item(self):
         item = {"name": "name"}
-        new_item = yield self.pipe.process_item(item)
+        new_item = await self.pipe.process_item(item)
         assert new_item is item
 
 
@@ -291,7 +290,7 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         req1 = Request("http://url1")
         req2 = Request("http://url2")
         item = {"requests": iter([req1, req2])}
-        new_item = yield self.pipe.process_item(item)
+        new_item = await self.pipe.process_item(item)
         assert new_item is item
         assert self.fingerprint(req1) in self.info.downloaded
         assert self.fingerprint(req2) in self.info.downloaded
@@ -310,7 +309,7 @@ class TestMediaPipeline(TestBaseMediaPipeline):
             req1.url, meta={"response": Response("http://donot.download.me")}
         )
         item = {"requests": req2}
-        new_item = yield self.pipe.process_item(item)
+        new_item = await self.pipe.process_item(item)
         assert new_item is item
         assert self.fingerprint(req1) == self.fingerprint(req2)
         assert new_item["results"] == [(True, {})]
