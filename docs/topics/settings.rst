@@ -983,9 +983,8 @@ The amount of time (in secs) that the downloader will wait before timing out.
 
 .. note::
 
-    This timeout can be set per spider using :attr:`download_timeout`
-    spider attribute and per-request using :reqmeta:`download_timeout`
-    Request.meta key.
+    This timeout can be per-request using the :reqmeta:`download_timeout`
+    :attr:`.Request.meta` key.
 
 .. note::
 
@@ -1010,9 +1009,10 @@ ignored.
 
 Use ``0`` to disable this limit.
 
-This limit can be set per spider using the :attr:`download_maxsize` spider
-attribute and per request using the :reqmeta:`download_maxsize` Request.meta
-key.
+.. note::
+
+    This limit can be set per-request using the :reqmeta:`download_maxsize`
+    :attr:`.Request.meta` key.
 
 .. note::
 
@@ -1033,9 +1033,10 @@ warning will be logged about it.
 
 Use ``0`` to disable this limit.
 
-This limit can be set per spider using the :attr:`download_warnsize` spider
-attribute and per request using the :reqmeta:`download_warnsize` Request.meta
-key.
+.. note::
+
+    This limit can be set per-request using the :reqmeta:`download_warnsize`
+    :attr:`.Request.meta` key.
 
 .. note::
 

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import warnings
+from unittest.mock import MagicMock
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
 
 from scrapy import signals
@@ -13,17 +13,21 @@ from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException
 from scrapy.pipelines.media import MediaPipeline
-from scrapy.utils.asyncio import call_later
+from scrapy.utils.defer import _defer_sleep_async, deferred_f_from_coro_f
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
 
-def _mocked_download_func(request, info):
+async def _mocked_download_func(request):
     assert request.callback is NO_CALLBACK
     response = request.meta.get("response")
-    return response() if callable(response) else response
+    if callable(response):
+        response = await response()
+    if isinstance(response, Exception):
+        raise response
+    return response
 
 
 class UserDefinedPipeline(MediaPipeline):
@@ -50,8 +54,8 @@ class TestBaseMediaPipeline:
     def setup_method(self):
         crawler = get_crawler(DefaultSpider, self.settings)
         crawler.spider = crawler._create_spider()
+        crawler.engine = MagicMock(download_async=_mocked_download_func)
         self.pipe = self.pipeline_class.from_crawler(crawler)
-        self.pipe.download_func = _mocked_download_func
         self.pipe.open_spider()
         self.info = self.pipe.spiderinfo
         self.fingerprint = crawler.request_fingerprinter.fingerprint
@@ -158,10 +162,10 @@ class TestBaseMediaPipeline:
         assert new_item is item
         assert len(log.records) == 0
 
-    @inlineCallbacks
-    def test_default_process_item(self):
+    @deferred_f_from_coro_f
+    async def test_default_process_item(self):
         item = {"name": "name"}
-        new_item = yield self.pipe.process_item(item)
+        new_item = await self.pipe.process_item(item)
         assert new_item is item
 
 
@@ -206,8 +210,8 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         self.pipe._mockcalled.append("request_errback")
         return result
 
-    @inlineCallbacks
-    def test_result_succeed(self):
+    @deferred_f_from_coro_f
+    async def test_result_succeed(self):
         rsp = Response("http://url1")
         req = Request(
             "http://url1",
@@ -215,7 +219,7 @@ class TestMediaPipeline(TestBaseMediaPipeline):
             errback=self._errback,
         )
         item = {"requests": req}
-        new_item = yield self.pipe.process_item(item)
+        new_item = await self.pipe.process_item(item)
         assert new_item["results"] == [(True, {})]
         assert self.pipe._mockcalled == [
             "get_media_requests",
@@ -224,18 +228,17 @@ class TestMediaPipeline(TestBaseMediaPipeline):
             "item_completed",
         ]
 
-    @inlineCallbacks
-    def test_result_failure(self):
+    @deferred_f_from_coro_f
+    async def test_result_failure(self):
         self.pipe.LOG_FAILED_RESULTS = False
         exc = Exception("foo")
-        fail = Failure(exc)
         req = Request(
             "http://url1",
-            meta={"response": fail},
+            meta={"response": exc},
             errback=self._errback,
         )
         item = {"requests": req}
-        new_item = yield self.pipe.process_item(item)
+        new_item = await self.pipe.process_item(item)
         assert len(new_item["results"]) == 1
         assert new_item["results"][0][0] is False
         assert isinstance(new_item["results"][0][1], Failure)
@@ -248,16 +251,15 @@ class TestMediaPipeline(TestBaseMediaPipeline):
             "item_completed",
         ]
 
-    @inlineCallbacks
-    def test_mix_of_success_and_failure(self):
+    @deferred_f_from_coro_f
+    async def test_mix_of_success_and_failure(self):
         self.pipe.LOG_FAILED_RESULTS = False
         rsp1 = Response("http://url1")
         req1 = Request("http://url1", meta={"response": rsp1})
         exc = Exception("foo")
-        fail = Failure(exc)
-        req2 = Request("http://url2", meta={"response": fail})
+        req2 = Request("http://url2", meta={"response": exc})
         item = {"requests": [req1, req2]}
-        new_item = yield self.pipe.process_item(item)
+        new_item = await self.pipe.process_item(item)
         assert len(new_item["results"]) == 2
         assert new_item["results"][0] == (True, {})
         assert new_item["results"][1][0] is False
@@ -275,12 +277,12 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         assert m.count("media_downloaded") == 1
         assert m.count("media_failed") == 1
 
-    @inlineCallbacks
-    def test_get_media_requests(self):
+    @deferred_f_from_coro_f
+    async def test_get_media_requests(self):
         # returns single Request (without callback)
         req = Request("http://url")
         item = {"requests": req}  # pass a single item
-        new_item = yield self.pipe.process_item(item)
+        new_item = await self.pipe.process_item(item)
         assert new_item is item
         assert self.fingerprint(req) in self.info.downloaded
 
@@ -288,17 +290,17 @@ class TestMediaPipeline(TestBaseMediaPipeline):
         req1 = Request("http://url1")
         req2 = Request("http://url2")
         item = {"requests": iter([req1, req2])}
-        new_item = yield self.pipe.process_item(item)
+        new_item = await self.pipe.process_item(item)
         assert new_item is item
         assert self.fingerprint(req1) in self.info.downloaded
         assert self.fingerprint(req2) in self.info.downloaded
 
-    @inlineCallbacks
-    def test_results_are_cached_across_multiple_items(self):
+    @deferred_f_from_coro_f
+    async def test_results_are_cached_across_multiple_items(self):
         rsp1 = Response("http://url1")
         req1 = Request("http://url1", meta={"response": rsp1})
         item = {"requests": req1}
-        new_item = yield self.pipe.process_item(item)
+        new_item = await self.pipe.process_item(item)
         assert new_item is item
         assert new_item["results"] == [(True, {})]
 
@@ -307,25 +309,25 @@ class TestMediaPipeline(TestBaseMediaPipeline):
             req1.url, meta={"response": Response("http://donot.download.me")}
         )
         item = {"requests": req2}
-        new_item = yield self.pipe.process_item(item)
+        new_item = await self.pipe.process_item(item)
         assert new_item is item
         assert self.fingerprint(req1) == self.fingerprint(req2)
         assert new_item["results"] == [(True, {})]
 
-    @inlineCallbacks
-    def test_results_are_cached_for_requests_of_single_item(self):
+    @deferred_f_from_coro_f
+    async def test_results_are_cached_for_requests_of_single_item(self):
         rsp1 = Response("http://url1")
         req1 = Request("http://url1", meta={"response": rsp1})
         req2 = Request(
             req1.url, meta={"response": Response("http://donot.download.me")}
         )
         item = {"requests": [req1, req2]}
-        new_item = yield self.pipe.process_item(item)
+        new_item = await self.pipe.process_item(item)
         assert new_item is item
         assert new_item["results"] == [(True, {}), (True, {})]
 
-    @inlineCallbacks
-    def test_wait_if_request_is_downloading(self):
+    @deferred_f_from_coro_f
+    async def test_wait_if_request_is_downloading(self):
         def _check_downloading(response):
             fp = self.fingerprint(req1)
             assert fp in self.info.downloading
@@ -336,25 +338,24 @@ class TestMediaPipeline(TestBaseMediaPipeline):
 
         rsp1 = Response("http://url")
 
-        def rsp1_func():
-            dfd = Deferred().addCallback(_check_downloading)
-            call_later(0.1, dfd.callback, rsp1)
-            return dfd
+        async def rsp1_func():
+            await _defer_sleep_async()
+            _check_downloading(rsp1)
 
-        def rsp2_func():
+        async def rsp2_func():
             pytest.fail("it must cache rsp1 result and must not try to redownload")
 
         req1 = Request("http://url", meta={"response": rsp1_func})
         req2 = Request(req1.url, meta={"response": rsp2_func})
         item = {"requests": [req1, req2]}
-        new_item = yield self.pipe.process_item(item)
+        new_item = await self.pipe.process_item(item)
         assert new_item["results"] == [(True, {}), (True, {})]
 
-    @inlineCallbacks
-    def test_use_media_to_download_result(self):
+    @deferred_f_from_coro_f
+    async def test_use_media_to_download_result(self):
         req = Request("http://url", meta={"result": "ITSME"})
         item = {"requests": req}
-        new_item = yield self.pipe.process_item(item)
+        new_item = await self.pipe.process_item(item)
         assert new_item["results"] == [(True, "ITSME")]
         assert self.pipe._mockcalled == [
             "get_media_requests",
@@ -469,45 +470,29 @@ class MediaFailedFailurePipeline(MockedMediaPipeline):
         return failure  # deprecated
 
 
-class TestMediaFailedFailure:
+class TestMediaFailedFailure(TestBaseMediaPipeline):
     """Test that media_failed() can return a failure instead of raising."""
 
     pipeline_class = MediaFailedFailurePipeline
-    settings = None
-
-    def setup_method(self):
-        crawler = get_crawler(DefaultSpider, self.settings)
-        crawler.spider = crawler._create_spider()
-        self.pipe = self.pipeline_class.from_crawler(crawler)
-        self.pipe.download_func = _mocked_download_func
-        self.pipe.open_spider()
-        self.info = self.pipe.spiderinfo
-        self.fingerprint = crawler.request_fingerprinter.fingerprint
-
-    def teardown_method(self):
-        for name, signal in vars(signals).items():
-            if not name.startswith("_"):
-                disconnect_all(signal)
 
     def _errback(self, result):
         self.pipe._mockcalled.append("request_errback")
         return result
 
-    @inlineCallbacks
-    def test_result_failure(self):
+    @deferred_f_from_coro_f
+    async def test_result_failure(self):
         self.pipe.LOG_FAILED_RESULTS = False
         exc = Exception("foo")
-        fail = Failure(exc)
         req = Request(
             "http://url1",
-            meta={"response": fail},
+            meta={"response": exc},
             errback=self._errback,
         )
         item = {"requests": req}
         with pytest.warns(
             ScrapyDeprecationWarning, match="media_failed returned a Failure instance"
         ):
-            new_item = yield self.pipe.process_item(item)
+            new_item = await self.pipe.process_item(item)
         assert len(new_item["results"]) == 1
         assert new_item["results"][0][0] is False
         assert isinstance(new_item["results"][0][1], Failure)

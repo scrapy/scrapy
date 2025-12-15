@@ -163,8 +163,8 @@ information on which commands must be run from inside projects, and which not.
 
 Also keep in mind that some commands may have slightly different behaviours
 when running them from inside projects. For example, the fetch command will use
-spider-overridden behaviours (such as the ``user_agent`` attribute to override
-the user-agent) if the url being fetched is associated with some specific
+spider-overridden behaviours (such as the ``custom_settings`` attribute to
+override settings) if the url being fetched is associated with some specific
 spider. This is intentional, as the ``fetch`` command is meant to be used to
 check how spiders are downloading pages.
 

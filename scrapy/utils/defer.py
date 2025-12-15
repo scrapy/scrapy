@@ -26,7 +26,7 @@ from twisted.internet.task import Cooperator
 from twisted.python import failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.asyncio import call_later, is_asyncio_available
+from scrapy.utils.asyncio import is_asyncio_available
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
@@ -84,15 +84,6 @@ def defer_succeed(result: _T) -> Deferred[_T]:
     return d
 
 
-def _defer_sleep() -> Deferred[None]:
-    """Delay by _DEFER_DELAY so reactor has a chance to go through readers and writers
-    before attending pending delayed calls, so do not set delay to zero.
-    """
-    d: Deferred[None] = Deferred()
-    call_later(_DEFER_DELAY, d.callback, None)
-    return d
-
-
 async def _defer_sleep_async() -> None:
     """Delay by _DEFER_DELAY so reactor has a chance to go through readers and writers
     before attending pending delayed calls, so do not set delay to zero.
@@ -100,7 +91,11 @@ async def _defer_sleep_async() -> None:
     if is_asyncio_available():
         await asyncio.sleep(_DEFER_DELAY)
     else:
-        await _defer_sleep()
+        from twisted.internet import reactor
+
+        d: Deferred[None] = Deferred()
+        reactor.callLater(_DEFER_DELAY, d.callback, None)
+        await d
 
 
 def defer_result(result: Any) -> Deferred[Any]:
