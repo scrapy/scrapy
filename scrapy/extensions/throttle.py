@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider, signals
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -43,6 +44,8 @@ class AutoThrottle:
         return cls(crawler)
 
     def _spider_opened(self, spider: Spider) -> None:
+        if hasattr(spider, "download_delay"):  # pragma: no cover
+            warn_on_deprecated_spider_attribute("download_delay", "DOWNLOAD_DELAY")
         self.mindelay = self._min_delay(spider)
         self.maxdelay = self._max_delay(spider)
 
