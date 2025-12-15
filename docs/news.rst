@@ -12,6 +12,8 @@ Highlights:
 
 -   More coroutine-based replacements for Deferred-based APIs
 
+-   The default priority queue is now ``DownloaderAwarePriorityQueue``
+
 -   Dropped support for Python 3.9 and PyPy 3.10
 
 Modified requirements
@@ -118,6 +120,12 @@ Backward-incompatible changes
     calls its methods directly.
     (:issue:`6802`)
 
+-   :meth:`scrapy.pipelines.media.MediaPipeline.process_item` now returns a
+    coroutine, previously it returned a
+    :class:`~twisted.internet.defer.Deferred` object. This
+    change only impacts code that calls this method directly.
+    (:issue:`7177`)
+
 Deprecation removals
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -196,6 +204,11 @@ Deprecations
     :class:`~twisted.internet.defer.Deferred` are deprecated in favor of their
     coroutine-based replacements:
 
+    - :class:`scrapy.core.downloader.middleware.DownloaderMiddlewareManager`
+
+        - ``download()`` (use
+          :meth:`~scrapy.core.downloader.middleware.DownloaderMiddlewareManager.download_async`)
+
     - :class:`scrapy.core.engine.ExecutionEngine`
 
         - ``start()`` (use
@@ -253,26 +266,54 @@ Deprecations
         - ``close_spider()`` (use
           :meth:`~scrapy.pipelines.ItemPipelineManager.close_spider_async`)
 
+    - :class:`scrapy.signalmanager.SignalManager`
+
+        - ``send_catch_log_deferred()`` (use
+          :meth:`~scrapy.signalmanager.SignalManager.send_catch_log_async`)
+
+    - ``scrapy.utils.signal.send_catch_log_deferred()`` (use
+      :func:`scrapy.utils.signal.send_catch_log_async`)
+
     (:issue:`6791`, :issue:`6842`, :issue:`6979`, :issue:`6997`, :issue:`6999`,
-    :issue:`7005`, :issue:`7043`)
+    :issue:`7005`, :issue:`7043`, :issue:`7069`, :issue:`7161`)
 
 -   The following spider attributes are deprecated in favor of settings:
 
     - ``download_maxsize`` (use :setting:`DOWNLOAD_MAXSIZE`)
 
+    - ``download_timeout`` (use :setting:`DOWNLOAD_TIMEOUT`)
+
     - ``download_warnsize`` (use :setting:`DOWNLOAD_WARNSIZE`)
 
     - ``max_concurrent_requests`` (use :setting:`CONCURRENT_REQUESTS`)
 
-    (:issue:`6988`, :issue:`6994`, :issue:`7117`)
+    - ``user_agent`` (use :setting:`USER_AGENT`)
+
+    (:issue:`6988`, :issue:`6994`, :issue:`7038`, :issue:`7039`, :issue:`7117`,
+    :issue:`7176`)
+
+-   Returning a :class:`~twisted.internet.defer.Deferred` from the following
+    user-defined functions is deprecated in favor of defining them as coroutine
+    functions:
+
+    - spider callbacks and errbacks (which was never officially supported and
+      may work incorrectly)
+
+    - the ``process_request()``, ``process_response()`` and
+      ``process_exception()`` methods of custom downloader middlewares
+
+    - signal handlers
+
+    (:issue:`6718`, :issue:`7069`, :issue:`7147`, :issue:`7148`, :issue:`7150`,
+    :issue:`7151`, :issue:`7161`)
 
 -   Passing a ``spider`` argument to the following methods is deprecated:
-
-    - :meth:`scrapy.core.downloader.middleware.DownloaderMiddlewareManager.download`
 
     - :meth:`scrapy.core.spidermw.SpiderMiddlewareManager.process_start`
 
     - :meth:`scrapy.core.downloader.Downloader.fetch`
+
+    - :meth:`scrapy.core.downloader.Downloader._get_slot`
 
     - :meth:`scrapy.core.downloader.handlers.DownloadHandlers.download_request`
 
@@ -291,7 +332,7 @@ Deprecations
     - :meth:`scrapy.pipelines.media.MediaPipeline.process_item`
 
     (:issue:`6750`, :issue:`6927`, :issue:`6984`, :issue:`7006`, :issue:`7011`,
-    :issue:`7033`, :issue:`7037`, :issue:`7045`)
+    :issue:`7033`, :issue:`7037`, :issue:`7045`, :issue:`7178`)
 
 -   Instantiating subclasses of :class:`scrapy.middleware.MiddlewareManager`
     without a :class:`~scrapy.crawler.Crawler` instance is deprecated.
@@ -313,9 +354,6 @@ Deprecations
     - the ``process_item()`` method of custom pipelines
 
     - the ``fetch()`` method of a custom :setting:`DOWNLOADER`
-
-    - a custom function passed as the ``download_func`` argument to
-      :meth:`scrapy.core.downloader.middleware.DownloaderMiddlewareManager.download`
 
     (:issue:`6927`, :issue:`6984`, :issue:`7006`, :issue:`7037`)
 
@@ -372,6 +410,11 @@ New features
 
 -   Added coroutine counterparts to some of the Deferred-based APIs:
 
+    - :class:`scrapy.core.downloader.middleware.DownloaderMiddlewareManager`
+
+        - :meth:`~scrapy.core.downloader.middleware.DownloaderMiddlewareManager.download_async`
+          (to ``download()``)
+
     - :class:`scrapy.core.engine.ExecutionEngine`
 
         - :meth:`~scrapy.core.engine.ExecutionEngine.start_async` (to
@@ -414,13 +457,24 @@ New features
         - :meth:`~scrapy.pipelines.ItemPipelineManager.process_item_async` (to
           ``process_item()``)
 
+        - :meth:`~scrapy.pipelines.ItemPipelineManager.open_spider_async` (to
+          ``open_spider()``)
+
+        - :meth:`~scrapy.pipelines.ItemPipelineManager.close_spider_async` (to
+          ``close_spider()``)
+
     - :class:`scrapy.signalmanager.SignalManager`
 
         - :meth:`~scrapy.signalmanager.SignalManager.send_catch_log_async` (to
           ``send_catch_log_deferred()``)
 
-    (:issue:`6781`, :issue:`6792`, :issue:`6795`, :issue:`6801`, :issue:`6817`,
-    :issue:`6997`, :issue:`7005`)
+    (:issue:`6781`, :issue:`6791`, :issue:`6792`, :issue:`6795`, :issue:`6801`,
+    :issue:`6817`, :issue:`6842`, :issue:`6997`, :issue:`7005`, :issue:`7043`,
+    :issue:`7069`)
+
+-   The default value of the :setting:`SCHEDULER_PRIORITY_QUEUE` setting is now
+    ``'scrapy.pqueues.DownloaderAwarePriorityQueue'``.
+    (:issue:`6924`, :issue:`6940`)
 
 -   Added :class:`scrapy.extensions.logcount.LogCount`, an enabled by default
     extension that is responsible for the ``log_count/*`` stats. Previously,
@@ -450,7 +504,7 @@ Improvements
 ~~~~~~~~~~~~
 
 -   Refactored internal functions to use coroutines instead of Deferreds.
-    (:issue:`6795`, :issue:`6852`, :issue:`6855`, :issue:`6858`)
+    (:issue:`6795`, :issue:`6852`, :issue:`6855`, :issue:`6858`, :issue:`7159`)
 
 -   Commands that don't need a :class:`~scrapy.crawler.CrawlerProcess` instance
     no longer create it.
@@ -470,6 +524,10 @@ Bug fixes
     uses the URL set in the ``<base>`` tag as the base URL when redirecting to
     a relative URL.
     (:issue:`7042`, :issue:`7047`)
+
+-   Passing ``None`` as a value of the :reqmeta:`download_slot` request meta
+    key is now handled in the same way as not setting this meta key at all.
+    (:issue:`7172`)
 
 -   Fixed parsing of the first line of ``robots.txt`` files that have a BOM.
     (:issue:`6195`, :issue:`7095`)
@@ -536,8 +594,10 @@ Quality assurance
     :issue:`7073`,
     :issue:`7118`,
     :issue:`7127`,
+    :issue:`7141`,
     :issue:`7143`,
-    :issue:`7145`)
+    :issue:`7145`,
+    :issue:`7173`)
 
 -   Code cleanups.
     (:issue:`6803`,
@@ -551,12 +611,8 @@ Quality assurance
     :issue:`6970`,
     :issue:`6977`,
     :issue:`6986`,
-    :issue:`7008`)
-
--   :meth:`scrapy.pipelines.media.MediaPipeline.process_item` now returns a
-    coroutine, previously it returned a
-    :class:`~twisted.internet.defer.Deferred` object. This
-    change only impacts code that calls this method directly.
+    :issue:`7008`,
+    :issue:`7177`)
 
 .. _release-2.13.4:
 
