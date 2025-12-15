@@ -7,6 +7,7 @@ from twisted.internet.defer import inlineCallbacks
 from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot
 from scrapy.crawler import CrawlerRunner
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
@@ -106,6 +107,24 @@ def test_params():
         assert getattr(expected, param) == getattr(actual, param), (
             f"Slot.{param}: {getattr(expected, param)!r} != {getattr(actual, param)!r}"
         )
+
+
+def test_get_slot_deprecated_spider_arg():
+    crawler = get_crawler(DefaultSpider)
+    crawler.spider = crawler._create_spider()
+    downloader = Downloader(crawler)
+    downloader._slot_gc_loop.stop()  # Prevent an unclean reactor.
+    request = Request("https://example.com")
+
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match=r"Passing a 'spider' argument to Downloader\._get_slot\(\) is deprecated",
+    ):
+        key1, slot1 = downloader._get_slot(request, spider=crawler.spider)
+    key2, slot2 = downloader._get_slot(request)
+
+    assert key1 == key2
+    assert slot1 == slot2
 
 
 @pytest.mark.parametrize(

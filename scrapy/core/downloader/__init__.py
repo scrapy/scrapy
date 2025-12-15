@@ -151,7 +151,10 @@ class Downloader:
     def needs_backout(self) -> bool:
         return len(self.active) >= self.total_concurrency
 
-    def _get_slot(self, request: Request) -> tuple[str, Slot]:
+    @_warn_spider_arg
+    def _get_slot(
+        self, request: Request, spider: Spider | None = None
+    ) -> tuple[str, Slot]:
         key = self.get_slot_key(request)
         if key not in self.slots:
             assert self.crawler.spider
