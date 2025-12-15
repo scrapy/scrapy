@@ -63,10 +63,10 @@ def test_target_concurrency_invalid(value):
     ("spider", "setting", "expected"),
     [
         (UNSET, UNSET, DOWNLOAD_DELAY),
-        (1.0, UNSET, DOWNLOAD_DELAY),
+        (1.0, UNSET, 1.0),
         (UNSET, 1.0, 1.0),
-        (1.0, 2.0, 2.0),
-        (3.0, 2.0, 2.0),
+        (1.0, 2.0, 1.0),
+        (3.0, 2.0, 3.0),
     ],
 )
 def test_mindelay_definition(spider, setting, expected):
@@ -82,7 +82,8 @@ def test_mindelay_definition(spider, setting, expected):
 
     crawler = get_crawler(settings, _TestSpider)
     at = build_from_crawler(AutoThrottle, crawler)
-    assert at._min_delay(_TestSpider()) == expected
+    at._spider_opened(_TestSpider())
+    assert at.mindelay == expected
 
 
 @pytest.mark.parametrize(
@@ -107,7 +108,7 @@ def test_maxdelay_definition(value, expected):
     [
         (UNSET, UNSET, UNSET, AUTOTHROTTLE_START_DELAY),
         (AUTOTHROTTLE_START_DELAY - 1.0, UNSET, UNSET, AUTOTHROTTLE_START_DELAY),
-        (AUTOTHROTTLE_START_DELAY + 1.0, UNSET, UNSET, AUTOTHROTTLE_START_DELAY),
+        (AUTOTHROTTLE_START_DELAY + 1.0, UNSET, UNSET, AUTOTHROTTLE_START_DELAY + 1.0),
         (UNSET, AUTOTHROTTLE_START_DELAY - 1.0, UNSET, AUTOTHROTTLE_START_DELAY),
         (UNSET, AUTOTHROTTLE_START_DELAY + 1.0, UNSET, AUTOTHROTTLE_START_DELAY + 1.0),
         (UNSET, UNSET, AUTOTHROTTLE_START_DELAY - 1.0, AUTOTHROTTLE_START_DELAY - 1.0),
@@ -116,13 +117,13 @@ def test_maxdelay_definition(value, expected):
             AUTOTHROTTLE_START_DELAY + 1.0,
             AUTOTHROTTLE_START_DELAY + 2.0,
             UNSET,
-            AUTOTHROTTLE_START_DELAY + 2.0,
+            AUTOTHROTTLE_START_DELAY + 1.0,
         ),
         (
             AUTOTHROTTLE_START_DELAY + 2.0,
             UNSET,
             AUTOTHROTTLE_START_DELAY + 1.0,
-            AUTOTHROTTLE_START_DELAY + 1.0,
+            AUTOTHROTTLE_START_DELAY + 2.0,
         ),
         (
             AUTOTHROTTLE_START_DELAY + 1.0,
@@ -149,11 +150,7 @@ def test_startdelay_definition(min_spider, min_setting, start_setting, expected)
     at = build_from_crawler(AutoThrottle, crawler)
     spider = _TestSpider()
     at._spider_opened(spider)
-    download_delay = min_setting if min_setting is not UNSET else DOWNLOAD_DELAY
-    autothrottle_start = (
-        start_setting if start_setting is not UNSET else AUTOTHROTTLE_START_DELAY
-    )
-    assert max(download_delay, autothrottle_start) == expected
+    assert at._start_delay(spider) == expected
 
 
 @pytest.mark.parametrize(
