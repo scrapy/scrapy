@@ -82,19 +82,6 @@ class MiddlewareManager(ABC):
                 f" {self._compat_spider} and {spider}"
             )
 
-    def _warn_spider_arg(self, method_name: str) -> None:
-        if self.crawler:
-            msg = (
-                f"Passing a spider argument to {type(self).__name__}.{method_name}() is deprecated"
-                " and the passed value is ignored."
-            )
-        else:
-            msg = (
-                f"Passing a spider argument to {type(self).__name__}.{method_name}() is deprecated,"
-                f" {type(self).__name__} should be instantiated with a Crawler instance instead."
-            )
-        warnings.warn(msg, category=ScrapyDeprecationWarning, stacklevel=3)
-
     @classmethod
     @abstractmethod
     def _get_mwlist_from_settings(cls, settings: Settings) -> list[Any]:

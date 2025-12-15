@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from scrapy import Request, Spider, signals
 from scrapy.utils.decorators import _warn_spider_arg
+from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
@@ -28,6 +29,9 @@ class UserAgentMiddleware:
         return o
 
     def spider_opened(self, spider: Spider) -> None:
+        if hasattr(spider, "user_agent"):  # pragma: no cover
+            warn_on_deprecated_spider_attribute("user_agent", "USER_AGENT")
+
         self.user_agent = getattr(spider, "user_agent", self.user_agent)
 
     @_warn_spider_arg

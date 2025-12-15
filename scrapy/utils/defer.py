@@ -26,7 +26,7 @@ from twisted.internet.task import Cooperator
 from twisted.python import failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.asyncio import call_later, is_asyncio_available
+from scrapy.utils.asyncio import is_asyncio_available
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
@@ -84,15 +84,6 @@ def defer_succeed(result: _T) -> Deferred[_T]:
     return d
 
 
-def _defer_sleep() -> Deferred[None]:
-    """Delay by _DEFER_DELAY so reactor has a chance to go through readers and writers
-    before attending pending delayed calls, so do not set delay to zero.
-    """
-    d: Deferred[None] = Deferred()
-    call_later(_DEFER_DELAY, d.callback, None)
-    return d
-
-
 async def _defer_sleep_async() -> None:
     """Delay by _DEFER_DELAY so reactor has a chance to go through readers and writers
     before attending pending delayed calls, so do not set delay to zero.
@@ -100,7 +91,11 @@ async def _defer_sleep_async() -> None:
     if is_asyncio_available():
         await asyncio.sleep(_DEFER_DELAY)
     else:
-        await _defer_sleep()
+        from twisted.internet import reactor
+
+        d: Deferred[None] = Deferred()
+        reactor.callLater(_DEFER_DELAY, d.callback, None)
+        await d
 
 
 def defer_result(result: Any) -> Deferred[Any]:
@@ -517,14 +512,14 @@ def _schedule_coro(coro: Coroutine[Any, Any, Any]) -> None:
 
 
 @overload
-def ensure_awaitable(o: Awaitable[_T]) -> Awaitable[_T]: ...
+def ensure_awaitable(o: Awaitable[_T], _warn: str | None = None) -> Awaitable[_T]: ...
 
 
 @overload
-def ensure_awaitable(o: _T) -> Awaitable[_T]: ...
+def ensure_awaitable(o: _T, _warn: str | None = None) -> Awaitable[_T]: ...
 
 
-def ensure_awaitable(o: _T | Awaitable[_T]) -> Awaitable[_T]:
+def ensure_awaitable(o: _T | Awaitable[_T], _warn: str | None = None) -> Awaitable[_T]:
     """Convert any value to an awaitable object.
 
     For a :class:`~twisted.internet.defer.Deferred` object, use
@@ -535,6 +530,13 @@ def ensure_awaitable(o: _T | Awaitable[_T]) -> Awaitable[_T]:
     .. versionadded:: VERSION
     """
     if isinstance(o, Deferred):
+        if _warn:
+            warnings.warn(
+                f"{_warn} returned a Deferred, this is deprecated."
+                f" Please refactor this function to return a coroutine.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         return maybe_deferred_to_future(o)
     if inspect.isawaitable(o):
         return o

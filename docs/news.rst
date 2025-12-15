@@ -553,6 +553,11 @@ Quality assurance
     :issue:`6986`,
     :issue:`7008`)
 
+-   :meth:`scrapy.pipelines.media.MediaPipeline.process_item` now returns a
+    coroutine, previously it returned a
+    :class:`~twisted.internet.defer.Deferred` object. This
+    change only impacts code that calls this method directly.
+
 .. _release-2.13.4:
 
 Scrapy 2.13.4 (2025-11-17)
