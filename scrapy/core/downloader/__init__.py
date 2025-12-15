@@ -94,7 +94,8 @@ def _get_concurrency_delay(
     concurrency: int, spider: Spider, settings: BaseSettings
 ) -> tuple[int, float]:
     delay: float = settings.getfloat("DOWNLOAD_DELAY")
-    if hasattr(spider, "download_delay"):
+    if hasattr(spider, "download_delay"):  # pragma: no cover
+        warn_on_deprecated_spider_attribute("download_delay", "DOWNLOAD_DELAY")
         delay = spider.download_delay
 
     if hasattr(spider, "max_concurrent_requests"):  # pragma: no cover
