@@ -31,7 +31,9 @@ Request objects
         If the URL is invalid, a :exc:`ValueError` exception is raised.
     :type url: str
 
-    :param callback: sets :attr:`callback`, defaults to ``None``.
+    :param callback: sets :attr:`callback`, defaults to ``None``. The callback
+        function will be called when the response is downloaded. For detailed
+        information about callbacks, see :ref:`topics-request-response-ref-request-callbacks`.
 
         .. versionchanged:: 2.0
             The *callback* parameter is no longer required when the *errback*
@@ -173,6 +175,7 @@ Request objects
         :meth:`replace`.
 
     .. autoattribute:: callback
+       :annotation: The callback function for this request. See :ref:`topics-request-response-ref-request-callbacks` for details.
 
     .. autoattribute:: errback
 
@@ -266,14 +269,26 @@ Other functions related to requests
 .. autofunction:: scrapy.utils.request.request_from_dict
 
 
-.. _topics-request-response-ref-request-callback-arguments:
+.. _topics-request-response-ref-request-callbacks:
 
-Passing additional data to callback functions
----------------------------------------------
+Request callbacks
+-----------------
 
-The callback of a request is a function that will be called when the response
-of that request is downloaded. The callback function will be called with the
-downloaded :class:`Response` object as its first argument.
+A **callback** is a function that Scrapy calls when a response for a request
+is downloaded. Callbacks are the primary mechanism for processing responses
+and generating new requests or items in Scrapy spiders.
+
+How callbacks work
+~~~~~~~~~~~~~~~~~~
+
+When you create a :class:`~scrapy.Request` object, you can specify a callback
+function using the ``callback`` parameter. If no callback is specified, Scrapy
+will use the spider's :meth:`~scrapy.Spider.parse` method as the default
+callback.
+
+The callback function receives the downloaded :class:`~scrapy.http.Response`
+object as its first argument, along with any additional keyword arguments
+specified in the request's :attr:`~scrapy.Request.cb_kwargs` attribute.
 
 Example:
 
@@ -288,6 +303,128 @@ Example:
     def parse_page2(self, response):
         # this would log http://www.example.com/some_page.html
         self.logger.info("Visited %s", response.url)
+
+What callbacks can return and yield
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Callback functions can return or yield the following types of objects:
+
+**Items**: Any :ref:`item object <topics-items>` (dictionaries, :class:`~scrapy.Item`
+instances, etc.) that will be processed by the :ref:`item pipeline <topics-item-pipeline>`.
+
+**Requests**: :class:`~scrapy.Request` objects (or subclasses like
+:class:`~scrapy.FormRequest`) that will be scheduled for download.
+
+**None**: Returning or yielding ``None`` is valid and results in no action
+being taken for that particular return/yield. This is useful when you want
+to conditionally process responses.
+
+**Iterables**: Any iterable containing a mix of the above types. You can return
+   or yield lists, generators, or any other iterable containing items and requests.
+
+**Async generators**: Callbacks can be defined as ``async def`` functions and
+use ``yield`` to produce items and requests asynchronously.
+
+Examples:
+
+.. code-block:: python
+
+    def parse(self, response):
+        # Return a single item
+        yield {"title": response.css("h1::text").get()}
+        
+        # Return a single request
+        yield scrapy.Request(response.urljoin("/next-page"), self.parse)
+        
+        # Return None (no-op)
+        if not response.css("h1"):
+            return None
+            
+        # Return multiple items and requests
+        for link in response.css("a::attr(href)"):
+            yield scrapy.Request(response.urljoin(link.get()), self.parse)
+            yield {"link": link.get()}
+            
+        # Return/yield an iterable (list, generator, etc.)
+        items = [{"title": "Item 1"}, {"title": "Item 2"}]
+        requests = [scrapy.Request(url, self.parse) for url in ["/page1", "/page2"]]
+        yield items  # Yields the entire list
+        yield requests  # Yields the entire list of requests
+
+    # Async callback example
+    async def parse_async(self, response):
+        # Process response asynchronously
+        title = response.css("h1::text").get()
+        if title:
+            yield {"title": title}
+            
+        # Follow links asynchronously
+        for link in response.css("a::attr(href)"):
+            yield scrapy.Request(response.urljoin(link.get()), self.parse_async)
+
+Valid callback types
+~~~~~~~~~~~~~~~~~~~~
+
+Callbacks can be:
+
+**Spider methods**: The most common approach. The callback must be a method
+of the spider class.
+
+.. code-block:: python
+
+    class MySpider(scrapy.Spider):
+        def parse(self, response):
+            pass
+            
+        def parse_item(self, response):
+            pass
+
+**String references**: You can pass a string containing the method name.
+This is useful for dynamic callback selection.
+
+.. code-block:: python
+
+    def get_callback(self, url):
+        if "/products/" in url:
+            return "parse_product"
+        return "parse_category"
+
+**Callable objects**: Any callable that accepts a response as its first
+argument. However, this has limitations with :ref:`request serialization
+<request-serialization>`.
+
+.. code-block:: python
+
+    def custom_callback(response):
+        return {"url": response.url}
+
+Callback serialization and persistence
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When using Scrapy's :ref:`persistence features <topics-jobs>`, callbacks must
+be serializable. This means:
+
+- **Spider methods** and **string references** work perfectly with persistence
+- **Lambda functions** and **nested functions** cannot be serialized and will
+  cause issues when resuming jobs
+- **Module-level functions** may work but are not recommended
+
+For jobs that need to be paused and resumed, always use spider methods or
+string references for callbacks.
+
+.. code-block:: python
+
+    # ✅ Good - works with persistence
+    yield scrapy.Request(url, callback=self.parse_item)
+    yield scrapy.Request(url, callback="parse_item")
+    
+    # ❌ Bad - won't work with persistence
+    yield scrapy.Request(url, callback=lambda r: {"url": r.url})
+
+.. _topics-request-response-ref-request-callback-arguments:
+
+Passing additional data to callback functions
+---------------------------------------------
 
 In some cases you may be interested in passing arguments to those callback
 functions so you can receive the arguments later, in the second callback.
