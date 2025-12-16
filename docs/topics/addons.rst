@@ -186,7 +186,7 @@ Use a fallback component:
             else:
                 return await self._fallback_handler.download_request(request)
 
-        async def close():
+        async def close(self):
             pass
 
 
