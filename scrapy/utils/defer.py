@@ -27,6 +27,7 @@ from twisted.python import failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.asyncio import is_asyncio_available
+from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
@@ -426,6 +427,12 @@ def maybeDeferred_coro(
         return fail(failure.Failure(captureVars=Deferred.debug))
 
     if isinstance(result, Deferred):
+        warnings.warn(
+            f"{global_object_name(f)} returned a Deferred, this is deprecated."
+            f" Please refactor this function to return a coroutine.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return result
     if asyncio.isfuture(result) or inspect.isawaitable(result):
         return deferred_from_coro(result)

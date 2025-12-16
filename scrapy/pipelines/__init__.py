@@ -6,6 +6,7 @@ See documentation in docs/item-pipeline.rst
 
 from __future__ import annotations
 
+import asyncio
 import warnings
 from typing import TYPE_CHECKING, Any, cast
 
@@ -13,16 +14,13 @@ from twisted.internet.defer import Deferred, DeferredList
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.middleware import MiddlewareManager
+from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.defer import (
-    deferred_from_coro,
-    maybe_deferred_to_future,
-    maybeDeferred_coro,
-)
+from scrapy.utils.defer import deferred_from_coro, ensure_awaitable, maybeDeferred_coro
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Awaitable, Callable, Coroutine, Iterable
 
     from twisted.python.failure import Failure
 
@@ -58,12 +56,19 @@ class ItemPipelineManager(MiddlewareManager):
         return deferred_from_coro(self.process_item_async(item))
 
     async def process_item_async(self, item: Any) -> Any:
-        return await self._process_chain("process_item", item, add_spider=True)
+        return await self._process_chain(
+            "process_item", item, add_spider=True, warn_deferred=True
+        )
 
-    def _process_parallel(self, methodname: str) -> Deferred[list[None]]:
-        methods = cast("Iterable[Callable[..., None]]", self.methods[methodname])
+    def _process_parallel_dfd(self, methodname: str) -> Deferred[list[None]]:
+        methods = cast(
+            "Iterable[Callable[..., Coroutine[Any, Any, None] | Deferred[None] | None]]",
+            self.methods[methodname],
+        )
 
-        def get_dfd(method: Callable[..., None]) -> Deferred[None]:
+        def get_dfd(
+            method: Callable[..., Coroutine[Any, Any, None] | Deferred[None] | None],
+        ) -> Deferred[None]:
             if method in self._mw_methods_requiring_spider:
                 return maybeDeferred_coro(method, self._spider)
             return maybeDeferred_coro(method)
@@ -80,6 +85,32 @@ class ItemPipelineManager(MiddlewareManager):
         d2.addErrback(eb)
         return d2
 
+    async def _process_parallel_asyncio(self, methodname: str) -> list[None]:
+        methods = cast(
+            "Iterable[Callable[..., Coroutine[Any, Any, None] | Deferred[None] | None]]",
+            self.methods[methodname],
+        )
+        if not methods:
+            return []
+
+        def get_awaitable(
+            method: Callable[..., Coroutine[Any, Any, None] | Deferred[None] | None],
+        ) -> Awaitable[None]:
+            if method in self._mw_methods_requiring_spider:
+                result = method(self._spider)
+            else:
+                result = method()
+            return ensure_awaitable(result, _warn=global_object_name(method))
+
+        awaitables = [get_awaitable(m) for m in methods]
+        await asyncio.gather(*awaitables)
+        return [None for _ in methods]
+
+    async def _process_parallel(self, methodname: str) -> list[None]:
+        if is_asyncio_available():
+            return await self._process_parallel_asyncio(methodname)
+        return await self._process_parallel_dfd(methodname)
+
     def open_spider(self, spider: Spider) -> Deferred[list[None]]:
         warnings.warn(
             f"{global_object_name(type(self))}.open_spider() is deprecated, use open_spider_async() instead.",
@@ -87,10 +118,10 @@ class ItemPipelineManager(MiddlewareManager):
             stacklevel=2,
         )
         self._set_compat_spider(spider)
-        return self._process_parallel("open_spider")
+        return deferred_from_coro(self._process_parallel("open_spider"))
 
     async def open_spider_async(self) -> None:
-        await maybe_deferred_to_future(self._process_parallel("open_spider"))
+        await self._process_parallel("open_spider")
 
     def close_spider(self, spider: Spider) -> Deferred[list[None]]:
         warnings.warn(
@@ -99,7 +130,7 @@ class ItemPipelineManager(MiddlewareManager):
             stacklevel=2,
         )
         self._set_compat_spider(spider)
-        return self._process_parallel("close_spider")
+        return deferred_from_coro(self._process_parallel("close_spider"))
 
     async def close_spider_async(self) -> None:
-        await maybe_deferred_to_future(self._process_parallel("close_spider"))
+        await self._process_parallel("close_spider")
