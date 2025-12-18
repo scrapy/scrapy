@@ -33,3 +33,11 @@ jobs:
 
     - name: Upload coverage report
       uses: codecov/codecov-action@v5
+
+    - name: Upload test results
+      if: ${{ !cancelled() }}
+      uses: codecov/codecov-action@v5
+      with:
+        report_type: test_results
+        files: testenv.junit.xml
+
