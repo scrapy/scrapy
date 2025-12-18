@@ -171,8 +171,8 @@ class LxmlLinkExtractor:
         allow_domains: str | Iterable[str] = (),
         deny_domains: str | Iterable[str] = (),
         restrict_xpaths: str | Iterable[str] = (),
-        tags: str | Iterable[str] = ("a", "area"),
-        attrs: str | Iterable[str] = ("href",),
+        tags: str | Iterable[str] | bool = ("a", "area"),
+        attrs: str | Iterable[str] | bool = ("href",),
         canonicalize: bool = False,
         unique: bool = True,
         process_value: Callable[[Any], Any] | None = None,
@@ -180,11 +180,37 @@ class LxmlLinkExtractor:
         restrict_css: str | Iterable[str] = (),
         strip: bool = True,
         restrict_text: _RegexOrSeveral | None = None,
+        deny_tags: str | Iterable[str] | None = None,
+        deny_attrs: str | Iterable[str] | None = None,
     ):
-        tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
+        deny_tags_set = set(arg_to_iter(deny_tags))
+        deny_attrs_set = set(arg_to_iter(deny_attrs))
+
+        tag_set: set[str] | None = None
+        if tags is not True:
+            tag_set = set(arg_to_iter(tags))
+
+        def tag_func(t: str) -> bool:
+            if t in deny_tags_set:
+                return False
+            if tag_set is None:
+                return True
+            return t in tag_set
+
+        attr_set: set[str] | None = None
+        if attrs is not True:
+            attr_set = set(arg_to_iter(attrs))
+
+        def attr_func(a: str) -> bool:
+            if a in deny_attrs_set:
+                return False
+            if attr_set is None:
+                return True
+            return a in attr_set
+
         self.link_extractor = LxmlParserLinkExtractor(
-            tag=partial(operator.contains, tags),
-            attr=partial(operator.contains, attrs),
+            tag=tag_func,
+            attr=attr_func,
             unique=unique,
             process=process_value,
             strip=strip,
