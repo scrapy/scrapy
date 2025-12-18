@@ -1,4 +1,3 @@
-import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -24,8 +23,8 @@ class TestMemoryUsage:
         # or we want to ensure it works even if resource module is missing (though it handles it).
         # Actually, let's just assume we are on a platform that supports it or mock it.
         # on Mac, resource module exists.
-        
-        with patch("scrapy.extensions.memusage.import_module") as mock_import:
+
+        with patch("scrapy.extensions.memusage.import_module"):
             m = MemoryUsage(crawler)
             assert m.limit == 0  # Default is 0 (disabled)
             assert m.warning == 0
@@ -53,13 +52,13 @@ class TestMemoryUsage:
             mock_import.return_value = mock_resource
             # Mock getrusage return value
             mock_resource.getrusage.return_value.ru_maxrss = 1000
-            
+
             m = MemoryUsage(crawler)
-            
+
             # Simulate different platforms
             with patch("sys.platform", "linux"):
                 assert m.get_virtual_size() == 1000 * 1024
-                
+
             with patch("sys.platform", "darwin"):
                 assert m.get_virtual_size() == 1000
 
@@ -72,27 +71,31 @@ class TestMemoryUsage:
         crawler.engine = MagicMock()
         crawler.stats = MagicMock()
         crawler.stop_async = MagicMock()
-        
+
         with patch("scrapy.extensions.memusage.import_module"):
             m = MemoryUsage(crawler)
-            
+
             # Mock get_virtual_size to return 11 MB
-            with patch.object(m, 'get_virtual_size', return_value=11 * 1024 * 1024):
-                with patch("scrapy.extensions.memusage._schedule_coro") as mock_schedule:
-                    m._check_limit()
-                    
-                    # Logic: if engine.spider is None, calls stop_async
-                    crawler.engine.spider = None
-                    m._check_limit()
-                    assert crawler.stop_async.called or mock_schedule.called
-                    
-                    # If spider is set
-                    crawler.engine.spider = MagicMock()
-                    m._check_limit()
-                    crawler.engine.close_spider_async.assert_called_with(reason="memusage_exceeded")
-                    
-                    # Check stats
-                    crawler.stats.set_value.assert_called_with("memusage/limit_reached", 1)
+            with (
+                patch.object(m, "get_virtual_size", return_value=11 * 1024 * 1024),
+                patch("scrapy.extensions.memusage._schedule_coro") as mock_schedule,
+            ):
+                m._check_limit()
+
+                # Logic: if engine.spider is None, calls stop_async
+                crawler.engine.spider = None
+                m._check_limit()
+                assert crawler.stop_async.called or mock_schedule.called
+
+                # If spider is set
+                crawler.engine.spider = MagicMock()
+                m._check_limit()
+                crawler.engine.close_spider_async.assert_called_with(
+                    reason="memusage_exceeded"
+                )
+
+                # Check stats
+                crawler.stats.set_value.assert_called_with("memusage/limit_reached", 1)
 
     def test_check_warning_triggered(self):
         settings = {
@@ -101,20 +104,21 @@ class TestMemoryUsage:
         }
         crawler = get_crawler(settings)
         crawler.stats = MagicMock()
-        
+
         with patch("scrapy.extensions.memusage.import_module"):
             m = MemoryUsage(crawler)
-            
-            # 11 MB
-            with patch.object(m, 'get_virtual_size', return_value=11 * 1024 * 1024):
-                with patch("scrapy.extensions.memusage.logger") as mock_logger:
-                     m._check_warning()
-                     assert crawler.stats.set_value.call_count >= 1
-                     mock_logger.warning.assert_called()
-                     assert m.warned is True
-                     
-                     # Check it warns only once
-                     mock_logger.reset_mock()
-                     m._check_warning()
-                     mock_logger.warning.assert_not_called()
 
+            # 11 MB
+            with (
+                patch.object(m, "get_virtual_size", return_value=11 * 1024 * 1024),
+                patch("scrapy.extensions.memusage.logger") as mock_logger,
+            ):
+                m._check_warning()
+                assert crawler.stats.set_value.call_count >= 1
+                mock_logger.warning.assert_called()
+                assert m.warned is True
+
+                # Check it warns only once
+                mock_logger.reset_mock()
+                m._check_warning()
+                mock_logger.warning.assert_not_called()
