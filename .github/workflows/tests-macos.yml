@@ -40,4 +40,3 @@ jobs:
       with:
         report_type: test_results
         files: testenv.junit.xml
-

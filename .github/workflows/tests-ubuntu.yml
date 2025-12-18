@@ -99,4 +99,3 @@ jobs:
           pinned.junit.xml
           botocore.junit.xml
           botocore-pinned.junit.xml
-
