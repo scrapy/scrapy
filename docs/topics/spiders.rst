@@ -547,8 +547,6 @@ Crawling rules
       callbacks for new requests when writing :class:`CrawlSpider`-based spiders;
       unexpected behaviour can occur otherwise.
 
-      The *errback* parameter.
-
 CrawlSpider example
 ~~~~~~~~~~~~~~~~~~~
 

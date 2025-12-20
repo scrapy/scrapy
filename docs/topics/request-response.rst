@@ -33,8 +33,6 @@ Request objects
 
     :param callback: sets :attr:`callback`, defaults to ``None``.
 
-            The *callback* parameter is no longer required when the *errback*
-            parameter is specified.
     :type callback: Callable[Concatenate[Response, ...], Any] | None
 
     :param method: the HTTP method of this request. Defaults to ``'GET'``.
@@ -115,9 +113,6 @@ Request objects
             :class:`scrapy.Request.cookies <scrapy.Request>` parameter. This is a known
             current limitation that is being worked on.
 
-           Cookie values that are :class:`bool`, :class:`float` or :class:`int`
-           are casted to :class:`str`.
-
     :type cookies: dict or list
 
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).
@@ -133,8 +128,6 @@ Request objects
 
     :param errback: sets :attr:`errback`, defaults to ``None``.
 
-            The *callback* parameter is no longer required when the *errback*
-            parameter is specified.
     :type errback: Callable[[Failure], Any] | None
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
@@ -444,7 +437,6 @@ To change how request fingerprints are built for your requests, use the
 
 REQUEST_FINGERPRINTER_CLASS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 Default: :class:`scrapy.utils.request.RequestFingerprinter`
 
@@ -984,12 +976,6 @@ Response objects
         For instance: "HTTP/1.0", "HTTP/1.1", "h2"
     :type protocol: :class:`str`
 
-       The ``certificate`` parameter.
-
-       The ``ip_address`` parameter.
-
-       The ``protocol`` parameter.
-
     .. attribute:: Response.url
 
         A string containing the URL of the response.
@@ -1055,7 +1041,6 @@ Response objects
 
     .. attribute:: Response.cb_kwargs
 
-
         A shortcut to the :attr:`~scrapy.Request.cb_kwargs` attribute of the
         :attr:`Response.request` object (i.e. ``self.request.cb_kwargs``).
 
@@ -1074,7 +1059,6 @@ Response objects
 
     .. attribute:: Response.certificate
 
-
         A :class:`twisted.internet.ssl.Certificate` object representing
         the server's SSL certificate.
 
@@ -1090,7 +1074,6 @@ Response objects
         :attr:`ip_address` is always ``None``.
 
     .. attribute:: Response.protocol
-
 
         The protocol that was used to download the response.
         For instance: "HTTP/1.0", "HTTP/1.1"

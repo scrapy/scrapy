@@ -76,9 +76,6 @@ LxmlLinkExtractor
         If not given, it will default to
         :data:`scrapy.linkextractors.IGNORED_EXTENSIONS`.
 
-           :data:`~scrapy.linkextractors.IGNORED_EXTENSIONS` now includes
-           ``7z``, ``7zip``, ``apk``, ``bz2``, ``cdr``, ``dmg``, ``ico``,
-           ``iso``, ``tar``, ``tar.gz``, ``webm``, and ``xz``.
     :type deny_extensions: list
 
     :param restrict_xpaths: is an XPath (or list of XPath's) which defines

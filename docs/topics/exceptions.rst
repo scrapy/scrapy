@@ -83,7 +83,6 @@ This exception is raised to indicate an unsupported feature.
 StopDownload
 -------------
 
-
 .. exception:: StopDownload(fail=True)
 
 Raised from a :class:`~scrapy.signals.bytes_received` or :class:`~scrapy.signals.headers_received`

@@ -163,8 +163,6 @@ BaseItemExporter
    populate their respective instance attributes: :attr:`fields_to_export`,
    :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
 
-      The *dont_fail* parameter.
-
    .. method:: export_item(item)
 
       Exports the given item. This method must be implemented in subclasses.

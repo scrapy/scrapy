@@ -125,9 +125,6 @@ one or more of these methods:
         :class:`~scrapy.Request` objects and :ref:`item objects
         <topics-items>`.
 
-           This method may be defined as an :term:`asynchronous generator`, in
-           which case ``result`` is an :term:`asynchronous iterable`.
-
         Consider defining this method as an :term:`asynchronous generator`,
         which will be a requirement in a future version of Scrapy. However, if
         you plan on sharing your spider middleware with other people, consider
@@ -146,7 +143,6 @@ one or more of these methods:
 
     .. method:: process_spider_output_async(response, result)
         :async:
-
 
         If defined, this method must be an :term:`asynchronous generator`,
         which will be called instead of :meth:`process_spider_output` if
