@@ -182,7 +182,6 @@ Setting values must be :ref:`picklable <pickle-picklable>`.
 Import paths and classes
 ========================
 
-.. versionadded:: 2.4.0
 
 When a setting references a callable object to be imported by Scrapy, such as a
 class or a function, there are two different ways you can specify that object:
@@ -667,7 +666,6 @@ DNS in-memory cache size.
 DNS_RESOLVER
 ------------
 
-.. versionadded:: 2.0
 
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
 
@@ -1798,7 +1796,6 @@ For available choices, see :setting:`SCHEDULER_MEMORY_QUEUE`.
 SCRAPER_SLOT_MAX_ACTIVE_SIZE
 ----------------------------
 
-.. versionadded:: 2.0
 
 Default: ``5_000_000``
 
@@ -1974,7 +1971,6 @@ in the ``project`` subdirectory.
 TWISTED_REACTOR
 ---------------
 
-.. versionadded:: 2.0
 
 Default: ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``
 

@@ -148,7 +148,6 @@ one or more of these methods:
     .. method:: process_spider_output_async(response, result)
         :async:
 
-        .. versionadded:: 2.7
 
         If defined, this method must be an :term:`asynchronous generator`,
         which will be called instead of :meth:`process_spider_output` if

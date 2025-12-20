@@ -116,7 +116,6 @@ Request objects
             :class:`scrapy.Request.cookies <scrapy.Request>` parameter. This is a known
             current limitation that is being worked on.
 
-        .. versionadded:: 2.6.0
            Cookie values that are :class:`bool`, :class:`float` or :class:`int`
            are casted to :class:`str`.
 
@@ -448,7 +447,6 @@ To change how request fingerprints are built for your requests, use the
 REQUEST_FINGERPRINTER_CLASS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. versionadded:: 2.7
 
 Default: :class:`scrapy.utils.request.RequestFingerprinter`
 
@@ -988,13 +986,10 @@ Response objects
         For instance: "HTTP/1.0", "HTTP/1.1", "h2"
     :type protocol: :class:`str`
 
-    .. versionadded:: 2.0.0
        The ``certificate`` parameter.
 
-    .. versionadded:: 2.1.0
        The ``ip_address`` parameter.
 
-    .. versionadded:: 2.5.0
        The ``protocol`` parameter.
 
     .. attribute:: Response.url
@@ -1062,7 +1057,6 @@ Response objects
 
     .. attribute:: Response.cb_kwargs
 
-        .. versionadded:: 2.0
 
         A shortcut to the :attr:`~scrapy.Request.cb_kwargs` attribute of the
         :attr:`Response.request` object (i.e. ``self.request.cb_kwargs``).
@@ -1082,7 +1076,6 @@ Response objects
 
     .. attribute:: Response.certificate
 
-        .. versionadded:: 2.0.0
 
         A :class:`twisted.internet.ssl.Certificate` object representing
         the server's SSL certificate.
@@ -1091,7 +1084,6 @@ Response objects
 
     .. attribute:: Response.ip_address
 
-        .. versionadded:: 2.1.0
 
         The IP address of the server from which the Response originated.
 
@@ -1101,7 +1093,6 @@ Response objects
 
     .. attribute:: Response.protocol
 
-        .. versionadded:: 2.5.0
 
         The protocol that was used to download the response.
         For instance: "HTTP/1.0", "HTTP/1.1"

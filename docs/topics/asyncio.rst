@@ -4,7 +4,6 @@
 asyncio
 =======
 
-.. versionadded:: 2.0
 
 Scrapy has partial support for :mod:`asyncio`. After you :ref:`install the
 asyncio reactor <install-asyncio>`, you may use :mod:`asyncio` and

@@ -80,7 +80,6 @@ Example:
 Dataclass objects
 -----------------
 
-.. versionadded:: 2.2
 
 :func:`~dataclasses.dataclass` allows the defining of item classes with field names,
 so that :ref:`item exporters <topics-exporters>` can export all fields by
@@ -112,7 +111,6 @@ Example:
 attr.s objects
 --------------
 
-.. versionadded:: 2.2
 
 :func:`attr.s` allows the defining of item classes with field names,
 so that :ref:`item exporters <topics-exporters>` can export all fields by

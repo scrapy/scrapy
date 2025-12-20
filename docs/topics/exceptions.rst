@@ -83,7 +83,6 @@ This exception is raised to indicate an unsupported feature.
 StopDownload
 -------------
 
-.. versionadded:: 2.2
 
 .. exception:: StopDownload(fail=True)
 
