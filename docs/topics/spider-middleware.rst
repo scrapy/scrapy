@@ -125,7 +125,6 @@ one or more of these methods:
         :class:`~scrapy.Request` objects and :ref:`item objects
         <topics-items>`.
 
-        .. versionchanged:: 2.7
            This method may be defined as an :term:`asynchronous generator`, in
            which case ``result`` is an :term:`asynchronous iterable`.
 

@@ -27,7 +27,6 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     If you are using any custom or third-party :ref:`spider middleware
     <topics-spider-middleware>`, see :ref:`sync-async-spider-middleware`.
 
-    .. versionchanged:: 2.7
        Output of async callbacks is now processed asynchronously instead of
        collecting all of it first.
 

@@ -2064,7 +2064,6 @@ If this setting is set ``None``, Scrapy will use the existing reactor if one is
 already installed, or install the default reactor defined by Twisted for the
 current platform.
 
-.. versionchanged:: 2.7
    The :command:`startproject` command now sets this setting to
    ``twisted.internet.asyncioreactor.AsyncioSelectorReactor`` in the generated
    ``settings.py`` file.

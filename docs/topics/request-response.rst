@@ -33,7 +33,6 @@ Request objects
 
     :param callback: sets :attr:`callback`, defaults to ``None``.
 
-        .. versionchanged:: 2.0
             The *callback* parameter is no longer required when the *errback*
             parameter is specified.
     :type callback: Callable[Concatenate[Response, ...], Any] | None
@@ -134,7 +133,6 @@ Request objects
 
     :param errback: sets :attr:`errback`, defaults to ``None``.
 
-        .. versionchanged:: 2.0
             The *callback* parameter is no longer required when the *errback*
             parameter is specified.
     :type errback: Callable[[Failure], Any] | None
