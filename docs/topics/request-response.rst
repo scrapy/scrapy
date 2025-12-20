@@ -32,7 +32,6 @@ Request objects
     :type url: str
 
     :param callback: sets :attr:`callback`, defaults to ``None``.
-
     :type callback: Callable[Concatenate[Response, ...], Any] | None
 
     :param method: the HTTP method of this request. Defaults to ``'GET'``.
@@ -127,7 +126,6 @@ Request objects
     :type dont_filter: bool
 
     :param errback: sets :attr:`errback`, defaults to ``None``.
-
     :type errback: Callable[[Failure], Any] | None
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
