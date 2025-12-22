@@ -79,6 +79,21 @@ Backward-incompatible changes
     :class:`~twisted.internet.defer.Deferred` object. This
     change only impacts code that calls this method directly.
 
+-   In order to fix a long-standing bug with handling of asynchronous storages
+    the following changes were made to media pipeline classes, which can impact
+    some of the user code that subclasses them or calls their methods directly:
+
+    - overrides of :meth:`scrapy.pipelines.media.MediaPipeline.media_downloaded`
+      and :meth:`~scrapy.pipelines.files.FilesPipeline.file_downloaded` can now
+      return coroutines
+
+    - :meth:`~scrapy.pipelines.files.FilesPipeline.media_downloaded`,
+      :meth:`~scrapy.pipelines.files.FilesPipeline.file_downloaded` and
+      :meth:`~scrapy.pipelines.images.ImagesPipeline.image_downloaded` now
+      return coroutines
+
+    (:issue:`2183`, :issue:`6369`, PR TBD)
+
 .. _release-2.13.4:
 
 Scrapy 2.13.4 (2025-11-17)
