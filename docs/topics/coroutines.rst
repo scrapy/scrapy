@@ -4,8 +4,6 @@
 Coroutines
 ==========
 
-.. versionadded:: 2.0
-
 Scrapy :ref:`supports <coroutine-support>` the :ref:`coroutine syntax <async>`
 (i.e. ``async def``).
 
@@ -28,10 +26,6 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     If you are using any custom or third-party :ref:`spider middleware
     <topics-spider-middleware>`, see :ref:`sync-async-spider-middleware`.
 
-    .. versionchanged:: 2.7
-       Output of async callbacks is now processed asynchronously instead of
-       collecting all of it first.
-
 -   The :meth:`process_item` method of
     :ref:`item pipelines <topics-item-pipeline>`.
 
@@ -52,8 +46,6 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
     See also :ref:`sync-async-spider-middleware` and
     :ref:`universal-spider-middleware`.
-
-    .. versionadded:: 2.7
 
 -   The :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` method
     of :ref:`spider middlewares <custom-spider-middleware>`, which *must* be
@@ -307,8 +299,6 @@ You can also send multiple requests in parallel:
 Mixing synchronous and asynchronous spider middlewares
 ======================================================
 
-.. versionadded:: 2.7
-
 The output of a :class:`~scrapy.Request` callback is passed as the ``result``
 parameter to the
 :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output` method
@@ -395,8 +385,6 @@ option. Otherwise, it's better to choose the second option.
 
 Universal spider middlewares
 ----------------------------
-
-.. versionadded:: 2.7
 
 To allow writing a spider middleware that supports asynchronous execution of
 its ``process_spider_output`` method in Scrapy 2.7 and later (avoiding

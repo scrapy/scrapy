@@ -182,8 +182,6 @@ Setting values must be :ref:`picklable <pickle-picklable>`.
 Import paths and classes
 ========================
 
-.. versionadded:: 2.4.0
-
 When a setting references a callable object to be imported by Scrapy, such as a
 class or a function, there are two different ways you can specify that object:
 
@@ -666,8 +664,6 @@ DNS in-memory cache size.
 
 DNS_RESOLVER
 ------------
-
-.. versionadded:: 2.0
 
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
 
@@ -1798,8 +1794,6 @@ For available choices, see :setting:`SCHEDULER_MEMORY_QUEUE`.
 SCRAPER_SLOT_MAX_ACTIVE_SIZE
 ----------------------------
 
-.. versionadded:: 2.0
-
 Default: ``5_000_000``
 
 Soft limit (in bytes) for response data being processed.
@@ -1974,8 +1968,6 @@ in the ``project`` subdirectory.
 TWISTED_REACTOR
 ---------------
 
-.. versionadded:: 2.0
-
 Default: ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``
 
 Import path of a given :mod:`~twisted.internet.reactor`.
@@ -2067,11 +2059,6 @@ which raises an exception, becomes:
 If this setting is set ``None``, Scrapy will use the existing reactor if one is
 already installed, or install the default reactor defined by Twisted for the
 current platform.
-
-.. versionchanged:: 2.7
-   The :command:`startproject` command now sets this setting to
-   ``twisted.internet.asyncioreactor.AsyncioSelectorReactor`` in the generated
-   ``settings.py`` file.
 
 .. versionchanged:: 2.13
    The default value was changed from ``None`` to
