@@ -691,24 +691,6 @@ Default: ``'scrapy.core.downloader.Downloader'``
 
 The downloader to use for crawling.
 
-.. setting:: DOWNLOADER_HTTPCLIENTFACTORY
-
-DOWNLOADER_HTTPCLIENTFACTORY
-----------------------------
-
-Default: ``'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'``
-
-Defines a Twisted ``protocol.ClientFactory``  class to use for HTTP/1.0
-connections (for ``HTTP10DownloadHandler``).
-
-.. note::
-
-    HTTP/1.0 is rarely used nowadays and its Scrapy support is deprecated,
-    so you can safely ignore this setting,
-    unless you really want to use HTTP/1.0 and override
-    :setting:`DOWNLOAD_HANDLERS` for ``http(s)`` scheme accordingly,
-    i.e. to ``'scrapy.core.downloader.handlers.http10.HTTP10DownloadHandler'``.
-
 .. setting:: DOWNLOADER_CLIENTCONTEXTFACTORY
 
 DOWNLOADER_CLIENTCONTEXTFACTORY
@@ -738,6 +720,12 @@ accepts a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
 parameter (``bool``) and a ``tls_ciphers`` parameter (see
 :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS`).
 
+.. note::
+
+    This setting is specific to the built-in Twisted-based download handlers:
+    :class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
+    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`.
+
 .. setting:: DOWNLOADER_CLIENT_TLS_CIPHERS
 
 DOWNLOADER_CLIENT_TLS_CIPHERS
@@ -745,8 +733,8 @@ DOWNLOADER_CLIENT_TLS_CIPHERS
 
 Default: ``'DEFAULT'``
 
-Use  this setting to customize the TLS/SSL ciphers used by the default
-HTTP/1.1 downloader.
+Use this setting to customize the TLS/SSL ciphers used by the HTTPS download
+handler.
 
 The setting should contain a string in the `OpenSSL cipher list format`_,
 these ciphers will be used as client ciphers. Changing this setting may be
@@ -756,6 +744,16 @@ specific cipher that is not included in ``DEFAULT`` if a website requires it.
 
 .. _OpenSSL cipher list format: https://docs.openssl.org/master/man1/openssl-ciphers/#cipher-list-format
 
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers. Moreover, for the built-in Twisted-based
+    download handlers
+    (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
+    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
+    to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
+
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
 DOWNLOADER_CLIENT_TLS_METHOD
@@ -763,8 +761,8 @@ DOWNLOADER_CLIENT_TLS_METHOD
 
 Default: ``'TLS'``
 
-Use this setting to customize the TLS/SSL method used by the default
-HTTP/1.1 downloader.
+Use this setting to customize the TLS/SSL method used by the HTTPS download
+handler.
 
 This setting must be one of these string values:
 
@@ -776,6 +774,15 @@ This setting must be one of these string values:
 - ``'TLSv1.1'``: forces TLS version 1.1
 - ``'TLSv1.2'``: forces TLS version 1.2
 
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers. Moreover, for the built-in Twisted-based
+    download handlers
+    (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
+    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
+    to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
 
@@ -786,10 +793,18 @@ Default: ``False``
 
 Setting this to ``True`` will enable DEBUG level messages about TLS connection
 parameters after establishing HTTPS connections. The kind of information logged
-depends on the versions of OpenSSL and pyOpenSSL.
+depends on the implementation of the download handler and the versions of
+the TLS-related libraries.
 
-This setting is only used for the default
-:setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`.
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers. Moreover, for the built-in Twisted-based
+    download handlers
+    (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
+    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
+    to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
 
 .. setting:: DOWNLOADER_MIDDLEWARES
 
@@ -882,7 +897,6 @@ It is also possible to change this setting per domain, although it requires
 non-trivial code. See the implementation of the :ref:`AutoThrottle
 <topics-autothrottle>` extension for an example.
 
-
 .. setting:: DOWNLOAD_HANDLERS
 
 DOWNLOAD_HANDLERS
@@ -890,7 +904,9 @@ DOWNLOAD_HANDLERS
 
 Default: ``{}``
 
-A dict containing the request downloader handlers enabled in your project.
+A dict containing the :ref:`download handlers <topics-download-handlers>`
+enabled in your project.
+
 See :setting:`DOWNLOAD_HANDLERS_BASE` for example format.
 
 .. setting:: DOWNLOAD_HANDLERS_BASE
@@ -912,9 +928,9 @@ Default:
     }
 
 
-A dict containing the request download handlers enabled by default in Scrapy.
-You should never modify this setting in your project, modify
-:setting:`DOWNLOAD_HANDLERS` instead.
+A dict containing the :ref:`download handlers <topics-download-handlers>`
+enabled by default in Scrapy. You should never modify this setting in your
+project, modify :setting:`DOWNLOAD_HANDLERS` instead.
 
 You can disable any of these download handlers by assigning ``None`` to their
 URI scheme in :setting:`DOWNLOAD_HANDLERS`. E.g., to disable the built-in FTP
@@ -926,46 +942,6 @@ handler (without replacement), place this in your ``settings.py``:
         "ftp": None,
     }
 
-.. _http2:
-
-The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
-
-#.  Install ``Twisted[http2]>=17.9.0`` to install the packages required to
-    enable HTTP/2 support in Twisted.
-
-#.  Update :setting:`DOWNLOAD_HANDLERS` as follows:
-
-    .. code-block:: python
-
-        DOWNLOAD_HANDLERS = {
-            "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler",
-        }
-
-.. warning::
-
-    HTTP/2 support in Scrapy is experimental, and not yet recommended for
-    production environments. Future Scrapy versions may introduce related
-    changes without a deprecation period or warning.
-
-.. note::
-
-    Known limitations of the current HTTP/2 implementation of Scrapy include:
-
-    -   No support for HTTP/2 Cleartext (h2c), since no major browser supports
-        HTTP/2 unencrypted (refer `http2 faq`_).
-
-    -   No setting to specify a maximum `frame size`_ larger than the default
-        value, 16384. Connections to servers that send a larger frame will
-        fail.
-
-    -   No support for `server pushes`_, which are ignored.
-
-    -   No support for the :signal:`bytes_received` and
-        :signal:`headers_received` signals.
-
-.. _frame size: https://datatracker.ietf.org/doc/html/rfc7540#section-4.2
-.. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
-.. _server pushes: https://datatracker.ietf.org/doc/html/rfc7540#section-8.2
 
 .. setting:: DOWNLOAD_SLOTS
 
@@ -1006,6 +982,12 @@ The amount of time (in secs) that the downloader will wait before timing out.
     This timeout can be per-request using the :reqmeta:`download_timeout`
     :attr:`.Request.meta` key.
 
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers.
+
 .. setting:: DOWNLOAD_MAXSIZE
 .. reqmeta:: download_maxsize
 
@@ -1028,6 +1010,12 @@ Use ``0`` to disable this limit.
     This limit can be set per-request using the :reqmeta:`download_maxsize`
     :attr:`.Request.meta` key.
 
+.. note::
+
+    Checking responses before decompressing them needs to be implemented inside
+    the :ref:`download handler <topics-download-handlers>`, so it's not
+    guaranteed to be supported by all 3rd-party handlers.
+
 .. setting:: DOWNLOAD_WARNSIZE
 .. reqmeta:: download_warnsize
 
@@ -1045,6 +1033,12 @@ Use ``0`` to disable this limit.
 
     This limit can be set per-request using the :reqmeta:`download_warnsize`
     :attr:`.Request.meta` key.
+
+.. note::
+
+    Checking responses before decompressing them needs to be implemented inside
+    the :ref:`download handler <topics-download-handlers>`, so it's not
+    guaranteed to be supported by all 3rd-party handlers.
 
 .. setting:: DOWNLOAD_FAIL_ON_DATALOSS
 
@@ -1072,11 +1066,17 @@ Optionally, this can be set per-request basis by using the
   If :setting:`RETRY_ENABLED` is ``True`` and this setting is set to ``True``,
   the ``ResponseFailed([_DataLoss])`` failure will be retried as usual.
 
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers.
+
 .. warning::
 
     This setting is ignored by the
     :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
-    download handler (see :setting:`DOWNLOAD_HANDLERS`). In case of a data loss
+    :ref:`download handler <topics-download-handlers>`. In case of a data loss
     error, the corresponding HTTP/2 connection may be corrupted, affecting other
     requests that use the same connection; hence, a ``ResponseFailed([InvalidBodyLengthError])``
     failure is always raised for every request that was using that connection.
@@ -1269,6 +1269,12 @@ Default: ``True``
 
 Whether or not to use passive mode when initiating FTP transfers.
 
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers.
+
 .. reqmeta:: ftp_password
 .. setting:: FTP_PASSWORD
 
@@ -1288,6 +1294,12 @@ in ``Request`` meta.
 
 .. _RFC 1635: https://datatracker.ietf.org/doc/html/rfc1635
 
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers.
+
 .. reqmeta:: ftp_user
 .. setting:: FTP_USER
 
@@ -1298,6 +1310,12 @@ Default: ``"anonymous"``
 
 The username to use for FTP connections when there is no ``"ftp_user"``
 in ``Request`` meta.
+
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers.
 
 .. setting:: GCS_PROJECT_ID
 

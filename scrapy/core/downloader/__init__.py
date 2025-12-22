@@ -236,9 +236,7 @@ class Downloader:
         slot.transferring.add(request)
         try:
             # 1. Download the response
-            response: Response = await maybe_deferred_to_future(
-                self.handlers.download_request(request)
-            )
+            response: Response = await self.handlers.download_request_async(request)
             # 2. Notify response_downloaded listeners about the recent download
             # before querying queue for next request
             self.signals.send_catch_log(
