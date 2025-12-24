@@ -184,6 +184,7 @@ __all__ = [
     "TELNETCONSOLE_PORT",
     "TELNETCONSOLE_USERNAME",
     "TEMPLATES_DIR",
+    "TWISTED_ENABLED",
     "TWISTED_REACTOR",
     "URLLENGTH_LIMIT",
     "USER_AGENT",
@@ -523,6 +524,7 @@ TELNETCONSOLE_PASSWORD = None
 
 TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
 
+TWISTED_ENABLED = True
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
 URLLENGTH_LIMIT = 2083

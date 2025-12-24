@@ -57,9 +57,23 @@ def is_asyncio_available() -> bool:
     but it's possible to await on :class:`~twisted.internet.defer.Deferred`
     objects.
     """
-    if not is_reactor_installed():
+
+    # Check if there is a running asyncio loop.
+    # Can't easily check for an installed but not running one, and there could
+    # be false positives due to some 3rd-party code installing it as a side
+    # effect.
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        pass
+    else:
+        return True
+
+    # Check if there is an installed asyncio reactor (it doesn't need to be
+    # running).
+    if not is_reactor_installed():  # TODO ?
         raise RuntimeError(
-            "is_asyncio_available() called without an installed reactor."
+            "is_asyncio_available() called without an installed reactor or running asyncio loop."
         )
 
     return is_asyncio_reactor_installed()
