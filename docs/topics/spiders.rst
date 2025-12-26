@@ -355,11 +355,9 @@ Otherwise, you would cause iteration over a ``start_urls`` string
 resulting in each character being seen as a separate url.
 
 A valid use case is to set the http auth credentials
-used by :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`
-or the user agent
-used by :class:`~scrapy.downloadermiddlewares.useragent.UserAgentMiddleware`::
+used by :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`::
 
-    scrapy crawl myspider -a http_user=myuser -a http_pass=mypassword -a user_agent=mybot
+    scrapy crawl myspider -a http_user=myuser -a http_pass=mypassword
 
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
@@ -548,9 +546,6 @@ Crawling rules
    .. warning:: Because of its internal implementation, you must explicitly set
       callbacks for new requests when writing :class:`CrawlSpider`-based spiders;
       unexpected behaviour can occur otherwise.
-
-   .. versionadded:: 2.0
-      The *errback* parameter.
 
 CrawlSpider example
 ~~~~~~~~~~~~~~~~~~~

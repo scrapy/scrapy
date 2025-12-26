@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import random
-import warnings
 from collections import deque
 from datetime import datetime
 from time import time
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import Deferred, inlineCallbacks
 from twisted.python.failure import Failure
@@ -13,7 +12,6 @@ from twisted.python.failure import Failure
 from scrapy import Request, Spider, signals
 from scrapy.core.downloader.handlers import DownloadHandlers
 from scrapy.core.downloader.middleware import DownloaderMiddlewareManager
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.resolver import dnscache
 from scrapy.utils.asyncio import (
     AsyncioLoopingCall,
@@ -25,8 +23,10 @@ from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.defer import (
     _defer_sleep_async,
     _schedule_coro,
+    deferred_from_coro,
     maybe_deferred_to_future,
 )
+from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
@@ -97,13 +97,9 @@ def _get_concurrency_delay(
     if hasattr(spider, "download_delay"):
         delay = spider.download_delay
 
-    if hasattr(spider, "max_concurrent_requests"):
-        warnings.warn(
-            "The 'max_concurrent_requests' spider attribute is deprecated. "
-            "Use Spider.custom_settings or Spider.update_settings() instead. "
-            "The corresponding setting name is 'CONCURRENT_REQUESTS'.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
+    if hasattr(spider, "max_concurrent_requests"):  # pragma: no cover
+        warn_on_deprecated_spider_attribute(
+            "max_concurrent_requests", "CONCURRENT_REQUESTS"
         )
         concurrency = spider.max_concurrent_requests
 
@@ -144,14 +140,21 @@ class Downloader:
     ) -> Generator[Deferred[Any], Any, Response | Request]:
         self.active.add(request)
         try:
-            return (yield self.middleware.download(self._enqueue_request, request))
+            return (
+                yield deferred_from_coro(
+                    self.middleware.download_async(self._enqueue_request, request)
+                )
+            )
         finally:
             self.active.remove(request)
 
     def needs_backout(self) -> bool:
         return len(self.active) >= self.total_concurrency
 
-    def _get_slot(self, request: Request) -> tuple[str, Slot]:
+    @_warn_spider_arg
+    def _get_slot(
+        self, request: Request, spider: Spider | None = None
+    ) -> tuple[str, Slot]:
         key = self.get_slot_key(request)
         if key not in self.slots:
             assert self.crawler.spider
@@ -173,8 +176,8 @@ class Downloader:
         return key, self.slots[key]
 
     def get_slot_key(self, request: Request) -> str:
-        if self.DOWNLOAD_SLOT in request.meta:
-            return cast("str", request.meta[self.DOWNLOAD_SLOT])
+        if (meta_slot := request.meta.get(self.DOWNLOAD_SLOT)) is not None:
+            return meta_slot
 
         key = urlparse_cached(request).hostname or ""
         if self.ip_concurrency:
@@ -183,10 +186,7 @@ class Downloader:
         return key
 
     # passed as download_func into self.middleware.download() in self.fetch()
-    @inlineCallbacks
-    def _enqueue_request(
-        self, request: Request
-    ) -> Generator[Deferred[Any], Any, Response]:
+    async def _enqueue_request(self, request: Request) -> Response:
         key, slot = self._get_slot(request)
         request.meta[self.DOWNLOAD_SLOT] = key
         slot.active.add(request)
@@ -199,7 +199,7 @@ class Downloader:
         slot.queue.append((request, d))
         self._process_queue(slot)
         try:
-            return (yield d)  # fired in _wait_for_download()
+            return await maybe_deferred_to_future(d)  # fired in _wait_for_download()
         finally:
             slot.active.remove(request)
 

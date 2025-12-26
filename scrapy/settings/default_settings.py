@@ -479,7 +479,7 @@ SCHEDULER = "scrapy.core.scheduler.Scheduler"
 SCHEDULER_DEBUG = False
 SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleLifoDiskQueue"
 SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.LifoMemoryQueue"
-SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ScrapyPriorityQueue"
+SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.DownloaderAwarePriorityQueue"
 SCHEDULER_START_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
 SCHEDULER_START_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
 

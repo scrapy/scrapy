@@ -16,26 +16,8 @@ class TestUserAgentMiddleware:
         assert mw.process_request(req) is None
         assert req.headers["User-Agent"] == b"default_useragent"
 
-    def test_remove_agent(self):
-        # settings USER_AGENT to None should remove the user agent
-        spider, mw = self.get_spider_and_mw("default_useragent")
-        spider.user_agent = None
-        mw.spider_opened(spider)
-        req = Request("http://scrapytest.org/")
-        assert mw.process_request(req) is None
-        assert req.headers.get("User-Agent") is None
-
-    def test_spider_agent(self):
-        spider, mw = self.get_spider_and_mw("default_useragent")
-        spider.user_agent = "spider_useragent"
-        mw.spider_opened(spider)
-        req = Request("http://scrapytest.org/")
-        assert mw.process_request(req) is None
-        assert req.headers["User-Agent"] == b"spider_useragent"
-
     def test_header_agent(self):
         spider, mw = self.get_spider_and_mw("default_useragent")
-        spider.user_agent = "spider_useragent"
         mw.spider_opened(spider)
         req = Request(
             "http://scrapytest.org/", headers={"User-Agent": "header_useragent"}
@@ -45,7 +27,6 @@ class TestUserAgentMiddleware:
 
     def test_no_agent(self):
         spider, mw = self.get_spider_and_mw(None)
-        spider.user_agent = None
         mw.spider_opened(spider)
         req = Request("http://scrapytest.org/")
         assert mw.process_request(req) is None

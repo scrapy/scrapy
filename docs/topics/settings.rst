@@ -182,8 +182,6 @@ Setting values must be :ref:`picklable <pickle-picklable>`.
 Import paths and classes
 ========================
 
-.. versionadded:: 2.4.0
-
 When a setting references a callable object to be imported by Scrapy, such as a
 class or a function, there are two different ways you can specify that object:
 
@@ -667,8 +665,6 @@ DNS in-memory cache size.
 DNS_RESOLVER
 ------------
 
-.. versionadded:: 2.0
-
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
 
 The class to be used to resolve DNS names. The default ``scrapy.resolver.CachingThreadedResolver``
@@ -1007,9 +1003,8 @@ The amount of time (in secs) that the downloader will wait before timing out.
 
 .. note::
 
-    This timeout can be set per spider using :attr:`download_timeout`
-    spider attribute and per-request using :reqmeta:`download_timeout`
-    Request.meta key.
+    This timeout can be per-request using the :reqmeta:`download_timeout`
+    :attr:`.Request.meta` key.
 
 .. setting:: DOWNLOAD_MAXSIZE
 .. reqmeta:: download_maxsize
@@ -1028,9 +1023,10 @@ ignored.
 
 Use ``0`` to disable this limit.
 
-This limit can be set per spider using the :attr:`download_maxsize` spider
-attribute and per request using the :reqmeta:`download_maxsize` Request.meta
-key.
+.. note::
+
+    This limit can be set per-request using the :reqmeta:`download_maxsize`
+    :attr:`.Request.meta` key.
 
 .. setting:: DOWNLOAD_WARNSIZE
 .. reqmeta:: download_warnsize
@@ -1045,9 +1041,10 @@ warning will be logged about it.
 
 Use ``0`` to disable this limit.
 
-This limit can be set per spider using the :attr:`download_warnsize` spider
-attribute and per request using the :reqmeta:`download_warnsize` Request.meta
-key.
+.. note::
+
+    This limit can be set per-request using the :reqmeta:`download_warnsize`
+    :attr:`.Request.meta` key.
 
 .. setting:: DOWNLOAD_FAIL_ON_DATALOSS
 
@@ -1739,10 +1736,10 @@ Type of in-memory queue used by the scheduler. Other available type is:
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
 
-Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
+Default: ``'scrapy.pqueues.DownloaderAwarePriorityQueue'``
 
 Type of priority queue used by the scheduler. Another available type is
-``scrapy.pqueues.DownloaderAwarePriorityQueue``.
+``scrapy.pqueues.ScrapyPriorityQueue``.
 ``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
 ``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
 domains in parallel.
@@ -1796,8 +1793,6 @@ For available choices, see :setting:`SCHEDULER_MEMORY_QUEUE`.
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE
 ----------------------------
-
-.. versionadded:: 2.0
 
 Default: ``5_000_000``
 
@@ -1973,8 +1968,6 @@ in the ``project`` subdirectory.
 TWISTED_REACTOR
 ---------------
 
-.. versionadded:: 2.0
-
 Default: ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``
 
 Import path of a given :mod:`~twisted.internet.reactor`.
@@ -2066,11 +2059,6 @@ which raises an exception, becomes:
 If this setting is set ``None``, Scrapy will use the existing reactor if one is
 already installed, or install the default reactor defined by Twisted for the
 current platform.
-
-.. versionchanged:: 2.7
-   The :command:`startproject` command now sets this setting to
-   ``twisted.internet.asyncioreactor.AsyncioSelectorReactor`` in the generated
-   ``settings.py`` file.
 
 .. versionchanged:: 2.13
    The default value was changed from ``None`` to
