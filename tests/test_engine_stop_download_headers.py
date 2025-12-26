@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 from testfixtures import LogCapture
 
 from scrapy.exceptions import StopDownload
-from scrapy.utils.defer import deferred_f_from_coro_f
 from tests.test_engine import (
     AttrsItemsSpider,
     CrawlerRun,
@@ -14,6 +13,7 @@ from tests.test_engine import (
     MySpider,
     TestEngineBase,
 )
+from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
     from tests.mockserver.http import MockServer

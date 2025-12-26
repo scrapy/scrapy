@@ -8,12 +8,12 @@ from urllib.parse import urlsplit, urlunsplit
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import SimpleSpider, SingleRequestSpider
+from tests.utils.decorators import inlineCallbacks
 
 
 class MitmProxy:

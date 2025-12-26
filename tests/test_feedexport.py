@@ -29,7 +29,6 @@ import lxml.etree
 import pytest
 from packaging.version import Version
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 from w3lib.url import file_uri_to_path, path_to_file_uri
 from zope.interface import implementer
 from zope.interface.verify import verifyObject
@@ -50,12 +49,13 @@ from scrapy.extensions.feedexport import (
     StdoutFeedStorage,
 )
 from scrapy.settings import Settings
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
 from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
+from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
