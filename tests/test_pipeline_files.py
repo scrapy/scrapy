@@ -31,11 +31,10 @@ from scrapy.pipelines.files import (
     S3FilesStore,
 )
 from scrapy.settings import Settings
-from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
-from tests.utils.decorators import inlineCallbacks
+from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
 
 from .test_pipeline_media import _mocked_download_func
 

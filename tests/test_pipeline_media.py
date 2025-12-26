@@ -13,11 +13,12 @@ from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException
 from scrapy.pipelines.media import MediaPipeline
-from scrapy.utils.defer import _defer_sleep_async, deferred_f_from_coro_f
+from scrapy.utils.defer import _defer_sleep_async
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.signal import disconnect_all
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import deferred_f_from_coro_f
 
 
 async def _mocked_download_func(request):

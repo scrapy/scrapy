@@ -7,12 +7,12 @@ from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot
 from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import MetaSpider
-from tests.utils.decorators import inlineCallbacks
+from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
 
 
 class DownloaderSlotsSettingsTestSpider(MetaSpider):
@@ -110,6 +110,7 @@ def test_params():
         )
 
 
+@pytest.mark.requires_reactor  # needs a reactor or an event loop for Downloader._slot_gc_loop
 def test_get_slot_deprecated_spider_arg():
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
