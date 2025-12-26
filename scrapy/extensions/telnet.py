@@ -21,7 +21,6 @@ from scrapy.exceptions import NotConfigured
 from scrapy.utils.decorators import defers
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
-from scrapy.utils.reactorless import is_reactorless
 from scrapy.utils.trackref import print_live_refs
 
 if TYPE_CHECKING:
@@ -45,7 +44,7 @@ class TelnetConsole(protocol.ServerFactory):
         if not crawler.settings.getbool("TELNETCONSOLE_ENABLED"):
             raise NotConfigured
 
-        if is_reactorless():
+        if not crawler.settings.getbool("TWISTED_ENABLED"):
             raise NotConfigured(
                 "The TelnetConsole extension is not supported in the reactorless mode."
                 " You can set the TELNETCONSOLE_ENABLED setting to False to remove this warning."

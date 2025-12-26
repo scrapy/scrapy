@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from functools import wraps
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 
 import pytest
 from twisted.internet.defer import Deferred
@@ -12,12 +12,9 @@ from scrapy.utils.defer import deferred_from_coro
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Generator
 
-    # typing.ParamSpec requires Python 3.10
-    from typing_extensions import ParamSpec
-
-    _P = ParamSpec("_P")
 
 _T = TypeVar("_T")
+_P = ParamSpec("_P")
 
 
 def inlineCallbacks(

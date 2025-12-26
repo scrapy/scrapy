@@ -128,7 +128,7 @@ def get_reactor_settings() -> dict[str, Any]:
         #     " you may need to install a reactor explicitly when running your tests."
         # )
         # TODO: distinguish between explicit reactorless mode and missing reactor installation
-        settings["_USE_REACTOR"] = False
+        settings["TWISTED_ENABLED"] = False
         settings["DOWNLOAD_HANDLERS"] = {
             "ftp": None,
             "http": None,

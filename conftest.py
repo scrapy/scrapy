@@ -8,9 +8,9 @@ import pytest
 from twisted.web.http import H2_ENABLED
 
 from scrapy.utils.reactor import set_asyncio_event_loop_policy
+from scrapy.utils.reactorless import install_reactor_import_hook
 from tests.keys import generate_keys
 from tests.mockserver.http import MockServer
-from tests.utils.reactorless import install_reactor_import_hook
 
 if TYPE_CHECKING:
     from collections.abc import Generator
