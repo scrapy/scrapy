@@ -81,8 +81,8 @@ These APIs have a coroutine-based implementation and a Deferred-based one:
 
     - :meth:`~scrapy.crawler.Crawler.crawl_async` (coroutine-based) and
       :meth:`~scrapy.crawler.Crawler.crawl` (Deferred-based): the former
-      doesn't support non-default reactors and so the latter should be used
-      with those.
+      may be inconvenient to use in Deferred-based code so both are available,
+      this may change in a future Scrapy version.
 
 -   :class:`scrapy.crawler.AsyncCrawlerRunner` and its subclass
     :class:`scrapy.crawler.AsyncCrawlerProcess` (coroutine-based) and

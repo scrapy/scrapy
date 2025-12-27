@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 
@@ -23,5 +23,5 @@ async def test_scraper_exception(
         "scrapy.core.engine.Scraper.handle_spider_output_async",
         lambda *args, **kwargs: 1 / 0,
     )
-    await maybe_deferred_to_future(crawler.crawl(url=mockserver.url("/")))
+    await crawler.crawl_async(url=mockserver.url("/"))
     assert "Scraper bug processing" in caplog.text

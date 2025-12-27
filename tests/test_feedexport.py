@@ -862,7 +862,7 @@ class TestFeedExport(TestFeedExportBase):
         try:
             spider_cls.start_urls = [self.mockserver.url("/")]
             crawler = get_crawler(spider_cls, settings)
-            await maybe_deferred_to_future(crawler.crawl())
+            await crawler.crawl_async()
 
             for file_path, feed_options in FEEDS.items():
                 content[feed_options["format"]] = (
@@ -1866,7 +1866,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
         try:
             spider_cls.start_urls = [self.mockserver.url("/")]
             crawler = get_crawler(spider_cls, settings)
-            await maybe_deferred_to_future(crawler.crawl())
+            await crawler.crawl_async()
 
             for file_path in FEEDS:
                 content[str(file_path)] = (
@@ -2363,7 +2363,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         content: defaultdict[str, list[bytes]] = defaultdict(list)
         spider_cls.start_urls = [self.mockserver.url("/")]
         crawler = get_crawler(spider_cls, settings)
-        await maybe_deferred_to_future(crawler.crawl())
+        await crawler.crawl_async()
 
         for path, feed in FEEDS.items():
             dir_name = Path(path).parent
