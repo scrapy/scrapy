@@ -98,7 +98,7 @@ class TestCrawl:
 
         settings = {"DOWNLOAD_DELAY": delay, "RANDOMIZE_DOWNLOAD_DELAY": randomize}
         crawler = get_crawler(FollowAllSpider, settings)
-        await maybe_deferred_to_future(crawler.crawl(**crawl_kwargs))
+        await crawler.crawl_async(**crawl_kwargs)
         assert crawler.spider
         assert isinstance(crawler.spider, FollowAllSpider)
         times = crawler.spider.times
@@ -112,7 +112,7 @@ class TestCrawl:
         # code above to have any meaning.
         settings["DOWNLOAD_DELAY"] = 0
         crawler = get_crawler(FollowAllSpider, settings)
-        await maybe_deferred_to_future(crawler.crawl(**crawl_kwargs))
+        await crawler.crawl_async(**crawl_kwargs)
         assert crawler.spider
         assert isinstance(crawler.spider, FollowAllSpider)
         times = crawler.spider.times
