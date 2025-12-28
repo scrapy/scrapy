@@ -84,13 +84,6 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
             reactor.callLater(0.1, d.callback, logger)
             await maybe_deferred_to_future(d)
 
-    @deferred_f_from_coro_f
-    async def test_unsupported_scheme(self) -> None:
-        request = Request("ftp://unsupported.scheme")
-        async with self.get_dh() as download_handler:
-            with pytest.raises(SchemeNotSupported):
-                await download_handler.download_request(request)
-
     def test_download_cause_data_loss(self) -> None:  # type: ignore[override]
         pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
@@ -99,6 +92,28 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
 
     def test_download_allow_data_loss_via_setting(self) -> None:  # type: ignore[override]
         pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
+
+    def test_download_conn_failed(self) -> None:  # type: ignore[override]
+        # Unlike HTTP11DownloadHandler which raises it from download_request()
+        # (without any special handling), here ConnectionRefusedError (raised in
+        # twisted.internet.endpoints.startConnectionAttempts()) bubbles up as
+        # an unhandled exception in a Deferred and the handler waits until
+        # DOWNLOAD_TIMEOUT.
+        pytest.skip("The handler doesn't properly reraise ConnectionRefusedError")
+
+    def test_download_conn_lost(self) -> None:  # type: ignore[override]
+        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
+
+    def test_download_conn_aborted(self) -> None:  # type: ignore[override]
+        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
+
+    def test_download_dns_error(self) -> None:  # type: ignore[override]
+        # Unlike HTTP11DownloadHandler which raises it from download_request()
+        # (without any special handling), here DNSLookupError (raised in
+        # twisted.internet.endpoints.startConnectionAttempts()) bubbles up as
+        # an unhandled exception in a Deferred and the handler waits until
+        # DOWNLOAD_TIMEOUT.
+        pytest.skip("The handler doesn't properly reraise DNSLookupError")
 
     @deferred_f_from_coro_f
     async def test_concurrent_requests_same_domain(

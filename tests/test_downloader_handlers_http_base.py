@@ -14,6 +14,10 @@ from unittest import mock
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
+from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
+from twisted.internet.error import DNSLookupError
+from twisted.web.client import ResponseFailed
+from twisted.web.error import SchemeNotSupported
 
 from scrapy.exceptions import (
     DownloadCancelledError,
@@ -61,6 +65,13 @@ class TestHttpBase(ABC):
             yield dh
         finally:
             await dh.close()
+
+    @deferred_f_from_coro_f
+    async def test_unsupported_scheme(self) -> None:
+        request = Request("ftp://unsupported.scheme")
+        async with self.get_dh() as download_handler:
+            with pytest.raises(SchemeNotSupported):  # TODO Twisted exception
+                await download_handler.download_request(request)
 
     @deferred_f_from_coro_f
     async def test_download(self, mockserver: MockServer) -> None:
@@ -531,6 +542,43 @@ class TestHttp11Base(TestHttpBase):
         assert response.flags == ["dataloss"]
 
     @deferred_f_from_coro_f
+    async def test_download_conn_failed(self) -> None:
+        # copy of TestCrawl.test_retry_conn_failed()
+        scheme = "https" if self.is_secure else "http"
+        request = Request(f"{scheme}://localhost:65432/")
+        async with self.get_dh() as download_handler:
+            with pytest.raises(TxConnectionRefusedError):  # TODO Twisted exception
+                await download_handler.download_request(request)
+
+    @deferred_f_from_coro_f
+    async def test_download_conn_lost(self, mockserver: MockServer) -> None:
+        # copy of TestCrawl.test_retry_conn_lost()
+        request = Request(mockserver.url("/drop?abort=0", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(ResponseDataLoss):
+                await download_handler.download_request(request)
+
+    @deferred_f_from_coro_f
+    async def test_download_conn_aborted(self, mockserver: MockServer) -> None:
+        # copy of TestCrawl.test_retry_conn_aborted()
+        request = Request(mockserver.url("/drop?abort=1", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(ResponseFailed):  # TODO Twisted exception
+                await download_handler.download_request(request)
+
+    @pytest.mark.skipif(
+        NON_EXISTING_RESOLVABLE, reason="Non-existing hosts are resolvable"
+    )
+    @deferred_f_from_coro_f
+    async def test_download_dns_error(self) -> None:
+        # copy of TestCrawl.test_retry_dns_error()
+        scheme = "https" if self.is_secure else "http"
+        request = Request(f"{scheme}://dns.resolution.invalid./")
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DNSLookupError):  # TODO Twisted exception
+                await download_handler.download_request(request)
+
+    @deferred_f_from_coro_f
     async def test_protocol(self, mockserver: MockServer) -> None:
         request = Request(
             mockserver.url("/host", is_secure=self.is_secure), method="GET"
@@ -547,6 +595,12 @@ class TestHttps11Base(TestHttp11Base):
         'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", '
         'subject "/C=IE/O=Scrapy/CN=localhost"'
     )
+
+    def test_download_conn_lost(self) -> None:  # type: ignore[override]
+        # For some reason (maybe related to TLS shutdown flow, and maybe the
+        # mockserver resource can be fixed so that this works) HTTPS clients
+        # (not just Scrapy) hang on /drop?abort=0.
+        pytest.skip("Unable to test on HTTPS")
 
     @deferred_f_from_coro_f
     async def test_tls_logging(self, mockserver: MockServer) -> None:

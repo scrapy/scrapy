@@ -26,6 +26,9 @@ class HTTP10DownloadHandlerMixin:
 class TestHttp10(HTTP10DownloadHandlerMixin, TestHttpBase):
     """HTTP 1.0 test case"""
 
+    def test_unsupported_scheme(self) -> None:  # type: ignore[override]
+        pytest.skip("Check not implemented")
+
     @deferred_f_from_coro_f
     async def test_protocol(self, mockserver: MockServer) -> None:
         request = Request(
