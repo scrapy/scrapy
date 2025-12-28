@@ -1,10 +1,13 @@
-from typing import Any
+import warnings
+from collections.abc import Iterable
+from typing import Any, NamedTuple
 
 import pytest
 
 from scrapy.http.request import NO_CALLBACK, Request
 from scrapy.http.request.form import FormRequest
 from scrapy.http.request.json_request import JsonRequest
+from scrapy.http.request.rpc import XmlRpcRequest
 
 _attr_value_map: dict[str, Any] = {
     "url": "http://example.com/test",
@@ -25,6 +28,7 @@ _attr_value_map: dict[str, Any] = {
     "errback": NO_CALLBACK,
     "flags": ["f1", "f2"],
     "cb_kwargs": {"x": 1},
+    "dumps_kwargs": {"sort_keys": True, "default": str},
 }
 
 
@@ -37,11 +41,23 @@ def _assert_equal_attribute(obj: Request, attr: str, expected: Any):
         assert val == expected
 
 
-@pytest.mark.parametrize("request_class", [Request, JsonRequest, FormRequest])
-@pytest.mark.parametrize("attr", Request.attributes)
-def test_attribute_setattr_and_replace_behavior(
-    request_class: type[Request], attr: str
-):
+class _ReqAttrTestCase(NamedTuple):
+    request_class: type[Request]
+    attribute_name: str
+
+
+def _generate_test_cases() -> Iterable[_ReqAttrTestCase]:
+    for request_class in (Request, JsonRequest, FormRequest, XmlRpcRequest):
+        for attr in request_class.attributes:
+            case = _ReqAttrTestCase(request_class, attr)
+            if attr in _attr_value_map:
+                yield case
+            else:
+                warnings.warn(f"Unhandled case: {case}", UserWarning)
+
+
+@pytest.mark.parametrize("req_attr_test_case", _generate_test_cases(), ids=repr)
+def test_attribute_setattr_and_replace_behavior(req_attr_test_case: _ReqAttrTestCase):
     """Ensure current assignment and replace semantics for Request.attributes.
 
     - If setattr(obj, attr, val) works today, it must keep working and
@@ -49,10 +65,9 @@ def test_attribute_setattr_and_replace_behavior(
     - If setattr(obj, attr, val) raises AttributeError today (read-only),
       replace(**{attr: val}) should still allow creating a Request with that attr.
     """
-    r = request_class("http://example.com/")
+    request_class, attr = req_attr_test_case
 
-    if attr not in _attr_value_map:
-        return
+    r = request_class("http://example.com/")
 
     val = _attr_value_map[attr]
 
