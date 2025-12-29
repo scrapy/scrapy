@@ -5,12 +5,17 @@ from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
 from twisted.internet.defer import CancelledError, Deferred
+from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
 from twisted.web.client import URI
 
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.core.http2.agent import H2Agent, H2ConnectionPool, ScrapyProxyH2Agent
-from scrapy.exceptions import DownloadCancelledError, DownloadTimeoutError
+from scrapy.exceptions import (
+    DownloadCancelledError,
+    DownloadConnectionRefusedError,
+    DownloadTimeoutError,
+)
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
@@ -51,6 +56,8 @@ class H2DownloadHandler(BaseDownloadHandler):
             )
         except CancelledError as e:
             raise DownloadCancelledError(str(e)) from e
+        except TxConnectionRefusedError as e:
+            raise DownloadConnectionRefusedError(str(e)) from e
 
     async def close(self) -> None:
         self._pool.close_connections()

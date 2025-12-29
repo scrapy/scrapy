@@ -1013,6 +1013,7 @@ RETRY_EXCEPTIONS
 Default::
 
     [
+        'scrapy.exceptions.DownloadConnectionRefusedError',
         'scrapy.exceptions.DownloadTimeoutError',
         'scrapy.exceptions.ResponseDataLoss',
         'twisted.internet.defer.TimeoutError',

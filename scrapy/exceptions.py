@@ -54,6 +54,10 @@ class StopDownload(Exception):
         self.fail = fail
 
 
+class DownloadConnectionRefusedError(Exception):
+    """Indicates that a connection was refused by the server."""
+
+
 class DownloadTimeoutError(Exception):
     """Indicates that a request download has timed out."""
 

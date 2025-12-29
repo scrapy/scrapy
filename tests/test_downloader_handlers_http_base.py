@@ -14,13 +14,13 @@ from unittest import mock
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
 from twisted.internet.error import DNSLookupError
 from twisted.web.client import ResponseFailed
 from twisted.web.error import SchemeNotSupported
 
 from scrapy.exceptions import (
     DownloadCancelledError,
+    DownloadConnectionRefusedError,
     DownloadTimeoutError,
     ResponseDataLoss,
 )
@@ -547,7 +547,7 @@ class TestHttp11Base(TestHttpBase):
         scheme = "https" if self.is_secure else "http"
         request = Request(f"{scheme}://localhost:65432/")
         async with self.get_dh() as download_handler:
-            with pytest.raises(TxConnectionRefusedError):  # TODO Twisted exception
+            with pytest.raises(DownloadConnectionRefusedError):
                 await download_handler.download_request(request)
 
     @deferred_f_from_coro_f

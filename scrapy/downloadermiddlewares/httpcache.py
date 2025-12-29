@@ -16,7 +16,12 @@ from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.web.client import ResponseFailed
 
 from scrapy import signals
-from scrapy.exceptions import DownloadTimeoutError, IgnoreRequest, NotConfigured
+from scrapy.exceptions import (
+    DownloadConnectionRefusedError,
+    DownloadTimeoutError,
+    IgnoreRequest,
+    NotConfigured,
+)
 from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.misc import load_object
 
@@ -45,6 +50,7 @@ class HttpCacheMiddleware:
         ResponseFailed,
         OSError,
         DownloadTimeoutError,
+        DownloadConnectionRefusedError,
     )
 
     crawler: Crawler
