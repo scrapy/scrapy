@@ -7,6 +7,7 @@ from urllib.parse import urldefrag
 from twisted.internet.defer import CancelledError, Deferred
 from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
 from twisted.web.client import URI
+from twisted.web.error import SchemeNotSupported
 
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
@@ -15,6 +16,7 @@ from scrapy.exceptions import (
     DownloadCancelledError,
     DownloadConnectionRefusedError,
     DownloadTimeoutError,
+    UnsupportedURLScheme,
 )
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
@@ -54,6 +56,8 @@ class H2DownloadHandler(BaseDownloadHandler):
             return await maybe_deferred_to_future(
                 agent.download_request(request, self._crawler.spider)
             )
+        except SchemeNotSupported as e:
+            raise UnsupportedURLScheme(str(e)) from e
         except CancelledError as e:
             raise DownloadCancelledError(str(e)) from e
         except TxConnectionRefusedError as e:

@@ -25,6 +25,7 @@ from twisted.web.client import (
     ResponseFailed,
 )
 from twisted.web.client import Response as TxResponse
+from twisted.web.error import SchemeNotSupported
 from twisted.web.http import PotentialDataLoss, _DataLoss
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS, IResponse
@@ -39,6 +40,7 @@ from scrapy.exceptions import (
     DownloadTimeoutError,
     ResponseDataLoss,
     StopDownload,
+    UnsupportedURLScheme,
 )
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
@@ -118,6 +120,8 @@ class HTTP11DownloadHandler(BaseDownloadHandler):
         )
         try:
             return await maybe_deferred_to_future(agent.download_request(request))
+        except SchemeNotSupported as e:
+            raise UnsupportedURLScheme(str(e)) from e
         except CancelledError as e:
             raise DownloadCancelledError(str(e)) from e
         except TxConnectionRefusedError as e:

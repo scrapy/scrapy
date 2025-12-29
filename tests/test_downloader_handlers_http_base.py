@@ -16,13 +16,13 @@ from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.error import DNSLookupError
 from twisted.web.client import ResponseFailed
-from twisted.web.error import SchemeNotSupported
 
 from scrapy.exceptions import (
     DownloadCancelledError,
     DownloadConnectionRefusedError,
     DownloadTimeoutError,
     ResponseDataLoss,
+    UnsupportedURLScheme,
 )
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
 from scrapy.utils.asyncio import call_later
@@ -70,7 +70,7 @@ class TestHttpBase(ABC):
     async def test_unsupported_scheme(self) -> None:
         request = Request("ftp://unsupported.scheme")
         async with self.get_dh() as download_handler:
-            with pytest.raises(SchemeNotSupported):  # TODO Twisted exception
+            with pytest.raises(UnsupportedURLScheme):
                 await download_handler.download_request(request)
 
     @deferred_f_from_coro_f

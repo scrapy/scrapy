@@ -70,6 +70,10 @@ class ResponseDataLoss(Exception):
     """Indicates that Scrapy couldn't get a complete response."""
 
 
+class UnsupportedURLScheme(Exception):
+    """Indicates that the URL scheme is not supported."""
+
+
 # Items
 
 

@@ -9,10 +9,9 @@ from unittest import mock
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.web.error import SchemeNotSupported
 from twisted.web.http import H2_ENABLED
 
-from scrapy.exceptions import DownloadCancelledError
+from scrapy.exceptions import DownloadCancelledError, UnsupportedURLScheme
 from scrapy.http import Request
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from tests.test_downloader_handlers_http_base import (
@@ -228,7 +227,7 @@ class TestHttps2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
     async def test_download_with_proxy_without_http_scheme(
         self, proxy_mockserver: ProxyEchoMockServer
     ) -> None:
-        with pytest.raises(SchemeNotSupported):
+        with pytest.raises(UnsupportedURLScheme):
             await maybe_deferred_to_future(
                 super().test_download_with_proxy_without_http_scheme(proxy_mockserver)
             )
