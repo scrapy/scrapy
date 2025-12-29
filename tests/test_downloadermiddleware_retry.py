@@ -16,6 +16,7 @@ from twisted.web.client import ResponseFailed
 
 from scrapy.downloadermiddlewares.retry import RetryMiddleware, get_retry_request
 from scrapy.exceptions import (
+    CannotResolveHostError,
     DownloadConnectionRefusedError,
     DownloadTimeoutError,
     IgnoreRequest,
@@ -66,7 +67,7 @@ class TestRetry:
     def test_dont_retry_exc(self):
         req = Request("http://www.scrapytest.org/503", meta={"dont_retry": True})
 
-        r = self.mw.process_exception(req, DNSLookupError())
+        r = self.mw.process_exception(req, CannotResolveHostError())
         assert r is None
 
     def test_503(self):
@@ -106,6 +107,7 @@ class TestRetry:
             TxTimeoutError,
             DownloadTimeoutError,
             DownloadConnectionRefusedError,
+            CannotResolveHostError,
         ]
 
         for exc in exceptions:
@@ -165,7 +167,7 @@ class TestMaxRetryTimes:
         req = Request(self.invalid_url)
         self._test_retry(
             req,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             max_retry_times,
             middleware=middleware,
         )
@@ -177,7 +179,7 @@ class TestMaxRetryTimes:
         req = Request(self.invalid_url, meta=meta)
         self._test_retry(
             req,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             max_retry_times,
             middleware=middleware,
         )
@@ -189,7 +191,7 @@ class TestMaxRetryTimes:
         req = Request(self.invalid_url)
         self._test_retry(
             req,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             max_retry_times,
             middleware=middleware,
         )
@@ -206,13 +208,13 @@ class TestMaxRetryTimes:
 
         self._test_retry(
             req1,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             meta_max_retry_times,
             middleware=middleware,
         )
         self._test_retry(
             req2,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             middleware_max_retry_times,
             middleware=middleware,
         )
@@ -229,13 +231,13 @@ class TestMaxRetryTimes:
 
         self._test_retry(
             req1,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             meta_max_retry_times,
             middleware=middleware,
         )
         self._test_retry(
             req2,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             middleware_max_retry_times,
             middleware=middleware,
         )
@@ -250,7 +252,7 @@ class TestMaxRetryTimes:
         req = Request(self.invalid_url, meta=meta)
         self._test_retry(
             req,
-            DNSLookupError("foo"),
+            CannotResolveHostError("foo"),
             0,
             middleware=middleware,
         )

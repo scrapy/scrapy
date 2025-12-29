@@ -58,6 +58,10 @@ class DownloadConnectionRefusedError(Exception):
     """Indicates that a connection was refused by the server."""
 
 
+class CannotResolveHostError(Exception):
+    """Indicates that the provided hostname cannot be resolved."""
+
+
 class DownloadTimeoutError(Exception):
     """Indicates that a request download has timed out."""
 

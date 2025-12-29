@@ -1013,6 +1013,7 @@ RETRY_EXCEPTIONS
 Default::
 
     [
+        'scrapy.exceptions.CannotResolveHostError',
         'scrapy.exceptions.DownloadConnectionRefusedError',
         'scrapy.exceptions.DownloadTimeoutError',
         'scrapy.exceptions.ResponseDataLoss',

@@ -14,10 +14,10 @@ from unittest import mock
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.internet.error import DNSLookupError
 from twisted.web.client import ResponseFailed
 
 from scrapy.exceptions import (
+    CannotResolveHostError,
     DownloadCancelledError,
     DownloadConnectionRefusedError,
     DownloadTimeoutError,
@@ -575,7 +575,7 @@ class TestHttp11Base(TestHttpBase):
         scheme = "https" if self.is_secure else "http"
         request = Request(f"{scheme}://dns.resolution.invalid./")
         async with self.get_dh() as download_handler:
-            with pytest.raises(DNSLookupError):  # TODO Twisted exception
+            with pytest.raises(CannotResolveHostError):
                 await download_handler.download_request(request)
 
     @deferred_f_from_coro_f

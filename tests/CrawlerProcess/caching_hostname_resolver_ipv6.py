@@ -4,7 +4,7 @@ from scrapy.crawler import CrawlerProcess
 
 class CachingHostnameResolverSpider(scrapy.Spider):
     """
-    Finishes without a twisted.internet.error.DNSLookupError exception
+    Finishes without a scrapy.exceptions.CannotResolveHostError exception
     """
 
     name = "caching_hostname_resolver_spider"

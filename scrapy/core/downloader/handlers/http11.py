@@ -15,6 +15,7 @@ from twisted.internet import ssl
 from twisted.internet.defer import CancelledError, Deferred, succeed
 from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
+from twisted.internet.error import DNSLookupError
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
 from twisted.web.client import (
@@ -35,6 +36,7 @@ from scrapy import Request, signals
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.exceptions import (
+    CannotResolveHostError,
     DownloadCancelledError,
     DownloadConnectionRefusedError,
     DownloadTimeoutError,
@@ -126,6 +128,8 @@ class HTTP11DownloadHandler(BaseDownloadHandler):
             raise DownloadCancelledError(str(e)) from e
         except TxConnectionRefusedError as e:
             raise DownloadConnectionRefusedError(str(e)) from e
+        except DNSLookupError as e:
+            raise CannotResolveHostError(str(e)) from e
 
     async def close(self) -> None:
         from twisted.internet import reactor
