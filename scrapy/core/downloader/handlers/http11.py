@@ -39,6 +39,7 @@ from scrapy.exceptions import (
     CannotResolveHostError,
     DownloadCancelledError,
     DownloadConnectionRefusedError,
+    DownloadFailedError,
     DownloadTimeoutError,
     ResponseDataLoss,
     StopDownload,
@@ -130,6 +131,8 @@ class HTTP11DownloadHandler(BaseDownloadHandler):
             raise DownloadConnectionRefusedError(str(e)) from e
         except DNSLookupError as e:
             raise CannotResolveHostError(str(e)) from e
+        except ResponseFailed as e:
+            raise DownloadFailedError(str(e)) from e
 
     async def close(self) -> None:
         from twisted.internet import reactor

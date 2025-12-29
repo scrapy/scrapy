@@ -14,12 +14,12 @@ from unittest import mock
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.web.client import ResponseFailed
 
 from scrapy.exceptions import (
     CannotResolveHostError,
     DownloadCancelledError,
     DownloadConnectionRefusedError,
+    DownloadFailedError,
     DownloadTimeoutError,
     ResponseDataLoss,
     UnsupportedURLScheme,
@@ -563,7 +563,7 @@ class TestHttp11Base(TestHttpBase):
         # copy of TestCrawl.test_retry_conn_aborted()
         request = Request(mockserver.url("/drop?abort=1", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
-            with pytest.raises(ResponseFailed):  # TODO Twisted exception
+            with pytest.raises(DownloadFailedError):
                 await download_handler.download_request(request)
 
     @pytest.mark.skipif(

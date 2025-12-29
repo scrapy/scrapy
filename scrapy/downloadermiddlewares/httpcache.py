@@ -18,6 +18,7 @@ from twisted.web.client import ResponseFailed
 from scrapy import signals
 from scrapy.exceptions import (
     DownloadConnectionRefusedError,
+    DownloadFailedError,
     DownloadTimeoutError,
     IgnoreRequest,
     NotConfigured,
@@ -51,6 +52,7 @@ class HttpCacheMiddleware:
         OSError,
         DownloadTimeoutError,
         DownloadConnectionRefusedError,
+        DownloadFailedError,
     )
 
     crawler: Crawler

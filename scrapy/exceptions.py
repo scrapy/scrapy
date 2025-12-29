@@ -70,6 +70,10 @@ class DownloadCancelledError(Exception):
     """Indicates that a request download was cancelled."""
 
 
+class DownloadFailedError(Exception):
+    """Indicates that a request download has failed."""
+
+
 class ResponseDataLoss(Exception):
     """Indicates that Scrapy couldn't get a complete response."""
 

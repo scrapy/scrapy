@@ -7,6 +7,7 @@ from urllib.parse import urldefrag
 from twisted.internet.defer import CancelledError, Deferred
 from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
 from twisted.internet.error import DNSLookupError
+from twisted.web._newclient import ResponseFailed
 from twisted.web.client import URI
 from twisted.web.error import SchemeNotSupported
 
@@ -17,6 +18,7 @@ from scrapy.exceptions import (
     CannotResolveHostError,
     DownloadCancelledError,
     DownloadConnectionRefusedError,
+    DownloadFailedError,
     DownloadTimeoutError,
     UnsupportedURLScheme,
 )
@@ -66,6 +68,8 @@ class H2DownloadHandler(BaseDownloadHandler):
             raise DownloadConnectionRefusedError(str(e)) from e
         except DNSLookupError as e:
             raise CannotResolveHostError(str(e)) from e
+        except ResponseFailed as e:
+            raise DownloadFailedError(str(e)) from e
 
     async def close(self) -> None:
         self._pool.close_connections()
