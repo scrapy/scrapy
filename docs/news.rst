@@ -74,6 +74,12 @@ Backward-incompatible changes
     :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` or
     calls its methods directly.
 
+-   The built-in :ref:`download handlers <download-handlers-ref>` were
+    refactored, changing signatures of their methods. This change should only
+    affect user code that subclasses any of these handlers or calls their
+    methods directly.
+    (:issue:`6778`, :issue:`7164`)
+
 -   :meth:`scrapy.pipelines.media.MediaPipeline.process_item` now returns a
     coroutine, previously it returned a
     :class:`~twisted.internet.defer.Deferred` object. This
@@ -2616,7 +2622,7 @@ Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
 
 -   The h2_ dependency is now optional, only needed to
-    :ref:`enable HTTP/2 support <http2>`. (:issue:`5113`)
+    :ref:`enable HTTP/2 support <twisted-http2-handler>`. (:issue:`5113`)
 
     .. _h2: https://pypi.org/project/h2/
 
@@ -2998,7 +3004,7 @@ Highlights:
 
 -   Official Python 3.9 support
 
--   Experimental :ref:`HTTP/2 support <http2>`
+-   Experimental :ref:`HTTP/2 support <twisted-http2-handler>`
 
 -   New :func:`~scrapy.downloadermiddlewares.retry.get_retry_request` function
     to retry requests from spider callbacks
@@ -3029,7 +3035,7 @@ Deprecations
 New features
 ~~~~~~~~~~~~
 
--   Experimental :ref:`HTTP/2 support <http2>` through a new download handler
+-   Experimental :ref:`HTTP/2 support <twisted-http2-handler>` through a new download handler
     that can be assigned to the ``https`` protocol in the
     :setting:`DOWNLOAD_HANDLERS` setting.
     (:issue:`1854`, :issue:`4769`, :issue:`5058`, :issue:`5059`, :issue:`5066`)
