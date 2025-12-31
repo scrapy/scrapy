@@ -20,12 +20,13 @@ Lifecycle overview
 
 A request passes through these main phases:
 
-1. **Creation**: A spider yields a :class:`~scrapy.Request`
-2. **Scheduling**: The engine passes the request to the scheduler for queuing
-3. **Downloading**: The scheduler returns the request to the engine, which sends it to the downloader
-4. **Response handling**: The downloader returns a response to the engine
-5. **Spider processing**: The engine passes the response to the spider for callback execution
-6. **Output processing**: Items go to pipelines; new requests return to step 2
+1. **Creation**: A spider yields requests and items from its :meth:`~scrapy.Spider.start` method
+2. **Start processing**: Spider middleware processes start output via :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start`
+3. **Scheduling**: The engine passes the request to the scheduler for queuing
+4. **Downloading**: The scheduler returns the request to the engine, which sends it to the downloader
+5. **Response handling**: The downloader returns a response to the engine
+6. **Spider processing**: The engine passes the response to the spider for callback execution
+7. **Output processing**: Items go to pipelines; new requests return to step 3
 
 The following sections describe each phase in detail.
 
@@ -61,12 +62,43 @@ The engine pauses request processing when any of these conditions are true:
 - The scraper's active response size exceeds its threshold (:setting:`SCRAPER_SLOT_MAX_ACTIVE_SIZE`)
 - The engine is shutting down
 
+When the engine starts, it emits the :signal:`engine_started` signal.
+
+.. _lifecycle-start-processing:
+
+Start request processing
+========================
+
+Before any crawling begins, the spider's :meth:`~scrapy.Spider.start` method
+(or the deprecated :meth:`~scrapy.Spider.start_requests`) generates the initial
+requests and items. This output passes through :ref:`spider middleware
+<component-spider-middleware>` before requests reach the scheduler.
+
+**Start processing flow**
+
+1. The engine opens the spider and emits the :signal:`spider_opened` signal
+2. The engine calls the spider middleware manager's ``process_start()`` method
+3. Each spider middleware's :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start`
+   method can filter, transform, or replace the start output
+4. Requests from the processed output are passed to the scheduler
+5. Items from the processed output are sent directly to pipelines
+
+Spider middlewares can use ``process_start()`` to:
+
+- Filter out certain start requests based on custom logic
+- Add metadata to requests (e.g., setting ``request.meta`` values)
+- Transform URLs or request parameters
+- Inject additional requests not in the original start output
+
+For details on implementing ``process_start()``, see
+:ref:`topics-spider-middleware`.
+
 .. _lifecycle-scheduling:
 
 Request scheduling and duplicate filtering
 ==========================================
 
-When the engine receives a request (from start requests or spider callbacks),
+When the engine receives a request (from start processing or spider callbacks),
 it passes the request to the :ref:`scheduler <component-scheduler>`.
 
 **Scheduling process**
@@ -74,7 +106,7 @@ it passes the request to the :ref:`scheduler <component-scheduler>`.
 1. The engine emits the :signal:`request_scheduled` signal
 2. If a signal handler raises :exc:`~scrapy.exceptions.IgnoreRequest`, the request is dropped
 3. The scheduler checks for duplicates using the configured duplicate filter
-4. If the request is a duplicate (and ``dont_filter=False``), it is rejected
+4. If the request is a duplicate (and ``dont_filter=False``), it is rejected and the :signal:`request_dropped` signal is emitted
 5. Otherwise, the request is added to the scheduler's queue
 
 **Duplicate filtering**
@@ -193,8 +225,14 @@ object.
 
 **Spider middleware integration**
 
-Spider middlewares can process responses before they reach the callback and
-filter or transform the callback's output. Common uses include:
+Spider middlewares process data at two points in the lifecycle:
+
+1. **Start processing**: Via ``process_start()`` before initial requests reach
+   the scheduler (see :ref:`lifecycle-start-processing`)
+2. **Callback processing**: Via ``process_spider_input()`` and
+   ``process_spider_output()`` for responses and callback output
+
+Common uses for callback processing include:
 
 - Filtering responses (e.g., by HTTP status code or content type)
 - Handling spider exceptions
@@ -309,7 +347,7 @@ When the spider becomes idle:
 1. The engine emits the :signal:`spider_idle` signal
 2. Signal handlers can schedule new requests to keep the spider running
 3. If a handler raises :exc:`~scrapy.exceptions.DontCloseSpider`, the spider remains open
-4. Otherwise, the engine initiates spider closure
+4. Otherwise, the engine initiates spider closure and emits the :signal:`spider_closed` signal
 
 The closure reason is "finished" by default, but can be customized by raising
 :exc:`~scrapy.exceptions.CloseSpider` with a reason argument.
@@ -365,26 +403,32 @@ Lifecycle sequence diagram
 
 The following diagram illustrates the request lifecycle::
 
-    Spider              Engine              Scheduler           Downloader          Scraper
-      |                   |                    |                    |                  |
-      |---Request-------->|                    |                    |                  |
-      |                   |---enqueue--------->|                    |                  |
-      |                   |                    |                    |                  |
-      |                   |<--next_request-----|                    |                  |
-      |                   |                    |                    |                  |
-      |                   |-------Request------|----------------->  |                  |
-      |                   |                    |    [Downloader Middlewares]           |
-      |                   |                    |    [Download Handler]                 |
-      |                   |                    |                    |                  |
-      |                   |<------Response-----|-------------------|                   |
-      |                   |                    |                    |                  |
-      |                   |------Response------|------------------- |---------------->|
-      |                   |                    |                    |                  |
-      |                   |                    |                    | [Spider Middlewares]
-      |                   |                    |                    | [Callback]       |
-      |<---items,requests-|--------------------|------------------- |-----------------|
-      |                   |                    |                    |                  |
-      |                   |   [Items to Pipeline, Requests to Scheduler]              |
-      |                   |                    |                    |                  |
+    Spider          Engine          Scheduler       Downloader      Scraper
+       |               |                |               |              |
+       |               |                |               |              |
+       |=== START PHASE ================================================|
+       |               |                |               |              |
+       |--start()----->|                |               |              |
+       |  [Spider MW: process_start()]  |               |              |
+       |               |---enqueue----->|               |              |
+       |               |                |               |              |
+       |=== CRAWL PHASE (repeats) ======================================|
+       |               |                |               |              |
+       |               |<--next_request-|               |              |
+       |               |                |               |              |
+       |               |----Request-----|-------------->|              |
+       |               |                | [Downloader Middlewares]     |
+       |               |                | [Download Handler]           |
+       |               |                |               |              |
+       |               |<---Response----|---------------|              |
+       |               |                |               |              |
+       |               |----Response----|---------------|------------->|
+       |               |                |               |              |
+       |               |                |               | [Spider MW]  |
+       |               |                |               | [Callback]   |
+       |<--items,reqs--|----------------|---------------|--------------|
+       |               |                |               |              |
+       |               |  [Items to Pipeline, Requests to Scheduler]   |
+       |               |                |               |              |
 
-This cycle repeats until the spider is idle and no handlers prevent closure.
+The crawl phase repeats until the spider is idle and no handlers prevent closure.
