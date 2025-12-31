@@ -229,14 +229,16 @@ Spider middlewares process data at two points in the lifecycle:
 
 1. **Start processing**: Via ``process_start()`` before initial requests reach
    the scheduler (see :ref:`lifecycle-start-processing`)
-2. **Callback processing**: Via ``process_spider_input()`` and
-   ``process_spider_output()`` for responses and callback output
+2. **Callback processing**: Via ``process_spider_input()`` before the callback
+   runs, and ``process_spider_output()`` after—processing both items and
+   new requests before they reach pipelines or the scheduler
 
 Common uses for callback processing include:
 
 - Filtering responses (e.g., by HTTP status code or content type)
 - Handling spider exceptions
-- Modifying the items or requests yielded by callbacks
+- Modifying or filtering items before they reach pipelines
+- Modifying or filtering requests before they return to the scheduler
 
 For details on writing spider middlewares, see :ref:`topics-spider-middleware`.
 
