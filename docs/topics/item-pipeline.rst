@@ -33,9 +33,8 @@ implement the following method:
    `item` is an :ref:`item object <item-types>`, see
    :ref:`supporting-item-types`.
 
-   :meth:`process_item` must either: return an :ref:`item object <item-types>`,
-   return a :class:`~twisted.internet.defer.Deferred` or raise a
-   :exc:`~scrapy.exceptions.DropItem` exception.
+   :meth:`process_item` must either return an :ref:`item object <item-types>`
+   or raise a :exc:`~scrapy.exceptions.DropItem` exception.
 
    Dropped items are no longer processed by further pipeline components.
 
@@ -51,6 +50,8 @@ Additionally, they may also implement the following methods:
 .. method:: close_spider(self)
 
    This method is called when the spider is closed.
+
+Any of these methods may be defined as a coroutine function (``async def``).
 
 
 Item pipeline example
