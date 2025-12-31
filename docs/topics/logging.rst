@@ -180,6 +180,20 @@ and :setting:`LOG_FILE_APPEND` is ``False``, the file will be overwritten
 (discarding the output from previous runs, if any). Lastly, if
 :setting:`LOG_ENABLED` is ``False``, there won't be any visible log output.
 
+.. note::
+
+   When using :class:`~scrapy.crawler.CrawlerProcess`, Scrapy installs its own
+   logging handlers by default.
+
+   If ``LOG_ENABLED`` is set to ``False``, Scrapy logging output is disabled.
+   In this case, if the application does not configure Python logging
+   explicitly (for example, using ``logging.basicConfig()``), calls to the
+   standard :mod:`logging` module may produce no output.
+
+   To avoid this, configure Python logging explicitly, or pass
+   ``install_root_handler=False`` when creating the ``CrawlerProcess``.
+
+
 :setting:`LOG_LEVEL` determines the minimum level of severity to display, those
 messages with lower severity will be filtered out. It ranges through the
 possible levels listed in :ref:`topics-logging-levels`.
