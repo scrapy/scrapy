@@ -1,5 +1,5 @@
 import logging
-
+import time
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
@@ -21,6 +21,15 @@ from scrapy.settings.default_settings import RETRY_EXCEPTIONS
 from scrapy.spiders import Spider
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
+import time
+from scrapy.settings import Settings
+from scrapy.crawler import Crawler
+from scrapy.http import Request, Response
+from scrapy.spiders import Spider
+from scrapy.downloadermiddlewares.retry import RetryMiddleware
+class DummySpider(Spider):
+    name = "dummy"
+
 
 
 class TestRetry:
@@ -636,3 +645,44 @@ class TestGetRetryRequest:
             f"{stats_key}/reason_count/{expected_reason}",
         ):
             assert spider.crawler.stats.get_value(stat) == 1
+# --- Test RETRY_DELAY functionality ---
+
+def test_retry_delay_waits(monkeypatch):
+    import time
+    from scrapy.settings import Settings
+    from scrapy.crawler import Crawler
+    from scrapy.http import Request, Response
+    from scrapy.spiders import Spider
+    from scrapy.statscollectors import StatsCollector
+    from scrapy.downloadermiddlewares.retry import RetryMiddleware
+
+    class DummySpider(Spider):
+        name = "dummy"
+
+    settings = Settings({
+        "RETRY_ENABLED": True,
+        "RETRY_TIMES": 3,
+        "RETRY_DELAY": 2,
+        "RETRY_HTTP_CODES": [500],
+    })
+
+    # setup crawler + spider
+    crawler = Crawler(DummySpider, settings)
+    spider = crawler._create_spider()
+    crawler.spider = spider
+
+    # ⭐ initialize stats manually (instead of extensions)
+    crawler.stats = StatsCollector(crawler)
+
+    # initialize retry middleware
+    mw = RetryMiddleware.from_crawler(crawler)
+
+    # mock request + response
+    request = Request("https://example.com/status/500")
+    response = Response("https://example.com/status/500", status=500)
+
+    start = time.time()
+    mw.process_response(request, response, spider)
+    end = time.time()
+
+    assert end - start >= 2, "Retry did not wait RETRY_DELAY seconds"
