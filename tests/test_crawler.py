@@ -111,7 +111,6 @@ class TestCrawler(TestBaseCrawler):
         with pytest.raises(RuntimeError, match="more than once on the same instance"):
             yield crawler.crawl()
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
     async def test_crawler_crawl_async_twice_seq_unsupported(self):
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
@@ -552,7 +551,7 @@ class TestCrawlerLogging:
             assert get_scrapy_root_handler().level == logging.DEBUG
             crawler = get_crawler(MySpider)
             assert get_scrapy_root_handler().level == logging.INFO
-            await maybe_deferred_to_future(crawler.crawl())
+            await crawler.crawl_async()
         finally:
             _uninstall_scrapy_root_handler()
 
