@@ -10,7 +10,6 @@ from twisted.internet.defer import Deferred, inlineCallbacks, succeed
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import (
-    _process_chain,
     aiter_errback,
     deferred_f_from_coro_f,
     deferred_from_coro,
@@ -19,7 +18,6 @@ from scrapy.utils.defer import (
     maybe_deferred_to_future,
     mustbe_deferred,
     parallel_async,
-    process_parallel,
 )
 
 if TYPE_CHECKING:
@@ -83,26 +81,6 @@ def cb_fail(value, arg1, arg2):
 
 def eb1(failure, arg1, arg2):
     return f"(eb1 {failure.value.__class__.__name__} {arg1} {arg2})"
-
-
-class TestDeferUtils:
-    @deferred_f_from_coro_f
-    async def test_process_chain(self):
-        x = await _process_chain([cb1, cb2, cb3], "res", "v1", "v2")
-        assert x == "(cb3 (cb2 (cb1 res v1 v2) v1 v2) v1 v2)"
-
-        with pytest.raises(TypeError):
-            await _process_chain([cb1, cb_fail, cb3], "res", "v1", "v2")
-
-    @inlineCallbacks
-    def test_process_parallel(self):
-        x = yield process_parallel([cb1, cb2, cb3], "res", "v1", "v2")
-        assert x == ["(cb1 res v1 v2)", "(cb2 res v1 v2)", "(cb3 res v1 v2)"]
-
-    @inlineCallbacks
-    def test_process_parallel_failure(self):
-        with pytest.raises(TypeError):
-            yield process_parallel([cb1, cb_fail, cb3], "res", "v1", "v2")
 
 
 class TestIterErrback:

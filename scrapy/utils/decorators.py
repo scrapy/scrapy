@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import inspect
 import warnings
 from functools import wraps
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar, overload
 
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.internet.threads import deferToThread
@@ -10,15 +11,11 @@ from twisted.internet.threads import deferToThread
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    # typing.ParamSpec requires Python 3.10
-    from typing_extensions import ParamSpec
-
-    _P = ParamSpec("_P")
+    from collections.abc import AsyncGenerator, Callable, Coroutine
 
 
 _T = TypeVar("_T")
+_P = ParamSpec("_P")
 
 
 def deprecated(
@@ -30,7 +27,7 @@ def deprecated(
 
     def deco(func: Callable[_P, _T]) -> Callable[_P, _T]:
         @wraps(func)
-        def wrapped(*args: _P.args, **kwargs: _P.kwargs) -> Any:
+        def wrapped(*args: _P.args, **kwargs: _P.kwargs) -> _T:
             message = f"Call to deprecated function {func.__name__}."
             if use_instead:
                 message += f" Use {use_instead} instead."
@@ -65,3 +62,69 @@ def inthread(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:
         return deferToThread(func, *a, **kw)
 
     return wrapped
+
+
+@overload
+def _warn_spider_arg(
+    func: Callable[_P, Coroutine[Any, Any, _T]],
+) -> Callable[_P, Coroutine[Any, Any, _T]]: ...
+
+
+@overload
+def _warn_spider_arg(
+    func: Callable[_P, AsyncGenerator[_T]],
+) -> Callable[_P, AsyncGenerator[_T]]: ...
+
+
+@overload
+def _warn_spider_arg(func: Callable[_P, _T]) -> Callable[_P, _T]: ...
+
+
+def _warn_spider_arg(
+    func: Callable[_P, _T],
+) -> (
+    Callable[_P, _T]
+    | Callable[_P, Coroutine[Any, Any, _T]]
+    | Callable[_P, AsyncGenerator[_T]]
+):
+    """Decorator to warn if a ``spider`` argument is passed to a function."""
+
+    sig = inspect.signature(func)
+
+    def check_args(*args: _P.args, **kwargs: _P.kwargs) -> None:
+        bound = sig.bind(*args, **kwargs)
+        if "spider" in bound.arguments:
+            warnings.warn(
+                f"Passing a 'spider' argument to {func.__qualname__}() is deprecated and "
+                "the argument will be removed in a future Scrapy version.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=3,
+            )
+
+    if inspect.iscoroutinefunction(func):
+
+        @wraps(func)
+        async def async_inner(*args: _P.args, **kwargs: _P.kwargs) -> _T:
+            check_args(*args, **kwargs)
+            return await func(*args, **kwargs)
+
+        return async_inner
+
+    if inspect.isasyncgenfunction(func):
+
+        @wraps(func)
+        async def asyncgen_inner(
+            *args: _P.args, **kwargs: _P.kwargs
+        ) -> AsyncGenerator[_T]:
+            check_args(*args, **kwargs)
+            async for item in func(*args, **kwargs):
+                yield item
+
+        return asyncgen_inner
+
+    @wraps(func)
+    def sync_inner(*args: _P.args, **kwargs: _P.kwargs) -> _T:
+        check_args(*args, **kwargs)
+        return func(*args, **kwargs)
+
+    return sync_inner

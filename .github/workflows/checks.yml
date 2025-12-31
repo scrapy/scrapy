@@ -20,10 +20,10 @@ jobs:
         - python-version: "3.13"
           env:
             TOXENV: pylint
-        - python-version: "3.9"
+        - python-version: "3.10"
           env:
             TOXENV: typing
-        - python-version: "3.9"
+        - python-version: "3.10"
           env:
             TOXENV: typing-tests
         - python-version: "3.13"  # Keep in sync with .readthedocs.yml
@@ -34,10 +34,10 @@ jobs:
             TOXENV: twinecheck
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -50,5 +50,5 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: pre-commit/action@v3.0.1

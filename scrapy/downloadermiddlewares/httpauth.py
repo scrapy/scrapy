@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from w3lib.http import basic_auth_header
 
 from scrapy import Request, Spider, signals
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.url import url_is_from_any_domain
 
 if TYPE_CHECKING:
@@ -38,8 +39,9 @@ class HttpAuthMiddleware:
             self.auth = basic_auth_header(usr, pwd)
             self.domain = spider.http_auth_domain  # type: ignore[attr-defined]
 
+    @_warn_spider_arg
     def process_request(
-        self, request: Request, spider: Spider
+        self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
         auth = getattr(self, "auth", None)
         if (

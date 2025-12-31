@@ -16,6 +16,7 @@ from logging import Logger, getLogger
 from typing import TYPE_CHECKING
 
 from scrapy.exceptions import NotConfigured
+from scrapy.utils.decorators import _warn_spider_arg
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import global_object_name
 from scrapy.utils.response import response_status_message
@@ -123,6 +124,8 @@ def get_retry_request(
 
 
 class RetryMiddleware:
+    crawler: Crawler
+
     def __init__(self, settings: BaseSettings):
         if not settings.getbool("RETRY_ENABLED"):
             raise NotConfigured
@@ -136,39 +139,41 @@ class RetryMiddleware:
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        return cls(crawler.settings)
+        o = cls(crawler.settings)
+        o.crawler = crawler
+        return o
 
+    @_warn_spider_arg
     def process_response(
-        self, request: Request, response: Response, spider: Spider
+        self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
         if request.meta.get("dont_retry", False):
             return response
         if response.status in self.retry_http_codes:
             reason = response_status_message(response.status)
-            return self._retry(request, reason, spider) or response
+            return self._retry(request, reason) or response
         return response
 
+    @_warn_spider_arg
     def process_exception(
-        self, request: Request, exception: Exception, spider: Spider
+        self, request: Request, exception: Exception, spider: Spider | None = None
     ) -> Request | Response | None:
         if isinstance(exception, self.exceptions_to_retry) and not request.meta.get(
             "dont_retry", False
         ):
-            return self._retry(request, exception, spider)
+            return self._retry(request, exception)
         return None
 
     def _retry(
-        self,
-        request: Request,
-        reason: str | Exception | type[Exception],
-        spider: Spider,
+        self, request: Request, reason: str | Exception | type[Exception]
     ) -> Request | None:
         max_retry_times = request.meta.get("max_retry_times", self.max_retry_times)
         priority_adjust = request.meta.get("priority_adjust", self.priority_adjust)
+        assert self.crawler.spider
         return get_retry_request(
             request,
             reason=reason,
-            spider=spider,
+            spider=self.crawler.spider,
             max_retry_times=max_retry_times,
             priority_adjust=priority_adjust,
         )

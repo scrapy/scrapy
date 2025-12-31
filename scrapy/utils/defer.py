@@ -10,28 +10,34 @@ import warnings
 from asyncio import Future
 from collections.abc import Awaitable, Coroutine, Iterable, Iterator
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Concatenate,
+    Generic,
+    ParamSpec,
+    TypeVar,
+    cast,
+    overload,
+)
 
 from twisted.internet.defer import Deferred, DeferredList, fail, succeed
 from twisted.internet.task import Cooperator
 from twisted.python import failure
 
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.asyncio import call_later, is_asyncio_available
+from scrapy.utils.asyncio import is_asyncio_available
+from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Callable
 
     from twisted.python.failure import Failure
 
-    # typing.Concatenate and typing.ParamSpec require Python 3.10
-    from typing_extensions import Concatenate, ParamSpec
-
-    _P = ParamSpec("_P")
-
 
 _T = TypeVar("_T")
 _T2 = TypeVar("_T2")
+_P = ParamSpec("_P")
 
 
 _DEFER_DELAY = 0.1
@@ -79,15 +85,6 @@ def defer_succeed(result: _T) -> Deferred[_T]:
     return d
 
 
-def _defer_sleep() -> Deferred[None]:
-    """Delay by _DEFER_DELAY so reactor has a chance to go through readers and writers
-    before attending pending delayed calls, so do not set delay to zero.
-    """
-    d: Deferred[None] = Deferred()
-    call_later(_DEFER_DELAY, d.callback, None)
-    return d
-
-
 async def _defer_sleep_async() -> None:
     """Delay by _DEFER_DELAY so reactor has a chance to go through readers and writers
     before attending pending delayed calls, so do not set delay to zero.
@@ -95,7 +92,11 @@ async def _defer_sleep_async() -> None:
     if is_asyncio_available():
         await asyncio.sleep(_DEFER_DELAY)
     else:
-        await _defer_sleep()
+        from twisted.internet import reactor
+
+        d: Deferred[None] = Deferred()
+        reactor.callLater(_DEFER_DELAY, d.callback, None)
+        await d
 
 
 def defer_result(result: Any) -> Deferred[Any]:
@@ -312,53 +313,20 @@ def process_chain(
     return d
 
 
-async def _process_chain(
-    callables: Iterable[Callable[Concatenate[_T, _P], _T | Awaitable[_T]]],
-    input_: _T,
-    *a: _P.args,
-    **kw: _P.kwargs,
-) -> _T:
-    """Chain the given (potentialy asynchronous) callables."""
-    result = input_
-    for callable_ in callables:
-        result = await ensure_awaitable(callable_(result, *a, **kw))
-    return result
-
-
-def process_chain_both(
-    callbacks: Iterable[Callable[Concatenate[_T, _P], Any]],
-    errbacks: Iterable[Callable[Concatenate[Failure, _P], Any]],
-    input: Any,  # noqa: A002
-    *a: _P.args,
-    **kw: _P.kwargs,
-) -> Deferred:
-    """Return a Deferred built by chaining the given callbacks and errbacks"""
-    warnings.warn(
-        "process_chain_both() is deprecated and will be removed in a future"
-        " Scrapy version.",
-        ScrapyDeprecationWarning,
-        stacklevel=2,
-    )
-    d: Deferred = Deferred()
-    for cb, eb in zip(callbacks, errbacks):
-        d.addCallback(cb, *a, **kw)
-        d.addErrback(eb, *a, **kw)
-    if isinstance(input, failure.Failure):
-        d.errback(input)
-    else:
-        d.callback(input)
-    return d
-
-
 def process_parallel(
     callbacks: Iterable[Callable[Concatenate[_T, _P], _T2]],
     input: _T,  # noqa: A002
     *a: _P.args,
     **kw: _P.kwargs,
-) -> Deferred[list[_T2]]:
+) -> Deferred[list[_T2]]:  # pragma: no cover
     """Return a Deferred with the output of all successful calls to the given
     callbacks
     """
+    warnings.warn(
+        "process_parallel() is deprecated.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
     dfds = [succeed(input).addCallback(x, *a, **kw) for x in callbacks]
     d: Deferred[list[tuple[bool, _T2]]] = DeferredList(
         dfds, fireOnOneErrback=True, consumeErrors=True
@@ -459,6 +427,12 @@ def maybeDeferred_coro(
         return fail(failure.Failure(captureVars=Deferred.debug))
 
     if isinstance(result, Deferred):
+        warnings.warn(
+            f"{global_object_name(f)} returned a Deferred, this is deprecated."
+            f" Please refactor this function to return a coroutine.",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         return result
     if asyncio.isfuture(result) or inspect.isawaitable(result):
         return deferred_from_coro(result)
@@ -545,14 +519,14 @@ def _schedule_coro(coro: Coroutine[Any, Any, Any]) -> None:
 
 
 @overload
-def ensure_awaitable(o: Awaitable[_T]) -> Awaitable[_T]: ...
+def ensure_awaitable(o: Awaitable[_T], _warn: str | None = None) -> Awaitable[_T]: ...
 
 
 @overload
-def ensure_awaitable(o: _T) -> Awaitable[_T]: ...
+def ensure_awaitable(o: _T, _warn: str | None = None) -> Awaitable[_T]: ...
 
 
-def ensure_awaitable(o: _T | Awaitable[_T]) -> Awaitable[_T]:
+def ensure_awaitable(o: _T | Awaitable[_T], _warn: str | None = None) -> Awaitable[_T]:
     """Convert any value to an awaitable object.
 
     For a :class:`~twisted.internet.defer.Deferred` object, use
@@ -563,6 +537,13 @@ def ensure_awaitable(o: _T | Awaitable[_T]) -> Awaitable[_T]:
     .. versionadded:: VERSION
     """
     if isinstance(o, Deferred):
+        if _warn:
+            warnings.warn(
+                f"{_warn} returned a Deferred, this is deprecated."
+                f" Please refactor this function to return a coroutine.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
         return maybe_deferred_to_future(o)
     if inspect.isawaitable(o):
         return o

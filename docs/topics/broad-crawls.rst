@@ -41,19 +41,6 @@ efficient broad crawl.
 
 .. _broad-crawls-scheduler-priority-queue:
 
-Use the right :setting:`SCHEDULER_PRIORITY_QUEUE`
-=================================================
-
-Scrapy’s default scheduler priority queue is ``'scrapy.pqueues.ScrapyPriorityQueue'``.
-It works best during single-domain crawl. It does not work well with crawling
-many different domains in parallel
-
-To apply the recommended priority queue use:
-
-.. code-block:: python
-
-    SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.DownloaderAwarePriorityQueue"
-
 .. _broad-crawls-concurrency:
 
 Increase concurrency
@@ -138,7 +125,7 @@ To disable cookies use:
 Disable retries
 ===============
 
-Retrying failed HTTP requests can slow down the crawls substantially, specially
+Retrying failed HTTP requests can slow down the crawls substantially, especially
 when sites causes are very slow (or fail) to respond, thus causing a timeout
 error which gets retried many times, unnecessarily, preventing crawler capacity
 to be reused for other domains.

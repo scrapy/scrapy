@@ -28,7 +28,7 @@ def test_trivial(crawler: Crawler) -> None:
     test_req = Request("data:,")
     spider_output = [test_req, {"foo": "bar"}]
     for processed in [
-        list(mw.process_spider_output(Response("data:,"), spider_output, None)),  # type: ignore[arg-type]
+        list(mw.process_spider_output(Response("data:,"), spider_output)),
         list(mw.process_start_requests(spider_output, None)),  # type: ignore[arg-type]
     ]:
         assert processed == [test_req, {"foo": "bar"}]
@@ -51,7 +51,7 @@ def test_processed_request(crawler: Crawler) -> None:
     test_req3 = Request("data:3,")
     spider_output = [test_req1, {"foo": "bar"}, test_req2, test_req3]
     for processed in [
-        list(mw.process_spider_output(Response("data:,"), spider_output, None)),  # type: ignore[arg-type]
+        list(mw.process_spider_output(Response("data:,"), spider_output)),
         list(mw.process_start_requests(spider_output, None)),  # type: ignore[arg-type]
     ]:
         assert len(processed) == 3
@@ -75,7 +75,7 @@ def test_processed_item(crawler: Crawler) -> None:
     test_req = Request("data:,")
     spider_output = [{"foo": 1}, {"foo": 2}, test_req, {"foo": 3}]
     for processed in [
-        list(mw.process_spider_output(Response("data:,"), spider_output, None)),  # type: ignore[arg-type]
+        list(mw.process_spider_output(Response("data:,"), spider_output)),
         list(mw.process_start_requests(spider_output, None)),  # type: ignore[arg-type]
     ]:
         assert processed == [{"foo": 1}, test_req, {"foo": 30}]
@@ -112,7 +112,7 @@ def test_processed_both(crawler: Crawler) -> None:
         test_req3,
     ]
     for processed in [
-        list(mw.process_spider_output(Response("data:,"), spider_output, None)),  # type: ignore[arg-type]
+        list(mw.process_spider_output(Response("data:,"), spider_output)),
         list(mw.process_start_requests(spider_output, None)),  # type: ignore[arg-type]
     ]:
         assert len(processed) == 4

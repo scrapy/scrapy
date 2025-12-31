@@ -220,7 +220,7 @@ class TestCurlToRequestKwargs:
             assert curl_to_request_kwargs(curl_command) == expected_result
 
         # case 2: ignore_unknown_options=False (raise exception):
-        with pytest.raises(ValueError, match="Unrecognized options:.*--bar.*--baz"):
+        with pytest.raises(ValueError, match=r"Unrecognized options:.*--bar.*--baz"):
             curl_to_request_kwargs(
                 "curl --bar --baz http://www.example.com", ignore_unknown_options=False
             )

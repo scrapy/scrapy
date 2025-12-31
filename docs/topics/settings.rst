@@ -182,8 +182,6 @@ Setting values must be :ref:`picklable <pickle-picklable>`.
 Import paths and classes
 ========================
 
-.. versionadded:: 2.4.0
-
 When a setting references a callable object to be imported by Scrapy, such as a
 class or a function, there are two different ways you can specify that object:
 
@@ -554,7 +552,7 @@ When writing an item pipeline, you can force a different log level by setting
 
 
    class MyPipeline:
-       def process_item(self, item, spider):
+       def process_item(self, item):
            if not item.get("price"):
                raise DropItem("Missing price data", log_level="INFO")
            return item
@@ -667,8 +665,6 @@ DNS in-memory cache size.
 DNS_RESOLVER
 ------------
 
-.. versionadded:: 2.0
-
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
 
 The class to be used to resolve DNS names. The default ``scrapy.resolver.CachingThreadedResolver``
@@ -711,7 +707,7 @@ connections (for ``HTTP10DownloadHandler``).
     so you can safely ignore this setting,
     unless you really want to use HTTP/1.0 and override
     :setting:`DOWNLOAD_HANDLERS` for ``http(s)`` scheme accordingly,
-    i.e. to ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
+    i.e. to ``'scrapy.core.downloader.handlers.http10.HTTP10DownloadHandler'``.
 
 .. setting:: DOWNLOADER_CLIENTCONTEXTFACTORY
 
@@ -909,8 +905,8 @@ Default:
     {
         "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
         "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
-        "http": "scrapy.core.downloader.handlers.http.HTTPDownloadHandler",
-        "https": "scrapy.core.downloader.handlers.http.HTTPDownloadHandler",
+        "http": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
+        "https": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
         "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
         "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
     }
@@ -1007,9 +1003,8 @@ The amount of time (in secs) that the downloader will wait before timing out.
 
 .. note::
 
-    This timeout can be set per spider using :attr:`download_timeout`
-    spider attribute and per-request using :reqmeta:`download_timeout`
-    Request.meta key.
+    This timeout can be per-request using the :reqmeta:`download_timeout`
+    :attr:`.Request.meta` key.
 
 .. setting:: DOWNLOAD_MAXSIZE
 .. reqmeta:: download_maxsize
@@ -1028,9 +1023,10 @@ ignored.
 
 Use ``0`` to disable this limit.
 
-This limit can be set per spider using the :attr:`download_maxsize` spider
-attribute and per request using the :reqmeta:`download_maxsize` Request.meta
-key.
+.. note::
+
+    This limit can be set per-request using the :reqmeta:`download_maxsize`
+    :attr:`.Request.meta` key.
 
 .. setting:: DOWNLOAD_WARNSIZE
 .. reqmeta:: download_warnsize
@@ -1045,9 +1041,10 @@ warning will be logged about it.
 
 Use ``0`` to disable this limit.
 
-This limit can be set per spider using the :attr:`download_warnsize` spider
-attribute and per request using the :reqmeta:`download_warnsize` Request.meta
-key.
+.. note::
+
+    This limit can be set per-request using the :reqmeta:`download_warnsize`
+    :attr:`.Request.meta` key.
 
 .. setting:: DOWNLOAD_FAIL_ON_DATALOSS
 
@@ -1131,9 +1128,9 @@ interface::
     class MyDupeFilter:
 
         @classmethod
-        def from_settings(cls, settings):
+        def from_crawler(cls, crawler):
             """Returns an instance of this duplicate request filtering class
-            based on the current crawl settings."""
+            based on the current Crawler instance."""
             return cls()
 
         def request_seen(self, request):
@@ -1739,10 +1736,10 @@ Type of in-memory queue used by the scheduler. Other available type is:
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
 
-Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
+Default: ``'scrapy.pqueues.DownloaderAwarePriorityQueue'``
 
 Type of priority queue used by the scheduler. Another available type is
-``scrapy.pqueues.DownloaderAwarePriorityQueue``.
+``scrapy.pqueues.ScrapyPriorityQueue``.
 ``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
 ``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
 domains in parallel.
@@ -1796,8 +1793,6 @@ For available choices, see :setting:`SCHEDULER_MEMORY_QUEUE`.
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE
 ----------------------------
-
-.. versionadded:: 2.0
 
 Default: ``5_000_000``
 
@@ -1973,8 +1968,6 @@ in the ``project`` subdirectory.
 TWISTED_REACTOR
 ---------------
 
-.. versionadded:: 2.0
-
 Default: ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``
 
 Import path of a given :mod:`~twisted.internet.reactor`.
@@ -2066,11 +2059,6 @@ which raises an exception, becomes:
 If this setting is set ``None``, Scrapy will use the existing reactor if one is
 already installed, or install the default reactor defined by Twisted for the
 current platform.
-
-.. versionchanged:: 2.7
-   The :command:`startproject` command now sets this setting to
-   ``twisted.internet.asyncioreactor.AsyncioSelectorReactor`` in the generated
-   ``settings.py`` file.
 
 .. versionchanged:: 2.13
    The default value was changed from ``None`` to

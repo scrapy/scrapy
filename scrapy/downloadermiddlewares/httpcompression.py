@@ -6,7 +6,7 @@ from logging import getLogger
 from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider, signals
-from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
+from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.http import Response, TextResponse
 from scrapy.responsetypes import responsetypes
 from scrapy.utils._compression import (
@@ -15,6 +15,8 @@ from scrapy.utils._compression import (
     _unbrotli,
     _unzstd,
 )
+from scrapy.utils.decorators import _warn_spider_arg
+from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.gz import gunzip
 
 if TYPE_CHECKING:
@@ -31,13 +33,22 @@ ACCEPTED_ENCODINGS: list[bytes] = [b"gzip", b"deflate"]
 
 try:
     try:
-        import brotli  # noqa: F401
+        import brotli
     except ImportError:
-        import brotlicffi  # noqa: F401
+        import brotlicffi as brotli
 except ImportError:
     pass
 else:
-    ACCEPTED_ENCODINGS.append(b"br")
+    try:
+        brotli.Decompressor.can_accept_more_data
+    except AttributeError:  # pragma: no cover
+        warnings.warn(
+            "You have brotli installed. But 'br' encoding support now requires "
+            "brotli's or brotlicffi's version >= 1.2.0. Please upgrade "
+            "brotli/brotlicffi to make Scrapy decode 'br' encoded responses.",
+        )
+    else:
+        ACCEPTED_ENCODINGS.append(b"br")
 
 try:
     import zstandard  # noqa: F401
@@ -75,32 +86,24 @@ class HttpCompressionMiddleware:
 
     def open_spider(self, spider: Spider) -> None:
         if hasattr(spider, "download_maxsize"):
-            warnings.warn(
-                "The 'download_maxsize' spider attribute is deprecated. "
-                "Use Spider.custom_settings or Spider.update_settings() instead. "
-                "The corresponding setting name is 'DOWNLOAD_MAXSIZE'.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
-            )
+            warn_on_deprecated_spider_attribute("download_maxsize", "DOWNLOAD_MAXSIZE")
             self._max_size = spider.download_maxsize
         if hasattr(spider, "download_warnsize"):
-            warnings.warn(
-                "The 'download_warnsize' spider attribute is deprecated. "
-                "Use Spider.custom_settings or Spider.update_settings() instead. "
-                "The corresponding setting name is 'DOWNLOAD_WARNSIZE'.",
-                category=ScrapyDeprecationWarning,
-                stacklevel=2,
+            warn_on_deprecated_spider_attribute(
+                "download_warnsize", "DOWNLOAD_WARNSIZE"
             )
             self._warn_size = spider.download_warnsize
 
+    @_warn_spider_arg
     def process_request(
-        self, request: Request, spider: Spider
+        self, request: Request, spider: Spider | None = None
     ) -> Request | Response | None:
         request.headers.setdefault("Accept-Encoding", b", ".join(ACCEPTED_ENCODINGS))
         return None
 
+    @_warn_spider_arg
     def process_response(
-        self, request: Request, response: Response, spider: Spider
+        self, request: Request, response: Response, spider: Spider | None = None
     ) -> Request | Response:
         if request.method == "HEAD":
             return response
@@ -113,13 +116,13 @@ class HttpCompressionMiddleware:
                     decoded_body, content_encoding = self._handle_encoding(
                         response.body, content_encoding, max_size
                     )
-                except _DecompressionMaxSizeExceeded:
+                except _DecompressionMaxSizeExceeded as e:
                     raise IgnoreRequest(
                         f"Ignored response {response} because its body "
-                        f"({len(response.body)} B compressed) exceeded "
-                        f"DOWNLOAD_MAXSIZE ({max_size} B) during "
-                        f"decompression."
-                    )
+                        f"({len(response.body)} B compressed, "
+                        f"{e.decompressed_size} B decompressed so far) exceeded "
+                        f"DOWNLOAD_MAXSIZE ({max_size} B) during decompression."
+                    ) from e
                 if len(response.body) < warn_size <= len(decoded_body):
                     logger.warning(
                         f"{response} body size after decompression "
@@ -133,11 +136,8 @@ class HttpCompressionMiddleware:
                     self.stats.inc_value(
                         "httpcompression/response_bytes",
                         len(decoded_body),
-                        spider=spider,
                     )
-                    self.stats.inc_value(
-                        "httpcompression/response_count", spider=spider
-                    )
+                    self.stats.inc_value("httpcompression/response_count")
                 respcls = responsetypes.from_args(
                     headers=response.headers, url=response.url, body=decoded_body
                 )
@@ -202,7 +202,7 @@ class HttpCompressionMiddleware:
             f"from unsupported encoding(s) '{encodings_str}'."
         )
         if b"br" in encodings:
-            msg += " You need to install brotli or brotlicffi to decode 'br'."
+            msg += " You need to install brotli or brotlicffi >= 1.2.0 to decode 'br'."
         if b"zstd" in encodings:
             msg += " You need to install zstandard to decode 'zstd'."
         logger.warning(msg)

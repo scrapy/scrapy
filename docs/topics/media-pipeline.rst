@@ -70,7 +70,7 @@ The advantage of using the :class:`ImagesPipeline` for image files is that you
 can configure some extra functions like generating thumbnails and filtering
 the images based on their size.
 
-The Images Pipeline requires Pillow_ 8.0.0 or greater. It is used for
+The Images Pipeline requires Pillow_ 8.3.2 or greater. It is used for
 thumbnailing and normalizing images to JPEG/RGB format.
 
 .. _Pillow: https://github.com/python-pillow/Pillow
@@ -212,8 +212,6 @@ Where:
 FTP server storage
 ------------------
 
-.. versionadded:: 2.0
-
 :setting:`FILES_STORE` and :setting:`IMAGES_STORE` can point to an FTP server.
 Scrapy will automatically upload the files to the server.
 
@@ -238,7 +236,7 @@ Amazon S3 storage
 .. setting:: FILES_STORE_S3_ACL
 .. setting:: IMAGES_STORE_S3_ACL
 
-If botocore_ >= 1.4.87 is installed, :setting:`FILES_STORE` and
+If botocore_ >= 1.13.45 is installed, :setting:`FILES_STORE` and
 :setting:`IMAGES_STORE` can represent an Amazon S3 bucket. Scrapy will
 automatically upload the files to the bucket.
 
@@ -547,9 +545,6 @@ See here the methods that you can override in your custom Files Pipeline:
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
 
-      .. versionadded:: 2.4
-         The *item* parameter.
-
    .. method:: FilesPipeline.get_media_requests(item, info)
 
       As seen on the workflow, the pipeline will get the URLs of the images to
@@ -589,8 +584,6 @@ See here the methods that you can override in your custom Files Pipeline:
         * ``checksum`` - a `MD5 hash`_ of the image contents
 
         * ``status`` - the file status indication.
-
-          .. versionadded:: 2.2
 
           It can be one of the following:
 
@@ -704,9 +697,6 @@ See here the methods that you can override in your custom Images Pipeline:
 
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
-
-      .. versionadded:: 2.4
-         The *item* parameter.
 
    .. method:: ImagesPipeline.thumb_path(self, request, thumb_id, response=None, info=None, *, item=None)
 

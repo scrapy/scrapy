@@ -26,7 +26,6 @@ from scrapy.exceptions import CloseSpider, IgnoreRequest
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.linkextractors import LinkExtractor
-from scrapy.signals import request_scheduled
 from scrapy.spiders import Spider
 from scrapy.utils.defer import (
     _schedule_coro,
@@ -439,6 +438,7 @@ class TestEngine(TestEngineBase):
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
         e = ExecutionEngine(crawler, lambda _: None)
+        crawler.engine = e
         yield deferred_from_coro(e.open_spider_async())
         _schedule_coro(e.start_async())
         with pytest.raises(RuntimeError, match="Engine already running"):
@@ -451,6 +451,7 @@ class TestEngine(TestEngineBase):
         crawler = get_crawler(DefaultSpider)
         crawler.spider = crawler._create_spider()
         e = ExecutionEngine(crawler, lambda _: None)
+        crawler.engine = e
         await e.open_spider_async()
         with pytest.raises(RuntimeError, match="Engine already running"):
             await asyncio.gather(e.start_async(), e.start_async())
@@ -490,6 +491,7 @@ class TestEngine(TestEngineBase):
         )
         p = subprocess.Popen(
             args,
+            stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
         )
 
@@ -621,7 +623,7 @@ def test_request_scheduled_signal(caplog):
 
     engine._start = start()
     engine._slot = _Slot(False, Mock(), scheduler)
-    crawler.signals.connect(signal_handler, request_scheduled)
+    crawler.signals.connect(signal_handler, signals.request_scheduled)
     keep_request = Request("https://keep.example")
     engine._schedule_request(keep_request)
     drop_request = Request("https://drop.example")
@@ -630,7 +632,7 @@ def test_request_scheduled_signal(caplog):
     assert scheduler.enqueued == [keep_request], (
         f"{scheduler.enqueued!r} != [{keep_request!r}]"
     )
-    crawler.signals.disconnect(signal_handler, request_scheduled)
+    crawler.signals.disconnect(signal_handler, signals.request_scheduled)
 
 
 class TestEngineCloseSpider:
@@ -645,22 +647,29 @@ class TestEngineCloseSpider:
     @deferred_f_from_coro_f
     async def test_no_slot(self, crawler: Crawler) -> None:
         engine = ExecutionEngine(crawler, lambda _: None)
+        crawler.engine = engine
         await engine.open_spider_async()
+        slot = engine._slot
         engine._slot = None
         with pytest.raises(RuntimeError, match="Engine slot not assigned"):
             await engine.close_spider_async()
+        # close it correctly
+        engine._slot = slot
+        await engine.close_spider_async()
 
     @deferred_f_from_coro_f
     async def test_no_spider(self, crawler: Crawler) -> None:
         engine = ExecutionEngine(crawler, lambda _: None)
         with pytest.raises(RuntimeError, match="Spider not opened"):
             await engine.close_spider_async()
+        engine.downloader.close()  # cleanup
 
     @deferred_f_from_coro_f
     async def test_exception_slot(
         self, crawler: Crawler, caplog: pytest.LogCaptureFixture
     ) -> None:
         engine = ExecutionEngine(crawler, lambda _: None)
+        crawler.engine = engine
         await engine.open_spider_async()
         assert engine._slot
         del engine._slot.heartbeat
@@ -672,6 +681,7 @@ class TestEngineCloseSpider:
         self, crawler: Crawler, caplog: pytest.LogCaptureFixture
     ) -> None:
         engine = ExecutionEngine(crawler, lambda _: None)
+        crawler.engine = engine
         await engine.open_spider_async()
         del engine.downloader.slots
         await engine.close_spider_async()
@@ -682,6 +692,7 @@ class TestEngineCloseSpider:
         self, crawler: Crawler, caplog: pytest.LogCaptureFixture
     ) -> None:
         engine = ExecutionEngine(crawler, lambda _: None)
+        crawler.engine = engine
         await engine.open_spider_async()
         engine.scraper.slot = None
         await engine.close_spider_async()
@@ -692,6 +703,7 @@ class TestEngineCloseSpider:
         self, crawler: Crawler, caplog: pytest.LogCaptureFixture
     ) -> None:
         engine = ExecutionEngine(crawler, lambda _: None)
+        crawler.engine = engine
         await engine.open_spider_async()
         assert engine._slot
         del cast("Scheduler", engine._slot.scheduler).dqs
@@ -703,16 +715,25 @@ class TestEngineCloseSpider:
         self, crawler: Crawler, caplog: pytest.LogCaptureFixture
     ) -> None:
         engine = ExecutionEngine(crawler, lambda _: None)
+        crawler.engine = engine
         await engine.open_spider_async()
+        signal_manager = engine.signals
         del engine.signals
         await engine.close_spider_async()
         assert "Error while sending spider_close signal" in caplog.text
+        # send the spider_closed signal to close various components
+        await signal_manager.send_catch_log_async(
+            signal=signals.spider_closed,
+            spider=engine.spider,
+            reason="cancelled",
+        )
 
     @deferred_f_from_coro_f
     async def test_exception_stats(
         self, crawler: Crawler, caplog: pytest.LogCaptureFixture
     ) -> None:
         engine = ExecutionEngine(crawler, lambda _: None)
+        crawler.engine = engine
         await engine.open_spider_async()
         del cast("MemoryStatsCollector", crawler.stats).spider_stats
         await engine.close_spider_async()
@@ -723,6 +744,7 @@ class TestEngineCloseSpider:
         self, crawler: Crawler, caplog: pytest.LogCaptureFixture
     ) -> None:
         engine = ExecutionEngine(crawler, lambda _: defer.fail(ValueError()))
+        crawler.engine = engine
         await engine.open_spider_async()
         await engine.close_spider_async()
         assert "Error running spider_closed_callback" in caplog.text
@@ -735,6 +757,7 @@ class TestEngineCloseSpider:
             raise ValueError
 
         engine = ExecutionEngine(crawler, cb)
+        crawler.engine = engine
         await engine.open_spider_async()
         await engine.close_spider_async()
         assert "Error running spider_closed_callback" in caplog.text

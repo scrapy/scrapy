@@ -11,7 +11,7 @@ from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
 from functools import wraps
 from inspect import isasyncgenfunction, iscoroutine
 from itertools import islice
-from typing import TYPE_CHECKING, Any, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, TypeVar, cast
 from warnings import warn
 
 from twisted.internet.defer import Deferred, inlineCallbacks
@@ -41,9 +41,9 @@ logger = logging.getLogger(__name__)
 
 
 _T = TypeVar("_T")
-ScrapeFunc = Callable[
-    [Union[Response, Failure], Request],
-    Coroutine[Any, Any, Union[Iterable[_T], AsyncIterator[_T]]],
+ScrapeFunc: TypeAlias = Callable[
+    [Response | Failure, Request],
+    Coroutine[Any, Any, Iterable[_T] | AsyncIterator[_T]],
 ]
 
 
@@ -117,9 +117,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
             )
 
     def _add_middleware(self, mw: Any) -> None:
-        super()._add_middleware(mw)
         if hasattr(mw, "process_spider_input"):
             self.methods["process_spider_input"].append(mw.process_spider_input)
+            self._check_mw_method_spider_arg(mw.process_spider_input)
+
         if self._use_start_requests:
             if hasattr(mw, "process_start_requests"):
                 self.methods["process_start_requests"].appendleft(
@@ -127,10 +128,19 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 )
         elif hasattr(mw, "process_start"):
             self.methods["process_start"].appendleft(mw.process_start)
+
         process_spider_output = self._get_async_method_pair(mw, "process_spider_output")
         self.methods["process_spider_output"].appendleft(process_spider_output)
+        if callable(process_spider_output):
+            self._check_mw_method_spider_arg(process_spider_output)
+        elif isinstance(process_spider_output, tuple):
+            for m in process_spider_output:
+                self._check_mw_method_spider_arg(m)
+
         process_spider_exception = getattr(mw, "process_spider_exception", None)
         self.methods["process_spider_exception"].appendleft(process_spider_exception)
+        if process_spider_exception is not None:
+            self._check_mw_method_spider_arg(process_spider_exception)
 
     async def _process_spider_input(
         self,
@@ -141,7 +151,10 @@ class SpiderMiddlewareManager(MiddlewareManager):
         for method in self.methods["process_spider_input"]:
             method = cast("Callable", method)
             try:
-                result = method(response=response, spider=self._spider)
+                if method in self._mw_methods_requiring_spider:
+                    result = method(response=response, spider=self._spider)
+                else:
+                    result = method(response=response)
                 if result is not None:
                     msg = (
                         f"{global_object_name(method)} must return None "
@@ -166,7 +179,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 yield from iterable
             except Exception as ex:
                 exception_result = cast(
-                    "Union[Failure, MutableChain[_T]]",
+                    "Failure | MutableChain[_T]",
                     self._process_spider_exception(
                         response, ex, exception_processor_index
                     ),
@@ -182,7 +195,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                     yield r
             except Exception as ex:
                 exception_result = cast(
-                    "Union[Failure, MutableAsyncChain[_T]]",
+                    "Failure | MutableAsyncChain[_T]",
                     self._process_spider_exception(
                         response, ex, exception_processor_index
                     ),
@@ -212,7 +225,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
             if method is None:
                 continue
             method = cast("Callable", method)
-            result = method(response=response, exception=exception, spider=self._spider)
+            if method in self._mw_methods_requiring_spider:
+                result = method(
+                    response=response, exception=exception, spider=self._spider
+                )
+            else:
+                result = method(response=response, exception=exception)
             if _isiterable(result):
                 # stop exception handling by handing control over to the
                 # process_spider_output chain if an iterable has been returned
@@ -223,9 +241,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
                 # simplified when downgrading is removed.
                 if dfd.called:
                     # the result is available immediately if _process_spider_output didn't do downgrading
-                    return cast(
-                        "Union[MutableChain[_T], MutableAsyncChain[_T]]", dfd.result
-                    )
+                    return cast("MutableChain[_T] | MutableAsyncChain[_T]", dfd.result)
                 # we forbid waiting here because otherwise we would need to return a deferred from
                 # _process_spider_exception too, which complicates the architecture
                 msg = f"Async iterable returned from {global_object_name(method)} cannot be downgraded"
@@ -298,7 +314,12 @@ class SpiderMiddlewareManager(MiddlewareManager):
                         )
                         recovered = MutableChain(recovered_collected)
                 # might fail directly if the output value is not a generator
-                result = method(response=response, result=result, spider=self._spider)
+                if method in self._mw_methods_requiring_spider:
+                    result = method(
+                        response=response, result=result, spider=self._spider
+                    )
+                else:
+                    result = method(response=response, result=result)
             except Exception as ex:
                 exception_result: Failure | MutableChain[_T] | MutableAsyncChain[_T] = (
                     self._process_spider_exception(response, ex, method_index + 1)
@@ -415,13 +436,23 @@ class SpiderMiddlewareManager(MiddlewareManager):
         self, spider: Spider | None = None
     ) -> AsyncIterator[Any] | None:
         if spider:
-            self._warn_spider_arg("process_start")
+            if self.crawler:
+                msg = (
+                    "Passing a spider argument to SpiderMiddlewareManager.process_start() is deprecated"
+                    " and the passed value is ignored."
+                )
+            else:
+                msg = (
+                    "Passing a spider argument to SpiderMiddlewareManager.process_start() is deprecated,"
+                    " SpiderMiddlewareManager should be instantiated with a Crawler instance instead."
+                )
+            warn(msg, category=ScrapyDeprecationWarning, stacklevel=2)
             self._set_compat_spider(spider)
         self._check_deprecated_start_requests_use()
         if self._use_start_requests:
             sync_start = iter(self._spider.start_requests())
             sync_start = await self._process_chain(
-                "process_start_requests", sync_start, self._spider
+                "process_start_requests", sync_start, always_add_spider=True
             )
             start: AsyncIterator[Any] = as_async_generator(sync_start)
         else:
