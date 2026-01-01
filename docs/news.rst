@@ -7504,7 +7504,7 @@ Enhancements
 - Make ``RFPDupeFilter`` class easily subclassable (:issue:`533`)
 - Improve test coverage and forthcoming Python 3 support (:issue:`525`)
 - Promote startup info on settings and middleware to INFO level (:issue:`520`)
-- Support partials in ``get_func_args`` util (:issue:`506`, issue:`504`)
+- Support partials in ``get_func_args`` util (:issue:`506`, :issue:`504`)
 - Allow running individual tests via tox (:issue:`503`)
 - Update extensions ignored by link extractors (:issue:`498`)
 - Add middleware methods to get files/images/thumbs paths (:issue:`490`)
@@ -8072,7 +8072,7 @@ API changes
    - ``scrapy.core.manager.ScrapyManager`` class renamed to ``scrapy.crawler.Crawler``
    - ``scrapy.core.manager.scrapymanager`` singleton moved to ``scrapy.project.crawler``
 - Moved module: ``scrapy.contrib.spidermanager`` to ``scrapy.spidermanager``
-- Spider Manager singleton moved from ``scrapy.spider.spiders`` to the ``spiders` attribute of ``scrapy.project.crawler`` singleton.
+- Spider Manager singleton moved from ``scrapy.spider.spiders`` to the ``spiders`` attribute of ``scrapy.project.crawler`` singleton.
 - moved Stats Collector classes: (#204)
    - ``scrapy.stats.collector.StatsCollector`` to ``scrapy.statscol.StatsCollector``
    - ``scrapy.stats.collector.SimpledbStatsCollector`` to ``scrapy.contrib.statscol.SimpledbStatsCollector``
