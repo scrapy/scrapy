@@ -142,7 +142,7 @@ async def send_catch_log_async(
 
     Returns a coroutine that completes once all signal handlers have finished.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.14
     """
     # note that this returns exceptions instead of Failures in the second tuple member
     if is_asyncio_available():
@@ -171,7 +171,7 @@ async def _send_catch_log_asyncio(
     :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
     installed.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.14
     """
     dont_log = named.pop("dont_log", ())
     dont_log = tuple(dont_log) if isinstance(dont_log, Sequence) else (dont_log,)

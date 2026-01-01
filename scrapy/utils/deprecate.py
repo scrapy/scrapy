@@ -203,7 +203,7 @@ def argument_is_required(func: Callable[..., Any], arg_name: str) -> bool:
     """
     Check if a function argument is required (exists and doesn't have a default value).
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.14
 
     >>> def func(a, b=1, c=None):
     ...     pass

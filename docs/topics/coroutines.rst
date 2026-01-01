@@ -57,7 +57,7 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
 
 -   Methods of :ref:`download handlers <topics-download-handlers>`.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.14
 
 
 .. _coroutine-deferred-apis:

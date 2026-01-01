@@ -85,7 +85,7 @@ class SignalManager:
         The keyword arguments are passed to the signal handlers (connected
         through the :meth:`connect` method).
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         # note that this returns exceptions instead of Failures in the second tuple member
         kwargs.setdefault("sender", self.sender)

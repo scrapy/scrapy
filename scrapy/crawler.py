@@ -165,7 +165,7 @@ class Crawler:
         *args* and *kwargs* arguments, while setting the execution engine in
         motion. Should be called only once.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
 
         Complete when the crawl is finished.
         """
@@ -209,7 +209,7 @@ class Crawler:
     async def stop_async(self) -> None:
         """Start a graceful stop of the crawler and complete when the crawler is stopped.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         if self.crawling:
             self.crawling = False

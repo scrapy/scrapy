@@ -72,7 +72,7 @@ Writing your own download handler
 =================================
 
 A download handler is a :ref:`component <topics-components>` that defines
-the following methods:
+the following API:
 
 .. class:: SampleDownloadHandler
 
