@@ -463,7 +463,7 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
 
     .. versionadded:: 2.6.0
 
-    .. versionchanged:: VERSION
+    .. versionchanged:: 2.14
         This function no longer installs an asyncio loop if called before the
         Twisted asyncio reactor is installed. A :exc:`RuntimeError` is raised
         in this case.
@@ -534,7 +534,7 @@ def ensure_awaitable(o: _T | Awaitable[_T], _warn: str | None = None) -> Awaitab
     awaitable object of a different type, return it as is. For any other
     value, return a coroutine that completes with that value.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.14
     """
     if isinstance(o, Deferred):
         if _warn:

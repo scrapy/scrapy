@@ -16,6 +16,8 @@ Highlights:
 
 -   Dropped support for Python 3.9 and PyPy 3.10
 
+-   Improved and documented the API for custom download handlers
+
 Modified requirements
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -120,9 +122,9 @@ Backward-incompatible changes
     calls its methods directly.
     (:issue:`6802`)
 
--   The built-in :ref:`download handlers <download-handlers-ref>` were
-    refactored, changing signatures of their methods. This change should only
-    affect user code that subclasses any of these handlers or calls their
+-   The built-in :ref:`download handlers <download-handlers-ref>` have been
+    refactored, changing the signatures of their methods. This change should
+    only affect user code that subclasses any of these handlers or calls their
     methods directly.
     (:issue:`6778`, :issue:`7164`)
 
@@ -210,6 +212,11 @@ Deprecations
     :class:`~twisted.internet.defer.Deferred` are deprecated in favor of their
     coroutine-based replacements:
 
+    - :class:`scrapy.core.downloader.handlers.DownloadHandlers`
+
+        - ``download_request()`` (use
+          :meth:`~scrapy.core.downloader.handlers.DownloadHandlers.download_request_async`)
+
     - :class:`scrapy.core.downloader.middleware.DownloaderMiddlewareManager`
 
         - ``download()`` (use
@@ -281,7 +288,7 @@ Deprecations
       :func:`scrapy.utils.signal.send_catch_log_async`)
 
     (:issue:`6791`, :issue:`6842`, :issue:`6979`, :issue:`6997`, :issue:`6999`,
-    :issue:`7005`, :issue:`7043`, :issue:`7069`, :issue:`7161`)
+    :issue:`7005`, :issue:`7043`, :issue:`7069`, :issue:`7161`, :issue:`7164`)
 
 -   The following spider attributes are deprecated in favor of settings:
 
@@ -308,10 +315,17 @@ Deprecations
     - the ``process_request()``, ``process_response()`` and
       ``process_exception()`` methods of custom downloader middlewares
 
+    - the ``process_item()``, ``open_spider()`` and ``close_spider()`` methods
+      of custom pipelines
+
     - signal handlers
 
-    (:issue:`6718`, :issue:`7069`, :issue:`7147`, :issue:`7148`, :issue:`7150`,
-    :issue:`7151`, :issue:`7161`)
+    - the ``download_request()`` and ``close()`` methods of custom download
+      handlers
+
+    (:issue:`6718`, :issue:`6778`, :issue:`7069`, :issue:`7147`, :issue:`7148`,
+    :issue:`7149`, :issue:`7150`, :issue:`7151`, :issue:`7161`, :issue:`7164`,
+    :issue:`7179`)
 
 -   Passing a ``spider`` argument to the following methods is deprecated:
 
@@ -363,6 +377,22 @@ Deprecations
 
     (:issue:`6927`, :issue:`6984`, :issue:`7006`, :issue:`7037`)
 
+-   The following things in custom download handlers are deprecated:
+
+    - not having a ``lazy`` attribute (you should define it as ``True`` if you
+      want to keep the current behavior)
+
+    - returning a :class:`~twisted.internet.defer.Deferred` from the
+      ``download_request()`` method (you should refactor it to return a
+      coroutine; you also need to remove the ``spider`` argument when doing
+      this)
+
+    - not having a ``close()`` method, having a synchronous one or one that
+      returns a :class:`~twisted.internet.defer.Deferred` (you should refactor
+      it to return a coroutine or add an empty one if you don't have it)
+
+    (:issue:`6778`, :issue:`7164`)
+
 -   Custom implementations of :setting:`ITEM_PROCESSOR` should now define
     ``process_item_async()``, ``open_spider_async()`` and
     ``close_spider_async()`` methods instead of, or in addition to,
@@ -379,6 +409,11 @@ Deprecations
     directly instead of importing the
     ``scrapy.core.downloader.handlers.http.HTTPDownloadHandler`` alias.
     (:issue:`7079`)
+
+-   The ``scrapy.utils.decorators.defers()`` decorator is deprecated, you can
+    use :func:`twisted.internet.defer.maybeDeferred` directly or reimplement
+    this decorator in your code.
+    (:issue:`7164`)
 
 -   ``scrapy.spiders.CrawlSpider._parse_response()`` is deprecated, use
     :meth:`scrapy.spiders.CrawlSpider.parse_with_rules` instead.
@@ -415,6 +450,11 @@ New features
     :issue:`7034`)
 
 -   Added coroutine counterparts to some of the Deferred-based APIs:
+
+    - :class:`scrapy.core.downloader.handlers.DownloadHandlers`
+
+        - :meth:`~scrapy.core.downloader.handlers.DownloadHandlers.download_request_async`
+          (to ``download_request()``)
 
     - :class:`scrapy.core.downloader.middleware.DownloaderMiddlewareManager`
 
@@ -476,7 +516,7 @@ New features
 
     (:issue:`6781`, :issue:`6791`, :issue:`6792`, :issue:`6795`, :issue:`6801`,
     :issue:`6817`, :issue:`6842`, :issue:`6997`, :issue:`7005`, :issue:`7043`,
-    :issue:`7069`)
+    :issue:`7069`,:issue:`7164`, :issue:`7202`)
 
 -   The default value of the :setting:`SCHEDULER_PRIORITY_QUEUE` setting is now
     ``'scrapy.pqueues.DownloaderAwarePriorityQueue'``.
@@ -495,6 +535,18 @@ New features
     to :func:`scrapy.utils.defer.is_asyncio_reactor_installed` with a
     future-proof name and semantics.
     (:issue:`6827`)
+
+-   The API for :ref:`download handlers <topics-download-handlers>`, previously
+    undocumented, has been modernized and documented. An optional base class,
+    :class:`scrapy.core.downloader.handlers.base.BaseDownloadHandler`, has been
+    added to simplify writing custom download handlers that conform to the
+    current API.
+    (:issue:`4944`, :issue:`6778`, :issue:`7164`)
+
+-   Added :func:`scrapy.utils.defer.ensure_awaitable` that can be helpful to
+    call user-defined functions which can return coroutines, Deferreds or
+    values directly.
+    (:issue:`7005`)
 
 -   The ``requests.seen`` file, written by
     :class:`~scrapy.dupefilters.RFPDupeFilter` when :ref:`the job persistence
@@ -541,6 +593,10 @@ Bug fixes
 Documentation
 ~~~~~~~~~~~~~
 
+-   Added :ref:`documentation <topics-download-handlers>` about download
+    handlers, their API and the built-in handlers.
+    (:issue:`4944`, :issue:`7164`)
+
 -   Added a section about the `scrapy-spider-metadata`_ library to the
     :ref:`spider argument docs <spiderargs-scrapy-spider-metadata>`.
     (:issue:`6676`, :issue:`6957`, :issue:`7116`)
@@ -552,7 +608,7 @@ Documentation
     (:issue:`6800`, :issue:`7146`)
 
 -   Other documentation improvements and fixes.
-    (:issue:`7058`, :issue:`7076`, :issue:`7109`)
+    (:issue:`7058`, :issue:`7076`, :issue:`7109`, :issue:`7195`, :issue:`7198`)
 
 Quality assurance
 ~~~~~~~~~~~~~~~~~
