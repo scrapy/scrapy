@@ -461,8 +461,6 @@ def deferred_to_future(d: Deferred[_T]) -> Future[_T]:
                 deferred = self.crawler.engine.download(additional_request)
                 additional_response = await deferred_to_future(deferred)
 
-    .. versionadded:: 2.6.0
-
     .. versionchanged:: 2.14
         This function no longer installs an asyncio loop if called before the
         Twisted asyncio reactor is installed. A :exc:`RuntimeError` is raised
@@ -495,8 +493,6 @@ def maybe_deferred_to_future(d: Deferred[_T]) -> Deferred[_T] | Future[_T]:
                 additional_request = scrapy.Request('https://example.org/price')
                 deferred = self.crawler.engine.download(additional_request)
                 additional_response = await maybe_deferred_to_future(deferred)
-
-    .. versionadded:: 2.6.0
     """
     if not is_asyncio_available():
         return d
