@@ -114,7 +114,7 @@ class TestShellCommand:
         url = "www.somedomainthatdoesntexi.st"
         ret, out, err = proc("shell", url, "-c", "item")
         assert ret == 1, out or err
-        assert "DNS lookup failed" in err
+        assert "CannotResolveHostError" in err
 
     def test_shell_fetch_async(self, mockserver: MockServer) -> None:
         url = mockserver.url("/html")
