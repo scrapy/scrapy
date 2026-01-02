@@ -458,15 +458,9 @@ RETRY_EXCEPTIONS = [
     "scrapy.exceptions.DownloadFailedError",
     "scrapy.exceptions.DownloadTimeoutError",
     "scrapy.exceptions.ResponseDataLoss",
-    "twisted.internet.defer.TimeoutError",
-    "twisted.internet.error.TimeoutError",
-    "twisted.internet.error.DNSLookupError",
-    "twisted.internet.error.ConnectionRefusedError",
     "twisted.internet.error.ConnectionDone",
     "twisted.internet.error.ConnectError",
     "twisted.internet.error.ConnectionLost",
-    "twisted.internet.error.TCPTimedOutError",
-    "twisted.web.client.ResponseFailed",
     # OSError is raised by the HttpCompression middleware when trying to
     # decompress an empty response
     OSError,

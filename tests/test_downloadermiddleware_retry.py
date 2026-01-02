@@ -2,17 +2,7 @@ import logging
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet import defer
-from twisted.internet.error import (
-    ConnectError,
-    ConnectionDone,
-    ConnectionLost,
-    DNSLookupError,
-    TCPTimedOutError,
-)
-from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
-from twisted.internet.error import TimeoutError as TxTimeoutError
-from twisted.web.client import ResponseFailed
+from twisted.internet.error import ConnectError, ConnectionDone, ConnectionLost
 
 from scrapy.downloadermiddlewares.retry import RetryMiddleware, get_retry_request
 from scrapy.exceptions import (
@@ -99,12 +89,6 @@ class TestRetry:
             ConnectError,
             ConnectionDone,
             ConnectionLost,
-            TxConnectionRefusedError,
-            defer.TimeoutError,
-            DNSLookupError,
-            ResponseFailed,
-            TCPTimedOutError,
-            TxTimeoutError,
             DownloadTimeoutError,
             DownloadConnectionRefusedError,
             CannotResolveHostError,
@@ -118,7 +102,7 @@ class TestRetry:
         assert stats.get_value("retry/max_reached") == len(exceptions)
         assert stats.get_value("retry/count") == len(exceptions) * 2
         assert (
-            stats.get_value("retry/reason_count/twisted.internet.defer.TimeoutError")
+            stats.get_value("retry/reason_count/scrapy.exceptions.DownloadTimeoutError")
             == 2
         )
 
