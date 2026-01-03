@@ -12,10 +12,8 @@ from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
-from twisted.internet.defer import CancelledError, Deferred, succeed
+from twisted.internet.defer import Deferred, succeed
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
-from twisted.internet.error import DNSLookupError
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
 from twisted.web.client import (
@@ -26,7 +24,6 @@ from twisted.web.client import (
     ResponseFailed,
 )
 from twisted.web.client import Response as TxResponse
-from twisted.web.error import SchemeNotSupported
 from twisted.web.http import PotentialDataLoss, _DataLoss
 from twisted.web.http_headers import Headers as TxHeaders
 from twisted.web.iweb import UNKNOWN_LENGTH, IBodyProducer, IPolicyForHTTPS, IResponse
@@ -36,17 +33,14 @@ from scrapy import Request, signals
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.exceptions import (
-    CannotResolveHostError,
     DownloadCancelledError,
-    DownloadConnectionRefusedError,
-    DownloadFailedError,
     DownloadTimeoutError,
     ResponseDataLoss,
     StopDownload,
-    UnsupportedURLScheme,
 )
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
+from scrapy.utils._download_handlers import wrap_twisted_exceptions
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
@@ -121,18 +115,8 @@ class HTTP11DownloadHandler(BaseDownloadHandler):
             fail_on_dataloss=self._fail_on_dataloss,
             crawler=self._crawler,
         )
-        try:
+        with wrap_twisted_exceptions():
             return await maybe_deferred_to_future(agent.download_request(request))
-        except SchemeNotSupported as e:
-            raise UnsupportedURLScheme(str(e)) from e
-        except CancelledError as e:
-            raise DownloadCancelledError(str(e)) from e
-        except TxConnectionRefusedError as e:
-            raise DownloadConnectionRefusedError(str(e)) from e
-        except DNSLookupError as e:
-            raise CannotResolveHostError(str(e)) from e
-        except ResponseFailed as e:
-            raise DownloadFailedError(str(e)) from e
 
     async def close(self) -> None:
         from twisted.internet import reactor

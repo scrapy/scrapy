@@ -4,30 +4,20 @@ from time import time
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
-from twisted.internet.defer import CancelledError, Deferred
-from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
-from twisted.internet.error import DNSLookupError
-from twisted.web._newclient import ResponseFailed
 from twisted.web.client import URI
-from twisted.web.error import SchemeNotSupported
 
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.core.http2.agent import H2Agent, H2ConnectionPool, ScrapyProxyH2Agent
-from scrapy.exceptions import (
-    CannotResolveHostError,
-    DownloadCancelledError,
-    DownloadConnectionRefusedError,
-    DownloadFailedError,
-    DownloadTimeoutError,
-    UnsupportedURLScheme,
-)
+from scrapy.exceptions import DownloadTimeoutError
+from scrapy.utils._download_handlers import wrap_twisted_exceptions
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
     from twisted.internet.base import DelayedCall
+    from twisted.internet.defer import Deferred
     from twisted.web.iweb import IPolicyForHTTPS
 
     from scrapy.crawler import Crawler
@@ -56,20 +46,10 @@ class H2DownloadHandler(BaseDownloadHandler):
             crawler=self._crawler,
         )
         assert self._crawler.spider
-        try:
+        with wrap_twisted_exceptions():
             return await maybe_deferred_to_future(
                 agent.download_request(request, self._crawler.spider)
             )
-        except SchemeNotSupported as e:
-            raise UnsupportedURLScheme(str(e)) from e
-        except CancelledError as e:
-            raise DownloadCancelledError(str(e)) from e
-        except TxConnectionRefusedError as e:
-            raise DownloadConnectionRefusedError(str(e)) from e
-        except DNSLookupError as e:
-            raise CannotResolveHostError(str(e)) from e
-        except ResponseFailed as e:
-            raise DownloadFailedError(str(e)) from e
 
     async def close(self) -> None:
         self._pool.close_connections()
