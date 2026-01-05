@@ -98,7 +98,7 @@ class TestCrawl:
 
         settings = {"DOWNLOAD_DELAY": delay, "RANDOMIZE_DOWNLOAD_DELAY": randomize}
         crawler = get_crawler(FollowAllSpider, settings)
-        await maybe_deferred_to_future(crawler.crawl(**crawl_kwargs))
+        await crawler.crawl_async(**crawl_kwargs)
         assert crawler.spider
         assert isinstance(crawler.spider, FollowAllSpider)
         times = crawler.spider.times
@@ -112,7 +112,7 @@ class TestCrawl:
         # code above to have any meaning.
         settings["DOWNLOAD_DELAY"] = 0
         crawler = get_crawler(FollowAllSpider, settings)
-        await maybe_deferred_to_future(crawler.crawl(**crawl_kwargs))
+        await crawler.crawl_async(**crawl_kwargs)
         assert crawler.spider
         assert isinstance(crawler.spider, FollowAllSpider)
         times = crawler.spider.times
@@ -419,6 +419,12 @@ with multiples lines
 
         self._assert_retried(caplog.text)
         assert "Got response 200" in caplog.text
+
+    @deferred_f_from_coro_f
+    async def test_unknown_url_scheme(self, caplog: pytest.LogCaptureFixture) -> None:
+        crawler = get_crawler(SimpleSpider)
+        await maybe_deferred_to_future(crawler.crawl("foo://bar"))
+        assert "NotSupported: Unsupported URL scheme 'foo'" in caplog.text
 
 
 class TestCrawlSpider:

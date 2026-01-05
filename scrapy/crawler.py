@@ -19,7 +19,6 @@ from scrapy.extension import ExtensionManager
 from scrapy.settings import Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
-from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import (
     configure_logging,
@@ -172,16 +171,10 @@ class Crawler:
         *args* and *kwargs* arguments, while setting the execution engine in
         motion. Should be called only once.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
 
         Complete when the crawl is finished.
-
-        This function requires
-        :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
-        installed.
         """
-        if not is_asyncio_available():
-            raise RuntimeError("Crawler.crawl_async() requires AsyncioSelectorReactor.")
         if self.crawling:
             raise RuntimeError("Crawling already taking place")
         if self._started:
@@ -222,7 +215,7 @@ class Crawler:
     async def stop_async(self) -> None:
         """Start a graceful stop of the crawler and complete when the crawler is stopped.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         if self.crawling:
             self.crawling = False
