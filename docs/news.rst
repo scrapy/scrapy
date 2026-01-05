@@ -522,7 +522,7 @@ New features
     ``'scrapy.pqueues.DownloaderAwarePriorityQueue'``.
     (:issue:`6924`, :issue:`6940`)
 
--   Added :class:`scrapy.extensions.logcount.LogCount`, an enabled by default
+-   Added :class:`scrapy.extensions.logcount.LogCount`, an enabled-by-default
     extension that is responsible for the ``log_count/*`` stats. Previously,
     this code was in :class:`scrapy.crawler.Crawler` and couldn't be disabled.
     (:issue:`7046`)
@@ -543,19 +543,19 @@ New features
     current API.
     (:issue:`4944`, :issue:`6778`, :issue:`7164`)
 
--   Added :func:`scrapy.utils.defer.ensure_awaitable` that can be helpful to
-    call user-defined functions which can return coroutines, Deferreds or
+-   Added :func:`scrapy.utils.defer.ensure_awaitable`, which can be helpful to
+    call user-defined functions that can return coroutines, Deferreds or
     values directly.
     (:issue:`7005`)
 
 -   The ``requests.seen`` file, written by
-    :class:`~scrapy.dupefilters.RFPDupeFilter` when :ref:`the job persistence
+    :class:`~scrapy.dupefilters.RFPDupeFilter` when :ref:`job persistence
     <topics-jobs>` is enabled, now uses line buffering to reduce data loss in
     spider crashes.
     (:issue:`6019`, :issue:`7094`)
 
 -   Images downloaded by :class:`~scrapy.pipelines.images.ImagesPipeline` are
-    now automatically transposed based on the EXIF value.
+    now automatically transposed based on EXIF data.
     (:issue:`6525`, :issue:`6975`)
 
 Improvements
@@ -594,7 +594,7 @@ Documentation
 ~~~~~~~~~~~~~
 
 -   Added :ref:`documentation <topics-download-handlers>` about download
-    handlers, their API and the built-in handlers.
+    handlers, their API and built-in handlers.
     (:issue:`4944`, :issue:`7164`)
 
 -   Added a section about the `scrapy-spider-metadata`_ library to the
