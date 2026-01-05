@@ -1076,6 +1076,22 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             "setting (uvloop.Loop)"
         ) in log
 
+    def test_reactorless_simple(self):
+        log = self.run_script("reactorless_simple.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "ERROR: " not in log
+        assert "WARNING: " not in log
+
+    def test_reactorless_datauri(self):
+        log = self.run_script("reactorless_datauri.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "{'data': 'foo'}" in log
+        assert "'item_scraped_count': 1" in log
+        assert "ERROR: " not in log
+        assert "WARNING: " not in log
+
 
 class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
     """Common tests between CrawlerRunner and AsyncCrawlerRunner,
@@ -1174,6 +1190,22 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         log = self.run_script("simple_default_reactor.py")
         assert "Spider closed (finished)" not in log
         assert "RuntimeError: AsyncCrawlerRunner requires AsyncioSelectorReactor" in log
+
+    def test_reactorless_simple(self):
+        log = self.run_script("reactorless_simple.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "ERROR: " not in log
+        assert "WARNING: " not in log
+
+    def test_reactorless_datauri(self):
+        log = self.run_script("reactorless_datauri.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "{'data': 'foo'}" in log
+        assert "'item_scraped_count': 1" in log
+        assert "ERROR: " not in log
+        assert "WARNING: " not in log
 
 
 @pytest.mark.parametrize(
