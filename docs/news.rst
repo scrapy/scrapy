@@ -3,8 +3,41 @@
 Release notes
 =============
 
-Scrapy VERSION (unreleased)
----------------------------
+.. _release-2.14.0:
+
+Scrapy 2.14.0 (unreleased)
+--------------------------
+
+Highlights:
+
+-   More coroutine-based replacements for Deferred-based APIs
+
+-   The default priority queue is now ``DownloaderAwarePriorityQueue``
+
+-   Dropped support for Python 3.9 and PyPy 3.10
+
+-   Improved and documented the API for custom download handlers
+
+Modified requirements
+~~~~~~~~~~~~~~~~~~~~~
+
+-   Dropped support for Python 3.9.
+    (:issue:`7121`)
+
+-   Dropped support for PyPy 3.10.
+    (:issue:`7050`)
+
+-   Increased the minimum versions of the following dependencies:
+
+    - lxml_: 4.6.0 → 4.6.4
+
+    - Pillow_ (optional dependency): 8.0.0 → 8.3.2
+
+    - botocore_ (optional dependency): 1.4.87 → 1.13.45
+
+-   Restored support for ``brotlicffi`` dropped in Scrapy 2.13.4. Its minimum
+    supported version is now ``1.2.0.0``.
+    (:issue:`7160`)
 
 Backward-incompatible changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -14,6 +47,7 @@ Backward-incompatible changes
     may now need to set the :setting:`FORCE_CRAWLER_PROCESS` setting to
     ``True`` when running Scrapy via :ref:`its command-line tool
     <topics-commands-crawlerprocess>` to avoid a reactor mismatch exception.
+    (:issue:`6845`)
 
 -   The ``log_count/*`` stats no longer count some of the early messages that
     they counted before. While the earliest log messages, emitted before the
@@ -52,6 +86,17 @@ Backward-incompatible changes
 
         - :meth:`~scrapy.spidermiddlewares.referer.ReferrerPolicy.referrer`
 
+    (:issue:`6930`)
+
+-   Scrapy no longer passes a ``spider`` argument to any methods of the
+    :setting:`stats collector <STATS_CLASS>`. It wasn't passed in many of the
+    calls even in older Scrapy versions, so we don't expect existing custom
+    stats collector implementations to require a ``spider`` argument. If your
+    implementation needs a :class:`~scrapy.Spider` instance, you can get it
+    from the :class:`~scrapy.crawler.Crawler` instance passed to the
+    constructor.
+    (:issue:`7011`)
+
 -   :class:`scrapy.middleware.MiddlewareManager` no longer includes code for
     handling ``open_spider()`` and ``close_spider()`` component methods. As
     this code was only used for pipelines it was moved into
@@ -66,6 +111,8 @@ Backward-incompatible changes
     - Code in ``scrapy.middleware.MiddlewareManager._add_middleware()`` that
       processes ``open_spider()`` and ``close_spider()`` component methods.
 
+    (:issue:`7006`)
+
 -   :meth:`scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware.process_request`
     now returns a coroutine, previously it returned a
     :class:`~twisted.internet.defer.Deferred` object or ``None``. The
@@ -73,10 +120,11 @@ Backward-incompatible changes
     change only impacts code that subclasses
     :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware` or
     calls its methods directly.
+    (:issue:`6802`)
 
--   The built-in :ref:`download handlers <download-handlers-ref>` were
-    refactored, changing signatures of their methods. This change should only
-    affect user code that subclasses any of these handlers or calls their
+-   The built-in :ref:`download handlers <download-handlers-ref>` have been
+    refactored, changing the signatures of their methods. This change should
+    only affect user code that subclasses any of these handlers or calls their
     methods directly.
     (:issue:`6778`, :issue:`7164`)
 
@@ -84,6 +132,549 @@ Backward-incompatible changes
     coroutine, previously it returned a
     :class:`~twisted.internet.defer.Deferred` object. This
     change only impacts code that calls this method directly.
+    (:issue:`7177`)
+
+Deprecation removals
+~~~~~~~~~~~~~~~~~~~~
+
+-   The ``from_settings()`` method of the following components, deprecated in
+    Scrapy 2.12.0, is removed. You should use ``from_crawler()`` instead.
+
+    - :class:`scrapy.dupefilters.RFPDupeFilter`
+    - :class:`scrapy.mail.MailSender`
+    - :class:`scrapy.middleware.MiddlewareManager`
+    - :class:`scrapy.core.downloader.contextfactory.ScrapyClientContextFactory`
+    - :class:`scrapy.pipelines.files.FilesPipeline`
+    - :class:`scrapy.pipelines.images.ImagesPipeline`
+
+    (:issue:`7126`)
+
+-   Scrapy no longer calls ``from_settings()`` methods of 3rd-party
+    :ref:`components <topics-components>`, deprecated in Scrapy 2.12.0. You
+    should define a ``from_crawler()`` method instead.
+    (:issue:`7126`)
+
+-   The initialization flow of :class:`scrapy.pipelines.media.MediaPipeline`
+    and its subclasses was simplified, it now mandates ``from_crawler()``
+    methods and ``crawler`` arguments of ``__init__()`` methods. Not using
+    these was deprecated in Scrapy 2.12.0.
+    (:issue:`7126`)
+
+-   The ``REQUEST_FINGERPRINTER_IMPLEMENTATION`` setting, deprecated in Scrapy
+    2.12.0, is removed.
+    (:issue:`7126`)
+
+-   The ``scrapy.utils.misc.create_instance()`` function, deprecated in Scrapy
+    2.12.0, is removed. Use :func:`scrapy.utils.misc.build_from_crawler`
+    instead.
+    (:issue:`7126`)
+
+-   The ``scrapy.core.downloader.Downloader._get_slot_key()`` function,
+    deprecated in Scrapy 2.12.0, is removed. Use
+    :meth:`scrapy.core.downloader.Downloader.get_slot_key` instead.
+    (:issue:`7126`)
+
+-   The ``scrapy.twisted_version`` attribute, deprecated in Scrapy 2.12.0, is
+    removed. You should instead use the :attr:`twisted.version` attribute
+    directly.
+    (:issue:`7126`)
+
+-   The following utility functions, deprecated in Scrapy 2.12.0, are removed:
+
+    - ``scrapy.utils.defer.process_chain_both()``
+    - ``scrapy.utils.python.equal_attributes()``
+    - ``scrapy.utils.python.flatten()``
+    - ``scrapy.utils.python.iflatten()``
+    - ``scrapy.utils.request.request_authenticate()``
+    - ``scrapy.utils.test.assert_samelines()``
+
+    (:issue:`7126`)
+
+-   ``scrapy.utils.serialize.ScrapyJSONDecoder``, deprecated in Scrapy 2.12.0,
+    is removed.
+    (:issue:`7126`)
+
+-   The ``scrapy.extensions.feedexport.build_storage()`` function, deprecated
+    in Scrapy 2.12.0, is removed, you can instead call the builder callable
+    directly.
+    (:issue:`7126`)
+
+-   ``scrapy.spidermiddlewares.offsite.OffsiteMiddleware``, deprecated in
+    Scrapy 2.11.2, is removed.
+    :class:`scrapy.downloadermiddlewares.offsite.OffsiteMiddleware` should be
+    used instead.
+    (:issue:`6926`)
+
+Deprecations
+~~~~~~~~~~~~
+
+-   The following methods that return a
+    :class:`~twisted.internet.defer.Deferred` are deprecated in favor of their
+    coroutine-based replacements:
+
+    - :class:`scrapy.core.downloader.handlers.DownloadHandlers`
+
+        - ``download_request()`` (use
+          :meth:`~scrapy.core.downloader.handlers.DownloadHandlers.download_request_async`)
+
+    - :class:`scrapy.core.downloader.middleware.DownloaderMiddlewareManager`
+
+        - ``download()`` (use
+          :meth:`~scrapy.core.downloader.middleware.DownloaderMiddlewareManager.download_async`)
+
+    - :class:`scrapy.core.engine.ExecutionEngine`
+
+        - ``start()`` (use
+          :meth:`~scrapy.core.engine.ExecutionEngine.start_async`)
+
+        - ``stop()`` (use
+          :meth:`~scrapy.core.engine.ExecutionEngine.stop_async`)
+
+        - ``close()`` (use
+          :meth:`~scrapy.core.engine.ExecutionEngine.close_async`)
+
+        - ``open_spider()`` (use
+          :meth:`~scrapy.core.engine.ExecutionEngine.open_spider_async`)
+
+        - ``close_spider()`` (use
+          :meth:`~scrapy.core.engine.ExecutionEngine.close_spider_async`)
+
+        - ``download()`` (use
+          :meth:`~scrapy.core.engine.ExecutionEngine.download_async`)
+
+    - :class:`scrapy.core.scraper.Scraper`
+
+        - ``open_spider()`` (use
+          :meth:`~scrapy.core.scraper.Scraper.open_spider_async`)
+
+        - ``call_spider()`` (use
+          :meth:`~scrapy.core.scraper.Scraper.call_spider_async`)
+
+        - ``close_spider()`` (use
+          :meth:`~scrapy.core.scraper.Scraper.close_spider_async`)
+
+        - ``handle_spider_output()`` (use
+          :meth:`~scrapy.core.scraper.Scraper.handle_spider_output_async`)
+
+        - ``start_itemproc()`` (use
+          :meth:`~scrapy.core.scraper.Scraper.start_itemproc_async`)
+
+    - :class:`scrapy.core.spidermw.SpiderMiddlewareManager`
+
+        - ``scrape_response()`` (use
+          :meth:`~scrapy.core.spidermw.SpiderMiddlewareManager.scrape_response_async`)
+
+    - :class:`scrapy.crawler.Crawler`
+
+        - ``stop()`` (use :meth:`~scrapy.crawler.Crawler.stop_async`)
+
+    - :class:`scrapy.pipelines.ItemPipelineManager`
+
+        - ``process_item()`` (use
+          :meth:`~scrapy.pipelines.ItemPipelineManager.process_item_async`)
+
+        - ``open_spider()`` (use
+          :meth:`~scrapy.pipelines.ItemPipelineManager.open_spider_async`)
+
+        - ``close_spider()`` (use
+          :meth:`~scrapy.pipelines.ItemPipelineManager.close_spider_async`)
+
+    - :class:`scrapy.signalmanager.SignalManager`
+
+        - ``send_catch_log_deferred()`` (use
+          :meth:`~scrapy.signalmanager.SignalManager.send_catch_log_async`)
+
+    - ``scrapy.utils.signal.send_catch_log_deferred()`` (use
+      :func:`scrapy.utils.signal.send_catch_log_async`)
+
+    (:issue:`6791`, :issue:`6842`, :issue:`6979`, :issue:`6997`, :issue:`6999`,
+    :issue:`7005`, :issue:`7043`, :issue:`7069`, :issue:`7161`, :issue:`7164`)
+
+-   The following spider attributes are deprecated in favor of settings:
+
+    - ``download_maxsize`` (use :setting:`DOWNLOAD_MAXSIZE`)
+
+    - ``download_timeout`` (use :setting:`DOWNLOAD_TIMEOUT`)
+
+    - ``download_warnsize`` (use :setting:`DOWNLOAD_WARNSIZE`)
+
+    - ``max_concurrent_requests`` (use :setting:`CONCURRENT_REQUESTS`)
+
+    - ``user_agent`` (use :setting:`USER_AGENT`)
+
+    (:issue:`6988`, :issue:`6994`, :issue:`7038`, :issue:`7039`, :issue:`7117`,
+    :issue:`7176`)
+
+-   Returning a :class:`~twisted.internet.defer.Deferred` from the following
+    user-defined functions is deprecated in favor of defining them as coroutine
+    functions:
+
+    - spider callbacks and errbacks (which was never officially supported and
+      may work incorrectly)
+
+    - the ``process_request()``, ``process_response()`` and
+      ``process_exception()`` methods of custom downloader middlewares
+
+    - the ``process_item()``, ``open_spider()`` and ``close_spider()`` methods
+      of custom pipelines
+
+    - signal handlers
+
+    - the ``download_request()`` and ``close()`` methods of custom download
+      handlers
+
+    (:issue:`6718`, :issue:`6778`, :issue:`7069`, :issue:`7147`, :issue:`7148`,
+    :issue:`7149`, :issue:`7150`, :issue:`7151`, :issue:`7161`, :issue:`7164`,
+    :issue:`7179`)
+
+-   Passing a ``spider`` argument to the following methods is deprecated:
+
+    - :meth:`scrapy.core.spidermw.SpiderMiddlewareManager.process_start`
+
+    - :meth:`scrapy.core.downloader.Downloader.fetch`
+
+    - :meth:`scrapy.core.downloader.Downloader._get_slot`
+
+    - :meth:`scrapy.core.downloader.handlers.DownloadHandlers.download_request`
+
+    - all public methods of :class:`scrapy.statscollectors.StatsCollector`
+
+    - :meth:`scrapy.spidermiddlewares.base.BaseSpiderMiddleware.process_spider_output`
+
+    - :meth:`scrapy.spidermiddlewares.base.BaseSpiderMiddleware.process_spider_output_async`
+
+    - all ``process_*()`` methods of built-in downloader middlewares
+
+    - all ``process_*()`` methods of built-in spider middlewares
+
+    - :meth:`scrapy.pipelines.media.MediaPipeline.open_spider`
+
+    - :meth:`scrapy.pipelines.media.MediaPipeline.process_item`
+
+    (:issue:`6750`, :issue:`6927`, :issue:`6984`, :issue:`7006`, :issue:`7011`,
+    :issue:`7033`, :issue:`7037`, :issue:`7045`, :issue:`7178`)
+
+-   Instantiating subclasses of :class:`scrapy.middleware.MiddlewareManager`
+    without a :class:`~scrapy.crawler.Crawler` instance is deprecated.
+    (:issue:`6984`)
+
+-   For the following user-defined functions and methods requiring a ``spider``
+    argument is deprecated, if you need a :class:`~scrapy.Spider` instance
+    inside them you should get it from the :class:`~scrapy.crawler.Crawler`
+    instance (you may need to refactor your code to save that instance in e.g.
+    the ``from_crawler()`` method):
+
+    - the ``process_request()``, ``process_response()`` and
+      ``process_exception()`` methods of custom downloader middlewares
+
+    - the ``process_spider_input()``, ``process_spider_output()``,
+      ``process_spider_output_async()`` and ``process_spider_exception()``
+      methods of custom spider middlewares
+
+    - the ``process_item()`` method of custom pipelines
+
+    - the ``fetch()`` method of a custom :setting:`DOWNLOADER`
+
+    (:issue:`6927`, :issue:`6984`, :issue:`7006`, :issue:`7037`)
+
+-   The following things in custom download handlers are deprecated:
+
+    - not having a ``lazy`` attribute (you should define it as ``True`` if you
+      want to keep the current behavior)
+
+    - returning a :class:`~twisted.internet.defer.Deferred` from the
+      ``download_request()`` method (you should refactor it to return a
+      coroutine; you also need to remove the ``spider`` argument when doing
+      this)
+
+    - not having a ``close()`` method, having a synchronous one or one that
+      returns a :class:`~twisted.internet.defer.Deferred` (you should refactor
+      it to return a coroutine or add an empty one if you don't have it)
+
+    (:issue:`6778`, :issue:`7164`)
+
+-   Custom implementations of :setting:`ITEM_PROCESSOR` should now define
+    ``process_item_async()``, ``open_spider_async()`` and
+    ``close_spider_async()`` methods instead of, or in addition to,
+    ``process_item()``, ``open_spider()`` and ``close_spider()``.
+    (:issue:`7005`, :issue:`7043`)
+
+-   The ``CONCURRENT_REQUESTS_PER_IP`` setting is deprecated, use
+    :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` instead.
+    (:issue:`6917`, :issue:`6921`)
+
+-   The ``scrapy.core.downloader.handlers.http`` module is deprecated. You
+    should import
+    :class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler`
+    directly instead of importing the
+    ``scrapy.core.downloader.handlers.http.HTTPDownloadHandler`` alias.
+    (:issue:`7079`)
+
+-   The ``scrapy.utils.decorators.defers()`` decorator is deprecated, you can
+    use :func:`twisted.internet.defer.maybeDeferred` directly or reimplement
+    this decorator in your code.
+    (:issue:`7164`)
+
+-   ``scrapy.spiders.CrawlSpider._parse_response()`` is deprecated, use
+    :meth:`scrapy.spiders.CrawlSpider.parse_with_rules` instead.
+    (:issue:`4463`, :issue:`6804`)
+
+-   The functions that add a delay to a Deferred are deprecated, their
+    underlying Twisted functions can be used instead, either directly if a
+    delay isn't needed, or with some explicit way to add a delay if it's
+    needed:
+
+    - ``scrapy.utils.defer.mustbe_deferred()`` (you can use
+      :func:`twisted.internet.defer.maybeDeferred`)
+
+    - ``scrapy.utils.defer.defer_succeed()`` (you can use
+      :func:`twisted.internet.defer.succeed`)
+
+    - ``scrapy.utils.defer.defer_fail()`` (you can use
+      :func:`twisted.internet.defer.fail`)
+
+    - ``scrapy.utils.defer.defer_result()`` (you can use
+      :func:`twisted.internet.defer.succeed` and
+      :func:`twisted.internet.defer.fail`)
+
+    (:issue:`6937`)
+
+New features
+~~~~~~~~~~~~
+
+-   Added :class:`scrapy.crawler.AsyncCrawlerProcess` and
+    :class:`scrapy.crawler.AsyncCrawlerRunner` as counterparts to
+    :class:`~scrapy.crawler.CrawlerProcess` and
+    :class:`~scrapy.crawler.CrawlerRunner` that offer coroutine-based APIs.
+    (:issue:`6789`, :issue:`6790`, :issue:`6796`, :issue:`6817`, :issue:`6845`,
+    :issue:`7034`)
+
+-   Added coroutine counterparts to some of the Deferred-based APIs:
+
+    - :class:`scrapy.core.downloader.handlers.DownloadHandlers`
+
+        - :meth:`~scrapy.core.downloader.handlers.DownloadHandlers.download_request_async`
+          (to ``download_request()``)
+
+    - :class:`scrapy.core.downloader.middleware.DownloaderMiddlewareManager`
+
+        - :meth:`~scrapy.core.downloader.middleware.DownloaderMiddlewareManager.download_async`
+          (to ``download()``)
+
+    - :class:`scrapy.core.engine.ExecutionEngine`
+
+        - :meth:`~scrapy.core.engine.ExecutionEngine.start_async` (to
+          ``start()``)
+
+        - :meth:`~scrapy.core.engine.ExecutionEngine.stop_async` (to
+          ``stop()``)
+
+        - :meth:`~scrapy.core.engine.ExecutionEngine.close_async` (to
+          ``close()``)
+
+        - :meth:`~scrapy.core.engine.ExecutionEngine.open_spider_async` (to
+          ``open_spider()``)
+
+        - :meth:`~scrapy.core.engine.ExecutionEngine.close_spider_async` (to
+          ``close_spider()``)
+
+        - :meth:`~scrapy.core.engine.ExecutionEngine.download_async` (to
+          ``download()``)
+
+    - :class:`scrapy.core.scraper.Scraper`
+
+        - :meth:`~scrapy.core.scraper.Scraper.open_spider_async` (to
+          ``open_spider()``)
+
+        - :meth:`~scrapy.core.scraper.Scraper.close_spider_async` (to
+          ``close_spider()``)
+
+        - :meth:`~scrapy.core.scraper.Scraper.start_itemproc_async` (to
+          ``start_itemproc()``)
+
+    - :class:`scrapy.crawler.Crawler`
+
+        - :meth:`~scrapy.crawler.Crawler.crawl_async` (to ``crawl()``)
+
+        - :meth:`~scrapy.crawler.Crawler.stop_async` (to ``stop()``)
+
+    - :class:`scrapy.pipelines.ItemPipelineManager`
+
+        - :meth:`~scrapy.pipelines.ItemPipelineManager.process_item_async` (to
+          ``process_item()``)
+
+        - :meth:`~scrapy.pipelines.ItemPipelineManager.open_spider_async` (to
+          ``open_spider()``)
+
+        - :meth:`~scrapy.pipelines.ItemPipelineManager.close_spider_async` (to
+          ``close_spider()``)
+
+    - :class:`scrapy.signalmanager.SignalManager`
+
+        - :meth:`~scrapy.signalmanager.SignalManager.send_catch_log_async` (to
+          ``send_catch_log_deferred()``)
+
+    (:issue:`6781`, :issue:`6791`, :issue:`6792`, :issue:`6795`, :issue:`6801`,
+    :issue:`6817`, :issue:`6842`, :issue:`6997`, :issue:`7005`, :issue:`7043`,
+    :issue:`7069`,:issue:`7164`, :issue:`7202`)
+
+-   The default value of the :setting:`SCHEDULER_PRIORITY_QUEUE` setting is now
+    ``'scrapy.pqueues.DownloaderAwarePriorityQueue'``.
+    (:issue:`6924`, :issue:`6940`)
+
+-   Added :class:`scrapy.extensions.logcount.LogCount`, an enabled-by-default
+    extension that is responsible for the ``log_count/*`` stats. Previously,
+    this code was in :class:`scrapy.crawler.Crawler` and couldn't be disabled.
+    (:issue:`7046`)
+
+-   Added :meth:`scrapy.spiders.CrawlSpider.parse_with_rules` as a public
+    replacement for ``_parse_response()``.
+    (:issue:`4463`, :issue:`6804`)
+
+-   Added :func:`scrapy.utils.asyncio.is_asyncio_available` as an alternative
+    to :func:`scrapy.utils.defer.is_asyncio_reactor_installed` with a
+    future-proof name and semantics.
+    (:issue:`6827`)
+
+-   The API for :ref:`download handlers <topics-download-handlers>`, previously
+    undocumented, has been modernized and documented. An optional base class,
+    :class:`scrapy.core.downloader.handlers.base.BaseDownloadHandler`, has been
+    added to simplify writing custom download handlers that conform to the
+    current API.
+    (:issue:`4944`, :issue:`6778`, :issue:`7164`)
+
+-   Added :func:`scrapy.utils.defer.ensure_awaitable`, which can be helpful to
+    call user-defined functions that can return coroutines, Deferreds or
+    values directly.
+    (:issue:`7005`)
+
+-   The ``requests.seen`` file, written by
+    :class:`~scrapy.dupefilters.RFPDupeFilter` when :ref:`job persistence
+    <topics-jobs>` is enabled, now uses line buffering to reduce data loss in
+    spider crashes.
+    (:issue:`6019`, :issue:`7094`)
+
+-   Images downloaded by :class:`~scrapy.pipelines.images.ImagesPipeline` are
+    now automatically transposed based on EXIF data.
+    (:issue:`6525`, :issue:`6975`)
+
+Improvements
+~~~~~~~~~~~~
+
+-   Refactored internal functions to use coroutines instead of Deferreds.
+    (:issue:`6795`, :issue:`6852`, :issue:`6855`, :issue:`6858`, :issue:`7159`)
+
+-   Commands that don't need a :class:`~scrapy.crawler.CrawlerProcess` instance
+    no longer create it.
+    (:issue:`6824`)
+
+-   Improved :command:`shell` help formatting when using IPython 9+.
+    (:issue:`6915`, :issue:`6980`)
+
+Bug fixes
+~~~~~~~~~
+
+-   Setting :setting:`FILES_STORE` or :setting:`IMAGES_STORE` to ``None`` now
+    correctly disables the respective pipeline.
+    (:issue:`6964`, :issue:`6969`)
+
+-   :class:`~scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware` now
+    uses the URL set in the ``<base>`` tag as the base URL when redirecting to
+    a relative URL.
+    (:issue:`7042`, :issue:`7047`)
+
+-   Passing ``None`` as a value of the :reqmeta:`download_slot` request meta
+    key is now handled in the same way as not setting this meta key at all.
+    (:issue:`7172`)
+
+-   Fixed parsing of the first line of ``robots.txt`` files that have a BOM.
+    (:issue:`6195`, :issue:`7095`)
+
+Documentation
+~~~~~~~~~~~~~
+
+-   Added :ref:`documentation <topics-download-handlers>` about download
+    handlers, their API and built-in handlers.
+    (:issue:`4944`, :issue:`7164`)
+
+-   Added a section about the `scrapy-spider-metadata`_ library to the
+    :ref:`spider argument docs <spiderargs-scrapy-spider-metadata>`.
+    (:issue:`6676`, :issue:`6957`, :issue:`7116`)
+
+    .. _scrapy-spider-metadata: https://scrapy-spider-metadata.readthedocs.io/en/latest/
+
+-   Improved :ref:`the docs <coroutine-deferred-apis>` about coroutine-based
+    and Deferred-based APIs.
+    (:issue:`6800`, :issue:`7146`)
+
+-   Other documentation improvements and fixes.
+    (:issue:`7058`, :issue:`7076`, :issue:`7109`, :issue:`7195`, :issue:`7198`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Switched from ``twisted.trial`` to ``pytest-twisted`` and replaced
+    remaining ``unittest`` and ``twisted.trial`` features with ``pytest`` ones.
+    (:issue:`6658`, :issue:`6873`, :issue:`6884`, :issue:`6938`)
+
+-   Enabled fancy ``pytest`` asserts.
+    (:issue:`6888`)
+
+-   Added `Sphinx Lint`_ to the ``pre-commit`` configuration.
+    (:issue:`6920`)
+
+    .. _Sphinx Lint: https://github.com/sphinx-contrib/sphinx-lint
+
+-   CI and test improvements and fixes.
+    (:issue:`6649`,
+    :issue:`6769`,
+    :issue:`6821`,
+    :issue:`6835`,
+    :issue:`6836`,
+    :issue:`6846`,
+    :issue:`6883`,
+    :issue:`6885`,
+    :issue:`6889`,
+    :issue:`6905`,
+    :issue:`6928`,
+    :issue:`6933`,
+    :issue:`6941`,
+    :issue:`6942`,
+    :issue:`6945`,
+    :issue:`6947`,
+    :issue:`6960`,
+    :issue:`6968`,
+    :issue:`6972`,
+    :issue:`6974`,
+    :issue:`6996`,
+    :issue:`7003`,
+    :issue:`7012`,
+    :issue:`7013`,
+    :issue:`7050`,
+    :issue:`7059`,
+    :issue:`7070`,
+    :issue:`7073`,
+    :issue:`7118`,
+    :issue:`7127`,
+    :issue:`7141`,
+    :issue:`7143`,
+    :issue:`7145`,
+    :issue:`7173`)
+
+-   Code cleanups.
+    (:issue:`6803`,
+    :issue:`6838`,
+    :issue:`6849`,
+    :issue:`6875`,
+    :issue:`6876`,
+    :issue:`6892`,
+    :issue:`6930`,
+    :issue:`6949`,
+    :issue:`6970`,
+    :issue:`6977`,
+    :issue:`6986`,
+    :issue:`7008`,
+    :issue:`7177`)
 
 .. _release-2.13.4:
 
@@ -265,7 +856,7 @@ Highlights:
 -   The asyncio reactor is now enabled by default
 
 -   Replaced ``start_requests()`` (sync) with :meth:`~scrapy.Spider.start`
-    (async) and changed how it is iterated.
+    (async) and changed how it is iterated
 
 -   Added the :reqmeta:`allow_offsite` request meta key
 
@@ -466,9 +1057,9 @@ Deprecations
 
 -   The following modules and functions used only in tests are deprecated:
 
-    - the ``scrapy/utils/testproc`` module
+    - the ``scrapy.utils.testproc`` module
 
-    - the ``scrapy/utils/testsite`` module
+    - the ``scrapy.utils.testsite`` module
 
     - ``scrapy.utils.test.assert_gcs_environ()``
 
@@ -6969,7 +7560,7 @@ Enhancements
 - Make ``RFPDupeFilter`` class easily subclassable (:issue:`533`)
 - Improve test coverage and forthcoming Python 3 support (:issue:`525`)
 - Promote startup info on settings and middleware to INFO level (:issue:`520`)
-- Support partials in ``get_func_args`` util (:issue:`506`, issue:`504`)
+- Support partials in ``get_func_args`` util (:issue:`506`, :issue:`504`)
 - Allow running individual tests via tox (:issue:`503`)
 - Update extensions ignored by link extractors (:issue:`498`)
 - Add middleware methods to get files/images/thumbs paths (:issue:`490`)
@@ -7537,7 +8128,7 @@ API changes
    - ``scrapy.core.manager.ScrapyManager`` class renamed to ``scrapy.crawler.Crawler``
    - ``scrapy.core.manager.scrapymanager`` singleton moved to ``scrapy.project.crawler``
 - Moved module: ``scrapy.contrib.spidermanager`` to ``scrapy.spidermanager``
-- Spider Manager singleton moved from ``scrapy.spider.spiders`` to the ``spiders` attribute of ``scrapy.project.crawler`` singleton.
+- Spider Manager singleton moved from ``scrapy.spider.spiders`` to the ``spiders`` attribute of ``scrapy.project.crawler`` singleton.
 - moved Stats Collector classes: (#204)
    - ``scrapy.stats.collector.StatsCollector`` to ``scrapy.statscol.StatsCollector``
    - ``scrapy.stats.collector.SimpledbStatsCollector`` to ``scrapy.contrib.statscol.SimpledbStatsCollector``
