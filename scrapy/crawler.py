@@ -105,10 +105,10 @@ class Crawler:
             self,
         )
 
-        reactor_class: str = self.settings["TWISTED_REACTOR"]
-        event_loop: str = self.settings["ASYNCIO_EVENT_LOOP"]
         use_reactor = self.settings.getbool("TWISTED_ENABLED")
         if use_reactor:
+            reactor_class: str = self.settings["TWISTED_REACTOR"]
+            event_loop: str = self.settings["ASYNCIO_EVENT_LOOP"]
             if self._init_reactor:
                 # this needs to be done after the spider settings are merged,
                 # but before something imports twisted.internet.reactor
@@ -774,20 +774,32 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             handlers from Twisted and Scrapy (default: True)
         """
 
-        # TODO https://docs.python.org/3/library/asyncio-runner.html#handling-keyboard-interruption
-
         if not self.settings.getbool("TWISTED_ENABLED"):
-            loop = asyncio.get_event_loop()
-            if stop_after_crawl:
-                join_task = loop.create_task(self.join())
-                join_task.add_done_callback(lambda _: loop.stop())
-            try:
-                loop.run_forever()
-            finally:
-                loop.run_until_complete(loop.shutdown_asyncgens())
-                loop.close()
-            return
+            self._start_asyncio(stop_after_crawl, install_signal_handlers)
+        else:
+            self._start_twisted(stop_after_crawl, install_signal_handlers)
 
+    def _start_asyncio(
+        self, stop_after_crawl: bool, install_signal_handlers: bool
+    ) -> None:
+        # Very basic and will need multiple improvements.
+        # TODO https://docs.python.org/3/library/asyncio-runner.html#handling-keyboard-interruption
+        # TODO various exception handling
+        # TODO consider asyncio.run()
+
+        loop = asyncio.get_event_loop()
+        if stop_after_crawl:
+            join_task = loop.create_task(self.join())
+            join_task.add_done_callback(lambda _: loop.stop())
+        try:
+            loop.run_forever()  # blocking call
+        finally:
+            loop.run_until_complete(loop.shutdown_asyncgens())
+            loop.close()
+
+    def _start_twisted(
+        self, stop_after_crawl: bool, install_signal_handlers: bool
+    ) -> None:
         from twisted.internet import reactor
 
         if stop_after_crawl:
