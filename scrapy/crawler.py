@@ -381,6 +381,8 @@ class CrawlerRunner(CrawlerRunnerBase):
 
     def __init__(self, settings: dict[str, Any] | Settings | None = None):
         super().__init__(settings)
+        if not self.settings.getbool("TWISTED_ENABLED"):
+            raise RuntimeError("CrawlerRunner doesn't support TWISTED_ENABLED=False.")
         self._active: set[Deferred[None]] = set()
 
     def crawl(
@@ -505,12 +507,14 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
                 "The crawler_or_spidercls argument cannot be a spider object, "
                 "it must be a spider class (or a Crawler object)"
             )
-        if (
-            self.settings.getbool("TWISTED_ENABLED")
-            and not is_asyncio_reactor_installed()
-        ):
+        if self.settings.getbool("TWISTED_ENABLED"):
+            if not is_asyncio_reactor_installed():
+                raise RuntimeError(
+                    f"{type(self).__name__} requires AsyncioSelectorReactor when using a reactor."
+                )
+        elif is_reactor_installed():
             raise RuntimeError(
-                f"{type(self).__name__} requires AsyncioSelectorReactor when using a reactor."
+                "TWISTED_ENABLED is False but a Twisted reactor is installed."
             )
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
@@ -658,6 +662,8 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
         super().__init__(settings, install_root_handler)
         self._initialized_reactor: bool = False
         logger.debug("Using CrawlerProcess")
+        if not self.settings.getbool("TWISTED_ENABLED"):
+            raise RuntimeError("CrawlerProcess doesn't support TWISTED_ENABLED=False.")
 
     def _create_crawler(self, spidercls: type[Spider] | str) -> Crawler:
         if isinstance(spidercls, str):
@@ -740,6 +746,10 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         # spiders when using AsyncCrawlerProcess.
         loop_path = self.settings["ASYNCIO_EVENT_LOOP"]
         if not self.settings.getbool("TWISTED_ENABLED"):
+            if is_reactor_installed():
+                raise RuntimeError(
+                    "TWISTED_ENABLED is False but a Twisted reactor is installed."
+                )
             set_asyncio_event_loop(loop_path)
             install_reactor_import_hook()
         elif is_reactor_installed():
