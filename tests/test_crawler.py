@@ -800,6 +800,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             in log
         )
+        assert "is_reactorless(): False" in log
 
     def test_multi(self):
         log = self.run_script("multi.py")
@@ -1086,6 +1087,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         log = self.run_script("reactorless_simple.py")
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
+        assert "is_reactorless(): True" in log
         assert "ERROR: " not in log
         assert "WARNING: " not in log
 
@@ -1108,10 +1110,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         log = self.run_script("reactorless_telnetconsole.py")
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
-        assert (
-            "The TelnetConsole extension is not supported in the reactorless mode"
-            in log
-        )
+        assert "The TelnetConsole extension requires a Twisted reactor" in log
 
     def test_reactorless_reactor(self):
         log = self.run_script("reactorless_reactor.py")
@@ -1133,6 +1132,7 @@ class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             in log
         )
+        assert "is_reactorless(): False" in log
 
     def test_multi_parallel(self):
         log = self.run_script("multi_parallel.py")
@@ -1229,6 +1229,7 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         log = self.run_script("reactorless_simple.py")
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
+        assert "is_reactorless(): True" in log
         assert "ERROR: " not in log
         assert "WARNING: " not in log
 

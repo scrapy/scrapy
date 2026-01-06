@@ -14,10 +14,20 @@ if TYPE_CHECKING:
 
 
 def is_reactorless() -> bool:
+    """Check if we are running in the reactorless mode, i.e. with ``TWISTED_ENABLED=False``.
+
+    As this checks the runtime state and not the setting itself, it can be
+    wrong when executed very early, before the reactor and/or the asyncio event
+    loop are initiliazed.
+
+    .. versionadded:: VERSION
+    """
     return is_asyncio_available() and not is_reactor_installed()
 
 
 class ReactorImportHook(MetaPathFinder):
+    """Hook that prevents importing :mod:`twisted.internet.reactor`."""
+
     def find_spec(
         self,
         fullname: str,
@@ -32,4 +42,6 @@ class ReactorImportHook(MetaPathFinder):
 
 
 def install_reactor_import_hook() -> None:
+    """Prevent importing :mod:`twisted.internet.reactor`."""
+
     sys.meta_path.insert(0, ReactorImportHook())
