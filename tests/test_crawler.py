@@ -1095,7 +1095,7 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     def test_reactorless_import_hook(self):
         log = self.run_script("reactorless_import_hook.py")
         assert "Not using a Twisted reactor" in log
-        assert "Spider closed (finished)" not in log
+        assert "Spider closed (finished)" in log
         assert "ImportError: Import of twisted.internet.reactor is forbidden" in log
 
     def test_reactorless_telnetconsole(self):
