@@ -134,6 +134,7 @@ def get_reactor_settings() -> dict[str, Any]:
             "http": None,
             "https": None,
         }
+        settings["TELNETCONSOLE_ENABLED"] = False
     return settings
 
 
