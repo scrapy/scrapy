@@ -95,11 +95,11 @@ def pytest_runtest_setup(item):
     if item.get_closest_marker("requires_reactor") and reactor == "none":
         pytest.skip("This test requires a reactor")
 
-    if item.get_closest_marker("only_asyncio") and reactor != "asyncio":
-        pytest.skip("This test is only run with --reactor=asyncio")
+    if item.get_closest_marker("only_asyncio") and reactor not in {"asyncio", "none"}:
+        pytest.skip("This test is only run with --reactor=asyncio or --reactor=none")
 
-    if item.get_closest_marker("only_not_asyncio") and reactor == "asyncio":
-        pytest.skip("This test is only run without --reactor=asyncio")
+    if item.get_closest_marker("only_not_asyncio") and reactor in {"asyncio", "none"}:
+        pytest.skip("This test is only run without --reactor=asyncio or --reactor=none")
 
     # Skip tests requiring optional dependencies
     optional_deps = [
