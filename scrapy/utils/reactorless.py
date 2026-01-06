@@ -18,7 +18,7 @@ def is_reactorless() -> bool:
 
     As this checks the runtime state and not the setting itself, it can be
     wrong when executed very early, before the reactor and/or the asyncio event
-    loop are initiliazed.
+    loop are initialized.
 
     .. versionadded:: VERSION
     """
@@ -36,7 +36,8 @@ class ReactorImportHook(MetaPathFinder):
     ) -> ModuleSpec | None:
         if fullname == "twisted.internet.reactor":
             raise ImportError(
-                f"Import of {fullname} is forbidden in the reactorless mode, to avoid silent problems."
+                f"Import of {fullname} is forbidden when running without a Twisted reactor,"
+                f" as importing it installs the reactor, which can lead to unexpected behavior."
             )
         return None
 
