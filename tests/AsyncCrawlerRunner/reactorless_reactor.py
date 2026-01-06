@@ -15,7 +15,6 @@ class NoRequestsSpider(Spider):
 
 
 async def main():
-    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
     configure_logging()
     runner = AsyncCrawlerRunner(
         settings={
@@ -31,4 +30,5 @@ async def main():
     await runner.crawl(NoRequestsSpider)
 
 
+install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
 asyncio.run(main())
