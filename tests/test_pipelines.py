@@ -156,7 +156,7 @@ class TestPipeline:
     @deferred_f_from_coro_f
     async def test_pipeline(self, mockserver: MockServer, pipeline_class: type) -> None:
         crawler = self._create_crawler(pipeline_class)
-        await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+        await crawler.crawl_async(mockserver=mockserver)
         assert len(self.items) == 1
 
     @deferred_f_from_coro_f
@@ -176,7 +176,7 @@ class TestPipeline:
                 match="DeferredPipeline.process_item returned a Deferred",
             ),
         ):
-            await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+            await crawler.crawl_async(mockserver=mockserver)
         assert len(self.items) == 1
 
     @deferred_f_from_coro_f
@@ -196,7 +196,7 @@ class TestPipeline:
                 match=r"DeprecatedSpiderArgPipeline.process_item\(\) requires a spider argument",
             ),
         ):
-            await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+            await crawler.crawl_async(mockserver=mockserver)
 
         assert len(self.items) == 1
 
@@ -221,7 +221,7 @@ class TestPipeline:
         pipeline_class: type,
     ) -> None:
         crawler = self._create_crawler(pipeline_class)
-        await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+        await crawler.crawl_async(mockserver=mockserver)
         assert "Error processing {'field': 42}" in caplog.text
         assert "process_item error" in caplog.text
 
@@ -244,7 +244,7 @@ class TestPipeline:
     ) -> None:
         crawler = self._create_crawler(pipeline_class)
         with pytest.raises(ValueError, match="open_spider error"):
-            await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+            await crawler.crawl_async(mockserver=mockserver)
 
 
 class TestCustomPipelineManager:
@@ -285,7 +285,7 @@ class TestCustomPipelineManager:
         )
         crawler.spider = crawler._create_spider()
         crawler.signals.connect(_on_item_scraped, signals.item_scraped)
-        await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+        await crawler.crawl_async(mockserver=mockserver)
 
         assert len(items) == 1
 
@@ -343,7 +343,7 @@ class TestCustomPipelineManager:
                 match=r"CustomPipelineManager overrides process_item\(\) but doesn't override process_item_async\(\)",
             ),
         ):
-            await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+            await crawler.crawl_async(mockserver=mockserver)
 
         assert len(items) == 1
 
@@ -405,7 +405,7 @@ class TestCustomPipelineManager:
                 match=r"CustomPipelineManager doesn't define a process_item_async\(\) method",
             ),
         ):
-            await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+            await crawler.crawl_async(mockserver=mockserver)
 
         assert len(items) == 1
 

@@ -172,7 +172,7 @@ class ExecutionEngine:
     async def start_async(self, *, _start_request_processing: bool = True) -> None:
         """Start the execution engine.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         if self._starting:
             raise RuntimeError("Engine already running")
@@ -208,7 +208,7 @@ class ExecutionEngine:
     async def stop_async(self) -> None:
         """Gracefully stop the execution engine.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
 
         if not self._starting:
@@ -459,7 +459,7 @@ class ExecutionEngine:
 
          Only downloader middlewares are applied.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
@@ -575,7 +575,7 @@ class ExecutionEngine:
     async def close_spider_async(self, *, reason: str = "cancelled") -> None:
         """Close (cancel) spider and clear all its outstanding requests.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         if self.spider is None:
             raise RuntimeError("Spider not opened")

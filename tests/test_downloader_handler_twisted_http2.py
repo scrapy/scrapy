@@ -13,10 +13,7 @@ from twisted.web.error import SchemeNotSupported
 from twisted.web.http import H2_ENABLED
 
 from scrapy.http import Request
-from scrapy.spiders import Spider
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
-from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.test import get_crawler
 from tests.test_downloader_handlers_http_base import (
     TestHttpProxyBase,
     TestHttps11Base,
@@ -25,7 +22,6 @@ from tests.test_downloader_handlers_http_base import (
     TestHttpsInvalidDNSPatternBase,
     TestHttpsWrongHostnameBase,
     TestHttpWithCrawlerBase,
-    download_request,
 )
 
 if TYPE_CHECKING:
@@ -57,13 +53,12 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
     HTTP2_DATALOSS_SKIP_REASON = "Content-Length mismatch raises InvalidBodyLengthError"
 
     @deferred_f_from_coro_f
-    async def test_protocol(
-        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
-    ) -> None:
+    async def test_protocol(self, mockserver: MockServer) -> None:
         request = Request(
             mockserver.url("/host", is_secure=self.is_secure), method="GET"
         )
-        response = await download_request(download_handler, request)
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
         assert response.protocol == "h2"
 
     @deferred_f_from_coro_f
@@ -71,9 +66,6 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
         self, mockserver: MockServer
     ) -> None:
         from twisted.internet import reactor
-
-        crawler = get_crawler(settings_dict={"DOWNLOAD_MAXSIZE": 1_500})
-        download_handler = build_from_crawler(self.download_handler_cls, crawler)
 
         with mock.patch("scrapy.core.http2.stream.logger") as logger:
             request = Request(
@@ -83,8 +75,9 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
             def check(logger: mock.Mock) -> None:
                 logger.error.assert_called_once_with(mock.ANY)
 
-            with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
-                await download_request(download_handler, request, Spider("foo"))
+            async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
+                with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
+                    await download_handler.download_request(request)
 
             # As the error message is logged in the dataReceived callback, we
             # have to give a bit of time to the reactor to process the queue
@@ -95,12 +88,11 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
             await maybe_deferred_to_future(d)
 
     @deferred_f_from_coro_f
-    async def test_unsupported_scheme(
-        self, download_handler: DownloadHandlerProtocol
-    ) -> None:
+    async def test_unsupported_scheme(self) -> None:
         request = Request("ftp://unsupported.scheme")
-        with pytest.raises(SchemeNotSupported):
-            await download_request(download_handler, request)
+        async with self.get_dh() as download_handler:
+            with pytest.raises(SchemeNotSupported):
+                await download_handler.download_request(request)
 
     def test_download_cause_data_loss(self) -> None:  # type: ignore[override]
         pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
@@ -113,49 +105,46 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
 
     @deferred_f_from_coro_f
     async def test_concurrent_requests_same_domain(
-        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
+        self, mockserver: MockServer
     ) -> None:
         request1 = Request(mockserver.url("/text", is_secure=self.is_secure))
-        response1 = await download_request(download_handler, request1)
-        assert response1.body == b"Works"
-
         request2 = Request(
             mockserver.url("/echo", is_secure=self.is_secure), method="POST"
         )
-        response2 = await download_request(download_handler, request2)
-        assert response2.headers["Content-Length"] == b"79"
+        async with self.get_dh() as download_handler:
+            response1 = await download_handler.download_request(request1)
+            assert response1.body == b"Works"
+            response2 = await download_handler.download_request(request2)
+            assert response2.headers["Content-Length"] == b"79"
 
     @pytest.mark.xfail(reason="https://github.com/python-hyper/h2/issues/1247")
     @deferred_f_from_coro_f
-    async def test_connect_request(
-        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
-    ) -> None:
+    async def test_connect_request(self, mockserver: MockServer) -> None:
         request = Request(
             mockserver.url("/file", is_secure=self.is_secure), method="CONNECT"
         )
-        response = await download_request(download_handler, request)
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
         assert response.body == b""
 
     @deferred_f_from_coro_f
-    async def test_custom_content_length_good(
-        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
-    ) -> None:
+    async def test_custom_content_length_good(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/contentlength", is_secure=self.is_secure))
         custom_content_length = str(len(request.body))
         request.headers["Content-Length"] = custom_content_length
-        response = await download_request(download_handler, request)
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
         assert response.text == custom_content_length
 
     @deferred_f_from_coro_f
-    async def test_custom_content_length_bad(
-        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
-    ) -> None:
+    async def test_custom_content_length_bad(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/contentlength", is_secure=self.is_secure))
         actual_content_length = str(len(request.body))
         bad_content_length = str(len(request.body) + 1)
         request.headers["Content-Length"] = bad_content_length
-        with LogCapture() as log:
-            response = await download_request(download_handler, request)
+        async with self.get_dh() as download_handler:
+            with LogCapture() as log:
+                response = await download_handler.download_request(request)
         assert response.text == actual_content_length
         log.check_present(
             (
@@ -168,14 +157,13 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
         )
 
     @deferred_f_from_coro_f
-    async def test_duplicate_header(
-        self, mockserver: MockServer, download_handler: DownloadHandlerProtocol
-    ) -> None:
+    async def test_duplicate_header(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/echo", is_secure=self.is_secure))
         header, value1, value2 = "Custom-Header", "foo", "bar"
         request.headers.appendlist(header, value1)
         request.headers.appendlist(header, value2)
-        response = await download_request(download_handler, request)
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
         assert json.loads(response.text)["headers"][header] == [value1, value2]
 
 
@@ -217,26 +205,18 @@ class TestHttps2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
 
     @deferred_f_from_coro_f
     async def test_download_with_proxy_https_timeout(
-        self,
-        proxy_mockserver: ProxyEchoMockServer,
-        download_handler: DownloadHandlerProtocol,
+        self, proxy_mockserver: ProxyEchoMockServer
     ) -> None:
         with pytest.raises(NotImplementedError):
             await maybe_deferred_to_future(
-                super().test_download_with_proxy_https_timeout(
-                    proxy_mockserver, download_handler
-                )
+                super().test_download_with_proxy_https_timeout(proxy_mockserver)
             )
 
     @deferred_f_from_coro_f
     async def test_download_with_proxy_without_http_scheme(
-        self,
-        proxy_mockserver: ProxyEchoMockServer,
-        download_handler: DownloadHandlerProtocol,
+        self, proxy_mockserver: ProxyEchoMockServer
     ) -> None:
         with pytest.raises(SchemeNotSupported):
             await maybe_deferred_to_future(
-                super().test_download_with_proxy_without_http_scheme(
-                    proxy_mockserver, download_handler
-                )
+                super().test_download_with_proxy_without_http_scheme(proxy_mockserver)
             )

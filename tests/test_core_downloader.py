@@ -188,4 +188,4 @@ async def test_fetch_deprecated_spider_arg():
         ScrapyDeprecationWarning,
         match=r"The fetch\(\) method of .+\.CustomDownloader requires a spider argument",
     ):
-        await maybe_deferred_to_future(crawler.crawl())
+        await crawler.crawl_async()

@@ -19,7 +19,6 @@ from scrapy.extension import ExtensionManager
 from scrapy.settings import Settings, overridden_settings
 from scrapy.signalmanager import SignalManager
 from scrapy.spiderloader import SpiderLoaderProtocol, get_spider_loader
-from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.log import (
     configure_logging,
@@ -106,10 +105,10 @@ class Crawler:
             self,
         )
 
-        reactor_class: str = self.settings["TWISTED_REACTOR"]
-        event_loop: str = self.settings["ASYNCIO_EVENT_LOOP"]
         use_reactor = self.settings.getbool("TWISTED_ENABLED")
         if use_reactor:
+            reactor_class: str = self.settings["TWISTED_REACTOR"]
+            event_loop: str = self.settings["ASYNCIO_EVENT_LOOP"]
             if self._init_reactor:
                 # this needs to be done after the spider settings are merged,
                 # but before something imports twisted.internet.reactor
@@ -172,16 +171,10 @@ class Crawler:
         *args* and *kwargs* arguments, while setting the execution engine in
         motion. Should be called only once.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
 
         Complete when the crawl is finished.
-
-        This function requires
-        :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
-        installed.
         """
-        if not is_asyncio_available():
-            raise RuntimeError("Crawler.crawl_async() requires AsyncioSelectorReactor.")
         if self.crawling:
             raise RuntimeError("Crawling already taking place")
         if self._started:
@@ -222,7 +215,7 @@ class Crawler:
     async def stop_async(self) -> None:
         """Start a graceful stop of the crawler and complete when the crawler is stopped.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         if self.crawling:
             self.crawling = False
@@ -388,6 +381,10 @@ class CrawlerRunner(CrawlerRunnerBase):
 
     def __init__(self, settings: dict[str, Any] | Settings | None = None):
         super().__init__(settings)
+        if not self.settings.getbool("TWISTED_ENABLED"):
+            raise RuntimeError(
+                f"{type(self).__name__} doesn't support TWISTED_ENABLED=False."
+            )
         self._active: set[Deferred[None]] = set()
 
     def crawl(
@@ -512,12 +509,14 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
                 "The crawler_or_spidercls argument cannot be a spider object, "
                 "it must be a spider class (or a Crawler object)"
             )
-        if (
-            self.settings.getbool("TWISTED_ENABLED")
-            and not is_asyncio_reactor_installed()
-        ):
+        if self.settings.getbool("TWISTED_ENABLED"):
+            if not is_asyncio_reactor_installed():
+                raise RuntimeError(
+                    f"{type(self).__name__} requires AsyncioSelectorReactor when using a reactor."
+                )
+        elif is_reactor_installed():
             raise RuntimeError(
-                f"{type(self).__name__} requires AsyncioSelectorReactor when using a reactor."
+                "TWISTED_ENABLED is False but a Twisted reactor is installed."
             )
         crawler = self.create_crawler(crawler_or_spidercls)
         return self._crawl(crawler, *args, **kwargs)
@@ -747,6 +746,10 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
         # spiders when using AsyncCrawlerProcess.
         loop_path = self.settings["ASYNCIO_EVENT_LOOP"]
         if not self.settings.getbool("TWISTED_ENABLED"):
+            if is_reactor_installed():
+                raise RuntimeError(
+                    "TWISTED_ENABLED is False but a Twisted reactor is installed."
+                )
             set_asyncio_event_loop(loop_path)
             install_reactor_import_hook()
         elif is_reactor_installed():
@@ -781,20 +784,32 @@ class AsyncCrawlerProcess(CrawlerProcessBase, AsyncCrawlerRunner):
             handlers from Twisted and Scrapy (default: True)
         """
 
-        # TODO https://docs.python.org/3/library/asyncio-runner.html#handling-keyboard-interruption
-
         if not self.settings.getbool("TWISTED_ENABLED"):
-            loop = asyncio.get_event_loop()
-            if stop_after_crawl:
-                join_task = loop.create_task(self.join())
-                join_task.add_done_callback(lambda _: loop.stop())
-            try:
-                loop.run_forever()
-            finally:
-                loop.run_until_complete(loop.shutdown_asyncgens())
-                loop.close()
-            return
+            self._start_asyncio(stop_after_crawl, install_signal_handlers)
+        else:
+            self._start_twisted(stop_after_crawl, install_signal_handlers)
 
+    def _start_asyncio(
+        self, stop_after_crawl: bool, install_signal_handlers: bool
+    ) -> None:
+        # Very basic and will need multiple improvements.
+        # TODO https://docs.python.org/3/library/asyncio-runner.html#handling-keyboard-interruption
+        # TODO various exception handling
+        # TODO consider asyncio.run()
+
+        loop = asyncio.get_event_loop()
+        if stop_after_crawl:
+            join_task = loop.create_task(self.join())
+            join_task.add_done_callback(lambda _: loop.stop())
+        try:
+            loop.run_forever()  # blocking call
+        finally:
+            loop.run_until_complete(loop.shutdown_asyncgens())
+            loop.close()
+
+    def _start_twisted(
+        self, stop_after_crawl: bool, install_signal_handlers: bool
+    ) -> None:
         from twisted.internet import reactor
 
         if stop_after_crawl:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+from abc import ABC, abstractmethod
 from pathlib import Path
 from tempfile import mkstemp
 from typing import TYPE_CHECKING, Any
@@ -13,20 +14,21 @@ from twisted.cred import checkers, credentials, portal
 from scrapy.core.downloader.handlers.ftp import FTPDownloadHandler
 from scrapy.http import HtmlResponse, Request, Response
 from scrapy.http.response.text import TextResponse
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
-from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
 
+    from twisted.protocols.ftp import FTPFactory
+
 
 pytestmark = pytest.mark.requires_reactor
 
 
-class TestFTPBase:
+class TestFTPBase(ABC):
     username = "scrapy"
     password = "passwd"
     req_meta: dict[str, Any] = {"ftp_user": username, "ftp_password": password}
@@ -37,21 +39,13 @@ class TestFTPBase:
         ("html-file-without-extension", b"<!DOCTYPE html>\n<title>.</title>"),
     )
 
+    @abstractmethod
     def _create_files(self, root: Path) -> None:
-        userdir = root / self.username
-        userdir.mkdir()
-        for filename, content in self.test_files:
-            (userdir / filename).write_bytes(content)
+        raise NotImplementedError
 
-    def _get_factory(self, root):
-        from twisted.protocols.ftp import FTPFactory, FTPRealm
-
-        realm = FTPRealm(anonymousRoot=str(root), userHome=str(root))
-        p = portal.Portal(realm)
-        users_checker = checkers.InMemoryUsernamePasswordDatabaseDontUse()
-        users_checker.addUser(self.username, self.password)
-        p.registerChecker(users_checker, credentials.IUsernamePassword)
-        return FTPFactory(portal=p)
+    @abstractmethod
+    def _get_factory(self, tmp_path: Path) -> FTPFactory:
+        raise NotImplementedError
 
     @async_yield_fixture
     async def server_url(self, tmp_path: Path) -> AsyncGenerator[str]:
@@ -79,18 +73,12 @@ class TestFTPBase:
             assert dh.client.transport
             dh.client.transport.loseConnection()
 
-    @staticmethod
-    async def download_request(dh: FTPDownloadHandler, request: Request) -> Response:
-        return await maybe_deferred_to_future(
-            dh.download_request(request, DefaultSpider())
-        )
-
     @deferred_f_from_coro_f
     async def test_ftp_download_success(
         self, server_url: str, dh: FTPDownloadHandler
     ) -> None:
         request = Request(url=server_url + "file.txt", meta=self.req_meta)
-        r = await self.download_request(dh, request)
+        r = await dh.download_request(request)
         assert r.status == 200
         assert r.body == b"I have the power!"
         assert r.headers == {b"Local Filename": [b""], b"Size": [b"17"]}
@@ -104,7 +92,7 @@ class TestFTPBase:
             url=server_url + "file with spaces.txt",
             meta=self.req_meta,
         )
-        r = await self.download_request(dh, request)
+        r = await dh.download_request(request)
         assert r.status == 200
         assert r.body == b"Moooooooooo power!"
         assert r.headers == {b"Local Filename": [b""], b"Size": [b"18"]}
@@ -114,8 +102,9 @@ class TestFTPBase:
         self, server_url: str, dh: FTPDownloadHandler
     ) -> None:
         request = Request(url=server_url + "nonexistent.txt", meta=self.req_meta)
-        r = await self.download_request(dh, request)
+        r = await dh.download_request(request)
         assert r.status == 404
+        assert r.body == b"['550 nonexistent.txt: No such file or directory.']"
 
     @deferred_f_from_coro_f
     async def test_ftp_local_filename(
@@ -128,7 +117,7 @@ class TestFTPBase:
         meta = {"ftp_local_filename": fname_bytes}
         meta.update(self.req_meta)
         request = Request(url=server_url + "file.txt", meta=meta)
-        r = await self.download_request(dh, request)
+        r = await dh.download_request(request)
         assert r.body == fname_bytes
         assert r.headers == {b"Local Filename": [fname_bytes], b"Size": [b"17"]}
         assert local_path.exists()
@@ -156,12 +145,28 @@ class TestFTPBase:
         meta = {}
         meta.update(self.req_meta)
         request = Request(url=server_url + filename, meta=meta)
-        r = await self.download_request(dh, request)
+        r = await dh.download_request(request)
         assert type(r) is response_class  # pylint: disable=unidiomatic-typecheck
         local_fname_path.unlink()
 
 
 class TestFTP(TestFTPBase):
+    def _create_files(self, root: Path) -> None:
+        userdir = root / self.username
+        userdir.mkdir()
+        for filename, content in self.test_files:
+            (userdir / filename).write_bytes(content)
+
+    def _get_factory(self, root):
+        from twisted.protocols.ftp import FTPFactory, FTPRealm
+
+        realm = FTPRealm(anonymousRoot=str(root), userHome=str(root))
+        p = portal.Portal(realm)
+        users_checker = checkers.InMemoryUsernamePasswordDatabaseDontUse()
+        users_checker.addUser(self.username, self.password)
+        p.registerChecker(users_checker, credentials.IUsernamePassword)
+        return FTPFactory(portal=p)
+
     @deferred_f_from_coro_f
     async def test_invalid_credentials(
         self, server_url: str, dh: FTPDownloadHandler, reactor_pytest: str
@@ -177,7 +182,7 @@ class TestFTP(TestFTPBase):
         meta.update({"ftp_password": "invalid"})
         request = Request(url=server_url + "file.txt", meta=meta)
         with pytest.raises(ConnectionLost):
-            await self.download_request(dh, request)
+            await dh.download_request(request)
 
 
 class TestAnonymousFTP(TestFTPBase):

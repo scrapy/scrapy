@@ -82,7 +82,7 @@ class TestMain:
         settings = {"SCHEDULER": MemoryScheduler}
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_url, signals.request_reached_downloader)
-        await maybe_deferred_to_future(crawler.crawl())
+        await crawler.crawl_async()
         assert crawler.stats.get_value("finish_reason") == "finished"
         expected_urls = ["data:,a", "data:,b", "data:,c", "data:,d"]
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
@@ -113,7 +113,7 @@ class TestMain:
 
         caplog.clear()
         with caplog.at_level(ERROR):
-            await maybe_deferred_to_future(crawler.crawl())
+            await crawler.crawl_async()
 
         assert not caplog.records
         assert crawler.stats
@@ -183,7 +183,7 @@ class TestRequestSendOrder:
 
         crawler = get_crawler(TestSpider, settings_dict=settings)
         crawler.signals.connect(track_num, signals.request_reached_downloader)
-        await maybe_deferred_to_future(crawler.crawl())
+        await crawler.crawl_async()
         assert crawler.stats.get_value("finish_reason") == "finished"
         expected_nums = sorted(start_nums + cb_nums)
         assert actual_nums == expected_nums, f"{actual_nums=} != {expected_nums=}"

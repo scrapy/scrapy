@@ -7,7 +7,6 @@ from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot
 from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
@@ -145,7 +144,7 @@ async def test_none_slot_with_priority_queue(
         DownloaderSlotsSettingsTestSpider,
         settings_dict={"SCHEDULER_PRIORITY_QUEUE": priority_queue_class},
     )
-    await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+    await crawler.crawl_async(mockserver=mockserver)
     assert isinstance(crawler.spider, DownloaderSlotsSettingsTestSpider)
 
     assert hasattr(crawler.spider, "times")

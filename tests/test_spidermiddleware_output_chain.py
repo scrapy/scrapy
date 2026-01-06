@@ -1,7 +1,6 @@
 from testfixtures import LogCapture
 
 from scrapy import Request, Spider
-from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.utils.decorators import deferred_f_from_coro_f
@@ -334,7 +333,7 @@ class TestSpiderMiddleware:
     async def crawl_log(self, spider: type[Spider]) -> LogCapture:
         crawler = get_crawler(spider)
         with LogCapture() as log:
-            await maybe_deferred_to_future(crawler.crawl(mockserver=self.mockserver))
+            await crawler.crawl_async(mockserver=self.mockserver)
         return log
 
     @deferred_f_from_coro_f

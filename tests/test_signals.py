@@ -1,7 +1,6 @@
 import pytest
 
 from scrapy import Request, Spider, signals
-from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.mockserver.http import MockServer
 from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
@@ -30,7 +29,7 @@ class TestMain:
             calls.append(object())
 
         crawler.signals.connect(track_call, signals.scheduler_empty)
-        await maybe_deferred_to_future(crawler.crawl())
+        await crawler.crawl_async()
         assert len(calls) >= 1
 
 
