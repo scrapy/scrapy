@@ -1042,6 +1042,12 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             in log
         )
 
+    def test_reactorless(self):
+        log = self.run_script("reactorless.py")
+        assert (
+            "RuntimeError: CrawlerProcess doesn't support TWISTED_ENABLED=False" in log
+        )
+
 
 class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     @property
@@ -1104,6 +1110,13 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "Spider closed (finished)" in log
         assert (
             "The TelnetConsole extension is not supported in the reactorless mode"
+            in log
+        )
+
+    def test_reactorless_reactor(self):
+        log = self.run_script("reactorless_reactor.py")
+        assert (
+            "RuntimeError: TWISTED_ENABLED is False but a Twisted reactor is installed"
             in log
         )
 
@@ -1195,6 +1208,12 @@ class TestCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         )
         assert "DEBUG: Using asyncio event loop" in log
 
+    def test_reactorless(self):
+        log = self.run_script("reactorless.py")
+        assert (
+            "RuntimeError: CrawlerRunner doesn't support TWISTED_ENABLED=False" in log
+        )
+
 
 class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
     @property
@@ -1221,6 +1240,13 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert "'item_scraped_count': 1" in log
         assert "ERROR: " not in log
         assert "WARNING: " not in log
+
+    def test_reactorless_reactor(self):
+        log = self.run_script("reactorless_reactor.py")
+        assert (
+            "RuntimeError: TWISTED_ENABLED is False but a Twisted reactor is installed"
+            in log
+        )
 
 
 @pytest.mark.parametrize(

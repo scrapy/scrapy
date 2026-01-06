@@ -382,7 +382,9 @@ class CrawlerRunner(CrawlerRunnerBase):
     def __init__(self, settings: dict[str, Any] | Settings | None = None):
         super().__init__(settings)
         if not self.settings.getbool("TWISTED_ENABLED"):
-            raise RuntimeError("CrawlerRunner doesn't support TWISTED_ENABLED=False.")
+            raise RuntimeError(
+                f"{type(self).__name__} doesn't support TWISTED_ENABLED=False."
+            )
         self._active: set[Deferred[None]] = set()
 
     def crawl(
@@ -662,8 +664,6 @@ class CrawlerProcess(CrawlerProcessBase, CrawlerRunner):
         super().__init__(settings, install_root_handler)
         self._initialized_reactor: bool = False
         logger.debug("Using CrawlerProcess")
-        if not self.settings.getbool("TWISTED_ENABLED"):
-            raise RuntimeError("CrawlerProcess doesn't support TWISTED_ENABLED=False.")
 
     def _create_crawler(self, spidercls: type[Spider] | str) -> Crawler:
         if isinstance(spidercls, str):
