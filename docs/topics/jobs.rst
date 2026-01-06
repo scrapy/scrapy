@@ -11,9 +11,7 @@ Scrapy supports this functionality out of the box by providing the following
 facilities:
 
 * a scheduler that persists scheduled requests on disk
-
 * a duplicates filter that persists visited requests on disk
-
 * an extension that keeps some spider state (key/value pairs) persistent
   between batches
 
@@ -59,6 +57,75 @@ is omitted for brevity):
         # parse item here
         self.state["items_count"] = self.state.get("items_count", 0) + 1
 
+Files created in JOBDIR
+=======================
+
+When you enable job persistence, Scrapy creates several files inside the ``JOBDIR``
+to store the state of your crawl. Understanding these files can help you debug
+issues and manage your crawls effectively.
+
+requests.seen
+-------------
+
+This file contains SHA1 fingerprints of URLs that have been processed (one per line).
+It is used by the :class:`~scrapy.dupefilters.RFPDupeFilter` to prevent crawling
+the same URL twice.
+
+**Structure**: Plain text file with one SHA1 hash per line.
+
+**Usage**: When Scrapy resumes a crawl, it reads this file to rebuild the in-memory
+set of visited URLs. The file is appended to in real-time as requests are processed.
+
+Example content::
+
+    198e506499442eaaaa6027b27f648b1fa2d4b636
+    8c78883bc76ebe66d1cf7e05306ff9438d340785
+    694b550106be20910b0ede19fcdcdb5d9fea8542
+
+requests.queue
+--------------
+
+This directory contains the pending requests that have been scheduled but not yet
+processed. The structure is managed by the scheduler's priority queue implementation
+(by default :class:`~scrapy.pqueues.ScrapyPriorityQueue`).
+
+**Structure**: The directory contains:
+
+* ``active.json``: Metadata about active priority queues, mapping hostnames to their
+  priority levels. Example: ``{"www.example.com": [6, 7], "www.github.com": [7]}``
+
+* ``{hostname}-{hash}/``: Subdirectories for each download slot, named with a
+  filesystem-safe hostname and its MD5 hash to prevent collisions.
+
+  * ``{priority}/``: Subdirectories for each priority level.
+
+    * ``q000000``, ``q000001``, etc.: Binary files containing serialized (pickled)
+      request objects, managed by the `queuelib <https://github.com/scrapy/queuelib>`_
+      library.
+
+    * ``info.json``: Metadata about the queue files (e.g., ``{"chunksize": 100000,
+      "size": 28, "tail": [0, 18, 4986], "head": [0, 46]}``). Written only on clean
+      shutdown.
+
+**Note**: The ``active.json`` and ``info.json`` files are only written when the
+spider closes cleanly. If the spider crashes, these files may be missing or outdated,
+but Scrapy can still recover pending requests from the ``q*`` files.
+
+spider.state
+------------
+
+This file contains the pickled contents of the ``spider.state`` dictionary, which
+allows spiders to persist custom data between runs.
+
+**Structure**: Binary file containing a pickled Python dictionary.
+
+**Usage**: Read when the spider starts and written when it closes cleanly. By default,
+Scrapy spiders have an empty state dictionary, so this file will contain an empty
+dict unless your spider explicitly uses ``spider.state``.
+
+Example (when unpickled): ``{}`` for an empty state, or ``{"items_count": 42,
+"last_page": "https://example.com/page/5"}`` if your spider stores custom data.
+
 Persistence gotchas
 ===================
 
@@ -71,7 +138,6 @@ Cookies expiration
 Cookies may expire. So, if you don't resume your spider quickly the requests
 scheduled may no longer work. This won't be an issue if your spider doesn't rely
 on cookies.
-
 
 .. _request-serialization:
 
