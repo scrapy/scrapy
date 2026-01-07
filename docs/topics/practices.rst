@@ -274,6 +274,169 @@ finishes before starting the next one:
 
 .. seealso:: :ref:`run-from-script`.
 
+.. _reactorless-mode:
+
+Reactorless mode
+================
+
+With :class:`~scrapy.crawler.AsyncCrawlerRunner` and the asyncio reactor, you can run Scrapy crawlers without explicitly calling :meth:`~twisted.internet.reactor.run` or using :func:`twisted.internet.task.react`. This is known as "reactorless mode" and allows you to use standard asyncio patterns like :func:`asyncio.run` to run your crawlers.
+
+Reactorless mode is only available when using :class:`~scrapy.crawler.AsyncCrawlerRunner` with the :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` (which is the default reactor). The reactor still needs to be installed (via :func:`~scrapy.utils.reactor.install_reactor`), but you don't need to explicitly start or stop it—the asyncio event loop handles the reactor's execution automatically.
+
+Here's a simple example using reactorless mode with :func:`asyncio.run`:
+
+.. code-block:: python
+
+    import asyncio
+    import scrapy
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.log import configure_logging
+    from scrapy.utils.reactor import install_reactor
+
+
+    class MySpider(scrapy.Spider):
+        name = "myspider"
+        start_urls = ["https://example.com"]
+
+        def parse(self, response):
+            yield {"url": response.url}
+
+
+    async def main():
+        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+        
+        runner = AsyncCrawlerRunner()
+        await runner.crawl(MySpider)
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
+
+When using reactorless mode, you can also use custom asyncio event loops by setting the :setting:`ASYNCIO_EVENT_LOOP` setting:
+
+.. code-block:: python
+
+    import asyncio
+    import scrapy
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.log import configure_logging
+    from scrapy.utils.reactor import install_reactor
+    from scrapy.settings import Settings
+
+
+    class MySpider(scrapy.Spider):
+        name = "myspider"
+        start_urls = ["https://example.com"]
+
+        def parse(self, response):
+            yield {"url": response.url}
+
+
+    async def main():
+        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+        
+        settings = Settings()
+        settings.set("ASYNCIO_EVENT_LOOP", "uvloop.Loop")  # Use uvloop if available
+        
+        install_reactor(
+            "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+            event_loop_path=settings.get("ASYNCIO_EVENT_LOOP")
+        )
+        
+        runner = AsyncCrawlerRunner(settings)
+        await runner.crawl(MySpider)
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
+
+You can also run multiple spiders sequentially or concurrently in reactorless mode.
+
+To run them concurrently:
+
+.. code-block:: python
+
+    import asyncio
+    import scrapy
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.log import configure_logging
+    from scrapy.utils.reactor import install_reactor
+
+
+    class MySpider1(scrapy.Spider):
+        name = "spider1"
+        # Your first spider definition
+        ...
+
+
+    class MySpider2(scrapy.Spider):
+        name = "spider2"
+        # Your second spider definition
+        ...
+
+
+    async def main():
+        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+        
+        runner = AsyncCrawlerRunner()
+        
+        # Run spiders concurrently
+        runner.crawl(MySpider1)
+        runner.crawl(MySpider2)
+        await runner.join()  # Wait for both to complete
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
+
+Or run them sequentially:
+
+.. code-block:: python
+
+    import asyncio
+    import scrapy
+    from scrapy.crawler import AsyncCrawlerRunner
+    from scrapy.utils.log import configure_logging
+    from scrapy.utils.reactor import install_reactor
+
+
+    class MySpider1(scrapy.Spider):
+        name = "spider1"
+        # Your first spider definition
+        ...
+
+
+    class MySpider2(scrapy.Spider):
+        name = "spider2"
+        # Your second spider definition
+        ...
+
+
+    async def main():
+        configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
+        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+        
+        runner = AsyncCrawlerRunner()
+        await runner.crawl(MySpider1)
+        await runner.crawl(MySpider2)
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
+
+.. important:: Reactorless mode requires:
+
+    * Python 3.10 or higher
+    * The :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` (default)
+    * Using :class:`~scrapy.crawler.AsyncCrawlerRunner` instead of :class:`~scrapy.crawler.AsyncCrawlerProcess`
+    * The reactor must still be installed via :func:`~scrapy.utils.reactor.install_reactor`, but it doesn't need to be explicitly started
+
+.. note:: When using reactorless mode, you cannot use features that require explicit reactor control, such as signal handlers that depend on reactor startup/shutdown events. For such use cases, use :class:`~scrapy.crawler.AsyncCrawlerProcess` or :class:`~scrapy.crawler.CrawlerProcess` instead.
+
+.. seealso:: :ref:`run-from-script`, :ref:`using-asyncio`.
+
 .. skip: end
 
 .. _distributed-crawls:
