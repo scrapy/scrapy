@@ -285,6 +285,8 @@ Reactorless mode is only available when using :class:`~scrapy.crawler.AsyncCrawl
 
 Here's a simple example using reactorless mode with :func:`asyncio.run`:
 
+.. note:: :func:`~scrapy.utils.reactor.install_reactor` can be called either before or inside the async function. For custom event loops (like uvloop), it's recommended to call it before :func:`asyncio.run` to ensure the correct event loop is used from the start.
+
 .. code-block:: python
 
     import asyncio
@@ -302,10 +304,12 @@ Here's a simple example using reactorless mode with :func:`asyncio.run`:
             yield {"url": response.url}
 
 
+    # Install reactor before asyncio.run() (optional: can also be called inside main())
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+
+
     async def main():
         configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
-        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
-        
         runner = AsyncCrawlerRunner()
         await runner.crawl(MySpider)
 
@@ -313,7 +317,10 @@ Here's a simple example using reactorless mode with :func:`asyncio.run`:
     if __name__ == "__main__":
         asyncio.run(main())
 
-When using reactorless mode, you can also use custom asyncio event loops by setting the :setting:`ASYNCIO_EVENT_LOOP` setting:
+Using custom asyncio event loops
+----------------------------------
+
+When using reactorless mode, you can also use custom asyncio event loops (such as uvloop) by setting the :setting:`ASYNCIO_EVENT_LOOP` setting. For custom event loops, it's recommended to call :func:`~scrapy.utils.reactor.install_reactor` before :func:`asyncio.run` to ensure the correct event loop is used:
 
 .. code-block:: python
 
@@ -333,23 +340,27 @@ When using reactorless mode, you can also use custom asyncio event loops by sett
             yield {"url": response.url}
 
 
+    # Install reactor with custom event loop before asyncio.run()
+    settings = Settings()
+    settings.set("ASYNCIO_EVENT_LOOP", "uvloop.Loop")  # Use uvloop if available
+
+    install_reactor(
+        "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
+        event_loop_path=settings.get("ASYNCIO_EVENT_LOOP")
+    )
+
+
     async def main():
         configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
-        
-        settings = Settings()
-        settings.set("ASYNCIO_EVENT_LOOP", "uvloop.Loop")  # Use uvloop if available
-        
-        install_reactor(
-            "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
-            event_loop_path=settings.get("ASYNCIO_EVENT_LOOP")
-        )
-        
         runner = AsyncCrawlerRunner(settings)
         await runner.crawl(MySpider)
 
 
     if __name__ == "__main__":
         asyncio.run(main())
+
+Running multiple spiders
+-------------------------
 
 You can also run multiple spiders sequentially or concurrently in reactorless mode.
 
@@ -376,10 +387,12 @@ To run them concurrently:
         ...
 
 
+    # Install reactor before asyncio.run()
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+
+
     async def main():
         configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
-        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
-        
         runner = AsyncCrawlerRunner()
         
         # Run spiders concurrently
@@ -414,10 +427,12 @@ Or run them sequentially:
         ...
 
 
+    # Install reactor before asyncio.run()
+    install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+
+
     async def main():
         configure_logging({"LOG_FORMAT": "%(levelname)s: %(message)s"})
-        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
-        
         runner = AsyncCrawlerRunner()
         await runner.crawl(MySpider1)
         await runner.crawl(MySpider2)
