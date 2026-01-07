@@ -61,7 +61,6 @@ def _wrong_credentials(proxy_url):
     return urlunsplit(bad_auth_proxy)
 
 
-@pytest.mark.requires_http_handler
 @pytest.mark.requires_mitmproxy
 class TestProxyConnect:
     @classmethod

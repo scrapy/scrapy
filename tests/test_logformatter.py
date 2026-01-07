@@ -253,7 +253,6 @@ class DropSomeItemsPipeline:
         self.drop = True
 
 
-@pytest.mark.requires_http_handler
 class TestShowOrSkipMessages:
     @classmethod
     def setup_class(cls):

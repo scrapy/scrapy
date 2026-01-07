@@ -67,7 +67,6 @@ class TestCrawl:
     def setup_method(self):
         self.runner = CrawlerRunner()
 
-    @pytest.mark.requires_http_handler
     @inline_callbacks_test
     def test_delay(self):
         crawler = get_crawler(DownloaderSlotsSettingsTestSpider)
@@ -129,7 +128,6 @@ def test_get_slot_deprecated_spider_arg():
     assert slot1 == slot2
 
 
-@pytest.mark.requires_http_handler
 @pytest.mark.parametrize(
     "priority_queue_class",
     [
