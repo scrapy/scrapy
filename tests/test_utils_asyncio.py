@@ -14,13 +14,14 @@ from scrapy.utils.asyncio import (
     _parallel_asyncio,
     is_asyncio_available,
 )
-from scrapy.utils.defer import deferred_f_from_coro_f
+from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
 
 class TestAsyncio:
+    @pytest.mark.requires_reactor  # needs a reactor or an event loop for is_asyncio_available()
     def test_is_asyncio_available(self, reactor_pytest: str) -> None:
         # the result should depend only on the pytest --reactor argument
         assert is_asyncio_available() == (reactor_pytest == "asyncio")
@@ -103,6 +104,7 @@ class TestParallelAsyncio:
             assert max_parallel_count[0] <= self.CONCURRENT_ITEMS
 
 
+@pytest.mark.requires_reactor  # needs a running event loop for AsyncioLoopingCall.start()
 @pytest.mark.only_asyncio
 class TestAsyncioLoopingCall:
     def test_looping_call(self):
