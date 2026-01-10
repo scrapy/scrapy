@@ -99,9 +99,9 @@ def test_params():
     crawler = get_crawler(DefaultSpider, settings_dict=settings)
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
-    downloader._slot_gc_loop.stop()  # Prevent an unclean reactor.
     request = Request("https://example.com")
     _, actual = downloader._get_slot(request)
+    downloader.close()
     expected = Slot(**params)
     for param in params:
         assert getattr(expected, param) == getattr(actual, param), (
@@ -113,7 +113,6 @@ def test_get_slot_deprecated_spider_arg():
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
-    downloader._slot_gc_loop.stop()  # Prevent an unclean reactor.
     request = Request("https://example.com")
 
     with pytest.warns(
@@ -122,6 +121,7 @@ def test_get_slot_deprecated_spider_arg():
     ):
         key1, slot1 = downloader._get_slot(request, spider=crawler.spider)
     key2, slot2 = downloader._get_slot(request)
+    downloader.close()
 
     assert key1 == key2
     assert slot1 == slot2
