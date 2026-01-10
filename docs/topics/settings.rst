@@ -1050,7 +1050,7 @@ Default: ``True``
 Whether or not to fail on broken responses, that is, declared
 ``Content-Length`` does not match content sent by the server or chunked
 response was not properly finish. If ``True``, these responses raise a
-``ResponseFailed([_DataLoss])`` error. If ``False``, these responses
+:exc:`~scrapy.exceptions.ResponseDataLoss` error. If ``False``, these responses
 are passed through and the flag ``dataloss`` is added to the response, i.e.:
 ``'dataloss' in response.flags`` is ``True``.
 
@@ -1064,7 +1064,8 @@ Optionally, this can be set per-request basis by using the
   corruption. It is up to the user to decide if it makes sense to process
   broken responses considering they may contain partial or incomplete content.
   If :setting:`RETRY_ENABLED` is ``True`` and this setting is set to ``True``,
-  the ``ResponseFailed([_DataLoss])`` failure will be retried as usual.
+  the :exc:`~scrapy.exceptions.ResponseDataLoss` failure will be retried as
+  usual.
 
 .. note::
 
