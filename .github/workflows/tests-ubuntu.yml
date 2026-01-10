@@ -93,4 +93,4 @@ jobs:
       if: ${{ !cancelled() }}
       uses: codecov/codecov-action@v5
       with:
-        report-type: test_results
+        report_type: test_results
