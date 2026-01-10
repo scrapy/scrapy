@@ -66,6 +66,5 @@ jobs:
       if: ${{ !cancelled() }}
       uses: codecov/codecov-action@v5
       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
         report-type: test_results
 
