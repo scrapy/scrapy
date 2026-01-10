@@ -164,7 +164,13 @@ def _get_handler(settings: Settings) -> logging.Handler:
         encoding = settings.get("LOG_ENCODING")
         handler = logging.FileHandler(filename, mode=mode, encoding=encoding)
     elif settings.getbool("LOG_ENABLED"):
-        handler = logging.StreamHandler()
+        if settings.getbool("LOG_SYSTEMD", False):
+            # Opt-in systemd journal logging, will raise if systemd.journal is missing
+            import systemd.journal  # noqa: PLC0415, pylint: disable=import-error
+
+            handler = systemd.journal.JournalHandler()
+        else:
+            handler = logging.StreamHandler()
     else:
         handler = logging.NullHandler()
 
