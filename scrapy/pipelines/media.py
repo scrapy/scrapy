@@ -31,6 +31,8 @@ from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
+    from collections.abc import Awaitable
+
     from typing_extensions import Self
 
     from scrapy import Spider
@@ -209,7 +211,9 @@ class MediaPipeline(ABC):
             self._modify_media_request(request)
             assert self.crawler.engine
             response = await self.crawler.engine.download_async(request)
-            return self.media_downloaded(response, request, info, item=item)
+            return await ensure_awaitable(
+                self.media_downloaded(response, request, info, item=item)
+            )
         except Exception:
             failure = self.media_failed(Failure(), request, info)
             if isinstance(failure, Failure):
@@ -281,7 +285,7 @@ class MediaPipeline(ABC):
         info: SpiderInfo,
         *,
         item: Any = None,
-    ) -> FileInfo:
+    ) -> FileInfo | Awaitable[FileInfo]:
         """Handler for success downloads"""
         raise NotImplementedError
 
