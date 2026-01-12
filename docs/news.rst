@@ -23,6 +23,10 @@ Bug fixes
 -   Fixed custom stats collectors that require a ``spider`` argument in their
     ``open_spider()`` and ``close_spider()`` methods not receiving the
     argument when called by the engine.
+    
+    Note, however, that the ``spider`` argument is now deprecated and will stop
+    being passed in a future version of Scrapy.
+
     (:issue:`7213`)
 
 Quality assurance
