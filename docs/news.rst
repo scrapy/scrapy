@@ -33,7 +33,7 @@ Quality assurance
 ~~~~~~~~~~~~~~~~~
 
 -   Updated the ``codecov/codecov-action`` GitHub Action to version 5.
-    (:issue:`7180`)
+    (:issue:`7180`, :issue:`7215`)
 
 .. _release-2.14.0:
 
