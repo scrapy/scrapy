@@ -5,7 +5,7 @@ Release notes
 
 .. _release-2.14.1:
 
-Scrapy 2.14.1 (unreleased)
+Scrapy 2.14.1 (2026-01-12)
 --------------------------
 
 Deprecations
