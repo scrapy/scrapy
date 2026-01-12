@@ -11,11 +11,7 @@ Scrapy 2.14.1 (unreleased)
 Deprecations
 ~~~~~~~~~~~~
 
--   ``scrapy.utils.defer.maybeDeferred_coro()`` is deprecated, refactor your
-    code to use coroutines (``async def``) instead.
-    If you really need to support functions that return Deferreds, you can use
-    :func:`twisted.internet.defer.maybeDeferred`.
-    (:issue:`7212`)
+-   ``scrapy.utils.defer.maybeDeferred_coro()`` is deprecated. (:issue:`7212`)
 
 Bug fixes
 ~~~~~~~~~
