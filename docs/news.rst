@@ -3,6 +3,34 @@
 Release notes
 =============
 
+.. _release-2.14.1:
+
+Scrapy 2.14.1 (unreleased)
+--------------------------
+
+Deprecations
+~~~~~~~~~~~~
+
+-   ``scrapy.utils.defer.maybeDeferred_coro()`` is deprecated, refactor your
+    code to use coroutines (``async def``) instead.
+    If you really need to support functions that return Deferreds, you can use
+    :func:`twisted.internet.defer.maybeDeferred`.
+    (:issue:`7212`)
+
+Bug fixes
+~~~~~~~~~
+
+-   Fixed custom stats collectors that require a ``spider`` argument in their
+    ``open_spider()`` and ``close_spider()`` methods not receiving the
+    argument when called by the engine.
+    (:issue:`7213`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Updated the ``codecov/codecov-action`` GitHub Action to version 5.
+    (:issue:`7180`)
+
 .. _release-2.14.0:
 
 Scrapy 2.14.0 (2026-01-05)
