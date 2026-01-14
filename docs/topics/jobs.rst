@@ -27,6 +27,12 @@ this directory must not be shared by different spiders, or even different
 jobs/runs of the same spider, as it's meant to be used for storing the state of
 a *single* job.
 
+A job directory typically contains:
+
+* ``requests.seen`` — visited requests tracked by the duplicates filter
+* ``queue/`` — pending requests saved by the scheduler
+* ``spider.state`` — persistent spider state saved by the SpiderState extension
+
 How to use it
 =============
 
@@ -46,7 +52,7 @@ Keeping persistent state between batches
 
 Sometimes you'll want to keep some persistent spider state between pause/resume
 batches. You can use the ``spider.state`` attribute for that, which should be a
-dict. There's :ref:`a built-in extension <topics-extensions-ref-spiderstate>`
+dict. There's a :ref:`built-in extension <topics-extensions-ref-spiderstate>`
 that takes care of serializing, storing and loading that attribute from the job
 directory, when the spider starts and stops.
 
@@ -71,7 +77,6 @@ Cookies expiration
 Cookies may expire. So, if you don't resume your spider quickly the requests
 scheduled may no longer work. This won't be an issue if your spider doesn't rely
 on cookies.
-
 
 .. _request-serialization:
 
