@@ -1,17 +1,17 @@
 """
-DAP RRI Streaming Satker Spider - Scrapes streaming analytics with PRO 1-4 breakdown
+DAP RRI Streaming Satker Spider - Scrapes streaming analytics with PRO 1-4 breakdown via API
 
-This spider authenticates with DAP RRI and scrapes streaming data
-for each satker with breakdown by programa (PRO 1, 2, 3, 4).
-
-Output format matches template: SATKER, PRO 1, PRO 2, PRO 3, PRO 4, ALL PRO,
-TOTAL HITS *DAP VER., TOTAL USER
+Uses:
+- api/get_cards?ids=6 for TOTAL HITS *DAP VER. (id=total_hits_card_idle)
+- api/get_cards?ids=7 for TOTAL USER (id=total_users_card_idle)
+- api/streaming/get_hits_total with port filter for PRO 1-4 breakdown
 
 Usage:
     scrapy crawl streaming_scraper -a email=EMAIL -a password=PASSWORD
 """
 
 import json
+import re
 from datetime import datetime
 from urllib.parse import urlencode
 
@@ -24,12 +24,20 @@ class StreamingSatkerSpider(scrapy.Spider):
 
     base_url = "https://dap.rri.go.id"
     login_url = "https://dap.rri.go.id/"
+
+    # API endpoints
     hits_endpoint = "api/streaming/get_hits_total"
+    cards_endpoint = "api/get_cards"
 
-    # Port/Programa names to query
-    PROGRAMAS = ["Pro 1", "Pro 2", "Pro 3", "Pro 4"]
+    # Port names for PRO 1-4 breakdown
+    PORTS = {
+        "Pro 1": "PRO 1",
+        "Pro 2": "PRO 2",
+        "Pro 3": "PRO 3",
+        "Pro 4": "PRO 4",
+    }
 
-    # All satkers (104 from template)
+    # All satkers (from dropdown)
     SATKERS = [
         "Aceh Singkil",
         "Alor",
@@ -63,9 +71,11 @@ class StreamingSatkerSpider(scrapy.Spider):
         "Fak Fak",
         "Gorontalo",
         "Gunung Sitoli",
+        "IKN",
         "Jakarta",
         "Jambi",
         "Jayapura",
+        "Jazz Channel",
         "Jember",
         "Kaimana",
         "Kediri",
@@ -82,6 +92,7 @@ class StreamingSatkerSpider(scrapy.Spider):
         "Manokwari",
         "Mataram",
         "Medan",
+        "Memori",
         "Merauke",
         "Meulaboh",
         "Nabire",
@@ -93,11 +104,11 @@ class StreamingSatkerSpider(scrapy.Spider):
         "Palu",
         "Pekanbaru",
         "Pontianak",
+        "Pro3",
         "Purwokerto",
-        "Pusat Pemberitaan",
         "Ranai",
-        "Rimba Raya",
         "Rote",
+        "Rimba Raya",
         "Sabang",
         "Samarinda",
         "Sambas",
@@ -110,7 +121,6 @@ class StreamingSatkerSpider(scrapy.Spider):
         "Sibolga",
         "Singaraja",
         "Sintang",
-        "Skouw",
         "Sorong",
         "Sumba",
         "Sumenep",
@@ -124,14 +134,14 @@ class StreamingSatkerSpider(scrapy.Spider):
         "Tanjung Balai",
         "Tanjungpinang",
         "Tarakan",
-        "Teluk Bintuni",
+        "Terminabuan",
         "Ternate",
         "Toli Toli",
         "Tual",
         "Tuban",
         "Voice of Indonesia",
         "Wamena",
-        "Waykanan",
+        "Way kanan",
         "Yogyakarta",
     ]
 
@@ -158,7 +168,7 @@ class StreamingSatkerSpider(scrapy.Spider):
         self.start_date = start_date or "01/01/2026"
         self.end_date = end_date or "31/01/2026"
 
-        # Storage: {satker: {pro1: X, pro2: X, ...}}
+        # Storage: {satker: {PRO 1: X, PRO 2: X, ..., TOTAL HITS: X, TOTAL USER: X}}
         self.satker_data = {}
 
         if not self.email or not self.password:
@@ -180,7 +190,7 @@ class StreamingSatkerSpider(scrapy.Spider):
             self.logger.error("❌ Could not find CSRF token")
             return
 
-        self.logger.info(f"✓ Found CSRF token")
+        self.logger.info("✓ Found CSRF token")
         yield scrapy.FormRequest(
             url=self.login_url,
             formdata={
@@ -198,9 +208,12 @@ class StreamingSatkerSpider(scrapy.Spider):
         date_range = f"{self.start_date} 00:00 - {self.end_date} 23:59"
         self.logger.info(f"📅 Date range: {date_range}")
 
-        total_requests = len(self.SATKERS) * (len(self.PROGRAMAS) + 1)  # +1 for ALL PRO
+        # For each satker, we need:
+        # - 1 request to get_cards?ids=6,7 (total_hits and total_users)
+        # - 4 requests to get_hits_total with port filter (PRO 1-4)
+        total_requests = len(self.SATKERS) * 5
         self.logger.info(
-            f"🎵 Scraping {total_requests} requests ({len(self.SATKERS)} satkers × {len(self.PROGRAMAS) + 1} programas)..."
+            f"🎵 Making {total_requests} API requests for {len(self.SATKERS)} satkers..."
         )
 
         request_idx = 0
@@ -212,45 +225,22 @@ class StreamingSatkerSpider(scrapy.Spider):
                 "PRO 3": 0,
                 "PRO 4": 0,
                 "ALL PRO": 0,
+                "TOTAL HITS": 0,
                 "TOTAL USER": 0,
             }
 
-            # Request for each programa (PRO 1-4)
-            for programa in self.PROGRAMAS:
-                request_idx += 1
-                params = {
-                    "date_range": date_range,
-                    "time_span": "auto",
-                    "satker": satker,
-                    "port": programa,  # Filter by programa/port
-                }
-                url = f"{self.base_url}/{self.hits_endpoint}?{urlencode(params)}"
-
-                yield scrapy.Request(
-                    url=url,
-                    callback=self.parse_programa_data,
-                    meta={
-                        "satker": satker,
-                        "programa": programa,
-                        "request_idx": request_idx,
-                        "total_requests": total_requests,
-                    },
-                    headers={"Accept": "application/json"},
-                    dont_filter=True,
-                )
-
-            # Request for ALL PRO (no port filter)
+            # Request 1: Get TOTAL HITS and TOTAL USER from get_cards API
             request_idx += 1
             params = {
+                "ids": "6,7",  # 6=total_hits_card_idle, 7=total_users_card_idle
                 "date_range": date_range,
-                "time_span": "auto",
                 "satker": satker,
             }
-            url = f"{self.base_url}/{self.hits_endpoint}?{urlencode(params)}"
+            url = f"{self.base_url}/{self.cards_endpoint}?{urlencode(params)}"
 
             yield scrapy.Request(
                 url=url,
-                callback=self.parse_all_pro_data,
+                callback=self.parse_cards_data,
                 meta={
                     "satker": satker,
                     "request_idx": request_idx,
@@ -260,48 +250,115 @@ class StreamingSatkerSpider(scrapy.Spider):
                 dont_filter=True,
             )
 
-    def parse_programa_data(self, response):
-        """Parse API response for specific programa (PRO 1-4)."""
-        satker = response.meta["satker"]
-        programa = response.meta["programa"]
-        idx = response.meta["request_idx"]
-        total = response.meta["total_requests"]
+            # Requests 2-5: Get PRO 1-4 with port filter from get_hits_total
+            for port_api, port_col in self.PORTS.items():
+                request_idx += 1
+                params = {
+                    "date_range": date_range,
+                    "time_span": "auto",
+                    "satker": satker,
+                    "port": port_api,
+                }
+                url = f"{self.base_url}/{self.hits_endpoint}?{urlencode(params)}"
 
-        try:
-            data = json.loads(response.text)
-            hits = data.get("total", 0)
-
-            # Map "Pro 1" to "PRO 1" etc.
-            col_name = programa.upper()
-            self.satker_data[satker][col_name] = hits
-
-            if idx % 50 == 0:
-                self.logger.info(f"[{idx}/{total}] Processing...")
-
-        except json.JSONDecodeError:
-            self.logger.warning(f"❌ JSON parse error for {satker} {programa}")
-
-    def parse_all_pro_data(self, response):
-        """Parse API response for all programas combined."""
-        satker = response.meta["satker"]
-        idx = response.meta["request_idx"]
-        total = response.meta["total_requests"]
-
-        try:
-            data = json.loads(response.text)
-            hits = data.get("total", 0)
-            users = data.get("total_user", 0)
-
-            self.satker_data[satker]["ALL PRO"] = hits
-            self.satker_data[satker]["TOTAL USER"] = users
-
-            if idx % 20 == 0:
-                self.logger.info(
-                    f"[{idx}/{total}] {satker}: ALL PRO={hits}, Users={users}"
+                yield scrapy.Request(
+                    url=url,
+                    callback=self.parse_port_data,
+                    meta={
+                        "satker": satker,
+                        "port_col": port_col,
+                        "request_idx": request_idx,
+                        "total_requests": total_requests,
+                    },
+                    headers={"Accept": "application/json"},
+                    dont_filter=True,
                 )
 
+    def parse_cards_data(self, response):
+        """Parse get_cards API response for TOTAL HITS and TOTAL USER."""
+        satker = response.meta["satker"]
+        idx = response.meta["request_idx"]
+        total = response.meta["total_requests"]
+
+        try:
+            data = json.loads(response.text)
+
+            # The response contains content with HTML that has the data
+            # We need to extract the values from data-tag_type="total" elements
+            if data.get("status") and data.get("result"):
+                content = data["result"].get("content", {})
+
+                # Card 6 = total_hits_card_idle
+                # Card 7 = total_users_card_idle
+                for card_id, card_content in content.items():
+                    if card_id == "6":
+                        # Extract total hits value from HTML
+                        match = re.search(
+                            r'data-tag_type="total"[^>]*>([^<]+)<', card_content
+                        )
+                        if match:
+                            value_str = match.group(1).strip().replace(",", "")
+                            if value_str.endswith("K"):
+                                self.satker_data[satker]["TOTAL HITS"] = int(
+                                    float(value_str[:-1]) * 1000
+                                )
+                            elif value_str.endswith("M"):
+                                self.satker_data[satker]["TOTAL HITS"] = int(
+                                    float(value_str[:-1]) * 1000000
+                                )
+                            else:
+                                self.satker_data[satker]["TOTAL HITS"] = (
+                                    int(float(value_str)) if value_str else 0
+                                )
+
+                    elif card_id == "7":
+                        # Extract total users value from HTML
+                        match = re.search(
+                            r'data-tag_type="total"[^>]*>([^<]+)<', card_content
+                        )
+                        if match:
+                            value_str = match.group(1).strip().replace(",", "")
+                            if value_str.endswith("K"):
+                                self.satker_data[satker]["TOTAL USER"] = int(
+                                    float(value_str[:-1]) * 1000
+                                )
+                            elif value_str.endswith("M"):
+                                self.satker_data[satker]["TOTAL USER"] = int(
+                                    float(value_str[:-1]) * 1000000
+                                )
+                            else:
+                                self.satker_data[satker]["TOTAL USER"] = (
+                                    int(float(value_str)) if value_str else 0
+                                )
+
+                if idx % 20 == 0:
+                    self.logger.info(
+                        f"[{idx}/{total}] {satker}: "
+                        f"HITS={self.satker_data[satker]['TOTAL HITS']}, "
+                        f"USER={self.satker_data[satker]['TOTAL USER']}"
+                    )
+
+        except (json.JSONDecodeError, Exception) as e:
+            self.logger.warning(f"❌ Error parsing cards for {satker}: {e}")
+
+    def parse_port_data(self, response):
+        """Parse API response for specific PRO (port) hits."""
+        satker = response.meta["satker"]
+        port_col = response.meta["port_col"]
+        idx = response.meta["request_idx"]
+        total = response.meta["total_requests"]
+
+        try:
+            data = json.loads(response.text)
+            hits = data.get("total", 0) or 0
+
+            self.satker_data[satker][port_col] = hits
+
+            if idx % 100 == 0:
+                self.logger.info(f"[{idx}/{total}] Processing ports...")
+
         except json.JSONDecodeError:
-            self.logger.warning(f"❌ JSON parse error for {satker}")
+            self.logger.warning(f"❌ JSON parse error for {satker} {port_col}")
 
     def closed(self, reason):
         """Export to Excel with exact template format."""
@@ -319,6 +376,14 @@ class StreamingSatkerSpider(scrapy.Spider):
             rows = []
             for satker in sorted(self.satker_data.keys()):
                 data = self.satker_data[satker]
+                # Calculate ALL PRO as sum of PRO 1-4
+                all_pro = (
+                    data.get("PRO 1", 0)
+                    + data.get("PRO 2", 0)
+                    + data.get("PRO 3", 0)
+                    + data.get("PRO 4", 0)
+                )
+
                 rows.append(
                     {
                         "SATKER": satker,
@@ -326,10 +391,8 @@ class StreamingSatkerSpider(scrapy.Spider):
                         "PRO 2": data.get("PRO 2", 0),
                         "PRO 3": data.get("PRO 3", 0),
                         "PRO 4": data.get("PRO 4", 0),
-                        "ALL PRO": data.get("ALL PRO", 0),
-                        "TOTAL HITS *DAP VER.": data.get(
-                            "ALL PRO", 0
-                        ),  # Same as ALL PRO
+                        "ALL PRO": all_pro,
+                        "TOTAL HITS *DAP VER.": data.get("TOTAL HITS", 0),
                         "TOTAL USER": data.get("TOTAL USER", 0),
                     }
                 )
@@ -349,7 +412,7 @@ class StreamingSatkerSpider(scrapy.Spider):
             ]
             df = df[columns]
 
-            output_file = f"streaming_scraped_{self.start_date.replace('/', '')}-{self.end_date.replace('/', '')}.xlsx"
+            output_file = f"streaming_{self.start_date.replace('/', '')}-{self.end_date.replace('/', '')}.xlsx"
 
             # Write with header matching template format
             with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
@@ -357,7 +420,6 @@ class StreamingSatkerSpider(scrapy.Spider):
                     writer, sheet_name="Sheet1", startrow=2, index=False, header=False
                 )
 
-                # Get worksheet and add headers
                 worksheet = writer.sheets["Sheet1"]
 
                 # Row 1: Main headers
@@ -376,14 +438,17 @@ class StreamingSatkerSpider(scrapy.Spider):
             self.logger.info(f"✅ Exported to: {output_file}")
 
             # Summary
-            total_hits = df["ALL PRO"].sum()
+            total_all_pro = df["ALL PRO"].sum()
+            total_hits = df["TOTAL HITS *DAP VER."].sum()
             total_users = df["TOTAL USER"].sum()
             satkers_with_data = (df["ALL PRO"] > 0).sum()
 
             self.logger.info(f"\n📊 Summary:")
-            self.logger.info(f"   Total Hits: {total_hits:,}")
-            self.logger.info(f"   Total Users: {total_users:,}")
+            self.logger.info(f"   Total satkers: {len(df)}")
             self.logger.info(f"   Satkers with data: {satkers_with_data}")
+            self.logger.info(f"   Total ALL PRO: {total_all_pro:,}")
+            self.logger.info(f"   Total HITS (DAP VER.): {total_hits:,}")
+            self.logger.info(f"   Total USERS: {total_users:,}")
 
         except ImportError:
             self.logger.warning("⚠️ pandas not installed")

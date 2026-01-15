@@ -100,8 +100,17 @@ async def scrape_streaming_data(start_date="01/01/2026", end_date="31/01/2026"):
             # Click apply filter
             await page.click("#kt_apply_filter")
 
-            # Wait for data to load
-            await page.wait_for_timeout(2000)
+            # Wait for data to load (cards need AJAX to populate)
+            await page.wait_for_timeout(3000)
+
+            # Wait specifically for total cards to have data
+            try:
+                await page.wait_for_function(
+                    "document.querySelector('#total_hits_card_idle [data-tag_type=\"total\"]')?.innerText?.length > 0",
+                    timeout=5000,
+                )
+            except:
+                pass  # Continue even if timeout
 
             # Extract PRO 1-4 values and totals
             data = await page.evaluate("""
@@ -111,55 +120,54 @@ async def scrape_streaming_data(start_date="01/01/2026", end_date="31/01/2026"):
                         total_hits: 0, total_users: 0
                     };
                     
-                    // Extract PRO 1-4 values
+                    // Helper to parse numeric values (55.5K, 1.2M, etc.)
+                    function parseValue(text) {
+                        if (!text) return 0;
+                        let value = text.trim().replace(/,/g, '');
+                        if (value.endsWith('K')) {
+                            return parseFloat(value) * 1000;
+                        } else if (value.endsWith('M')) {
+                            return parseFloat(value) * 1000000;
+                        }
+                        return parseFloat(value) || 0;
+                    }
+                    
+                    // Extract PRO 1-4 values using data-tag_type="total"
                     ['pro1', 'pro2', 'pro3', 'pro4'].forEach(pro => {
                         const card = document.querySelector(`#${pro}_total_card_chart_line`);
                         if (card) {
-                            const hitsEl = card.querySelector('.fs-4.text-gray-900.fw-bold');
+                            // First try data-tag_type="total", then fallback to class selector
+                            let hitsEl = card.querySelector('[data-tag_type="total"]');
+                            if (!hitsEl) {
+                                hitsEl = card.querySelector('.fs-4.text-gray-900.fw-bold');
+                            }
                             if (hitsEl) {
-                                let value = hitsEl.innerText.trim();
-                                // Parse value (could be like "55.5K", "1.2M", etc.)
-                                value = value.replace(/,/g, '');
-                                if (value.endsWith('K')) {
-                                    result[pro] = parseFloat(value) * 1000;
-                                } else if (value.endsWith('M')) {
-                                    result[pro] = parseFloat(value) * 1000000;
-                                } else {
-                                    result[pro] = parseFloat(value) || 0;
-                                }
+                                result[pro] = parseValue(hitsEl.innerText);
                             }
                         }
                     });
                     
-                    // Get total hits
+                    // Get TOTAL HITS using data-tag_type="total" selector
                     const totalHitsCard = document.querySelector('#total_hits_card_idle');
                     if (totalHitsCard) {
-                        const hitsEl = totalHitsCard.querySelector('.fs-4.text-gray-900.fw-bold, .fw-bold');
+                        let hitsEl = totalHitsCard.querySelector('[data-tag_type="total"]');
+                        if (!hitsEl) {
+                            hitsEl = totalHitsCard.querySelector('.fs-4.text-gray-900.fw-bold, .fw-bold');
+                        }
                         if (hitsEl) {
-                            let value = hitsEl.innerText.trim().replace(/,/g, '');
-                            if (value.endsWith('K')) {
-                                result.total_hits = parseFloat(value) * 1000;
-                            } else if (value.endsWith('M')) {
-                                result.total_hits = parseFloat(value) * 1000000;
-                            } else {
-                                result.total_hits = parseFloat(value) || 0;
-                            }
+                            result.total_hits = parseValue(hitsEl.innerText);
                         }
                     }
                     
-                    // Get total users
+                    // Get TOTAL USERS using data-tag_type="total" selector
                     const totalUsersCard = document.querySelector('#total_users_card_idle');
                     if (totalUsersCard) {
-                        const usersEl = totalUsersCard.querySelector('.fs-4.text-gray-900.fw-bold, .fw-bold');
+                        let usersEl = totalUsersCard.querySelector('[data-tag_type="total"]');
+                        if (!usersEl) {
+                            usersEl = totalUsersCard.querySelector('.fs-4.text-gray-900.fw-bold, .fw-bold');
+                        }
                         if (usersEl) {
-                            let value = usersEl.innerText.trim().replace(/,/g, '');
-                            if (value.endsWith('K')) {
-                                result.total_users = parseFloat(value) * 1000;
-                            } else if (value.endsWith('M')) {
-                                result.total_users = parseFloat(value) * 1000000;
-                            } else {
-                                result.total_users = parseFloat(value) || 0;
-                            }
+                            result.total_users = parseValue(usersEl.innerText);
                         }
                     }
                     
