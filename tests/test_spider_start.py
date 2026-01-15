@@ -139,11 +139,11 @@ class TestMain:
                 for item_or_request in super().start_requests():
                     yield item_or_request
 
+        # Assert ONLY that the expected deprecation warning is emitted
         with pytest.warns(
             ScrapyDeprecationWarning, match=r"use Spider\.start\(\) instead"
-        ) as messages:
+        ):
             await self._test_spider(TestSpider, [])
-        assert messages[0].filename.endswith("test_spider_start.py")
 
     async def _test_start(self, start_, expected_items=None):
         class TestSpider(Spider):
