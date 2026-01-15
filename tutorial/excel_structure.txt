@@ -1,0 +1,14 @@
+Row 0 (first header):
+['SATKER', 'HITS', nan, nan, nan, nan, nan, 'TOTAL HITS *DAP VER.', 'TOTAL USER']
+
+Row 1 (second header):
+[nan, nan, nan, nan, nan, nan, nan, nan, nan]
+
+Row 2 (first data):
+[nan, nan, 'PRO 1', 'PRO 2', 'PRO 3', 'PRO 4', 'ALL PRO', nan, nan]
+
+Row 3:
+['Aceh Singkil', nan, nan, nan, nan, nan, 0, 0, nan]
+
+Row 10:
+['Bandung', nan, nan, nan, nan, nan, 0, 0, nan]
