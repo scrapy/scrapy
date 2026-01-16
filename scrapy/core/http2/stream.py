@@ -7,11 +7,12 @@ from typing import TYPE_CHECKING, Any
 
 from h2.errors import ErrorCodes
 from h2.exceptions import H2Error, ProtocolError, StreamClosedError
-from twisted.internet.defer import CancelledError, Deferred
+from twisted.internet.defer import Deferred
 from twisted.internet.error import ConnectionClosed
 from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
 
+from scrapy.exceptions import DownloadCancelledError
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
@@ -422,7 +423,7 @@ class Stream:
                 f"size ({expected_size}) larger than download max size ({self._download_maxsize})"
             )
             logger.error(error_msg)
-            self._deferred_response.errback(CancelledError(error_msg))
+            self._deferred_response.errback(DownloadCancelledError(error_msg))
 
         elif reason is StreamCloseReason.ENDED:
             self._fire_response_deferred()

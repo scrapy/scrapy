@@ -4,12 +4,13 @@ from time import time
 from typing import TYPE_CHECKING
 from urllib.parse import urldefrag
 
-from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.web.client import URI
 
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.core.http2.agent import H2Agent, H2ConnectionPool, ScrapyProxyH2Agent
+from scrapy.exceptions import DownloadTimeoutError
+from scrapy.utils._download_handlers import wrap_twisted_exceptions
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.python import to_bytes
@@ -45,9 +46,10 @@ class H2DownloadHandler(BaseDownloadHandler):
             crawler=self._crawler,
         )
         assert self._crawler.spider
-        return await maybe_deferred_to_future(
-            agent.download_request(request, self._crawler.spider)
-        )
+        with wrap_twisted_exceptions():
+            return await maybe_deferred_to_future(
+                agent.download_request(request, self._crawler.spider)
+            )
 
     async def close(self) -> None:
         self._pool.close_connections()
@@ -129,4 +131,4 @@ class ScrapyH2Agent:
             return response
 
         url = urldefrag(request.url)[0]
-        raise TxTimeoutError(f"Getting {url} took longer than {timeout} seconds.")
+        raise DownloadTimeoutError(f"Getting {url} took longer than {timeout} seconds.")
