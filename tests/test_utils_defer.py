@@ -6,7 +6,7 @@ from asyncio import Future
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from twisted.internet.defer import Deferred, inlineCallbacks, succeed
+from twisted.internet.defer import Deferred, succeed
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import (
@@ -19,6 +19,7 @@ from scrapy.utils.defer import (
     mustbe_deferred,
     parallel_async,
 )
+from tests.utils.decorators import inlineCallbacks
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
@@ -107,6 +108,7 @@ class TestIterErrback:
         assert isinstance(errors[0].value, ZeroDivisionError)
 
 
+@pytest.mark.requires_reactor
 class TestAiterErrback:
     @deferred_f_from_coro_f
     async def test_aiter_errback_good(self):
@@ -134,6 +136,7 @@ class TestAiterErrback:
         assert isinstance(errors[0].value, ZeroDivisionError)
 
 
+@pytest.mark.requires_reactor
 class TestAsyncDefTestsuite:
     @deferred_f_from_coro_f
     async def test_deferred_f_from_coro_f(self):
@@ -340,6 +343,7 @@ class TestDeferredFFromCoroF:
 
 
 @pytest.mark.only_asyncio
+@pytest.mark.requires_reactor
 class TestDeferredToFuture:
     @deferred_f_from_coro_f
     async def test_deferred(self):
@@ -375,6 +379,7 @@ class TestDeferredToFuture:
 
 
 @pytest.mark.only_asyncio
+@pytest.mark.requires_reactor
 class TestMaybeDeferredToFutureAsyncio:
     @deferred_f_from_coro_f
     async def test_deferred(self):
@@ -410,6 +415,7 @@ class TestMaybeDeferredToFutureAsyncio:
 
 
 @pytest.mark.only_not_asyncio
+@pytest.mark.requires_reactor  # needs a reactor or an event loop for is_asyncio_available()
 class TestMaybeDeferredToFutureNotAsyncio:
     def test_deferred(self):
         d = Deferred()
