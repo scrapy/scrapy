@@ -408,6 +408,8 @@ String value                             Class name (as a string)
 REFERRER_POLICIES
 ^^^^^^^^^^^^^^^^^
 
+.. versionadded:: 2.14.2
+
 Default: ``{}``
 
 A dictionary mapping policy names to import paths of
