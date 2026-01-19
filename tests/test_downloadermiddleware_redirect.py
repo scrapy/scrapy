@@ -1004,7 +1004,7 @@ class TestRedirectMiddleware(Base.Test):
         return Response(request.url, status=status, headers=headers)
 
     def test_redirect_3xx_permanent(self):
-        def _test(method, status=301):
+        def _test(method, status: int):
             url = f"http://www.example.com/{status}"
             url2 = "http://www.example.com/redirected"
             req = Request(url, method=method)
@@ -1019,10 +1019,6 @@ class TestRedirectMiddleware(Base.Test):
             del rsp.headers["Location"]
             assert self.mw.process_response(req, rsp) is rsp
 
-        _test("GET")
-        _test("POST")
-        _test("HEAD")
-
         _test("GET", status=307)
         _test("POST", status=307)
         _test("HEAD", status=307)
@@ -1030,6 +1026,45 @@ class TestRedirectMiddleware(Base.Test):
         _test("GET", status=308)
         _test("POST", status=308)
         _test("HEAD", status=308)
+
+    @pytest.mark.parametrize("status", [301, 302, 303])
+    def test_post_method_converted_on_301_302_303(self, status):
+        source_url = f"http://www.example.com/{status}"
+        target_url = "http://www.example.com/redirected2"
+        request = Request(
+            source_url,
+            method="POST",
+            body="test",
+            headers={"Content-Type": "text/plain", "Content-length": "4"},
+        )
+        response = Response(source_url, headers={"Location": target_url}, status=status)
+        redirect_request = self.mw.process_response(request, response)
+        assert isinstance(redirect_request, Request)
+        assert redirect_request.url == target_url
+        assert redirect_request.method == "GET"
+        assert "Content-Type" not in redirect_request.headers
+        assert "Content-Length" not in redirect_request.headers
+        assert not redirect_request.body
+
+    @pytest.mark.parametrize("status", [307, 308])
+    def test_cross_origin_strip_body(self, status):
+        source_url = "https://example.com"
+        target_url = "https://attacker.example"
+        body = b"secret"
+        request = Request(
+            source_url,
+            method="POST",
+            body=body,
+            headers={"Content-Type": "application/json", "Content-Length": str(len(body))},
+        )
+        response1 = Response(source_url, headers={"Location": target_url}, status=status)
+        redirect_request = self.mw.process_response(request, response1)
+        assert isinstance(redirect_request, Request)
+        assert redirect_request.url == target_url
+        assert redirect_request.method == "POST"
+        assert not getattr(redirect_request, "body", None)
+        assert b"Content-Type" not in redirect_request.headers
+        assert b"Content-Length" not in redirect_request.headers
 
     def test_redirect_302_head(self):
         url = "http://www.example.com/302"

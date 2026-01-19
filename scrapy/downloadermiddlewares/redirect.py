@@ -43,7 +43,8 @@ def _build_redirect_request(
             redirect_request.headers.pop(b"Proxy-Authorization", None)
     has_cookie_header = "Cookie" in redirect_request.headers
     has_authorization_header = "Authorization" in redirect_request.headers
-    if has_cookie_header or has_authorization_header:
+    has_request_body = bool(getattr(redirect_request, "body", None))
+    if has_cookie_header or has_authorization_header or has_request_body:
         default_ports = {"http": 80, "https": 443}
 
         parsed_source_request = urlparse_cached(source_request)
@@ -75,6 +76,11 @@ def _build_redirect_request(
             or source_port != redirect_port
         ):
             del redirect_request.headers["Authorization"]
+
+        if has_request_body and source_host != redirect_host:
+            redirect_request = redirect_request.replace(body=b"")
+            redirect_request.headers.pop("Content-Type", None)
+            redirect_request.headers.pop("Content-Length", None)
 
     return redirect_request
 
@@ -174,7 +180,7 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         if urlparse_cached(redirected).scheme not in {"http", "https"}:
             return response
 
-        if response.status in (301, 307, 308) or request.method == "HEAD":
+        if response.status in (307, 308) or request.method == "HEAD":
             return self._redirect(redirected, request, response.status)
 
         redirected = self._redirect_request_using_get(request, redirected_url)
