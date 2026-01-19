@@ -16,6 +16,10 @@ Security bug fixes
 
     .. _7j88-353p-36rg: https://github.com/scrapy/scrapy/security/advisories/GHSA-7j88-353p-36rg
 
+-   301 redirects now force the request method to GET, in line with modern
+    browsers. The original request method is not only maintained on 307 and 308
+    redirects.
+
 .. _release-2.14.1:
 
 Scrapy 2.14.1 (2026-01-12)
