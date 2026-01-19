@@ -3,6 +3,26 @@
 Release notes
 =============
 
+.. _release-2.14.2:
+
+Scrapy 2.14.2 (unreleased)
+--------------------------
+
+Security bug fixes
+~~~~~~~~~~~~~~~~~~
+
+-   Values from the ``Referrer-Policy`` header of HTTP responses are no longer
+    executed as Python callables. See the `cwxj-rr6w-m6w7`_ security advisory
+    for details.
+
+    .. _cwxj-rr6w-m6w7: https://github.com/scrapy/scrapy/security/advisories/GHSA-cwxj-rr6w-m6w7
+
+New features
+~~~~~~~~~~~~
+
+-   Added a new setting, :setting:`REFERER_POLICIES`, to allow customizing 
+    supported referrer policies.
+
 .. _release-2.14.1:
 
 Scrapy 2.14.1 (2026-01-12)
