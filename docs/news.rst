@@ -3,6 +3,19 @@
 Release notes
 =============
 
+.. _release-2.14.2:
+
+Scrapy 2.14.2 (unreleased)
+--------------------------
+
+Security bug fixes
+~~~~~~~~~~~~~~~~~~
+
+-   Cross-origin 307/308 redirects now remove the request body. See the 
+    7j88-353p-36rg_ security advisory for details.
+
+    .. _7j88-353p-36rg: https://github.com/scrapy/scrapy/security/advisories/GHSA-7j88-353p-36rg
+
 .. _release-2.14.1:
 
 Scrapy 2.14.1 (2026-01-12)
