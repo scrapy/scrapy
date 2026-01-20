@@ -416,7 +416,7 @@ A dictionary mapping policy names to import paths of
 :class:`scrapy.spidermiddlewares.referer.ReferrerPolicy` subclasses, or
 ``None`` to disable support for a given policy name.
 
-This allows to override the policies triggered by the ``Referrer-Policy``
+This allows overriding the policies triggered by the ``Referrer-Policy``
 response header.
 
 Use ``""`` to override the policy for responses with `no referrer policy
