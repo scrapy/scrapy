@@ -1028,7 +1028,7 @@ class TestRedirectMiddleware(Base.Test):
         _test("HEAD", status=308)
 
     @pytest.mark.parametrize("status", [301, 302, 303])
-    def test_post_method_converted_on_301_302_303(self, status):
+    def test_method_becomes_get(self, status):
         source_url = f"http://www.example.com/{status}"
         target_url = "http://www.example.com/redirected2"
         request = Request(
