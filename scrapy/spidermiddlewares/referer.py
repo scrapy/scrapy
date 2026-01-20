@@ -365,6 +365,29 @@ class RefererMiddleware(BaseSpiderMiddleware):
         *,
         allow_import_path: bool = False,
     ) -> type[ReferrerPolicy] | None:
+        """Load the :class:`ReferrerPolicy` class to use for *policy*.
+        
+        *policy* may be any of the following:
+
+        -   A standard policy name, e.g. ``"no-referrer"``,
+            ``"origin-when-cross-origin"``, etc.
+
+        -   The special ``"scrapy-default"`` policy.
+
+        -   The import path of a :class:`ReferrerPolicy` subclass, e.g.
+            ``"scrapy.spidermiddlewares.referer.NoReferrerPolicy"`` or
+            ``"myproject.policies.CustomReferrerPolicy"``.
+
+        If *warning_only* is ``False`` (default) and *policy* cannot be turned
+        into a :class:`ReferrerPolicy` subclass, a :exc:`RuntimeError` is
+        raised. If *warning_only* is ``True``, a warning is logged and ``None``
+        is returned instead.
+
+        If *allow_import_path* is ``False`` (default), import paths are not
+        allowed, resulting in :exc:`RuntimeError` or ``None``. If ``True``,
+        they are allowed. Use ``True`` only if you trust the source of the
+        *policy* value.
+        """
         if allow_import_path:
             try:
                 return cast("type[ReferrerPolicy]", load_object(policy))
