@@ -247,6 +247,9 @@ def test_process_request_disallowed_dont_filter(value, filtered):
     else:
         assert mw.process_request(request) is None
 
+    request2 = Request("https://b.example")
+    assert mw.process_request(request2) is None
+
 
 @pytest.mark.parametrize(
     ("allow_offsite", "dont_filter", "filtered"),
