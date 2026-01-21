@@ -9,6 +9,7 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, cast
 from urllib.parse import urlparse
+from warnings import warn
 
 from w3lib.url import safe_url_string
 
@@ -342,29 +343,47 @@ class RefererMiddleware(BaseSpiderMiddleware):
     def from_crawler(cls, crawler: Crawler) -> Self:
         if not crawler.settings.getbool("REFERER_ENABLED"):
             raise NotConfigured
-        mw = cls(crawler.settings)
+        return cls(crawler.settings)
 
-        # Note: this hook is a bit of a hack to intercept redirections
-        crawler.signals.connect(mw.request_scheduled, signal=signals.request_scheduled)
-
-        return mw
-
-    def policy(self, resp_or_url: Response | str, request: Request) -> ReferrerPolicy:
-        """
-        Determine Referrer-Policy to use from a parent Response (or URL),
-        and a Request to be sent.
+    def policy(
+        self,
+        response: Response | str | None = None,
+        request: Request | None = None,
+        **kwargs,
+    ) -> ReferrerPolicy:
+        """Return the referrer policy to use for *request* based on *request*
+        meta, *response* and settings.
 
         - if a valid policy is set in Request meta, it is used.
-        - if the policy is set in meta but is wrong (e.g. a typo error),
-          the policy from settings is used
-        - if the policy is not set in Request meta,
-          but there is a Referrer-policy header in the parent response,
-          it is used if valid
+        - if the policy is set in meta but is wrong (e.g. a typo error), the
+          policy from settings is used
+        - if the policy is not set in Request meta, but there is a
+          Referrer-Policy header in the parent response, it is used if valid
         - otherwise, the policy from settings is used.
         """
+        if "resp_or_url" in kwargs:
+            if response is not None:
+                raise TypeError("Cannot pass both 'response' and 'resp_or_url'")
+            response = kwargs.pop("resp_or_url")
+            warn(
+                "Passing 'resp_or_url' is deprecated, use 'response' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        if response is None:
+            raise TypeError("Missing required argument: 'response'")
+        if request is None:
+            raise TypeError("Missing required argument: 'request'")
+        if isinstance(response, str):
+            warn(
+                "Passing a response URL to RefererMiddleware.policy() instead "
+                "of a Response object is deprecated.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         policy_name = request.meta.get("referrer_policy")
-        if policy_name is None and isinstance(resp_or_url, Response):
-            policy_header = resp_or_url.headers.get("Referrer-Policy")
+        if policy_name is None and isinstance(response, Response):
+            policy_header = response.headers.get("Referrer-Policy")
             if policy_header is not None:
                 policy_name = to_unicode(policy_header.decode("latin1"))
         if policy_name is None:
@@ -383,25 +402,3 @@ class RefererMiddleware(BaseSpiderMiddleware):
         if referrer is not None:
             request.headers.setdefault("Referer", referrer)
         return request
-
-    def request_scheduled(self, request: Request, spider: Spider) -> None:
-        # check redirected request to patch "Referer" header if necessary
-        redirected_urls = request.meta.get("redirect_urls", [])
-        if redirected_urls:
-            request_referrer = request.headers.get("Referer")
-            # we don't patch the referrer value if there is none
-            if request_referrer is not None:
-                # the request's referrer header value acts as a surrogate
-                # for the parent response URL
-                #
-                # Note: if the 3xx response contained a Referrer-Policy header,
-                #       the information is not available using this hook
-                parent_url = safe_url_string(request_referrer)
-                policy_referrer = self.policy(parent_url, request).referrer(
-                    parent_url, request.url
-                )
-                if policy_referrer != request_referrer.decode("latin1"):
-                    if policy_referrer is None:
-                        request.headers.pop("Referer")
-                    else:
-                        request.headers["Referer"] = policy_referrer

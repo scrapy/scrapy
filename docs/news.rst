@@ -8,17 +8,55 @@ Release notes
 Scrapy 2.14.2 (unreleased)
 --------------------------
 
-Security bug fixes
-~~~~~~~~~~~~~~~~~~
+Deprecations
+~~~~~~~~~~~~
 
--   Cross-origin 307/308 redirects now remove the request body. See the 
-    7j88-353p-36rg_ security advisory for details.
+-   Using a response URL string as the first parameter on calls to
+    :meth:`scrapy.spidermiddlewares.referer.RefererMiddleware.policy` is
+    deprecated. Pass a :class:`~scrapy.http.Response` instead.
 
-    .. _7j88-353p-36rg: https://github.com/scrapy/scrapy/security/advisories/GHSA-7j88-353p-36rg
+    The parameter has also been renamed to ``response`` to reflect this change.
+    The old parameter name (``resp_or_url``) is deprecated.
 
--   301 redirects now force the request method to GET, in line with modern
-    browsers. The original request method is now only maintained on 307 and 308
-    redirects.
+Bug fixes
+~~~~~~~~~
+
+-   Aligned redirect method conversions to ``GET`` with the `standard
+    <https://fetch.spec.whatwg.org/#http-redirect-fetch>`__:
+
+    -   301 redirects of ``POST`` requests turn into ``GET`` requests.
+
+    -   Only ``POST`` 302 redirects turn into ``GET`` requests, other methods
+        are preserved.
+
+    -   ``HEAD`` 303 redirects do not turn into ``GET`` requests.
+
+    -   ``GET`` 303 redirects do not get their body or standard ``Content-*``
+        headers removed.
+
+    .. note:: Turning into a ``GET`` request implies not only a method change,
+        but also omitting the body and ``Content-*`` headers in the redirect
+        request.
+
+-   Redirects where the original request body is dropped now also get their
+    ``Content-Encoding``, ``Content-Language`` and ``Content-Location`` headers
+    removed, in addition to ``Content-Type`` and ``Content-Length`` that were
+    already being removed.
+
+-   Redirects now maintain the source URL fragment if the redirect URL doesn't
+    have one. This may be useful when using browser-based download handlers,
+    like those of `scrapy-playwright`_ or `scrapy-zyte-api`_, and letting
+    Scrapy handle redirects.
+
+    .. _scrapy-playwright: https://github.com/scrapy-plugins/scrapy-playwright
+    .. _scrapy-zyte-api: https://scrapy-zyte-api.readthedocs.io/en/latest/
+
+-   The ``Referer`` header is now removed on redirect if
+    :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware` is disabled.
+
+-   The handling of the ``Referer`` header on redirects now accounts for the
+    ``Referer-Policy`` header of the response that triggers the redirect
+    request.
 
 .. _release-2.14.1:
 

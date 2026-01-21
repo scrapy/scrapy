@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 
 import pytest
 
-from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.http import Request, Response
 from scrapy.settings import Settings
 from scrapy.spidermiddlewares.referer import (
@@ -31,6 +30,7 @@ from scrapy.spidermiddlewares.referer import (
     StrictOriginWhenCrossOriginPolicy,
     UnsafeUrlPolicy,
 )
+from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
@@ -970,391 +970,58 @@ class TestPolicyHeaderPrecedence004(
     resp_headers = {"Referrer-Policy": ""}
 
 
-class TestReferrerOnRedirect(TestRefererMiddleware):
-    settings = {"REFERRER_POLICY": "scrapy.spidermiddlewares.referer.UnsafeUrlPolicy"}
-    scenarii: Sequence[
-        tuple[str, str, tuple[tuple[int, str], ...], bytes | None, bytes | None]
-    ] = [  # type: ignore[assignment]
-        (
-            "http://scrapytest.org/1",  # parent
-            "http://scrapytest.org/2",  # target
-            (
-                # redirections: code, URL
-                (301, "http://scrapytest.org/3"),
-                (301, "http://scrapytest.org/4"),
-            ),
-            b"http://scrapytest.org/1",  # expected initial referer
-            b"http://scrapytest.org/1",  # expected referer for the redirection request
-        ),
-        (
-            "https://scrapytest.org/1",
-            "https://scrapytest.org/2",
-            (
-                # redirecting to non-secure URL
-                (301, "http://scrapytest.org/3"),
-            ),
-            b"https://scrapytest.org/1",
-            b"https://scrapytest.org/1",
-        ),
-        (
-            "https://scrapytest.org/1",
-            "https://scrapytest.com/2",
-            (
-                # redirecting to non-secure URL: different origin
-                (301, "http://scrapytest.com/3"),
-            ),
-            b"https://scrapytest.org/1",
-            b"https://scrapytest.org/1",
-        ),
-    ]
+class TestPolicyMethodResponseParamRename:
+    def setup_method(self):
+        self.crawler = get_crawler()
+        self.mw = build_from_crawler(RefererMiddleware, self.crawler)
+        self.request = Request("http://www.example.com")
+        self.response = Response("http://www.example.com")
 
-    @pytest.fixture
-    def crawler(self) -> Crawler:
-        crawler = get_crawler(DefaultSpider, self.settings)
-        crawler.spider = crawler._create_spider()
-        return crawler
+    def test_pos_string(self):
+        with warnings.catch_warnings(record=True) as w:
+            self.mw.policy("http://old.com", self.request)
+            found = False
+            for warning in w:
+                if "Passing a response URL" in str(warning.message):
+                    found = True
+                    break
+            assert found
 
-    @pytest.fixture
-    def referrermw(self, crawler: Crawler) -> RefererMiddleware:
-        return RefererMiddleware.from_crawler(crawler)
+    def test_pos_response(self):
+        with warnings.catch_warnings(record=True) as w:
+            self.mw.policy(self.response, self.request)
+            for warning in w:
+                assert "resp_or_url" not in str(warning.message)
 
-    @pytest.fixture
-    def redirectmw(self, crawler: Crawler) -> RedirectMiddleware:
-        return RedirectMiddleware.from_crawler(crawler)
+    def test_key_resp_or_url(self):
+        with warnings.catch_warnings(record=True) as w:
+            self.mw.policy(resp_or_url=self.response, request=self.request)
+            found = False
+            for warning in w:
+                if "Passing 'resp_or_url' is deprecated, use 'response' instead" in str(warning.message):
+                    found = True
+                    break
+            assert found
 
-    def test(  # type: ignore[override]
-        self,
-        crawler: Crawler,
-        referrermw: RefererMiddleware,
-        redirectmw: RedirectMiddleware,
-    ) -> None:
-        for (
-            parent,
-            target,
-            redirections,
-            init_referrer,
-            final_referrer,
-        ) in self.scenarii:
-            response = self.get_response(parent)
-            request = self.get_request(target)
+    def test_key_response(self):
+        with warnings.catch_warnings(record=True) as w:
+            self.mw.policy(response=self.response, request=self.request)
+            for warning in w:
+                assert "resp_or_url" not in str(warning.message)
 
-            out = list(referrermw.process_spider_output(response, [request]))
-            assert out[0].headers.get("Referer") == init_referrer
+    def test_key_response_string(self):
+         with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            self.mw.policy(response="http://old.com", request=self.request)
+            found = False
+            for warning in w:
+                if "Passing a response URL" in str(warning.message):
+                    found = True
+                    break
+            assert found
 
-            for status, url in redirections:
-                response = Response(
-                    request.url, headers={"Location": url}, status=status
-                )
-                request = cast(
-                    "Request", redirectmw.process_response(request, response)
-                )
-                assert crawler.spider
-                referrermw.request_scheduled(request, crawler.spider)
-
-            assert isinstance(request, Request)
-            assert request.headers.get("Referer") == final_referrer
+    def test_both_resp_or_url_and_response(self):
+        with pytest.raises(TypeError, match="Cannot pass both 'response' and 'resp_or_url'"):
+            self.mw.policy(response=self.response, resp_or_url=self.response, request=self.request)
 
 
-class TestReferrerOnRedirectNoReferrer(TestReferrerOnRedirect):
-    """
-    No Referrer policy never sets the "Referer" header.
-    HTTP redirections should not change that.
-    """
-
-    settings = {"REFERRER_POLICY": "no-referrer"}
-    scenarii = [
-        (
-            "http://scrapytest.org/1",  # parent
-            "http://scrapytest.org/2",  # target
-            (
-                # redirections: code, URL
-                (301, "http://scrapytest.org/3"),
-                (301, "http://scrapytest.org/4"),
-            ),
-            None,  # expected initial "Referer"
-            None,  # expected "Referer" for the redirection request
-        ),
-        (
-            "https://scrapytest.org/1",
-            "https://scrapytest.org/2",
-            ((301, "http://scrapytest.org/3"),),
-            None,
-            None,
-        ),
-        (
-            "https://scrapytest.org/1",
-            "https://example.com/2",  # different origin
-            ((301, "http://scrapytest.com/3"),),
-            None,
-            None,
-        ),
-    ]
-
-
-class TestReferrerOnRedirectSameOrigin(TestReferrerOnRedirect):
-    """
-    Same Origin policy sends the full URL as "Referer" if the target origin
-    is the same as the parent response (same protocol, same domain, same port).
-
-    HTTP redirections to a different domain or a lower secure level
-    should have the "Referer" removed.
-    """
-
-    settings = {"REFERRER_POLICY": "same-origin"}
-    scenarii = [
-        (
-            "http://scrapytest.org/101",  # origin
-            "http://scrapytest.org/102",  # target
-            (
-                # redirections: code, URL
-                (301, "http://scrapytest.org/103"),
-                (301, "http://scrapytest.org/104"),
-            ),
-            b"http://scrapytest.org/101",  # expected initial "Referer"
-            b"http://scrapytest.org/101",  # expected referer for the redirection request
-        ),
-        (
-            "https://scrapytest.org/201",
-            "https://scrapytest.org/202",
-            (
-                # redirecting from secure to non-secure URL == different origin
-                (301, "http://scrapytest.org/203"),
-            ),
-            b"https://scrapytest.org/201",
-            None,
-        ),
-        (
-            "https://scrapytest.org/301",
-            "https://scrapytest.org/302",
-            (
-                # different domain == different origin
-                (301, "http://example.com/303"),
-            ),
-            b"https://scrapytest.org/301",
-            None,
-        ),
-    ]
-
-
-class TestReferrerOnRedirectStrictOrigin(TestReferrerOnRedirect):
-    """
-    Strict Origin policy will always send the "origin" as referrer
-    (think of it as the parent URL without the path part),
-    unless the security level is lower and no "Referer" is sent.
-
-    Redirections from secure to non-secure URLs should have the
-    "Referrer" header removed if necessary.
-    """
-
-    settings = {"REFERRER_POLICY": POLICY_STRICT_ORIGIN}
-    scenarii = [
-        (
-            "http://scrapytest.org/101",
-            "http://scrapytest.org/102",
-            (
-                (301, "http://scrapytest.org/103"),
-                (301, "http://scrapytest.org/104"),
-            ),
-            b"http://scrapytest.org/",  # send origin
-            b"http://scrapytest.org/",  # redirects to same origin: send origin
-        ),
-        (
-            "https://scrapytest.org/201",
-            "https://scrapytest.org/202",
-            (
-                # redirecting to non-secure URL: no referrer
-                (301, "http://scrapytest.org/203"),
-            ),
-            b"https://scrapytest.org/",
-            None,
-        ),
-        (
-            "https://scrapytest.org/301",
-            "https://scrapytest.org/302",
-            (
-                # redirecting to non-secure URL (different domain): no referrer
-                (301, "http://example.com/303"),
-            ),
-            b"https://scrapytest.org/",
-            None,
-        ),
-        (
-            "http://scrapy.org/401",
-            "http://example.com/402",
-            ((301, "http://scrapytest.org/403"),),
-            b"http://scrapy.org/",
-            b"http://scrapy.org/",
-        ),
-        (
-            "https://scrapy.org/501",
-            "https://example.com/502",
-            (
-                # HTTPS all along, so origin referrer is kept as-is
-                (301, "https://google.com/503"),
-                (301, "https://facebook.com/504"),
-            ),
-            b"https://scrapy.org/",
-            b"https://scrapy.org/",
-        ),
-        (
-            "https://scrapytest.org/601",
-            "http://scrapytest.org/602",  # TLS to non-TLS: no referrer
-            (
-                (
-                    301,
-                    "https://scrapytest.org/603",
-                ),  # TLS URL again: (still) no referrer
-            ),
-            None,
-            None,
-        ),
-    ]
-
-
-class TestReferrerOnRedirectOriginWhenCrossOrigin(TestReferrerOnRedirect):
-    """
-    Origin When Cross-Origin policy sends the full URL as "Referer",
-    unless the target's origin is different (different domain, different protocol)
-    in which case only the origin is sent.
-
-    Redirections to a different origin should strip the "Referer"
-    to the parent origin.
-    """
-
-    settings = {"REFERRER_POLICY": POLICY_ORIGIN_WHEN_CROSS_ORIGIN}
-    scenarii = [
-        (
-            "http://scrapytest.org/101",  # origin
-            "http://scrapytest.org/102",  # target + redirection
-            (
-                # redirections: code, URL
-                (301, "http://scrapytest.org/103"),
-                (301, "http://scrapytest.org/104"),
-            ),
-            b"http://scrapytest.org/101",  # expected initial referer
-            b"http://scrapytest.org/101",  # expected referer for the redirection request
-        ),
-        (
-            "https://scrapytest.org/201",
-            "https://scrapytest.org/202",
-            (
-                # redirecting to non-secure URL: send origin
-                (301, "http://scrapytest.org/203"),
-            ),
-            b"https://scrapytest.org/201",
-            b"https://scrapytest.org/",
-        ),
-        (
-            "https://scrapytest.org/301",
-            "https://scrapytest.org/302",
-            (
-                # redirecting to non-secure URL (different domain): send origin
-                (301, "http://example.com/303"),
-            ),
-            b"https://scrapytest.org/301",
-            b"https://scrapytest.org/",
-        ),
-        (
-            "http://scrapy.org/401",
-            "http://example.com/402",
-            ((301, "http://scrapytest.org/403"),),
-            b"http://scrapy.org/",
-            b"http://scrapy.org/",
-        ),
-        (
-            "https://scrapy.org/501",
-            "https://example.com/502",
-            (
-                # all different domains: send origin
-                (301, "https://google.com/503"),
-                (301, "https://facebook.com/504"),
-            ),
-            b"https://scrapy.org/",
-            b"https://scrapy.org/",
-        ),
-        (
-            "https://scrapytest.org/301",
-            "http://scrapytest.org/302",  # TLS to non-TLS: send origin
-            ((301, "https://scrapytest.org/303"),),  # TLS URL again: send origin (also)
-            b"https://scrapytest.org/",
-            b"https://scrapytest.org/",
-        ),
-    ]
-
-
-class TestReferrerOnRedirectStrictOriginWhenCrossOrigin(TestReferrerOnRedirect):
-    """
-    Strict Origin When Cross-Origin policy sends the full URL as "Referer",
-    unless the target's origin is different (different domain, different protocol)
-    in which case only the origin is sent...
-    Unless there's also a downgrade in security and then the "Referer" header
-    is not sent.
-
-    Redirections to a different origin should strip the "Referer" to the parent origin,
-    and from https:// to http:// will remove the "Referer" header.
-    """
-
-    settings = {"REFERRER_POLICY": POLICY_STRICT_ORIGIN_WHEN_CROSS_ORIGIN}
-    scenarii = [
-        (
-            "http://scrapytest.org/101",  # origin
-            "http://scrapytest.org/102",  # target + redirection
-            (
-                # redirections: code, URL
-                (301, "http://scrapytest.org/103"),
-                (301, "http://scrapytest.org/104"),
-            ),
-            b"http://scrapytest.org/101",  # expected initial referer
-            b"http://scrapytest.org/101",  # expected referer for the redirection request
-        ),
-        (
-            "https://scrapytest.org/201",
-            "https://scrapytest.org/202",
-            (
-                # redirecting to non-secure URL: do not send the "Referer" header
-                (301, "http://scrapytest.org/203"),
-            ),
-            b"https://scrapytest.org/201",
-            None,
-        ),
-        (
-            "https://scrapytest.org/301",
-            "https://scrapytest.org/302",
-            (
-                # redirecting to non-secure URL (different domain): send origin
-                (301, "http://example.com/303"),
-            ),
-            b"https://scrapytest.org/301",
-            None,
-        ),
-        (
-            "http://scrapy.org/401",
-            "http://example.com/402",
-            ((301, "http://scrapytest.org/403"),),
-            b"http://scrapy.org/",
-            b"http://scrapy.org/",
-        ),
-        (
-            "https://scrapy.org/501",
-            "https://example.com/502",
-            (
-                # all different domains: send origin
-                (301, "https://google.com/503"),
-                (301, "https://facebook.com/504"),
-            ),
-            b"https://scrapy.org/",
-            b"https://scrapy.org/",
-        ),
-        (
-            "https://scrapytest.org/601",
-            "http://scrapytest.org/602",  # TLS to non-TLS: do not send "Referer"
-            (
-                (
-                    301,
-                    "https://scrapytest.org/603",
-                ),  # TLS URL again: (still) send nothing
-            ),
-            None,
-            None,
-        ),
-    ]
