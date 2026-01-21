@@ -93,6 +93,7 @@ class HTTP11DownloadHandler(BaseDownloadHandler):
             "DOWNLOAD_FAIL_ON_DATALOSS"
         )
         self._disconnect_timeout: int = 1
+        self._fail_on_dataloss_warned: bool = False
 
     async def download_request(self, request: Request) -> Response:
         """Return a deferred for the HTTP download"""
@@ -115,8 +116,19 @@ class HTTP11DownloadHandler(BaseDownloadHandler):
             fail_on_dataloss=self._fail_on_dataloss,
             crawler=self._crawler,
         )
-        with wrap_twisted_exceptions():
-            return await maybe_deferred_to_future(agent.download_request(request))
+        try:
+            with wrap_twisted_exceptions():
+                return await maybe_deferred_to_future(agent.download_request(request))
+        except ResponseDataLossError:
+            if not self._fail_on_dataloss_warned:
+                logger.warning(
+                    "Got data loss in %s. If you want to process broken "
+                    "responses set the setting DOWNLOAD_FAIL_ON_DATALOSS = False"
+                    " -- This message won't be shown in further requests",
+                    request.url,
+                )
+                self._fail_on_dataloss_warned = True
+            raise
 
     async def close(self) -> None:
         from twisted.internet import reactor
@@ -633,7 +645,6 @@ class _ResponseReader(Protocol):
         self._maxsize: int = maxsize
         self._warnsize: int = warnsize
         self._fail_on_dataloss: bool = fail_on_dataloss
-        self._fail_on_dataloss_warned: bool = False
         self._reached_warnsize: bool = False
         self._bytes_received: int = 0
         self._certificate: ssl.Certificate | None = None
@@ -737,15 +748,6 @@ class _ResponseReader(Protocol):
             if not self._fail_on_dataloss:
                 self._finish_response(flags=["dataloss"])
                 return
-
-            if not self._fail_on_dataloss_warned:
-                logger.warning(
-                    "Got data loss in %s. If you want to process broken "
-                    "responses set the setting DOWNLOAD_FAIL_ON_DATALOSS = False"
-                    " -- This message won't be shown in further requests",
-                    self._txresponse.request.absoluteURI.decode(),
-                )
-                self._fail_on_dataloss_warned = True
 
             exc = ResponseDataLossError()
             exc.__cause__ = reason.value
