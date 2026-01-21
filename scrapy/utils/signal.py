@@ -22,9 +22,9 @@ from twisted.python.failure import Failure
 from scrapy.exceptions import ScrapyDeprecationWarning, StopDownload
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.defer import (
+    _maybeDeferred_coro,
     ensure_awaitable,
     maybe_deferred_to_future,
-    maybeDeferred_coro,
 )
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import global_object_name
@@ -114,8 +114,14 @@ def _send_catch_log_deferred(
     spider = named.get("spider")
     dfds: list[Deferred[tuple[TypingAny, TypingAny]]] = []
     for receiver in liveReceivers(getAllReceivers(sender, signal)):
-        d: Deferred[TypingAny] = maybeDeferred_coro(
-            robustApply, receiver, signal=signal, sender=sender, *arguments, **named
+        d: Deferred[TypingAny] = _maybeDeferred_coro(
+            robustApply,
+            True,
+            receiver,
+            signal=signal,
+            sender=sender,
+            *arguments,
+            **named,
         )
         d.addErrback(logerror, receiver)
         # TODO https://pylint.readthedocs.io/en/latest/user_guide/messages/warning/cell-var-from-loop.html
@@ -142,7 +148,7 @@ async def send_catch_log_async(
 
     Returns a coroutine that completes once all signal handlers have finished.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.14
     """
     # note that this returns exceptions instead of Failures in the second tuple member
     if is_asyncio_available():
@@ -171,7 +177,7 @@ async def _send_catch_log_asyncio(
     :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` to be
     installed.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.14
     """
     dont_log = named.pop("dont_log", ())
     dont_log = tuple(dont_log) if isinstance(dont_log, Sequence) else (dont_log,)
