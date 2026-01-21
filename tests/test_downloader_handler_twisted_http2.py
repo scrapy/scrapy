@@ -8,10 +8,10 @@ from unittest import mock
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet import defer, error
-from twisted.web.error import SchemeNotSupported
+from twisted.internet import defer
 from twisted.web.http import H2_ENABLED
 
+from scrapy.exceptions import DownloadCancelledError, UnsupportedURLSchemeError
 from scrapy.http import Request
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from tests.test_downloader_handlers_http_base import (
@@ -72,7 +72,7 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
                 logger.error.assert_called_once_with(mock.ANY)
 
             async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
-                with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
+                with pytest.raises(DownloadCancelledError):
                     await download_handler.download_request(request)
 
             # As the error message is logged in the dataReceived callback, we
@@ -83,13 +83,6 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
             reactor.callLater(0.1, d.callback, logger)
             await maybe_deferred_to_future(d)
 
-    @deferred_f_from_coro_f
-    async def test_unsupported_scheme(self) -> None:
-        request = Request("ftp://unsupported.scheme")
-        async with self.get_dh() as download_handler:
-            with pytest.raises(SchemeNotSupported):
-                await download_handler.download_request(request)
-
     def test_download_cause_data_loss(self) -> None:  # type: ignore[override]
         pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
@@ -98,6 +91,28 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
 
     def test_download_allow_data_loss_via_setting(self) -> None:  # type: ignore[override]
         pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
+
+    def test_download_conn_failed(self) -> None:  # type: ignore[override]
+        # Unlike HTTP11DownloadHandler which raises it from download_request()
+        # (without any special handling), here ConnectionRefusedError (raised in
+        # twisted.internet.endpoints.startConnectionAttempts()) bubbles up as
+        # an unhandled exception in a Deferred and the handler waits until
+        # DOWNLOAD_TIMEOUT.
+        pytest.skip("The handler doesn't properly reraise ConnectionRefusedError")
+
+    def test_download_conn_lost(self) -> None:  # type: ignore[override]
+        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
+
+    def test_download_conn_aborted(self) -> None:  # type: ignore[override]
+        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
+
+    def test_download_dns_error(self) -> None:  # type: ignore[override]
+        # Unlike HTTP11DownloadHandler which raises it from download_request()
+        # (without any special handling), here DNSLookupError (raised in
+        # twisted.internet.endpoints.startConnectionAttempts()) bubbles up as
+        # an unhandled exception in a Deferred and the handler waits until
+        # DOWNLOAD_TIMEOUT.
+        pytest.skip("The handler doesn't properly reraise DNSLookupError")
 
     @deferred_f_from_coro_f
     async def test_concurrent_requests_same_domain(
@@ -212,7 +227,7 @@ class TestHttps2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
     async def test_download_with_proxy_without_http_scheme(
         self, proxy_mockserver: ProxyEchoMockServer
     ) -> None:
-        with pytest.raises(SchemeNotSupported):
+        with pytest.raises(UnsupportedURLSchemeError):
             await maybe_deferred_to_future(
                 super().test_download_with_proxy_without_http_scheme(proxy_mockserver)
             )

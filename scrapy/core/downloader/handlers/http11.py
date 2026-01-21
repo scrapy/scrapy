@@ -12,9 +12,8 @@ from typing import TYPE_CHECKING, Any, TypedDict, TypeVar, cast
 from urllib.parse import urldefrag, urlparse
 
 from twisted.internet import ssl
-from twisted.internet.defer import CancelledError, Deferred, succeed
+from twisted.internet.defer import Deferred, succeed
 from twisted.internet.endpoints import TCP4ClientEndpoint
-from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.internet.protocol import Factory, Protocol, connectionDone
 from twisted.python.failure import Failure
 from twisted.web.client import (
@@ -33,9 +32,15 @@ from zope.interface import implementer
 from scrapy import Request, signals
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
-from scrapy.exceptions import StopDownload
+from scrapy.exceptions import (
+    DownloadCancelledError,
+    DownloadTimeoutError,
+    ResponseDataLossError,
+    StopDownload,
+)
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
+from scrapy.utils._download_handlers import wrap_twisted_exceptions
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
@@ -110,7 +115,8 @@ class HTTP11DownloadHandler(BaseDownloadHandler):
             fail_on_dataloss=self._fail_on_dataloss,
             crawler=self._crawler,
         )
-        return await maybe_deferred_to_future(agent.download_request(request))
+        with wrap_twisted_exceptions():
+            return await maybe_deferred_to_future(agent.download_request(request))
 
     async def close(self) -> None:
         from twisted.internet import reactor
@@ -462,7 +468,7 @@ class ScrapyAgent:
         if self._txresponse:
             self._txresponse._transport.stopProducing()
 
-        raise TxTimeoutError(f"Getting {url} took longer than {timeout} seconds.")
+        raise DownloadTimeoutError(f"Getting {url} took longer than {timeout} seconds.")
 
     def _cb_latency(self, result: _T, request: Request, start_time: float) -> _T:
         request.meta["download_latency"] = time() - start_time
@@ -534,7 +540,7 @@ class ScrapyAgent:
             logger.warning(warning_msg, warning_args)
 
             txresponse._transport.loseConnection()
-            raise CancelledError(warning_msg % warning_args)
+            raise DownloadCancelledError(warning_msg % warning_args)
 
         if warnsize and expected_size > warnsize:
             logger.warning(
@@ -740,5 +746,9 @@ class _ResponseReader(Protocol):
                     self._txresponse.request.absoluteURI.decode(),
                 )
                 self._fail_on_dataloss_warned = True
+
+            exc = ResponseDataLossError()
+            exc.__cause__ = reason.value
+            reason = Failure(exc)
 
         self._finished.errback(reason)
