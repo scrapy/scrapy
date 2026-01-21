@@ -74,11 +74,11 @@ class DownloadFailedError(Exception):
     """Indicates that a request download has failed."""
 
 
-class ResponseDataLoss(Exception):
+class ResponseDataLossError(Exception):
     """Indicates that Scrapy couldn't get a complete response."""
 
 
-class UnsupportedURLScheme(Exception):
+class UnsupportedURLSchemeError(Exception):
     """Indicates that the URL scheme is not supported."""
 
 

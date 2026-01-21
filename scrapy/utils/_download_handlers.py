@@ -18,7 +18,7 @@ from scrapy.exceptions import (
     DownloadConnectionRefusedError,
     DownloadFailedError,
     DownloadTimeoutError,
-    UnsupportedURLScheme,
+    UnsupportedURLSchemeError,
 )
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ def wrap_twisted_exceptions() -> Iterator[None]:
     try:
         yield
     except SchemeNotSupported as e:
-        raise UnsupportedURLScheme(str(e)) from e
+        raise UnsupportedURLSchemeError(str(e)) from e
     except CancelledError as e:
         raise DownloadCancelledError(str(e)) from e
     except TxConnectionRefusedError as e:

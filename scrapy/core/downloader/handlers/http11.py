@@ -35,7 +35,7 @@ from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.exceptions import (
     DownloadCancelledError,
     DownloadTimeoutError,
-    ResponseDataLoss,
+    ResponseDataLossError,
     StopDownload,
 )
 from scrapy.http import Headers, Response
@@ -747,7 +747,7 @@ class _ResponseReader(Protocol):
                 )
                 self._fail_on_dataloss_warned = True
 
-            exc = ResponseDataLoss()
+            exc = ResponseDataLossError()
             exc.__cause__ = reason.value
             reason = Failure(exc)
 

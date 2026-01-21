@@ -457,7 +457,7 @@ RETRY_EXCEPTIONS = [
     "scrapy.exceptions.DownloadConnectionRefusedError",
     "scrapy.exceptions.DownloadFailedError",
     "scrapy.exceptions.DownloadTimeoutError",
-    "scrapy.exceptions.ResponseDataLoss",
+    "scrapy.exceptions.ResponseDataLossError",
     "twisted.internet.error.ConnectionDone",
     "twisted.internet.error.ConnectError",
     "twisted.internet.error.ConnectionLost",

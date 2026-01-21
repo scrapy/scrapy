@@ -21,8 +21,8 @@ from scrapy.exceptions import (
     DownloadConnectionRefusedError,
     DownloadFailedError,
     DownloadTimeoutError,
-    ResponseDataLoss,
-    UnsupportedURLScheme,
+    ResponseDataLossError,
+    UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
 from scrapy.utils.asyncio import call_later
@@ -70,7 +70,7 @@ class TestHttpBase(ABC):
     async def test_unsupported_scheme(self) -> None:
         request = Request("ftp://unsupported.scheme")
         async with self.get_dh() as download_handler:
-            with pytest.raises(UnsupportedURLScheme):
+            with pytest.raises(UnsupportedURLSchemeError):
                 await download_handler.download_request(request)
 
     @deferred_f_from_coro_f
@@ -513,7 +513,7 @@ class TestHttp11Base(TestHttpBase):
     ) -> None:
         request = Request(mockserver.url(f"/{url}", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
-            with pytest.raises(ResponseDataLoss):
+            with pytest.raises(ResponseDataLossError):
                 await download_handler.download_request(request)
 
     @pytest.mark.parametrize("url", ["broken", "broken-chunked"])
@@ -555,7 +555,7 @@ class TestHttp11Base(TestHttpBase):
         # copy of TestCrawl.test_retry_conn_lost()
         request = Request(mockserver.url("/drop?abort=0", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
-            with pytest.raises(ResponseDataLoss):
+            with pytest.raises(ResponseDataLossError):
                 await download_handler.download_request(request)
 
     @deferred_f_from_coro_f
