@@ -86,6 +86,9 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
     def test_download_cause_data_loss(self) -> None:  # type: ignore[override]
         pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 
+    def test_download_cause_data_loss_double_warning(self) -> None:  # type: ignore[override]
+        pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
+
     def test_download_allow_data_loss(self) -> None:  # type: ignore[override]
         pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
 

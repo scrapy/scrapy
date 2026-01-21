@@ -516,6 +516,21 @@ class TestHttp11Base(TestHttpBase):
             with pytest.raises(ResponseDataLossError):
                 await download_handler.download_request(request)
 
+    @deferred_f_from_coro_f
+    async def test_download_cause_data_loss_double_warning(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        request = Request(mockserver.url("/broken", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(ResponseDataLossError):
+                await download_handler.download_request(request)
+            assert "Got data loss" in caplog.text
+            caplog.clear()
+            with pytest.raises(ResponseDataLossError):
+                await download_handler.download_request(request)
+            # no repeated warning
+            assert "Got data loss" not in caplog.text
+
     @pytest.mark.parametrize("url", ["broken", "broken-chunked"])
     @deferred_f_from_coro_f
     async def test_download_allow_data_loss(
