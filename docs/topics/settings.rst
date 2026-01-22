@@ -217,6 +217,7 @@ In a spider, settings are available through ``self.settings``:
 
     class MySpider(scrapy.Spider):
         name = "myspider"
+        allowed_domains = ["example.com"]
         start_urls = ["http://example.com"]
 
         def parse(self, response):
@@ -2024,6 +2025,7 @@ In order to use the reactor installed by Scrapy:
 
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
+        allowed_domains = ["quotes.toscrape.com"]
 
         def __init__(self, *args, **kwargs):
             self.timeout = int(kwargs.pop("timeout", "60"))
@@ -2053,6 +2055,7 @@ which raises an exception, becomes:
 
     class QuotesSpider(scrapy.Spider):
         name = "quotes"
+        allowed_domains = ["quotes.toscrape.com"]
 
         def __init__(self, *args, **kwargs):
             self.timeout = int(kwargs.pop("timeout", "60"))
