@@ -67,7 +67,7 @@ jobs:
             TOXENV: mitmproxy
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v6
