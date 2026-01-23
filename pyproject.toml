@@ -53,6 +53,18 @@ requires-python = ">=3.10"
 authors = [{ name = "Scrapy developers", email = "pablo@pablohoffman.com" }]
 maintainers = [{ name = "Pablo Hoffman", email = "pablo@pablohoffman.com" }]
 
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "pre-commit",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-twisted",
+    "ruff",
+    "tox"
+]
+
 [project.urls]
 Homepage = "https://scrapy.org/"
 Documentation = "https://docs.scrapy.org/"
