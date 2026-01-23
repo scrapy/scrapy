@@ -14,7 +14,7 @@ from typing import Any
 import pytest
 from packaging.version import parse as parse_version
 from pexpect.popen_spawn import PopenSpawn
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred
 from w3lib import __version__ as w3lib_version
 from zope.interface.exceptions import MultipleInvalid
 
@@ -31,11 +31,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.throttle import AutoThrottle
 from scrapy.settings import Settings, default_settings
 from scrapy.utils.asyncio import call_later
-from scrapy.utils.defer import (
-    deferred_f_from_coro_f,
-    deferred_from_coro,
-    maybe_deferred_to_future,
-)
+from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.log import (
     _uninstall_scrapy_root_handler,
     configure_logging,
@@ -45,6 +41,7 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests.mockserver.http import MockServer
 from tests.utils import get_script_run_env
+from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
 
 BASE_SETTINGS: dict[str, Any] = {}
 
@@ -800,6 +797,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             in log
         )
+        assert "is_reactorless(): False" in log
 
     def test_multi(self):
         log = self.run_script("multi.py")
@@ -1042,6 +1040,12 @@ class TestCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             in log
         )
 
+    def test_reactorless(self):
+        log = self.run_script("reactorless.py")
+        assert (
+            "RuntimeError: CrawlerProcess doesn't support TWISTED_ENABLED=False" in log
+        )
+
 
 class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
     @property
@@ -1076,6 +1080,42 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
             "setting (uvloop.Loop)"
         ) in log
 
+    def test_reactorless_simple(self):
+        log = self.run_script("reactorless_simple.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "is_reactorless(): True" in log
+        assert "ERROR: " not in log
+        assert "WARNING: " not in log
+
+    def test_reactorless_datauri(self):
+        log = self.run_script("reactorless_datauri.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "{'data': 'foo'}" in log
+        assert "'item_scraped_count': 1" in log
+        assert "ERROR: " not in log
+        assert "WARNING: " not in log
+
+    def test_reactorless_import_hook(self):
+        log = self.run_script("reactorless_import_hook.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "ImportError: Import of twisted.internet.reactor is forbidden" in log
+
+    def test_reactorless_telnetconsole(self):
+        log = self.run_script("reactorless_telnetconsole.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "The TelnetConsole extension requires a Twisted reactor" in log
+
+    def test_reactorless_reactor(self):
+        log = self.run_script("reactorless_reactor.py")
+        assert (
+            "RuntimeError: TWISTED_ENABLED is False but a Twisted reactor is installed"
+            in log
+        )
+
 
 class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
     """Common tests between CrawlerRunner and AsyncCrawlerRunner,
@@ -1089,6 +1129,7 @@ class TestCrawlerRunnerSubprocessBase(ScriptRunnerMixin):
             "Using reactor: twisted.internet.asyncioreactor.AsyncioSelectorReactor"
             in log
         )
+        assert "is_reactorless(): False" in log
 
     def test_multi_parallel(self):
         log = self.run_script("multi_parallel.py")
@@ -1164,6 +1205,12 @@ class TestCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         )
         assert "DEBUG: Using asyncio event loop" in log
 
+    def test_reactorless(self):
+        log = self.run_script("reactorless.py")
+        assert (
+            "RuntimeError: CrawlerRunner doesn't support TWISTED_ENABLED=False" in log
+        )
+
 
 class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
     @property
@@ -1174,6 +1221,30 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         log = self.run_script("simple_default_reactor.py")
         assert "Spider closed (finished)" not in log
         assert "RuntimeError: AsyncCrawlerRunner requires AsyncioSelectorReactor" in log
+
+    def test_reactorless_simple(self):
+        log = self.run_script("reactorless_simple.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "is_reactorless(): True" in log
+        assert "ERROR: " not in log
+        assert "WARNING: " not in log
+
+    def test_reactorless_datauri(self):
+        log = self.run_script("reactorless_datauri.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "{'data': 'foo'}" in log
+        assert "'item_scraped_count': 1" in log
+        assert "ERROR: " not in log
+        assert "WARNING: " not in log
+
+    def test_reactorless_reactor(self):
+        log = self.run_script("reactorless_reactor.py")
+        assert (
+            "RuntimeError: TWISTED_ENABLED is False but a Twisted reactor is installed"
+            in log
+        )
 
 
 @pytest.mark.parametrize(

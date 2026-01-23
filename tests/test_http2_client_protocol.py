@@ -39,9 +39,12 @@ if TYPE_CHECKING:
     from scrapy.core.http2.protocol import H2ClientProtocol
 
 
-pytestmark = pytest.mark.skipif(
-    not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
-)
+pytestmark = [
+    pytest.mark.requires_reactor,
+    pytest.mark.skipif(
+        not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
+    ),
+]
 
 
 def generate_random_string(size: int) -> str:

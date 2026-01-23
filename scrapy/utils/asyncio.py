@@ -35,15 +35,16 @@ def is_asyncio_available() -> bool:
 
     .. versionadded:: 2.14
 
-    Currently this function is identical to
-    :func:`scrapy.utils.reactor.is_asyncio_reactor_installed`: it returns
-    ``True`` if the Twisted reactor that is installed is
+    This function returns ``True`` if there is a running asyncio event loop. If
+    there is no such loop, it returns ``True`` if the Twisted reactor that is
+    installed is
     :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`, returns
     ``False`` if a different reactor is installed, and raises a
-    :exc:`RuntimeError` if no reactor is installed. In a future Scrapy version,
-    when Scrapy supports running without a Twisted reactor, this function will
-    also return ``True`` when running in that mode, so code that doesn't
-    directly require a Twisted reactor should use this function instead of
+    :exc:`RuntimeError` if no reactor is installed.
+
+    Code that doesn't directly require a Twisted reactor should use this
+    function while code that requires
+    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` should use
     :func:`~scrapy.utils.reactor.is_asyncio_reactor_installed`.
 
     When this returns ``True``, an asyncio loop is installed and used by
@@ -56,10 +57,29 @@ def is_asyncio_available() -> bool:
     loop or await on :class:`asyncio.Future` objects in Scrapy-related code,
     but it's possible to await on :class:`~twisted.internet.defer.Deferred`
     objects.
+
+    .. versionchanged:: VERSION
+        This function now also returns ``True`` if there is a running asyncio
+        loop, even if no Twisted reactor is installed.
     """
+
+    # Check if there is a running asyncio loop.
+    # Can't easily check for an installed but not running one, and there could
+    # be false positives due to some 3rd-party code installing it as a side
+    # effect.
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        pass
+    else:
+        return True
+
+    # Check if there is an installed asyncio reactor (it doesn't need to be
+    # running).
     if not is_reactor_installed():
         raise RuntimeError(
-            "is_asyncio_available() called without an installed reactor."
+            "is_asyncio_available() called without an installed reactor"
+            " or running asyncio loop."
         )
 
     return is_asyncio_reactor_installed()

@@ -1,11 +1,11 @@
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy import Request, signals
 from scrapy.http.response import Response
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import SingleRequestSpider
+from tests.utils.decorators import inlineCallbacks
 
 OVERRIDDEN_URL = "https://example.org"
 

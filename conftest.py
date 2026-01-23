@@ -8,6 +8,7 @@ import pytest
 from twisted.web.http import H2_ENABLED
 
 from scrapy.utils.reactor import set_asyncio_event_loop_policy
+from scrapy.utils.reactorless import install_reactor_import_hook
 from tests.keys import generate_keys
 from tests.mockserver.http import MockServer
 
@@ -56,6 +57,17 @@ if not H2_ENABLED:
     )
 
 
+def pytest_addoption(parser, pluginmanager):
+    if pluginmanager.hasplugin("twisted"):
+        return
+    # add the full choice set so that pytest doesn't complain about invalid choices in some cases
+    parser.addoption(
+        "--reactor",
+        default="none",
+        choices=["asyncio", "default", "none"],
+    )
+
+
 @pytest.fixture(scope="session")
 def mockserver() -> Generator[MockServer]:
     with MockServer() as mockserver:
@@ -72,17 +84,22 @@ def pytest_configure(config):
         # Needed on Windows to switch from proactor to selector for Twisted reactor compatibility.
         # If we decide to run tests with both, we will need to add a new option and check it here.
         set_asyncio_event_loop_policy()
+    elif config.getoption("--reactor") == "none":
+        install_reactor_import_hook()
 
 
 def pytest_runtest_setup(item):
     # Skip tests based on reactor markers
     reactor = item.config.getoption("--reactor")
 
-    if item.get_closest_marker("only_asyncio") and reactor != "asyncio":
-        pytest.skip("This test is only run with --reactor=asyncio")
+    if item.get_closest_marker("requires_reactor") and reactor == "none":
+        pytest.skip("This test requires a reactor")
 
-    if item.get_closest_marker("only_not_asyncio") and reactor == "asyncio":
-        pytest.skip("This test is only run without --reactor=asyncio")
+    if item.get_closest_marker("only_asyncio") and reactor not in {"asyncio", "none"}:
+        pytest.skip("This test is only run with --reactor=asyncio or --reactor=none")
+
+    if item.get_closest_marker("only_not_asyncio") and reactor in {"asyncio", "none"}:
+        pytest.skip("This test is only run without --reactor=asyncio or --reactor=none")
 
     # Skip tests requiring optional dependencies
     optional_deps = [
