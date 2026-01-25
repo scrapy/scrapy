@@ -35,7 +35,7 @@ STREAMING_URL = f"{BASE_URL}/streaming/detail?page=2"
 
 async def login(page):
     """Login to DAP RRI."""
-    print("🔐 Logging in...")
+    print("[*] Logging in...")
     await page.goto(BASE_URL)
     await page.wait_for_load_state("networkidle")
 
@@ -44,7 +44,7 @@ async def login(page):
     await page.click("#kt_sign_in_submit")
 
     await page.wait_for_timeout(3000)
-    print("✓ Login successful!")
+    print("[+] Login successful!")
 
 
 async def get_satker_options(page):
@@ -75,13 +75,13 @@ async def set_date_range(page, start_date, end_date):
             }}
         }}
     ''')
-    print(f"📅 Date range set: {date_range}")
+    print(f"[*] Date range set: {date_range}")
 
 
 async def scrape_portal_data(page, start_date, end_date):
     """Scrape Portal (Weblytic) data for all satkers."""
     print("\n" + "=" * 60)
-    print("📊 PORTAL (WEBLYTIC) DATA SCRAPER")
+    print("[*] PORTAL (WEBLYTIC) DATA SCRAPER")
     print("=" * 60)
 
     await page.goto(PORTAL_URL)
@@ -89,7 +89,7 @@ async def scrape_portal_data(page, start_date, end_date):
     await page.wait_for_timeout(2000)
 
     satker_options = await get_satker_options(page)
-    print(f"📋 Found {len(satker_options)} satkers to scrape")
+    print(f"[*] Found {len(satker_options)} satkers to scrape")
 
     await set_date_range(page, start_date, end_date)
 
@@ -180,7 +180,7 @@ async def scrape_portal_data(page, start_date, end_date):
 async def scrape_streaming_data(page, start_date, end_date):
     """Scrape Streaming data for all satkers."""
     print("\n" + "=" * 60)
-    print("🎵 STREAMING DATA SCRAPER")
+    print("[*] STREAMING DATA SCRAPER")
     print("=" * 60)
 
     await page.goto(STREAMING_URL)
@@ -188,7 +188,7 @@ async def scrape_streaming_data(page, start_date, end_date):
     await page.wait_for_timeout(2000)
 
     satker_options = await get_satker_options(page)
-    print(f"📋 Found {len(satker_options)} satkers to scrape")
+    print(f"[*] Found {len(satker_options)} satkers to scrape")
 
     await set_date_range(page, start_date, end_date)
 
@@ -359,8 +359,8 @@ def export_portal_excel(data, start_date, end_date):
             cell.font = Font(bold=True)
             cell.alignment = Alignment(horizontal="center", vertical="center")
 
-    print(f"\n✅ Portal data exported to: {output_file}")
-    print(f"📊 Summary:")
+    print(f"\n[+] Portal data exported to: {output_file}")
+    print(f"[*] Summary:")
     print(f"   Total satkers: {len(df)}")
     print(f"   Satkers with pageviews: {(df['PAGEVIEW'] > 0).sum()}")
     print(f"   Total pageviews: {df['PAGEVIEW'].sum():,}")
@@ -453,8 +453,8 @@ def export_streaming_excel(data, start_date, end_date):
         # Merge TOTAL USER row 1-2
         worksheet.merge_cells("H1:H2")
 
-    print(f"\n✅ Streaming data exported to: {output_file}")
-    print(f"📊 Summary:")
+    print(f"\n[+] Streaming data exported to: {output_file}")
+    print(f"[*] Summary:")
     print(f"   Total satkers: {len(df)}")
     print(f"   Satkers with data: {(df['ALL PRO'] > 0).sum()}")
     print(f"   Total ALL PRO hits: {df['ALL PRO'].sum():,}")
@@ -484,11 +484,11 @@ async def main():
     scrape_streaming = not args.portal_only
 
     print("=" * 60)
-    print("🚀 DAP RRI UNIFIED SCRAPER")
+    print("[*] DAP RRI UNIFIED SCRAPER")
     print("=" * 60)
-    print(f"📅 Date range: {args.start_date} - {args.end_date}")
-    print(f"📊 Portal: {'Yes' if scrape_portal else 'No'}")
-    print(f"🎵 Streaming: {'Yes' if scrape_streaming else 'No'}")
+    print(f"[*] Date range: {args.start_date} - {args.end_date}")
+    print(f"[*] Portal: {'Yes' if scrape_portal else 'No'}")
+    print(f"[*] Streaming: {'Yes' if scrape_streaming else 'No'}")
     print()
 
     async with async_playwright() as p:
@@ -520,12 +520,12 @@ async def main():
         await browser.close()
 
     print("\n" + "=" * 60)
-    print("✅ SCRAPING COMPLETE!")
+    print("[+] SCRAPING COMPLETE!")
     print("=" * 60)
     if portal_file:
-        print(f"📊 Portal: {portal_file}")
+        print(f"[*] Portal: {portal_file}")
     if streaming_file:
-        print(f"🎵 Streaming: {streaming_file}")
+        print(f"[*] Streaming: {streaming_file}")
 
 
 if __name__ == "__main__":
