@@ -1013,15 +1013,14 @@ RETRY_EXCEPTIONS
 Default::
 
     [
-        'twisted.internet.defer.TimeoutError',
-        'twisted.internet.error.TimeoutError',
-        'twisted.internet.error.DNSLookupError',
-        'twisted.internet.error.ConnectionRefusedError',
+        'scrapy.exceptions.CannotResolveHostError',
+        'scrapy.exceptions.DownloadConnectionRefusedError',
+        'scrapy.exceptions.DownloadFailedError',
+        'scrapy.exceptions.DownloadTimeoutError',
+        'scrapy.exceptions.ResponseDataLossError',
         'twisted.internet.error.ConnectionDone',
         'twisted.internet.error.ConnectError',
         'twisted.internet.error.ConnectionLost',
-        'twisted.internet.error.TCPTimedOutError',
-        'twisted.web.client.ResponseFailed',
         IOError,
         'scrapy.core.downloader.handlers.http11.TunnelError',
     ]
