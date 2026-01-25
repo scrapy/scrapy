@@ -27,6 +27,17 @@ this directory must not be shared by different spiders, or even different
 jobs/runs of the same spider, as it's meant to be used for storing the state of
 a *single* job.
 
+Directory Structure
+-------------------
+
+When ``JOBDIR`` is set, Scrapy creates a directory to persist crawl state. This structure allows the spider to pause and resume:
+
+* ``requests.queue``: Stores the persistent priority queue (requests scheduled but not yet processed).
+
+* ``requests.seen``: A filter for requests that have already been visited. This prevents reprocessing duplicates upon resumption.
+
+* ``spider.state``: Captures the spider's internal state. This is a binary file (Python pickle) and should not be modified manually.
+
 How to use it
 =============
 
