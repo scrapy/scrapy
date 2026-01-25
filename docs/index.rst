@@ -229,6 +229,7 @@ Extending Scrapy
    topics/signals
    topics/scheduler
    topics/exporters
+   topics/download-handlers
    topics/components
    topics/api
 
@@ -256,6 +257,9 @@ Extending Scrapy
 
 :doc:`topics/exporters`
     Quickly export your scraped items to a file (XML, CSV, etc).
+
+:doc:`topics/download-handlers`
+    Customize how requests are downloaded or add support for new URL schemes.
 
 :doc:`topics/components`
     Learn the common API and some good practices when building custom Scrapy

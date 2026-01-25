@@ -111,7 +111,6 @@ class TestCrawler(TestBaseCrawler):
         with pytest.raises(RuntimeError, match="more than once on the same instance"):
             yield crawler.crawl()
 
-    @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
     async def test_crawler_crawl_async_twice_seq_unsupported(self):
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
@@ -552,7 +551,7 @@ class TestCrawlerLogging:
             assert get_scrapy_root_handler().level == logging.DEBUG
             crawler = get_crawler(MySpider)
             assert get_scrapy_root_handler().level == logging.INFO
-            await maybe_deferred_to_future(crawler.crawl())
+            await crawler.crawl_async()
         finally:
             _uninstall_scrapy_root_handler()
 
@@ -845,18 +844,18 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         log = self.run_script("default_name_resolver.py")
         assert "Spider closed (finished)" in log
         assert (
-            "'downloader/exception_type_count/twisted.internet.error.DNSLookupError': 1,"
+            "'downloader/exception_type_count/scrapy.exceptions.CannotResolveHostError': 1,"
             in log
         )
         assert (
-            "twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1."
+            "scrapy.exceptions.CannotResolveHostError: DNS lookup failed: no results for hostname lookup: ::1."
             in log
         )
 
     def test_caching_hostname_resolver_ipv6(self):
         log = self.run_script("caching_hostname_resolver_ipv6.py")
         assert "Spider closed (finished)" in log
-        assert "twisted.internet.error.DNSLookupError" not in log
+        assert "scrapy.exceptions.CannotResolveHostError" not in log
 
     def test_caching_hostname_resolver_finite_execution(
         self, mockserver: MockServer
@@ -865,7 +864,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "Spider closed (finished)" in log
         assert "ERROR: Error downloading" not in log
         assert "TimeoutError" not in log
-        assert "twisted.internet.error.DNSLookupError" not in log
+        assert "scrapy.exceptions.CannotResolveHostError" not in log
 
     def test_twisted_reactor_asyncio(self):
         log = self.run_script("twisted_reactor_asyncio.py")

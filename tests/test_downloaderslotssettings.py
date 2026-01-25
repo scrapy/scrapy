@@ -8,7 +8,7 @@ from scrapy import Request
 from scrapy.core.downloader import Downloader, Slot
 from scrapy.crawler import CrawlerRunner
 from scrapy.exceptions import ScrapyDeprecationWarning
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
@@ -99,9 +99,9 @@ def test_params():
     crawler = get_crawler(DefaultSpider, settings_dict=settings)
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
-    downloader._slot_gc_loop.stop()  # Prevent an unclean reactor.
     request = Request("https://example.com")
     _, actual = downloader._get_slot(request)
+    downloader.close()
     expected = Slot(**params)
     for param in params:
         assert getattr(expected, param) == getattr(actual, param), (
@@ -113,7 +113,6 @@ def test_get_slot_deprecated_spider_arg():
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
     downloader = Downloader(crawler)
-    downloader._slot_gc_loop.stop()  # Prevent an unclean reactor.
     request = Request("https://example.com")
 
     with pytest.warns(
@@ -122,6 +121,7 @@ def test_get_slot_deprecated_spider_arg():
     ):
         key1, slot1 = downloader._get_slot(request, spider=crawler.spider)
     key2, slot2 = downloader._get_slot(request)
+    downloader.close()
 
     assert key1 == key2
     assert slot1 == slot2
@@ -143,7 +143,7 @@ async def test_none_slot_with_priority_queue(
         DownloaderSlotsSettingsTestSpider,
         settings_dict={"SCHEDULER_PRIORITY_QUEUE": priority_queue_class},
     )
-    await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+    await crawler.crawl_async(mockserver=mockserver)
     assert isinstance(crawler.spider, DownloaderSlotsSettingsTestSpider)
 
     assert hasattr(crawler.spider, "times")

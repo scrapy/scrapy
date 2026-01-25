@@ -172,7 +172,7 @@ class ExecutionEngine:
     async def start_async(self, *, _start_request_processing: bool = True) -> None:
         """Start the execution engine.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         if self._starting:
             raise RuntimeError("Engine already running")
@@ -208,7 +208,7 @@ class ExecutionEngine:
     async def stop_async(self) -> None:
         """Gracefully stop the execution engine.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
 
         if not self._starting:
@@ -459,7 +459,7 @@ class ExecutionEngine:
 
          Only downloader middlewares are applied.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         if self.spider is None:
             raise RuntimeError(f"No open spider to crawl: {request}")
@@ -534,7 +534,16 @@ class ExecutionEngine:
             await maybe_deferred_to_future(d)
         await self.scraper.open_spider_async()
         assert self.crawler.stats
-        self.crawler.stats.open_spider()
+        if argument_is_required(self.crawler.stats.open_spider, "spider"):
+            warnings.warn(
+                f"The open_spider() method of {global_object_name(type(self.crawler.stats))} requires a spider argument,"
+                f" this is deprecated and the argument will not be passed in future Scrapy versions.",
+                ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+            self.crawler.stats.open_spider(spider=self.crawler.spider)
+        else:
+            self.crawler.stats.open_spider()
         await self.signals.send_catch_log_async(
             signals.spider_opened, spider=self.crawler.spider
         )
@@ -575,7 +584,7 @@ class ExecutionEngine:
     async def close_spider_async(self, *, reason: str = "cancelled") -> None:
         """Close (cancel) spider and clear all its outstanding requests.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         if self.spider is None:
             raise RuntimeError("Spider not opened")
@@ -629,7 +638,18 @@ class ExecutionEngine:
 
         assert self.crawler.stats
         try:
-            self.crawler.stats.close_spider(reason=reason)
+            if argument_is_required(self.crawler.stats.close_spider, "spider"):
+                warnings.warn(
+                    f"The close_spider() method of {global_object_name(type(self.crawler.stats))} requires a spider argument,"
+                    f" this is deprecated and the argument will not be passed in future Scrapy versions.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
+                self.crawler.stats.close_spider(
+                    spider=self.crawler.spider, reason=reason
+                )
+            else:
+                self.crawler.stats.close_spider(reason=reason)
         except Exception:
             log_failure("Stats close failure")
 

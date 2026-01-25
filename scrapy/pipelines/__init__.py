@@ -16,7 +16,7 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.middleware import MiddlewareManager
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.defer import deferred_from_coro, ensure_awaitable, maybeDeferred_coro
+from scrapy.utils.defer import _maybeDeferred_coro, deferred_from_coro, ensure_awaitable
 from scrapy.utils.python import global_object_name
 
 if TYPE_CHECKING:
@@ -70,8 +70,8 @@ class ItemPipelineManager(MiddlewareManager):
             method: Callable[..., Coroutine[Any, Any, None] | Deferred[None] | None],
         ) -> Deferred[None]:
             if method in self._mw_methods_requiring_spider:
-                return maybeDeferred_coro(method, self._spider)
-            return maybeDeferred_coro(method)
+                return _maybeDeferred_coro(method, True, self._spider)
+            return _maybeDeferred_coro(method, True)
 
         dfds = [get_dfd(m) for m in methods]
         d: Deferred[list[tuple[bool, None]]] = DeferredList(

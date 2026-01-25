@@ -233,9 +233,6 @@ genspider
 * Syntax: ``scrapy genspider [-t template] <name> <domain or URL>``
 * Requires project: *no*
 
-.. versionadded:: 2.6.0
-   The ability to pass a URL instead of a domain.
-
 Creates a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain or URL>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
 
 Usage example::
@@ -508,8 +505,6 @@ Supported options:
 * ``--verbose`` or ``-v``: display information for each depth level
 
 * ``--output`` or ``-o``: dump scraped items to a file
-
-  .. versionadded:: 2.3
 
 .. skip: start
 

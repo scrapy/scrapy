@@ -129,9 +129,10 @@ defines one or more of these methods:
 
    .. method:: process_exception(request, exception)
 
-      Scrapy calls :meth:`process_exception` when a download handler
-      or a :meth:`process_request` (from a downloader middleware) raises an
-      exception (including an :exc:`~scrapy.exceptions.IgnoreRequest` exception)
+      Scrapy calls :meth:`process_exception` when a :ref:`download handler
+      <topics-download-handlers>` or a :meth:`process_request` (from a
+      downloader middleware) raises an exception (including an
+      :exc:`~scrapy.exceptions.IgnoreRequest` exception).
 
       :meth:`process_exception` should return: either ``None``,
       a :class:`~scrapy.http.Response` object, or a :class:`~scrapy.Request` object.
@@ -917,10 +918,6 @@ Default: ``[]``
 
 Meta tags within these tags are ignored.
 
-.. versionchanged:: 2.0
-   The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
-   ``["script", "noscript"]`` to ``[]``.
-
 .. versionchanged:: 2.11.2
    The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
    ``[]`` to ``["noscript"]``.
@@ -1016,15 +1013,14 @@ RETRY_EXCEPTIONS
 Default::
 
     [
-        'twisted.internet.defer.TimeoutError',
-        'twisted.internet.error.TimeoutError',
-        'twisted.internet.error.DNSLookupError',
-        'twisted.internet.error.ConnectionRefusedError',
+        'scrapy.exceptions.CannotResolveHostError',
+        'scrapy.exceptions.DownloadConnectionRefusedError',
+        'scrapy.exceptions.DownloadFailedError',
+        'scrapy.exceptions.DownloadTimeoutError',
+        'scrapy.exceptions.ResponseDataLossError',
         'twisted.internet.error.ConnectionDone',
         'twisted.internet.error.ConnectError',
         'twisted.internet.error.ConnectionLost',
-        'twisted.internet.error.TCPTimedOutError',
-        'twisted.web.client.ResponseFailed',
         IOError,
         'scrapy.core.downloader.handlers.http11.TunnelError',
     ]

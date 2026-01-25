@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 def is_asyncio_available() -> bool:
     """Check if it's possible to call asyncio code that relies on the asyncio event loop.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.14
 
     Currently this function is identical to
     :func:`scrapy.utils.reactor.is_asyncio_reactor_installed`: it returns

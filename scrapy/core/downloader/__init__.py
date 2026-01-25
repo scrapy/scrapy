@@ -108,6 +108,7 @@ def _get_concurrency_delay(
 
 class Downloader:
     DOWNLOAD_SLOT = "download_slot"
+    _SLOT_GC_INTERVAL: float = 60.0  # seconds
 
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
@@ -125,10 +126,7 @@ class Downloader:
         self.middleware: DownloaderMiddlewareManager = (
             DownloaderMiddlewareManager.from_crawler(crawler)
         )
-        self._slot_gc_loop: AsyncioLoopingCall | LoopingCall = create_looping_call(
-            self._slot_gc
-        )
-        self._slot_gc_loop.start(60)
+        self._slot_gc_loop: AsyncioLoopingCall | LoopingCall | None = None
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS"
         )
@@ -172,6 +170,7 @@ class Downloader:
             randomize_delay = slot_settings.get("randomize_delay", self.randomize_delay)
             new_slot = Slot(conc, delay, randomize_delay)
             self.slots[key] = new_slot
+            self._start_slot_gc()
 
         return key, self.slots[key]
 
@@ -236,9 +235,7 @@ class Downloader:
         slot.transferring.add(request)
         try:
             # 1. Download the response
-            response: Response = await maybe_deferred_to_future(
-                self.handlers.download_request(request)
-            )
+            response: Response = await self.handlers.download_request_async(request)
             # 2. Notify response_downloaded listeners about the recent download
             # before querying queue for next request
             self.signals.send_catch_log(
@@ -275,7 +272,7 @@ class Downloader:
             queue_dfd.callback(response)  # awaited in _enqueue_request()
 
     def close(self) -> None:
-        self._slot_gc_loop.stop()
+        self._stop_slot_gc()
         for slot in self.slots.values():
             slot.close()
 
@@ -284,3 +281,14 @@ class Downloader:
         for key, slot in list(self.slots.items()):
             if not slot.active and slot.lastseen + slot.delay < mintime:
                 self.slots.pop(key).close()
+
+    def _start_slot_gc(self) -> None:
+        if self._slot_gc_loop:
+            return
+        self._slot_gc_loop = create_looping_call(self._slot_gc)
+        self._slot_gc_loop.start(self._SLOT_GC_INTERVAL, now=False)
+
+    def _stop_slot_gc(self) -> None:
+        if self._slot_gc_loop:
+            self._slot_gc_loop.stop()
+            self._slot_gc_loop = None

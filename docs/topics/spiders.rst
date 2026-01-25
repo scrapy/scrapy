@@ -362,6 +362,8 @@ used by :class:`~scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware`::
 Spider arguments can also be passed through the Scrapyd ``schedule.json`` API.
 See `Scrapyd documentation`_.
 
+.. _spiderargs-scrapy-spider-metadata:
+
 scrapy-spider-metadata parameters
 ---------------------------------
 
@@ -546,9 +548,6 @@ Crawling rules
    .. warning:: Because of its internal implementation, you must explicitly set
       callbacks for new requests when writing :class:`CrawlSpider`-based spiders;
       unexpected behaviour can occur otherwise.
-
-   .. versionadded:: 2.0
-      The *errback* parameter.
 
 CrawlSpider example
 ~~~~~~~~~~~~~~~~~~~

@@ -174,7 +174,7 @@ def get_func_args_dict(
 ) -> Mapping[str, inspect.Parameter]:
     """Return the argument dict of a callable object.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.14
     """
     if not callable(func):
         raise TypeError(f"func must be callable, got '{type(func).__name__}'")

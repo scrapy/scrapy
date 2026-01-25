@@ -4,8 +4,6 @@
 Coroutines
 ==========
 
-.. versionadded:: 2.0
-
 Scrapy :ref:`supports <coroutine-support>` the :ref:`coroutine syntax <async>`
 (i.e. ``async def``).
 
@@ -28,10 +26,6 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     If you are using any custom or third-party :ref:`spider middleware
     <topics-spider-middleware>`, see :ref:`sync-async-spider-middleware`.
 
-    .. versionchanged:: 2.7
-       Output of async callbacks is now processed asynchronously instead of
-       collecting all of it first.
-
 -   The :meth:`process_item` method of
     :ref:`item pipelines <topics-item-pipeline>`.
 
@@ -53,8 +47,6 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     See also :ref:`sync-async-spider-middleware` and
     :ref:`universal-spider-middleware`.
 
-    .. versionadded:: 2.7
-
 -   The :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_start` method
     of :ref:`spider middlewares <custom-spider-middleware>`, which *must* be
     defined as an :term:`asynchronous generator`.
@@ -62,6 +54,10 @@ hence use coroutine syntax (e.g. ``await``, ``async for``, ``async with``):
     .. versionadded:: 2.13
 
 -   :ref:`Signal handlers that support deferreds <signal-deferred>`.
+
+-   Methods of :ref:`download handlers <topics-download-handlers>`.
+
+    .. versionadded:: 2.14
 
 
 .. _coroutine-deferred-apis:
@@ -89,8 +85,8 @@ These APIs have a coroutine-based implementation and a Deferred-based one:
 
     - :meth:`~scrapy.crawler.Crawler.crawl_async` (coroutine-based) and
       :meth:`~scrapy.crawler.Crawler.crawl` (Deferred-based): the former
-      doesn't support non-default reactors and so the latter should be used
-      with those.
+      may be inconvenient to use in Deferred-based code so both are available,
+      this may change in a future Scrapy version.
 
 -   :class:`scrapy.crawler.AsyncCrawlerRunner` and its subclass
     :class:`scrapy.crawler.AsyncCrawlerProcess` (coroutine-based) and
@@ -102,12 +98,6 @@ These APIs have a coroutine-based implementation and a Deferred-based one:
 The following user-supplied methods can return
 :class:`~twisted.internet.defer.Deferred` objects (the methods that can also
 return coroutines are listed in :ref:`coroutine-support`):
-
--   Custom download handlers (see :setting:`DOWNLOAD_HANDLERS`):
-
-    - ``download_request()``
-
-    - ``close()``
 
 -   Custom downloader implementations (see :setting:`DOWNLOADER`):
 
@@ -154,11 +144,11 @@ For example:
     email is sent. You can use this object directly in Deferred-based code or
     convert it into a :class:`~asyncio.Future` object with
     :func:`~scrapy.utils.defer.maybe_deferred_to_future`.
--   A custom download handler needs to define a ``download_request()`` method
-    that returns a :class:`~twisted.internet.defer.Deferred` object. You can
-    write a method that works with Deferreds and returns one directly, or you
-    can write a coroutine and convert it into a function that returns a
-    Deferred with :func:`~scrapy.utils.defer.deferred_f_from_coro_f`.
+-   A custom scheduler needs to define an ``open()`` method that can return a
+    :class:`~twisted.internet.defer.Deferred` object. You can write a method
+    that works with Deferreds and returns one directly, or you can write a
+    coroutine and convert it into a function that returns a Deferred with
+    :func:`~scrapy.utils.defer.deferred_f_from_coro_f`.
 
 
 General usage
@@ -307,8 +297,6 @@ You can also send multiple requests in parallel:
 Mixing synchronous and asynchronous spider middlewares
 ======================================================
 
-.. versionadded:: 2.7
-
 The output of a :class:`~scrapy.Request` callback is passed as the ``result``
 parameter to the
 :meth:`~scrapy.spidermiddlewares.SpiderMiddleware.process_spider_output` method
@@ -395,8 +383,6 @@ option. Otherwise, it's better to choose the second option.
 
 Universal spider middlewares
 ----------------------------
-
-.. versionadded:: 2.7
 
 To allow writing a spider middleware that supports asynchronous execution of
 its ``process_spider_output`` method in Scrapy 2.7 and later (avoiding
