@@ -25,6 +25,7 @@ from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.pipelines.files import (
+    FileException,
     FilesPipeline,
     FSFilesStore,
     FTPFilesStore,
@@ -286,6 +287,77 @@ class TestFilesPipeline:
 
         with pytest.raises(TypeError, match="file_urls must be a list of URLs"):
             list(pipeline.get_media_requests(item, None))
+
+    def test_media_downloaded_accepts_status_201(self):
+        """
+        Test that FilesPipeline accepts HTTP 201 (Created) status.
+
+        Per RFC 7231, HTTP 201 indicates successful resource creation.
+        Some APIs return 201 when serving files.
+
+        Fixes: https://github.com/scrapy/scrapy/issues/1615
+        """
+        # Create test request and response with 201 status
+        request = Request("http://example.com/test.txt")
+        response = Response(
+            "http://example.com/test.txt",
+            status=201,  # Testing HTTP 201 (Created)
+            body=b"Test file content",
+            request=request,
+        )
+
+        # Get spider info
+        info = self.pipeline.spiderinfo
+
+        # This should NOT raise FileException
+        result = self.pipeline.media_downloaded(
+            response=response, request=request, info=info, item=None
+        )
+
+        # Verify result is valid
+        assert result is not None
+        assert "path" in result
+        assert "checksum" in result
+
+    def test_media_downloaded_still_accepts_status_200(self):
+        """
+        Regression test: HTTP 200 should still work.
+        """
+        request = Request("http://example.com/test.txt")
+        response = Response(
+            "http://example.com/test.txt",
+            status=200,  # Standard HTTP 200 (OK)
+            body=b"Test file content",
+            request=request,
+        )
+
+        info = self.pipeline.spiderinfo
+
+        result = self.pipeline.media_downloaded(
+            response=response, request=request, info=info, item=None
+        )
+
+        assert result is not None
+
+    def test_media_downloaded_rejects_status_404(self):
+        """
+        Regression test: Invalid status codes should still fail.
+        """
+        request = Request("http://example.com/notfound.txt")
+        response = Response(
+            "http://example.com/notfound.txt",
+            status=404,  # Should fail
+            body=b"Not found",
+            request=request,
+        )
+
+        info = self.pipeline.spiderinfo
+
+        # This SHOULD raise FileException
+        with pytest.raises(FileException):
+            self.pipeline.media_downloaded(
+                response=response, request=request, info=info, item=None
+            )
 
 
 class TestFilesPipelineFieldsMixin(ABC):
