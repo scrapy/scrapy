@@ -25,7 +25,6 @@ async def main():
                 "https": None,
                 "ftp": None,
             },
-            "TELNETCONSOLE_ENABLED": False,
         }
     )
     await runner.crawl(NoRequestsSpider)

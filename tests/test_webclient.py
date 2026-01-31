@@ -9,7 +9,6 @@ from urllib.parse import urlparse
 import OpenSSL.SSL
 import pytest
 from pytest_twisted import async_yield_fixture
-from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.testing import StringTransport
 from twisted.protocols.policies import WrappingFactory
@@ -18,6 +17,7 @@ from twisted.web.client import _makeGetterFactory
 
 from scrapy.core.downloader import webclient as client
 from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
+from scrapy.exceptions import DownloadTimeoutError
 from scrapy.http import Headers, Request
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes, to_unicode
@@ -304,9 +304,9 @@ class TestWebClient:
         """
         When a non-zero timeout is passed to L{getPage} and that many
         seconds elapse before the server responds to the request. the
-        L{Deferred} is errbacked with a L{error.TimeoutError}.
+        L{Deferred} is errbacked with a L{DownloadTimeoutError}.
         """
-        with pytest.raises(defer.TimeoutError):
+        with pytest.raises(DownloadTimeoutError):
             yield getPage(server_url + "wait", timeout=0.000001)
         # Clean up the server which is hanging around not doing
         # anything.

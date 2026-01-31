@@ -14,11 +14,16 @@ if TYPE_CHECKING:
 
 
 def is_reactorless() -> bool:
-    """Check if we are running in the reactorless mode, i.e. with ``TWISTED_ENABLED=False``.
+    """Check if we are running in the reactorless mode, i.e. with
+    :setting:`TWISTED_ENABLED` set to ``False``.
 
     As this checks the runtime state and not the setting itself, it can be
     wrong when executed very early, before the reactor and/or the asyncio event
     loop are initialized.
+
+    .. note:: As this function uses
+        :func:`scrapy.utils.asyncio.is_asyncio_available()`, it has the same
+        limitations for detecting a running asyncio event loop as that one.
 
     .. versionadded:: VERSION
     """

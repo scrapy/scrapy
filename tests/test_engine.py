@@ -614,7 +614,6 @@ def test_request_scheduled_signal(caplog):
 
     crawler = get_crawler(MySpider)
     engine = ExecutionEngine(crawler, lambda _: None)
-    engine.downloader._slot_gc_loop.stop()
     scheduler = TestScheduler()
 
     async def start():

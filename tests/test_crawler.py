@@ -842,18 +842,18 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         log = self.run_script("default_name_resolver.py")
         assert "Spider closed (finished)" in log
         assert (
-            "'downloader/exception_type_count/twisted.internet.error.DNSLookupError': 1,"
+            "'downloader/exception_type_count/scrapy.exceptions.CannotResolveHostError': 1,"
             in log
         )
         assert (
-            "twisted.internet.error.DNSLookupError: DNS lookup failed: no results for hostname lookup: ::1."
+            "scrapy.exceptions.CannotResolveHostError: DNS lookup failed: no results for hostname lookup: ::1."
             in log
         )
 
     def test_caching_hostname_resolver_ipv6(self):
         log = self.run_script("caching_hostname_resolver_ipv6.py")
         assert "Spider closed (finished)" in log
-        assert "twisted.internet.error.DNSLookupError" not in log
+        assert "scrapy.exceptions.CannotResolveHostError" not in log
 
     def test_caching_hostname_resolver_finite_execution(
         self, mockserver: MockServer
@@ -862,7 +862,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         assert "Spider closed (finished)" in log
         assert "ERROR: Error downloading" not in log
         assert "TimeoutError" not in log
-        assert "twisted.internet.error.DNSLookupError" not in log
+        assert "scrapy.exceptions.CannotResolveHostError" not in log
 
     def test_twisted_reactor_asyncio(self):
         log = self.run_script("twisted_reactor_asyncio.py")
@@ -1103,8 +1103,25 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "Spider closed (finished)" in log
         assert "ImportError: Import of twisted.internet.reactor is forbidden" in log
 
-    def test_reactorless_telnetconsole(self):
-        log = self.run_script("reactorless_telnetconsole.py")
+    def test_reactorless_telnetconsole_default(self):
+        """By default TWISTED_ENABLED=False silently sets TELNETCONSOLE_ENABLED=False."""
+        log = self.run_script("reactorless_telnetconsole_default.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "The TelnetConsole extension requires a Twisted reactor" not in log
+        assert "scrapy.extensions.telnet.TelnetConsole" not in log
+
+    def test_reactorless_telnetconsole_disabled(self):
+        """Explicit TELNETCONSOLE_ENABLED=False, there are no warnings."""
+        log = self.run_script("reactorless_telnetconsole_disabled.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "The TelnetConsole extension requires a Twisted reactor" not in log
+        assert "scrapy.extensions.telnet.TelnetConsole" not in log
+
+    def test_reactorless_telnetconsole_enabled(self):
+        """Explicit TELNETCONSOLE_ENABLED=True, the user gets a warning."""
+        log = self.run_script("reactorless_telnetconsole_enabled.py")
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
         assert "The TelnetConsole extension requires a Twisted reactor" in log
@@ -1220,7 +1237,10 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
     def test_simple_default_reactor(self):
         log = self.run_script("simple_default_reactor.py")
         assert "Spider closed (finished)" not in log
-        assert "RuntimeError: AsyncCrawlerRunner requires AsyncioSelectorReactor" in log
+        assert (
+            "RuntimeError: When TWISTED_ENABLED is True, "
+            "AsyncCrawlerRunner requires that the installed Twisted reactor"
+        ) in log
 
     def test_reactorless_simple(self):
         log = self.run_script("reactorless_simple.py")

@@ -5,12 +5,11 @@ from typing import TYPE_CHECKING
 from unittest import mock
 
 import pytest
-from twisted.internet import error
 from twisted.internet.defer import Deferred, DeferredList
 from twisted.python import failure
 
 from scrapy.downloadermiddlewares.robotstxt import RobotsTxtMiddleware
-from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.exceptions import CannotResolveHostError, IgnoreRequest, NotConfigured
 from scrapy.http import Request, Response, TextResponse
 from scrapy.http.request import NO_CALLBACK
 from scrapy.settings import Settings
@@ -162,7 +161,7 @@ Disallow: /some/randome/page.html
     @deferred_f_from_coro_f
     async def test_robotstxt_error(self, caplog: pytest.LogCaptureFixture) -> None:
         self.crawler.settings.set("ROBOTSTXT_OBEY", True)
-        err = error.DNSLookupError("Robotstxt address not found")
+        err = CannotResolveHostError("Robotstxt address not found")
 
         async def return_failure(request):
             deferred = Deferred()
@@ -173,12 +172,12 @@ Disallow: /some/randome/page.html
 
         middleware = RobotsTxtMiddleware(self.crawler)
         await middleware.process_request(Request("http://site.local"))
-        assert "DNS lookup failed: Robotstxt address not found" in caplog.text
+        assert "Robotstxt address not found" in caplog.text
 
     @deferred_f_from_coro_f
     async def test_robotstxt_immediate_error(self):
         self.crawler.settings.set("ROBOTSTXT_OBEY", True)
-        err = error.DNSLookupError("Robotstxt address not found")
+        err = CannotResolveHostError("Robotstxt address not found")
 
         async def immediate_failure(request):
             raise err

@@ -21,7 +21,6 @@ from h2.events import (
     WindowUpdated,
 )
 from h2.exceptions import FrameTooLargeError, H2Error
-from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.internet.interfaces import (
     IAddress,
     IHandshakeListener,
@@ -33,6 +32,7 @@ from twisted.protocols.policies import TimeoutMixin
 from zope.interface import implementer
 
 from scrapy.core.http2.stream import Stream, StreamCloseReason
+from scrapy.exceptions import DownloadTimeoutError
 from scrapy.http import Request, Response
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 
@@ -313,7 +313,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
     def timeoutConnection(self) -> None:
         """Called when the connection times out.
-        We lose the connection with TimeoutError"""
+        We lose the connection with DownloadTimeoutError"""
 
         # Check whether there are open streams. If there are, we're going to
         # want to use the error code PROTOCOL_ERROR. If there aren't, use
@@ -330,7 +330,11 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self._write_to_transport()
 
         self._lose_connection_with_error(
-            [TxTimeoutError(f"Connection was IDLE for more than {self.IDLE_TIMEOUT}s")]
+            [
+                DownloadTimeoutError(
+                    f"Connection was IDLE for more than {self.IDLE_TIMEOUT}s"
+                )
+            ]
         )
 
     def connectionLost(self, reason: Failure = connectionDone) -> None:

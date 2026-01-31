@@ -125,6 +125,7 @@ class Crawler:
                 log_reactor_info()
         else:
             logger.debug("Not using a Twisted reactor")
+            self._apply_reactorless_default_settings()
 
         self.extensions = ExtensionManager.from_crawler(self)
         self.settings.freeze()
@@ -133,6 +134,15 @@ class Crawler:
         logger.info(
             "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
         )
+
+    def _apply_reactorless_default_settings(self):
+        """Change some setting defaults when not using a Twisted reactor.
+
+        Some settings need different defaults when using and not using a
+        reactor, but as we can't put this logic into default_settings.py we
+        change them here when the reactor is not used.
+        """
+        self.settings.set("TELNETCONSOLE_ENABLED", False, priority="default")
 
     # Cannot use @deferred_f_from_coro_f because that relies on the reactor
     # being installed already, which is done within _apply_settings(), inside
@@ -512,7 +522,9 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         if self.settings.getbool("TWISTED_ENABLED"):
             if not is_asyncio_reactor_installed():
                 raise RuntimeError(
-                    f"{type(self).__name__} requires AsyncioSelectorReactor when using a reactor."
+                    f"When TWISTED_ENABLED is True, {type(self).__name__} "
+                    f"requires that the installed Twisted reactor is "
+                    f'"twisted.internet.asyncioreactor.AsyncioSelectorReactor".'
                 )
         elif is_reactor_installed():
             raise RuntimeError(

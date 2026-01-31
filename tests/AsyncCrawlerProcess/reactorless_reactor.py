@@ -11,6 +11,5 @@ AsyncCrawlerProcess(
             "https": None,
             "ftp": None,
         },
-        "TELNETCONSOLE_ENABLED": False,
     }
 )

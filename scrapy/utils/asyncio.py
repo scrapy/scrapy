@@ -58,15 +58,21 @@ def is_asyncio_available() -> bool:
     but it's possible to await on :class:`~twisted.internet.defer.Deferred`
     objects.
 
+    .. note:: As this function uses :func:`asyncio.get_running_loop()`, it will
+        only detect the event loop if called in the same thread and from the
+        code that runs inside that loop (this shouldn't be a problem when
+        calling it from code such as spiders and Scrapy components, if Scrapy
+        is run using one of the supported ways).
+
     .. versionchanged:: VERSION
         This function now also returns ``True`` if there is a running asyncio
         loop, even if no Twisted reactor is installed.
     """
 
     # Check if there is a running asyncio loop.
-    # Can't easily check for an installed but not running one, and there could
-    # be false positives due to some 3rd-party code installing it as a side
-    # effect.
+    # Can't easily check for an installed but not running one, and if we
+    # checked that there could be false positives due to some 3rd-party code
+    # installing it as a side effect (e.g. by calling get_event_loop()).
     try:
         asyncio.get_running_loop()
     except RuntimeError:

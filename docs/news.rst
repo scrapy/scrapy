@@ -3,6 +3,35 @@
 Release notes
 =============
 
+.. _release-2.14.1:
+
+Scrapy 2.14.1 (2026-01-12)
+--------------------------
+
+Deprecations
+~~~~~~~~~~~~
+
+-   ``scrapy.utils.defer.maybeDeferred_coro()`` is deprecated. (:issue:`7212`)
+
+Bug fixes
+~~~~~~~~~
+
+-   Fixed custom stats collectors that require a ``spider`` argument in their
+    ``open_spider()`` and ``close_spider()`` methods not receiving the
+    argument when called by the engine.
+
+    Note, however, that the ``spider`` argument is now deprecated and will stop
+    being passed in a future version of Scrapy.
+
+    (:issue:`7213`)
+
+Quality assurance
+~~~~~~~~~~~~~~~~~
+
+-   Replaced deprecated ``codecov/test-results-action@v1`` GitHub Action with
+    ``codecov/codecov-action@v5``.
+    (:issue:`7180`, :issue:`7215`)
+
 .. _release-2.14.0:
 
 Scrapy 2.14.0 (2026-01-05)

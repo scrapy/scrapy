@@ -12,14 +12,8 @@ from urllib.parse import urlencode
 
 import pytest
 from pytest_twisted import async_yield_fixture
-from twisted.internet.defer import (
-    CancelledError,
-    Deferred,
-    DeferredList,
-    inlineCallbacks,
-)
+from twisted.internet.defer import Deferred, DeferredList, inlineCallbacks
 from twisted.internet.endpoints import SSL4ClientEndpoint, SSL4ServerEndpoint
-from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.internet.ssl import Certificate, PrivateCertificate, optionsForClientTLS
 from twisted.web.client import URI, ResponseFailed
 from twisted.web.http import H2_ENABLED
@@ -27,6 +21,7 @@ from twisted.web.http import Request as TxRequest
 from twisted.web.server import NOT_DONE_YET, Site
 from twisted.web.static import File
 
+from scrapy.exceptions import DownloadCancelledError, DownloadTimeoutError
 from scrapy.http import JsonRequest, Request, Response
 from scrapy.settings import Settings
 from scrapy.spiders import Spider
@@ -480,7 +475,7 @@ class TestHttps2ClientProtocol:
             url=self.get_url(server_port, "/get-data-html-large"),
             meta={"download_maxsize": 1000},
         )
-        with pytest.raises(CancelledError) as exc_info:
+        with pytest.raises(DownloadCancelledError) as exc_info:
             await make_request(client, request)
         error_pattern = re.compile(
             rf"Cancelling download of {request.url}: received response "
@@ -735,7 +730,7 @@ class TestHttps2ClientProtocol:
         for err in exc_info.value.reasons:
             from scrapy.core.http2.protocol import H2ClientProtocol  # noqa: PLC0415
 
-            if isinstance(err, TxTimeoutError):
+            if isinstance(err, DownloadTimeoutError):
                 assert (
                     f"Connection was IDLE for more than {H2ClientProtocol.IDLE_TIMEOUT}s"
                     in str(err)
