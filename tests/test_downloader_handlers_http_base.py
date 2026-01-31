@@ -139,6 +139,48 @@ class TestHttpBase(ABC):
             assert body["headers"][header_name] == [header_value]
 
     @deferred_f_from_coro_f
+    async def test_request_header_none(self, mockserver: MockServer) -> None:
+        """Adding a header with None as the value should not send that header."""
+        request_headers = {
+            "Cookie": None,
+            "X-Custom-Header": None,
+        }
+        request = Request(
+            mockserver.url("/echo", is_secure=self.is_secure),
+            headers=request_headers,
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == HTTPStatus.OK
+        body = json.loads(response.body.decode("utf-8"))
+        assert "headers" in body
+        for header_name in request_headers:
+            assert header_name not in body["headers"]
+
+    @pytest.mark.parametrize(
+        "request_headers",
+        [
+            {"X-Custom-Header": ["foo", "bar"]},
+            [("X-Custom-Header", "foo"), ("X-Custom-Header", "bar")],
+        ],
+    )
+    @deferred_f_from_coro_f
+    async def test_request_header_duplicate(
+        self, mockserver: MockServer, request_headers: Any
+    ) -> None:
+        """All values for a header should be sent."""
+        request = Request(
+            mockserver.url("/echo", is_secure=self.is_secure),
+            headers=request_headers,
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == HTTPStatus.OK
+        body = json.loads(response.body.decode("utf-8"))
+        assert "headers" in body
+        assert body["headers"]["X-Custom-Header"] == ["foo", "bar"]
+
+    @deferred_f_from_coro_f
     async def test_server_receives_correct_request_body(
         self, mockserver: MockServer
     ) -> None:
