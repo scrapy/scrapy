@@ -11,11 +11,9 @@ from http import HTTPStatus
 from ipaddress import IPv4Address
 from socket import gethostbyname
 from typing import TYPE_CHECKING, Any
-from unittest import mock
 from urllib.parse import urlparse
 
 import pytest
-from twisted.internet import defer
 from twisted.internet.ssl import Certificate
 
 from scrapy.exceptions import (
@@ -28,7 +26,6 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
-from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import (
     deferred_f_from_coro_f,
     deferred_from_coro,
@@ -495,28 +492,14 @@ class TestHttp11Base(TestHttpBase):
 
     @deferred_f_from_coro_f
     async def test_download_with_maxsize_very_large_file(
-        self, mockserver: MockServer
+        self, mockserver: MockServer, caplog: pytest.LogCaptureFixture
     ) -> None:
-        # TODO: the logger check is specific to scrapy.core.downloader.handlers.http11
-        with mock.patch("scrapy.core.downloader.handlers.http11.logger") as logger:
-            request = Request(
-                mockserver.url("/largechunkedfile", is_secure=self.is_secure)
-            )
+        request = Request(mockserver.url("/largechunkedfile", is_secure=self.is_secure))
+        async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
+            with pytest.raises(DownloadCancelledError):
+                await download_handler.download_request(request)
 
-            def check(logger: mock.Mock) -> None:
-                logger.warning.assert_called_once_with(mock.ANY, mock.ANY)
-
-            async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
-                with pytest.raises(DownloadCancelledError):
-                    await download_handler.download_request(request)
-
-            # As the error message is logged in the dataReceived callback, we
-            # have to give a bit of time to the reactor to process the queue
-            # after closing the connection.
-            d: defer.Deferred[mock.Mock] = defer.Deferred()
-            d.addCallback(check)
-            call_later(0.1, d.callback, logger)
-            await maybe_deferred_to_future(d)
+        assert "larger than download max size" in caplog.text
 
     @deferred_f_from_coro_f
     async def test_download_with_maxsize_per_req(self, mockserver: MockServer) -> None:
