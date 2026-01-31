@@ -8,12 +8,16 @@ import sys
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from http import HTTPStatus
+from ipaddress import IPv4Address
+from socket import gethostbyname
 from typing import TYPE_CHECKING, Any
 from unittest import mock
+from urllib.parse import urlparse
 
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
+from twisted.internet.ssl import Certificate
 
 from scrapy.exceptions import (
     CannotResolveHostError,
@@ -743,6 +747,33 @@ class TestHttpWithCrawlerBase(ABC):
         assert failure is None
         reason = crawler.spider.meta["close_reason"]  # type: ignore[attr-defined]
         assert reason == "finished"
+
+    @deferred_f_from_coro_f
+    async def test_response_ssl_certificate(self, mockserver: MockServer) -> None:
+        if not self.is_secure:
+            pytest.skip("Only applies to HTTPS")
+        # copy of TestCrawl.test_response_ssl_certificate()
+        # the current test implementation can only work for Twisted-based downloaders
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        url = mockserver.url("/echo?body=test", is_secure=self.is_secure)
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        cert = crawler.spider.meta["responses"][0].certificate
+        assert isinstance(cert, Certificate)
+        assert cert.getSubject().commonName == b"localhost"
+        assert cert.getIssuer().commonName == b"localhost"
+
+    @deferred_f_from_coro_f
+    async def test_response_ip_address(self, mockserver: MockServer) -> None:
+        # copy of TestCrawl.test_response_ip_address()
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        url = mockserver.url("/echo?body=test", is_secure=self.is_secure)
+        expected_netloc, _ = urlparse(url).netloc.split(":")
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        ip_address = crawler.spider.meta["responses"][0].ip_address
+        assert isinstance(ip_address, IPv4Address)
+        assert str(ip_address) == gethostbyname(expected_netloc)
 
 
 class TestHttpProxyBase(ABC):

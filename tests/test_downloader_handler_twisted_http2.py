@@ -206,7 +206,8 @@ class TestHttp2WithCrawler(TestHttpWithCrawlerBase):
     def settings_dict(self) -> dict[str, Any] | None:
         return {
             "DOWNLOAD_HANDLERS": {
-                "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler"
+                "http": None,
+                "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler",
             }
         }
 
