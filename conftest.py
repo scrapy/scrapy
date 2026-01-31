@@ -26,10 +26,6 @@ collect_ignore = [
     # not a test, but looks like a test
     "scrapy/utils/testproc.py",
     "scrapy/utils/testsite.py",
-    "tests/ftpserver.py",
-    "tests/mockserver.py",
-    "tests/pipelines.py",
-    "tests/spiders.py",
     # contains scripts to be run by tests/test_crawler.py::AsyncCrawlerProcessSubprocess
     *_py_files("tests/AsyncCrawlerProcess"),
     # contains scripts to be run by tests/test_crawler.py::AsyncCrawlerRunnerSubprocess
@@ -93,13 +89,17 @@ def pytest_runtest_setup(item):
     reactor = item.config.getoption("--reactor")
 
     if item.get_closest_marker("requires_reactor") and reactor == "none":
-        pytest.skip("This test requires a reactor")
+        pytest.skip('This test is only run when the --reactor value is not "none"')
 
     if item.get_closest_marker("only_asyncio") and reactor not in {"asyncio", "none"}:
-        pytest.skip("This test is only run with --reactor=asyncio or --reactor=none")
+        pytest.skip(
+            'This test is only run when the --reactor value is "asyncio" (default) or "none"'
+        )
 
     if item.get_closest_marker("only_not_asyncio") and reactor in {"asyncio", "none"}:
-        pytest.skip("This test is only run without --reactor=asyncio or --reactor=none")
+        pytest.skip(
+            'This test is only run when the --reactor value is not "asyncio" (default) or "none"'
+        )
 
     # Skip tests requiring optional dependencies
     optional_deps = [

@@ -227,8 +227,8 @@ addopts = [
 xfail_strict = true
 python_files = ["test_*.py", "test_*/__init__.py"]
 markers = [
-    "only_asyncio: marks tests as only enabled when --reactor=asyncio is passed",
-    "only_not_asyncio: marks tests as only enabled when --reactor=asyncio is not passed",
+    "only_asyncio: marks tests that require the asyncio loop to be used",
+    "only_not_asyncio: marks tests that require the asyncio loop to not be used",
     "requires_reactor: marks tests that require a reactor",
     "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
     "requires_botocore: marks tests that need botocore (but not boto3)",
