@@ -134,7 +134,6 @@ def get_reactor_settings() -> dict[str, Any]:
             "http": None,
             "https": None,
         }
-        settings["TELNETCONSOLE_ENABLED"] = False
     return settings
 
 
@@ -155,6 +154,7 @@ def get_crawler(
     }
     runner: CrawlerRunnerBase
     if is_reactor_installed():
+        # TODO should we use this only for the non-asyncio reactors instead?
         runner = CrawlerRunner(settings)
     else:
         runner = AsyncCrawlerRunner(settings)
