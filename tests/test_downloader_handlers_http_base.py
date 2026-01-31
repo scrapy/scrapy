@@ -15,7 +15,6 @@ from unittest import mock
 from urllib.parse import urlparse
 
 import pytest
-from testfixtures import LogCapture
 from twisted.internet import defer
 from twisted.internet.ssl import Certificate
 
@@ -622,17 +621,17 @@ class TestHttps11Base(TestHttp11Base):
         pytest.skip("Unable to test on HTTPS")
 
     @deferred_f_from_coro_f
-    async def test_tls_logging(self, mockserver: MockServer) -> None:
+    async def test_tls_logging(
+        self, mockserver: MockServer, caplog: pytest.LogCaptureFixture
+    ) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
         async with self.get_dh(
             {"DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING": True}
         ) as download_handler:
-            with LogCapture() as log_capture:
+            with caplog.at_level("DEBUG"):
                 response = await download_handler.download_request(request)
         assert response.body == b"Works"
-        log_capture.check_present(
-            ("scrapy.core.downloader.tls", "DEBUG", self.tls_log_message)
-        )
+        assert self.tls_log_message in caplog.text
 
 
 class TestSimpleHttpsBase(ABC):
