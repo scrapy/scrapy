@@ -13,10 +13,17 @@ from unittest import mock
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet import defer, error
-from twisted.web._newclient import ResponseFailed
-from twisted.web.http import _DataLoss
+from twisted.internet import defer
 
+from scrapy.exceptions import (
+    CannotResolveHostError,
+    DownloadCancelledError,
+    DownloadConnectionRefusedError,
+    DownloadFailedError,
+    DownloadTimeoutError,
+    ResponseDataLossError,
+    UnsupportedURLSchemeError,
+)
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import (
@@ -58,6 +65,13 @@ class TestHttpBase(ABC):
             yield dh
         finally:
             await dh.close()
+
+    @deferred_f_from_coro_f
+    async def test_unsupported_scheme(self) -> None:
+        request = Request("ftp://unsupported.scheme")
+        async with self.get_dh() as download_handler:
+            with pytest.raises(UnsupportedURLSchemeError):
+                await download_handler.download_request(request)
 
     @deferred_f_from_coro_f
     async def test_download(self, mockserver: MockServer) -> None:
@@ -208,7 +222,7 @@ class TestHttpBase(ABC):
         request = Request(mockserver.url("/wait", is_secure=self.is_secure), meta=meta)
         async with self.get_dh() as download_handler:
             d = deferred_from_coro(download_handler.download_request(request))
-            with pytest.raises((defer.TimeoutError, error.TimeoutError)):
+            with pytest.raises(DownloadTimeoutError):
                 await maybe_deferred_to_future(d)
 
     @deferred_f_from_coro_f
@@ -229,7 +243,7 @@ class TestHttpBase(ABC):
         )
         async with self.get_dh() as download_handler:
             d = deferred_from_coro(download_handler.download_request(request))
-            with pytest.raises((defer.TimeoutError, error.TimeoutError)):
+            with pytest.raises(DownloadTimeoutError):
                 await maybe_deferred_to_future(d)
 
     @pytest.mark.parametrize("send_header", [True, False])
@@ -431,7 +445,7 @@ class TestHttp11Base(TestHttpBase):
         assert response.body == b"Works"
 
         async with self.get_dh({"DOWNLOAD_MAXSIZE": 4}) as download_handler:
-            with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
+            with pytest.raises(DownloadCancelledError):
                 await download_handler.download_request(request)
 
     @deferred_f_from_coro_f
@@ -448,7 +462,7 @@ class TestHttp11Base(TestHttpBase):
                 logger.warning.assert_called_once_with(mock.ANY, mock.ANY)
 
             async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
-                with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
+                with pytest.raises(DownloadCancelledError):
                     await download_handler.download_request(request)
 
             # As the error message is logged in the dataReceived callback, we
@@ -464,7 +478,7 @@ class TestHttp11Base(TestHttpBase):
         meta = {"download_maxsize": 2}
         request = Request(mockserver.url("/text", is_secure=self.is_secure), meta=meta)
         async with self.get_dh() as download_handler:
-            with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
+            with pytest.raises(DownloadCancelledError):
                 await download_handler.download_request(request)
 
     @deferred_f_from_coro_f
@@ -473,7 +487,7 @@ class TestHttp11Base(TestHttpBase):
     ) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
         async with self.get_dh({"DOWNLOAD_MAXSIZE": 2}) as download_handler:
-            with pytest.raises((defer.CancelledError, error.ConnectionAborted)):
+            with pytest.raises(DownloadCancelledError):
                 await download_handler.download_request(request)
 
     @deferred_f_from_coro_f
@@ -497,12 +511,25 @@ class TestHttp11Base(TestHttpBase):
     async def test_download_cause_data_loss(
         self, url: str, mockserver: MockServer
     ) -> None:
-        # TODO: this one checks for Twisted-specific exceptions
         request = Request(mockserver.url(f"/{url}", is_secure=self.is_secure))
         async with self.get_dh() as download_handler:
-            with pytest.raises(ResponseFailed) as exc_info:
+            with pytest.raises(ResponseDataLossError):
                 await download_handler.download_request(request)
-        assert any(r.check(_DataLoss) for r in exc_info.value.reasons)
+
+    @deferred_f_from_coro_f
+    async def test_download_cause_data_loss_double_warning(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        request = Request(mockserver.url("/broken", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(ResponseDataLossError):
+                await download_handler.download_request(request)
+            assert "Got data loss" in caplog.text
+            caplog.clear()
+            with pytest.raises(ResponseDataLossError):
+                await download_handler.download_request(request)
+            # no repeated warning
+            assert "Got data loss" not in caplog.text
 
     @pytest.mark.parametrize("url", ["broken", "broken-chunked"])
     @deferred_f_from_coro_f
@@ -530,6 +557,43 @@ class TestHttp11Base(TestHttpBase):
         assert response.flags == ["dataloss"]
 
     @deferred_f_from_coro_f
+    async def test_download_conn_failed(self) -> None:
+        # copy of TestCrawl.test_retry_conn_failed()
+        scheme = "https" if self.is_secure else "http"
+        request = Request(f"{scheme}://localhost:65432/")
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadConnectionRefusedError):
+                await download_handler.download_request(request)
+
+    @deferred_f_from_coro_f
+    async def test_download_conn_lost(self, mockserver: MockServer) -> None:
+        # copy of TestCrawl.test_retry_conn_lost()
+        request = Request(mockserver.url("/drop?abort=0", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(ResponseDataLossError):
+                await download_handler.download_request(request)
+
+    @deferred_f_from_coro_f
+    async def test_download_conn_aborted(self, mockserver: MockServer) -> None:
+        # copy of TestCrawl.test_retry_conn_aborted()
+        request = Request(mockserver.url("/drop?abort=1", is_secure=self.is_secure))
+        async with self.get_dh() as download_handler:
+            with pytest.raises(DownloadFailedError):
+                await download_handler.download_request(request)
+
+    @pytest.mark.skipif(
+        NON_EXISTING_RESOLVABLE, reason="Non-existing hosts are resolvable"
+    )
+    @deferred_f_from_coro_f
+    async def test_download_dns_error(self) -> None:
+        # copy of TestCrawl.test_retry_dns_error()
+        scheme = "https" if self.is_secure else "http"
+        request = Request(f"{scheme}://dns.resolution.invalid./")
+        async with self.get_dh() as download_handler:
+            with pytest.raises(CannotResolveHostError):
+                await download_handler.download_request(request)
+
+    @deferred_f_from_coro_f
     async def test_protocol(self, mockserver: MockServer) -> None:
         request = Request(
             mockserver.url("/host", is_secure=self.is_secure), method="GET"
@@ -546,6 +610,12 @@ class TestHttps11Base(TestHttp11Base):
         'SSL connection certificate: issuer "/C=IE/O=Scrapy/CN=localhost", '
         'subject "/C=IE/O=Scrapy/CN=localhost"'
     )
+
+    def test_download_conn_lost(self) -> None:  # type: ignore[override]
+        # For some reason (maybe related to TLS shutdown flow, and maybe the
+        # mockserver resource can be fixed so that this works) HTTPS clients
+        # (not just Scrapy) hang on /drop?abort=0.
+        pytest.skip("Unable to test on HTTPS")
 
     @deferred_f_from_coro_f
     async def test_tls_logging(self, mockserver: MockServer) -> None:
@@ -658,7 +728,7 @@ class TestHttpWithCrawlerBase(ABC):
         )
         assert crawler.spider
         failure = crawler.spider.meta["failure"]  # type: ignore[attr-defined]
-        assert isinstance(failure.value, defer.CancelledError)
+        assert isinstance(failure.value, DownloadCancelledError)
 
     @deferred_f_from_coro_f
     async def test_download(self, mockserver: MockServer) -> None:
@@ -734,9 +804,9 @@ class TestHttpProxyBase(ABC):
         domain = "https://no-such-domain.nosuch"
         request = Request(domain, meta={"proxy": http_proxy, "download_timeout": 0.2})
         async with self.get_dh() as download_handler:
-            with pytest.raises(error.TimeoutError) as exc_info:
+            with pytest.raises(DownloadTimeoutError) as exc_info:
                 await download_handler.download_request(request)
-        assert domain in exc_info.value.osError
+        assert domain in str(exc_info.value)
 
     @deferred_f_from_coro_f
     async def test_download_with_proxy_without_http_scheme(

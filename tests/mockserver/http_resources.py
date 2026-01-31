@@ -193,10 +193,11 @@ class Drop(Partial):
         request.write(b"this connection will be dropped\n")
         tr = request.channel.transport
         try:
-            if abort and hasattr(tr, "abortConnection"):
-                tr.abortConnection()
-            else:
-                tr.loseConnection()
+            if tr:
+                if abort and hasattr(tr, "abortConnection"):
+                    tr.abortConnection()
+                else:
+                    tr.loseConnection()
         finally:
             request.finish()
 

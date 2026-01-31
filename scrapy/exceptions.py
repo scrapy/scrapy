@@ -54,6 +54,34 @@ class StopDownload(Exception):
         self.fail = fail
 
 
+class DownloadConnectionRefusedError(Exception):
+    """Indicates that a connection was refused by the server."""
+
+
+class CannotResolveHostError(Exception):
+    """Indicates that the provided hostname cannot be resolved."""
+
+
+class DownloadTimeoutError(Exception):
+    """Indicates that a request download has timed out."""
+
+
+class DownloadCancelledError(Exception):
+    """Indicates that a request download was cancelled."""
+
+
+class DownloadFailedError(Exception):
+    """Indicates that a request download has failed."""
+
+
+class ResponseDataLossError(Exception):
+    """Indicates that Scrapy couldn't get a complete response."""
+
+
+class UnsupportedURLSchemeError(Exception):
+    """Indicates that the URL scheme is not supported."""
+
+
 # Items
 
 
