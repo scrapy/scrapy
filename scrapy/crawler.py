@@ -512,7 +512,9 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         if self.settings.getbool("TWISTED_ENABLED"):
             if not is_asyncio_reactor_installed():
                 raise RuntimeError(
-                    f"{type(self).__name__} requires AsyncioSelectorReactor when using a reactor."
+                    f"When TWISTED_ENABLED is True, {type(self).__name__} "
+                    f"requires that the installed Twisted reactor is "
+                    f'"twisted.internet.asyncioreactor.AsyncioSelectorReactor".'
                 )
         elif is_reactor_installed():
             raise RuntimeError(

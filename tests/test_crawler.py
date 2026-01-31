@@ -1223,7 +1223,10 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
     def test_simple_default_reactor(self):
         log = self.run_script("simple_default_reactor.py")
         assert "Spider closed (finished)" not in log
-        assert "RuntimeError: AsyncCrawlerRunner requires AsyncioSelectorReactor" in log
+        assert (
+            "RuntimeError: When TWISTED_ENABLED is True, "
+            "AsyncCrawlerRunner requires that the installed Twisted reactor"
+        ) in log
 
     def test_reactorless_simple(self):
         log = self.run_script("reactorless_simple.py")
