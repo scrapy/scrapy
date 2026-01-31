@@ -44,6 +44,12 @@ class TelnetConsole(protocol.ServerFactory):
         if not crawler.settings.getbool("TELNETCONSOLE_ENABLED"):
             raise NotConfigured
 
+        if not crawler.settings.getbool("TWISTED_ENABLED"):
+            raise NotConfigured(
+                "The TelnetConsole extension requires a Twisted reactor."
+                " You can set the TELNETCONSOLE_ENABLED setting to False to remove this warning."
+            )
+
         self.crawler: Crawler = crawler
         self.noisy: bool = False
         self.portrange: list[int] = [

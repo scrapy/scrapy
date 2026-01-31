@@ -12,7 +12,16 @@ class NoRequestsSpider(scrapy.Spider):
         yield
 
 
-process = AsyncCrawlerProcess(settings={})
+process = AsyncCrawlerProcess(
+    settings={
+        "TWISTED_ENABLED": False,
+        "DOWNLOAD_HANDLERS": {
+            "http": None,
+            "https": None,
+            "ftp": None,
+        },
+    }
+)
 
 process.crawl(NoRequestsSpider)
 process.start()
