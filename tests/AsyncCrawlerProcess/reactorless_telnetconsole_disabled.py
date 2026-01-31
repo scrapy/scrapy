@@ -6,8 +6,6 @@ class NoRequestsSpider(scrapy.Spider):
     name = "no_request"
 
     async def start(self):
-        import twisted.internet.reactor  # noqa: F401
-
         return
         yield
 
@@ -20,6 +18,7 @@ process = AsyncCrawlerProcess(
             "https": None,
             "ftp": None,
         },
+        "TELNETCONSOLE_ENABLED": False,
     }
 )
 

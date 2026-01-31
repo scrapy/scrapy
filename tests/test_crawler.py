@@ -1106,8 +1106,25 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "Spider closed (finished)" in log
         assert "ImportError: Import of twisted.internet.reactor is forbidden" in log
 
-    def test_reactorless_telnetconsole(self):
-        log = self.run_script("reactorless_telnetconsole.py")
+    def test_reactorless_telnetconsole_default(self):
+        """By default TWISTED_ENABLED=False silently sets TELNETCONSOLE_ENABLED=False."""
+        log = self.run_script("reactorless_telnetconsole_default.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "The TelnetConsole extension requires a Twisted reactor" not in log
+        assert "scrapy.extensions.telnet.TelnetConsole" not in log
+
+    def test_reactorless_telnetconsole_disabled(self):
+        """Explicit TELNETCONSOLE_ENABLED=False, there are no warnings."""
+        log = self.run_script("reactorless_telnetconsole_disabled.py")
+        assert "Not using a Twisted reactor" in log
+        assert "Spider closed (finished)" in log
+        assert "The TelnetConsole extension requires a Twisted reactor" not in log
+        assert "scrapy.extensions.telnet.TelnetConsole" not in log
+
+    def test_reactorless_telnetconsole_enabled(self):
+        """Explicit TELNETCONSOLE_ENABLED=True, the user gets a warning."""
+        log = self.run_script("reactorless_telnetconsole_enabled.py")
         assert "Not using a Twisted reactor" in log
         assert "Spider closed (finished)" in log
         assert "The TelnetConsole extension requires a Twisted reactor" in log
