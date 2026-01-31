@@ -166,7 +166,7 @@ class TestHttpBase(ABC):
             "Content-Encoding": "gzip",
             "Content-MD5": "Q2hlY2sgSW50ZWdyaXR5IQ==",
             "Content-Type": "text/html; charset=utf-8",
-            "Date": "Date: Tue, 15 Nov 1994 08:12:31 GMT",
+            "Date": "Tue, 15 Nov 1994 08:12:31 GMT",
             "Pragma": "no-cache",
             "Retry-After": "120",
             "Set-Cookie": "CookieName=CookieValue; Max-Age=3600; Version=1",
