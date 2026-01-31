@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
+from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
     import pytest
