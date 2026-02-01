@@ -777,7 +777,7 @@ class TestHttpWithCrawlerBase(ABC):
         if not self.is_secure:
             pytest.skip("Only applies to HTTPS")
         # copy of TestCrawl.test_response_ssl_certificate()
-        # the current test implementation can only work for Twisted-based downloaders
+        # the current test implementation can only work for Twisted-based download handlers
         crawler = get_crawler(SingleRequestSpider, self.settings_dict)
         url = mockserver.url("/echo?body=test", is_secure=self.is_secure)
         await crawler.crawl_async(seed=url, mockserver=mockserver)
