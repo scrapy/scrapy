@@ -59,6 +59,70 @@ is omitted for brevity):
         # parse item here
         self.state["items_count"] = self.state.get("items_count", 0) + 1
 
+.. _topics-jobdir-files:
+
+Understanding JOBDIR Files
+==========================
+
+When you enable job persistence using the :setting:`JOBDIR` setting, Scrapy 
+creates several files in the specified directory to maintain the crawler's state. 
+Understanding these files can help you troubleshoot issues and manage disk space 
+for large crawls.
+
+Files and directories created
+-----------------------------
+
+**requests.queue/**
+    A directory containing the queue of requests that are scheduled to be processed.
+    Scrapy stores request objects here using Python's :mod:`pickle` module. The queue
+    is split into multiple files (``p0``, ``p1``, etc.) to handle large numbers of
+    requests efficiently.
+    
+    When you resume a crawl, Scrapy reads from this queue to continue where it left off.
+
+**requests.seen**
+    A file containing fingerprints (unique identifiers) of all requests that have been
+    scheduled or processed. This is used by the :ref:`duplicates filter <topics-request-fingerprints>`
+    to prevent the same URL from being crawled multiple times.
+    
+    The fingerprints are stored as a pickled set for fast lookup. For large crawls,
+    this file can grow significantly in size.
+
+**spider.state**
+    Contains the spider's persistent state dictionary (``spider.state``). This file
+    stores any custom data you save to ``spider.state`` between pause/resume cycles.
+    See :ref:`topics-keeping-persistent-state-between-batches` for more information.
+
+Example JOBDIR structure
+------------------------
+
+After running a spider with ``JOBDIR=crawls/myspider-1``, your directory structure 
+will look like this::
+
+    crawls/myspider-1/
+    ├── requests.queue/
+    │   ├── p0
+    │   ├── p1
+    │   └── ...
+    ├── requests.seen
+    └── spider.state
+
+Important notes
+---------------
+
+* **Do not manually edit** these files - they use Python's :mod:`pickle` format and 
+  manual editing will corrupt them.
+  
+* **One JOBDIR per spider run** - Each spider job should use a unique JOBDIR path. 
+  Sharing a JOBDIR between different spiders or multiple runs of the same spider 
+  will cause data corruption.
+  
+* **Disk space** - For large crawls with millions of URLs, the ``requests.queue/`` 
+  directory and ``requests.seen`` file can consume significant disk space.
+  
+* **Fresh start** - To start a completely fresh crawl, delete the entire JOBDIR 
+  folder before running the spider.
+
 Persistence gotchas
 ===================
 
