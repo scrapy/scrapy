@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import shutil
 import string
+import subprocess
 from importlib import import_module
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -120,7 +121,7 @@ class Command(ScrapyCommand):
         if template_file:
             self._genspider(module, name, url, opts.template, template_file)
             if opts.edit:
-                self.exitcode = os.system(f'scrapy edit "{name}"')  # noqa: S605
+                self.exitcode = subprocess.call(["scrapy", "edit", name])
 
     def _generate_template_variables(
         self,
