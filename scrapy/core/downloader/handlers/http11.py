@@ -38,12 +38,12 @@ from scrapy.exceptions import (
     StopDownload,
 )
 from scrapy.http import Headers, Response
-from scrapy.responsetypes import responsetypes
 from scrapy.utils._download_handlers import (
     BaseHttpDownloadHandler,
     get_dataloss_msg,
     get_maxsize_msg,
     get_warnsize_msg,
+    make_response,
     wrap_twisted_exceptions,
 )
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -459,7 +459,7 @@ class ScrapyAgent:
         d.addCallback(self._cb_latency, request, start_time)
         # response body is ready to be consumed
         d2: Deferred[_ResultT] = d.addCallback(self._cb_bodyready, request)
-        d3: Deferred[Response] = d2.addCallback(self._cb_bodydone, request, url)
+        d3: Deferred[Response] = d2.addCallback(self._cb_bodydone, url)
         # check download timeout
         self._timeout_cl = reactor.callLater(timeout, d3.cancel)
         d3.addBoth(self._cb_timeout, request, url, timeout)
@@ -567,17 +567,14 @@ class ScrapyAgent:
 
         return d
 
-    def _cb_bodydone(
-        self, result: _ResultT, request: Request, url: str
-    ) -> Response | Failure:
+    def _cb_bodydone(self, result: _ResultT, url: str) -> Response | Failure:
         headers = self._headers_from_twisted_response(result["txresponse"])
-        respcls = responsetypes.from_args(headers=headers, url=url, body=result["body"])
         try:
             version = result["txresponse"].version
             protocol = f"{to_unicode(version[0])}/{version[1]}.{version[2]}"
         except (AttributeError, TypeError, IndexError):
             protocol = None
-        response = respcls(
+        response = make_response(
             url=url,
             status=int(result["txresponse"].code),
             headers=headers,

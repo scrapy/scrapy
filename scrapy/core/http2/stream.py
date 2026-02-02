@@ -14,8 +14,11 @@ from twisted.web.client import ResponseFailed
 
 from scrapy.exceptions import DownloadCancelledError
 from scrapy.http.headers import Headers
-from scrapy.responsetypes import responsetypes
-from scrapy.utils._download_handlers import get_maxsize_msg, get_warnsize_msg
+from scrapy.utils._download_handlers import (
+    get_maxsize_msg,
+    get_warnsize_msg,
+    make_response,
+)
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
@@ -475,22 +478,13 @@ class Stream:
         and fires the response deferred callback with the
         generated response instance"""
 
-        body = self._response["body"].getvalue()
-        response_cls = responsetypes.from_args(
-            headers=self._response["headers"],
-            url=self._request.url,
-            body=body,
-        )
-
-        response = response_cls(
+        response = make_response(
             url=self._request.url,
             status=int(self._response["headers"][":status"]),
             headers=self._response["headers"],
-            body=body,
-            request=self._request,
+            body=self._response["body"].getvalue(),
             certificate=self._protocol.metadata["certificate"],
             ip_address=self._protocol.metadata["ip_address"],
             protocol="h2",
         )
-
         self._deferred_response.callback(response)

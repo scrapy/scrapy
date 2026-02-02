@@ -13,6 +13,7 @@ from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.web.client import ResponseFailed
 from twisted.web.error import SchemeNotSupported
 
+from scrapy import responsetypes
 from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.exceptions import (
     CannotResolveHostError,
@@ -25,9 +26,13 @@ from scrapy.exceptions import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from ipaddress import IPv4Address, IPv6Address
+
+    from twisted.internet.ssl import Certificate
 
     from scrapy import Request
     from scrapy.crawler import Crawler
+    from scrapy.http import Headers, Response
 
 
 class BaseHttpDownloadHandler(BaseDownloadHandler, ABC):
@@ -60,6 +65,29 @@ def wrap_twisted_exceptions() -> Iterator[None]:
         raise DownloadFailedError(str(e)) from e
     except TxTimeoutError as e:
         raise DownloadTimeoutError(str(e)) from e
+
+
+def make_response(
+    url: str,
+    status: int,
+    headers: Headers,
+    body: bytes = b"",
+    flags: list[str] | None = None,
+    certificate: Certificate | None = None,
+    ip_address: IPv4Address | IPv6Address | None = None,
+    protocol: str | None = None,
+) -> Response:
+    respcls = responsetypes.responsetypes.from_args(headers=headers, url=url, body=body)
+    return respcls(
+        url=url,
+        status=status,
+        headers=headers,
+        body=body,
+        flags=flags,
+        certificate=certificate,
+        ip_address=ip_address,
+        protocol=protocol,
+    )
 
 
 def get_maxsize_msg(size: int, limit: int, request: Request) -> str:
