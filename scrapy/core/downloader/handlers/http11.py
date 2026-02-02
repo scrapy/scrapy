@@ -41,6 +41,9 @@ from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils._download_handlers import (
     BaseHttpDownloadHandler,
+    get_dataloss_msg,
+    get_maxsize_msg,
+    get_warnsize_msg,
     wrap_twisted_exceptions,
 )
 from scrapy.utils.defer import maybe_deferred_to_future
@@ -117,12 +120,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
                 return await maybe_deferred_to_future(agent.download_request(request))
         except ResponseDataLossError:
             if not self._fail_on_dataloss_warned:
-                logger.warning(
-                    "Got data loss in %s. If you want to process broken "
-                    "responses set the setting DOWNLOAD_FAIL_ON_DATALOSS = False"
-                    " -- This message won't be shown in further requests",
-                    request.url,
-                )
+                logger.warning(get_dataloss_msg(request.url))
                 self._fail_on_dataloss_warned = True
             raise
 
@@ -529,33 +527,23 @@ class ScrapyAgent:
 
         maxsize = request.meta.get("download_maxsize", self._maxsize)
         warnsize = request.meta.get("download_warnsize", self._warnsize)
-        expected_size = txresponse.length if txresponse.length != UNKNOWN_LENGTH else -1
+        expected_size = (
+            cast("int", txresponse.length)
+            if txresponse.length != UNKNOWN_LENGTH
+            else -1
+        )
         fail_on_dataloss = request.meta.get(
             "download_fail_on_dataloss", self._fail_on_dataloss
         )
 
         if maxsize and expected_size > maxsize:
-            warning_msg = (
-                "Cancelling download of %(url)s: expected response "
-                "size (%(size)s) larger than download max size (%(maxsize)s)."
-            )
-            warning_args = {
-                "url": request.url,
-                "size": expected_size,
-                "maxsize": maxsize,
-            }
-
-            logger.warning(warning_msg, warning_args)
-
+            warning_msg = get_maxsize_msg(expected_size, maxsize, request)
+            logger.warning(warning_msg)
             txresponse._transport.loseConnection()
-            raise DownloadCancelledError(warning_msg % warning_args)
+            raise DownloadCancelledError(warning_msg)
 
         if warnsize and expected_size > warnsize:
-            logger.warning(
-                "Expected response size (%(size)s) larger than "
-                "download warn size (%(warnsize)s) in request %(request)s.",
-                {"size": expected_size, "warnsize": warnsize, "request": request},
-            )
+            logger.warning(get_warnsize_msg(expected_size, warnsize, request))
 
         def _cancel(_: Any) -> None:
             # Abort connection immediately.
@@ -702,13 +690,7 @@ class _ResponseReader(Protocol):
 
         if self._maxsize and self._bytes_received > self._maxsize:
             logger.warning(
-                "Received (%(bytes)s) bytes larger than download "
-                "max size (%(maxsize)s) in request %(request)s.",
-                {
-                    "bytes": self._bytes_received,
-                    "maxsize": self._maxsize,
-                    "request": self._request,
-                },
+                get_maxsize_msg(self._bytes_received, self._maxsize, self._request)
             )
             # Clear buffer earlier to avoid keeping data in memory for a long time.
             self._bodybuf.truncate(0)
@@ -721,9 +703,7 @@ class _ResponseReader(Protocol):
         ):
             self._reached_warnsize = True
             logger.warning(
-                "Received more bytes than download "
-                "warn size (%(warnsize)s) in request %(request)s.",
-                {"warnsize": self._warnsize, "request": self._request},
+                get_warnsize_msg(self._bytes_received, self._warnsize, self._request)
             )
 
     def connectionLost(self, reason: Failure = connectionDone) -> None:

@@ -15,6 +15,7 @@ from twisted.web.client import ResponseFailed
 from scrapy.exceptions import DownloadCancelledError
 from scrapy.http.headers import Headers
 from scrapy.responsetypes import responsetypes
+from scrapy.utils._download_handlers import get_maxsize_msg, get_warnsize_msg
 from scrapy.utils.httpobj import urlparse_cached
 
 if TYPE_CHECKING:
@@ -339,9 +340,10 @@ class Stream:
 
         if self._log_warnsize:
             self.metadata["reached_warnsize"] = True
-            warning_msg = (
-                f"Received more ({self._response['flow_controlled_size']}) bytes than download "
-                f"warn size ({self._download_warnsize}) in request {self._request}"
+            warning_msg = get_warnsize_msg(
+                self._response["flow_controlled_size"],
+                self._download_warnsize,
+                self._request,
             )
             logger.warning(warning_msg)
 
@@ -362,9 +364,8 @@ class Stream:
 
         if self._log_warnsize:
             self.metadata["reached_warnsize"] = True
-            warning_msg = (
-                f"Expected response size ({expected_size}) larger than "
-                f"download warn size ({self._download_warnsize}) in request {self._request}"
+            warning_msg = get_warnsize_msg(
+                expected_size, self._download_warnsize, self._request
             )
             logger.warning(warning_msg)
 
@@ -418,9 +419,8 @@ class Stream:
                     b"Content-Length", self._response["flow_controlled_size"]
                 )
             )
-            error_msg = (
-                f"Cancelling download of {self._request.url}: received response "
-                f"size ({expected_size}) larger than download max size ({self._download_maxsize})"
+            error_msg = get_maxsize_msg(
+                expected_size, self._download_maxsize, self._request
             )
             logger.error(error_msg)
             self._deferred_response.errback(DownloadCancelledError(error_msg))
