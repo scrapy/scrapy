@@ -224,7 +224,6 @@ disable = [
 addopts = [
     "--reactor=asyncio",
 ]
-asyncio_mode = "auto"
 xfail_strict = true
 python_files = ["test_*.py", "test_*/__init__.py"]
 markers = [
@@ -239,8 +238,6 @@ markers = [
 ]
 filterwarnings = [
     "ignore::DeprecationWarning:twisted.web.static",
-    # emitted when pytest-asyncio (which is not required for all test envs) is absent
-    "ignore:Unknown config option. asyncio_mode:pytest.PytestConfigWarning",
 ]
 
 [tool.ruff.lint]

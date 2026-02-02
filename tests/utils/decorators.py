@@ -59,7 +59,7 @@ def deferred_f_from_coro_f(
     """
 
     if not is_reactor_installed():
-        return coro_f
+        return pytest.mark.asyncio(coro_f)
 
     @wraps(coro_f)
     def f(*coro_args: _P.args, **coro_kwargs: _P.kwargs) -> Deferred[None]:
