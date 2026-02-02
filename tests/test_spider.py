@@ -12,7 +12,6 @@ from unittest import mock
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 from w3lib.url import safe_url_string
 
 from scrapy import signals
@@ -29,9 +28,9 @@ from scrapy.spiders import (
     XMLFeedSpider,
 )
 from scrapy.spiders.init import InitSpider
-from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import get_testdata, tests_datadir
+from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
 
 
 class TestSpider:

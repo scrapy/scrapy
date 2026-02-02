@@ -10,9 +10,9 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.extensions.corestats import CoreStats
 from scrapy.spiders import Spider
 from scrapy.statscollectors import DummyStatsCollector, StatsCollector
-from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
+from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler

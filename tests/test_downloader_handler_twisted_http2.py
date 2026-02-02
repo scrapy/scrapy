@@ -27,9 +27,13 @@ if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
     from tests.mockserver.proxy_echo import ProxyEchoMockServer
 
-pytestmark = pytest.mark.skipif(
-    not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
-)
+
+pytestmark = [
+    pytest.mark.requires_reactor,
+    pytest.mark.skipif(
+        not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
+    ),
+]
 
 
 class H2DownloadHandlerMixin:

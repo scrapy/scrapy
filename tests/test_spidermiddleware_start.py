@@ -1,9 +1,9 @@
 from scrapy.http import Request
 from scrapy.spidermiddlewares.start import StartSpiderMiddleware
 from scrapy.spiders import Spider
-from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import deferred_f_from_coro_f
 
 
 class TestMiddleware:

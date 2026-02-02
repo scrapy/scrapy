@@ -17,7 +17,7 @@ from unittest import mock
 from twisted.trial.unittest import SkipTest
 from twisted.web.client import Agent
 
-from scrapy.crawler import CrawlerRunner
+from scrapy.crawler import AsyncCrawlerRunner, CrawlerRunner, CrawlerRunnerBase
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.deprecate import create_deprecated_class
@@ -116,16 +116,24 @@ def get_reactor_settings() -> dict[str, Any]:
 
     ``Crawler._apply_settings()`` checks that the installed reactor matches the
     settings, so tests that run the crawler in the current process may need to
-    pass a correct ``"TWISTED_REACTOR"`` setting value when creating it.
+    pass a correct :setting:`TWISTED_REACTOR` setting value when creating it.
     """
-    if not is_reactor_installed():
-        raise RuntimeError(
-            "get_reactor_settings() called without an installed reactor,"
-            " you may need to install a reactor explicitly when running your tests."
-        )
     settings: dict[str, Any] = {}
-    if not is_asyncio_reactor_installed():
-        settings["TWISTED_REACTOR"] = None
+    if is_reactor_installed():
+        if not is_asyncio_reactor_installed():
+            settings["TWISTED_REACTOR"] = None
+    else:
+        # We are either running Scrapy tests for the reactorless mode, or
+        # running some 3rd-party library tests for the reactorless mode, or
+        # running some 3rd-party library tests without initializing a reactor
+        # properly. The first two cases are fine, but we cannot distinguish the
+        # last one from them.
+        settings["TWISTED_ENABLED"] = False
+        settings["DOWNLOAD_HANDLERS"] = {
+            "ftp": None,
+            "http": None,
+            "https": None,
+        }
     return settings
 
 
@@ -144,7 +152,11 @@ def get_crawler(
         **get_reactor_settings(),
         **(settings_dict or {}),
     }
-    runner = CrawlerRunner(settings)
+    runner: CrawlerRunnerBase
+    if is_reactor_installed():
+        runner = CrawlerRunner(settings)
+    else:
+        runner = AsyncCrawlerRunner(settings)
     crawler = runner.create_crawler(spidercls or DefaultSpider)
     crawler._apply_settings()
     return crawler

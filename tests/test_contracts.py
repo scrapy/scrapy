@@ -1,7 +1,6 @@
 from unittest import TextTestResult
 
 import pytest
-from twisted.internet.defer import inlineCallbacks
 from twisted.python import failure
 
 from scrapy import FormRequest
@@ -19,6 +18,7 @@ from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
+from tests.utils.decorators import inlineCallbacks
 
 
 class DemoItem(Item):

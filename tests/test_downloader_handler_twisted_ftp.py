@@ -25,6 +25,9 @@ if TYPE_CHECKING:
     from twisted.protocols.ftp import FTPFactory
 
 
+pytestmark = pytest.mark.requires_reactor
+
+
 class TestFTPBase(ABC):
     username = "scrapy"
     password = "passwd"

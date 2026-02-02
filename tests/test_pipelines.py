@@ -10,14 +10,11 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.defer import (
-    deferred_f_from_coro_f,
-    deferred_to_future,
-    maybe_deferred_to_future,
-)
+from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.mockserver.http import MockServer
+from tests.utils.decorators import deferred_f_from_coro_f
 
 
 class SimplePipeline:
@@ -251,6 +248,9 @@ class TestPipeline:
 
 
 class TestCustomPipelineManager:
+    # needs a reactor or an event loop for is_asyncio_available()
+    # (for ItemPipelineManager.process_item())
+    @pytest.mark.requires_reactor
     def test_deprecated_process_item_spider_arg(self) -> None:
         class CustomPipelineManager(ItemPipelineManager):
             def process_item(self, item, spider):  # pylint: disable=useless-parent-delegation

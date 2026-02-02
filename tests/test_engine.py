@@ -17,7 +17,6 @@ from itemadapter import ItemAdapter
 from pydispatch import dispatcher
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy import signals
 from scrapy.core.engine import ExecutionEngine, _Slot
@@ -29,7 +28,6 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.utils.defer import (
     _schedule_coro,
-    deferred_f_from_coro_f,
     deferred_from_coro,
     maybe_deferred_to_future,
 )
@@ -37,6 +35,7 @@ from scrapy.utils.signal import disconnect_all
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests import get_testdata
+from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
 
 if TYPE_CHECKING:
     from scrapy.core.scheduler import Scheduler
@@ -599,6 +598,7 @@ class TestEngineDownload(TestEngineDownloadAsync):
         return await maybe_deferred_to_future(engine.download(request))
 
 
+@pytest.mark.requires_reactor  # needs a reactor or an event loop for _Slot.heartbeat
 def test_request_scheduled_signal(caplog):
     class TestScheduler(BaseScheduler):
         def __init__(self):

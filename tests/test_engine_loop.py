@@ -7,10 +7,11 @@ from typing import TYPE_CHECKING
 from twisted.internet.defer import Deferred
 
 from scrapy import Request, Spider, signals
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.test_scheduler import MemoryScheduler
+from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
     import pytest

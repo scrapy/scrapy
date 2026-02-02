@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from scrapy.exceptions import StopDownload
-from scrapy.utils.defer import deferred_f_from_coro_f
 from tests.test_engine import (
     AttrsItemsSpider,
     CrawlerRun,
@@ -12,6 +11,7 @@ from tests.test_engine import (
     MySpider,
     TestEngineBase,
 )
+from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
     import pytest

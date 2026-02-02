@@ -26,11 +26,7 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
-from scrapy.utils.defer import (
-    deferred_f_from_coro_f,
-    deferred_from_coro,
-    maybe_deferred_to_future,
-)
+from scrapy.utils.defer import deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
@@ -38,6 +34,7 @@ from tests import NON_EXISTING_RESOLVABLE
 from tests.mockserver.proxy_echo import ProxyEchoMockServer
 from tests.mockserver.simple_https import SimpleMockServer
 from tests.spiders import SingleRequestSpider
+from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator

@@ -8,7 +8,6 @@ from collections import deque
 from typing import Any, NamedTuple
 
 import pytest
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import BaseScheduler, Scheduler
@@ -20,6 +19,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
+from tests.utils.decorators import inlineCallbacks
 
 
 class MemoryScheduler(BaseScheduler):
@@ -99,6 +99,9 @@ class MockCrawler(Crawler):
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
 
+# needs a reactor or an event loop for is_asyncio_available()
+# (for _schedule_coro())
+@pytest.mark.requires_reactor
 class SchedulerHandler(ABC):
     jobdir = None
 
@@ -243,6 +246,9 @@ _URLS_WITH_SLOTS = [
 
 
 class TestMigration:
+    # needs a reactor or an event loop for is_asyncio_available()
+    # (for _schedule_coro())
+    @pytest.mark.requires_reactor
     def test_migration(self, tmpdir):
         class PrevSchedulerHandler(SchedulerHandler):
             jobdir = tmpdir
