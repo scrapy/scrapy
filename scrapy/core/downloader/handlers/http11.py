@@ -73,7 +73,7 @@ class _ResultT(TypedDict):
     flags: list[str] | None
     certificate: ssl.Certificate | None
     ip_address: ipaddress.IPv4Address | ipaddress.IPv6Address | None
-    failure: NotRequired[Failure | None]
+    stop_download: NotRequired[StopDownload | None]
 
 
 class HTTP11DownloadHandler(BaseHttpDownloadHandler):
@@ -512,7 +512,7 @@ class ScrapyAgent:
                     "flags": ["download_stopped"],
                     "certificate": None,
                     "ip_address": None,
-                    "failure": result if result.value.fail else None,
+                    "stop_download": result.value if result.value.fail else None,
                 }
 
         # deliverBody hangs for responses without body
@@ -567,7 +567,7 @@ class ScrapyAgent:
 
         return d
 
-    def _cb_bodydone(self, result: _ResultT, url: str) -> Response | Failure:
+    def _cb_bodydone(self, result: _ResultT, url: str) -> Response:
         headers = self._headers_from_twisted_response(result["txresponse"])
         try:
             version = result["txresponse"].version
@@ -584,10 +584,10 @@ class ScrapyAgent:
             ip_address=result["ip_address"],
             protocol=protocol,
         )
-        if result.get("failure"):
-            assert result["failure"]
-            result["failure"].value.response = response
-            return result["failure"]
+        if result.get("stop_download"):
+            assert result["stop_download"]
+            result["stop_download"].response = response
+            raise result["stop_download"]
         return response
 
 
@@ -633,7 +633,7 @@ class _ResponseReader(Protocol):
         self._crawler: Crawler = crawler
 
     def _finish_response(
-        self, flags: list[str] | None = None, failure: Failure | None = None
+        self, flags: list[str] | None = None, stop_download: StopDownload | None = None
     ) -> None:
         self._finished.callback(
             {
@@ -642,7 +642,7 @@ class _ResponseReader(Protocol):
                 "flags": flags,
                 "certificate": self._certificate,
                 "ip_address": self._ip_address,
-                "failure": failure,
+                "stop_download": stop_download,
             }
         )
 
@@ -682,8 +682,10 @@ class _ResponseReader(Protocol):
                 )
                 self.transport.stopProducing()
                 self.transport.loseConnection()
-                failure = result if result.value.fail else None
-                self._finish_response(flags=["download_stopped"], failure=failure)
+                self._finish_response(
+                    flags=["download_stopped"],
+                    stop_download=result.value if result.value.fail else None,
+                )
 
         if self._maxsize and self._bytes_received > self._maxsize:
             logger.warning(

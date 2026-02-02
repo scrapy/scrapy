@@ -7,7 +7,10 @@ new exceptions here without documenting them there.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from scrapy.http import Response
 
 # Internal
 
@@ -48,6 +51,8 @@ class StopDownload(Exception):
     The 'fail' boolean parameter indicates whether or not the resulting partial response
     should be handled by the request errback. Note that 'fail' is a keyword-only argument.
     """
+
+    response: Response | None
 
     def __init__(self, *, fail: bool = True):
         super().__init__()
