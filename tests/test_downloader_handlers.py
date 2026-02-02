@@ -21,7 +21,7 @@ from scrapy.responsetypes import responsetypes
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
-from tests.utils.decorators import deferred_f_from_coro_f
+from tests.utils.decorators import coroutine_test
 
 
 class DummyDH:
@@ -126,7 +126,7 @@ class TestFile:
         os.close(self.fd)
         Path(self.tmpname).unlink()
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_download(self):
         request = Request(path_to_file_uri(self.tmpname))
         assert request.url.upper().endswith("%5E")
@@ -136,7 +136,7 @@ class TestFile:
         assert response.body == b"0123456789"
         assert response.protocol is None
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_non_existent(self):
         request = Request(path_to_file_uri(mkdtemp()))
         # the specific exception differs between platforms
@@ -163,7 +163,7 @@ class TestS3Anon:
             self.s3reqh = build_from_crawler(S3DownloadHandler, crawler)
         self.download_request = self.s3reqh.download_request
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_anon_request(self):
         req = Request("s3://aws-publicdatasets/")
         httpreq = await self.download_request(req)
@@ -205,7 +205,7 @@ class TestS3:
                 mock_formatdate.return_value = date
                 yield
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_request_signing1(self):
         # gets an object from the johnsmith bucket.
         date = "Tue, 27 Mar 2007 19:36:42 +0000"
@@ -217,7 +217,7 @@ class TestS3:
             == b"AWS 0PN5J17HBGZHT7JJ3X82:xXjDGYUmKxnwqr5KXNPGldn5LbA="
         )
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_request_signing2(self):
         # puts an object into the johnsmith bucket.
         date = "Tue, 27 Mar 2007 21:15:45 +0000"
@@ -237,7 +237,7 @@ class TestS3:
             == b"AWS 0PN5J17HBGZHT7JJ3X82:hcicpDDvL9SsO6AkvxqmIWkmOuQ="
         )
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_request_signing3(self):
         # lists the content of the johnsmith bucket.
         date = "Tue, 27 Mar 2007 19:42:41 +0000"
@@ -256,7 +256,7 @@ class TestS3:
             == b"AWS 0PN5J17HBGZHT7JJ3X82:jsRt/rhG+Vtp88HrYL706QhE4w4="
         )
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_request_signing4(self):
         # fetches the access control policy sub-resource for the 'johnsmith' bucket.
         date = "Tue, 27 Mar 2007 19:44:46 +0000"
@@ -268,7 +268,7 @@ class TestS3:
             == b"AWS 0PN5J17HBGZHT7JJ3X82:thdUi9VAkzhkniLj96JIrOPGi0g="
         )
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_request_signing6(self):
         # uploads an object to a CNAME style virtual hosted bucket with metadata.
         date = "Tue, 27 Mar 2007 21:06:08 +0000"
@@ -297,7 +297,7 @@ class TestS3:
             == b"AWS 0PN5J17HBGZHT7JJ3X82:C0FlOtU8Ylb9KDTpZqYkZPX91iI="
         )
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_request_signing7(self):
         # ensure that spaces are quoted properly before signing
         date = "Tue, 27 Mar 2007 19:42:41 +0000"
@@ -327,7 +327,7 @@ class TestDataURI:
         download_handler = build_from_crawler(DataURIDownloadHandler, crawler)
         self.download_request = download_handler.download_request
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_response_attrs(self):
         uri = "data:,A%20brief%20note"
         request = Request(uri)
@@ -335,7 +335,7 @@ class TestDataURI:
         assert response.url == uri
         assert not response.headers
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_default_mediatype_encoding(self):
         request = Request("data:,A%20brief%20note")
         response = await self.download_request(request)
@@ -343,7 +343,7 @@ class TestDataURI:
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
         assert response.encoding == "US-ASCII"
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_default_mediatype(self):
         request = Request("data:;charset=iso-8859-7,%be%d3%be")
         response = await self.download_request(request)
@@ -351,7 +351,7 @@ class TestDataURI:
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
         assert response.encoding == "iso-8859-7"
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_text_charset(self):
         request = Request("data:text/plain;charset=iso-8859-7,%be%d3%be")
         response = await self.download_request(request)
@@ -359,7 +359,7 @@ class TestDataURI:
         assert response.body == b"\xbe\xd3\xbe"
         assert response.encoding == "iso-8859-7"
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_mediatype_parameters(self):
         request = Request(
             "data:text/plain;foo=%22foo;bar%5C%22%22;"
@@ -371,13 +371,13 @@ class TestDataURI:
         assert type(response) is responsetypes.from_mimetype("text/plain")  # pylint: disable=unidiomatic-typecheck
         assert response.encoding == "utf-8"
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_base64(self):
         request = Request("data:text/plain;base64,SGVsbG8sIHdvcmxkLg%3D%3D")
         response = await self.download_request(request)
         assert response.text == "Hello, world."
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_protocol(self):
         request = Request("data:,")
         response = await self.download_request(request)

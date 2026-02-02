@@ -6,8 +6,7 @@ from asyncio import Future
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from twisted.internet.defer import Deferred, succeed
-from twisted.internet.defer import inlineCallbacks as inlineCallbacks_orig
+from twisted.internet.defer import Deferred, inlineCallbacks, succeed
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import (
@@ -20,7 +19,7 @@ from scrapy.utils.defer import (
     mustbe_deferred,
     parallel_async,
 )
-from tests.utils.decorators import inlineCallbacks
+from tests.utils.decorators import inline_callbacks_test
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
@@ -29,7 +28,7 @@ if TYPE_CHECKING:
 @pytest.mark.requires_reactor
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestMustbeDeferred:
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_success_function(self) -> Generator[Deferred[Any], Any, None]:
         steps: list[int] = []
 
@@ -45,7 +44,7 @@ class TestMustbeDeferred:
         steps.append(2)  # add another value, that should be caught by assertEqual
         yield dfd
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_unfired_deferred(self) -> Generator[Deferred[Any], Any, None]:
         steps: list[int] = []
 
@@ -224,7 +223,7 @@ class TestParallelAsync:
                 await maybe_deferred_to_future(dfd)
             yield i
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_simple(self):
         for length in [20, 50, 100]:
             parallel_count = [0]
@@ -244,7 +243,7 @@ class TestParallelAsync:
             assert parallel_count[0] == 0
             assert max_parallel_count[0] <= self.CONCURRENT_ITEMS, max_parallel_count[0]
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_delays(self):
         for length in [20, 50, 100]:
             parallel_count = [0]
@@ -276,7 +275,7 @@ class TestDeferredFromCoro:
         result = deferred_from_coro(42)
         assert result == 42
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_coroutine(self):
         async def coroutine() -> int:
             return 42
@@ -287,7 +286,7 @@ class TestDeferredFromCoro:
         assert coro_result == 42
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_coroutine_asyncio(self):
         async def coroutine() -> int:
             await asyncio.sleep(0.01)
@@ -299,7 +298,7 @@ class TestDeferredFromCoro:
         assert coro_result == 42
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_future(self):
         future = Future()
         result = deferred_from_coro(future)
@@ -310,7 +309,7 @@ class TestDeferredFromCoro:
 
 
 class TestDeferredFFromCoroF:
-    @inlineCallbacks_orig
+    @inlineCallbacks
     def _assert_result(
         self, c_f: Callable[[], Awaitable[int]]
     ) -> Generator[Deferred[Any], Any, None]:
@@ -320,7 +319,7 @@ class TestDeferredFFromCoroF:
         result = yield d
         assert result == 42
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_coroutine(self):
         async def c_f() -> int:
             return 42
@@ -328,7 +327,7 @@ class TestDeferredFFromCoroF:
         yield self._assert_result(c_f)
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_coroutine_asyncio(self):
         async def c_f() -> int:
             await asyncio.sleep(0.01)
@@ -337,7 +336,7 @@ class TestDeferredFFromCoroF:
         yield self._assert_result(c_f)
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_future(self):
         def c_f() -> Future[int]:
             f: Future[int] = Future()

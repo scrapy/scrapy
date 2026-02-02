@@ -3,7 +3,7 @@ import pytest
 from scrapy import Request, Spider, signals
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.mockserver.http import MockServer
-from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 
 class ItemSpider(Spider):
@@ -20,7 +20,7 @@ class ItemSpider(Spider):
 
 
 class TestMain:
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_scheduler_empty(self):
         crawler = get_crawler()
         calls = []
@@ -52,7 +52,7 @@ class TestMockServer:
 
     @pytest.mark.requires_http_handler
     @pytest.mark.only_asyncio
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_simple_pipeline(self):
         crawler = get_crawler(ItemSpider)
         crawler.signals.connect(self._on_item_scraped, signals.item_scraped)

@@ -9,7 +9,7 @@ from scrapy.utils.reactor import (
     is_asyncio_reactor_installed,
     set_asyncio_event_loop,
 )
-from tests.utils.decorators import deferred_f_from_coro_f
+from tests.utils.decorators import coroutine_test
 
 
 class TestAsyncio:
@@ -31,7 +31,7 @@ class TestAsyncio:
 
     @pytest.mark.requires_reactor
     @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_set_asyncio_event_loop(self):
         install_reactor(_asyncio_reactor_path)
         assert set_asyncio_event_loop(None) is asyncio.get_running_loop()

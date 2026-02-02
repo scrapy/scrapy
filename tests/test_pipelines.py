@@ -14,7 +14,7 @@ from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.mockserver.http import MockServer
-from tests.utils.decorators import deferred_f_from_coro_f
+from tests.utils.decorators import coroutine_test
 
 
 class SimplePipeline:
@@ -154,13 +154,13 @@ class TestPipeline:
             ),
         ],
     )
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_pipeline(self, mockserver: MockServer, pipeline_class: type) -> None:
         crawler = self._create_crawler(pipeline_class)
         await crawler.crawl_async(mockserver=mockserver)
         assert len(self.items) == 1
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_pipeline_deferred(self, mockserver: MockServer) -> None:
         crawler = self._create_crawler(DeferredPipeline)
         with (
@@ -180,7 +180,7 @@ class TestPipeline:
             await crawler.crawl_async(mockserver=mockserver)
         assert len(self.items) == 1
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_deprecated_spider_arg(self, mockserver: MockServer) -> None:
         crawler = self._create_crawler(DeprecatedSpiderArgPipeline)
         with (
@@ -214,7 +214,7 @@ class TestPipeline:
             ProcessItemExceptionAsyncPipeline,
         ],
     )
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_process_item_exception(
         self,
         caplog: pytest.LogCaptureFixture,
@@ -239,7 +239,7 @@ class TestPipeline:
             OpenSpiderExceptionAsyncPipeline,
         ],
     )
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_open_spider_exception(
         self, mockserver: MockServer, pipeline_class: type
     ) -> None:
@@ -267,7 +267,7 @@ class TestCustomPipelineManager:
             itemproc.process_item({}, crawler.spider)
 
     @pytest.mark.requires_http_handler
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_integration_recommended(self, mockserver: MockServer) -> None:
         class CustomPipelineManager(ItemPipelineManager):
             async def process_item_async(self, item):
@@ -294,7 +294,7 @@ class TestCustomPipelineManager:
         assert len(items) == 1
 
     @pytest.mark.requires_http_handler
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_integration_no_async_subclass(self, mockserver: MockServer) -> None:
         class CustomPipelineManager(ItemPipelineManager):
             def open_spider(self, spider):
@@ -353,7 +353,7 @@ class TestCustomPipelineManager:
         assert len(items) == 1
 
     @pytest.mark.requires_http_handler
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_integration_no_async_not_subclass(
         self, mockserver: MockServer
     ) -> None:
@@ -425,7 +425,7 @@ class TestMiddlewareManagerSpider:
     def crawler(self) -> Crawler:
         return get_crawler(Spider)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_deprecated_spider_arg_no_crawler_spider(
         self, crawler: Crawler
     ) -> None:
@@ -480,7 +480,7 @@ class TestMiddlewareManagerSpider:
         ):
             await mwman.close_spider_async()
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_deprecated_spider_arg_with_crawler(self, crawler: Crawler) -> None:
         """Crawler is provided and has a spider, works. The instance passed to a deprecated method
         is ignored, even if mismatched."""
@@ -497,7 +497,7 @@ class TestMiddlewareManagerSpider:
         ):
             await maybe_deferred_to_future(mwman.close_spider(DefaultSpider()))
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_deprecated_spider_arg_without_crawler(self) -> None:
         """The first instance passed to a deprecated method is used. Mismatched ones raise an error."""
         with pytest.warns(
@@ -527,7 +527,7 @@ class TestMiddlewareManagerSpider:
         ):
             await maybe_deferred_to_future(mwman.close_spider(spider))
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_no_spider_arg_without_crawler(self) -> None:
         """If no crawler and no spider arg, raise an error."""
         with pytest.warns(

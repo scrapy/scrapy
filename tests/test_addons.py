@@ -7,7 +7,7 @@ from scrapy.crawler import AsyncCrawlerRunner, Crawler, CrawlerRunner
 from scrapy.exceptions import NotConfigured
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.test import get_crawler, get_reactor_settings
-from tests.utils.decorators import inlineCallbacks
+from tests.utils.decorators import inline_callbacks_test
 
 
 class SimpleAddon:
@@ -183,7 +183,7 @@ class TestAddonManager:
                 extra={"crawler": crawler},
             )
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_enable_addon_in_spider(self):
         class MySpider(Spider):
             name = "myspider"

@@ -12,7 +12,7 @@ from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.test_scheduler import MemoryScheduler
-from tests.utils.decorators import deferred_f_from_coro_f
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from scrapy.http import Response
@@ -28,7 +28,7 @@ async def sleep(seconds: float = 0.001) -> None:
 
 class TestMain:
     @pytest.mark.requires_reactor  # TODO
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_sleep(self):
         """Neither asynchronous sleeps on Spider.start() nor the equivalent on
         the scheduler (returning no requests while also returning True from
@@ -87,7 +87,7 @@ class TestMain:
         expected_urls = ["data:,a", "data:,b", "data:,c", "data:,d"]
         assert actual_urls == expected_urls, f"{actual_urls=} != {expected_urls=}"
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_close_during_start_iteration(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
@@ -188,7 +188,7 @@ class TestRequestSendOrder:
         expected_nums = sorted(start_nums + cb_nums)
         assert actual_nums == expected_nums, f"{actual_nums=} != {expected_nums=}"
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_default(self):
         """By default, callback requests take priority over start requests and
         are sent in order. Priority matters, but given the same priority, a
@@ -228,7 +228,7 @@ class TestRequestSendOrder:
             parse_fn=parse,
         )
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_lifo_start(self):
         """Changing the queues of start requests to LIFO, matching the queues
         of non-start requests, does not cause all requests to be stored in the
@@ -271,7 +271,7 @@ class TestRequestSendOrder:
             parse_fn=parse,
         )
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_shared_queues(self):
         """If SCHEDULER_START_*_QUEUE is falsy, start requests and other
         requests share the same queue, i.e. start requests are not priorized
@@ -333,7 +333,7 @@ class TestRequestSendOrder:
     # spiders.
 
     @pytest.mark.requires_http_handler
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_lazy(self):
         start_nums = [1, 2, 4]
         cb_nums = [3]

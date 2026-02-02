@@ -13,7 +13,7 @@ from scrapy.http import Request
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import SimpleSpider, SingleRequestSpider
-from tests.utils.decorators import inlineCallbacks
+from tests.utils.decorators import inline_callbacks_test
 
 
 class MitmProxy:
@@ -84,14 +84,14 @@ class TestProxyConnect:
         self._proxy.stop()
         os.environ = self._oldenv
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_https_connect_tunnel(self):
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
         self._assert_got_response_code(200, log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_https_tunnel_auth_error(self):
         os.environ["https_proxy"] = _wrong_credentials(os.environ["https_proxy"])
         crawler = get_crawler(SimpleSpider)
@@ -101,7 +101,7 @@ class TestProxyConnect:
         # he just sees a TunnelError.
         self._assert_got_tunnel_error(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_https_tunnel_without_leak_proxy_authorization_header(self):
         request = Request(self.mockserver.url("/echo", is_secure=True))
         crawler = get_crawler(SingleRequestSpider)

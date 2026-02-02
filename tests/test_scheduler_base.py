@@ -13,7 +13,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.request import fingerprint
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
-from tests.utils.decorators import inlineCallbacks
+from tests.utils.decorators import inline_callbacks_test
 
 PATHS = ["/a", "/b", "/c"]
 URLS = [urljoin("https://example.org", p) for p in PATHS]
@@ -118,7 +118,7 @@ class TestSimpleScheduler(InterfaceCheckMixin):
     def setup_method(self):
         self.scheduler = SimpleScheduler()
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_enqueue_dequeue(self):
         open_result = yield self.scheduler.open(Spider("foo"))
         assert open_result == "open"
@@ -148,7 +148,7 @@ class TestSimpleScheduler(InterfaceCheckMixin):
 class TestMinimalSchedulerCrawl:
     scheduler_cls = MinimalScheduler
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawl(self):
         with MockServer() as mockserver:
             settings = {

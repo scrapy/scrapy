@@ -5,7 +5,7 @@ from scrapy.http import Request
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import MockServerSpider
-from tests.utils.decorators import inlineCallbacks
+from tests.utils.decorators import inline_callbacks_test
 
 
 class InjectArgumentsDownloaderMiddleware:
@@ -160,7 +160,7 @@ class TestCallbackKeywordArguments:
     def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_callback_kwargs(self):
         crawler = get_crawler(KeywordArgumentsSpider)
         with LogCapture() as log:

@@ -12,7 +12,7 @@ from scrapy.spiders import Spider
 from scrapy.statscollectors import DummyStatsCollector, StatsCollector
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
-from tests.utils.decorators import deferred_f_from_coro_f
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from scrapy.crawler import Crawler
@@ -121,7 +121,7 @@ class TestStatsCollector:
         ):
             assert stats.get_stats(spider) == {"test": "value"}
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_deprecated_spider_arg_custom_collector(self) -> None:
         class CustomStatsCollector:
             def __init__(self, crawler):
@@ -153,7 +153,7 @@ class TestStatsCollector:
         ):
             await crawler.crawl_async(url="data:,")
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_deprecated_spider_arg_custom_collector_subclass(self) -> None:
         class CustomStatsCollector(StatsCollector):
             def open_spider(self, spider):  # pylint: disable=signature-differs

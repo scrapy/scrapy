@@ -13,7 +13,7 @@ from tests.test_engine import (
     MySpider,
     TestEngineBase,
 )
-from tests.utils.decorators import deferred_f_from_coro_f
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
@@ -27,7 +27,7 @@ class HeadersReceivedCrawlerRun(CrawlerRun):
 
 class TestHeadersReceivedEngine(TestEngineBase):
     @pytest.mark.requires_http_handler
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_crawler(
         self, mockserver: MockServer, caplog: pytest.LogCaptureFixture
     ) -> None:

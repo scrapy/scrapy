@@ -18,7 +18,7 @@ from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
-from tests.utils.decorators import inlineCallbacks
+from tests.utils.decorators import inline_callbacks_test
 
 
 class DemoItem(Item):
@@ -502,7 +502,7 @@ class TestContractsManager:
         assert self.results.errors
 
     @pytest.mark.requires_http_handler
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_same_url(self):
         class TestSameUrlSpider(Spider):
             name = "test_same_url"
