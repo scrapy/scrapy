@@ -31,7 +31,6 @@ from zope.interface import implementer
 
 from scrapy import Request, signals
 from scrapy.core.downloader.contextfactory import load_context_factory_from_settings
-from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.exceptions import (
     DownloadCancelledError,
     DownloadTimeoutError,
@@ -40,7 +39,10 @@ from scrapy.exceptions import (
 )
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
-from scrapy.utils._download_handlers import wrap_twisted_exceptions
+from scrapy.utils._download_handlers import (
+    BaseHttpDownloadHandler,
+    wrap_twisted_exceptions,
+)
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 from scrapy.utils.httpobj import urlparse_cached
@@ -71,7 +73,7 @@ class _ResultT(TypedDict):
     failure: NotRequired[Failure | None]
 
 
-class HTTP11DownloadHandler(BaseDownloadHandler):
+class HTTP11DownloadHandler(BaseHttpDownloadHandler):
     def __init__(self, crawler: Crawler):
         super().__init__(crawler)
         self._crawler = crawler
@@ -87,13 +89,7 @@ class HTTP11DownloadHandler(BaseDownloadHandler):
         self._contextFactory: IPolicyForHTTPS = load_context_factory_from_settings(
             crawler.settings, crawler
         )
-        self._default_maxsize: int = crawler.settings.getint("DOWNLOAD_MAXSIZE")
-        self._default_warnsize: int = crawler.settings.getint("DOWNLOAD_WARNSIZE")
-        self._fail_on_dataloss: bool = crawler.settings.getbool(
-            "DOWNLOAD_FAIL_ON_DATALOSS"
-        )
         self._disconnect_timeout: int = 1
-        self._fail_on_dataloss_warned: bool = False
 
     async def download_request(self, request: Request) -> Response:
         """Return a deferred for the HTTP download"""
