@@ -116,18 +116,18 @@ def get_reactor_settings() -> dict[str, Any]:
 
     ``Crawler._apply_settings()`` checks that the installed reactor matches the
     settings, so tests that run the crawler in the current process may need to
-    pass a correct ``"TWISTED_REACTOR"`` setting value when creating it.
+    pass a correct :setting:`TWISTED_REACTOR` setting value when creating it.
     """
     settings: dict[str, Any] = {}
     if is_reactor_installed():
         if not is_asyncio_reactor_installed():
             settings["TWISTED_REACTOR"] = None
     else:
-        # raise RuntimeError(
-        #     "get_reactor_settings() called without an installed reactor,"
-        #     " you may need to install a reactor explicitly when running your tests."
-        # )
-        # TODO: distinguish between explicit reactorless mode and missing reactor installation
+        # We are either running Scrapy tests for the reactorless mode, or
+        # running some 3rd-party library tests for the reactorless mode, or
+        # running some 3rd-party library tests without initializing a reactor
+        # properly. The first two cases are fine, but we cannot distinguish the
+        # last one from them.
         settings["TWISTED_ENABLED"] = False
         settings["DOWNLOAD_HANDLERS"] = {
             "ftp": None,
@@ -154,7 +154,6 @@ def get_crawler(
     }
     runner: CrawlerRunnerBase
     if is_reactor_installed():
-        # TODO should we use this only for the non-asyncio reactors instead?
         runner = CrawlerRunner(settings)
     else:
         runner = AsyncCrawlerRunner(settings)

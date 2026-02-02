@@ -381,6 +381,8 @@ class TestDeferredToFuture:
 
 
 @pytest.mark.only_asyncio
+# needs a reactor or an event loop for is_asyncio_available()
+# (for maybe_deferred_to_future())
 @pytest.mark.requires_reactor
 class TestMaybeDeferredToFutureAsyncio:
     @deferred_f_from_coro_f
@@ -417,7 +419,9 @@ class TestMaybeDeferredToFutureAsyncio:
 
 
 @pytest.mark.only_not_asyncio
-@pytest.mark.requires_reactor  # needs a reactor or an event loop for is_asyncio_available()
+# needs a reactor or an event loop for is_asyncio_available()
+# (for maybe_deferred_to_future())
+@pytest.mark.requires_reactor
 class TestMaybeDeferredToFutureNotAsyncio:
     def test_deferred(self):
         d = Deferred()

@@ -20,6 +20,9 @@ _P = ParamSpec("_P")
 def inlineCallbacks(
     f: Callable[_P, Generator[Deferred[Any], Any, _T]],
 ) -> Callable[_P, Deferred[_T]]:
+    """Like :func:`twisted.internet.defer.inlineCallbacks`, but marks the
+    decorated function with ``@pytest.mark.requires_reactor``."""
+
     @pytest.mark.requires_reactor
     @wraps(f)
     @inlineCallbacks_orig
@@ -34,6 +37,9 @@ def inlineCallbacks(
 def deferred_f_from_coro_f(
     coro_f: Callable[_P, Awaitable[_T]],
 ) -> Callable[_P, Deferred[_T]]:
+    """Like :func:`scrapy.utils.defer.deferred_f_from_coro_f`, but marks the
+    decorated function with ``@pytest.mark.requires_reactor``."""
+
     @pytest.mark.requires_reactor
     @wraps(coro_f)
     def f(*coro_args: _P.args, **coro_kwargs: _P.kwargs) -> Deferred[_T]:
