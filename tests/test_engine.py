@@ -598,7 +598,7 @@ class TestEngineDownload(TestEngineDownloadAsync):
         return await maybe_deferred_to_future(engine.download(request))
 
 
-@pytest.mark.requires_reactor  # needs a reactor or an event loop for Downloader._slot_gc_loop
+@pytest.mark.requires_reactor  # needs a reactor or an event loop for _Slot.heartbeat
 def test_request_scheduled_signal(caplog):
     class TestScheduler(BaseScheduler):
         def __init__(self):
