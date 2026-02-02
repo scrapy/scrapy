@@ -65,7 +65,16 @@ class TestHttps11CustomCiphers(HTTP11DownloadHandlerMixin, TestHttpsCustomCipher
 class TestHttp11WithCrawler(TestHttpWithCrawlerBase):
     @property
     def settings_dict(self) -> dict[str, Any] | None:
-        return None  # default handler settings
+        return {
+            "DOWNLOAD_HANDLERS": {
+                "http": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
+                "https": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
+            }
+        }
+
+
+class TestHttps11WithCrawler(TestHttp11WithCrawler):
+    is_secure = True
 
 
 class TestHttp11Proxy(HTTP11DownloadHandlerMixin, TestHttpProxyBase):

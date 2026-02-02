@@ -634,43 +634,52 @@ class TestCrawlSpider:
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
         assert crawler.spider.meta["responses"][0].certificate is None
 
-    @inlineCallbacks
-    def test_response_ssl_certificate(self):
-        crawler = get_crawler(SingleRequestSpider)
-        url = self.mockserver.url("/echo?body=test", is_secure=True)
-        yield crawler.crawl(seed=url, mockserver=self.mockserver)
-        cert = crawler.spider.meta["responses"][0].certificate
-        assert isinstance(cert, Certificate)
-        assert cert.getSubject().commonName == b"localhost"
-        assert cert.getIssuer().commonName == b"localhost"
-
-    @pytest.mark.xfail(
-        reason="Responses with no body return early and contain no certificate"
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "/echo?body=test",
+            pytest.param(
+                "/status?n=200",
+                marks=pytest.mark.xfail(
+                    reason="With HTTP11DownloadHandler, responses with no body are returned early and contain no certificate",
+                    strict=True,
+                ),
+            ),
+        ],
     )
-    @inlineCallbacks
-    def test_response_ssl_certificate_empty_response(self):
+    @deferred_f_from_coro_f
+    async def test_response_ssl_certificate(
+        self, mockserver: MockServer, url: str
+    ) -> None:
         crawler = get_crawler(SingleRequestSpider)
-        url = self.mockserver.url("/status?n=200", is_secure=True)
-        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        url = mockserver.url(url, is_secure=True)
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
         cert = crawler.spider.meta["responses"][0].certificate
         assert isinstance(cert, Certificate)
         assert cert.getSubject().commonName == b"localhost"
         assert cert.getIssuer().commonName == b"localhost"
 
-    @inlineCallbacks
-    def test_dns_server_ip_address_none(self):
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "/echo?body=test",
+            pytest.param(
+                "/status?n=200",
+                marks=pytest.mark.xfail(
+                    reason="With HTTP11DownloadHandler, responses with no body are returned early and contain no ip_address",
+                    strict=True,
+                ),
+            ),
+        ],
+    )
+    @deferred_f_from_coro_f
+    async def test_response_ip_address(self, mockserver: MockServer, url: str) -> None:
         crawler = get_crawler(SingleRequestSpider)
-        url = self.mockserver.url("/status?n=200")
-        yield crawler.crawl(seed=url, mockserver=self.mockserver)
-        ip_address = crawler.spider.meta["responses"][0].ip_address
-        assert ip_address is None
-
-    @inlineCallbacks
-    def test_dns_server_ip_address(self):
-        crawler = get_crawler(SingleRequestSpider)
-        url = self.mockserver.url("/echo?body=test")
+        url = mockserver.url(url)
         expected_netloc, _ = urlparse(url).netloc.split(":")
-        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
         ip_address = crawler.spider.meta["responses"][0].ip_address
         assert isinstance(ip_address, IPv4Address)
         assert str(ip_address) == gethostbyname(expected_netloc)

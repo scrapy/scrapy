@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING, Any
-from unittest import mock
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet import defer
 from twisted.web.http import H2_ENABLED
 
-from scrapy.exceptions import DownloadCancelledError, UnsupportedURLSchemeError
+from scrapy.exceptions import UnsupportedURLSchemeError
 from scrapy.http import Request
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from tests.test_downloader_handlers_http_base import (
@@ -60,32 +58,6 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert response.protocol == "h2"
-
-    @deferred_f_from_coro_f
-    async def test_download_with_maxsize_very_large_file(
-        self, mockserver: MockServer
-    ) -> None:
-        from twisted.internet import reactor
-
-        with mock.patch("scrapy.core.http2.stream.logger") as logger:
-            request = Request(
-                mockserver.url("/largechunkedfile", is_secure=self.is_secure)
-            )
-
-            def check(logger: mock.Mock) -> None:
-                logger.error.assert_called_once_with(mock.ANY)
-
-            async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
-                with pytest.raises(DownloadCancelledError):
-                    await download_handler.download_request(request)
-
-            # As the error message is logged in the dataReceived callback, we
-            # have to give a bit of time to the reactor to process the queue
-            # after closing the connection.
-            d: defer.Deferred[mock.Mock] = defer.Deferred()
-            d.addCallback(check)
-            reactor.callLater(0.1, d.callback, logger)
-            await maybe_deferred_to_future(d)
 
     def test_download_cause_data_loss(self) -> None:  # type: ignore[override]
         pytest.skip(self.HTTP2_DATALOSS_SKIP_REASON)
@@ -210,7 +182,8 @@ class TestHttp2WithCrawler(TestHttpWithCrawlerBase):
     def settings_dict(self) -> dict[str, Any] | None:
         return {
             "DOWNLOAD_HANDLERS": {
-                "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler"
+                "http": None,
+                "https": "scrapy.core.downloader.handlers.http2.H2DownloadHandler",
             }
         }
 

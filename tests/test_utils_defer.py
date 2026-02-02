@@ -324,9 +324,11 @@ class TestDeferredFFromCoroF:
 
         yield self._assert_result(c_f)
 
+    @pytest.mark.only_asyncio
     @inlineCallbacks
     def test_coroutine_asyncio(self):
         async def c_f() -> int:
+            await asyncio.sleep(0.01)
             return 42
 
         yield self._assert_result(c_f)
