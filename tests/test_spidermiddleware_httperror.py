@@ -11,7 +11,7 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import MockServerSpider
-from tests.utils.decorators import inlineCallbacks
+from tests.utils.decorators import inline_callbacks_test
 
 
 class _HttpErrorSpider(MockServerSpider):
@@ -202,7 +202,7 @@ class TestHttpErrorMiddlewareIntegrational:
     def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_middleware_works(self):
         crawler = get_crawler(_HttpErrorSpider)
         yield crawler.crawl(mockserver=self.mockserver)
@@ -216,7 +216,7 @@ class TestHttpErrorMiddlewareIntegrational:
         assert get_value("httperror/response_ignored_status_count/402") == 1
         assert get_value("httperror/response_ignored_status_count/500") == 1
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_logging(self):
         crawler = get_crawler(_HttpErrorSpider)
         with LogCapture() as log:
@@ -230,7 +230,7 @@ class TestHttpErrorMiddlewareIntegrational:
         assert "Ignoring response <200" not in str(log)
         assert "Ignoring response <402" not in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_logging_level(self):
         # HttpError logs ignored responses with level INFO
         crawler = get_crawler(_HttpErrorSpider)

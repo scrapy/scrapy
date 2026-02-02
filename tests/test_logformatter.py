@@ -12,7 +12,7 @@ from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
-from tests.utils.decorators import inlineCallbacks
+from tests.utils.decorators import inline_callbacks_test
 
 
 class CustomItem(Item):
@@ -272,7 +272,7 @@ class TestShowOrSkipMessages:
             },
         }
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_show_messages(self):
         crawler = get_crawler(ItemSpider, self.base_settings)
         with LogCapture() as lc:
@@ -281,7 +281,7 @@ class TestShowOrSkipMessages:
         assert "Crawled (200) <GET http://127.0.0.1:" in str(lc)
         assert "Dropped: Ignoring item" in str(lc)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_skip_messages(self):
         settings = self.base_settings.copy()
         settings["LOG_FORMATTER"] = SkipMessagesLogFormatter

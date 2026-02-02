@@ -41,7 +41,7 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests.mockserver.http import MockServer
 from tests.utils import get_script_run_env
-from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 BASE_SETTINGS: dict[str, Any] = {}
 
@@ -101,21 +101,21 @@ class TestCrawler(TestBaseCrawler):
         with pytest.raises(ValueError, match="spidercls argument must be a class"):
             Crawler(DefaultSpider())
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawler_crawl_twice_seq_unsupported(self):
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
         yield crawler.crawl()
         with pytest.raises(RuntimeError, match="more than once on the same instance"):
             yield crawler.crawl()
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_crawler_crawl_async_twice_seq_unsupported(self):
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
         await crawler.crawl_async()
         with pytest.raises(RuntimeError, match="more than once on the same instance"):
             await crawler.crawl_async()
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawler_crawl_twice_parallel_unsupported(self):
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
         d1 = crawler.crawl()
@@ -125,7 +125,7 @@ class TestCrawler(TestBaseCrawler):
             yield d2
 
     @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_crawler_crawl_async_twice_parallel_unsupported(self):
         crawler = get_raw_crawler(NoRequestsSpider, BASE_SETTINGS)
         t1 = asyncio.create_task(crawler.crawl_async())
@@ -172,7 +172,7 @@ class TestCrawler(TestBaseCrawler):
         addon = crawler.get_addon(ChildAddon)
         assert addon is None
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_get_downloader_middleware(self):
         class ParentDownloaderMiddleware:
             pass
@@ -235,7 +235,7 @@ class TestCrawler(TestBaseCrawler):
         with pytest.raises(RuntimeError):
             crawler.get_downloader_middleware(DefaultSpider)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_get_downloader_middleware_no_engine(self):
         class MySpider(Spider):
             name = "myspider"
@@ -252,7 +252,7 @@ class TestCrawler(TestBaseCrawler):
         with pytest.raises(RuntimeError):
             yield crawler.crawl()
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_get_extension(self):
         class ParentExtension:
             pass
@@ -315,7 +315,7 @@ class TestCrawler(TestBaseCrawler):
         with pytest.raises(RuntimeError):
             crawler.get_extension(DefaultSpider)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_get_extension_no_engine(self):
         class MySpider(Spider):
             name = "myspider"
@@ -332,7 +332,7 @@ class TestCrawler(TestBaseCrawler):
         with pytest.raises(RuntimeError):
             yield crawler.crawl()
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_get_item_pipeline(self):
         class ParentItemPipeline:
             pass
@@ -395,7 +395,7 @@ class TestCrawler(TestBaseCrawler):
         with pytest.raises(RuntimeError):
             crawler.get_item_pipeline(DefaultSpider)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_get_item_pipeline_no_engine(self):
         class MySpider(Spider):
             name = "myspider"
@@ -412,7 +412,7 @@ class TestCrawler(TestBaseCrawler):
         with pytest.raises(RuntimeError):
             yield crawler.crawl()
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_get_spider_middleware(self):
         class ParentSpiderMiddleware:
             pass
@@ -475,7 +475,7 @@ class TestCrawler(TestBaseCrawler):
         with pytest.raises(RuntimeError):
             crawler.get_spider_middleware(DefaultSpider)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_get_spider_middleware_no_engine(self):
         class MySpider(Spider):
             name = "myspider"
@@ -516,7 +516,7 @@ class TestCrawlerLogging:
         get_crawler(MySpider)
         assert get_scrapy_root_handler() is None
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_spider_custom_settings_log_level(self, tmp_path):
         log_file = Path(tmp_path, "log.txt")
         log_file.write_text("previous message\n", encoding="utf-8")
@@ -686,20 +686,20 @@ class TestCrawlerRunnerHasSpider:
     def _crawl(runner, spider):
         return runner.crawl(spider)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawler_runner_bootstrap_successful(self):
         runner = self._runner()
         yield self._crawl(runner, NoRequestsSpider)
         assert not runner.bootstrap_failed
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawler_runner_bootstrap_successful_for_several(self):
         runner = self._runner()
         yield self._crawl(runner, NoRequestsSpider)
         yield self._crawl(runner, NoRequestsSpider)
         assert not runner.bootstrap_failed
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawler_runner_bootstrap_failed(self):
         runner = self._runner()
 
@@ -712,7 +712,7 @@ class TestCrawlerRunnerHasSpider:
 
         assert runner.bootstrap_failed
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawler_runner_bootstrap_failed_for_several(self):
         runner = self._runner()
 
@@ -727,7 +727,7 @@ class TestCrawlerRunnerHasSpider:
 
         assert runner.bootstrap_failed
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawler_runner_asyncio_enabled_true(
         self, reactor_pytest: str
     ) -> Generator[Deferred[Any], Any, None]:
@@ -959,7 +959,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
         p.expect_exact("Spider closed (shutdown)")
         p.wait()
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_shutdown_forced(self):
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
         args = self.get_script_args("sleeping.py", "10")
@@ -1297,7 +1297,7 @@ def test_log_scrapy_info(settings, items, caplog):
     assert re.search(r"^Versions:\n{'" + expected_items_pattern + "'}$", version_string)
 
 
-@deferred_f_from_coro_f
+@coroutine_test
 async def test_deprecated_crawler_stop() -> None:
     crawler = get_crawler(DefaultSpider)
     d = crawler.crawl()

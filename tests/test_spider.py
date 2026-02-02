@@ -30,7 +30,7 @@ from scrapy.spiders import (
 from scrapy.spiders.init import InitSpider
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import get_testdata, tests_datadir
-from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 
 class TestSpider:
@@ -95,7 +95,7 @@ class TestSpider:
         assert settings.get("TEST2") == "spider"
         assert settings.get("TEST3") == "project"
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_settings_in_from_crawler(self):
         spider_settings = {"TEST1": "spider", "TEST2": "spider"}
         project_settings = {
@@ -142,7 +142,7 @@ class TestSpider:
 class TestInitSpider(TestSpider):
     spider_class = InitSpider
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_start_urls(self):
         responses = []
 
@@ -458,7 +458,7 @@ class TestCrawlSpider(TestSpider):
         assert hasattr(spider, "_follow_links")
         assert not spider._follow_links
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_start_url(self):
         class TestSpider(self.spider_class):
             name = "test"
@@ -827,7 +827,7 @@ Sitemap: /sitemap-relative-url.xml
             ),
         )
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_sitemap_urls(self):
         class TestSpider(self.spider_class):
             name = "test"

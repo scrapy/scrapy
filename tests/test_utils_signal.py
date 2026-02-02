@@ -14,14 +14,14 @@ from scrapy.utils.signal import (
     send_catch_log_deferred,
 )
 from scrapy.utils.test import get_from_asyncio_queue
-from tests.utils.decorators import inlineCallbacks
+from tests.utils.decorators import inline_callbacks_test
 
 
 class TestSendCatchLog:
     # whether the function being tested returns exceptions or failures
     returns_exceptions: bool = False
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_send_catch_log(self):
         test_signal = object()
         handlers_called = set()

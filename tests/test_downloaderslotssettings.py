@@ -11,7 +11,7 @@ from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import MetaSpider
-from tests.utils.decorators import deferred_f_from_coro_f, inlineCallbacks
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 
 class DownloaderSlotsSettingsTestSpider(MetaSpider):
@@ -68,7 +68,7 @@ class TestCrawl:
         self.runner = CrawlerRunner()
 
     @pytest.mark.requires_http_handler
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_delay(self):
         crawler = get_crawler(DownloaderSlotsSettingsTestSpider)
         yield crawler.crawl(mockserver=self.mockserver)
@@ -137,7 +137,7 @@ def test_get_slot_deprecated_spider_arg():
         "scrapy.pqueues.DownloaderAwarePriorityQueue",
     ],
 )
-@deferred_f_from_coro_f
+@coroutine_test
 async def test_none_slot_with_priority_queue(
     mockserver: MockServer, priority_queue_class: str
 ) -> None:

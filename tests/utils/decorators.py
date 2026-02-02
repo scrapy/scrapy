@@ -4,8 +4,7 @@ from functools import wraps
 from typing import TYPE_CHECKING, Any, ParamSpec
 
 import pytest
-from twisted.internet.defer import Deferred
-from twisted.internet.defer import inlineCallbacks as inlineCallbacks_orig
+from twisted.internet.defer import Deferred, inlineCallbacks
 
 from scrapy.utils.defer import deferred_from_coro, deferred_to_future
 from scrapy.utils.reactor import is_reactor_installed
@@ -17,7 +16,7 @@ if TYPE_CHECKING:
 _P = ParamSpec("_P")
 
 
-def inlineCallbacks(
+def inline_callbacks_test(
     f: Callable[_P, Generator[Deferred[Any], Any, None]],
 ) -> Callable[_P, Awaitable[None]]:
     """Mark a test function written in a :func:`twisted.internet.defer.inlineCallbacks` style.
@@ -34,12 +33,12 @@ def inlineCallbacks(
         @pytest.mark.asyncio
         @wraps(f)
         async def wrapper_coro(*args: _P.args, **kwargs: _P.kwargs) -> None:
-            await deferred_to_future(inlineCallbacks_orig(f)(*args, **kwargs))
+            await deferred_to_future(inlineCallbacks(f)(*args, **kwargs))
 
         return wrapper_coro
 
     @wraps(f)
-    @inlineCallbacks_orig
+    @inlineCallbacks
     def wrapper_dfd(
         *args: _P.args, **kwargs: _P.kwargs
     ) -> Generator[Deferred[Any], Any, None]:
@@ -48,7 +47,7 @@ def inlineCallbacks(
     return wrapper_dfd
 
 
-def deferred_f_from_coro_f(
+def coroutine_test(
     coro_f: Callable[_P, Awaitable[None]],
 ) -> Callable[_P, Awaitable[None]]:
     """Mark a test function that returns a coroutine.
