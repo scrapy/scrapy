@@ -40,6 +40,7 @@ from scrapy.exceptions import (
 from scrapy.http import Headers, Response
 from scrapy.utils._download_handlers import (
     BaseHttpDownloadHandler,
+    check_stop_download,
     get_dataloss_msg,
     get_maxsize_msg,
     get_warnsize_msg,
@@ -491,29 +492,23 @@ class ScrapyAgent:
     def _cb_bodyready(
         self, txresponse: TxResponse, request: Request
     ) -> _ResultT | Deferred[_ResultT]:
-        headers_received_result = self._crawler.signals.send_catch_log(
-            signal=signals.headers_received,
+        if stop_download := check_stop_download(
+            signals.headers_received,
+            self._crawler,
+            request,
             headers=self._headers_from_twisted_response(txresponse),
             body_length=txresponse.length,
-            request=request,
-            spider=self._crawler.spider,
-        )
-        for handler, result in headers_received_result:
-            if isinstance(result, Failure) and isinstance(result.value, StopDownload):
-                logger.debug(
-                    "Download stopped for %(request)s from signal handler %(handler)s",
-                    {"request": request, "handler": handler.__qualname__},
-                )
-                txresponse._transport.stopProducing()
-                txresponse._transport.loseConnection()
-                return {
-                    "txresponse": txresponse,
-                    "body": b"",
-                    "flags": ["download_stopped"],
-                    "certificate": None,
-                    "ip_address": None,
-                    "stop_download": result.value if result.value.fail else None,
-                }
+        ):
+            txresponse._transport.stopProducing()
+            txresponse._transport.loseConnection()
+            return {
+                "txresponse": txresponse,
+                "body": b"",
+                "flags": None,
+                "certificate": None,
+                "ip_address": None,
+                "stop_download": stop_download,
+            }
 
         # deliverBody hangs for responses without body
         if txresponse.length == 0:
@@ -574,7 +569,7 @@ class ScrapyAgent:
             protocol = f"{to_unicode(version[0])}/{version[1]}.{version[2]}"
         except (AttributeError, TypeError, IndexError):
             protocol = None
-        response = make_response(
+        return make_response(
             url=url,
             status=int(result["txresponse"].code),
             headers=headers,
@@ -583,12 +578,8 @@ class ScrapyAgent:
             certificate=result["certificate"],
             ip_address=result["ip_address"],
             protocol=protocol,
+            stop_download=result.get("stop_download"),
         )
-        if result.get("stop_download"):
-            assert result["stop_download"]
-            result["stop_download"].response = response
-            raise result["stop_download"]
-        return response
 
 
 @implementer(IBodyProducer)
@@ -668,24 +659,12 @@ class _ResponseReader(Protocol):
         self._bodybuf.write(bodyBytes)
         self._bytes_received += len(bodyBytes)
 
-        bytes_received_result = self._crawler.signals.send_catch_log(
-            signal=signals.bytes_received,
-            data=bodyBytes,
-            request=self._request,
-            spider=self._crawler.spider,
-        )
-        for handler, result in bytes_received_result:
-            if isinstance(result, Failure) and isinstance(result.value, StopDownload):
-                logger.debug(
-                    "Download stopped for %(request)s from signal handler %(handler)s",
-                    {"request": self._request, "handler": handler.__qualname__},
-                )
-                self.transport.stopProducing()
-                self.transport.loseConnection()
-                self._finish_response(
-                    flags=["download_stopped"],
-                    stop_download=result.value if result.value.fail else None,
-                )
+        if stop_download := check_stop_download(
+            signals.bytes_received, self._crawler, self._request, data=bodyBytes
+        ):
+            self.transport.stopProducing()
+            self.transport.loseConnection()
+            self._finish_response(stop_download=stop_download)
 
         if self._maxsize and self._bytes_received > self._maxsize:
             logger.warning(

@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from abc import ABC
 from contextlib import contextmanager
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from twisted.internet.defer import CancelledError
 from twisted.internet.error import ConnectionRefusedError as TxConnectionRefusedError
 from twisted.internet.error import DNSLookupError
 from twisted.internet.error import TimeoutError as TxTimeoutError
+from twisted.python.failure import Failure
 from twisted.web.client import ResponseFailed
 from twisted.web.error import SchemeNotSupported
 
@@ -21,8 +22,10 @@ from scrapy.exceptions import (
     DownloadConnectionRefusedError,
     DownloadFailedError,
     DownloadTimeoutError,
+    StopDownload,
     UnsupportedURLSchemeError,
 )
+from scrapy.utils.log import logger
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -67,6 +70,30 @@ def wrap_twisted_exceptions() -> Iterator[None]:
         raise DownloadTimeoutError(str(e)) from e
 
 
+def check_stop_download(
+    signal: object, crawler: Crawler, request: Request, **kwargs: Any
+) -> StopDownload | None:
+    """Send the given signal and check if any of its handlers raised
+    :exc:`~scrapy.exceptions.StopDownload`.
+
+    Return the raised exception or ``None``.
+    """
+    signal_result = crawler.signals.send_catch_log(
+        signal=signal,
+        request=request,
+        spider=crawler.spider,
+        **kwargs,
+    )
+    for handler, result in signal_result:
+        if isinstance(result, Failure) and isinstance(result.value, StopDownload):
+            logger.debug(
+                f"Download stopped for {request} from signal handler {handler.__qualname__}"
+            )
+            return result.value
+
+    return None
+
+
 def make_response(
     url: str,
     status: int,
@@ -76,9 +103,10 @@ def make_response(
     certificate: Certificate | None = None,
     ip_address: IPv4Address | IPv6Address | None = None,
     protocol: str | None = None,
+    stop_download: StopDownload | None = None,
 ) -> Response:
     respcls = responsetypes.responsetypes.from_args(headers=headers, url=url, body=body)
-    return respcls(
+    response = respcls(
         url=url,
         status=status,
         headers=headers,
@@ -88,6 +116,12 @@ def make_response(
         ip_address=ip_address,
         protocol=protocol,
     )
+    if stop_download:
+        response.flags.append("download_stopped")
+        if stop_download.fail:
+            stop_download.response = response
+            raise stop_download
+    return response
 
 
 def get_maxsize_msg(size: int, limit: int, request: Request) -> str:
