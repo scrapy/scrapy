@@ -26,7 +26,7 @@ def inlineCallbacks(
 
     * with ``pytest-twisted`` this returns the resulting Deferred
     * with ``pytest-asyncio`` this converts the resulting Deferred into a
-      coroutine.
+      coroutine
     """
 
     if not is_reactor_installed():
