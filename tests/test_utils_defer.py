@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 from twisted.internet.defer import Deferred, succeed
+from twisted.internet.defer import inlineCallbacks as inlineCallbacks_orig
 
 from scrapy.utils.asyncgen import as_async_generator, collect_asyncgen
 from scrapy.utils.defer import (
@@ -307,7 +308,7 @@ class TestDeferredFromCoro:
 
 
 class TestDeferredFFromCoroF:
-    @inlineCallbacks
+    @inlineCallbacks_orig
     def _assert_result(
         self, c_f: Callable[[], Awaitable[int]]
     ) -> Generator[Deferred[Any], Any, None]:
