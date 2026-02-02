@@ -476,7 +476,8 @@ class TestMiddlewareManagerSpider:
         ):
             await mwman.close_spider_async()
 
-    def test_deprecated_spider_arg_with_crawler(self, crawler: Crawler) -> None:
+    @deferred_f_from_coro_f
+    async def test_deprecated_spider_arg_with_crawler(self, crawler: Crawler) -> None:
         """Crawler is provided and has a spider, works. The instance passed to a deprecated method
         is ignored, even if mismatched."""
         mwman = ItemPipelineManager(crawler=crawler)
@@ -485,14 +486,15 @@ class TestMiddlewareManagerSpider:
             ScrapyDeprecationWarning,
             match=r"ItemPipelineManager.open_spider\(\) is deprecated, use open_spider_async\(\) instead",
         ):
-            mwman.open_spider(DefaultSpider())
+            await maybe_deferred_to_future(mwman.open_spider(DefaultSpider()))
         with pytest.warns(
             ScrapyDeprecationWarning,
             match=r"ItemPipelineManager.close_spider\(\) is deprecated, use close_spider_async\(\) instead",
         ):
-            mwman.close_spider(DefaultSpider())
+            await maybe_deferred_to_future(mwman.close_spider(DefaultSpider()))
 
-    def test_deprecated_spider_arg_without_crawler(self) -> None:
+    @deferred_f_from_coro_f
+    async def test_deprecated_spider_arg_without_crawler(self) -> None:
         """The first instance passed to a deprecated method is used. Mismatched ones raise an error."""
         with pytest.warns(
             ScrapyDeprecationWarning,
@@ -504,7 +506,7 @@ class TestMiddlewareManagerSpider:
             ScrapyDeprecationWarning,
             match=r"ItemPipelineManager.open_spider\(\) is deprecated, use open_spider_async\(\) instead",
         ):
-            mwman.open_spider(spider)
+            await maybe_deferred_to_future(mwman.open_spider(spider))
         with (
             pytest.warns(
                 ScrapyDeprecationWarning,
@@ -514,12 +516,12 @@ class TestMiddlewareManagerSpider:
                 RuntimeError, match="Different instances of Spider were passed"
             ),
         ):
-            mwman.close_spider(DefaultSpider())
+            await maybe_deferred_to_future(mwman.close_spider(DefaultSpider()))
         with pytest.warns(
             ScrapyDeprecationWarning,
             match=r"ItemPipelineManager.close_spider\(\) is deprecated, use close_spider_async\(\) instead",
         ):
-            mwman.close_spider(spider)
+            await maybe_deferred_to_future(mwman.close_spider(spider))
 
     @deferred_f_from_coro_f
     async def test_no_spider_arg_without_crawler(self) -> None:

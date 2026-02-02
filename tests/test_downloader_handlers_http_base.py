@@ -8,12 +8,13 @@ import sys
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from http import HTTPStatus
+from ipaddress import IPv4Address
+from socket import gethostbyname
 from typing import TYPE_CHECKING, Any
-from unittest import mock
+from urllib.parse import urlparse
 
 import pytest
-from testfixtures import LogCapture
-from twisted.internet import defer
+from twisted.internet.ssl import Certificate
 
 from scrapy.exceptions import (
     CannotResolveHostError,
@@ -25,7 +26,6 @@ from scrapy.exceptions import (
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
-from scrapy.utils.asyncio import call_later
 from scrapy.utils.defer import (
     deferred_f_from_coro_f,
     deferred_from_coro,
@@ -136,6 +136,48 @@ class TestHttpBase(ABC):
             assert body["headers"][header_name] == [header_value]
 
     @deferred_f_from_coro_f
+    async def test_request_header_none(self, mockserver: MockServer) -> None:
+        """Adding a header with None as the value should not send that header."""
+        request_headers = {
+            "Cookie": None,
+            "X-Custom-Header": None,
+        }
+        request = Request(
+            mockserver.url("/echo", is_secure=self.is_secure),
+            headers=request_headers,
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == HTTPStatus.OK
+        body = json.loads(response.body.decode("utf-8"))
+        assert "headers" in body
+        for header_name in request_headers:
+            assert header_name not in body["headers"]
+
+    @pytest.mark.parametrize(
+        "request_headers",
+        [
+            {"X-Custom-Header": ["foo", "bar"]},
+            [("X-Custom-Header", "foo"), ("X-Custom-Header", "bar")],
+        ],
+    )
+    @deferred_f_from_coro_f
+    async def test_request_header_duplicate(
+        self, mockserver: MockServer, request_headers: Any
+    ) -> None:
+        """All values for a header should be sent."""
+        request = Request(
+            mockserver.url("/echo", is_secure=self.is_secure),
+            headers=request_headers,
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.status == HTTPStatus.OK
+        body = json.loads(response.body.decode("utf-8"))
+        assert "headers" in body
+        assert body["headers"]["X-Custom-Header"] == ["foo", "bar"]
+
+    @deferred_f_from_coro_f
     async def test_server_receives_correct_request_body(
         self, mockserver: MockServer
     ) -> None:
@@ -166,7 +208,7 @@ class TestHttpBase(ABC):
             "Content-Encoding": "gzip",
             "Content-MD5": "Q2hlY2sgSW50ZWdyaXR5IQ==",
             "Content-Type": "text/html; charset=utf-8",
-            "Date": "Date: Tue, 15 Nov 1994 08:12:31 GMT",
+            "Date": "Tue, 15 Nov 1994 08:12:31 GMT",
             "Pragma": "no-cache",
             "Retry-After": "120",
             "Set-Cookie": "CookieName=CookieValue; Max-Age=3600; Version=1",
@@ -450,28 +492,14 @@ class TestHttp11Base(TestHttpBase):
 
     @deferred_f_from_coro_f
     async def test_download_with_maxsize_very_large_file(
-        self, mockserver: MockServer
+        self, mockserver: MockServer, caplog: pytest.LogCaptureFixture
     ) -> None:
-        # TODO: the logger check is specific to scrapy.core.downloader.handlers.http11
-        with mock.patch("scrapy.core.downloader.handlers.http11.logger") as logger:
-            request = Request(
-                mockserver.url("/largechunkedfile", is_secure=self.is_secure)
-            )
+        request = Request(mockserver.url("/largechunkedfile", is_secure=self.is_secure))
+        async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
+            with pytest.raises(DownloadCancelledError):
+                await download_handler.download_request(request)
 
-            def check(logger: mock.Mock) -> None:
-                logger.warning.assert_called_once_with(mock.ANY, mock.ANY)
-
-            async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
-                with pytest.raises(DownloadCancelledError):
-                    await download_handler.download_request(request)
-
-            # As the error message is logged in the dataReceived callback, we
-            # have to give a bit of time to the reactor to process the queue
-            # after closing the connection.
-            d: defer.Deferred[mock.Mock] = defer.Deferred()
-            d.addCallback(check)
-            call_later(0.1, d.callback, logger)
-            await maybe_deferred_to_future(d)
+        assert "larger than download max size" in caplog.text
 
     @deferred_f_from_coro_f
     async def test_download_with_maxsize_per_req(self, mockserver: MockServer) -> None:
@@ -618,17 +646,17 @@ class TestHttps11Base(TestHttp11Base):
         pytest.skip("Unable to test on HTTPS")
 
     @deferred_f_from_coro_f
-    async def test_tls_logging(self, mockserver: MockServer) -> None:
+    async def test_tls_logging(
+        self, mockserver: MockServer, caplog: pytest.LogCaptureFixture
+    ) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
         async with self.get_dh(
             {"DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING": True}
         ) as download_handler:
-            with LogCapture() as log_capture:
+            with caplog.at_level("DEBUG"):
                 response = await download_handler.download_request(request)
         assert response.body == b"Works"
-        log_capture.check_present(
-            ("scrapy.core.downloader.tls", "DEBUG", self.tls_log_message)
-        )
+        assert self.tls_log_message in caplog.text
 
 
 class TestSimpleHttpsBase(ABC):
@@ -743,6 +771,33 @@ class TestHttpWithCrawlerBase(ABC):
         assert failure is None
         reason = crawler.spider.meta["close_reason"]  # type: ignore[attr-defined]
         assert reason == "finished"
+
+    @deferred_f_from_coro_f
+    async def test_response_ssl_certificate(self, mockserver: MockServer) -> None:
+        if not self.is_secure:
+            pytest.skip("Only applies to HTTPS")
+        # copy of TestCrawl.test_response_ssl_certificate()
+        # the current test implementation can only work for Twisted-based download handlers
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        url = mockserver.url("/echo?body=test", is_secure=self.is_secure)
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        cert = crawler.spider.meta["responses"][0].certificate
+        assert isinstance(cert, Certificate)
+        assert cert.getSubject().commonName == b"localhost"
+        assert cert.getIssuer().commonName == b"localhost"
+
+    @deferred_f_from_coro_f
+    async def test_response_ip_address(self, mockserver: MockServer) -> None:
+        # copy of TestCrawl.test_response_ip_address()
+        crawler = get_crawler(SingleRequestSpider, self.settings_dict)
+        url = mockserver.url("/echo?body=test", is_secure=self.is_secure)
+        expected_netloc, _ = urlparse(url).netloc.split(":")
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
+        ip_address = crawler.spider.meta["responses"][0].ip_address
+        assert isinstance(ip_address, IPv4Address)
+        assert str(ip_address) == gethostbyname(expected_netloc)
 
 
 class TestHttpProxyBase(ABC):
