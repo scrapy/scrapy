@@ -2,8 +2,6 @@ import itertools
 from typing import Any
 from unittest.mock import patch
 
-import pytest
-
 from scrapy import Spider
 from scrapy.crawler import AsyncCrawlerRunner, Crawler, CrawlerRunner
 from scrapy.exceptions import NotConfigured
@@ -134,41 +132,35 @@ class TestAddonManager:
         crawler = runner.create_crawler(Spider)
         assert crawler.settings.getint("KEY") == 20
 
-    @pytest.mark.requires_reactor  # TODO use a different setting in the test
     def test_fallback_workflow(self):
-        FALLBACK_SETTING = "MY_FALLBACK_DOWNLOAD_HANDLER"
+        FALLBACK_SETTING = "MY_FALLBACK_SCHEDULER"
 
         class AddonWithFallback:
             def update_settings(self, settings):
                 if not settings.get(FALLBACK_SETTING):
                     settings.set(
                         FALLBACK_SETTING,
-                        settings.getwithbase("DOWNLOAD_HANDLERS")["https"],
+                        settings.get("SCHEDULER"),
                         "addon",
                     )
-                settings["DOWNLOAD_HANDLERS"]["https"] = "AddonHandler"
+                settings["SCHEDULER"] = "AddonScheduler"
 
         settings_dict = {
             "ADDONS": {AddonWithFallback: 1},
         }
         crawler = get_crawler(settings_dict=settings_dict)
+        assert crawler.settings.get("SCHEDULER") == "AddonScheduler"
         assert (
-            crawler.settings.getwithbase("DOWNLOAD_HANDLERS")["https"] == "AddonHandler"
-        )
-        assert (
-            crawler.settings.get(FALLBACK_SETTING)
-            == "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler"
+            crawler.settings.get(FALLBACK_SETTING) == "scrapy.core.scheduler.Scheduler"
         )
 
         settings_dict = {
             "ADDONS": {AddonWithFallback: 1},
-            "DOWNLOAD_HANDLERS": {"https": "UserHandler"},
+            "SCHEDULER": "UserScheduler",
         }
         crawler = get_crawler(settings_dict=settings_dict)
-        assert (
-            crawler.settings.getwithbase("DOWNLOAD_HANDLERS")["https"] == "AddonHandler"
-        )
-        assert crawler.settings.get(FALLBACK_SETTING) == "UserHandler"
+        assert crawler.settings.get("SCHEDULER") == "AddonScheduler"
+        assert crawler.settings.get(FALLBACK_SETTING) == "UserScheduler"
 
     def test_logging_message(self):
         class LoggedAddon:
