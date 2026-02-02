@@ -1,3 +1,4 @@
+import pytest
 from testfixtures import LogCapture
 
 from scrapy import Request, signals
@@ -62,6 +63,7 @@ class AlternativeCallbacksMiddleware:
         return response.replace(request=new_request)
 
 
+@pytest.mark.requires_http_handler
 class TestCrawl:
     @classmethod
     def setup_class(cls):

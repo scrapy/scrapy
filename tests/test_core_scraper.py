@@ -2,16 +2,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from scrapy.utils.test import get_crawler
 from tests.spiders import SimpleSpider
 from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
-    import pytest
-
     from tests.mockserver.http import MockServer
 
 
+@pytest.mark.requires_http_handler
 @deferred_f_from_coro_f
 async def test_scraper_exception(
     mockserver: MockServer,

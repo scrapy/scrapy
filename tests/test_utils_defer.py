@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
 
 
+@pytest.mark.requires_reactor
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestMustbeDeferred:
     @inlineCallbacks
@@ -153,6 +154,7 @@ class TestAsyncDefTestsuite:
         raise RuntimeError("This is expected to be raised")
 
 
+@pytest.mark.requires_reactor
 class TestParallelAsync:
     """This tests _AsyncCooperatorAdapter by testing parallel_async which is its only usage.
 

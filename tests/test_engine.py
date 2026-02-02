@@ -373,6 +373,7 @@ class TestEngineBase:
 
 
 class TestEngine(TestEngineBase):
+    @pytest.mark.requires_http_handler
     @deferred_f_from_coro_f
     async def test_crawler(self, mockserver: MockServer) -> None:
         for spider in (
@@ -390,6 +391,7 @@ class TestEngine(TestEngineBase):
             self._assert_signals_caught(run)
             self._assert_bytes_received(run)
 
+    @pytest.mark.requires_http_handler
     @deferred_f_from_coro_f
     async def test_crawler_dupefilter(self, mockserver: MockServer) -> None:
         run = CrawlerRun(DupeFilterSpider)
@@ -397,12 +399,14 @@ class TestEngine(TestEngineBase):
         self._assert_scheduled_requests(run, count=8)
         self._assert_dropped_requests(run)
 
+    @pytest.mark.requires_http_handler
     @deferred_f_from_coro_f
     async def test_crawler_itemerror(self, mockserver: MockServer) -> None:
         run = CrawlerRun(ItemZeroDivisionErrorSpider)
         await run.run(mockserver)
         self._assert_items_error(run)
 
+    @pytest.mark.requires_http_handler
     @deferred_f_from_coro_f
     async def test_crawler_change_close_reason_on_idle(
         self, mockserver: MockServer

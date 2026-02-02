@@ -1,3 +1,4 @@
+import pytest
 from testfixtures import LogCapture
 
 from scrapy import Request, Spider
@@ -318,6 +319,7 @@ class NotGeneratorOutputChainSpider(Spider):
 
 
 # ================================================================================
+@pytest.mark.requires_http_handler
 class TestSpiderMiddleware:
     mockserver: MockServer
 

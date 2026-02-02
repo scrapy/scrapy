@@ -691,6 +691,7 @@ class TestGCSFilesStore:
             store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
+@pytest.mark.requires_reactor  # needs a reactor for FTPFilesStore
 class TestFTPFileStore:
     @inlineCallbacks
     def test_persist(self):

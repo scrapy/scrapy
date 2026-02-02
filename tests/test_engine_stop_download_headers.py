@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from scrapy.exceptions import StopDownload
 from tests.test_engine import (
     AttrsItemsSpider,
@@ -14,8 +16,6 @@ from tests.test_engine import (
 from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
-    import pytest
-
     from tests.mockserver.http import MockServer
 
 
@@ -26,6 +26,7 @@ class HeadersReceivedCrawlerRun(CrawlerRun):
 
 
 class TestHeadersReceivedEngine(TestEngineBase):
+    @pytest.mark.requires_http_handler
     @deferred_f_from_coro_f
     async def test_crawler(
         self, mockserver: MockServer, caplog: pytest.LogCaptureFixture

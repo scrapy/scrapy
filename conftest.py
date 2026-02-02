@@ -88,7 +88,10 @@ def pytest_runtest_setup(item):
     # Skip tests based on reactor markers
     reactor = item.config.getoption("--reactor")
 
-    if item.get_closest_marker("requires_reactor") and reactor == "none":
+    if (
+        item.get_closest_marker("requires_reactor")
+        or item.get_closest_marker("requires_http_handler")
+    ) and reactor == "none":
         pytest.skip('This test is only run when the --reactor value is not "none"')
 
     if item.get_closest_marker("only_asyncio") and reactor not in {"asyncio", "none"}:

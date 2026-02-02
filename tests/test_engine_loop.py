@@ -4,6 +4,7 @@ from collections import deque
 from logging import ERROR
 from typing import TYPE_CHECKING
 
+import pytest
 from twisted.internet.defer import Deferred
 
 from scrapy import Request, Spider, signals
@@ -14,8 +15,6 @@ from tests.test_scheduler import MemoryScheduler
 from tests.utils.decorators import deferred_f_from_coro_f
 
 if TYPE_CHECKING:
-    import pytest
-
     from scrapy.http import Response
 
 
@@ -28,6 +27,7 @@ async def sleep(seconds: float = 0.001) -> None:
 
 
 class TestMain:
+    @pytest.mark.requires_reactor  # TODO
     @deferred_f_from_coro_f
     async def test_sleep(self):
         """Neither asynchronous sleeps on Spider.start() nor the equivalent on
@@ -332,6 +332,7 @@ class TestRequestSendOrder:
     # Examples from the “Start requests” section of the documentation about
     # spiders.
 
+    @pytest.mark.requires_http_handler
     @deferred_f_from_coro_f
     async def test_lazy(self):
         start_nums = [1, 2, 4]

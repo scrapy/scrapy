@@ -29,6 +29,7 @@ class TestAsyncio:
 
         assert original_reactor == reactor
 
+    @pytest.mark.requires_reactor
     @pytest.mark.only_asyncio
     @deferred_f_from_coro_f
     async def test_set_asyncio_event_loop(self):

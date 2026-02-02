@@ -6,6 +6,8 @@ from scrapy.extensions.telnet import TelnetConsole
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import inlineCallbacks
 
+pytestmark = pytest.mark.requires_reactor
+
 
 class TestTelnetExtension:
     def _get_console_and_portal(self, settings=None):

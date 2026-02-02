@@ -200,7 +200,7 @@ class TestHttps2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
     ) -> None:
         with pytest.raises(NotImplementedError):
             await maybe_deferred_to_future(
-                super().test_download_with_proxy_https_timeout(proxy_mockserver)
+                super().test_download_with_proxy_https_timeout(proxy_mockserver)  # type: ignore[arg-type]
             )
 
     @deferred_f_from_coro_f
@@ -209,5 +209,5 @@ class TestHttps2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
     ) -> None:
         with pytest.raises(UnsupportedURLSchemeError):
             await maybe_deferred_to_future(
-                super().test_download_with_proxy_without_http_scheme(proxy_mockserver)
+                super().test_download_with_proxy_without_http_scheme(proxy_mockserver)  # type: ignore[arg-type]
             )
