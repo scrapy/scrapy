@@ -162,6 +162,7 @@ class TestMain:
 
         await self._test_start(start, [ITEM_A])
 
+    @pytest.mark.requires_reactor  # needs a reactor for twisted_sleep()
     @deferred_f_from_coro_f
     async def test_twisted_delayed(self):
         async def start(spider):

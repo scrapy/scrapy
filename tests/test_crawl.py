@@ -61,6 +61,7 @@ if TYPE_CHECKING:
     from scrapy.statscollectors import StatsCollector
 
 
+@pytest.mark.requires_http_handler  # easier than marking many individual tests
 class TestCrawl:
     mockserver: MockServer
 
@@ -428,6 +429,7 @@ with multiples lines
         assert "NotSupported: Unsupported URL scheme 'foo'" in caplog.text
 
 
+@pytest.mark.requires_http_handler
 class TestCrawlSpider:
     mockserver: MockServer
 

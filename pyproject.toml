@@ -224,19 +224,23 @@ disable = [
 addopts = [
     "--reactor=asyncio",
 ]
+asyncio_mode = "auto"
 xfail_strict = true
 python_files = ["test_*.py", "test_*/__init__.py"]
 markers = [
     "only_asyncio: marks tests that require the asyncio loop to be used",
     "only_not_asyncio: marks tests that require the asyncio loop to not be used",
     "requires_reactor: marks tests that require a reactor",
+    "requires_http_handler: marks tests that require a HTTP handler",
     "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
     "requires_botocore: marks tests that need botocore (but not boto3)",
     "requires_boto3: marks tests that need botocore and boto3",
     "requires_mitmproxy: marks tests that need mitmproxy",
 ]
 filterwarnings = [
-    "ignore::DeprecationWarning:twisted.web.static"
+    "ignore::DeprecationWarning:twisted.web.static",
+    # emitted when pytest-asyncio (which is not required for all test envs) is absent
+    "ignore:Unknown config option. asyncio_mode:pytest.PytestConfigWarning",
 ]
 
 [tool.ruff.lint]

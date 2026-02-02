@@ -199,7 +199,12 @@ class TestAddonManager:
         settings = Settings()
         settings.setdict(get_reactor_settings())
         settings.set("KEY", "default", priority="default")
-        runner = CrawlerRunner(settings)
+        runner_cls = (
+            CrawlerRunner
+            if settings.getbool("TWISTED_ENABLED", True)
+            else AsyncCrawlerRunner
+        )
+        runner = runner_cls(settings)
         crawler = runner.create_crawler(MySpider)
         assert crawler.settings.get("KEY") == "default"
         yield crawler.crawl()

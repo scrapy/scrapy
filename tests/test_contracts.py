@@ -501,6 +501,7 @@ class TestContractsManager:
         assert not self.results.failures
         assert self.results.errors
 
+    @pytest.mark.requires_http_handler
     @inlineCallbacks
     def test_same_url(self):
         class TestSameUrlSpider(Spider):

@@ -144,6 +144,7 @@ class TestSimpleScheduler(InterfaceCheckMixin):
         assert close_result == "close"
 
 
+@pytest.mark.requires_http_handler
 class TestMinimalSchedulerCrawl:
     scheduler_cls = MinimalScheduler
 

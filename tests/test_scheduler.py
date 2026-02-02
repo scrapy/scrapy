@@ -369,6 +369,7 @@ class TestIntegrationWithDownloaderAwareInMemory:
             },
         )
 
+    @pytest.mark.requires_http_handler
     @inlineCallbacks
     def test_integration_downloader_aware_priority_queue(self):
         with MockServer() as mockserver:

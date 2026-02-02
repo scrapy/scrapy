@@ -38,6 +38,7 @@ class TestSlot:
         assert repr(slot) == "Slot(concurrency=8, delay=0.10, randomize_delay=True)"
 
 
+@pytest.mark.requires_reactor
 class TestContextFactoryBase:
     context_factory = None
 

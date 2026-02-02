@@ -7,7 +7,8 @@ import pytest
 from twisted.internet.defer import Deferred
 from twisted.internet.defer import inlineCallbacks as inlineCallbacks_orig
 
-from scrapy.utils.defer import deferred_from_coro
+from scrapy.utils.defer import deferred_from_coro, deferred_to_future
+from scrapy.utils.reactor import is_reactor_installed
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable, Generator
@@ -18,28 +19,48 @@ _P = ParamSpec("_P")
 
 def inlineCallbacks(
     f: Callable[_P, Generator[Deferred[Any], Any, None]],
-) -> Callable[_P, Deferred[None]]:
-    """Like :func:`twisted.internet.defer.inlineCallbacks`, but marks the
-    decorated function with ``@pytest.mark.requires_reactor``."""
+) -> Callable[_P, Awaitable[None]]:
+    """Mark a test function written in a :func:`twisted.internet.defer.inlineCallbacks` style.
 
-    @pytest.mark.requires_reactor
+    This calls :func:`twisted.internet.defer.inlineCallbacks` and then:
+
+    * with ``pytest-twisted`` this returns the resulting Deferred
+    * with ``pytest-asyncio`` this converts the resulting Deferred into a
+      coroutine.
+    """
+
+    if not is_reactor_installed():
+
+        @pytest.mark.asyncio
+        @wraps(f)
+        async def wrapper_coro(*args: _P.args, **kwargs: _P.kwargs) -> None:
+            await deferred_to_future(inlineCallbacks_orig(f)(*args, **kwargs))
+
+        return wrapper_coro
+
     @wraps(f)
     @inlineCallbacks_orig
-    def wrapper(
+    def wrapper_dfd(
         *args: _P.args, **kwargs: _P.kwargs
     ) -> Generator[Deferred[Any], Any, None]:
         return f(*args, **kwargs)
 
-    return wrapper
+    return wrapper_dfd
 
 
 def deferred_f_from_coro_f(
     coro_f: Callable[_P, Awaitable[None]],
-) -> Callable[_P, Deferred[None]]:
-    """Like :func:`scrapy.utils.defer.deferred_f_from_coro_f`, but marks the
-    decorated function with ``@pytest.mark.requires_reactor``."""
+) -> Callable[_P, Awaitable[None]]:
+    """Mark a test function that returns a coroutine.
 
-    @pytest.mark.requires_reactor
+    * with ``pytest-twisted`` this converts a coroutine into a
+      :class:`twisted.internet.defer.Deferred`
+    * with ``pytest-asyncio`` this is a no-op
+    """
+
+    if not is_reactor_installed():
+        return coro_f
+
     @wraps(coro_f)
     def f(*coro_args: _P.args, **coro_kwargs: _P.kwargs) -> Deferred[None]:
         return deferred_from_coro(coro_f(*coro_args, **coro_kwargs))

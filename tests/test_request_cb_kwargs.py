@@ -1,3 +1,4 @@
+import pytest
 from testfixtures import LogCapture
 
 from scrapy.http import Request
@@ -148,6 +149,7 @@ class KeywordArgumentsSpider(MockServerSpider):
         self.crawler.stats.inc_value("boolean_checks", 1)
 
 
+@pytest.mark.requires_http_handler
 class TestCallbackKeywordArguments:
     @classmethod
     def setup_class(cls):
