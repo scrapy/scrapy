@@ -124,16 +124,18 @@ def make_response(
     return response
 
 
-def get_maxsize_msg(size: int, limit: int, request: Request) -> str:
+def get_maxsize_msg(size: int, limit: int, request: Request, *, expected: bool) -> str:
+    prefix = "Expected to receive" if expected else "Received"
     return (
-        f"Received ({size}) bytes larger than download "
+        f"{prefix} {size} bytes which is larger than download "
         f"max size ({limit}) in request {request}."
     )
 
 
-def get_warnsize_msg(size: int, limit: int, request: Request) -> str:
+def get_warnsize_msg(size: int, limit: int, request: Request, *, expected: bool) -> str:
+    prefix = "Expected to receive" if expected else "Received"
     return (
-        f"Expected response size ({size}) larger than download "
+        f"{prefix} {size} bytes which is larger than download "
         f"warn size ({limit}) in request {request}."
     )
 

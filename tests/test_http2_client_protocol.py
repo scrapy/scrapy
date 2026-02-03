@@ -466,7 +466,10 @@ class TestHttps2ClientProtocol:
 
     @deferred_f_from_coro_f
     async def test_download_maxsize_exceeded(
-        self, server_port: int, client: H2ClientProtocol
+        self,
+        caplog: pytest.LogCaptureFixture,
+        server_port: int,
+        client: H2ClientProtocol,
     ) -> None:
         request = Request(
             url=self.get_url(server_port, "/get-data-html-large"),
@@ -474,7 +477,7 @@ class TestHttps2ClientProtocol:
         )
         with pytest.raises(
             DownloadCancelledError,
-            match=r"Received \(\d+\) bytes larger than download max size \(1000\)",
+            match=r"Expected to receive \d+ bytes which is larger than download max size \(1000\)",
         ):
             await make_request(client, request)
 
@@ -533,7 +536,7 @@ class TestHttps2ClientProtocol:
             meta={"download_warnsize": 1000},
         )
         warn_pattern = re.compile(
-            rf"Expected response size \(\d*\) larger than "
+            rf"Expected to receive \d+ bytes which is larger than "
             rf"download warn size \(1000\) in request {request}"
         )
 
@@ -553,7 +556,7 @@ class TestHttps2ClientProtocol:
             meta={"download_warnsize": 10},
         )
         warn_pattern = re.compile(
-            rf"Expected response size \(\d*\) larger than "
+            rf"Received \d+ bytes which is larger than "
             rf"download warn size \(10\) in request {request}"
         )
 

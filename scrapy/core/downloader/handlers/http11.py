@@ -524,13 +524,17 @@ class ScrapyAgent:
         )
 
         if maxsize and expected_size > maxsize:
-            warning_msg = get_maxsize_msg(expected_size, maxsize, request)
+            warning_msg = get_maxsize_msg(
+                expected_size, maxsize, request, expected=True
+            )
             logger.warning(warning_msg)
             txresponse._transport.loseConnection()
             raise DownloadCancelledError(warning_msg)
 
         if warnsize and expected_size > warnsize:
-            logger.warning(get_warnsize_msg(expected_size, warnsize, request))
+            logger.warning(
+                get_warnsize_msg(expected_size, warnsize, request, expected=True)
+            )
 
         def _cancel(_: Any) -> None:
             # Abort connection immediately.
@@ -660,7 +664,9 @@ class _ResponseReader(Protocol):
 
         if self._maxsize and self._bytes_received > self._maxsize:
             logger.warning(
-                get_maxsize_msg(self._bytes_received, self._maxsize, self._request)
+                get_maxsize_msg(
+                    self._bytes_received, self._maxsize, self._request, expected=False
+                )
             )
             # Clear buffer earlier to avoid keeping data in memory for a long time.
             self._bodybuf.truncate(0)
@@ -673,7 +679,9 @@ class _ResponseReader(Protocol):
         ):
             self._reached_warnsize = True
             logger.warning(
-                get_warnsize_msg(self._bytes_received, self._warnsize, self._request)
+                get_warnsize_msg(
+                    self._bytes_received, self._warnsize, self._request, expected=False
+                )
             )
 
     def connectionLost(self, reason: Failure = connectionDone) -> None:

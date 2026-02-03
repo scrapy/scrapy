@@ -347,6 +347,7 @@ class Stream:
                 self._response["flow_controlled_size"],
                 self._download_warnsize,
                 self._request,
+                expected=False,
             )
             logger.warning(warning_msg)
 
@@ -368,7 +369,7 @@ class Stream:
         if self._log_warnsize:
             self.metadata["reached_warnsize"] = True
             warning_msg = get_warnsize_msg(
-                expected_size, self._download_warnsize, self._request
+                expected_size, self._download_warnsize, self._request, expected=True
             )
             logger.warning(warning_msg)
 
@@ -423,7 +424,7 @@ class Stream:
                 )
             )
             error_msg = get_maxsize_msg(
-                expected_size, self._download_maxsize, self._request
+                expected_size, self._download_maxsize, self._request, expected=True
             )
             logger.error(error_msg)
             self._deferred_response.errback(DownloadCancelledError(error_msg))
