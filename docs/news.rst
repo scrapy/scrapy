@@ -8,6 +8,18 @@ Release notes
 Scrapy 2.14.2 (unreleased)
 --------------------------
 
+Security bug fixes
+~~~~~~~~~~~~~~~~~~
+
+-   In line with the `standard
+    <https://fetch.spec.whatwg.org/#http-redirect-fetch>`__, 301 redirects of
+    ``POST`` requests turn into ``GET`` requests.
+
+    Turning into a ``GET`` request implies not only a method change, but also
+    omitting the body and ``Content-*`` headers in the redirect request. On
+    cross-origin redirects (e.g. cross-domain), this is effectively a security
+    bug fix for scenarios where the body contains secrets.
+
 Deprecations
 ~~~~~~~~~~~~
 
@@ -21,10 +33,8 @@ Deprecations
 Bug fixes
 ~~~~~~~~~
 
--   Aligned redirect method conversions to ``GET`` with the `standard
-    <https://fetch.spec.whatwg.org/#http-redirect-fetch>`__:
-
-    -   301 redirects of ``POST`` requests turn into ``GET`` requests.
+-   Made additional redirect scenarios convert to ``GET`` in line with the
+    `standard <https://fetch.spec.whatwg.org/#http-redirect-fetch>`__:
 
     -   Only ``POST`` 302 redirects turn into ``GET`` requests, other methods
         are preserved.
@@ -33,10 +43,6 @@ Bug fixes
 
     -   ``GET`` 303 redirects do not get their body or standard ``Content-*``
         headers removed.
-
-    .. note:: Turning into a ``GET`` request implies not only a method change,
-        but also omitting the body and ``Content-*`` headers in the redirect
-        request.
 
 -   Redirects where the original request body is dropped now also get their
     ``Content-Encoding``, ``Content-Language`` and ``Content-Location`` headers
