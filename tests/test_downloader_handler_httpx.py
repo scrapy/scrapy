@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from scrapy.core.downloader.handlers.httpx import HttpxDownloadHandler
 from tests.test_downloader_handlers_http_base import (
     TestHttp11Base,
     TestHttpProxyBase,
@@ -25,9 +24,17 @@ if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
 
 
+pytest.importorskip("httpx")
+
+
 class HttpxDownloadHandlerMixin:
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
+        # the import will fail if httpx is not installed
+        from scrapy.core.downloader.handlers.httpx import (  # noqa: PLC0415
+            HttpxDownloadHandler,
+        )
+
         return HttpxDownloadHandler
 
 
