@@ -61,6 +61,23 @@ if TYPE_CHECKING:
     from scrapy.statscollectors import StatsCollector
 
 
+class ErrbackExceptionRecoveryMiddleware:
+    def __init__(self, crawler):
+        self.crawler = crawler
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
+
+    def process_spider_exception(self, response, exception, spider=None):
+        if isinstance(response, Failure):
+            self.crawler.spider.logger.info("Errback exception response is Failure")
+        self.crawler.spider.logger.info(
+            "Errback exception handled: %s", exception.__class__.__name__
+        )
+        return [{"from": "process_spider_exception"}]
+
+
 @pytest.mark.requires_http_handler  # easier than marking many individual tests
 class TestCrawl:
     mockserver: MockServer
@@ -852,6 +869,25 @@ class TestCrawlSpider:
             )
         assert "Error downloading" in str(log)
         assert "Spider error processing" in str(log)
+
+    @inline_callbacks_test
+    def test_spider_errback_downloader_error_exception_process_spider_exception(self):
+        def eb(failure: Failure) -> None:
+            raise ValueError("foo")
+
+        settings = {
+            "SPIDER_MIDDLEWARES": {ErrbackExceptionRecoveryMiddleware: 10},
+        }
+        crawler = get_crawler(SingleRequestSpider, settings)
+        with LogCapture() as log:
+            yield crawler.crawl(
+                seed=self.mockserver.url("/drop?abort=1"), errback_func=eb
+            )
+        assert "Error downloading" in str(log)
+        assert "Errback exception response is Failure" in str(log)
+        assert "Errback exception handled: ValueError" in str(log)
+        assert "'item_scraped_count': 1" in str(log)
+        assert "Spider error processing" not in str(log)
 
     @inline_callbacks_test
     def test_spider_errback_downloader_error_item(self):

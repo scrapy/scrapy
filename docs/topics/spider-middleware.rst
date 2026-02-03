@@ -167,8 +167,11 @@ one or more of these methods:
         :meth:`process_spider_exception` will be called.
 
         :param response: the response being processed when the exception was
-          raised
-        :type response: :class:`~scrapy.http.Response` object
+          raised. For exceptions raised by request errbacks without a response
+          (e.g. download errors), this may be a
+          :class:`twisted.python.failure.Failure` instance instead.
+        :type response: :class:`~scrapy.http.Response` object or
+          :class:`twisted.python.failure.Failure`
 
         :param exception: the exception raised
         :type exception: :exc:`Exception` object

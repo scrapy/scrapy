@@ -277,10 +277,33 @@ class Scraper:
                     exc_info=failure_to_exc_info(result),
                 )
             if spider_exc is not result.value:
-                # the errback raised a different exception, handle it
-                self.handle_spider_error(Failure(), request, result)
+                await _defer_sleep_async()
+                exception_response = self._get_spider_exception_response(
+                    result, spider_exc
+                )
+                try:
+                    output = self.spidermw._process_spider_exception(
+                        exception_response, spider_exc
+                    )
+                except Exception:
+                    self.handle_spider_error(Failure(), request, exception_response)
+                else:
+                    await self.handle_spider_output_async(
+                        output, request, exception_response
+                    )
         else:
             await self.handle_spider_output_async(output, request, result)
+
+    def _get_spider_exception_response(
+        self, response: Response | Failure, exception: Exception
+    ) -> Response | Failure:
+        response_from_exc = getattr(exception, "response", None)
+        if isinstance(response_from_exc, Response):
+            return response_from_exc
+        response_from_failure = getattr(getattr(response, "value", None), "response", None)
+        if isinstance(response_from_failure, Response):
+            return response_from_failure
+        return response
 
     async def _wait_for_processing(
         self, result: Response | Failure, request: Request, queue_dfd: Deferred[None]

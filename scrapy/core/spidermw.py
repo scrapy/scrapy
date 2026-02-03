@@ -211,7 +211,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
 
     def _process_spider_exception(
         self,
-        response: Response,
+        response: Response | Failure,
         exception: Exception,
         start_index: int = 0,
     ) -> MutableChain[_T] | MutableAsyncChain[_T]:
