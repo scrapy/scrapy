@@ -549,17 +549,14 @@ class TestHttp11Base(TestHttpBase):
     async def test_download_with_warnsize_no_content_length(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
-        body = b"1" * 100
         request = Request(
-            mockserver.url("/payload", is_secure=self.is_secure),
-            method="POST",
-            body=body,
+            mockserver.url("/delay?n=0.1", is_secure=self.is_secure),
         )
         async with self.get_dh({"DOWNLOAD_WARNSIZE": 10}) as download_handler:
             response = await download_handler.download_request(request)
-        assert response.body == body
+        assert response.body == b"Response delayed for 0.100 seconds\n"
         assert (
-            "Received 100 bytes which is larger than download warn size (10)"
+            "Received 35 bytes which is larger than download warn size (10)"
             in caplog.text
         )
 
