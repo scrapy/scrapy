@@ -810,6 +810,14 @@ class TestTextResponse(TestResponseBase):
         json_response = self.response_class("http://www.example.com", body=json_body)
         assert json_response.json() == {"ip": "109.187.217.200"}
 
+        json_body = '{"price": "£"}'.encode("iso-8859-1")
+        json_response = self.response_class(
+            "http://www.example.com",
+            body=json_body,
+            headers={"Content-Type": ["application/json; charset=iso-8859-1"]},
+        )
+        assert json_response.json() == {"price": "£"}
+
         text_body = b"""<html><body>text</body></html>"""
         text_response = self.response_class("http://www.example.com", body=text_body)
         with pytest.raises(
@@ -827,7 +835,7 @@ class TestTextResponse(TestResponseBase):
             with mock.patch("json.loads") as mock_json:
                 for _ in range(2):
                     json_response.json()
-                mock_json.assert_called_once_with(json_body)
+                mock_json.assert_called_once_with(json_response.text)
 
 
 class TestHtmlResponse(TestTextResponse):

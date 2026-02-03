@@ -1210,6 +1210,8 @@ TextResponse objects
 
         Returns a Python object from deserialized JSON document.
         The result is cached after the first call.
+        The response body is decoded using :attr:`TextResponse.encoding` before
+        deserialization.
 
     .. method:: TextResponse.urljoin(url)
 
