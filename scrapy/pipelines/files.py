@@ -31,6 +31,7 @@ from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
+from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
 from scrapy.utils.python import to_bytes
@@ -591,7 +592,7 @@ class FilesPipeline(MediaPipeline):
 
         raise FileException
 
-    def media_downloaded(
+    async def media_downloaded(
         self,
         response: Response,
         request: Request,
@@ -630,7 +631,9 @@ class FilesPipeline(MediaPipeline):
 
         try:
             path = self.file_path(request, response=response, info=info, item=item)
-            checksum = self.file_downloaded(response, request, info, item=item)
+            checksum = await ensure_awaitable(
+                self.file_downloaded(response, request, info, item=item)
+            )
         except FileException as exc:
             logger.warning(
                 "File (error): Error processing file from %(request)s "
@@ -680,12 +683,15 @@ class FilesPipeline(MediaPipeline):
         info: MediaPipeline.SpiderInfo,
         *,
         item: Any = None,
-    ) -> str:
+    ) -> str | Deferred[str]:
         path = self.file_path(request, response=response, info=info, item=item)
         buf = BytesIO(response.body)
         checksum = _md5sum(buf)
         buf.seek(0)
-        self.store.persist_file(path, buf, info)
+        dfd = deferred_from_coro(self.store.persist_file(path, buf, info))
+        if isinstance(dfd, Deferred):
+            dfd.addCallback(lambda _: checksum)
+            return dfd
         return checksum
 
     def item_completed(

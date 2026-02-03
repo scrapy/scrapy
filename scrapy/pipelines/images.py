@@ -14,11 +14,13 @@ from io import BytesIO
 from typing import TYPE_CHECKING, Any
 
 from itemadapter import ItemAdapter
+from twisted.internet.defer import Deferred, DeferredList
 
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException, FilesPipeline, _md5sum
+from scrapy.utils.defer import deferred_from_coro
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
@@ -122,7 +124,7 @@ class ImagesPipeline(FilesPipeline):
         info: MediaPipeline.SpiderInfo,
         *,
         item: Any = None,
-    ) -> str:
+    ) -> str | Deferred[str]:
         return self.image_downloaded(response, request, info, item=item)
 
     def image_downloaded(
@@ -132,21 +134,32 @@ class ImagesPipeline(FilesPipeline):
         info: MediaPipeline.SpiderInfo,
         *,
         item: Any = None,
-    ) -> str:
+    ) -> str | Deferred[str]:
         checksum: str | None = None
+        deferreds: list[Deferred[Any]] = []
         for path, image, buf in self.get_images(response, request, info, item=item):
             if checksum is None:
                 buf.seek(0)
                 checksum = _md5sum(buf)
             width, height = image.size
-            self.store.persist_file(
-                path,
-                buf,
-                info,
-                meta={"width": width, "height": height},
-                headers={"Content-Type": "image/jpeg"},
+            dfd = deferred_from_coro(
+                self.store.persist_file(
+                    path,
+                    buf,
+                    info,
+                    meta={"width": width, "height": height},
+                    headers={"Content-Type": "image/jpeg"},
+                )
             )
+            if isinstance(dfd, Deferred):
+                deferreds.append(dfd)
         assert checksum is not None
+        if deferreds:
+            return DeferredList(
+                deferreds,
+                fireOnOneErrback=True,
+                consumeErrors=True,
+            ).addCallback(lambda _: checksum)
         return checksum
 
     def get_images(

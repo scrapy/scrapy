@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 import attr
 import pytest
 from itemadapter import ItemAdapter
+from twisted.internet.defer import Deferred
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
@@ -31,6 +32,7 @@ from scrapy.pipelines.files import (
     S3FilesStore,
 )
 from scrapy.settings import Settings
+from scrapy.utils.defer import _defer_sleep_async, deferred_from_coro, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
@@ -160,6 +162,37 @@ class TestFilesPipeline:
         path = "some/image/key.jpg"
         fullpath = Path(self.tempdir, "some", "image", "key.jpg")
         assert self.pipeline.store._get_filesystem_path(path) == fullpath
+
+    @coroutine_test
+    async def test_persist_file_is_awaited(self):
+        item_url = "http://example.com/file.pdf"
+        item = _create_item_with_files(item_url)
+        persist_dfd = Deferred()
+        persist_calls: list[str] = []
+
+        def _persist_file(path, buf, info, meta=None, headers=None):
+            persist_calls.append(path)
+            return persist_dfd
+
+        self.pipeline.store.persist_file = _persist_file  # type: ignore[method-assign]
+
+        with mock.patch.object(
+            FilesPipeline,
+            "get_media_requests",
+            return_value=[_prepare_request_object(item_url)],
+        ):
+            item_dfd = deferred_from_coro(self.pipeline.process_item(item))
+            for _ in range(3):
+                await _defer_sleep_async()
+                if persist_calls:
+                    break
+            assert persist_calls
+            assert not item_dfd.called
+
+            persist_dfd.callback(None)
+            result = await maybe_deferred_to_future(item_dfd)
+
+        assert result["files"][0]["status"] == "downloaded"
 
     @coroutine_test
     async def test_file_not_expired(self):

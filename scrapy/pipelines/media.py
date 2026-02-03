@@ -6,7 +6,7 @@ import logging
 import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Awaitable, Literal, TypeAlias, TypedDict, cast
 
 from twisted import version as twisted_version
 from twisted.internet.defer import Deferred, DeferredList
@@ -209,7 +209,9 @@ class MediaPipeline(ABC):
             self._modify_media_request(request)
             assert self.crawler.engine
             response = await self.crawler.engine.download_async(request)
-            return self.media_downloaded(response, request, info, item=item)
+            return await ensure_awaitable(
+                self.media_downloaded(response, request, info, item=item)
+            )
         except Exception:
             failure = self.media_failed(Failure(), request, info)
             if isinstance(failure, Failure):
@@ -281,7 +283,7 @@ class MediaPipeline(ABC):
         info: SpiderInfo,
         *,
         item: Any = None,
-    ) -> FileInfo:
+    ) -> FileInfo | Deferred[FileInfo] | Awaitable[FileInfo]:
         """Handler for success downloads"""
         raise NotImplementedError
 
