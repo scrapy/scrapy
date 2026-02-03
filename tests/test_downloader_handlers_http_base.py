@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import re
 import sys
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
@@ -474,7 +475,9 @@ class TestHttp11Base(TestHttpBase):
         assert type(response) is TextResponse  # pylint: disable=unidiomatic-typecheck
 
     @coroutine_test
-    async def test_download_with_maxsize(self, mockserver: MockServer) -> None:
+    async def test_download_with_maxsize(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
         request = Request(mockserver.url("/text", is_secure=self.is_secure))
 
         # 10 is minimal size for this request and the limit is only counted on
@@ -483,9 +486,12 @@ class TestHttp11Base(TestHttpBase):
             response = await download_handler.download_request(request)
         assert response.body == b"Works"
 
+        caplog.clear()
+        msg = "Expected to receive 5 bytes which is larger than download max size (4)"
         async with self.get_dh({"DOWNLOAD_MAXSIZE": 4}) as download_handler:
-            with pytest.raises(DownloadCancelledError):
+            with pytest.raises(DownloadCancelledError, match=re.escape(msg)):
                 await download_handler.download_request(request)
+        assert msg in caplog.text
 
     @coroutine_test
     async def test_download_with_maxsize_very_large_file(
@@ -495,8 +501,10 @@ class TestHttp11Base(TestHttpBase):
         async with self.get_dh({"DOWNLOAD_MAXSIZE": 1_500}) as download_handler:
             with pytest.raises(DownloadCancelledError):
                 await download_handler.download_request(request)
-
-        assert "larger than download max size" in caplog.text
+        assert (
+            "Received 2048 bytes which is larger than download max size (1500)"
+            in caplog.text
+        )
 
     @coroutine_test
     async def test_download_with_maxsize_per_req(self, mockserver: MockServer) -> None:
@@ -523,6 +531,34 @@ class TestHttp11Base(TestHttpBase):
         async with self.get_dh({"DOWNLOAD_MAXSIZE": 100}) as download_handler:
             response = await download_handler.download_request(request)
         assert response.body == b"Works"
+
+    @coroutine_test
+    async def test_download_with_warnsize(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        request = Request(mockserver.url("/text", is_secure=self.is_secure))
+        async with self.get_dh({"DOWNLOAD_WARNSIZE": 4}) as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
+        assert (
+            "Expected to receive 5 bytes which is larger than download warn size (4)"
+            in caplog.text
+        )
+
+    @coroutine_test
+    async def test_download_with_warnsize_no_content_length(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        request = Request(
+            mockserver.url("/delay?n=0.1", is_secure=self.is_secure),
+        )
+        async with self.get_dh({"DOWNLOAD_WARNSIZE": 10}) as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Response delayed for 0.100 seconds\n"
+        assert (
+            "Received 35 bytes which is larger than download warn size (10)"
+            in caplog.text
+        )
 
     @coroutine_test
     async def test_download_chunked_content(self, mockserver: MockServer) -> None:
