@@ -70,10 +70,10 @@ _T = TypeVar("_T")
 
 class _ResultT(TypedDict):
     txresponse: TxResponse
-    body: bytes
-    flags: list[str] | None
-    certificate: ssl.Certificate | None
-    ip_address: ipaddress.IPv4Address | ipaddress.IPv6Address | None
+    body: NotRequired[bytes]
+    flags: NotRequired[list[str] | None]
+    certificate: NotRequired[ssl.Certificate | None]
+    ip_address: NotRequired[ipaddress.IPv4Address | ipaddress.IPv6Address | None]
     stop_download: NotRequired[StopDownload | None]
 
 
@@ -503,10 +503,6 @@ class ScrapyAgent:
             txresponse._transport.loseConnection()
             return {
                 "txresponse": txresponse,
-                "body": b"",
-                "flags": None,
-                "certificate": None,
-                "ip_address": None,
                 "stop_download": stop_download,
             }
 
@@ -514,10 +510,6 @@ class ScrapyAgent:
         if txresponse.length == 0:
             return {
                 "txresponse": txresponse,
-                "body": b"",
-                "flags": None,
-                "certificate": None,
-                "ip_address": None,
             }
 
         maxsize = request.meta.get("download_maxsize", self._maxsize)
@@ -573,10 +565,10 @@ class ScrapyAgent:
             url=url,
             status=int(result["txresponse"].code),
             headers=headers,
-            body=result["body"],
-            flags=result["flags"],
-            certificate=result["certificate"],
-            ip_address=result["ip_address"],
+            body=result.get("body", b""),
+            flags=result.get("flags"),
+            certificate=result.get("certificate"),
+            ip_address=result.get("ip_address"),
             protocol=protocol,
             stop_download=result.get("stop_download"),
         )
