@@ -86,7 +86,7 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         #     ),
         # )
 
-    async def download_request(self, request: Request) -> Response:
+    async def download_request(self, request: Request) -> Response:  # pylint: disable=too-many-statements
         maxsize = request.meta.get("download_maxsize", self._default_maxsize)
         warnsize = request.meta.get("download_warnsize", self._default_warnsize)
         timeout = request.meta.get("download_timeout", self._DEFAULT_CONNECT_TIMEOUT)

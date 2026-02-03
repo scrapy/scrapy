@@ -201,7 +201,6 @@ disable = [
     "too-many-positional-arguments",
     "too-many-public-methods",
     "too-many-return-statements",
-    "too-many-statements",
     "unused-argument",
     "unused-import",
     "unused-variable",
