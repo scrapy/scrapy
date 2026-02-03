@@ -79,6 +79,9 @@ class StreamCloseReason(Enum):
     # As a result sending this request will the end the connection
     INVALID_HOSTNAME = 7
 
+    # Actual response body size is more than allowed limit
+    MAXSIZE_EXCEEDED_ACTUAL = 8
+
 
 class Stream:
     """Represents a single HTTP/2 Stream.
@@ -338,7 +341,7 @@ class Stream:
             self._download_maxsize
             and self._response["flow_controlled_size"] > self._download_maxsize
         ):
-            self.reset_stream(StreamCloseReason.MAXSIZE_EXCEEDED)
+            self.reset_stream(StreamCloseReason.MAXSIZE_EXCEEDED_ACTUAL)
             return
 
         if self._log_warnsize:
@@ -417,14 +420,20 @@ class Stream:
         # As we immediately cancel the request when maxsize is exceeded while
         # receiving DATA_FRAME's when we have received the headers (not
         # having Content-Length)
-        if reason is StreamCloseReason.MAXSIZE_EXCEEDED:
+        if reason in {
+            StreamCloseReason.MAXSIZE_EXCEEDED,
+            StreamCloseReason.MAXSIZE_EXCEEDED_ACTUAL,
+        }:
             expected_size = int(
                 self._response["headers"].get(
                     b"Content-Length", self._response["flow_controlled_size"]
                 )
             )
             error_msg = get_maxsize_msg(
-                expected_size, self._download_maxsize, self._request, expected=True
+                expected_size,
+                self._download_maxsize,
+                self._request,
+                expected=reason == StreamCloseReason.MAXSIZE_EXCEEDED,
             )
             logger.error(error_msg)
             self._deferred_response.errback(DownloadCancelledError(error_msg))
