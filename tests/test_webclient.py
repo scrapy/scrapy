@@ -9,7 +9,6 @@ from urllib.parse import urlparse
 import OpenSSL.SSL
 import pytest
 from pytest_twisted import async_yield_fixture
-from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.testing import StringTransport
 from twisted.protocols.policies import WrappingFactory
@@ -18,20 +17,20 @@ from twisted.web.client import _makeGetterFactory
 
 from scrapy.core.downloader import webclient as client
 from scrapy.core.downloader.contextfactory import ScrapyClientContextFactory
+from scrapy.exceptions import DownloadTimeoutError
 from scrapy.http import Headers, Request
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes, to_unicode
 from scrapy.utils.test import get_crawler
-from tests.mockserver import (
-    BrokenDownloadResource,
-    ErrorResource,
+from tests.mockserver.http_resources import (
     ForeverTakingResource,
     HostHeaderResource,
-    NoLengthResource,
     PayloadResource,
-    ssl_context_factory,
 )
+from tests.mockserver.utils import ssl_context_factory
 from tests.test_core_downloader import TestContextFactoryBase
+
+pytestmark = pytest.mark.requires_reactor
 
 
 def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
@@ -195,6 +194,27 @@ class EncodingResource(resource.Resource):
         return body.encode(self.out_encoding)
 
 
+class BrokenDownloadResource(resource.Resource):
+    def render(self, request):
+        # only sends 3 bytes even though it claims to send 5
+        request.setHeader(b"content-length", b"5")
+        request.write(b"abc")
+        return b""
+
+
+class ErrorResource(resource.Resource):
+    def render(self, request):
+        request.setResponseCode(401)
+        if request.args.get(b"showlength"):
+            request.setHeader(b"content-length", b"0")
+        return b""
+
+
+class NoLengthResource(resource.Resource):
+    def render(self, request):
+        return b"nolength"
+
+
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
 class TestWebClient:
     def _listen(self, site):
@@ -284,9 +304,9 @@ class TestWebClient:
         """
         When a non-zero timeout is passed to L{getPage} and that many
         seconds elapse before the server responds to the request. the
-        L{Deferred} is errbacked with a L{error.TimeoutError}.
+        L{Deferred} is errbacked with a L{DownloadTimeoutError}.
         """
-        with pytest.raises(defer.TimeoutError):
+        with pytest.raises(DownloadTimeoutError):
             yield getPage(server_url + "wait", timeout=0.000001)
         # Clean up the server which is hanging around not doing
         # anything.

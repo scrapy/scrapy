@@ -311,7 +311,7 @@ class TestBaseSettings:
         assert settings.getdict("TEST_DICT3", {"key1": 5}) == {"key1": 5}
         with pytest.raises(
             ValueError,
-            match="dictionary update sequence element #0 has length 3; 2 is required|sequence of pairs expected",
+            match=r"dictionary update sequence element #0 has length 3; 2 is required|sequence of pairs expected",
         ):
             settings.getdict("TEST_LIST1")
         with pytest.raises(
@@ -451,7 +451,7 @@ class TestSettings:
 
     def test_passing_objects_as_values(self):
         class TestPipeline:
-            def process_item(self, i, s):
+            def process_item(self, i):
                 return i
 
         settings = Settings(
@@ -471,7 +471,7 @@ class TestSettings:
         assert priority == 800
         assert mypipeline == TestPipeline
         assert isinstance(mypipeline(), TestPipeline)
-        assert mypipeline().process_item("item", None) == "item"
+        assert mypipeline().process_item("item") == "item"
 
         myhandler = settings.getdict("DOWNLOAD_HANDLERS").pop("ftp")
         assert myhandler == FileDownloadHandler

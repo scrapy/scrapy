@@ -6,23 +6,26 @@ from typing import TYPE_CHECKING, Any, cast
 import OpenSSL.SSL
 import pytest
 from pytest_twisted import async_yield_fixture
-from twisted.protocols.policies import WrappingFactory
 from twisted.web import server, static
 from twisted.web.client import Agent, BrowserLikePolicyForHTTPS, readBody
 from twisted.web.client import Response as TxResponse
 
-from scrapy.core.downloader import Slot
+from scrapy.core.downloader import Downloader, Slot
 from scrapy.core.downloader.contextfactory import (
     ScrapyClientContextFactory,
     load_context_factory_from_settings,
 )
 from scrapy.core.downloader.handlers.http11 import _RequestBodyProducer
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import Settings
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.python import to_bytes
+from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
-from tests.mockserver import PayloadResource, ssl_context_factory
+from tests.mockserver.http_resources import PayloadResource
+from tests.mockserver.utils import ssl_context_factory
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from twisted.internet.defer import Deferred
@@ -35,6 +38,7 @@ class TestSlot:
         assert repr(slot) == "Slot(concurrency=8, delay=0.10, randomize_delay=True)"
 
 
+@pytest.mark.requires_reactor
 class TestContextFactoryBase:
     context_factory = None
 
@@ -44,8 +48,7 @@ class TestContextFactoryBase:
         r = static.File(str(tmp_path))
         r.putChild(b"payload", PayloadResource())
         site = server.Site(r, timeout=None)
-        wrapper = WrappingFactory(site)
-        port = self._listen(wrapper)
+        port = self._listen(site)
         portno = port.getHost().port
 
         yield f"https://127.0.0.1:{portno}/"
@@ -94,7 +97,7 @@ class TestContextFactoryBase:
 
 
 class TestContextFactory(TestContextFactoryBase):
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def testPayload(self, server_url: str) -> None:
         s = "0123456789" * 10
         crawler = get_crawler()
@@ -132,7 +135,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         )
         assert body == to_bytes(s)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_setting_default(self, server_url: str) -> None:
         crawler = get_crawler()
         settings = Settings()
@@ -152,7 +155,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         with pytest.raises(KeyError):
             load_context_factory_from_settings(settings, crawler)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_setting_explicit(self, server_url: str) -> None:
         crawler = get_crawler()
         settings = Settings({"DOWNLOADER_CLIENT_TLS_METHOD": "TLSv1.2"})
@@ -160,7 +163,7 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_direct_from_crawler(self, server_url: str) -> None:
         # the setting is ignored
         crawler = get_crawler(settings_dict={"DOWNLOADER_CLIENT_TLS_METHOD": "bad"})
@@ -168,8 +171,22 @@ class TestContextFactoryTLSMethod(TestContextFactoryBase):
         assert client_context_factory._ssl_method == OpenSSL.SSL.SSLv23_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_direct_init(self, server_url: str) -> None:
         client_context_factory = ScrapyClientContextFactory(OpenSSL.SSL.TLSv1_2_METHOD)
         assert client_context_factory._ssl_method == OpenSSL.SSL.TLSv1_2_METHOD
         await self._assert_factory_works(server_url, client_context_factory)
+
+
+@coroutine_test
+async def test_fetch_deprecated_spider_arg():
+    class CustomDownloader(Downloader):
+        def fetch(self, request, spider):  # pylint: disable=signature-differs
+            return super().fetch(request, spider)
+
+    crawler = get_crawler(DefaultSpider, {"DOWNLOADER": CustomDownloader})
+    with pytest.warns(
+        ScrapyDeprecationWarning,
+        match=r"The fetch\(\) method of .+\.CustomDownloader requires a spider argument",
+    ):
+        await crawler.crawl_async()

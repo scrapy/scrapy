@@ -8,17 +8,18 @@ from collections import deque
 from typing import Any, NamedTuple
 
 import pytest
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.core.downloader import Downloader
 from scrapy.core.scheduler import BaseScheduler, Scheduler
 from scrapy.crawler import Crawler
 from scrapy.http import Request
 from scrapy.spiders import Spider
+from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
+from tests.utils.decorators import inline_callbacks_test
 
 
 class MemoryScheduler(BaseScheduler):
@@ -98,6 +99,9 @@ class MockCrawler(Crawler):
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
 
+# needs a reactor or an event loop for is_asyncio_available()
+# (for _schedule_coro())
+@pytest.mark.requires_reactor
 class SchedulerHandler(ABC):
     jobdir = None
 
@@ -114,7 +118,7 @@ class SchedulerHandler(ABC):
 
     def close_scheduler(self):
         self.scheduler.close("finished")
-        self.mock_crawler.stop()
+        _schedule_coro(self.mock_crawler.stop_async())
         self.mock_crawler.engine.downloader.close()
 
     def setup_method(self):
@@ -242,6 +246,9 @@ _URLS_WITH_SLOTS = [
 
 
 class TestMigration:
+    # needs a reactor or an event loop for is_asyncio_available()
+    # (for _schedule_coro())
+    @pytest.mark.requires_reactor
     def test_migration(self, tmpdir):
         class PrevSchedulerHandler(SchedulerHandler):
             jobdir = tmpdir
@@ -362,7 +369,8 @@ class TestIntegrationWithDownloaderAwareInMemory:
             },
         )
 
-    @inlineCallbacks
+    @pytest.mark.requires_http_handler
+    @inline_callbacks_test
     def test_integration_downloader_aware_priority_queue(self):
         with MockServer() as mockserver:
             url = mockserver.url("/status?n=200", is_secure=False)

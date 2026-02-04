@@ -68,9 +68,10 @@ defines one or more of these methods:
 
 .. class:: DownloaderMiddleware
 
-   .. note::  Any of the downloader middleware methods may also return a deferred.
+   .. note::  Any of the downloader middleware methods may be defined as a
+        coroutine function (``async def``).
 
-   .. method:: process_request(request, spider)
+   .. method:: process_request(request)
 
       This method is called for each request that goes through the download
       middleware.
@@ -102,10 +103,7 @@ defines one or more of these methods:
       :param request: the request being processed
       :type request: :class:`~scrapy.Request` object
 
-      :param spider: the spider for which this request is intended
-      :type spider: :class:`~scrapy.Spider` object
-
-   .. method:: process_response(request, response, spider)
+   .. method:: process_response(request, response)
 
       :meth:`process_response` should either: return a :class:`~scrapy.http.Response`
       object, return a :class:`~scrapy.Request` object or
@@ -129,14 +127,12 @@ defines one or more of these methods:
       :param response: the response being processed
       :type response: :class:`~scrapy.http.Response` object
 
-      :param spider: the spider for which this response is intended
-      :type spider: :class:`~scrapy.Spider` object
+   .. method:: process_exception(request, exception)
 
-   .. method:: process_exception(request, exception, spider)
-
-      Scrapy calls :meth:`process_exception` when a download handler
-      or a :meth:`process_request` (from a downloader middleware) raises an
-      exception (including an :exc:`~scrapy.exceptions.IgnoreRequest` exception)
+      Scrapy calls :meth:`process_exception` when a :ref:`download handler
+      <topics-download-handlers>` or a :meth:`process_request` (from a
+      downloader middleware) raises an exception (including an
+      :exc:`~scrapy.exceptions.IgnoreRequest` exception).
 
       :meth:`process_exception` should return: either ``None``,
       a :class:`~scrapy.http.Response` object, or a :class:`~scrapy.Request` object.
@@ -159,9 +155,6 @@ defines one or more of these methods:
 
       :param exception: the raised exception
       :type exception: an ``Exception`` object
-
-      :param spider: the spider for which this request is intended
-      :type spider: :class:`~scrapy.Spider` object
 
 .. _topics-downloader-middleware-ref:
 
@@ -298,13 +291,12 @@ DownloadTimeoutMiddleware
 .. class:: DownloadTimeoutMiddleware
 
     This middleware sets the download timeout for requests specified in the
-    :setting:`DOWNLOAD_TIMEOUT` setting or :attr:`download_timeout`
-    spider attribute.
+    :setting:`DOWNLOAD_TIMEOUT` setting.
 
 .. note::
 
-    You can also set download timeout per-request using
-    :reqmeta:`download_timeout` Request.meta key; this is supported
+    You can also set download timeout per-request using the
+    :reqmeta:`download_timeout` :attr:`.Request.meta` key; this is supported
     even when DownloadTimeoutMiddleware is disabled.
 
 HttpAuthMiddleware
@@ -926,10 +918,6 @@ Default: ``[]``
 
 Meta tags within these tags are ignored.
 
-.. versionchanged:: 2.0
-   The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
-   ``["script", "noscript"]`` to ``[]``.
-
 .. versionchanged:: 2.11.2
    The default value of :setting:`METAREFRESH_IGNORE_TAGS` changed from
    ``[]`` to ``["noscript"]``.
@@ -1025,15 +1013,14 @@ RETRY_EXCEPTIONS
 Default::
 
     [
-        'twisted.internet.defer.TimeoutError',
-        'twisted.internet.error.TimeoutError',
-        'twisted.internet.error.DNSLookupError',
-        'twisted.internet.error.ConnectionRefusedError',
+        'scrapy.exceptions.CannotResolveHostError',
+        'scrapy.exceptions.DownloadConnectionRefusedError',
+        'scrapy.exceptions.DownloadFailedError',
+        'scrapy.exceptions.DownloadTimeoutError',
+        'scrapy.exceptions.ResponseDataLossError',
         'twisted.internet.error.ConnectionDone',
         'twisted.internet.error.ConnectError',
         'twisted.internet.error.ConnectionLost',
-        'twisted.internet.error.TCPTimedOutError',
-        'twisted.web.client.ResponseFailed',
         IOError,
         'scrapy.core.downloader.handlers.http11.TunnelError',
     ]
@@ -1220,9 +1207,8 @@ UserAgentMiddleware
 
 .. class:: UserAgentMiddleware
 
-   Middleware that allows spiders to override the default user agent.
+   Middleware that sets the ``User-Agent`` header.
 
-   In order for a spider to override the default user agent, its ``user_agent``
-   attribute must be set.
+   The header value is taken from the :setting:`USER_AGENT` setting.
 
 .. _DBM: https://en.wikipedia.org/wiki/Dbm

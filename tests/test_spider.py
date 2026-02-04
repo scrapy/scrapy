@@ -12,7 +12,6 @@ from unittest import mock
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 from w3lib.url import safe_url_string
 
 from scrapy import signals
@@ -29,9 +28,9 @@ from scrapy.spiders import (
     XMLFeedSpider,
 )
 from scrapy.spiders.init import InitSpider
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import get_testdata, tests_datadir
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 
 class TestSpider:
@@ -96,7 +95,7 @@ class TestSpider:
         assert settings.get("TEST2") == "spider"
         assert settings.get("TEST3") == "project"
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_settings_in_from_crawler(self):
         spider_settings = {"TEST1": "spider", "TEST2": "spider"}
         project_settings = {
@@ -143,7 +142,7 @@ class TestSpider:
 class TestInitSpider(TestSpider):
     spider_class = InitSpider
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_start_urls(self):
         responses = []
 
@@ -155,7 +154,7 @@ class TestInitSpider(TestSpider):
                 responses.append(response)
 
         crawler = get_crawler(TestSpider)
-        await maybe_deferred_to_future(crawler.crawl())
+        await crawler.crawl_async()
         assert len(responses) == 1
         assert responses[0].url == "data:,"
 
@@ -459,7 +458,7 @@ class TestCrawlSpider(TestSpider):
         assert hasattr(spider, "_follow_links")
         assert not spider._follow_links
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_start_url(self):
         class TestSpider(self.spider_class):
             name = "test"
@@ -726,6 +725,7 @@ Sitemap: /sitemap-relative-url.xml
         response = Response(url="https://example.com", body=body, request=request)
         assert spider._get_sitemap_body(response) is None
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_compression_bomb_spider_attr(self):
         class DownloadMaxSizeSpider(self.spider_class):
             download_maxsize = 10_000_000
@@ -773,6 +773,7 @@ Sitemap: /sitemap-relative-url.xml
             ),
         )
 
+    @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
     def test_download_warnsize_spider_attr(self):
         class DownloadWarnSizeSpider(self.spider_class):
             download_warnsize = 10_000_000
@@ -826,7 +827,7 @@ Sitemap: /sitemap-relative-url.xml
             ),
         )
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_sitemap_urls(self):
         class TestSpider(self.spider_class):
             name = "test"

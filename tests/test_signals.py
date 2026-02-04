@@ -1,10 +1,9 @@
 import pytest
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy import Request, Spider, signals
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 
 class ItemSpider(Spider):
@@ -21,7 +20,7 @@ class ItemSpider(Spider):
 
 
 class TestMain:
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_scheduler_empty(self):
         crawler = get_crawler()
         calls = []
@@ -30,7 +29,7 @@ class TestMain:
             calls.append(object())
 
         crawler.signals.connect(track_call, signals.scheduler_empty)
-        await maybe_deferred_to_future(crawler.crawl())
+        await crawler.crawl_async()
         assert len(calls) >= 1
 
 
@@ -51,8 +50,9 @@ class TestMockServer:
         item = await get_from_asyncio_queue(item)
         self.items.append(item)
 
+    @pytest.mark.requires_http_handler
     @pytest.mark.only_asyncio
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_simple_pipeline(self):
         crawler = get_crawler(ItemSpider)
         crawler.signals.connect(self._on_item_scraped, signals.item_scraped)

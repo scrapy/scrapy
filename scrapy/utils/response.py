@@ -48,7 +48,7 @@ def get_meta_refresh(
     if response not in _metaref_cache:
         text = response.text[0:4096]
         _metaref_cache[response] = html.get_meta_refresh(
-            text, response.url, response.encoding, ignore_tags=ignore_tags
+            text, get_base_url(response), response.encoding, ignore_tags=ignore_tags
         )
     return _metaref_cache[response]
 

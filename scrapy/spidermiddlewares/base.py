@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from scrapy import Request, Spider
+from scrapy.utils.decorators import _warn_spider_arg
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterable
@@ -52,15 +53,20 @@ class BaseSpiderMiddleware:
             if (o := self._get_processed(o, None)) is not None:
                 yield o
 
+    @_warn_spider_arg
     def process_spider_output(
-        self, response: Response, result: Iterable[Any], spider: Spider
+        self, response: Response, result: Iterable[Any], spider: Spider | None = None
     ) -> Iterable[Any]:
         for o in result:
             if (o := self._get_processed(o, response)) is not None:
                 yield o
 
+    @_warn_spider_arg
     async def process_spider_output_async(
-        self, response: Response, result: AsyncIterator[Any], spider: Spider
+        self,
+        response: Response,
+        result: AsyncIterator[Any],
+        spider: Spider | None = None,
     ) -> AsyncIterator[Any]:
         async for o in result:
             if (o := self._get_processed(o, response)) is not None:

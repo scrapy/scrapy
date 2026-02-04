@@ -9,21 +9,21 @@ from urllib.parse import urlencode, urlparse
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import succeed
 from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
 from scrapy.crawler import CrawlerRunner
-from scrapy.exceptions import CloseSpider, StopDownload
+from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.engine import format_engine_status, get_engine_status
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler, get_reactor_settings
 from tests import NON_EXISTING_RESOLVABLE
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
 from tests.spiders import (
     AsyncDefAsyncioGenComplexSpider,
     AsyncDefAsyncioGenExcSpider,
@@ -55,11 +55,13 @@ from tests.spiders import (
     StartGoodAndBadOutput,
     StartItemSpider,
 )
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 if TYPE_CHECKING:
     from scrapy.statscollectors import StatsCollector
 
 
+@pytest.mark.requires_http_handler  # easier than marking many individual tests
 class TestCrawl:
     mockserver: MockServer
 
@@ -72,17 +74,17 @@ class TestCrawl:
     def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_follow_all(self):
         crawler = get_crawler(FollowAllSpider)
         yield crawler.crawl(mockserver=self.mockserver)
         assert len(crawler.spider.urls_visited) == 11  # 10 + start_url
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_fixed_delay(self):
         await self._test_delay(total=3, delay=0.2)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_randomized_delay(self):
         await self._test_delay(total=3, delay=0.1, randomize=True)
 
@@ -98,7 +100,7 @@ class TestCrawl:
 
         settings = {"DOWNLOAD_DELAY": delay, "RANDOMIZE_DOWNLOAD_DELAY": randomize}
         crawler = get_crawler(FollowAllSpider, settings)
-        await maybe_deferred_to_future(crawler.crawl(**crawl_kwargs))
+        await crawler.crawl_async(**crawl_kwargs)
         assert crawler.spider
         assert isinstance(crawler.spider, FollowAllSpider)
         times = crawler.spider.times
@@ -112,7 +114,7 @@ class TestCrawl:
         # code above to have any meaning.
         settings["DOWNLOAD_DELAY"] = 0
         crawler = get_crawler(FollowAllSpider, settings)
-        await maybe_deferred_to_future(crawler.crawl(**crawl_kwargs))
+        await crawler.crawl_async(**crawl_kwargs)
         assert crawler.spider
         assert isinstance(crawler.spider, FollowAllSpider)
         times = crawler.spider.times
@@ -120,7 +122,7 @@ class TestCrawl:
         average = total_time / (len(times) - 1)
         assert average <= delay / tolerance, "test total or delay values are too small"
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_timeout_success(self):
         crawler = get_crawler(DelaySpider)
         yield crawler.crawl(n=0.5, mockserver=self.mockserver)
@@ -128,7 +130,7 @@ class TestCrawl:
         assert crawler.spider.t2 > 0
         assert crawler.spider.t2 > crawler.spider.t1
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_timeout_failure(self):
         crawler = get_crawler(DelaySpider, {"DOWNLOAD_TIMEOUT": 0.35})
         yield crawler.crawl(n=0.5, mockserver=self.mockserver)
@@ -145,7 +147,7 @@ class TestCrawl:
         assert crawler.spider.t2_err > 0
         assert crawler.spider.t2_err > crawler.spider.t1
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_retry_503(self):
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as log:
@@ -154,7 +156,7 @@ class TestCrawl:
             )
         self._assert_retried(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_retry_conn_failed(self):
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as log:
@@ -163,7 +165,7 @@ class TestCrawl:
             )
         self._assert_retried(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_retry_dns_error(self):
         if NON_EXISTING_RESOLVABLE:
             pytest.skip("Non-existing hosts are resolvable")
@@ -175,7 +177,7 @@ class TestCrawl:
             )
         self._assert_retried(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_start_bug_before_yield(self):
         with LogCapture("scrapy", level=logging.ERROR) as log:
             crawler = get_crawler(BrokenStartSpider)
@@ -186,7 +188,7 @@ class TestCrawl:
         assert record.exc_info is not None
         assert record.exc_info[0] is ZeroDivisionError
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_start_bug_yielding(self):
         with LogCapture("scrapy", level=logging.ERROR) as log:
             crawler = get_crawler(BrokenStartSpider)
@@ -197,7 +199,7 @@ class TestCrawl:
         assert record.exc_info is not None
         assert record.exc_info[0] is ZeroDivisionError
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_start_items(self):
         items = []
 
@@ -212,7 +214,7 @@ class TestCrawl:
         assert len(log.records) == 0
         assert items == [{"name": "test item"}]
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_start_unsupported_output(self):
         """Anything that is not a request is assumed to be an item, avoiding a
         potentially expensive call to itemadapter.is_item(), and letting
@@ -233,7 +235,7 @@ class TestCrawl:
         assert len(items) == 3
         assert not any(isinstance(item, Request) for item in items)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_start_dupes(self):
         settings = {"CONCURRENT_REQUESTS": 1}
         crawler = get_crawler(DuplicateStartSpider, settings)
@@ -251,7 +253,7 @@ class TestCrawl:
         )
         assert crawler.spider.visited == 3
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_unbounded_response(self):
         # Completeness of responses without Content-Length or Transfer-Encoding
         # can not be determined, we treat them as valid but flagged as "partial"
@@ -283,7 +285,7 @@ with multiples lines
             )
         assert str(log).count("Got response 200") == 1
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_retry_conn_lost(self):
         # connection lost after receiving data
         crawler = get_crawler(SimpleSpider)
@@ -293,7 +295,7 @@ with multiples lines
             )
         self._assert_retried(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_retry_conn_aborted(self):
         # connection lost before receiving data
         crawler = get_crawler(SimpleSpider)
@@ -307,7 +309,7 @@ with multiples lines
         assert str(log).count("Retrying") == 2
         assert str(log).count("Gave up retrying") == 1
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_referer_header(self):
         """Referer header is set by RefererMiddleware unless it is already set"""
         req0 = Request(self.mockserver.url("/echo?headers=1&body=0"), dont_filter=1)
@@ -335,7 +337,7 @@ with multiples lines
         echo3 = json.loads(to_unicode(crawler.spider.meta["responses"][3].body))
         assert echo3["headers"].get("Referer") == ["http://example.com"]
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_engine_status(self):
         est = []
 
@@ -351,7 +353,7 @@ with multiples lines
         assert s["engine.spider.name"] == crawler.spider.name
         assert s["len(engine.scraper.slot.active)"] == 1
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_format_engine_status(self):
         est = []
 
@@ -369,12 +371,12 @@ with multiples lines
         est = [x for sublist in est for x in sublist]  # flatten
         est = [x.lstrip().rstrip() for x in est]
         it = iter(est)
-        s = dict(zip(it, it))
+        s = dict(zip(it, it, strict=False))
 
         assert s["engine.spider.name"] == crawler.spider.name
         assert s["len(engine.scraper.slot.active)"] == "1"
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_open_spider_error_on_faulty_pipeline(self):
         settings = {
             "ITEM_PIPELINES": {
@@ -388,7 +390,7 @@ with multiples lines
             )
         assert not crawler.crawling
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawlerrunner_accepts_crawler(self):
         crawler = get_crawler(SimpleSpider)
         runner = CrawlerRunner()
@@ -400,8 +402,8 @@ with multiples lines
             )
         assert "Got response 200" in str(log)
 
-    @inlineCallbacks
-    def test_crawl_multiple(self):
+    @inline_callbacks_test
+    def test_crawl_multiple(self, caplog: pytest.LogCaptureFixture):
         runner = CrawlerRunner(get_reactor_settings())
         runner.crawl(
             SimpleSpider,
@@ -414,13 +416,20 @@ with multiples lines
             mockserver=self.mockserver,
         )
 
-        with LogCapture() as log:
+        with caplog.at_level(logging.DEBUG):
             yield runner.join()
 
-        self._assert_retried(log)
-        assert "Got response 200" in str(log)
+        self._assert_retried(caplog.text)
+        assert "Got response 200" in caplog.text
+
+    @coroutine_test
+    async def test_unknown_url_scheme(self, caplog: pytest.LogCaptureFixture) -> None:
+        crawler = get_crawler(SimpleSpider)
+        await maybe_deferred_to_future(crawler.crawl("foo://bar"))
+        assert "NotSupported: Unsupported URL scheme 'foo'" in caplog.text
 
 
+@pytest.mark.requires_http_handler
 class TestCrawlSpider:
     mockserver: MockServer
 
@@ -452,7 +461,7 @@ class TestCrawlSpider:
         assert crawler.stats
         return log, items, crawler.stats
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawlspider_with_parse(self):
         crawler = get_crawler(CrawlSpiderWithParseMethod)
         with LogCapture() as log:
@@ -462,7 +471,7 @@ class TestCrawlSpider:
         assert "[parse] status 201 (foo: None)" in str(log)
         assert "[parse] status 202 (foo: bar)" in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawlspider_with_async_callback(self):
         crawler = get_crawler(CrawlSpiderWithAsyncCallback)
         with LogCapture() as log:
@@ -472,7 +481,7 @@ class TestCrawlSpider:
         assert "[parse_async] status 201 (foo: None)" in str(log)
         assert "[parse_async] status 202 (foo: bar)" in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawlspider_with_async_generator_callback(self):
         crawler = get_crawler(CrawlSpiderWithAsyncGeneratorCallback)
         with LogCapture() as log:
@@ -482,7 +491,7 @@ class TestCrawlSpider:
         assert "[parse_async_gen] status 201 (foo: None)" in str(log)
         assert "[parse_async_gen] status 202 (foo: bar)" in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawlspider_with_errback(self):
         crawler = get_crawler(CrawlSpiderWithErrback)
         with LogCapture() as log:
@@ -495,7 +504,7 @@ class TestCrawlSpider:
         assert "[errback] status 500" in str(log)
         assert "[errback] status 501" in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawlspider_process_request_cb_kwargs(self):
         crawler = get_crawler(CrawlSpiderWithProcessRequestCallbackKeywordArguments)
         with LogCapture() as log:
@@ -505,7 +514,7 @@ class TestCrawlSpider:
         assert "[parse] status 201 (foo: process_request)" in str(log)
         assert "[parse] status 202 (foo: bar)" in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_async_def_parse(self):
         crawler = get_crawler(AsyncDefSpider)
         with LogCapture() as log:
@@ -515,7 +524,7 @@ class TestCrawlSpider:
         assert "Got response 200" in str(log)
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_async_def_asyncio_parse(self):
         crawler = get_crawler(
             AsyncDefAsyncioSpider,
@@ -530,7 +539,7 @@ class TestCrawlSpider:
         assert "Got response 200" in str(log)
 
     @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_async_def_asyncio_parse_items_list(self):
         log, items, _ = await self._run_spider(AsyncDefAsyncioReturnSpider)
         assert "Got response 200" in str(log)
@@ -538,7 +547,7 @@ class TestCrawlSpider:
         assert {"id": 2} in items
 
     @pytest.mark.only_asyncio
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_async_def_asyncio_parse_items_single_element(self):
         items = []
 
@@ -555,7 +564,7 @@ class TestCrawlSpider:
         assert {"foo": 42} in items
 
     @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_async_def_asyncgen_parse(self):
         log, _, stats = await self._run_spider(AsyncDefAsyncioGenSpider)
         assert "Got response 200" in str(log)
@@ -563,7 +572,7 @@ class TestCrawlSpider:
         assert itemcount == 1
 
     @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_async_def_asyncgen_parse_loop(self):
         log, items, stats = await self._run_spider(AsyncDefAsyncioGenLoopSpider)
         assert "Got response 200" in str(log)
@@ -573,7 +582,7 @@ class TestCrawlSpider:
             assert {"foo": i} in items
 
     @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_async_def_asyncgen_parse_exc(self):
         log, items, stats = await self._run_spider(AsyncDefAsyncioGenExcSpider)
         log = str(log)
@@ -585,7 +594,7 @@ class TestCrawlSpider:
             assert {"foo": i} in items
 
     @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_async_def_asyncgen_parse_complex(self):
         _, items, stats = await self._run_spider(AsyncDefAsyncioGenComplexSpider)
         itemcount = stats.get_value("item_scraped_count")
@@ -597,78 +606,87 @@ class TestCrawlSpider:
             assert {"index2": i} in items
 
     @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_async_def_asyncio_parse_reqs_list(self):
         log, *_ = await self._run_spider(AsyncDefAsyncioReqsReturnSpider)
         for req_id in range(3):
             assert f"Got response 200, req_id {req_id}" in str(log)
 
     @pytest.mark.only_not_asyncio
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_async_def_deferred_direct(self):
         _, items, _ = await self._run_spider(AsyncDefDeferredDirectSpider)
         assert items == [{"code": 200}]
 
     @pytest.mark.only_asyncio
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_async_def_deferred_wrapped(self):
-        log, items, _ = await self._run_spider(AsyncDefDeferredWrappedSpider)
+        _, items, _ = await self._run_spider(AsyncDefDeferredWrappedSpider)
         assert items == [{"code": 200}]
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_async_def_deferred_maybe_wrapped(self):
         _, items, _ = await self._run_spider(AsyncDefDeferredMaybeWrappedSpider)
         assert items == [{"code": 200}]
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_response_ssl_certificate_none(self):
         crawler = get_crawler(SingleRequestSpider)
         url = self.mockserver.url("/echo?body=test", is_secure=False)
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
         assert crawler.spider.meta["responses"][0].certificate is None
 
-    @inlineCallbacks
-    def test_response_ssl_certificate(self):
-        crawler = get_crawler(SingleRequestSpider)
-        url = self.mockserver.url("/echo?body=test", is_secure=True)
-        yield crawler.crawl(seed=url, mockserver=self.mockserver)
-        cert = crawler.spider.meta["responses"][0].certificate
-        assert isinstance(cert, Certificate)
-        assert cert.getSubject().commonName == b"localhost"
-        assert cert.getIssuer().commonName == b"localhost"
-
-    @pytest.mark.xfail(
-        reason="Responses with no body return early and contain no certificate"
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "/echo?body=test",
+            pytest.param(
+                "/status?n=200",
+                marks=pytest.mark.xfail(
+                    reason="With HTTP11DownloadHandler, responses with no body are returned early and contain no certificate",
+                    strict=True,
+                ),
+            ),
+        ],
     )
-    @inlineCallbacks
-    def test_response_ssl_certificate_empty_response(self):
+    @coroutine_test
+    async def test_response_ssl_certificate(
+        self, mockserver: MockServer, url: str
+    ) -> None:
         crawler = get_crawler(SingleRequestSpider)
-        url = self.mockserver.url("/status?n=200", is_secure=True)
-        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        url = mockserver.url(url, is_secure=True)
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
         cert = crawler.spider.meta["responses"][0].certificate
         assert isinstance(cert, Certificate)
         assert cert.getSubject().commonName == b"localhost"
         assert cert.getIssuer().commonName == b"localhost"
 
-    @inlineCallbacks
-    def test_dns_server_ip_address_none(self):
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "/echo?body=test",
+            pytest.param(
+                "/status?n=200",
+                marks=pytest.mark.xfail(
+                    reason="With HTTP11DownloadHandler, responses with no body are returned early and contain no ip_address",
+                    strict=True,
+                ),
+            ),
+        ],
+    )
+    @coroutine_test
+    async def test_response_ip_address(self, mockserver: MockServer, url: str) -> None:
         crawler = get_crawler(SingleRequestSpider)
-        url = self.mockserver.url("/status?n=200")
-        yield crawler.crawl(seed=url, mockserver=self.mockserver)
-        ip_address = crawler.spider.meta["responses"][0].ip_address
-        assert ip_address is None
-
-    @inlineCallbacks
-    def test_dns_server_ip_address(self):
-        crawler = get_crawler(SingleRequestSpider)
-        url = self.mockserver.url("/echo?body=test")
+        url = mockserver.url(url)
         expected_netloc, _ = urlparse(url).netloc.split(":")
-        yield crawler.crawl(seed=url, mockserver=self.mockserver)
+        await crawler.crawl_async(seed=url, mockserver=mockserver)
+        assert isinstance(crawler.spider, SingleRequestSpider)
         ip_address = crawler.spider.meta["responses"][0].ip_address
         assert isinstance(ip_address, IPv4Address)
         assert str(ip_address) == gethostbyname(expected_netloc)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_bytes_received_stop_download_callback(self):
         crawler = get_crawler(BytesReceivedCallbackSpider)
         yield crawler.crawl(mockserver=self.mockserver)
@@ -682,7 +700,7 @@ class TestCrawlSpider:
             < crawler.spider.full_response_length
         )
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_bytes_received_stop_download_errback(self):
         crawler = get_crawler(BytesReceivedErrbackSpider)
         yield crawler.crawl(mockserver=self.mockserver)
@@ -698,7 +716,7 @@ class TestCrawlSpider:
             < crawler.spider.full_response_length
         )
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_headers_received_stop_download_callback(self):
         crawler = get_crawler(HeadersReceivedCallbackSpider)
         yield crawler.crawl(mockserver=self.mockserver)
@@ -708,7 +726,7 @@ class TestCrawlSpider:
             "headers_received"
         )
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_headers_received_stop_download_errback(self):
         crawler = get_crawler(HeadersReceivedErrbackSpider)
         yield crawler.crawl(mockserver=self.mockserver)
@@ -720,7 +738,19 @@ class TestCrawlSpider:
             "failure"
         ].value.response.headers == crawler.spider.meta.get("headers_received")
 
-    @inlineCallbacks
+    @inline_callbacks_test
+    def test_spider_callback_deferred_deprecated(self):
+        def cb(response: Response) -> Any:
+            return succeed(None)
+
+        crawler = get_crawler(SingleRequestSpider)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="Returning Deferreds from spider callbacks is deprecated",
+        ):
+            yield crawler.crawl(seed=self.mockserver.url("/"), callback_func=cb)
+
+    @inline_callbacks_test
     def test_spider_errback(self):
         failures = []
 
@@ -737,7 +767,7 @@ class TestCrawlSpider:
         assert "HTTP status code is not handled or not allowed" in str(log)
         assert "Spider error processing" not in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_spider_errback_silence(self):
         failures = []
 
@@ -753,7 +783,7 @@ class TestCrawlSpider:
         assert "HTTP status code is not handled or not allowed" not in str(log)
         assert "Spider error processing" not in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_spider_errback_exception(self):
         def eb(failure: Failure) -> None:
             raise ValueError("foo")
@@ -765,7 +795,7 @@ class TestCrawlSpider:
             )
         assert "Spider error processing" in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_spider_errback_item(self):
         def eb(failure: Failure) -> Any:
             return {"foo": "bar"}
@@ -779,7 +809,7 @@ class TestCrawlSpider:
         assert "Spider error processing" not in str(log)
         assert "'item_scraped_count': 1" in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_spider_errback_request(self):
         def eb(failure: Failure) -> Request:
             return Request(self.mockserver.url("/"))
@@ -793,7 +823,7 @@ class TestCrawlSpider:
         assert "Spider error processing" not in str(log)
         assert "Crawled (200)" in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_spider_errback_downloader_error(self):
         failures = []
 
@@ -810,7 +840,7 @@ class TestCrawlSpider:
         assert "Error downloading" in str(log)
         assert "Spider error processing" not in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_spider_errback_downloader_error_exception(self):
         def eb(failure: Failure) -> None:
             raise ValueError("foo")
@@ -823,7 +853,7 @@ class TestCrawlSpider:
         assert "Error downloading" in str(log)
         assert "Spider error processing" in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_spider_errback_downloader_error_item(self):
         def eb(failure: Failure) -> Any:
             return {"foo": "bar"}
@@ -837,7 +867,7 @@ class TestCrawlSpider:
         assert "Spider error processing" not in str(log)
         assert "'item_scraped_count': 1" in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_spider_errback_downloader_error_request(self):
         def eb(failure: Failure) -> Request:
             return Request(self.mockserver.url("/"))
@@ -851,7 +881,21 @@ class TestCrawlSpider:
         assert "Spider error processing" not in str(log)
         assert "Crawled (200)" in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
+    def test_spider_errback_deferred_deprecated(self):
+        def eb(failure: Failure) -> Any:
+            return succeed(None)
+
+        crawler = get_crawler(SingleRequestSpider)
+        with pytest.warns(
+            ScrapyDeprecationWarning,
+            match="Returning Deferreds from spider errbacks is deprecated",
+        ):
+            yield crawler.crawl(
+                seed=self.mockserver.url("/status?n=400"), errback_func=eb
+            )
+
+    @inline_callbacks_test
     def test_raise_closespider(self):
         def cb(response):
             raise CloseSpider
@@ -862,7 +906,7 @@ class TestCrawlSpider:
         assert "Closing spider (cancelled)" in str(log)
         assert "Spider error processing" not in str(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_raise_closespider_reason(self):
         def cb(response):
             raise CloseSpider("my_reason")

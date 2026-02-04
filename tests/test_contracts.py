@@ -1,7 +1,6 @@
 from unittest import TextTestResult
 
 import pytest
-from twisted.internet.defer import inlineCallbacks
 from twisted.python import failure
 
 from scrapy import FormRequest
@@ -18,7 +17,8 @@ from scrapy.item import Field, Item
 from scrapy.spidermiddlewares.httperror import HttpError
 from scrapy.spiders import Spider
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
+from tests.utils.decorators import inline_callbacks_test
 
 
 class DemoItem(Item):
@@ -501,7 +501,8 @@ class TestContractsManager:
         assert not self.results.failures
         assert self.results.errors
 
-    @inlineCallbacks
+    @pytest.mark.requires_http_handler
+    @inline_callbacks_test
     def test_same_url(self):
         class TestSameUrlSpider(Spider):
             name = "test_same_url"

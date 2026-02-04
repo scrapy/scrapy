@@ -29,8 +29,6 @@ import lxml.etree
 import pytest
 from packaging.version import Version
 from testfixtures import LogCapture
-from twisted.internet import defer
-from twisted.internet.defer import inlineCallbacks
 from w3lib.url import file_uri_to_path, path_to_file_uri
 from zope.interface import implementer
 from zope.interface.verify import verifyObject
@@ -51,14 +49,16 @@ from scrapy.extensions.feedexport import (
     StdoutFeedStorage,
 )
 from scrapy.settings import Settings
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockFTPServer, MockServer
+from tests.mockserver.ftp import MockFTPServer
+from tests.mockserver.http import MockServer
 from tests.spiders import ItemSpider
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable
     from os import PathLike
 
 
@@ -163,6 +163,7 @@ class TestFileFeedStorage:
         assert storage.path == path
 
 
+@pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
 class TestFTPFeedStorage:
     def get_test_spider(self, settings=None):
         class TestSpider(scrapy.Spider):
@@ -191,7 +192,7 @@ class TestFTPFeedStorage:
         finally:
             path.unlink()
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_append(self):
         with MockFTPServer() as ftp_server:
             filename = "file"
@@ -201,7 +202,7 @@ class TestFTPFeedStorage:
             await self._store(url, b"bar", feed_options=feed_options)
             self._assert_stored(ftp_server.path / filename, b"foobar")
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_overwrite(self):
         with MockFTPServer() as ftp_server:
             filename = "file"
@@ -210,7 +211,7 @@ class TestFTPFeedStorage:
             await self._store(url, b"bar")
             self._assert_stored(ftp_server.path / filename, b"bar")
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_append_active_mode(self):
         with MockFTPServer() as ftp_server:
             settings = {"FEED_STORAGE_FTP_ACTIVE": True}
@@ -221,7 +222,7 @@ class TestFTPFeedStorage:
             await self._store(url, b"bar", feed_options=feed_options, settings=settings)
             self._assert_stored(ftp_server.path / filename, b"foobar")
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_overwrite_active_mode(self):
         with MockFTPServer() as ftp_server:
             settings = {"FEED_STORAGE_FTP_ACTIVE": True}
@@ -277,6 +278,7 @@ class TestBlockingFeedStorage:
 
 
 @pytest.mark.requires_boto3
+@pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
 class TestS3FeedStorage:
     def test_parse_credentials(self):
         aws_credentials = {
@@ -312,7 +314,7 @@ class TestS3FeedStorage:
         assert storage.access_key == "uri_key"
         assert storage.secret_key == "uri_secret"
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_store(self):
         settings = {
             "AWS_ACCESS_KEY_ID": "access_key",
@@ -453,7 +455,7 @@ class TestS3FeedStorage:
         assert storage.region_name == region_name
         assert storage.s3_client._client_config.region_name == region_name
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_store_without_acl(self):
         storage = S3FeedStorage(
             "s3://mybucket/export.csv",
@@ -473,7 +475,7 @@ class TestS3FeedStorage:
         )
         assert acl is None
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_store_with_acl(self):
         storage = S3FeedStorage(
             "s3://mybucket/export.csv", "access_key", "secret_key", "custom-acl"
@@ -506,6 +508,7 @@ class TestS3FeedStorage:
         assert "S3 does not support appending to files" in str(log)
 
 
+@pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
 class TestGCSFeedStorage:
     def test_parse_settings(self):
         try:
@@ -537,7 +540,7 @@ class TestGCSFeedStorage:
         storage = GCSFeedStorage.from_crawler(crawler, "gs://mybucket/export.csv")
         assert storage.acl is None
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_store(self):
         try:
             from google.cloud.storage import Client  # noqa: F401,PLC0415
@@ -846,6 +849,7 @@ class ExceptionJsonItemExporter(JsonItemExporter):
         raise RuntimeError("foo")
 
 
+@pytest.mark.requires_http_handler
 class TestFeedExport(TestFeedExportBase):
     async def run_and_export(
         self, spider_cls: type[Spider], settings: dict[str, Any]
@@ -862,7 +866,7 @@ class TestFeedExport(TestFeedExportBase):
         try:
             spider_cls.start_urls = [self.mockserver.url("/")]
             crawler = get_crawler(spider_cls, settings)
-            await maybe_deferred_to_future(crawler.crawl())
+            await crawler.crawl_async()
 
             for file_path, feed_options in FEEDS.items():
                 content[feed_options["format"]] = (
@@ -1002,7 +1006,7 @@ class TestFeedExport(TestFeedExportBase):
         result = self._load_until_eof(data["marshal"], load_func=marshal.load)
         assert result == expected
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_stats_file_success(self):
         settings = {
             "FEEDS": {
@@ -1016,7 +1020,7 @@ class TestFeedExport(TestFeedExportBase):
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 1
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_stats_file_failed(self):
         settings = {
             "FEEDS": {
@@ -1034,7 +1038,7 @@ class TestFeedExport(TestFeedExportBase):
         assert "feedexport/failed_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/failed_count/FileFeedStorage") == 1
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_stats_multiple_file(self):
         settings = {
             "FEEDS": {
@@ -1056,7 +1060,7 @@ class TestFeedExport(TestFeedExportBase):
             crawler.stats.get_value("feedexport/success_count/StdoutFeedStorage") == 1
         )
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_items(self):
         # feed exporters use field names from Item
         items = [
@@ -1070,7 +1074,7 @@ class TestFeedExport(TestFeedExportBase):
         header = self.MyItem.fields.keys()
         await self.assertExported(items, header, rows)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_no_items_not_store_empty(self):
         for fmt in ("json", "jsonlines", "xml", "csv"):
             settings = {
@@ -1082,7 +1086,7 @@ class TestFeedExport(TestFeedExportBase):
             data = await self.exported_no_data(settings)
             assert data[fmt] is None
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_start_finish_exporting_items(self):
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -1102,7 +1106,7 @@ class TestFeedExport(TestFeedExportBase):
             assert not listener.start_without_finish
             assert not listener.finish_without_start
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_start_finish_exporting_no_items(self):
         items = []
         settings = {
@@ -1120,7 +1124,7 @@ class TestFeedExport(TestFeedExportBase):
             assert not listener.start_without_finish
             assert not listener.finish_without_start
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_start_finish_exporting_items_exception(self):
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -1141,7 +1145,7 @@ class TestFeedExport(TestFeedExportBase):
             assert not listener.start_without_finish
             assert not listener.finish_without_start
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_start_finish_exporting_no_items_exception(self):
         items = []
         settings = {
@@ -1160,7 +1164,7 @@ class TestFeedExport(TestFeedExportBase):
             assert not listener.start_without_finish
             assert not listener.finish_without_start
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_no_items_store_empty(self):
         formats = (
             ("json", b"[]"),
@@ -1180,7 +1184,7 @@ class TestFeedExport(TestFeedExportBase):
             data = await self.exported_no_data(settings)
             assert expctd == data[fmt]
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_no_items_multiple_feeds(self):
         """Make sure that `storage.store` is called for every feed."""
         settings = {
@@ -1198,7 +1202,7 @@ class TestFeedExport(TestFeedExportBase):
 
         assert str(log).count("Storage.store is called") == 0
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_multiple_item_classes(self):
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -1220,7 +1224,7 @@ class TestFeedExport(TestFeedExportBase):
         await self.assertExportedCsv(items, header, rows_csv)
         await self.assertExportedJsonLines(items, rows_jl)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_items_empty_field_list(self):
         # FEED_EXPORT_FIELDS==[] means the same as default None
         items = [{"foo": "bar"}]
@@ -1230,7 +1234,7 @@ class TestFeedExport(TestFeedExportBase):
         await self.assertExportedCsv(items, header, rows)
         await self.assertExportedJsonLines(items, rows, settings)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_items_field_list(self):
         items = [{"foo": "bar"}]
         header = ["foo", "baz"]
@@ -1238,7 +1242,7 @@ class TestFeedExport(TestFeedExportBase):
         settings = {"FEED_EXPORT_FIELDS": header}
         await self.assertExported(items, header, rows, settings=settings)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_items_comma_separated_field_list(self):
         items = [{"foo": "bar"}]
         header = ["foo", "baz"]
@@ -1246,7 +1250,7 @@ class TestFeedExport(TestFeedExportBase):
         settings = {"FEED_EXPORT_FIELDS": ",".join(header)}
         await self.assertExported(items, header, rows, settings=settings)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_items_json_field_list(self):
         items = [{"foo": "bar"}]
         header = ["foo", "baz"]
@@ -1254,7 +1258,7 @@ class TestFeedExport(TestFeedExportBase):
         settings = {"FEED_EXPORT_FIELDS": json.dumps(header)}
         await self.assertExported(items, header, rows, settings=settings)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_items_field_names(self):
         items = [{"foo": "bar"}]
         header = {"foo": "Foo"}
@@ -1262,7 +1266,7 @@ class TestFeedExport(TestFeedExportBase):
         settings = {"FEED_EXPORT_FIELDS": header}
         await self.assertExported(items, list(header.values()), rows, settings=settings)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_items_dict_field_names(self):
         items = [{"foo": "bar"}]
         header = {
@@ -1273,7 +1277,7 @@ class TestFeedExport(TestFeedExportBase):
         settings = {"FEED_EXPORT_FIELDS": header}
         await self.assertExported(items, ["Baz", "Foo"], rows, settings=settings)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_items_json_field_names(self):
         items = [{"foo": "bar"}]
         header = {"foo": "Foo"}
@@ -1281,7 +1285,7 @@ class TestFeedExport(TestFeedExportBase):
         settings = {"FEED_EXPORT_FIELDS": json.dumps(header)}
         await self.assertExported(items, list(header.values()), rows, settings=settings)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_based_on_item_classes(self):
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -1327,7 +1331,7 @@ class TestFeedExport(TestFeedExportBase):
         for fmt, expected in formats.items():
             assert data[fmt] == expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_based_on_custom_filters(self):
         items = [
             self.MyItem({"foo": "bar1", "egg": "spam1"}),
@@ -1386,7 +1390,7 @@ class TestFeedExport(TestFeedExportBase):
         for fmt, expected in formats.items():
             assert data[fmt] == expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_dicts(self):
         # When dicts are used, only keys from the first row are used as
         # a header for CSV, and all fields are used for JSON Lines.
@@ -1399,7 +1403,7 @@ class TestFeedExport(TestFeedExportBase):
         await self.assertExportedCsv(items, ["foo", "egg"], rows_csv)
         await self.assertExportedJsonLines(items, rows_jl)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_tuple(self):
         items = [
             {"foo": "bar1", "egg": "spam1"},
@@ -1410,7 +1414,7 @@ class TestFeedExport(TestFeedExportBase):
         rows = [{"foo": "bar1", "baz": ""}, {"foo": "bar2", "baz": "quux"}]
         await self.assertExported(items, ["foo", "baz"], rows, settings=settings)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_feed_export_fields(self):
         # FEED_EXPORT_FIELDS option allows to order export fields
         # and to select a subset of fields to export, both for Items and dicts.
@@ -1436,7 +1440,7 @@ class TestFeedExport(TestFeedExportBase):
             rows = [{"egg": "spam1", "baz": ""}, {"egg": "spam2", "baz": "quux2"}]
             await self.assertExported(items, ["egg", "baz"], rows, settings=settings)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_encoding(self):
         items = [{"foo": "Test\xd6"}]
 
@@ -1481,7 +1485,7 @@ class TestFeedExport(TestFeedExportBase):
             data = await self.exported_data(items, settings)
             assert data[fmt] == expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_multiple_configs(self):
         items = [{"foo": "FOO", "bar": "BAR"}]
 
@@ -1521,7 +1525,7 @@ class TestFeedExport(TestFeedExportBase):
         for fmt, expected in formats.items():
             assert data[fmt] == expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_indentation(self):
         items = [
             {"foo": ["bar"]},
@@ -1677,7 +1681,7 @@ class TestFeedExport(TestFeedExportBase):
             data = await self.exported_data(items, settings)
             assert data[row["format"]] == row["expected"]
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_init_exporters_storages_with_crawler(self):
         settings = {
             "FEED_EXPORTERS": {"csv": FromCrawlerCsvItemExporter},
@@ -1690,7 +1694,7 @@ class TestFeedExport(TestFeedExportBase):
         assert FromCrawlerCsvItemExporter.init_with_crawler
         assert FromCrawlerFileFeedStorage.init_with_crawler
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_str_uri(self):
         settings = {
             "FEED_STORE_EMPTY": True,
@@ -1699,7 +1703,7 @@ class TestFeedExport(TestFeedExportBase):
         data = await self.exported_no_data(settings)
         assert data["csv"] == b""
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_multiple_feeds_success_logs_blocking_feed_storage(self):
         settings = {
             "FEEDS": {
@@ -1716,11 +1720,10 @@ class TestFeedExport(TestFeedExportBase):
         with LogCapture() as log:
             await self.exported_data(items, settings)
 
-        print(log)
         for fmt in ["json", "xml", "csv"]:
             assert f"Stored {fmt} feed (2 items)" in str(log)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_multiple_feeds_failing_logs_blocking_feed_storage(self):
         settings = {
             "FEEDS": {
@@ -1737,11 +1740,10 @@ class TestFeedExport(TestFeedExportBase):
         with LogCapture() as log:
             await self.exported_data(items, settings)
 
-        print(log)
         for fmt in ["json", "xml", "csv"]:
             assert f"Error storing {fmt} feed (2 items)" in str(log)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_extend_kwargs(self):
         items = [{"foo": "FOO", "bar": "BAR"}]
 
@@ -1778,7 +1780,7 @@ class TestFeedExport(TestFeedExportBase):
             data = await self.exported_data(items, settings)
             assert data[feed_options["format"]] == row["expected"]
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_storage_file_no_postprocessing(self):
         @implementer(IFeedStorage)
         class Storage:
@@ -1800,7 +1802,7 @@ class TestFeedExport(TestFeedExportBase):
         await self.exported_no_data(settings)
         assert Storage.open_file is Storage.store_file
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_storage_file_postprocessing(self):
         @implementer(IFeedStorage)
         class Storage:
@@ -1832,6 +1834,7 @@ class TestFeedExport(TestFeedExportBase):
         assert not Storage.file_was_closed
 
 
+@pytest.mark.requires_http_handler
 class TestFeedPostProcessedExports(TestFeedExportBase):
     items = [{"foo": "bar"}]
     expected = b"foo\r\nbar\r\n"
@@ -1868,7 +1871,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
         try:
             spider_cls.start_urls = [self.mockserver.url("/")]
             crawler = get_crawler(spider_cls, settings)
-            await maybe_deferred_to_future(crawler.crawl())
+            await crawler.crawl_async()
 
             for file_path in FEEDS:
                 content[str(file_path)] = (
@@ -1898,7 +1901,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
         data_stream.seek(0)
         return data_stream.read()
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_gzip_plugin(self):
         filename = self._named_tempfile("gzip_file")
 
@@ -1917,7 +1920,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
         except OSError:
             pytest.fail("Received invalid gzip data.")
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_gzip_plugin_compresslevel(self):
         filename_to_compressed = {
             self._named_tempfile("compresslevel_0"): self.get_gzip_compressed(
@@ -1954,7 +1957,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert compressed == data[filename]
             assert result == self.expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_gzip_plugin_mtime(self):
         filename_to_compressed = {
             self._named_tempfile("mtime_123"): self.get_gzip_compressed(
@@ -1989,7 +1992,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert compressed == data[filename]
             assert result == self.expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_gzip_plugin_filename(self):
         filename_to_compressed = {
             self._named_tempfile("filename_FILE1"): self.get_gzip_compressed(
@@ -2024,7 +2027,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert compressed == data[filename]
             assert result == self.expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_lzma_plugin(self):
         filename = self._named_tempfile("lzma_file")
 
@@ -2043,7 +2046,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
         except lzma.LZMAError:
             pytest.fail("Received invalid lzma data.")
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_lzma_plugin_format(self):
         filename_to_compressed = {
             self._named_tempfile("format_FORMAT_XZ"): lzma.compress(
@@ -2076,7 +2079,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert compressed == data[filename]
             assert result == self.expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_lzma_plugin_check(self):
         filename_to_compressed = {
             self._named_tempfile("check_CHECK_NONE"): lzma.compress(
@@ -2109,7 +2112,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert compressed == data[filename]
             assert result == self.expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_lzma_plugin_preset(self):
         filename_to_compressed = {
             self._named_tempfile("preset_PRESET_0"): lzma.compress(
@@ -2142,7 +2145,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert compressed == data[filename]
             assert result == self.expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_lzma_plugin_filters(self):
         if "PyPy" in sys.version:
             # https://foss.heptapod.net/pypy/pypy/-/issues/3527
@@ -2167,7 +2170,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
         result = lzma.decompress(data[filename])
         assert result == self.expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_bz2_plugin(self):
         filename = self._named_tempfile("bz2_file")
 
@@ -2186,7 +2189,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
         except OSError:
             pytest.fail("Received invalid bz2 data.")
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_bz2_plugin_compresslevel(self):
         filename_to_compressed = {
             self._named_tempfile("compresslevel_1"): bz2.compress(
@@ -2219,7 +2222,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert compressed == data[filename]
             assert result == self.expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_custom_plugin(self):
         filename = self._named_tempfile("csv_file")
 
@@ -2235,7 +2238,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
         data = await self.exported_data(self.items, settings)
         assert data[filename] == self.expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_custom_plugin_with_parameter(self):
         expected = b"foo\r\n\nbar\r\n\n"
         filename = self._named_tempfile("newline")
@@ -2253,7 +2256,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
         data = await self.exported_data(self.items, settings)
         assert data[filename] == expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_custom_plugin_with_compression(self):
         expected = b"foo\r\n\nbar\r\n\n"
 
@@ -2298,7 +2301,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             result = decompressor(data[filename])
             assert result == expected
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_exports_compatibility_with_postproc(self):
         filename_to_expected = {
             self._named_tempfile("csv"): b"foo\r\nbar\r\n",
@@ -2350,6 +2353,7 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert result == expected
 
 
+@pytest.mark.requires_http_handler
 class TestBatchDeliveries(TestFeedExportBase):
     _file_mark = "_%(batch_time)s_#%(batch_id)02d_"
 
@@ -2365,7 +2369,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         content: defaultdict[str, list[bytes]] = defaultdict(list)
         spider_cls.start_urls = [self.mockserver.url("/")]
         crawler = get_crawler(spider_cls, settings)
-        await maybe_deferred_to_future(crawler.crawl())
+        await crawler.crawl_async()
 
         for path, feed in FEEDS.items():
             dir_name = Path(path).parent
@@ -2507,7 +2511,7 @@ class TestBatchDeliveries(TestFeedExportBase):
             expected_batch, rows = rows[:batch_size], rows[batch_size:]
             assert got_batch == expected_batch
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_items(self):
         """Test partial deliveries in all supported formats"""
         items = [
@@ -2536,7 +2540,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         with pytest.raises(NotConfigured):
             FeedExporter(crawler)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_no_items_not_store_empty(self):
         for fmt in ("json", "jsonlines", "xml", "csv"):
             settings = {
@@ -2552,7 +2556,7 @@ class TestBatchDeliveries(TestFeedExportBase):
             data = dict(data)
             assert len(data[fmt]) == 0
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_no_items_store_empty(self):
         formats = (
             ("json", b"[]"),
@@ -2576,7 +2580,7 @@ class TestBatchDeliveries(TestFeedExportBase):
             data = dict(data)
             assert data[fmt][0] == expctd
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_export_multiple_configs(self):
         items = [
             {"foo": "FOO", "bar": "BAR"},
@@ -2629,10 +2633,10 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         data = await self.exported_data(items, settings)
         for fmt, expected in formats.items():
-            for expected_batch, got_batch in zip(expected, data[fmt]):
+            for expected_batch, got_batch in zip(expected, data[fmt], strict=False):
                 assert got_batch == expected_batch
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_batch_item_count_feeds_setting(self):
         items = [{"foo": "FOO"}, {"foo": "FOO1"}]
         formats = {
@@ -2653,10 +2657,10 @@ class TestBatchDeliveries(TestFeedExportBase):
         }
         data = await self.exported_data(items, settings)
         for fmt, expected in formats.items():
-            for expected_batch, got_batch in zip(expected, data[fmt]):
+            for expected_batch, got_batch in zip(expected, data[fmt], strict=False):
                 assert got_batch == expected_batch
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_batch_path_differ(self):
         """
         Test that the name of all batch files differ from each other.
@@ -2678,7 +2682,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         data = await self.exported_data(items, settings)
         assert len(items) == len(data["json"])
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_stats_batch_file_success(self):
         settings = {
             "FEEDS": {
@@ -2696,7 +2700,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 12
 
     @pytest.mark.requires_boto3
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_s3_export(self):
         bucket = "mybucket"
         items = [
@@ -2763,6 +2767,12 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert len(CustomS3FeedStorage.stubs) == len(items)
         for stub in CustomS3FeedStorage.stubs[:-1]:
             stub.assert_no_pending_responses()
+        assert (
+            "feedexport/success_count/CustomS3FeedStorage" in crawler.stats.get_stats()
+        )
+        assert (
+            crawler.stats.get_value("feedexport/success_count/CustomS3FeedStorage") == 3
+        )
 
 
 # Test that the FeedExporer sends the feed_exporter_closed and feed_slot_closed signals
@@ -2788,21 +2798,15 @@ class TestFeedExporterSignals:
     def feed_slot_closed_signal_handler(self, slot):
         self.feed_slot_closed_received = True
 
-    def feed_exporter_closed_signal_handler_deferred(self):
-        d = defer.Deferred()
-        d.addCallback(lambda _: setattr(self, "feed_exporter_closed_received", True))
-        d.callback(None)
-        return d
+    async def feed_exporter_closed_signal_handler_async(self):
+        self.feed_exporter_closed_received = True
 
-    def feed_slot_closed_signal_handler_deferred(self, slot):
-        d = defer.Deferred()
-        d.addCallback(lambda _: setattr(self, "feed_slot_closed_received", True))
-        d.callback(None)
-        return d
+    async def feed_slot_closed_signal_handler_async(self, slot):
+        self.feed_slot_closed_received = True
 
-    def run_signaled_feed_exporter(
-        self, feed_exporter_signal_handler, feed_slot_signal_handler
-    ):
+    async def run_signaled_feed_exporter(
+        self, feed_exporter_signal_handler: Callable, feed_slot_signal_handler: Callable
+    ) -> None:
         crawler = get_crawler(settings_dict=self.settings)
         feed_exporter = FeedExporter.from_crawler(crawler)
         spider = scrapy.Spider("default")
@@ -2817,26 +2821,28 @@ class TestFeedExporterSignals:
         feed_exporter.open_spider(spider)
         for item in self.items:
             feed_exporter.item_scraped(item, spider)
-        defer.ensureDeferred(feed_exporter.close_spider(spider))
+        await feed_exporter.close_spider(spider)
 
-    def test_feed_exporter_signals_sent(self):
+    @coroutine_test
+    async def test_feed_exporter_signals_sent(self) -> None:
         self.feed_exporter_closed_received = False
         self.feed_slot_closed_received = False
 
-        self.run_signaled_feed_exporter(
+        await self.run_signaled_feed_exporter(
             self.feed_exporter_closed_signal_handler,
             self.feed_slot_closed_signal_handler,
         )
         assert self.feed_slot_closed_received
         assert self.feed_exporter_closed_received
 
-    def test_feed_exporter_signals_sent_deferred(self):
+    @coroutine_test
+    async def test_feed_exporter_signals_sent_async(self) -> None:
         self.feed_exporter_closed_received = False
         self.feed_slot_closed_received = False
 
-        self.run_signaled_feed_exporter(
-            self.feed_exporter_closed_signal_handler_deferred,
-            self.feed_slot_closed_signal_handler_deferred,
+        await self.run_signaled_feed_exporter(
+            self.feed_exporter_closed_signal_handler_async,
+            self.feed_slot_closed_signal_handler_async,
         )
         assert self.feed_slot_closed_received
         assert self.feed_exporter_closed_received

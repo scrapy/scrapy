@@ -9,14 +9,14 @@ import pytest
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler
 from scrapy.http import Request
 from scrapy.utils.defer import deferred_f_from_coro_f
-from tests.test_downloader_handlers_http_base import (
-    TestHttpBase,
-    TestHttpProxyBase,
-    download_request,
-)
+from tests.test_downloader_handlers_http_base import TestHttpBase, TestHttpProxyBase
 
 if TYPE_CHECKING:
     from scrapy.core.downloader.handlers import DownloadHandlerProtocol
+    from tests.mockserver.http import MockServer
+
+
+pytestmark = pytest.mark.requires_reactor
 
 
 class HTTP10DownloadHandlerMixin:
@@ -29,17 +29,21 @@ class HTTP10DownloadHandlerMixin:
 class TestHttp10(HTTP10DownloadHandlerMixin, TestHttpBase):
     """HTTP 1.0 test case"""
 
+    def test_unsupported_scheme(self) -> None:  # type: ignore[override]
+        pytest.skip("Check not implemented")
+
     @deferred_f_from_coro_f
-    async def test_protocol(
-        self, server_port: int, download_handler: DownloadHandlerProtocol
-    ) -> None:
-        request = Request(self.getURL(server_port, "host"), method="GET")
-        response = await download_request(download_handler, request)
+    async def test_protocol(self, mockserver: MockServer) -> None:
+        request = Request(
+            mockserver.url("/host", is_secure=self.is_secure), method="GET"
+        )
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
         assert response.protocol == "HTTP/1.0"
 
 
 class TestHttps10(TestHttp10):
-    scheme = "https"
+    is_secure = True
 
 
 @pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")

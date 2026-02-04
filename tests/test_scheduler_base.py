@@ -5,7 +5,6 @@ from urllib.parse import urljoin
 import pytest
 from testfixtures import LogCapture
 from twisted.internet import defer
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.core.scheduler import BaseScheduler
 from scrapy.http import Request
@@ -13,7 +12,8 @@ from scrapy.spiders import Spider
 from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.request import fingerprint
 from scrapy.utils.test import get_crawler
-from tests.mockserver import MockServer
+from tests.mockserver.http import MockServer
+from tests.utils.decorators import inline_callbacks_test
 
 PATHS = ["/a", "/b", "/c"]
 URLS = [urljoin("https://example.org", p) for p in PATHS]
@@ -35,7 +35,7 @@ class MinimalScheduler:
 
     def next_request(self) -> Request | None:
         if self.has_pending_requests():
-            fp, request = self.requests.popitem()
+            _, request = self.requests.popitem()
             return request
         return None
 
@@ -118,7 +118,7 @@ class TestSimpleScheduler(InterfaceCheckMixin):
     def setup_method(self):
         self.scheduler = SimpleScheduler()
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_enqueue_dequeue(self):
         open_result = yield self.scheduler.open(Spider("foo"))
         assert open_result == "open"
@@ -144,10 +144,11 @@ class TestSimpleScheduler(InterfaceCheckMixin):
         assert close_result == "close"
 
 
+@pytest.mark.requires_http_handler
 class TestMinimalSchedulerCrawl:
     scheduler_cls = MinimalScheduler
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_crawl(self):
         with MockServer() as mockserver:
             settings = {
