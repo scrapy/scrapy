@@ -1,6 +1,7 @@
 # pylint: disable=unsubscriptable-object,unsupported-membership-test,use-implicit-booleaness-not-comparison
 # (too many false positives)
 
+import logging
 import warnings
 from unittest import mock
 
@@ -463,6 +464,35 @@ class TestBaseSettings:
             value = settings.getwithbase(name)
             assert isinstance(value, BaseSettings)
             assert dict(value) == expected
+
+    def test_getwithbase_warns_on_duplicate_import_paths(self, caplog):
+        settings = BaseSettings()
+        settings["FOO"] = BaseSettings(
+            {
+                "scrapy.Request": 1,
+                "scrapy.http.Request": 2,
+            }
+        )
+        with caplog.at_level(logging.WARNING):
+            value = settings.getwithbase("FOO")
+        assert isinstance(value, BaseSettings)
+        assert dict(value) == {"scrapy.http.Request": 2}
+        assert caplog.records, "Expected a warning to be logged"
+        msg = caplog.records[0].message
+        assert "scrapy.http.request.Request" in msg
+
+    def test_getwithbase_warns_on_duplicate_mixed_type_and_path(self, caplog):
+        settings = BaseSettings()
+        settings["FOO"] = BaseSettings(
+            {Component1: 1, "tests.test_settings.Component1": 2}
+        )
+        with caplog.at_level(logging.WARNING):
+            value = settings.getwithbase("FOO")
+        assert isinstance(value, BaseSettings)
+        assert dict(value) == {"tests.test_settings.Component1": 2}
+        assert caplog.records, "Expected a warning to be logged"
+        msg = caplog.records[0].message
+        assert "tests.test_settings.Component1" in msg
 
     def test_getwithbase_invalid_setting_name(self):
         settings = BaseSettings()

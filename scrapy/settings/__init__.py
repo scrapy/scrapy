@@ -5,6 +5,7 @@ import json
 import warnings
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 from importlib import import_module
+from logging import getLogger
 from pprint import pformat
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
@@ -12,6 +13,8 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import default_settings
 from scrapy.utils.misc import load_object
 from scrapy.utils.python import global_object_name
+
+logger = getLogger(__name__)
 
 # The key types are restricted in BaseSettings._get_key() to ones supported by JSON,
 # see https://github.com/scrapy/scrapy/issues/5383.
@@ -322,13 +325,29 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
             raise ValueError(f"Base setting key must be a string, got {name}")
 
         normalized_keys = {}
+        obj_keys = set()
 
-        def normalize_key(k: Any) -> str:
-            if isinstance(k, type):
-                import_path = global_object_name(k)
-                normalized_keys[import_path] = k
-                return import_path
-            return k
+        def track_loaded_key(k: Any) -> None:
+            if k not in obj_keys:
+                obj_keys.add(k)
+                return
+            logger.warning(
+                f"Setting {name} contains multiple keys that refer to the "
+                f"same type: {global_object_name(k)}. Only the last one will "
+                f"be kept."
+            )
+
+        def normalize_key(key: Any) -> str:
+            try:
+                loaded_key = load_object(key)
+            except (AttributeError, TypeError, ValueError):
+                loaded_key = key
+            else:
+                import_path = global_object_name(loaded_key)
+                normalized_keys[import_path] = key
+                key = import_path
+            track_loaded_key(loaded_key)
+            return key
 
         def restore_key(k: str) -> Any:
             return normalized_keys.get(k, k)
