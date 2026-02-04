@@ -197,10 +197,10 @@ Scrapy component responsible for that log output.
 
 If :setting:`LOG_SYSTEMD` is set to ``True``, Scrapy will send logs to the
 systemd journal using ``systemd.journal.JournalHandler`` as its logging handler.
-This requires the external Python package ``systemd`` to be installed (minimum
-version 234 recommended). You can install it via pip::
+This requires the external Python package ``cysystemd`` to be installed.
+You can install it via pip:
 
-    pip install systemd
+    pip install cysystemd
 
 This feature is opt-in and disabled by default. When enabled, Scrapy will raise an
 ``ImportError`` if the ``systemd`` package is not found. Use this setting when
