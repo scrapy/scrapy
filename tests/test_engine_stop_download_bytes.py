@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from testfixtures import LogCapture
+import pytest
 
 from scrapy.exceptions import StopDownload
-from scrapy.utils.defer import deferred_f_from_coro_f
 from tests.test_engine import (
     AttrsItemsSpider,
     CrawlerRun,
@@ -14,6 +13,7 @@ from tests.test_engine import (
     MySpider,
     TestEngineBase,
 )
+from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from tests.mockserver.http import MockServer
@@ -26,8 +26,11 @@ class BytesReceivedCrawlerRun(CrawlerRun):
 
 
 class TestBytesReceivedEngine(TestEngineBase):
-    @deferred_f_from_coro_f
-    async def test_crawler(self, mockserver: MockServer) -> None:
+    @pytest.mark.requires_http_handler
+    @coroutine_test
+    async def test_crawler(
+        self, mockserver: MockServer, caplog: pytest.LogCaptureFixture
+    ) -> None:
         for spider in (
             MySpider,
             DictItemsSpider,
@@ -35,32 +38,13 @@ class TestBytesReceivedEngine(TestEngineBase):
             DataClassItemsSpider,
         ):
             run = BytesReceivedCrawlerRun(spider)
-            with LogCapture() as log:
+            with caplog.at_level("DEBUG"):
                 await run.run(mockserver)
-                log.check_present(
-                    (
-                        "scrapy.core.downloader.handlers.http11",
-                        "DEBUG",
-                        f"Download stopped for <GET {mockserver.url('/redirected')}> "
-                        "from signal handler BytesReceivedCrawlerRun.bytes_received",
-                    )
-                )
-                log.check_present(
-                    (
-                        "scrapy.core.downloader.handlers.http11",
-                        "DEBUG",
-                        f"Download stopped for <GET {mockserver.url('/static/')}> "
-                        "from signal handler BytesReceivedCrawlerRun.bytes_received",
-                    )
-                )
-                log.check_present(
-                    (
-                        "scrapy.core.downloader.handlers.http11",
-                        "DEBUG",
-                        f"Download stopped for <GET {mockserver.url('/numbers')}> "
-                        "from signal handler BytesReceivedCrawlerRun.bytes_received",
-                    )
-                )
+            for url in ("/redirected", "/static/", "/numbers"):
+                assert (
+                    f"Download stopped for <GET {mockserver.url(url)}> "
+                    "from signal handler BytesReceivedCrawlerRun.bytes_received"
+                ) in caplog.text
             self._assert_visited_urls(run)
             self._assert_scheduled_requests(run, count=9)
             self._assert_downloaded_responses(run, count=9)

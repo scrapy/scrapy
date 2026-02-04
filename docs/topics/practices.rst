@@ -281,7 +281,7 @@ finishes before starting the next one:
 Distributed crawls
 ==================
 
-Scrapy doesn't provide any built-in facility for running crawls in a distribute
+Scrapy doesn't provide any built-in facility for running crawls in a distributed
 (multi-server) manner. However, there are some ways to distribute crawls, which
 vary depending on how you plan to distribute them.
 
@@ -289,10 +289,10 @@ If you have many spiders, the obvious way to distribute the load is to setup
 many Scrapyd instances and distribute spider runs among those.
 
 If you instead want to run a single (big) spider through many machines, what
-you usually do is partition the urls to crawl and send them to each separate
+you usually do is partition the URLs to crawl and send them to each separate
 spider. Here is a concrete example:
 
-First, you prepare the list of urls to crawl and put them into separate
+First, you prepare the list of URLs to crawl and put them into separate
 files/urls::
 
     http://somedomain.com/urls-to-crawl/spider1/part1.list
@@ -319,7 +319,7 @@ consider contacting `commercial support`_ if in doubt.
 
 Here are some tips to keep in mind when dealing with these kinds of sites:
 
-* rotate your user agent from a pool of well-known ones from browsers (google
+* rotate your user agent from a pool of well-known ones from browsers (Google
   around to get a list of them)
 * disable cookies (see :setting:`COOKIES_ENABLED`) as some sites may use
   cookies to spot bot behaviour

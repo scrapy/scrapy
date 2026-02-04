@@ -49,7 +49,5 @@ class UrlLengthMiddleware(BaseSpiderMiddleware):
             extra={"spider": self.crawler.spider},
         )
         assert self.crawler.stats
-        self.crawler.stats.inc_value(
-            "urllength/request_ignored_count", spider=self.crawler.spider
-        )
+        self.crawler.stats.inc_value("urllength/request_ignored_count")
         return None

@@ -67,7 +67,7 @@ value of one of their fields:
                 self.year_to_exporter[year] = (exporter, xml_file)
             return self.year_to_exporter[year][0]
 
-        def process_item(self, item, spider):
+        def process_item(self, item):
             exporter = self._exporter_for_item(item)
             exporter.export_item(item)
             return item
@@ -162,9 +162,6 @@ BaseItemExporter
    These features can be configured through the ``__init__`` method arguments which
    populate their respective instance attributes: :attr:`fields_to_export`,
    :attr:`export_empty_fields`, :attr:`encoding`, :attr:`indent`.
-
-   .. versionadded:: 2.0
-      The *dont_fail* parameter.
 
    .. method:: export_item(item)
 

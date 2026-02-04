@@ -24,7 +24,7 @@ If you have `IPython`_ installed, the Scrapy shell will use it (instead of the
 standard Python console). The `IPython`_ console is much more powerful and
 provides smart auto-completion and colorized output, among other things.
 
-We highly recommend you install `IPython`_, specially if you're working on
+We highly recommend you install `IPython`_, especially if you're working on
 Unix systems (where `IPython`_ excels). See the `IPython installation guide`_
 for more info.
 

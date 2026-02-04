@@ -183,6 +183,8 @@ def method_is_overridden(subclass: type, base_class: type, method_name: str) -> 
     ...         pass
     >>> class Sub4(Sub2):
     ...     pass
+    >>> method_is_overridden(Base, Base, 'foo')
+    False
     >>> method_is_overridden(Sub1, Base, 'foo')
     False
     >>> method_is_overridden(Sub2, Base, 'foo')
@@ -201,7 +203,7 @@ def argument_is_required(func: Callable[..., Any], arg_name: str) -> bool:
     """
     Check if a function argument is required (exists and doesn't have a default value).
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.14
 
     >>> def func(a, b=1, c=None):
     ...     pass
@@ -217,3 +219,13 @@ def argument_is_required(func: Callable[..., Any], arg_name: str) -> bool:
     args = get_func_args_dict(func)
     param = args.get(arg_name)
     return param is not None and param.default is inspect.Parameter.empty
+
+
+def warn_on_deprecated_spider_attribute(attribute_name: str, setting_name: str) -> None:
+    warnings.warn(
+        f"The '{attribute_name}' spider attribute is deprecated. "
+        "Use Spider.custom_settings or Spider.update_settings() instead. "
+        f"The corresponding setting name is '{setting_name}'.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )

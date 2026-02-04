@@ -1,30 +1,20 @@
 from __future__ import annotations
 
 import json
-import warnings
 from hashlib import sha1
 from weakref import WeakKeyDictionary
 
 import pytest
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.http import Request
 from scrapy.utils.python import to_bytes
 from scrapy.utils.request import (
     _fingerprint_cache,
     fingerprint,
-    request_authenticate,
     request_httprepr,
     request_to_curl,
 )
 from scrapy.utils.test import get_crawler
-
-
-@pytest.mark.filterwarnings("ignore::scrapy.exceptions.ScrapyDeprecationWarning")
-def test_request_authenticate():
-    r = Request("http://www.example.com")
-    request_authenticate(r, "someuser", "somepass")
-    assert r.headers["Authorization"] == b"Basic c29tZXVzZXI6c29tZXBhc3M="
 
 
 @pytest.mark.parametrize(
@@ -237,24 +227,12 @@ class TestFingerprint:
 
 
 class TestRequestFingerprinter:
-    def test_default_implementation(self):
+    def test_fingerprint(self):
         crawler = get_crawler()
         request = Request("https://example.com")
         assert crawler.request_fingerprinter.fingerprint(request) == fingerprint(
             request
         )
-
-    def test_deprecated_implementation(self):
-        settings = {
-            "REQUEST_FINGERPRINTER_IMPLEMENTATION": "2.7",
-        }
-        with warnings.catch_warnings(record=True) as logged_warnings:
-            crawler = get_crawler(settings_dict=settings)
-        request = Request("https://example.com")
-        assert crawler.request_fingerprinter.fingerprint(request) == fingerprint(
-            request
-        )
-        assert logged_warnings
 
 
 class TestCustomRequestFingerprinter:
@@ -323,57 +301,6 @@ class TestCustomRequestFingerprinter:
 
     def test_from_crawler(self):
         class RequestFingerprinter:
-            @classmethod
-            def from_crawler(cls, crawler):
-                return cls(crawler)
-
-            def __init__(self, crawler):
-                self._fingerprint = crawler.settings["FINGERPRINT"]
-
-            def fingerprint(self, request):
-                return self._fingerprint
-
-        settings = {
-            "REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter,
-            "FINGERPRINT": b"fingerprint",
-        }
-        crawler = get_crawler(settings_dict=settings)
-
-        request = Request("http://www.example.com")
-        fingerprint = crawler.request_fingerprinter.fingerprint(request)
-        assert fingerprint == settings["FINGERPRINT"]
-
-    def test_from_settings(self):
-        class RequestFingerprinter:
-            @classmethod
-            def from_settings(cls, settings):
-                return cls(settings)
-
-            def __init__(self, settings):
-                self._fingerprint = settings["FINGERPRINT"]
-
-            def fingerprint(self, request):
-                return self._fingerprint
-
-        settings = {
-            "REQUEST_FINGERPRINTER_CLASS": RequestFingerprinter,
-            "FINGERPRINT": b"fingerprint",
-        }
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", ScrapyDeprecationWarning)
-            crawler = get_crawler(settings_dict=settings)
-
-        request = Request("http://www.example.com")
-        fingerprint = crawler.request_fingerprinter.fingerprint(request)
-        assert fingerprint == settings["FINGERPRINT"]
-
-    def test_from_crawler_and_settings(self):
-        class RequestFingerprinter:
-            # This method is ignored due to the presence of from_crawler
-            @classmethod
-            def from_settings(cls, settings):
-                return cls(settings)
-
             @classmethod
             def from_crawler(cls, crawler):
                 return cls(crawler)

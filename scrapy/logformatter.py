@@ -142,8 +142,6 @@ class LogFormatter:
     ) -> LogFormatterResult:
         """Logs a message when an item causes an error while it is passing
         through the item pipeline.
-
-        .. versionadded:: 2.0
         """
         return {
             "level": logging.ERROR,
@@ -160,10 +158,7 @@ class LogFormatter:
         response: Response | Failure,
         spider: Spider,
     ) -> LogFormatterResult:
-        """Logs an error message from a spider.
-
-        .. versionadded:: 2.0
-        """
+        """Logs an error message from a spider."""
         return {
             "level": logging.ERROR,
             "msg": SPIDERERRORMSG,
@@ -182,8 +177,6 @@ class LogFormatter:
     ) -> LogFormatterResult:
         """Logs a download error message from a spider (typically coming from
         the engine).
-
-        .. versionadded:: 2.0
         """
         args: dict[str, Any] = {"request": request}
         if errmsg:
