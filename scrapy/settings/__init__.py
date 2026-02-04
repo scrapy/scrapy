@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import copy
 import json
-import logging
 import warnings
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 from importlib import import_module
@@ -38,8 +37,6 @@ SETTINGS_PRIORITIES: dict[str, int] = {
     "spider": 30,
     "cmdline": 40,
 }
-
-logger = logging.getLogger(__name__)
 
 
 def get_settings_priority(priority: int | str) -> int:
