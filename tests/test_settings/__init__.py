@@ -20,7 +20,11 @@ from scrapy.utils.test import get_crawler
 
 from . import default_settings
 
-NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES = {"DOWNLOAD_HANDLERS_BASE", "FEED_EXPORTERS_BASE", "FEED_STORAGES_BASE"}
+NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES = {
+    "DOWNLOAD_HANDLERS_BASE",
+    "FEED_EXPORTERS_BASE",
+    "FEED_STORAGES_BASE",
+}
 
 
 class TestSettingsGlobalFuncs:
@@ -314,7 +318,7 @@ class TestBaseSettings:
         assert settings.getdict("TEST_DICT3", {"key1": 5}) == {"key1": 5}
         with pytest.raises(
             ValueError,
-            match="dictionary update sequence element #0 has length 3; 2 is required|sequence of pairs expected",
+            match=r"dictionary update sequence element #0 has length 3; 2 is required|sequence of pairs expected",
         ):
             settings.getdict("TEST_LIST1")
         with pytest.raises(
@@ -409,14 +413,16 @@ class TestBaseSettings:
         settings = BaseSettings()
         setting_names = set()
         for k, v in scrapy_default_settings.__dict__.items():
-            if not k.endswith("_BASE") or k in NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES:
+            if (
+                not k.endswith("_BASE")
+                or k in NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES
+            ):
                 continue
             settings[k] = v
             setting_name = k[: -len("_BASE")]
             setting_names.add(setting_name)
             settings[setting_name] = {
-                load_object(import_path): None
-                for import_path in v
+                load_object(import_path): None for import_path in v
             }
         for setting_name in setting_names:
             value = settings.getwithbase(setting_name)
@@ -427,14 +433,16 @@ class TestBaseSettings:
         setting_names = set()
         value = 0
         for k, v in scrapy_default_settings.__dict__.items():
-            if not k.endswith("_BASE") or k in NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES:
+            if (
+                not k.endswith("_BASE")
+                or k in NON_COMPONENT_PRIORITY_DICT_BASE_SETTING_NAMES
+            ):
                 continue
             settings[k] = v
             setting_name = k[: -len("_BASE")]
             setting_names.add(setting_name)
             settings[setting_name] = {
-                load_object(import_path): value
-                for import_path in v
+                load_object(import_path): value for import_path in v
             }
         for setting_name in setting_names:
             assert settings.getwithbase(setting_name) == settings[setting_name]
@@ -450,7 +458,7 @@ class TestBaseSettings:
             override = {keys[0]: values[1]}
             expected = dict(base_value)
             expected[keys[0]] = values[1]
-            name = base_name[:-len("_BASE")]
+            name = base_name[: -len("_BASE")]
             settings[name] = BaseSettings(override)
             value = settings.getwithbase(name)
             assert isinstance(value, BaseSettings)
@@ -458,7 +466,9 @@ class TestBaseSettings:
 
     def test_getwithbase_invalid_setting_name(self):
         settings = BaseSettings()
-        with pytest.raises(ValueError, match="Base setting key must be a string, got 123"):
+        with pytest.raises(
+            ValueError, match="Base setting key must be a string, got 123"
+        ):
             settings.getwithbase(123)
 
 

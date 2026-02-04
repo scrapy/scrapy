@@ -336,7 +336,9 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         result = dict(self[name + "_BASE"] or {})
         override = {normalize_key(k): v for k, v in (self[name] or {}).items()}
         result.update(override)
-        return BaseSettings({restore_key(k): v for k, v in result.items() if v is not None})
+        return BaseSettings(
+            {restore_key(k): v for k, v in result.items() if v is not None}
+        )
 
     def getpriority(self, name: _SettingsKey) -> int | None:
         """
