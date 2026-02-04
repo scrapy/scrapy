@@ -333,7 +333,7 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
                 return
             logger.warning(
                 f"Setting {name} contains multiple keys that refer to the "
-                f"same type: {global_object_name(k)}. Only the last one will "
+                f"same object: {global_object_name(k)}. Only the last one will "
                 f"be kept."
             )
 
