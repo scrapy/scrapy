@@ -43,7 +43,7 @@ This command will fire up your default browser and open the main page of your
 Start over
 ----------
 
-To cleanup all generated documentation files and start from scratch run::
+To clean up all generated documentation files and start from scratch run::
 
     make clean
 

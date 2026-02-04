@@ -1,83 +1,123 @@
+from __future__ import annotations
+
+import importlib
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from twisted.web.http import H2_ENABLED
 
-from scrapy.utils.reactor import install_reactor
-
+from scrapy.utils.reactor import set_asyncio_event_loop_policy
+from scrapy.utils.reactorless import install_reactor_import_hook
 from tests.keys import generate_keys
+from tests.mockserver.http import MockServer
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 def _py_files(folder):
-    return (str(p) for p in Path(folder).rglob('*.py'))
+    return (str(p) for p in Path(folder).rglob("*.py"))
 
 
 collect_ignore = [
+    # may need extra deps
+    "docs/_ext",
     # not a test, but looks like a test
+    "scrapy/utils/testproc.py",
     "scrapy/utils/testsite.py",
+    # contains scripts to be run by tests/test_crawler.py::AsyncCrawlerProcessSubprocess
+    *_py_files("tests/AsyncCrawlerProcess"),
+    # contains scripts to be run by tests/test_crawler.py::AsyncCrawlerRunnerSubprocess
+    *_py_files("tests/AsyncCrawlerRunner"),
     # contains scripts to be run by tests/test_crawler.py::CrawlerProcessSubprocess
     *_py_files("tests/CrawlerProcess"),
     # contains scripts to be run by tests/test_crawler.py::CrawlerRunnerSubprocess
     *_py_files("tests/CrawlerRunner"),
 ]
 
-with open('tests/ignores.txt') as reader:
+base_dir = Path(__file__).parent
+ignore_file_path = base_dir / "tests" / "ignores.txt"
+with ignore_file_path.open(encoding="utf-8") as reader:
     for line in reader:
         file_path = line.strip()
-        if file_path and file_path[0] != '#':
+        if file_path and file_path[0] != "#":
             collect_ignore.append(file_path)
 
 if not H2_ENABLED:
     collect_ignore.extend(
         (
-            'scrapy/core/downloader/handlers/http2.py',
+            "scrapy/core/downloader/handlers/http2.py",
             *_py_files("scrapy/core/http2"),
         )
     )
 
 
-@pytest.fixture()
-def chdir(tmpdir):
-    """Change to pytest-provided temporary directory"""
-    tmpdir.chdir()
-
-
-def pytest_collection_modifyitems(session, config, items):
-    # Avoid executing tests when executing `--flake8` flag (pytest-flake8)
-    try:
-        from pytest_flake8 import Flake8Item
-        if config.getoption('--flake8'):
-            items[:] = [item for item in items if isinstance(item, Flake8Item)]
-    except ImportError:
-        pass
-
-
-def pytest_addoption(parser):
+def pytest_addoption(parser, pluginmanager):
+    if pluginmanager.hasplugin("twisted"):
+        return
+    # add the full choice set so that pytest doesn't complain about invalid choices in some cases
     parser.addoption(
         "--reactor",
-        default="default",
-        choices=["default", "asyncio"],
+        default="none",
+        choices=["asyncio", "default", "none"],
     )
 
 
-@pytest.fixture(scope='class')
-def reactor_pytest(request):
-    if not request.cls:
-        # doctests
-        return
-    request.cls.reactor_pytest = request.config.getoption("--reactor")
-    return request.cls.reactor_pytest
+@pytest.fixture(scope="session")
+def mockserver() -> Generator[MockServer]:
+    with MockServer() as mockserver:
+        yield mockserver
 
 
-@pytest.fixture(autouse=True)
-def only_asyncio(request, reactor_pytest):
-    if request.node.get_closest_marker('only_asyncio') and reactor_pytest != 'asyncio':
-        pytest.skip('This test is only run with --reactor=asyncio')
+@pytest.fixture(scope="session")
+def reactor_pytest(request) -> str:
+    return request.config.getoption("--reactor")
 
 
 def pytest_configure(config):
     if config.getoption("--reactor") == "asyncio":
-        install_reactor("twisted.internet.asyncioreactor.AsyncioSelectorReactor")
+        # Needed on Windows to switch from proactor to selector for Twisted reactor compatibility.
+        # If we decide to run tests with both, we will need to add a new option and check it here.
+        set_asyncio_event_loop_policy()
+    elif config.getoption("--reactor") == "none":
+        install_reactor_import_hook()
+
+
+def pytest_runtest_setup(item):
+    # Skip tests based on reactor markers
+    reactor = item.config.getoption("--reactor")
+
+    if (
+        item.get_closest_marker("requires_reactor")
+        or item.get_closest_marker("requires_http_handler")
+    ) and reactor == "none":
+        pytest.skip('This test is only run when the --reactor value is not "none"')
+
+    if item.get_closest_marker("only_asyncio") and reactor not in {"asyncio", "none"}:
+        pytest.skip(
+            'This test is only run when the --reactor value is "asyncio" (default) or "none"'
+        )
+
+    if item.get_closest_marker("only_not_asyncio") and reactor in {"asyncio", "none"}:
+        pytest.skip(
+            'This test is only run when the --reactor value is not "asyncio" (default) or "none"'
+        )
+
+    # Skip tests requiring optional dependencies
+    optional_deps = [
+        "uvloop",
+        "botocore",
+        "boto3",
+        "mitmproxy",
+    ]
+
+    for module in optional_deps:
+        if item.get_closest_marker(f"requires_{module}"):
+            try:
+                importlib.import_module(module)
+            except ImportError:
+                pytest.skip(f"{module} is not installed")
 
 
 # Generate localhost certificate files, needed by some tests

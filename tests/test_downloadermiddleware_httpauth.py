@@ -1,32 +1,83 @@
-import unittest
+import pytest
+from w3lib.http import basic_auth_header
 
-from scrapy.http import Request
 from scrapy.downloadermiddlewares.httpauth import HttpAuthMiddleware
+from scrapy.http import Request
 from scrapy.spiders import Spider
 
 
-class TestSpider(Spider):
-    http_user = 'foo'
-    http_pass = 'bar'
+class LegacySpider(Spider):
+    http_user = "foo"
+    http_pass = "bar"
 
 
-class HttpAuthMiddlewareTest(unittest.TestCase):
+class DomainSpider(Spider):
+    http_user = "foo"
+    http_pass = "bar"
+    http_auth_domain = "example.com"
 
-    def setUp(self):
+
+class AnyDomainSpider(Spider):
+    http_user = "foo"
+    http_pass = "bar"
+    http_auth_domain = None
+
+
+class TestHttpAuthMiddlewareLegacy:
+    def setup_method(self):
+        self.spider = LegacySpider("foo")
+
+    def test_auth(self):
+        mw = HttpAuthMiddleware()
+        with pytest.raises(AttributeError):
+            mw.spider_opened(self.spider)
+
+
+class TestHttpAuthMiddleware:
+    def setup_method(self):
         self.mw = HttpAuthMiddleware()
-        self.spider = TestSpider('foo')
-        self.mw.spider_opened(self.spider)
+        spider = DomainSpider("foo")
+        self.mw.spider_opened(spider)
 
-    def tearDown(self):
+    def teardown_method(self):
+        del self.mw
+
+    def test_no_auth(self):
+        req = Request("http://example-noauth.com/")
+        assert self.mw.process_request(req) is None
+        assert "Authorization" not in req.headers
+
+    def test_auth_domain(self):
+        req = Request("http://example.com/")
+        assert self.mw.process_request(req) is None
+        assert req.headers["Authorization"] == basic_auth_header("foo", "bar")
+
+    def test_auth_subdomain(self):
+        req = Request("http://foo.example.com/")
+        assert self.mw.process_request(req) is None
+        assert req.headers["Authorization"] == basic_auth_header("foo", "bar")
+
+    def test_auth_already_set(self):
+        req = Request("http://example.com/", headers={"Authorization": "Digest 123"})
+        assert self.mw.process_request(req) is None
+        assert req.headers["Authorization"] == b"Digest 123"
+
+
+class TestHttpAuthAnyMiddleware:
+    def setup_method(self):
+        self.mw = HttpAuthMiddleware()
+        spider = AnyDomainSpider("foo")
+        self.mw.spider_opened(spider)
+
+    def teardown_method(self):
         del self.mw
 
     def test_auth(self):
-        req = Request('http://scrapytest.org/')
-        assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers['Authorization'], b'Basic Zm9vOmJhcg==')
+        req = Request("http://example.com/")
+        assert self.mw.process_request(req) is None
+        assert req.headers["Authorization"] == basic_auth_header("foo", "bar")
 
     def test_auth_already_set(self):
-        req = Request('http://scrapytest.org/',
-                      headers=dict(Authorization='Digest 123'))
-        assert self.mw.process_request(req, self.spider) is None
-        self.assertEqual(req.headers['Authorization'], b'Digest 123')
+        req = Request("http://example.com/", headers={"Authorization": "Digest 123"})
+        assert self.mw.process_request(req) is None
+        assert req.headers["Authorization"] == b"Digest 123"

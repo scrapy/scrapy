@@ -1,45 +1,54 @@
 name: Checks
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - master
+    - '[0-9]+.[0-9]+'
+  pull_request:
+
+concurrency:
+  group: ${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   checks:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-        - python-version: 3.9
-          env:
-            TOXENV: security
-        - python-version: 3.9
-          env:
-            TOXENV: flake8
-        # Pylint requires installing reppy, which does not support Python 3.9
-        # https://github.com/seomoz/reppy/issues/122
-        - python-version: 3.8
+        - python-version: "3.13"
           env:
             TOXENV: pylint
-            TOX_PIP_VERSION: 20.3.3
-        - python-version: 3.9
+        - python-version: "3.10"
           env:
             TOXENV: typing
-        - python-version: 3.8  # Keep in sync with .readthedocs.yml
+        - python-version: "3.10"
+          env:
+            TOXENV: typing-tests
+        - python-version: "3.13"  # Keep in sync with .readthedocs.yml
           env:
             TOXENV: docs
+        - python-version: "3.13"
+          env:
+            TOXENV: twinecheck
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Run check
       env: ${{ matrix.env }}
       run: |
-        if [[ ! -z "$TOX_PIP_VERSION" ]]; then
-            pip install tox-pip-version
-        fi
         pip install -U tox
         tox
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: pre-commit/action@v3.0.1

@@ -1,15 +1,17 @@
+import argparse
 import time
 from collections import defaultdict
-from unittest import TextTestRunner, TextTestResult as _TextTestResult
+from unittest import TextTestResult as _TextTestResult
+from unittest import TextTestRunner
 
 from scrapy.commands import ScrapyCommand
 from scrapy.contracts import ContractsManager
-from scrapy.utils.misc import load_object, set_environ
 from scrapy.utils.conf import build_component_list
+from scrapy.utils.misc import load_object, set_environ
 
 
 class TextTestResult(_TextTestResult):
-    def printSummary(self, start, stop):
+    def printSummary(self, start: float, stop: float) -> None:
         write = self.stream.write
         writeln = self.stream.writeln
 
@@ -39,24 +41,36 @@ class TextTestResult(_TextTestResult):
 
 class Command(ScrapyCommand):
     requires_project = True
-    default_settings = {'LOG_ENABLED': False}
+    default_settings = {"LOG_ENABLED": False}
 
-    def syntax(self):
+    def syntax(self) -> str:
         return "[options] <spider>"
 
-    def short_desc(self):
+    def short_desc(self) -> str:
         return "Check spider contracts"
 
-    def add_options(self, parser):
-        ScrapyCommand.add_options(self, parser)
-        parser.add_option("-l", "--list", dest="list", action="store_true",
-                          help="only list contracts, without checking them")
-        parser.add_option("-v", "--verbose", dest="verbose", default=False, action='store_true',
-                          help="print contract tests for all spiders")
+    def add_options(self, parser: argparse.ArgumentParser) -> None:
+        super().add_options(parser)
+        parser.add_argument(
+            "-l",
+            "--list",
+            dest="list",
+            action="store_true",
+            help="only list contracts, without checking them",
+        )
+        parser.add_argument(
+            "-v",
+            "--verbose",
+            dest="verbose",
+            default=False,
+            action="store_true",
+            help="print contract tests for all spiders",
+        )
 
-    def run(self, args, opts):
+    def run(self, args: list[str], opts: argparse.Namespace) -> None:
         # load contracts
-        contracts = build_component_list(self.settings.getwithbase('SPIDER_CONTRACTS'))
+        assert self.settings is not None
+        contracts = build_component_list(self.settings.getwithbase("SPIDER_CONTRACTS"))
         conman = ContractsManager(load_object(c) for c in contracts)
         runner = TextTestRunner(verbosity=2 if opts.verbose else 1)
         result = TextTestResult(runner.stream, runner.descriptions, runner.verbosity)
@@ -64,12 +78,17 @@ class Command(ScrapyCommand):
         # contract requests
         contract_reqs = defaultdict(list)
 
+        assert self.crawler_process
         spider_loader = self.crawler_process.spider_loader
 
-        with set_environ(SCRAPY_CHECK='true'):
+        async def start(self):
+            for request in conman.from_spider(self, result):
+                yield request
+
+        with set_environ(SCRAPY_CHECK="true"):
             for spidername in args or spider_loader.list():
                 spidercls = spider_loader.load(spidername)
-                spidercls.start_requests = lambda s: conman.from_spider(s, result)
+                spidercls.start = start  # type: ignore[assignment,method-assign,return-value]
 
                 tested_methods = conman.tested_methods_from_spidercls(spidercls)
                 if opts.list:
@@ -85,12 +104,12 @@ class Command(ScrapyCommand):
                         continue
                     print(spider)
                     for method in sorted(methods):
-                        print(f'  * {method}')
+                        print(f"  * {method}")
             else:
-                start = time.time()
+                start_time = time.time()
                 self.crawler_process.start()
                 stop = time.time()
 
                 result.printErrors()
-                result.printSummary(start, stop)
+                result.printSummary(start_time, stop)
                 self.exitcode = int(not result.wasSuccessful())

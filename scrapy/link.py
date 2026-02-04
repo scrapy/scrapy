@@ -24,18 +24,22 @@ class Link:
                     of the anchor tag.
     """
 
-    __slots__ = ['url', 'text', 'fragment', 'nofollow']
+    __slots__ = ["fragment", "nofollow", "text", "url"]
 
-    def __init__(self, url, text='', fragment='', nofollow=False):
+    def __init__(
+        self, url: str, text: str = "", fragment: str = "", nofollow: bool = False
+    ):
         if not isinstance(url, str):
             got = url.__class__.__name__
             raise TypeError(f"Link urls must be str objects, got {got}")
-        self.url = url
-        self.text = text
-        self.fragment = fragment
-        self.nofollow = nofollow
+        self.url: str = url
+        self.text: str = text
+        self.fragment: str = fragment
+        self.nofollow: bool = nofollow
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Link):
+            raise NotImplementedError
         return (
             self.url == other.url
             and self.text == other.text
@@ -43,11 +47,13 @@ class Link:
             and self.nofollow == other.nofollow
         )
 
-    def __hash__(self):
-        return hash(self.url) ^ hash(self.text) ^ hash(self.fragment) ^ hash(self.nofollow)
-
-    def __repr__(self):
+    def __hash__(self) -> int:
         return (
-            f'Link(url={self.url!r}, text={self.text!r}, '
-            f'fragment={self.fragment!r}, nofollow={self.nofollow!r})'
+            hash(self.url) ^ hash(self.text) ^ hash(self.fragment) ^ hash(self.nofollow)
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"Link(url={self.url!r}, text={self.text!r}, "
+            f"fragment={self.fragment!r}, nofollow={self.nofollow!r})"
         )

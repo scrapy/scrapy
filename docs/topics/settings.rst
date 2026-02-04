@@ -33,76 +33,154 @@ Python :ref:`import search path <tut-searchpath>`.
 Populating the settings
 =======================
 
-Settings can be populated using different mechanisms, each of which having a
-different precedence. Here is the list of them in decreasing order of
-precedence:
+Settings can be populated using different mechanisms, each of which has a
+different precedence:
 
- 1. Command line options (most precedence)
- 2. Settings per-spider
- 3. Project settings module
- 4. Default settings per-command
- 5. Default global settings (less precedence)
+ 1. :ref:`Command-line settings <cli-settings>` (highest precedence)
+ 2. :ref:`Spider settings <spider-settings>`
+ 3. :ref:`Project settings <project-settings>`
+ 4. :ref:`Add-on settings <addon-settings>`
+ 5. :ref:`Command-specific default settings <cmd-default-settings>`
+ 6. :ref:`Global default settings <default-settings>` (lowest precedence)
 
-The population of these settings sources is taken care of internally, but a
-manual handling is possible using API calls. See the
-:ref:`topics-api-settings` topic for reference.
+.. _cli-settings:
 
-These mechanisms are described in more detail below.
+1. Command-line settings
+------------------------
 
-1. Command line options
------------------------
+Settings set in the command line have the highest precedence, overriding any
+other settings.
 
-Arguments provided by the command line are the ones that take most precedence,
-overriding any other options. You can explicitly override one (or more)
-settings using the ``-s`` (or ``--set``) command line option.
+You can explicitly override one or more settings using the ``-s`` (or
+``--set``) command-line option.
 
 .. highlight:: sh
 
 Example::
 
-    scrapy crawl myspider -s LOG_FILE=scrapy.log
+    scrapy crawl myspider -s LOG_LEVEL=INFO -s LOG_FILE=scrapy.log
 
-2. Settings per-spider
-----------------------
+.. _spider-settings:
 
-Spiders (See the :ref:`topics-spiders` chapter for reference) can define their
-own settings that will take precedence and override the project ones. They can
-do so by setting their :attr:`~scrapy.Spider.custom_settings` attribute::
+2. Spider settings
+------------------
+
+:ref:`Spiders <topics-spiders>` can define their own settings that will take
+precedence and override the project ones.
+
+.. note:: :ref:`Pre-crawler settings <pre-crawler-settings>` cannot be defined
+    per spider, and :ref:`reactor settings <reactor-settings>` should not have
+    a different value per spider when :ref:`running multiple spiders in the
+    same process <run-multiple-spiders>`.
+
+One way to do so is by setting their :attr:`~scrapy.Spider.custom_settings`
+attribute:
+
+.. code-block:: python
+
+    import scrapy
+
 
     class MySpider(scrapy.Spider):
-        name = 'myspider'
+        name = "myspider"
 
         custom_settings = {
-            'SOME_SETTING': 'some value',
+            "SOME_SETTING": "some value",
         }
 
-3. Project settings module
+It's often better to implement :meth:`~scrapy.Spider.update_settings` instead,
+and settings set there should use the ``"spider"`` priority explicitly:
+
+.. code-block:: python
+
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
+        name = "myspider"
+
+        @classmethod
+        def update_settings(cls, settings):
+            super().update_settings(settings)
+            settings.set("SOME_SETTING", "some value", priority="spider")
+
+.. versionadded:: 2.11
+
+It's also possible to modify the settings in the
+:meth:`~scrapy.Spider.from_crawler` method, e.g. based on :ref:`spider
+arguments <spiderargs>` or other logic:
+
+.. code-block:: python
+
+    import scrapy
+
+
+    class MySpider(scrapy.Spider):
+        name = "myspider"
+
+        @classmethod
+        def from_crawler(cls, crawler, *args, **kwargs):
+            spider = super().from_crawler(crawler, *args, **kwargs)
+            if "some_argument" in kwargs:
+                spider.settings.set(
+                    "SOME_SETTING", kwargs["some_argument"], priority="spider"
+                )
+            return spider
+
+.. _project-settings:
+
+3. Project settings
+-------------------
+
+Scrapy projects include a settings module, usually a file called
+``settings.py``, where you should populate most settings that apply to all your
+spiders.
+
+.. seealso:: :ref:`topics-settings-module-envvar`
+
+.. _addon-settings:
+
+4. Add-on settings
+------------------
+
+:ref:`Add-ons <topics-addons>` can modify settings. They should do this with
+``"addon"`` priority where possible.
+
+.. _cmd-default-settings:
+
+5. Command-specific default settings
+------------------------------------
+
+Each :ref:`Scrapy command <topics-commands>` can have its own default settings,
+which override the :ref:`global default settings <default-settings>`.
+
+Those command-specific default settings are specified in the
+``default_settings`` attribute of each command class.
+
+.. _default-settings:
+
+6. Default global settings
 --------------------------
 
-The project settings module is the standard configuration file for your Scrapy
-project, it's where most of your custom settings will be populated. For a
-standard Scrapy project, this means you'll be adding or changing the settings
-in the ``settings.py`` file created for your project.
+The ``scrapy.settings.default_settings`` module defines global default values
+for some :ref:`built-in settings <topics-settings-ref>`.
 
-4. Default settings per-command
--------------------------------
+.. note:: :command:`startproject` generates a ``settings.py`` file that sets
+    some settings to different values.
 
-Each :doc:`Scrapy tool </topics/commands>` command can have its own default
-settings, which override the global default settings. Those custom command
-settings are specified in the ``default_settings`` attribute of the command
-class.
+    The reference documentation of settings indicates the default value if one
+    exists. If :command:`startproject` sets a value, that value is documented
+    as default, and the value from ``scrapy.settings.default_settings`` is
+    documented as “fallback”.
 
-5. Default global settings
---------------------------
 
-The global defaults are located in the ``scrapy.settings.default_settings``
-module and documented in the :ref:`topics-settings-ref` section.
+Compatibility with pickle
+=========================
 
+Setting values must be :ref:`picklable <pickle-picklable>`.
 
 Import paths and classes
 ========================
-
-.. versionadded:: 2.4.0
 
 When a setting references a callable object to be imported by Scrapy, such as a
 class or a function, there are two different ways you can specify that object:
@@ -111,14 +189,18 @@ class or a function, there are two different ways you can specify that object:
 
 -   As the object itself
 
-For example::
+For example:
+
+.. skip: next
+.. code-block:: python
 
    from mybot.pipelines.validate import ValidateMyItem
+
    ITEM_PIPELINES = {
        # passing the classname...
        ValidateMyItem: 300,
        # ...equals passing the class path
-       'mybot.pipelines.validate.ValidateMyItem': 300,
+       "mybot.pipelines.validate.ValidateMyItem": 300,
    }
 
 .. note:: Passing non-callable objects is not supported.
@@ -129,46 +211,150 @@ How to access settings
 
 .. highlight:: python
 
-In a spider, the settings are available through ``self.settings``::
+In a spider, settings are available through ``self.settings``:
+
+.. code-block:: python
 
     class MySpider(scrapy.Spider):
-        name = 'myspider'
-        start_urls = ['http://example.com']
+        name = "myspider"
+        start_urls = ["http://example.com"]
 
         def parse(self, response):
             print(f"Existing settings: {self.settings.attributes.keys()}")
 
 .. note::
     The ``settings`` attribute is set in the base Spider class after the spider
-    is initialized.  If you want to use the settings before the initialization
+    is initialized.  If you want to use settings before the initialization
     (e.g., in your spider's ``__init__()`` method), you'll need to override the
     :meth:`~scrapy.Spider.from_crawler` method.
 
-Settings can be accessed through the :attr:`scrapy.crawler.Crawler.settings`
-attribute of the Crawler that is passed to ``from_crawler`` method in
-extensions, middlewares and item pipelines::
+:ref:`Components <topics-components>` can also :ref:`access settings
+<component-settings>`.
 
-    class MyExtension:
-        def __init__(self, log_is_enabled=False):
-            if log_is_enabled:
-                print("log is enabled!")
+The ``settings`` object can be used like a :class:`dict` (e.g.
+``settings["LOG_ENABLED"]``). However, to support non-string setting values,
+which may be passed from the command line as strings, it is recommended to use
+one of the methods provided by the :class:`~scrapy.settings.Settings` API.
 
-        @classmethod
-        def from_crawler(cls, crawler):
-            settings = crawler.settings
-            return cls(settings.getbool('LOG_ENABLED'))
 
-The settings object can be used like a dict (e.g.,
-``settings['LOG_ENABLED']``), but it's usually preferred to extract the setting
-in the format you need it to avoid type errors, using one of the methods
-provided by the :class:`~scrapy.settings.Settings` API.
+.. _component-priority-dictionaries:
 
-Rationale for setting names
-===========================
+Component priority dictionaries
+===============================
 
-Setting names are usually prefixed with the component that they configure. For
-example, proper setting names for a fictional robots.txt extension would be
-``ROBOTSTXT_ENABLED``, ``ROBOTSTXT_OBEY``, ``ROBOTSTXT_CACHEDIR``, etc.
+A **component priority dictionary** is a :class:`dict` where keys are
+:ref:`components <topics-components>` and values are component priorities. For
+example:
+
+.. skip: next
+.. code-block:: python
+
+    {
+        "path.to.ComponentA": None,
+        ComponentB: 100,
+    }
+
+A component can be specified either as a class object or through an import
+path.
+
+.. warning:: Component priority dictionaries are regular :class:`dict` objects.
+    Be careful not to define the same component more than once, e.g. with
+    different import path strings or defining both an import path and a
+    :class:`type` object.
+
+A priority can be an :class:`int` or :data:`None`.
+
+A component with priority 1 goes *before* a component with priority 2. What
+going before entails, however, depends on the corresponding setting. For
+example, in the :setting:`DOWNLOADER_MIDDLEWARES` setting, components have
+their
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_request`
+method executed before that of later components, but have their
+:meth:`~scrapy.downloadermiddlewares.DownloaderMiddleware.process_response`
+method executed after that of later components.
+
+A component with priority :data:`None` is disabled.
+
+Some component priority dictionaries get merged with some built-in value. For
+example, :setting:`DOWNLOADER_MIDDLEWARES` is merged with
+:setting:`DOWNLOADER_MIDDLEWARES_BASE`. This is where :data:`None` comes in
+handy, allowing you to disable a component from the base setting in the regular
+setting:
+
+.. code-block:: python
+
+    DOWNLOADER_MIDDLEWARES = {
+        "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": None,
+    }
+
+
+Special settings
+================
+
+The following settings work slightly differently than all other settings.
+
+.. _pre-crawler-settings:
+
+Pre-crawler settings
+--------------------
+
+**Pre-crawler settings** are settings used before the
+:class:`~scrapy.crawler.Crawler` object is created.
+
+These settings cannot be :ref:`set from a spider <spider-settings>`.
+
+These settings are :setting:`SPIDER_LOADER_CLASS` and settings used by the
+corresponding :ref:`component <topics-components>`, e.g.
+:setting:`SPIDER_MODULES` and :setting:`SPIDER_LOADER_WARN_ONLY` for the
+default component.
+
+
+.. _reactor-settings:
+
+Reactor settings
+----------------
+
+**Reactor settings** are settings tied to the :doc:`Twisted reactor
+<twisted:core/howto/reactor-basics>`.
+
+These settings can be defined from a spider. However, because only 1 reactor
+can be used per process, these settings cannot use a different value per spider
+when :ref:`running multiple spiders in the same process
+<run-multiple-spiders>`.
+
+In general, if different spiders define different values, the first defined
+value is used. However, if two spiders request a different reactor, an
+exception is raised.
+
+These settings are:
+
+-   :setting:`ASYNCIO_EVENT_LOOP` (not possible to set per-spider when using
+    :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
+
+-   :setting:`DNS_RESOLVER` and settings used by the corresponding
+    component, e.g. :setting:`DNSCACHE_ENABLED`, :setting:`DNSCACHE_SIZE`
+    and :setting:`DNS_TIMEOUT` for the default one.
+
+-   :setting:`REACTOR_THREADPOOL_MAXSIZE`
+
+-   :setting:`TWISTED_REACTOR` (ignored when using
+    :class:`~scrapy.crawler.AsyncCrawlerProcess`, see below)
+
+:setting:`ASYNCIO_EVENT_LOOP` and :setting:`TWISTED_REACTOR` are used upon
+installing the reactor. The rest of the settings are applied when starting
+the reactor.
+
+There is an additional restriction for :setting:`TWISTED_REACTOR` and
+:setting:`ASYNCIO_EVENT_LOOP` when using
+:class:`~scrapy.crawler.AsyncCrawlerProcess`: when this class is instantiated,
+it installs :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`,
+ignoring the value of :setting:`TWISTED_REACTOR` and using the value of
+:setting:`ASYNCIO_EVENT_LOOP` that was passed to
+:meth:`AsyncCrawlerProcess.__init__()
+<scrapy.crawler.AsyncCrawlerProcess.__init__>`. If a different value for
+:setting:`TWISTED_REACTOR` or :setting:`ASYNCIO_EVENT_LOOP` is provided later,
+e.g. in :ref:`per-spider settings <spider-settings>`, an exception will be
+raised.
 
 
 .. _topics-settings-ref:
@@ -183,6 +369,16 @@ The scope, where available, shows where the setting is being used, if it's tied
 to any particular component. In that case the module of that component will be
 shown, typically an extension, middleware or pipeline. It also means that the
 component must be enabled in order for the setting to have any effect.
+
+.. setting:: ADDONS
+
+ADDONS
+------
+
+Default: ``{}``
+
+A dict containing paths to the add-ons enabled in your project and their
+priorities. For more information, see :ref:`topics-addons`.
 
 .. setting:: AWS_ACCESS_KEY_ID
 
@@ -215,7 +411,7 @@ The AWS security token used by code that requires access to `Amazon Web services
 such as the :ref:`S3 feed storage backend <topics-feed-storage-s3>`, when using
 `temporary security credentials`_.
 
-.. _temporary security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#temporary-access-keys
+.. _temporary security credentials: https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html
 
 .. setting:: AWS_ENDPOINT_URL
 
@@ -286,7 +482,7 @@ Note that the event loop class must inherit from :class:`asyncio.AbstractEventLo
 BOT_NAME
 --------
 
-Default: ``'scrapybot'``
+Default: ``<project name>`` (:ref:`fallback <default-settings>`: ``'scrapybot'``)
 
 The name of the bot implemented by this Scrapy project (also known as the
 project name). This name will be used for the logging too.
@@ -319,7 +515,7 @@ performed by the Scrapy downloader.
 CONCURRENT_REQUESTS_PER_DOMAIN
 ------------------------------
 
-Default: ``8``
+Default: ``1`` (:ref:`fallback <default-settings>`: ``8``)
 
 The maximum number of concurrent (i.e. simultaneous) requests that will be
 performed to any single domain.
@@ -328,23 +524,38 @@ See also: :ref:`topics-autothrottle` and its
 :setting:`AUTOTHROTTLE_TARGET_CONCURRENCY` option.
 
 
-.. setting:: CONCURRENT_REQUESTS_PER_IP
+.. setting:: DEFAULT_DROPITEM_LOG_LEVEL
 
-CONCURRENT_REQUESTS_PER_IP
+DEFAULT_DROPITEM_LOG_LEVEL
 --------------------------
 
-Default: ``0``
+Default: ``"WARNING"``
 
-The maximum number of concurrent (i.e. simultaneous) requests that will be
-performed to any single IP. If non-zero, the
-:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` setting is ignored, and this one is
-used instead. In other words, concurrency limits will be applied per IP, not
-per domain.
+Default :ref:`log level <levels>` of messages about dropped items.
 
-This setting also affects :setting:`DOWNLOAD_DELAY` and
-:ref:`topics-autothrottle`: if :setting:`CONCURRENT_REQUESTS_PER_IP`
-is non-zero, download delay is enforced per IP, not per domain.
+When an item is dropped by raising :exc:`scrapy.exceptions.DropItem` from the
+:func:`process_item` method of an :ref:`item pipeline <topics-item-pipeline>`,
+a message is logged, and by default its log level is the one configured in this
+setting.
 
+You may specify this log level as an integer (e.g. ``20``), as a log level
+constant (e.g. ``logging.INFO``) or as a string with the name of a log level
+constant (e.g. ``"INFO"``).
+
+When writing an item pipeline, you can force a different log level by setting
+:attr:`scrapy.exceptions.DropItem.log_level` in your
+:exc:`scrapy.exceptions.DropItem` exception. For example:
+
+.. code-block:: python
+
+   from scrapy.exceptions import DropItem
+
+
+   class MyPipeline:
+       def process_item(self, item):
+           if not item.get("price"):
+               raise DropItem("Missing price data", log_level="INFO")
+           return item
 
 .. setting:: DEFAULT_ITEM_CLASS
 
@@ -361,11 +572,13 @@ Scrapy shell <topics-shell>`.
 DEFAULT_REQUEST_HEADERS
 -----------------------
 
-Default::
+Default:
+
+.. code-block:: python
 
     {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en',
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en",
     }
 
 The default headers used for Scrapy HTTP Requests. They're populated in the
@@ -400,9 +613,12 @@ Scope: ``scrapy.spidermiddlewares.depth.DepthMiddleware``
 An integer that is used to adjust the :attr:`~scrapy.Request.priority` of
 a :class:`~scrapy.Request` based on its depth.
 
-The priority of a request is adjusted as follows::
+The priority of a request is adjusted as follows:
 
-    request.priority = request.priority - ( depth * DEPTH_PRIORITY )
+.. skip: next
+.. code-block:: python
+
+    request.priority = request.priority - (depth * DEPTH_PRIORITY)
 
 As depth increases, positive values of ``DEPTH_PRIORITY`` decrease request
 priority (BFO), while negative values increase request priority (DFO). See
@@ -449,8 +665,6 @@ DNS in-memory cache size.
 DNS_RESOLVER
 ------------
 
-.. versionadded:: 2.0
-
 Default: ``'scrapy.resolver.CachingThreadedResolver'``
 
 The class to be used to resolve DNS names. The default ``scrapy.resolver.CachingThreadedResolver``
@@ -476,23 +690,6 @@ DOWNLOADER
 Default: ``'scrapy.core.downloader.Downloader'``
 
 The downloader to use for crawling.
-
-.. setting:: DOWNLOADER_HTTPCLIENTFACTORY
-
-DOWNLOADER_HTTPCLIENTFACTORY
-----------------------------
-
-Default: ``'scrapy.core.downloader.webclient.ScrapyHTTPClientFactory'``
-
-Defines a Twisted ``protocol.ClientFactory``  class to use for HTTP/1.0
-connections (for ``HTTP10DownloadHandler``).
-
-.. note::
-
-    HTTP/1.0 is rarely used nowadays so you can safely ignore this setting,
-    unless you really want to use HTTP/1.0 and override
-    :setting:`DOWNLOAD_HANDLERS` for ``http(s)`` scheme accordingly,
-    i.e. to ``'scrapy.core.downloader.handlers.http.HTTP10DownloadHandler'``.
 
 .. setting:: DOWNLOADER_CLIENTCONTEXTFACTORY
 
@@ -523,6 +720,12 @@ accepts a ``method`` parameter (this is the ``OpenSSL.SSL`` method mapping
 parameter (``bool``) and a ``tls_ciphers`` parameter (see
 :setting:`DOWNLOADER_CLIENT_TLS_CIPHERS`).
 
+.. note::
+
+    This setting is specific to the built-in Twisted-based download handlers:
+    :class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
+    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`.
+
 .. setting:: DOWNLOADER_CLIENT_TLS_CIPHERS
 
 DOWNLOADER_CLIENT_TLS_CIPHERS
@@ -530,8 +733,8 @@ DOWNLOADER_CLIENT_TLS_CIPHERS
 
 Default: ``'DEFAULT'``
 
-Use  this setting to customize the TLS/SSL ciphers used by the default
-HTTP/1.1 downloader.
+Use this setting to customize the TLS/SSL ciphers used by the HTTPS download
+handler.
 
 The setting should contain a string in the `OpenSSL cipher list format`_,
 these ciphers will be used as client ciphers. Changing this setting may be
@@ -539,7 +742,17 @@ necessary to access certain HTTPS websites: for example, you may need to use
 ``'DEFAULT:!DH'`` for a website with weak DH parameters or enable a
 specific cipher that is not included in ``DEFAULT`` if a website requires it.
 
-.. _OpenSSL cipher list format: https://www.openssl.org/docs/manmaster/man1/openssl-ciphers.html#CIPHER-LIST-FORMAT
+.. _OpenSSL cipher list format: https://docs.openssl.org/master/man1/openssl-ciphers/#cipher-list-format
+
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers. Moreover, for the built-in Twisted-based
+    download handlers
+    (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
+    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
+    to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
 
 .. setting:: DOWNLOADER_CLIENT_TLS_METHOD
 
@@ -548,8 +761,8 @@ DOWNLOADER_CLIENT_TLS_METHOD
 
 Default: ``'TLS'``
 
-Use this setting to customize the TLS/SSL method used by the default
-HTTP/1.1 downloader.
+Use this setting to customize the TLS/SSL method used by the HTTPS download
+handler.
 
 This setting must be one of these string values:
 
@@ -560,8 +773,16 @@ This setting must be one of these string values:
   set this if you want the behavior of Scrapy<1.1
 - ``'TLSv1.1'``: forces TLS version 1.1
 - ``'TLSv1.2'``: forces TLS version 1.2
-- ``'SSLv3'``: forces SSL version 3 (**not recommended**)
 
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers. Moreover, for the built-in Twisted-based
+    download handlers
+    (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
+    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
+    to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
 
 .. setting:: DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING
 
@@ -572,10 +793,18 @@ Default: ``False``
 
 Setting this to ``True`` will enable DEBUG level messages about TLS connection
 parameters after establishing HTTPS connections. The kind of information logged
-depends on the versions of OpenSSL and pyOpenSSL.
+depends on the implementation of the download handler and the versions of
+the TLS-related libraries.
 
-This setting is only used for the default
-:setting:`DOWNLOADER_CLIENTCONTEXTFACTORY`.
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers. Moreover, for the built-in Twisted-based
+    download handlers
+    (:class:`scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler` and
+    :class:`scrapy.core.downloader.handlers.http2.H2DownloadHandler`) it needs
+    to be implemented in the :setting:`DOWNLOADER_CLIENTCONTEXTFACTORY` class.
 
 .. setting:: DOWNLOADER_MIDDLEWARES
 
@@ -592,23 +821,26 @@ orders. For more info see :ref:`topics-downloader-middleware-setting`.
 DOWNLOADER_MIDDLEWARES_BASE
 ---------------------------
 
-Default::
+Default:
+
+.. code-block:: python
 
     {
-        'scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware': 100,
-        'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware': 300,
-        'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 350,
-        'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware': 400,
-        'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': 500,
-        'scrapy.downloadermiddlewares.retry.RetryMiddleware': 550,
-        'scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware': 560,
-        'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware': 580,
-        'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware': 590,
-        'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': 600,
-        'scrapy.downloadermiddlewares.cookies.CookiesMiddleware': 700,
-        'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 750,
-        'scrapy.downloadermiddlewares.stats.DownloaderStats': 850,
-        'scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware': 900,
+        "scrapy.downloadermiddlewares.offsite.OffsiteMiddleware": 50,
+        "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware": 100,
+        "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
+        "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware": 350,
+        "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware": 400,
+        "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": 500,
+        "scrapy.downloadermiddlewares.retry.RetryMiddleware": 550,
+        "scrapy.downloadermiddlewares.ajaxcrawl.AjaxCrawlMiddleware": 560,
+        "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware": 580,
+        "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 590,
+        "scrapy.downloadermiddlewares.redirect.RedirectMiddleware": 600,
+        "scrapy.downloadermiddlewares.cookies.CookiesMiddleware": 700,
+        "scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware": 750,
+        "scrapy.downloadermiddlewares.stats.DownloaderStats": 850,
+        "scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware": 900,
     }
 
 A dict containing the downloader middlewares enabled by default in Scrapy. Low
@@ -631,26 +863,39 @@ Whether to enable downloader stats collection.
 DOWNLOAD_DELAY
 --------------
 
-Default: ``0``
+Default: ``1`` (:ref:`fallback <default-settings>`: ``0``)
 
-The amount of time (in secs) that the downloader should wait before downloading
-consecutive pages from the same website. This can be used to throttle the
-crawling speed to avoid hitting servers too hard. Decimal numbers are
-supported.  Example::
+Minimum seconds to wait between 2 consecutive requests to the same domain.
 
-    DOWNLOAD_DELAY = 0.25    # 250 ms of delay
+Use :setting:`DOWNLOAD_DELAY` to throttle your crawling speed, to avoid hitting
+servers too hard.
+
+Decimal numbers are supported. For example, to send a maximum of 4 requests
+every 10 seconds::
+
+    DOWNLOAD_DELAY = 2.5
 
 This setting is also affected by the :setting:`RANDOMIZE_DOWNLOAD_DELAY`
-setting (which is enabled by default). By default, Scrapy doesn't wait a fixed
-amount of time between requests, but uses a random interval between 0.5 * :setting:`DOWNLOAD_DELAY` and 1.5 * :setting:`DOWNLOAD_DELAY`.
+setting, which is enabled by default.
 
-When :setting:`CONCURRENT_REQUESTS_PER_IP` is non-zero, delays are enforced
-per ip address instead of per domain.
+Note that :setting:`DOWNLOAD_DELAY` can lower the effective per-domain
+concurrency below :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`. If the response
+time of a domain is lower than :setting:`DOWNLOAD_DELAY`, the effective
+concurrency for that domain is 1. When testing throttling configurations, it
+usually makes sense to lower :setting:`CONCURRENT_REQUESTS_PER_DOMAIN` first,
+and only increase :setting:`DOWNLOAD_DELAY` once
+:setting:`CONCURRENT_REQUESTS_PER_DOMAIN` is 1 but a higher throttling is
+desired.
 
 .. _spider-download_delay-attribute:
 
-You can also change this setting per spider by setting ``download_delay``
-spider attribute.
+.. note::
+
+    This delay can be set per spider using :attr:`download_delay` spider attribute.
+
+It is also possible to change this setting per domain, although it requires
+non-trivial code. See the implementation of the :ref:`AutoThrottle
+<topics-autothrottle>` extension for an example.
 
 .. setting:: DOWNLOAD_HANDLERS
 
@@ -659,7 +904,9 @@ DOWNLOAD_HANDLERS
 
 Default: ``{}``
 
-A dict containing the request downloader handlers enabled in your project.
+A dict containing the :ref:`download handlers <topics-download-handlers>`
+enabled in your project.
+
 See :setting:`DOWNLOAD_HANDLERS_BASE` for example format.
 
 .. setting:: DOWNLOAD_HANDLERS_BASE
@@ -667,68 +914,59 @@ See :setting:`DOWNLOAD_HANDLERS_BASE` for example format.
 DOWNLOAD_HANDLERS_BASE
 ----------------------
 
-Default::
+Default:
+
+.. code-block:: python
 
     {
-        'data': 'scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler',
-        'file': 'scrapy.core.downloader.handlers.file.FileDownloadHandler',
-        'http': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
-        'https': 'scrapy.core.downloader.handlers.http.HTTPDownloadHandler',
-        's3': 'scrapy.core.downloader.handlers.s3.S3DownloadHandler',
-        'ftp': 'scrapy.core.downloader.handlers.ftp.FTPDownloadHandler',
+        "data": "scrapy.core.downloader.handlers.datauri.DataURIDownloadHandler",
+        "file": "scrapy.core.downloader.handlers.file.FileDownloadHandler",
+        "http": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
+        "https": "scrapy.core.downloader.handlers.http11.HTTP11DownloadHandler",
+        "s3": "scrapy.core.downloader.handlers.s3.S3DownloadHandler",
+        "ftp": "scrapy.core.downloader.handlers.ftp.FTPDownloadHandler",
     }
 
 
-A dict containing the request download handlers enabled by default in Scrapy.
-You should never modify this setting in your project, modify
-:setting:`DOWNLOAD_HANDLERS` instead.
+A dict containing the :ref:`download handlers <topics-download-handlers>`
+enabled by default in Scrapy. You should never modify this setting in your
+project, modify :setting:`DOWNLOAD_HANDLERS` instead.
 
 You can disable any of these download handlers by assigning ``None`` to their
 URI scheme in :setting:`DOWNLOAD_HANDLERS`. E.g., to disable the built-in FTP
-handler (without replacement), place this in your ``settings.py``::
+handler (without replacement), place this in your ``settings.py``:
+
+.. code-block:: python
 
     DOWNLOAD_HANDLERS = {
-        'ftp': None,
+        "ftp": None,
     }
 
-.. _http2:
 
-The default HTTPS handler uses HTTP/1.1. To use HTTP/2:
+.. setting:: DOWNLOAD_SLOTS
 
-#.  Install ``Twisted[http2]>=17.9.0`` to install the packages required to
-    enable HTTP/2 support in Twisted.
+DOWNLOAD_SLOTS
+--------------
 
-#.  Update :setting:`DOWNLOAD_HANDLERS` as follows::
+Default: ``{}``
 
-        DOWNLOAD_HANDLERS = {
-            'https': 'scrapy.core.downloader.handlers.http2.H2DownloadHandler',
+Allows to define concurrency/delay parameters on per slot (domain) basis:
+
+    .. code-block:: python
+
+        DOWNLOAD_SLOTS = {
+            "quotes.toscrape.com": {"concurrency": 1, "delay": 2, "randomize_delay": False},
+            "books.toscrape.com": {"delay": 3, "randomize_delay": False},
         }
-
-.. warning::
-
-    HTTP/2 support in Scrapy is experimental, and not yet recommended for
-    production environments. Future Scrapy versions may introduce related
-    changes without a deprecation period or warning.
 
 .. note::
 
-    Known limitations of the current HTTP/2 implementation of Scrapy include:
+    For other downloader slots default settings values will be used:
 
-    -   No support for HTTP/2 Cleartext (h2c), since no major browser supports
-        HTTP/2 unencrypted (refer `http2 faq`_).
+    -   :setting:`DOWNLOAD_DELAY`: ``delay``
+    -   :setting:`CONCURRENT_REQUESTS_PER_DOMAIN`: ``concurrency``
+    -   :setting:`RANDOMIZE_DOWNLOAD_DELAY`: ``randomize_delay``
 
-    -   No setting to specify a maximum `frame size`_ larger than the default
-        value, 16384. Connections to servers that send a larger frame will
-        fail.
-
-    -   No support for `server pushes`_, which are ignored.
-
-    -   No support for the :signal:`bytes_received` and
-        :signal:`headers_received` signals.
-
-.. _frame size: https://tools.ietf.org/html/rfc7540#section-4.2
-.. _http2 faq: https://http2.github.io/faq/#does-http2-require-encryption
-.. _server pushes: https://tools.ietf.org/html/rfc7540#section-8.2
 
 .. setting:: DOWNLOAD_TIMEOUT
 
@@ -741,45 +979,66 @@ The amount of time (in secs) that the downloader will wait before timing out.
 
 .. note::
 
-    This timeout can be set per spider using :attr:`download_timeout`
-    spider attribute and per-request using :reqmeta:`download_timeout`
-    Request.meta key.
+    This timeout can be per-request using the :reqmeta:`download_timeout`
+    :attr:`.Request.meta` key.
+
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers.
 
 .. setting:: DOWNLOAD_MAXSIZE
+.. reqmeta:: download_maxsize
 
 DOWNLOAD_MAXSIZE
 ----------------
 
-Default: ``1073741824`` (1024MB)
+Default: ``1073741824`` (1 GiB)
 
-The maximum response size (in bytes) that downloader will download.
+The maximum response body size (in bytes) allowed. Bigger responses are
+aborted and ignored.
 
-If you want to disable it set to 0.
+This applies both before and after compression. If decompressing a response
+body would exceed this limit, decompression is aborted and the response is
+ignored.
 
-.. reqmeta:: download_maxsize
+Use ``0`` to disable this limit.
 
 .. note::
 
-    This size can be set per spider using :attr:`download_maxsize`
-    spider attribute and per-request using :reqmeta:`download_maxsize`
-    Request.meta key.
+    This limit can be set per-request using the :reqmeta:`download_maxsize`
+    :attr:`.Request.meta` key.
+
+.. note::
+
+    Checking responses before decompressing them needs to be implemented inside
+    the :ref:`download handler <topics-download-handlers>`, so it's not
+    guaranteed to be supported by all 3rd-party handlers.
 
 .. setting:: DOWNLOAD_WARNSIZE
+.. reqmeta:: download_warnsize
 
 DOWNLOAD_WARNSIZE
 -----------------
 
-Default: ``33554432`` (32MB)
+Default: ``33554432`` (32 MiB)
 
-The response size (in bytes) that downloader will start to warn.
+If the size of a response exceeds this value, before or after compression, a
+warning will be logged about it.
 
-If you want to disable it set to 0.
+Use ``0`` to disable this limit.
 
 .. note::
 
-    This size can be set per spider using :attr:`download_warnsize`
-    spider attribute and per-request using :reqmeta:`download_warnsize`
-    Request.meta key.
+    This limit can be set per-request using the :reqmeta:`download_warnsize`
+    :attr:`.Request.meta` key.
+
+.. note::
+
+    Checking responses before decompressing them needs to be implemented inside
+    the :ref:`download handler <topics-download-handlers>`, so it's not
+    guaranteed to be supported by all 3rd-party handlers.
 
 .. setting:: DOWNLOAD_FAIL_ON_DATALOSS
 
@@ -788,12 +1047,12 @@ DOWNLOAD_FAIL_ON_DATALOSS
 
 Default: ``True``
 
-Whether or not to fail on broken responses, that is, declared
-``Content-Length`` does not match content sent by the server or chunked
-response was not properly finish. If ``True``, these responses raise a
-``ResponseFailed([_DataLoss])`` error. If ``False``, these responses
-are passed through and the flag ``dataloss`` is added to the response, i.e.:
-``'dataloss' in response.flags`` is ``True``.
+Whether or not to fail on broken responses, that is, when the declared
+``Content-Length`` does not match content sent by the server or a chunked
+response was not properly finished. If ``True``, these responses raise a
+:exc:`~scrapy.exceptions.ResponseDataLossError` exception. If ``False``, these
+responses are passed through and the flag ``dataloss`` is added to the
+response, i.e.: ``'dataloss' in response.flags`` is ``True``.
 
 Optionally, this can be set per-request basis by using the
 :reqmeta:`download_fail_on_dataloss` Request.meta key to ``False``.
@@ -805,13 +1064,20 @@ Optionally, this can be set per-request basis by using the
   corruption. It is up to the user to decide if it makes sense to process
   broken responses considering they may contain partial or incomplete content.
   If :setting:`RETRY_ENABLED` is ``True`` and this setting is set to ``True``,
-  the ``ResponseFailed([_DataLoss])`` failure will be retried as usual.
+  the :exc:`~scrapy.exceptions.ResponseDataLossError` failure will be retried
+  as usual.
+
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers.
 
 .. warning::
 
     This setting is ignored by the
     :class:`~scrapy.core.downloader.handlers.http2.H2DownloadHandler`
-    download handler (see :setting:`DOWNLOAD_HANDLERS`). In case of a data loss
+    :ref:`download handler <topics-download-handlers>`. In case of a data loss
     error, the corresponding HTTP/2 connection may be corrupted, affecting other
     requests that use the same connection; hence, a ``ResponseFailed([InvalidBodyLengthError])``
     failure is always raised for every request that was using that connection.
@@ -825,19 +1091,79 @@ Default: ``'scrapy.dupefilters.RFPDupeFilter'``
 
 The class used to detect and filter duplicate requests.
 
-The default (``RFPDupeFilter``) filters based on request fingerprint using
-the ``scrapy.utils.request.request_fingerprint`` function. In order to change
-the way duplicates are checked you could subclass ``RFPDupeFilter`` and
-override its ``request_fingerprint`` method. This method should accept
-scrapy :class:`~scrapy.Request` object and return its fingerprint
-(a string).
+The default, :class:`~scrapy.dupefilters.RFPDupeFilter`, filters based on the
+:setting:`REQUEST_FINGERPRINTER_CLASS` setting.
 
-You can disable filtering of duplicate requests by setting
-:setting:`DUPEFILTER_CLASS` to ``'scrapy.dupefilters.BaseDupeFilter'``.
-Be very careful about this however, because you can get into crawling loops.
-It's usually a better idea to set the ``dont_filter`` parameter to
-``True`` on the specific :class:`~scrapy.Request` that should not be
-filtered.
+To change how duplicates are checked, you can point :setting:`DUPEFILTER_CLASS`
+to a custom subclass of :class:`~scrapy.dupefilters.RFPDupeFilter` that
+overrides its ``__init__`` method to use a :ref:`different request
+fingerprinting class <custom-request-fingerprinter>`. For example:
+
+.. code-block:: python
+
+    from scrapy.dupefilters import RFPDupeFilter
+    from scrapy.utils.request import fingerprint
+
+
+    class CustomRequestFingerprinter:
+        def fingerprint(self, request):
+            return fingerprint(request, include_headers=["X-ID"])
+
+
+    class CustomDupeFilter(RFPDupeFilter):
+
+        def __init__(self, path=None, debug=False, *, fingerprinter=None):
+            super().__init__(
+                path=path, debug=debug, fingerprinter=CustomRequestFingerprinter()
+            )
+
+To disable duplicate request filtering set :setting:`DUPEFILTER_CLASS` to
+``'scrapy.dupefilters.BaseDupeFilter'``. Note that not filtering out duplicate
+requests may cause crawling loops. It is usually better to set
+the ``dont_filter`` parameter to ``True`` on the ``__init__`` method of a
+specific :class:`~scrapy.Request` object that should not be filtered out.
+
+A class assigned to :setting:`DUPEFILTER_CLASS` must implement the following
+interface::
+
+    class MyDupeFilter:
+
+        @classmethod
+        def from_crawler(cls, crawler):
+            """Returns an instance of this duplicate request filtering class
+            based on the current Crawler instance."""
+            return cls()
+
+        def request_seen(self, request):
+            """Returns ``True`` if *request* is a duplicate of another request
+            seen in a previous call to :meth:`request_seen`, or ``False``
+            otherwise."""
+            return False
+
+        def open(self):
+            """Called before the spider opens. It may return a deferred."""
+            pass
+
+        def close(self, reason):
+            """Called before the spider closes. It may return a deferred."""
+            pass
+
+        def log(self, request, spider):
+            """Logs that a request has been filtered out.
+
+            It is called right after a call to :meth:`request_seen` that
+            returns ``True``.
+
+            If :meth:`request_seen` always returns ``False``, such as in the
+            case of :class:`~scrapy.dupefilters.BaseDupeFilter`, this method
+            may be omitted.
+            """
+            pass
+
+.. autoclass:: scrapy.dupefilters.BaseDupeFilter
+
+.. autoclass:: scrapy.dupefilters.RFPDupeFilter
+
 
 .. setting:: DUPEFILTER_DEBUG
 
@@ -867,25 +1193,28 @@ EXTENSIONS
 
 Default:: ``{}``
 
-A dict containing the extensions enabled in your project, and their orders.
+:ref:`Component priority dictionary <component-priority-dictionaries>` of
+enabled extensions. See :ref:`topics-extensions`.
 
 .. setting:: EXTENSIONS_BASE
 
 EXTENSIONS_BASE
 ---------------
 
-Default::
+Default:
+
+.. code-block:: python
 
     {
-        'scrapy.extensions.corestats.CoreStats': 0,
-        'scrapy.extensions.telnet.TelnetConsole': 0,
-        'scrapy.extensions.memusage.MemoryUsage': 0,
-        'scrapy.extensions.memdebug.MemoryDebugger': 0,
-        'scrapy.extensions.closespider.CloseSpider': 0,
-        'scrapy.extensions.feedexport.FeedExporter': 0,
-        'scrapy.extensions.logstats.LogStats': 0,
-        'scrapy.extensions.spiderstate.SpiderState': 0,
-        'scrapy.extensions.throttle.AutoThrottle': 0,
+        "scrapy.extensions.corestats.CoreStats": 0,
+        "scrapy.extensions.telnet.TelnetConsole": 0,
+        "scrapy.extensions.memusage.MemoryUsage": 0,
+        "scrapy.extensions.memdebug.MemoryDebugger": 0,
+        "scrapy.extensions.closespider.CloseSpider": 0,
+        "scrapy.extensions.feedexport.FeedExporter": 0,
+        "scrapy.extensions.logstats.LogStats": 0,
+        "scrapy.extensions.spiderstate.SpiderState": 0,
+        "scrapy.extensions.throttle.AutoThrottle": 0,
     }
 
 A dict containing the extensions available by default in Scrapy, and their
@@ -894,7 +1223,6 @@ some of them need to be enabled through a setting.
 
 For more information See the :ref:`extensions user guide  <topics-extensions>`
 and the :ref:`list of available extensions <topics-extensions-ref>`.
-
 
 .. setting:: FEED_TEMPDIR
 
@@ -913,6 +1241,26 @@ FEED_STORAGE_GCS_ACL
 The Access Control List (ACL) used when storing items to :ref:`Google Cloud Storage <topics-feed-storage-gcs>`.
 For more information on how to set this value, please refer to the column *JSON API* in `Google Cloud documentation <https://cloud.google.com/storage/docs/access-control/lists>`_.
 
+.. setting:: FORCE_CRAWLER_PROCESS
+
+FORCE_CRAWLER_PROCESS
+---------------------
+
+Default: ``False``
+
+If ``False``, :ref:`Scrapy commands that need a CrawlerProcess
+<topics-commands-crawlerprocess>` will decide between using
+:class:`scrapy.crawler.AsyncCrawlerProcess` and
+:class:`scrapy.crawler.CrawlerProcess` based on the value of the
+:setting:`TWISTED_REACTOR` setting, but ignoring its value in :ref:`per-spider
+settings <spider-settings>`.
+
+If ``True``, these commands will always use
+:class:`~scrapy.crawler.CrawlerProcess`.
+
+Set this to ``True`` if you want to set :setting:`TWISTED_REACTOR` to a
+non-default value in :ref:`per-spider settings <spider-settings>`.
+
 .. setting:: FTP_PASSIVE_MODE
 
 FTP_PASSIVE_MODE
@@ -921,6 +1269,12 @@ FTP_PASSIVE_MODE
 Default: ``True``
 
 Whether or not to use passive mode when initiating FTP transfers.
+
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers.
 
 .. reqmeta:: ftp_password
 .. setting:: FTP_PASSWORD
@@ -939,7 +1293,13 @@ in ``Request`` meta.
     some FTP servers explicitly ask for the user's e-mail address
     and will not allow login with the "guest" password.
 
-.. _RFC 1635: https://tools.ietf.org/html/rfc1635
+.. _RFC 1635: https://datatracker.ietf.org/doc/html/rfc1635
+
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers.
 
 .. reqmeta:: ftp_user
 .. setting:: FTP_USER
@@ -951,6 +1311,12 @@ Default: ``"anonymous"``
 
 The username to use for FTP connections when there is no ``"ftp_user"``
 in ``Request`` meta.
+
+.. note::
+
+    Handling of this setting needs to be implemented inside the :ref:`download
+    handler <topics-download-handlers>`, so it's not guaranteed to be supported
+    by all 3rd-party handlers.
 
 .. setting:: GCS_PROJECT_ID
 
@@ -972,11 +1338,13 @@ A dict containing the item pipelines to use, and their orders. Order values are
 arbitrary, but it is customary to define them in the 0-1000 range. Lower orders
 process before higher orders.
 
-Example::
+Example:
+
+.. code-block:: python
 
    ITEM_PIPELINES = {
-       'mybot.pipelines.validate.ValidateMyItem': 300,
-       'mybot.pipelines.validate.StoreMyItem': 800,
+       "mybot.pipelines.validate.ValidateMyItem": 300,
+       "mybot.pipelines.validate.StoreMyItem": 800,
    }
 
 .. setting:: ITEM_PIPELINES_BASE
@@ -989,15 +1357,17 @@ Default: ``{}``
 A dict containing the pipelines enabled by default in Scrapy. You should never
 modify this setting in your project, modify :setting:`ITEM_PIPELINES` instead.
 
+
 .. setting:: JOBDIR
 
 JOBDIR
 ------
 
-Default: ``''``
+Default: ``None``
 
 A string indicating the directory for storing the state of a crawl when
 :ref:`pausing and resuming crawls <topics-jobs>`.
+
 
 .. setting:: LOG_ENABLED
 
@@ -1026,6 +1396,16 @@ Default: ``None``
 
 File name to use for logging output. If ``None``, standard error will be used.
 
+.. setting:: LOG_FILE_APPEND
+
+LOG_FILE_APPEND
+---------------
+
+Default: ``True``
+
+If ``False``, the log file specified with :setting:`LOG_FILE` will be
+overwritten (discarding the output from previous runs, if any).
+
 .. setting:: LOG_FORMAT
 
 LOG_FORMAT
@@ -1034,7 +1414,7 @@ LOG_FORMAT
 Default: ``'%(asctime)s [%(name)s] %(levelname)s: %(message)s'``
 
 String for formatting log messages. Refer to the
-:ref:`Python logging documentation <logrecord-attributes>` for the qwhole
+:ref:`Python logging documentation <logrecord-attributes>` for the whole
 list of available placeholders.
 
 .. setting:: LOG_DATEFORMAT
@@ -1088,6 +1468,25 @@ Default: ``False``
 
 If ``True``, the logs will just contain the root path. If it is set to ``False``
 then it displays the component responsible for the log output
+
+.. setting:: LOG_VERSIONS
+
+LOG_VERSIONS
+------------
+
+Default: ``["lxml", "libxml2", "cssselect", "parsel", "w3lib", "Twisted", "Python", "pyOpenSSL", "cryptography", "Platform"]``
+
+Logs the installed versions of the specified items.
+
+An item can be any installed Python package.
+
+The following special items are also supported:
+
+-   ``libxml2``
+
+-   ``Platform`` (:func:`platform.platform`)
+
+-   ``Python``
 
 .. setting:: LOGSTATS_INTERVAL
 
@@ -1206,7 +1605,7 @@ email notifying about it. If zero, no warning will be produced.
 NEWSPIDER_MODULE
 ----------------
 
-Default: ``''``
+Default: ``"<project name>.spiders"`` (:ref:`fallback <default-settings>`: ``""``)
 
 Module where to create new spiders using the :command:`genspider` command.
 
@@ -1265,9 +1664,7 @@ Adjust redirect request priority relative to original request:
 ROBOTSTXT_OBEY
 --------------
 
-Default: ``False``
-
-Scope: ``scrapy.downloadermiddlewares.robotstxt``
+Default: ``True`` (:ref:`fallback <default-settings>`: ``False``)
 
 If enabled, Scrapy will respect robots.txt policies. For more information see
 :ref:`topics-dlmw-robots`.
@@ -1336,38 +1733,85 @@ SCHEDULER_DISK_QUEUE
 
 Default: ``'scrapy.squeues.PickleLifoDiskQueue'``
 
-Type of disk queue that will be used by scheduler. Other available types are
-``scrapy.squeues.PickleFifoDiskQueue``, ``scrapy.squeues.MarshalFifoDiskQueue``,
+Type of disk queue that will be used by the scheduler. Other available types
+are ``scrapy.squeues.PickleFifoDiskQueue``,
+``scrapy.squeues.MarshalFifoDiskQueue``,
 ``scrapy.squeues.MarshalLifoDiskQueue``.
+
 
 .. setting:: SCHEDULER_MEMORY_QUEUE
 
 SCHEDULER_MEMORY_QUEUE
 ----------------------
+
 Default: ``'scrapy.squeues.LifoMemoryQueue'``
 
-Type of in-memory queue used by scheduler. Other available type is:
+Type of in-memory queue used by the scheduler. Other available type is:
 ``scrapy.squeues.FifoMemoryQueue``.
+
 
 .. setting:: SCHEDULER_PRIORITY_QUEUE
 
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
-Default: ``'scrapy.pqueues.ScrapyPriorityQueue'``
+
+Default: ``'scrapy.pqueues.DownloaderAwarePriorityQueue'``
 
 Type of priority queue used by the scheduler. Another available type is
-``scrapy.pqueues.DownloaderAwarePriorityQueue``.
+``scrapy.pqueues.ScrapyPriorityQueue``.
 ``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
 ``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
-domains in parallel. But currently ``scrapy.pqueues.DownloaderAwarePriorityQueue``
-does not work together with :setting:`CONCURRENT_REQUESTS_PER_IP`.
+domains in parallel.
+
+
+.. setting:: SCHEDULER_START_DISK_QUEUE
+
+SCHEDULER_START_DISK_QUEUE
+--------------------------
+
+Default: ``'scrapy.squeues.PickleFifoDiskQueue'``
+
+Type of disk queue (see :setting:`JOBDIR`) that the :ref:`scheduler
+<topics-scheduler>` uses for :ref:`start requests <start-requests>`.
+
+For available choices, see :setting:`SCHEDULER_DISK_QUEUE`.
+
+.. queue-common-starts
+
+Use ``None`` or ``""`` to disable these separate queues entirely, and instead
+have start requests share the same queues as other requests.
+
+.. note::
+
+    Disabling separate start request queues makes :ref:`start request order
+    <start-request-order>` unintuitive: start requests will be sent in order
+    only until :setting:`CONCURRENT_REQUESTS` is reached, then remaining start
+    requests will be sent in reverse order.
+
+.. queue-common-ends
+
+
+.. setting:: SCHEDULER_START_MEMORY_QUEUE
+
+SCHEDULER_START_MEMORY_QUEUE
+----------------------------
+
+Default: ``'scrapy.squeues.FifoMemoryQueue'``
+
+Type of in-memory queue that the :ref:`scheduler <topics-scheduler>` uses for
+:ref:`start requests <start-requests>`.
+
+For available choices, see :setting:`SCHEDULER_MEMORY_QUEUE`.
+
+.. include:: settings.rst
+    :start-after: queue-common-starts
+    :end-before: queue-common-ends
+
 
 .. setting:: SCRAPER_SLOT_MAX_ACTIVE_SIZE
 
 SCRAPER_SLOT_MAX_ACTIVE_SIZE
 ----------------------------
-
-.. versionadded:: 2.0
 
 Default: ``5_000_000``
 
@@ -1391,12 +1835,14 @@ testing spiders. For more info see :ref:`topics-contracts`.
 SPIDER_CONTRACTS_BASE
 ---------------------
 
-Default::
+Default:
+
+.. code-block:: python
 
     {
-        'scrapy.contracts.default.UrlContract' : 1,
-        'scrapy.contracts.default.ReturnsContract': 2,
-        'scrapy.contracts.default.ScrapesContract': 3,
+        "scrapy.contracts.default.UrlContract": 1,
+        "scrapy.contracts.default.ReturnsContract": 2,
+        "scrapy.contracts.default.ScrapesContract": 3,
     }
 
 A dict containing the Scrapy contracts enabled by default in Scrapy. You should
@@ -1405,10 +1851,12 @@ instead. For more info see :ref:`topics-contracts`.
 
 You can disable any of these contracts by assigning ``None`` to their class
 path in :setting:`SPIDER_CONTRACTS`. E.g., to disable the built-in
-``ScrapesContract``, place this in your ``settings.py``::
+``ScrapesContract``, place this in your ``settings.py``:
+
+.. code-block:: python
 
     SPIDER_CONTRACTS = {
-        'scrapy.contracts.default.ScrapesContract': None,
+        "scrapy.contracts.default.ScrapesContract": None,
     }
 
 .. setting:: SPIDER_LOADER_CLASS
@@ -1429,18 +1877,9 @@ SPIDER_LOADER_WARN_ONLY
 Default: ``False``
 
 By default, when Scrapy tries to import spider classes from :setting:`SPIDER_MODULES`,
-it will fail loudly if there is any ``ImportError`` exception.
+it will fail loudly if there is any ``ImportError`` or ``SyntaxError`` exception.
 But you can choose to silence this exception and turn it into a simple
 warning by setting ``SPIDER_LOADER_WARN_ONLY = True``.
-
-.. note::
-    Some :ref:`scrapy commands <topics-commands>` run with this setting to ``True``
-    already (i.e. they will only issue a warning and will not fail)
-    since they do not actually need to load spider classes to work:
-    :command:`scrapy runspider <runspider>`,
-    :command:`scrapy settings <settings>`,
-    :command:`scrapy startproject <startproject>`,
-    :command:`scrapy version <version>`.
 
 .. setting:: SPIDER_MIDDLEWARES
 
@@ -1457,14 +1896,15 @@ orders. For more info see :ref:`topics-spider-middleware-setting`.
 SPIDER_MIDDLEWARES_BASE
 -----------------------
 
-Default::
+Default:
+
+.. code-block:: python
 
     {
-        'scrapy.spidermiddlewares.httperror.HttpErrorMiddleware': 50,
-        'scrapy.spidermiddlewares.offsite.OffsiteMiddleware': 500,
-        'scrapy.spidermiddlewares.referer.RefererMiddleware': 700,
-        'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware': 800,
-        'scrapy.spidermiddlewares.depth.DepthMiddleware': 900,
+        "scrapy.spidermiddlewares.httperror.HttpErrorMiddleware": 50,
+        "scrapy.spidermiddlewares.referer.RefererMiddleware": 700,
+        "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware": 800,
+        "scrapy.spidermiddlewares.depth.DepthMiddleware": 900,
     }
 
 A dict containing the spider middlewares enabled by default in Scrapy, and
@@ -1476,13 +1916,15 @@ the spider. For more info see :ref:`topics-spider-middleware-setting`.
 SPIDER_MODULES
 --------------
 
-Default: ``[]``
+Default: ``["<project name>.spiders"]`` (:ref:`fallback <default-settings>`: ``[]``)
 
 A list of modules where Scrapy will look for spiders.
 
-Example::
+Example:
 
-    SPIDER_MODULES = ['mybot.spiders_prod', 'mybot.spiders_dev']
+.. code-block:: python
+
+    SPIDER_MODULES = ["mybot.spiders_prod", "mybot.spiders_dev"]
 
 .. setting:: STATS_CLASS
 
@@ -1545,17 +1987,17 @@ in the ``project`` subdirectory.
 TWISTED_REACTOR
 ---------------
 
-.. versionadded:: 2.0
-
-Default: ``None``
+Default: ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``
 
 Import path of a given :mod:`~twisted.internet.reactor`.
 
 Scrapy will install this reactor if no other reactor is installed yet, such as
 when the ``scrapy`` CLI program is invoked or when using the
+:class:`~scrapy.crawler.AsyncCrawlerProcess` class or the
 :class:`~scrapy.crawler.CrawlerProcess` class.
 
-If you are using the :class:`~scrapy.crawler.CrawlerRunner` class, you also
+If you are using the :class:`~scrapy.crawler.AsyncCrawlerRunner` class or the
+:class:`~scrapy.crawler.CrawlerRunner` class, you also
 need to install the correct reactor manually. You can do that using
 :func:`~scrapy.utils.reactor.install_reactor`:
 
@@ -1564,74 +2006,82 @@ need to install the correct reactor manually. You can do that using
 If a reactor is already installed,
 :func:`~scrapy.utils.reactor.install_reactor` has no effect.
 
-:meth:`CrawlerRunner.__init__ <scrapy.crawler.CrawlerRunner.__init__>` raises
-:exc:`Exception` if the installed reactor does not match the
-:setting:`TWISTED_REACTOR` setting; therfore, having top-level
+:class:`~scrapy.crawler.AsyncCrawlerRunner` and other similar classes raise an
+exception if the installed reactor does not match the
+:setting:`TWISTED_REACTOR` setting; therefore, having top-level
 :mod:`~twisted.internet.reactor` imports in project files and imported
-third-party libraries will make Scrapy raise :exc:`Exception` when
-it checks which reactor is installed.
+third-party libraries will make Scrapy raise an exception when it checks which
+reactor is installed.
 
-In order to use the reactor installed by Scrapy::
+In order to use the reactor installed by Scrapy:
+
+.. skip: next
+.. code-block:: python
 
     import scrapy
     from twisted.internet import reactor
 
 
     class QuotesSpider(scrapy.Spider):
-        name = 'quotes'
+        name = "quotes"
 
         def __init__(self, *args, **kwargs):
-            self.timeout = int(kwargs.pop('timeout', '60'))
+            self.timeout = int(kwargs.pop("timeout", "60"))
             super(QuotesSpider, self).__init__(*args, **kwargs)
 
-        def start_requests(self):
+        async def start(self):
             reactor.callLater(self.timeout, self.stop)
 
-            urls = ['http://quotes.toscrape.com/page/1']
+            urls = ["https://quotes.toscrape.com/page/1"]
             for url in urls:
                 yield scrapy.Request(url=url, callback=self.parse)
 
         def parse(self, response):
-            for quote in response.css('div.quote'):
-                yield {'text': quote.css('span.text::text').get()}
+            for quote in response.css("div.quote"):
+                yield {"text": quote.css("span.text::text").get()}
 
         def stop(self):
-            self.crawler.engine.close_spider(self, 'timeout')
+            self.crawler.engine.close_spider(self, "timeout")
 
 
-which raises :exc:`Exception`, becomes::
+which raises an exception, becomes:
+
+.. code-block:: python
 
     import scrapy
 
 
     class QuotesSpider(scrapy.Spider):
-        name = 'quotes'
+        name = "quotes"
 
         def __init__(self, *args, **kwargs):
-            self.timeout = int(kwargs.pop('timeout', '60'))
+            self.timeout = int(kwargs.pop("timeout", "60"))
             super(QuotesSpider, self).__init__(*args, **kwargs)
 
-        def start_requests(self):
+        async def start(self):
             from twisted.internet import reactor
+
             reactor.callLater(self.timeout, self.stop)
 
-            urls = ['http://quotes.toscrape.com/page/1']
+            urls = ["https://quotes.toscrape.com/page/1"]
             for url in urls:
                 yield scrapy.Request(url=url, callback=self.parse)
 
         def parse(self, response):
-            for quote in response.css('div.quote'):
-                yield {'text': quote.css('span.text::text').get()}
+            for quote in response.css("div.quote"):
+                yield {"text": quote.css("span.text::text").get()}
 
         def stop(self):
-            self.crawler.engine.close_spider(self, 'timeout')
+            self.crawler.engine.close_spider(self, "timeout")
 
 
-The default value of the :setting:`TWISTED_REACTOR` setting is ``None``, which
-means that Scrapy will not attempt to install any specific reactor, and the
-default reactor defined by Twisted for the current platform will be used. This
-is to maintain backward compatibility and avoid possible problems caused by
-using a non-default reactor.
+If this setting is set ``None``, Scrapy will use the existing reactor if one is
+already installed, or install the default reactor defined by Twisted for the
+current platform.
+
+.. versionchanged:: 2.13
+   The default value was changed from ``None`` to
+   ``"twisted.internet.asyncioreactor.AsyncioSelectorReactor"``.
 
 For additional information, see :doc:`core/howto/choosing-reactor`.
 
@@ -1645,8 +2095,19 @@ Default: ``2083``
 
 Scope: ``spidermiddlewares.urllength``
 
-The maximum URL length to allow for crawled URLs. For more information about
-the default value for this setting see: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
+The maximum URL length to allow for crawled URLs.
+
+This setting can act as a stopping condition in case of URLs of ever-increasing
+length, which may be caused for example by a programming error either in the
+target server or in your code. See also :setting:`REDIRECT_MAX_TIMES` and
+:setting:`DEPTH_LIMIT`.
+
+Use ``0`` to allow URLs of any length.
+
+The default value is copied from the `Microsoft Internet Explorer maximum URL
+length`_, even though this setting exists for different reasons.
+
+.. _Microsoft Internet Explorer maximum URL length: https://support.microsoft.com/en-us/topic/maximum-url-length-is-2-083-characters-in-internet-explorer-174e7c8a-6666-f4e0-6fd6-908b53c12246
 
 .. setting:: USER_AGENT
 
@@ -1658,8 +2119,23 @@ Default: ``"Scrapy/VERSION (+https://scrapy.org)"``
 The default User-Agent to use when crawling, unless overridden. This user agent is
 also used by :class:`~scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware`
 if :setting:`ROBOTSTXT_USER_AGENT` setting is ``None`` and
-there is no overridding User-Agent header specified for the request.
+there is no overriding User-Agent header specified for the request.
 
+.. setting:: WARN_ON_GENERATOR_RETURN_VALUE
+
+WARN_ON_GENERATOR_RETURN_VALUE
+------------------------------
+
+Default: ``True``
+
+When enabled, Scrapy will warn if generator-based callback methods (like
+``parse``) contain return statements with non-``None`` values. This helps detect
+potential mistakes in spider development.
+
+Disable this setting to prevent syntax errors that may occur when dynamically
+modifying generator function source code during runtime, skip AST parsing of
+callback functions, or improve performance in auto-reloading development
+environments.
 
 Settings documented elsewhere:
 ------------------------------

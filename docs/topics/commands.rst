@@ -6,7 +6,7 @@
 Command line tool
 =================
 
-Scrapy is controlled through the ``scrapy`` command-line tool, to be referred
+Scrapy is controlled through the ``scrapy`` command-line tool, to be referred to
 here as the "Scrapy tool" to differentiate it from the sub-commands, which we
 just call "commands" or "Scrapy commands".
 
@@ -163,8 +163,8 @@ information on which commands must be run from inside projects, and which not.
 
 Also keep in mind that some commands may have slightly different behaviours
 when running them from inside projects. For example, the fetch command will use
-spider-overridden behaviours (such as the ``user_agent`` attribute to override
-the user-agent) if the url being fetched is associated with some specific
+spider-overridden behaviours (such as the ``custom_settings`` attribute to
+override settings) if the url being fetched is associated with some specific
 spider. This is intentional, as the ``fetch`` command is meant to be used to
 check how spiders are downloading pages.
 
@@ -185,8 +185,8 @@ And you can see all available commands with::
 
 There are two kinds of commands, those that only work from inside a Scrapy
 project (Project-specific commands) and those that also work without an active
-Scrapy project (Global commands), though they may behave slightly different
-when running from inside a project (as they would use the project overridden
+Scrapy project (Global commands), though they may behave slightly differently
+when run from inside a project (as they would use the project overridden
 settings).
 
 Global commands:
@@ -230,10 +230,10 @@ Usage example::
 genspider
 ---------
 
-* Syntax: ``scrapy genspider [-t template] <name> <domain>``
+* Syntax: ``scrapy genspider [-t template] <name> <domain or URL>``
 * Requires project: *no*
 
-Create a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
+Creates a new spider in the current folder or in the current project's ``spiders`` folder, if called from inside a project. The ``<name>`` parameter is set as the spider's ``name``, while ``<domain or URL>`` is used to generate the ``allowed_domains`` and ``start_urls`` spider's attributes.
 
 Usage example::
 
@@ -250,7 +250,7 @@ Usage example::
     $ scrapy genspider -t crawl scrapyorg scrapy.org
     Created spider 'scrapyorg' using template 'crawl'
 
-This is just a convenience shortcut command for creating spiders based on
+This is just a convenient shortcut command for creating spiders based on
 pre-defined templates, but certainly not the only way to create spiders. You
 can just create the spider source code files yourself, instead of using this
 command.
@@ -265,11 +265,26 @@ crawl
 
 Start crawling using a spider.
 
+Supported options:
+
+* ``-h, --help``: show a help message and exit
+
+* ``-a NAME=VALUE``: set a spider argument (may be repeated)
+
+* ``--output FILE`` or ``-o FILE``: append scraped items to the end of FILE (use - for stdout). To define the output format, set a colon at the end of the output URI (i.e. ``-o FILE:FORMAT``)
+
+* ``--overwrite-output FILE`` or ``-O FILE``: dump scraped items into FILE, overwriting any existing file. To define the output format, set a colon at the end of the output URI (i.e. ``-O FILE:FORMAT``)
+
 Usage examples::
 
     $ scrapy crawl myspider
     [ ... myspider starts crawling ... ]
 
+    $ scrapy crawl -o myfile:csv myspider
+    [ ... myspider starts crawling and appends the result to the file myfile in csv format ... ]
+
+    $ scrapy crawl -O myfile:json myspider
+    [ ... myspider starts crawling and saves the result in myfile in json format overwriting the original content... ]
 
 .. command:: check
 
@@ -330,7 +345,7 @@ edit
 Edit the given spider using the editor defined in the ``EDITOR`` environment
 variable or (if unset) the :setting:`EDITOR` setting.
 
-This command is provided only as a convenience shortcut for the most common
+This command is provided only as a convenient shortcut for the most common
 case, the developer is of course free to choose any tool or IDE to write and
 debug spiders.
 
@@ -349,7 +364,7 @@ fetch
 Downloads the given URL using the Scrapy downloader and writes the contents to
 standard output.
 
-The interesting thing about this command is that it fetches the page how the
+The interesting thing about this command is that it fetches the page the way the
 spider would download it. For example, if the spider has a ``USER_AGENT``
 attribute which overrides the User Agent, it will use that one.
 
@@ -491,8 +506,6 @@ Supported options:
 
 * ``--output`` or ``-o``: dump scraped items to a file
 
-  .. versionadded:: 2.3
-
 .. skip: start
 
 Usage example::
@@ -569,6 +582,44 @@ bench
 
 Run a quick benchmark test. :ref:`benchmarking`.
 
+.. _topics-commands-crawlerprocess:
+
+Commands that run a crawl
+=========================
+
+Many commands need to run a crawl of some kind, running either a user-provided
+spider or a special internal one:
+
+* :command:`bench`
+* :command:`check`
+* :command:`crawl`
+* :command:`fetch`
+* :command:`parse`
+* :command:`runspider`
+* :command:`shell`
+* :command:`view`
+
+They use an internal instance of :class:`scrapy.crawler.AsyncCrawlerProcess` or
+:class:`scrapy.crawler.CrawlerProcess` for this. In most cases this detail
+shouldn't matter to the user running the command, but when the user :ref:`needs
+a non-default Twisted reactor <disable-asyncio>`, it may be important.
+
+Scrapy decides which of these two classes to use based on the value of the
+:setting:`TWISTED_REACTOR` setting. If the setting value is the default one
+(``'twisted.internet.asyncioreactor.AsyncioSelectorReactor'``),
+:class:`~scrapy.crawler.AsyncCrawlerProcess` will be used, otherwise
+:class:`~scrapy.crawler.CrawlerProcess` will be used. The :ref:`spider settings
+<spider-settings>` are not taken into account when doing this, as they are
+loaded after this decision is made. This may cause an error if the
+project-level setting is set to :ref:`the asyncio reactor <install-asyncio>`
+(:ref:`explicitly <project-settings>` or :ref:`by using the Scrapy default
+<default-settings>`) and :ref:`the setting of the spider being run
+<spider-settings>` is set to :ref:`a different one <disable-asyncio>`, because
+:class:`~scrapy.crawler.AsyncCrawlerProcess` only supports the asyncio reactor.
+In this case you should set the :setting:`FORCE_CRAWLER_PROCESS` setting to
+``True`` (at the project level or via the command line) so that Scrapy uses
+:class:`~scrapy.crawler.CrawlerProcess` which supports all reactors.
+
 Custom project commands
 =======================
 
@@ -591,7 +642,7 @@ Example:
 
 .. code-block:: python
 
-    COMMANDS_MODULE = 'mybot.commands'
+    COMMANDS_MODULE = "mybot.commands"
 
 .. _Deploying your project: https://scrapyd.readthedocs.io/en/latest/deploy.html
 
@@ -610,10 +661,11 @@ The following example adds ``my_command`` command:
 
   from setuptools import setup, find_packages
 
-  setup(name='scrapy-mymodule',
-    entry_points={
-      'scrapy.commands': [
-        'my_command=my_scrapy_module.commands:MyCommand',
-      ],
-    },
-   )
+  setup(
+      name="scrapy-mymodule",
+      entry_points={
+          "scrapy.commands": [
+              "my_command=my_scrapy_module.commands:MyCommand",
+          ],
+      },
+  )

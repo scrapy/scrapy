@@ -1,16 +1,22 @@
-from testfixtures import LogCapture
-from twisted.internet import defer
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+import pytest
 
 from scrapy.exceptions import StopDownload
-
 from tests.test_engine import (
     AttrsItemsSpider,
+    CrawlerRun,
     DataClassItemsSpider,
     DictItemsSpider,
-    TestSpider,
-    CrawlerRun,
-    EngineTest,
+    MySpider,
+    TestEngineBase,
 )
+from tests.utils.decorators import coroutine_test
+
+if TYPE_CHECKING:
+    from tests.mockserver.http import MockServer
 
 
 class HeadersReceivedCrawlerRun(CrawlerRun):
@@ -19,38 +25,41 @@ class HeadersReceivedCrawlerRun(CrawlerRun):
         raise StopDownload(fail=False)
 
 
-class HeadersReceivedEngineTest(EngineTest):
-    @defer.inlineCallbacks
-    def test_crawler(self):
-        for spider in (TestSpider, DictItemsSpider, AttrsItemsSpider, DataClassItemsSpider):
-            if spider is None:
-                continue
-            self.run = HeadersReceivedCrawlerRun(spider)
-            with LogCapture() as log:
-                yield self.run.run()
-                log.check_present(("scrapy.core.downloader.handlers.http11",
-                                   "DEBUG",
-                                   f"Download stopped for <GET http://localhost:{self.run.portno}/redirected> from"
-                                   " signal handler HeadersReceivedCrawlerRun.headers_received"))
-                log.check_present(("scrapy.core.downloader.handlers.http11",
-                                   "DEBUG",
-                                   f"Download stopped for <GET http://localhost:{self.run.portno}/> from signal"
-                                   " handler HeadersReceivedCrawlerRun.headers_received"))
-                log.check_present(("scrapy.core.downloader.handlers.http11",
-                                   "DEBUG",
-                                   f"Download stopped for <GET http://localhost:{self.run.portno}/numbers> from"
-                                   " signal handler HeadersReceivedCrawlerRun.headers_received"))
-            self._assert_visited_urls()
-            self._assert_downloaded_responses(count=6)
-            self._assert_signals_caught()
-            self._assert_bytes_received()
-            self._assert_headers_received()
+class TestHeadersReceivedEngine(TestEngineBase):
+    @pytest.mark.requires_http_handler
+    @coroutine_test
+    async def test_crawler(
+        self, mockserver: MockServer, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        for spider in (
+            MySpider,
+            DictItemsSpider,
+            AttrsItemsSpider,
+            DataClassItemsSpider,
+        ):
+            run = HeadersReceivedCrawlerRun(spider)
+            with caplog.at_level("DEBUG"):
+                await run.run(mockserver)
+            for url in ("/redirected", "/static/", "/numbers"):
+                assert (
+                    f"Download stopped for <GET {mockserver.url(url)}> "
+                    "from signal handler HeadersReceivedCrawlerRun.headers_received"
+                ) in caplog.text
+            self._assert_visited_urls(run)
+            self._assert_downloaded_responses(run, count=6)
+            self._assert_signals_caught(run)
+            self._assert_bytes_received(run)
+            self._assert_headers_received(run)
 
-    def _assert_bytes_received(self):
-        self.assertEqual(0, len(self.run.bytes))
+    @staticmethod
+    def _assert_bytes_received(run: CrawlerRun) -> None:
+        assert len(run.bytes) == 0
 
-    def _assert_visited_urls(self):
-        must_be_visited = ["/", "/redirect", "/redirected"]
-        urls_visited = {rp[0].url for rp in self.run.respplug}
-        urls_expected = {self.run.geturl(p) for p in must_be_visited}
-        assert urls_expected <= urls_visited, f"URLs not visited: {list(urls_expected - urls_visited)}"
+    @staticmethod
+    def _assert_visited_urls(run: CrawlerRun) -> None:
+        must_be_visited = ["/static/", "/redirect", "/redirected"]
+        urls_visited = {rp[0].url for rp in run.respplug}
+        urls_expected = {run.geturl(p) for p in must_be_visited}
+        assert urls_expected <= urls_visited, (
+            f"URLs not visited: {list(urls_expected - urls_visited)}"
+        )

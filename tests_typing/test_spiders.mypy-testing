@@ -1,0 +1,68 @@
+from typing import Any
+
+import pytest
+
+from scrapy.http import HtmlResponse, Response
+from scrapy.spiders import Spider
+
+
+class SimpleSpider(Spider):
+    pass
+
+
+class SameOverrideSpider(Spider):
+    def parse(self, response: Response, **kwargs: Any) -> Any:
+        pass
+
+
+class NoKwargsSpider(Spider):
+    def parse(self, response: Response) -> Any:
+        pass
+
+
+class SpecificKwargsSpider(Spider):
+    def parse(self, response: Response, page: int) -> Any:
+        pass
+
+
+class NarrowOverrideSpider(Spider):
+    # without type: ignore this produces several note lines in addition to an error line,
+    # which is unsupported by pytest-mypy-testing
+    def parse(self, response: HtmlResponse, **kwargs: Any) -> Any:  # type: ignore[override]
+        pass
+
+
+@pytest.mark.mypy_testing
+def test_spider_parse() -> None:
+    spider = Spider()
+    reveal_type(spider.parse)  # R: def (scrapy.http.response.Response, *Any, **Any) -> Any
+
+
+@pytest.mark.mypy_testing
+def test_spider_parse_override_simple() -> None:
+    spider = SimpleSpider()
+    reveal_type(spider.parse)  # R: def (scrapy.http.response.Response, *Any, **Any) -> Any
+
+
+@pytest.mark.mypy_testing
+def test_spider_parse_override_same() -> None:
+    spider = SameOverrideSpider()
+    reveal_type(spider.parse)  # R: def (response: scrapy.http.response.Response, **kwargs: Any) -> Any
+
+
+@pytest.mark.mypy_testing
+def test_spider_parse_override_no_kwargs() -> None:
+    spider = NoKwargsSpider()
+    reveal_type(spider.parse)  # R: def (response: scrapy.http.response.Response) -> Any
+
+
+@pytest.mark.mypy_testing
+def test_spider_parse_override_specific_kwargs() -> None:
+    spider = SpecificKwargsSpider()
+    reveal_type(spider.parse)  # R: def (response: scrapy.http.response.Response, page: builtins.int) -> Any
+
+
+@pytest.mark.mypy_testing
+def test_spider_parse_override_narrow() -> None:
+    spider = NarrowOverrideSpider()
+    reveal_type(spider.parse)  # R: def (response: scrapy.http.response.html.HtmlResponse, **kwargs: Any) -> Any

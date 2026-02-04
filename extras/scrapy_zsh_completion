@@ -41,7 +41,6 @@ _scrapy() {
 		(runspider)
 		    local options=(
 			{'(--output)-o','(-o)--output='}'[dump scraped items into FILE (use - for stdout)]:file:_files'
-			{'(--output-format)-t','(-t)--output-format='}'[format to use for dumping items with -o]:format:(FORMAT)'
 			'*-a[set spider argument (may be repeated)]:value pair:(NAME=VALUE)'
 			'1:spider file:_files -g \*.py'
 		    )
@@ -99,7 +98,6 @@ _scrapy() {
 		(crawl)
 		    local options=(
 			{'(--output)-o','(-o)--output='}'[dump scraped items into FILE (use - for stdout)]:file:_files'
-			{'(--output-format)-t','(-t)--output-format='}'[format to use for dumping items with -o]:format:(FORMAT)'
 			'*-a[set spider argument (may be repeated)]:value pair:(NAME=VALUE)'
 			'1:spider:_scrapy_spiders'
 		    )
