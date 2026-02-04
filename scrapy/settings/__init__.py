@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, TypeAlias, cast
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import default_settings
 from scrapy.utils.misc import load_object
+from scrapy.utils.python import global_object_name
 
 # The key types are restricted in BaseSettings._get_key() to ones supported by JSON,
 # see https://github.com/scrapy/scrapy/issues/5383.
@@ -323,39 +324,22 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         if not isinstance(name, str):
             raise ValueError(f"Base setting key must be a string, got {name}")
 
-        base_settings = dict(self[name + "_BASE"]) if name + "_BASE" in self else {}
-        override_settings = dict(self[name]) if name in self else {}
+        normalized_keys = {}
 
-        override_keys_normalized = set()
-        for k in override_settings:
+        def normalize_key(k: Any) -> str:
             if isinstance(k, type):
-                override_keys_normalized.add(f"{k.__module__}.{k.__name__}")
-            else:
-                override_keys_normalized.add(str(k))
+                import_path = global_object_name(k)
+                normalized_keys[import_path] = k
+                return import_path
+            return k
 
-        keys_to_drop = []
-        for k in base_settings:
-            if isinstance(k, type):
-                normalized_k = f"{k.__module__}.{k.__name__}"
-            else:
-                normalized_k = str(k)
+        def restore_key(k: str) -> Any:
+            return normalized_keys.get(k, k)
 
-            if normalized_k in override_keys_normalized:
-                logger.warning(
-                    f"{name}: dropped base key '{k}' because of duplicate with override"
-                )
-                keys_to_drop.append(k)
-
-        for k in keys_to_drop:
-            del base_settings[k]
-
-        compbs = BaseSettings()
-        compbs.update(base_settings)
-        for k, v in override_settings.items():
-            if v is not None:
-                compbs[k] = v
-
-        return compbs
+        result = dict(self[name + "_BASE"] or {})
+        override = {normalize_key(k): v for k, v in (self[name] or {}).items()}
+        result.update(override)
+        return BaseSettings({restore_key(k): v for k, v in result.items() if v is not None})
 
     def getpriority(self, name: _SettingsKey) -> int | None:
         """
