@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, cast
 from scrapy.exceptions import UsageError
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
-from scrapy.utils.python import without_none_values
+from scrapy.utils.python import global_object_name, without_none_values
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Mapping, MutableMapping
@@ -25,8 +25,13 @@ def build_component_list(
     """Compose a component list from a :ref:`component priority dictionary
     <component-priority-dictionaries>`."""
 
+    def _convert(k: Any) -> Any:
+        if isinstance(k, type):
+            k = global_object_name(k)
+        return convert(k)
+
     def _check_components(complist: Collection[Any]) -> None:
-        if len({convert(c) for c in complist}) != len(complist):
+        if len({_convert(c) for c in complist}) != len(complist):
             raise ValueError(
                 f"Some paths in {complist!r} convert to the same object, "
                 "please update your settings"
@@ -38,16 +43,16 @@ def build_component_list(
             for k, v in compdict.items():
                 prio = compdict.getpriority(k)
                 assert prio is not None
-                if compbs.getpriority(convert(k)) == prio:
+                if compbs.getpriority(_convert(k)) == prio:
                     raise ValueError(
                         f"Some paths in {list(compdict.keys())!r} "
                         "convert to the same "
                         "object, please update your settings"
                     )
-                compbs.set(convert(k), v, priority=prio)
+                compbs.set(_convert(k), v, priority=prio)
             return compbs
         _check_components(compdict)
-        return {convert(k): v for k, v in compdict.items()}
+        return {_convert(k): v for k, v in compdict.items()}
 
     def _validate_values(compdict: Mapping[Any, Any]) -> None:
         """Fail if a value in the components dict is not a real number or None."""

@@ -35,6 +35,40 @@ class TestBuildComponentList:
         ):
             build_component_list(duplicate_bs, convert=lambda x: x.lower())
 
+    def test_duplicate_components_class_vs_string(self):
+        # Case mixing class objects and string paths
+        class MyComponent:
+            pass
+
+        comp_str = "scrapy.tests.test_utils_conf.TestBuildComponentList.test_duplicate_components_class_vs_string.<locals>.MyComponent"
+        
+        # Test 1: Class object disabling string path
+        # Assuming defaults (priority 0) has string path, and custom (priority 10) has class object set to None
+        settings = BaseSettings({comp_str: 100}, priority=0)
+        settings.set(MyComponent, None, priority=10)
+        
+        # We need a convert function that simulates update_classpath/global_object_name logic
+        # But build_component_list handles class normalization internally now.
+        # We just need to ensure the convert function returns the string path for the string input.
+        
+        # Since the internal logic normalizes the class key to global_object_name(class),
+        # we need to ensure that global_object_name(MyComponent) matches comp_str.
+        # However, purely local classes might have complex names.
+        
+        # Let's use a real imported class for stability.
+        from scrapy.downloadermiddlewares.httpauth import HttpAuthMiddleware
+        comp_str = "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware"
+        
+        settings = BaseSettings({comp_str: 100}, priority=0)
+        settings.set(HttpAuthMiddleware, None, priority=10)
+        
+        assert build_component_list(settings) == []
+
+        # Test 2: String path disabling class object (should also work)
+        settings = BaseSettings({HttpAuthMiddleware: 100}, priority=0)
+        settings.set(comp_str, None, priority=10)
+        assert build_component_list(settings) == []
+
     def test_valid_numbers(self):
         # work well with None and numeric values
         d = {"a": 10, "b": None, "c": 15, "d": 5.0}
