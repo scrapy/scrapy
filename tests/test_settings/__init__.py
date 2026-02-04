@@ -14,7 +14,8 @@ from scrapy.settings import (
     SettingsAttribute,
     get_settings_priority,
 )
-from scrapy.utils.misc import build_from_crawler
+from scrapy.settings import default_settings as scrapy_default_settings
+from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
 
 from . import default_settings
@@ -403,23 +404,22 @@ class TestBaseSettings:
         assert frozencopy is not self.settings
 
     def test_getwithbase_override_none_by_type(self):
-        class DummyMiddleware:
-            pass
-
-        DummyMiddleware.__module__ = "tests.test_settings"
-        DummyMiddleware.__name__ = "DummyMiddleware"
-
-        settings = BaseSettings(
-            {
-                "DOWNLOADER_MIDDLEWARES_BASE": {DummyMiddleware: 300},
-                "DOWNLOADER_MIDDLEWARES": {DummyMiddleware: None},
+        settings = BaseSettings()
+        setting_names = set()
+        for k, v in scrapy_default_settings.__dict__.items():
+            if not k.endswith("_BASE") or k in {"DOWNLOAD_HANDLERS_BASE", "FEED_EXPORTERS_BASE", "FEED_STORAGES_BASE"}:
+                continue
+            settings[k] = v
+            setting_name = k[: -len("_BASE")]
+            setting_names.add(setting_name)
+            settings[setting_name] = {
+                load_object(import_path): None
+                for import_path in v
             }
-        )
-        compbs = settings.getwithbase("DOWNLOADER_MIDDLEWARES")
 
-        assert isinstance(compbs, BaseSettings)
-        assert DummyMiddleware not in compbs
-        assert DummyMiddleware not in compbs.attributes
+        for setting_name in setting_names:
+            value = settings.getwithbase(setting_name)
+            assert not dict(value)
 
 
 class TestSettings:
