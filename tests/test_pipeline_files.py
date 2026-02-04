@@ -13,12 +13,12 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from typing import Any
 from unittest import mock
+from unittest.mock import MagicMock
 from urllib.parse import urlparse
 
 import attr
 import pytest
 from itemadapter import ItemAdapter
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.exceptions import NotConfigured
 from scrapy.http import Request, Response
@@ -34,6 +34,7 @@ from scrapy.settings import Settings
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 from tests.mockserver.ftp import MockFTPServer
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 from .test_pipeline_media import _mocked_download_func
 
@@ -83,8 +84,8 @@ class TestFilesPipeline:
         settings_dict = {"FILES_STORE": self.tempdir}
         crawler = get_crawler(DefaultSpider, settings_dict=settings_dict)
         crawler.spider = crawler._create_spider()
+        crawler.engine = MagicMock(download_async=_mocked_download_func)
         self.pipeline = FilesPipeline.from_crawler(crawler)
-        self.pipeline.download_func = _mocked_download_func
         self.pipeline.open_spider()
 
     def teardown_method(self):
@@ -160,8 +161,8 @@ class TestFilesPipeline:
         fullpath = Path(self.tempdir, "some", "image", "key.jpg")
         assert self.pipeline.store._get_filesystem_path(path) == fullpath
 
-    @inlineCallbacks
-    def test_file_not_expired(self):
+    @coroutine_test
+    async def test_file_not_expired(self):
         item_url = "http://example.com/file.pdf"
         item = _create_item_with_files(item_url)
         patchers = [
@@ -180,15 +181,15 @@ class TestFilesPipeline:
         for p in patchers:
             p.start()
 
-        result = yield self.pipeline.process_item(item)
+        result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] == "abc"
         assert result["files"][0]["status"] == "uptodate"
 
         for p in patchers:
             p.stop()
 
-    @inlineCallbacks
-    def test_file_expired(self):
+    @coroutine_test
+    async def test_file_expired(self):
         item_url = "http://example.com/file2.pdf"
         item = _create_item_with_files(item_url)
         patchers = [
@@ -211,15 +212,15 @@ class TestFilesPipeline:
         for p in patchers:
             p.start()
 
-        result = yield self.pipeline.process_item(item)
+        result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "downloaded"
 
         for p in patchers:
             p.stop()
 
-    @inlineCallbacks
-    def test_file_cached(self):
+    @coroutine_test
+    async def test_file_cached(self):
         item_url = "http://example.com/file3.pdf"
         item = _create_item_with_files(item_url)
         patchers = [
@@ -242,7 +243,7 @@ class TestFilesPipeline:
         for p in patchers:
             p.start()
 
-        result = yield self.pipeline.process_item(item)
+        result = await self.pipeline.process_item(item)
         assert result["files"][0]["checksum"] != "abc"
         assert result["files"][0]["status"] == "cached"
 
@@ -562,7 +563,7 @@ class TestFilesPipelineCustomSettings:
 
 @pytest.mark.requires_botocore
 class TestS3FilesStore:
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_persist(self):
         bucket = "mybucket"
         key = "export.csv"
@@ -602,7 +603,7 @@ class TestS3FilesStore:
             # The call to read does not happen with Stubber
             assert buffer.method_calls == [mock.call.seek(0)]
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_stat(self):
         bucket = "mybucket"
         key = "export.csv"
@@ -639,7 +640,7 @@ class TestS3FilesStore:
     "GCS_PROJECT_ID" not in os.environ, reason="GCS_PROJECT_ID not found"
 )
 class TestGCSFilesStore:
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_persist(self):
         uri = os.environ.get("GCS_TEST_FILE_URI")
         if not uri:
@@ -664,7 +665,7 @@ class TestGCSFilesStore:
         assert blob.content_type == "application/octet-stream"
         assert expected_policy in acl
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_blob_path_consistency(self):
         """Test to make sure that paths used to store files is the same as the one used to get
         already uploaded files.
@@ -690,8 +691,9 @@ class TestGCSFilesStore:
             store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
+@pytest.mark.requires_reactor  # needs a reactor for FTPFilesStore
 class TestFTPFileStore:
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_persist(self):
         data = b"TestFTPFilesStore: \xe2\x98\x83"
         buf = BytesIO(data)

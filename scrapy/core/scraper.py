@@ -162,7 +162,7 @@ class Scraper:
     async def open_spider_async(self) -> None:
         """Open the spider for scraping and allocate resources for it.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         self.slot = Slot(self.crawler.settings.getint("SCRAPER_SLOT_MAX_ACTIVE_SIZE"))
         if not self.crawler.spider:
@@ -187,7 +187,7 @@ class Scraper:
     async def close_spider_async(self) -> None:
         """Close the spider being scraped and release its resources.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         if self.slot is None:
             raise RuntimeError("Scraper slot not assigned")
@@ -318,6 +318,13 @@ class Scraper:
             callback = result.request.callback or self.crawler.spider._parse
             warn_on_generator_with_return_value(self.crawler.spider, callback)
             output = callback(result, **result.request.cb_kwargs)
+            if isinstance(output, Deferred):
+                warnings.warn(
+                    f"{callback} returned a Deferred."
+                    f" Returning Deferreds from spider callbacks is deprecated.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
         else:  # result is a Failure
             # TODO: properly type adding this attribute to a Failure
             result.request = request  # type: ignore[attr-defined]
@@ -329,6 +336,13 @@ class Scraper:
                 output.raiseException()
             # else the errback returned actual output (like a callback),
             # which needs to be passed to iterate_spider_output()
+            if isinstance(output, Deferred):
+                warnings.warn(
+                    f"{request.errback} returned a Deferred."
+                    f" Returning Deferreds from spider errbacks is deprecated.",
+                    ScrapyDeprecationWarning,
+                    stacklevel=2,
+                )
         return await ensure_awaitable(iterate_spider_output(output))
 
     @_warn_spider_arg
@@ -474,7 +488,7 @@ class Scraper:
         *response* is the source of the item data. If the item does not come
         from response data, e.g. it was hard-coded, set it to ``None``.
 
-        .. versionadded:: VERSION
+        .. versionadded:: 2.14
         """
         assert self.slot is not None  # typing
         assert self.crawler.spider is not None  # typing

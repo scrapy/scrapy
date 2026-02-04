@@ -32,6 +32,9 @@ jobs:
         - python-version: "3.13"
           env:
             TOXENV: default-reactor
+        - python-version: "3.13"
+          env:
+            TOXENV: no-reactor
 
         # pinned deps
         - python-version: "3.10.11"
@@ -46,7 +49,7 @@ jobs:
             TOXENV: extra-deps
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v6
@@ -64,4 +67,6 @@ jobs:
 
     - name: Upload test results
       if: ${{ !cancelled() }}
-      uses: codecov/test-results-action@v1
+      uses: codecov/codecov-action@v5
+      with:
+        report_type: test_results

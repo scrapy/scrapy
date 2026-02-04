@@ -1,7 +1,8 @@
 import asyncio
+from typing import Any
 
 import pytest
-from twisted.internet.defer import Deferred, inlineCallbacks, succeed
+from twisted.internet.defer import Deferred, fail, succeed
 
 from scrapy import Request, Spider, signals
 from scrapy.crawler import Crawler
@@ -9,14 +10,11 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.pipelines import ItemPipelineManager
 from scrapy.utils.asyncio import call_later
 from scrapy.utils.conf import build_component_list
-from scrapy.utils.defer import (
-    deferred_f_from_coro_f,
-    deferred_to_future,
-    maybe_deferred_to_future,
-)
+from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler, get_from_asyncio_queue
 from tests.mockserver.http import MockServer
+from tests.utils.decorators import coroutine_test
 
 
 class SimplePipeline:
@@ -41,6 +39,12 @@ class DeferredPipeline:
     def cb(self, item):
         item["pipeline_passed"] = True
         return item
+
+    def open_spider(self):
+        return succeed(None)
+
+    def close_spider(self):
+        return succeed(None)
 
     def process_item(self, item):
         d = Deferred()
@@ -83,6 +87,36 @@ class AsyncDefNotAsyncioPipeline:
         return item
 
 
+class ProcessItemExceptionPipeline:
+    def process_item(self, item):
+        raise ValueError("process_item error")
+
+
+class ProcessItemExceptionDeferredPipeline:
+    def process_item(self, item):
+        return fail(ValueError("process_item error"))
+
+
+class ProcessItemExceptionAsyncPipeline:
+    async def process_item(self, item):
+        raise ValueError("process_item error")
+
+
+class OpenSpiderExceptionPipeline:
+    def open_spider(self):
+        raise ValueError("open_spider error")
+
+
+class OpenSpiderExceptionDeferredPipeline:
+    def open_spider(self):
+        return fail(ValueError("open_spider error"))
+
+
+class OpenSpiderExceptionAsyncPipeline:
+    async def open_spider(self):
+        raise ValueError("open_spider error")
+
+
 class ItemSpider(Spider):
     name = "itemspider"
 
@@ -93,63 +127,60 @@ class ItemSpider(Spider):
         return {"field": 42}
 
 
+@pytest.mark.requires_http_handler
 class TestPipeline:
-    @classmethod
-    def setup_class(cls):
-        cls.mockserver = MockServer()
-        cls.mockserver.__enter__()
-
-    @classmethod
-    def teardown_class(cls):
-        cls.mockserver.__exit__(None, None, None)
-
     def _on_item_scraped(self, item):
         assert isinstance(item, dict)
         assert item.get("pipeline_passed")
         self.items.append(item)
 
-    def _create_crawler(self, pipeline_class):
+    def _create_crawler(self, pipeline_class: type) -> Crawler:
         settings = {
             "ITEM_PIPELINES": {pipeline_class: 1},
         }
         crawler = get_crawler(ItemSpider, settings)
         crawler.signals.connect(self._on_item_scraped, signals.item_scraped)
-        self.items = []
+        self.items: list[Any] = []
         return crawler
 
-    @inlineCallbacks
-    def test_simple_pipeline(self):
-        crawler = self._create_crawler(SimplePipeline)
-        yield crawler.crawl(mockserver=self.mockserver)
+    @pytest.mark.parametrize(
+        "pipeline_class",
+        [
+            SimplePipeline,
+            AsyncDefPipeline,
+            pytest.param(AsyncDefAsyncioPipeline, marks=pytest.mark.only_asyncio),
+            pytest.param(
+                AsyncDefNotAsyncioPipeline, marks=pytest.mark.only_not_asyncio
+            ),
+        ],
+    )
+    @coroutine_test
+    async def test_pipeline(self, mockserver: MockServer, pipeline_class: type) -> None:
+        crawler = self._create_crawler(pipeline_class)
+        await crawler.crawl_async(mockserver=mockserver)
         assert len(self.items) == 1
 
-    @inlineCallbacks
-    def test_deferred_pipeline(self):
+    @coroutine_test
+    async def test_pipeline_deferred(self, mockserver: MockServer) -> None:
         crawler = self._create_crawler(DeferredPipeline)
-        yield crawler.crawl(mockserver=self.mockserver)
+        with (
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match="DeferredPipeline.open_spider returned a Deferred",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match="DeferredPipeline.close_spider returned a Deferred",
+            ),
+            pytest.warns(
+                ScrapyDeprecationWarning,
+                match="DeferredPipeline.process_item returned a Deferred",
+            ),
+        ):
+            await crawler.crawl_async(mockserver=mockserver)
         assert len(self.items) == 1
 
-    @inlineCallbacks
-    def test_asyncdef_pipeline(self):
-        crawler = self._create_crawler(AsyncDefPipeline)
-        yield crawler.crawl(mockserver=self.mockserver)
-        assert len(self.items) == 1
-
-    @pytest.mark.only_asyncio
-    @inlineCallbacks
-    def test_asyncdef_asyncio_pipeline(self):
-        crawler = self._create_crawler(AsyncDefAsyncioPipeline)
-        yield crawler.crawl(mockserver=self.mockserver)
-        assert len(self.items) == 1
-
-    @pytest.mark.only_not_asyncio
-    @inlineCallbacks
-    def test_asyncdef_not_asyncio_pipeline(self):
-        crawler = self._create_crawler(AsyncDefNotAsyncioPipeline)
-        yield crawler.crawl(mockserver=self.mockserver)
-        assert len(self.items) == 1
-
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_deprecated_spider_arg(self, mockserver: MockServer) -> None:
         crawler = self._create_crawler(DeprecatedSpiderArgPipeline)
         with (
@@ -166,12 +197,61 @@ class TestPipeline:
                 match=r"DeprecatedSpiderArgPipeline.process_item\(\) requires a spider argument",
             ),
         ):
-            await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+            await crawler.crawl_async(mockserver=mockserver)
 
         assert len(self.items) == 1
 
+    @pytest.mark.parametrize(
+        "pipeline_class",
+        [
+            ProcessItemExceptionPipeline,
+            pytest.param(
+                ProcessItemExceptionDeferredPipeline,
+                marks=pytest.mark.filterwarnings(
+                    "ignore::scrapy.exceptions.ScrapyDeprecationWarning"
+                ),
+            ),
+            ProcessItemExceptionAsyncPipeline,
+        ],
+    )
+    @coroutine_test
+    async def test_process_item_exception(
+        self,
+        caplog: pytest.LogCaptureFixture,
+        mockserver: MockServer,
+        pipeline_class: type,
+    ) -> None:
+        crawler = self._create_crawler(pipeline_class)
+        await crawler.crawl_async(mockserver=mockserver)
+        assert "Error processing {'field': 42}" in caplog.text
+        assert "process_item error" in caplog.text
+
+    @pytest.mark.parametrize(
+        "pipeline_class",
+        [
+            OpenSpiderExceptionPipeline,
+            pytest.param(
+                OpenSpiderExceptionDeferredPipeline,
+                marks=pytest.mark.filterwarnings(
+                    "ignore::scrapy.exceptions.ScrapyDeprecationWarning"
+                ),
+            ),
+            OpenSpiderExceptionAsyncPipeline,
+        ],
+    )
+    @coroutine_test
+    async def test_open_spider_exception(
+        self, mockserver: MockServer, pipeline_class: type
+    ) -> None:
+        crawler = self._create_crawler(pipeline_class)
+        with pytest.raises(ValueError, match="open_spider error"):
+            await crawler.crawl_async(mockserver=mockserver)
+
 
 class TestCustomPipelineManager:
+    # needs a reactor or an event loop for is_asyncio_available()
+    # (for ItemPipelineManager.process_item())
+    @pytest.mark.requires_reactor
     def test_deprecated_process_item_spider_arg(self) -> None:
         class CustomPipelineManager(ItemPipelineManager):
             def process_item(self, item, spider):  # pylint: disable=useless-parent-delegation
@@ -186,7 +266,8 @@ class TestCustomPipelineManager:
         ):
             itemproc.process_item({}, crawler.spider)
 
-    @deferred_f_from_coro_f
+    @pytest.mark.requires_http_handler
+    @coroutine_test
     async def test_integration_recommended(self, mockserver: MockServer) -> None:
         class CustomPipelineManager(ItemPipelineManager):
             async def process_item_async(self, item):
@@ -208,11 +289,12 @@ class TestCustomPipelineManager:
         )
         crawler.spider = crawler._create_spider()
         crawler.signals.connect(_on_item_scraped, signals.item_scraped)
-        await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+        await crawler.crawl_async(mockserver=mockserver)
 
         assert len(items) == 1
 
-    @deferred_f_from_coro_f
+    @pytest.mark.requires_http_handler
+    @coroutine_test
     async def test_integration_no_async_subclass(self, mockserver: MockServer) -> None:
         class CustomPipelineManager(ItemPipelineManager):
             def open_spider(self, spider):
@@ -266,11 +348,12 @@ class TestCustomPipelineManager:
                 match=r"CustomPipelineManager overrides process_item\(\) but doesn't override process_item_async\(\)",
             ),
         ):
-            await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+            await crawler.crawl_async(mockserver=mockserver)
 
         assert len(items) == 1
 
-    @deferred_f_from_coro_f
+    @pytest.mark.requires_http_handler
+    @coroutine_test
     async def test_integration_no_async_not_subclass(
         self, mockserver: MockServer
     ) -> None:
@@ -328,7 +411,7 @@ class TestCustomPipelineManager:
                 match=r"CustomPipelineManager doesn't define a process_item_async\(\) method",
             ),
         ):
-            await maybe_deferred_to_future(crawler.crawl(mockserver=mockserver))
+            await crawler.crawl_async(mockserver=mockserver)
 
         assert len(items) == 1
 
@@ -342,7 +425,7 @@ class TestMiddlewareManagerSpider:
     def crawler(self) -> Crawler:
         return get_crawler(Spider)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_deprecated_spider_arg_no_crawler_spider(
         self, crawler: Crawler
     ) -> None:
@@ -374,7 +457,7 @@ class TestMiddlewareManagerSpider:
                 match=r"ItemPipelineManager needs to access self\.crawler\.spider but it is None",
             ),
         ):
-            mwman.open_spider(DefaultSpider())
+            await maybe_deferred_to_future(mwman.open_spider(DefaultSpider()))
         with pytest.raises(
             ValueError,
             match=r"ItemPipelineManager needs to access self\.crawler\.spider but it is None",
@@ -390,14 +473,15 @@ class TestMiddlewareManagerSpider:
                 match=r"ItemPipelineManager needs to access self\.crawler\.spider but it is None",
             ),
         ):
-            mwman.close_spider(DefaultSpider())
+            await maybe_deferred_to_future(mwman.close_spider(DefaultSpider()))
         with pytest.raises(
             ValueError,
             match=r"ItemPipelineManager needs to access self\.crawler\.spider but it is None",
         ):
             await mwman.close_spider_async()
 
-    def test_deprecated_spider_arg_with_crawler(self, crawler: Crawler) -> None:
+    @coroutine_test
+    async def test_deprecated_spider_arg_with_crawler(self, crawler: Crawler) -> None:
         """Crawler is provided and has a spider, works. The instance passed to a deprecated method
         is ignored, even if mismatched."""
         mwman = ItemPipelineManager(crawler=crawler)
@@ -406,14 +490,15 @@ class TestMiddlewareManagerSpider:
             ScrapyDeprecationWarning,
             match=r"ItemPipelineManager.open_spider\(\) is deprecated, use open_spider_async\(\) instead",
         ):
-            mwman.open_spider(DefaultSpider())
+            await maybe_deferred_to_future(mwman.open_spider(DefaultSpider()))
         with pytest.warns(
             ScrapyDeprecationWarning,
             match=r"ItemPipelineManager.close_spider\(\) is deprecated, use close_spider_async\(\) instead",
         ):
-            mwman.close_spider(DefaultSpider())
+            await maybe_deferred_to_future(mwman.close_spider(DefaultSpider()))
 
-    def test_deprecated_spider_arg_without_crawler(self) -> None:
+    @coroutine_test
+    async def test_deprecated_spider_arg_without_crawler(self) -> None:
         """The first instance passed to a deprecated method is used. Mismatched ones raise an error."""
         with pytest.warns(
             ScrapyDeprecationWarning,
@@ -425,7 +510,7 @@ class TestMiddlewareManagerSpider:
             ScrapyDeprecationWarning,
             match=r"ItemPipelineManager.open_spider\(\) is deprecated, use open_spider_async\(\) instead",
         ):
-            mwman.open_spider(spider)
+            await maybe_deferred_to_future(mwman.open_spider(spider))
         with (
             pytest.warns(
                 ScrapyDeprecationWarning,
@@ -435,14 +520,14 @@ class TestMiddlewareManagerSpider:
                 RuntimeError, match="Different instances of Spider were passed"
             ),
         ):
-            mwman.close_spider(DefaultSpider())
+            await maybe_deferred_to_future(mwman.close_spider(DefaultSpider()))
         with pytest.warns(
             ScrapyDeprecationWarning,
             match=r"ItemPipelineManager.close_spider\(\) is deprecated, use close_spider_async\(\) instead",
         ):
-            mwman.close_spider(spider)
+            await maybe_deferred_to_future(mwman.close_spider(spider))
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_no_spider_arg_without_crawler(self) -> None:
         """If no crawler and no spider arg, raise an error."""
         with pytest.warns(

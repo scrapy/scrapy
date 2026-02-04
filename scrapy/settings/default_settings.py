@@ -185,6 +185,7 @@ __all__ = [
     "TELNETCONSOLE_PORT",
     "TELNETCONSOLE_USERNAME",
     "TEMPLATES_DIR",
+    "TWISTED_ENABLED",
     "TWISTED_REACTOR",
     "URLLENGTH_LIMIT",
     "USER_AGENT",
@@ -455,15 +456,14 @@ REQUEST_FINGERPRINTER_CLASS = "scrapy.utils.request.RequestFingerprinter"
 
 RETRY_ENABLED = True
 RETRY_EXCEPTIONS = [
-    "twisted.internet.defer.TimeoutError",
-    "twisted.internet.error.TimeoutError",
-    "twisted.internet.error.DNSLookupError",
-    "twisted.internet.error.ConnectionRefusedError",
+    "scrapy.exceptions.CannotResolveHostError",
+    "scrapy.exceptions.DownloadConnectionRefusedError",
+    "scrapy.exceptions.DownloadFailedError",
+    "scrapy.exceptions.DownloadTimeoutError",
+    "scrapy.exceptions.ResponseDataLossError",
     "twisted.internet.error.ConnectionDone",
     "twisted.internet.error.ConnectError",
     "twisted.internet.error.ConnectionLost",
-    "twisted.internet.error.TCPTimedOutError",
-    "twisted.web.client.ResponseFailed",
     # OSError is raised by the HttpCompression middleware when trying to
     # decompress an empty response
     OSError,
@@ -481,7 +481,7 @@ SCHEDULER = "scrapy.core.scheduler.Scheduler"
 SCHEDULER_DEBUG = False
 SCHEDULER_DISK_QUEUE = "scrapy.squeues.PickleLifoDiskQueue"
 SCHEDULER_MEMORY_QUEUE = "scrapy.squeues.LifoMemoryQueue"
-SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.ScrapyPriorityQueue"
+SCHEDULER_PRIORITY_QUEUE = "scrapy.pqueues.DownloaderAwarePriorityQueue"
 SCHEDULER_START_DISK_QUEUE = "scrapy.squeues.PickleFifoDiskQueue"
 SCHEDULER_START_MEMORY_QUEUE = "scrapy.squeues.FifoMemoryQueue"
 
@@ -525,6 +525,7 @@ TELNETCONSOLE_PASSWORD = None
 
 TEMPLATES_DIR = str((Path(__file__).parent / ".." / "templates").resolve())
 
+TWISTED_ENABLED = True
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
 URLLENGTH_LIMIT = 2083

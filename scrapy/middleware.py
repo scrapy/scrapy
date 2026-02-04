@@ -82,19 +82,6 @@ class MiddlewareManager(ABC):
                 f" {self._compat_spider} and {spider}"
             )
 
-    def _warn_spider_arg(self, method_name: str) -> None:
-        if self.crawler:
-            msg = (
-                f"Passing a spider argument to {type(self).__name__}.{method_name}() is deprecated"
-                " and the passed value is ignored."
-            )
-        else:
-            msg = (
-                f"Passing a spider argument to {type(self).__name__}.{method_name}() is deprecated,"
-                f" {type(self).__name__} should be instantiated with a Crawler instance instead."
-            )
-        warnings.warn(msg, category=ScrapyDeprecationWarning, stacklevel=3)
-
     @classmethod
     @abstractmethod
     def _get_mwlist_from_settings(cls, settings: Settings) -> list[Any]:
@@ -151,17 +138,21 @@ class MiddlewareManager(ABC):
         *args: Any,
         add_spider: bool = False,
         always_add_spider: bool = False,
+        warn_deferred: bool = False,
     ) -> _T:
         methods = cast(
             "Iterable[Callable[Concatenate[_T, _P], _T]]", self.methods[methodname]
         )
         for method in methods:
+            warn = global_object_name(method) if warn_deferred else None
             if always_add_spider or (
                 add_spider and method in self._mw_methods_requiring_spider
             ):
-                obj = await ensure_awaitable(method(obj, *(*args, self._spider)))
+                obj = await ensure_awaitable(
+                    method(obj, *(*args, self._spider)), _warn=warn
+                )
             else:
-                obj = await ensure_awaitable(method(obj, *args))
+                obj = await ensure_awaitable(method(obj, *args), _warn=warn)
         return obj
 
     def open_spider(self, spider: Spider) -> Deferred[list[None]]:  # pragma: no cover

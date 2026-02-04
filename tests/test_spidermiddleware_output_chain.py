@@ -1,9 +1,10 @@
+import pytest
 from testfixtures import LogCapture
 
 from scrapy import Request, Spider
-from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
+from tests.utils.decorators import coroutine_test
 
 
 class _BaseSpiderMiddleware:
@@ -318,6 +319,7 @@ class NotGeneratorOutputChainSpider(Spider):
 
 
 # ================================================================================
+@pytest.mark.requires_http_handler
 class TestSpiderMiddleware:
     mockserver: MockServer
 
@@ -333,10 +335,10 @@ class TestSpiderMiddleware:
     async def crawl_log(self, spider: type[Spider]) -> LogCapture:
         crawler = get_crawler(spider)
         with LogCapture() as log:
-            await maybe_deferred_to_future(crawler.crawl(mockserver=self.mockserver))
+            await crawler.crawl_async(mockserver=self.mockserver)
         return log
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_recovery(self):
         """
         (0) Recover from an exception in a spider callback. The final item count should be 3
@@ -349,7 +351,7 @@ class TestSpiderMiddleware:
         assert str(log).count("Middleware: TabError exception caught") == 1
         assert "'item_scraped_count': 3" in str(log)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_recovery_asyncgen(self):
         """
         Same as test_recovery but with an async callback.
@@ -359,7 +361,7 @@ class TestSpiderMiddleware:
         assert str(log).count("Middleware: TabError exception caught") == 1
         assert "'item_scraped_count': 3" in str(log)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_process_spider_input_without_errback(self):
         """
         (1.1) An exception from the process_spider_input chain should be caught by the
@@ -369,7 +371,7 @@ class TestSpiderMiddleware:
         assert "Middleware: will raise IndexError" in str(log1)
         assert "Middleware: IndexError exception caught" in str(log1)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_process_spider_input_with_errback(self):
         """
         (1.2) An exception from the process_spider_input chain should not be caught by the
@@ -383,7 +385,7 @@ class TestSpiderMiddleware:
         assert "{'from': 'callback'}" not in str(log1)
         assert "'item_scraped_count': 1" in str(log1)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_generator_callback(self):
         """
         (2) An exception from a spider callback (returning a generator) should
@@ -394,7 +396,7 @@ class TestSpiderMiddleware:
         assert "Middleware: ImportError exception caught" in str(log2)
         assert "'item_scraped_count': 2" in str(log2)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_async_generator_callback(self):
         """
         Same as test_generator_callback but with an async callback.
@@ -403,7 +405,7 @@ class TestSpiderMiddleware:
         assert "Middleware: ImportError exception caught" in str(log2)
         assert "'item_scraped_count': 2" in str(log2)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_generator_callback_right_after_callback(self):
         """
         (2.1) Special case of (2): Exceptions should be caught
@@ -413,7 +415,7 @@ class TestSpiderMiddleware:
         assert "Middleware: ImportError exception caught" in str(log21)
         assert "'item_scraped_count': 2" in str(log21)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_not_a_generator_callback(self):
         """
         (3) An exception from a spider callback (returning a list) should
@@ -423,7 +425,7 @@ class TestSpiderMiddleware:
         assert "Middleware: ZeroDivisionError exception caught" in str(log3)
         assert "item_scraped_count" not in str(log3)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_not_a_generator_callback_right_after_callback(self):
         """
         (3.1) Special case of (3): Exceptions should be caught
@@ -435,7 +437,7 @@ class TestSpiderMiddleware:
         assert "Middleware: ZeroDivisionError exception caught" in str(log31)
         assert "item_scraped_count" not in str(log31)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_generator_output_chain(self):
         """
         (4) An exception from a middleware's process_spider_output method should be sent
@@ -482,7 +484,7 @@ class TestSpiderMiddleware:
         assert str(item_recovered) in str(log4)
         assert "parse-second-item" not in str(log4)
 
-    @deferred_f_from_coro_f
+    @coroutine_test
     async def test_not_a_generator_output_chain(self):
         """
         (5) An exception from a middleware's process_spider_output method should be sent

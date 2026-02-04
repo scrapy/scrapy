@@ -111,7 +111,7 @@ module = "twisted"
 implicit_reexport = true
 
 [tool.bumpversion]
-current_version = "2.13.4"
+current_version = "2.14.1"
 commit = true
 tag = true
 tag_name = "{new_version}"
@@ -227,15 +227,17 @@ addopts = [
 xfail_strict = true
 python_files = ["test_*.py", "test_*/__init__.py"]
 markers = [
-    "only_asyncio: marks tests as only enabled when --reactor=asyncio is passed",
-    "only_not_asyncio: marks tests as only enabled when --reactor=asyncio is not passed",
+    "only_asyncio: marks tests that require the asyncio loop to be used",
+    "only_not_asyncio: marks tests that require the asyncio loop to not be used",
+    "requires_reactor: marks tests that require a reactor",
+    "requires_http_handler: marks tests that require a HTTP handler",
     "requires_uvloop: marks tests as only enabled when uvloop is known to be working",
     "requires_botocore: marks tests that need botocore (but not boto3)",
     "requires_boto3: marks tests that need botocore and boto3",
     "requires_mitmproxy: marks tests that need mitmproxy",
 ]
 filterwarnings = [
-    "ignore::DeprecationWarning:twisted.web.static"
+    "ignore::DeprecationWarning:twisted.web.static",
 ]
 
 [tool.ruff.lint]
