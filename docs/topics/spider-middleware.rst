@@ -94,7 +94,7 @@ one or more of these methods:
             def process_start_requests(self, start, spider):
                 yield from start
 
-    .. method:: process_spider_input(response, spider)
+    .. method:: process_spider_input(response)
 
         This method is called for each response that goes through the spider
         middleware and into the spider, for processing.
@@ -116,11 +116,7 @@ one or more of these methods:
         :param response: the response being processed
         :type response: :class:`~scrapy.http.Response` object
 
-        :param spider: the spider for which this response is intended
-        :type spider: :class:`~scrapy.Spider` object
-
-
-    .. method:: process_spider_output(response, result, spider)
+    .. method:: process_spider_output(response, result)
 
         This method is called with the results returned from the Spider, after
         it has processed the response.
@@ -128,10 +124,6 @@ one or more of these methods:
         :meth:`process_spider_output` must return an iterable of
         :class:`~scrapy.Request` objects and :ref:`item objects
         <topics-items>`.
-
-        .. versionchanged:: 2.7
-           This method may be defined as an :term:`asynchronous generator`, in
-           which case ``result`` is an :term:`asynchronous iterable`.
 
         Consider defining this method as an :term:`asynchronous generator`,
         which will be a requirement in a future version of Scrapy. However, if
@@ -149,19 +141,14 @@ one or more of these methods:
         :type result: an iterable of :class:`~scrapy.Request` objects and
           :ref:`item objects <topics-items>`
 
-        :param spider: the spider whose result is being processed
-        :type spider: :class:`~scrapy.Spider` object
-
-    .. method:: process_spider_output_async(response, result, spider)
+    .. method:: process_spider_output_async(response, result)
         :async:
-
-        .. versionadded:: 2.7
 
         If defined, this method must be an :term:`asynchronous generator`,
         which will be called instead of :meth:`process_spider_output` if
         ``result`` is an :term:`asynchronous iterable`.
 
-    .. method:: process_spider_exception(response, exception, spider)
+    .. method:: process_spider_exception(response, exception)
 
         This method is called when a spider or :meth:`process_spider_output`
         method (from a previous spider middleware) raises an exception.
@@ -186,8 +173,6 @@ one or more of these methods:
         :param exception: the exception raised
         :type exception: :exc:`Exception` object
 
-        :param spider: the spider which raised the exception
-        :type spider: :class:`~scrapy.Spider` object
 
 Base class for custom spider middlewares
 ----------------------------------------

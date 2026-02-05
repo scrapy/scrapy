@@ -6,7 +6,7 @@ import inspect
 import os
 import sys
 from importlib.metadata import entry_points
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ParamSpec
 
 import scrapy
 from scrapy.commands import BaseRunSpiderCommand, ScrapyCommand, ScrapyHelpFormatter
@@ -20,12 +20,9 @@ from scrapy.utils.reactor import _asyncio_reactor_path
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
-    # typing.ParamSpec requires Python 3.10
-    from typing_extensions import ParamSpec
-
     from scrapy.settings import BaseSettings, Settings
 
-    _P = ParamSpec("_P")
+_P = ParamSpec("_P")
 
 
 class ScrapyArgumentParser(argparse.ArgumentParser):
@@ -67,11 +64,7 @@ def _get_commands_from_entry_points(
     inproject: bool, group: str = "scrapy.commands"
 ) -> dict[str, ScrapyCommand]:
     cmds: dict[str, ScrapyCommand] = {}
-    if sys.version_info >= (3, 10):
-        eps = entry_points(group=group)
-    else:
-        eps = entry_points().get(group, ())
-    for entry_point in eps:
+    for entry_point in entry_points(group=group):
         obj = entry_point.load()
         if inspect.isclass(obj):
             cmds[entry_point.name] = obj()

@@ -29,17 +29,14 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWar
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
-from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.boto import is_botocore_available
 from scrapy.utils.datatypes import CaseInsensitiveDict
-from scrapy.utils.deprecate import method_is_overridden
 from scrapy.utils.ftp import ftp_store_file
 from scrapy.utils.log import failure_to_exc_info
-from scrapy.utils.python import get_func_args, global_object_name, to_bytes
+from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
     from os import PathLike
 
     from twisted.python.failure import Failure
@@ -47,8 +44,8 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy import Spider
     from scrapy.crawler import Crawler
+    from scrapy.settings import BaseSettings
 
 
 logger = logging.getLogger(__name__)
@@ -161,7 +158,7 @@ class S3FilesStore:
     AWS_USE_SSL = None
     AWS_VERIFY = None
 
-    POLICY = "private"  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_settings
+    POLICY = "private"  # Overridden from settings.FILES_STORE_S3_ACL in FilesPipeline.from_crawler()
     HEADERS = {
         "Cache-Control": "max-age=172800",
     }
@@ -280,7 +277,7 @@ class GCSFilesStore:
     CACHE_CONTROL = "max-age=172800"
 
     # The bucket's default object ACL will be applied to the object.
-    # Overridden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_settings.
+    # Overridden from settings.FILES_STORE_GCS_ACL in FilesPipeline.from_crawler().
     POLICY = None
 
     def __init__(self, uri: str):
@@ -445,27 +442,30 @@ class FilesPipeline(MediaPipeline):
     def __init__(
         self,
         store_uri: str | PathLike[str],
-        download_func: Callable[[Request, Spider], Response] | None = None,
-        settings: Settings | dict[str, Any] | None = None,
+        download_func: None = None,
         *,
-        crawler: Crawler | None = None,
+        crawler: Crawler,
     ):
-        store_uri = _to_string(store_uri)
-        if not store_uri:
-            raise NotConfigured
+        if download_func is not None:  # pragma: no cover
+            warnings.warn(
+                "The download_func argument of FilesPipeline.__init__() is ignored"
+                " and will be removed in a future Scrapy version.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
 
-        if crawler is not None:
-            if settings is not None:
-                warnings.warn(
-                    f"FilesPipeline.__init__() was called with a crawler instance and a settings instance"
-                    f" when creating {global_object_name(self.__class__)}. The settings instance will be ignored"
-                    f" and crawler.settings will be used. The settings argument will be removed in a future Scrapy version.",
-                    category=ScrapyDeprecationWarning,
-                    stacklevel=2,
-                )
-            settings = crawler.settings
-        elif isinstance(settings, dict) or settings is None:
-            settings = Settings(settings)
+        if not (store_uri and (store_uri := _to_string(store_uri))):
+            from scrapy.pipelines.images import ImagesPipeline  # noqa: PLC0415
+
+            setting_name = (
+                "IMAGES_STORE" if isinstance(self, ImagesPipeline) else "FILES_STORE"
+            )
+            raise NotConfigured(
+                f"{setting_name} setting must be set to a valid path (not empty) "
+                f"to enable {self.__class__.__name__}."
+            )
+
+        settings = crawler.settings
         cls_name = "FilesPipeline"
         self.store: FilesStoreProtocol = self._get_store(store_uri)
         resolve = functools.partial(
@@ -483,51 +483,14 @@ class FilesPipeline(MediaPipeline):
             resolve("FILES_RESULT_FIELD"), self.FILES_RESULT_FIELD
         )
 
-        super().__init__(
-            download_func=download_func,
-            settings=settings if not crawler else None,
-            crawler=crawler,
-        )
-
-    @classmethod
-    def from_settings(cls, settings: Settings) -> Self:
-        warnings.warn(
-            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return cls._from_settings(settings, None)
+        super().__init__(crawler=crawler)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:
-        if method_is_overridden(cls, FilesPipeline, "from_settings"):
-            warnings.warn(
-                f"{global_object_name(cls)} overrides FilesPipeline.from_settings()."
-                f" This method is deprecated and won't be called in future Scrapy versions,"
-                f" please update your code so that it overrides from_crawler() instead.",
-                category=ScrapyDeprecationWarning,
-            )
-            o = cls.from_settings(crawler.settings)
-            o._finish_init(crawler)
-            return o
-        return cls._from_settings(crawler.settings, crawler)
-
-    @classmethod
-    def _from_settings(cls, settings: Settings, crawler: Crawler | None) -> Self:
+        settings = crawler.settings
         cls._update_stores(settings)
         store_uri = settings["FILES_STORE"]
-        if "crawler" in get_func_args(cls.__init__):
-            o = cls(store_uri, crawler=crawler)
-        else:
-            o = cls(store_uri, settings=settings)
-            if crawler:
-                o._finish_init(crawler)
-            warnings.warn(
-                f"{global_object_name(cls)}.__init__() doesn't take a crawler argument."
-                " This is deprecated and the argument will be required in future Scrapy versions.",
-                category=ScrapyDeprecationWarning,
-            )
-        return o
+        return cls(store_uri, crawler=crawler)
 
     @classmethod
     def _update_stores(cls, settings: BaseSettings) -> None:
@@ -585,7 +548,7 @@ class FilesPipeline(MediaPipeline):
                 {"medianame": self.MEDIA_NAME, "request": request, "referer": referer},
                 extra={"spider": info.spider},
             )
-            self.inc_stats(info.spider, "uptodate")
+            self.inc_stats("uptodate")
 
             checksum = result.get("checksum", None)
             return {
@@ -663,7 +626,7 @@ class FilesPipeline(MediaPipeline):
             {"status": status, "request": request, "referer": referer},
             extra={"spider": info.spider},
         )
-        self.inc_stats(info.spider, status)
+        self.inc_stats(status)
 
         try:
             path = self.file_path(request, response=response, info=info, item=item)
@@ -694,10 +657,10 @@ class FilesPipeline(MediaPipeline):
             "status": status,
         }
 
-    def inc_stats(self, spider: Spider, status: str) -> None:
-        assert spider.crawler.stats
-        spider.crawler.stats.inc_value("file_count", spider=spider)
-        spider.crawler.stats.inc_value(f"file_status_count/{status}", spider=spider)
+    def inc_stats(self, status: str) -> None:
+        assert self.crawler.stats
+        self.crawler.stats.inc_value("file_count")
+        self.crawler.stats.inc_value(f"file_status_count/{status}")
 
     # Overridable Interface
     def get_media_requests(
