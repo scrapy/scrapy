@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import sys
 from contextlib import suppress
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, ParamSpec, TypeVar
 from warnings import catch_warnings, filterwarnings
 
 from twisted.internet import asyncioreactor, error
@@ -19,14 +19,11 @@ if TYPE_CHECKING:
     from twisted.internet.protocol import ServerFactory
     from twisted.internet.tcp import Port
 
-    # typing.ParamSpec requires Python 3.10
-    from typing_extensions import ParamSpec
-
     from scrapy.utils.asyncio import CallLaterResult
 
-    _P = ParamSpec("_P")
 
 _T = TypeVar("_T")
+_P = ParamSpec("_P")
 
 
 def listen_tcp(portrange: list[int], host: str, factory: ServerFactory) -> Port:  # type: ignore[return]  # pylint: disable=inconsistent-return-statements  # noqa: RET503

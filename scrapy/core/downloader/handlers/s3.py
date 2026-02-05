@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
+from scrapy.core.downloader.handlers.base import BaseDownloadHandler
 from scrapy.core.downloader.handlers.http11 import HTTP11DownloadHandler
 from scrapy.exceptions import NotConfigured
 from scrapy.utils.boto import is_botocore_available
@@ -9,57 +10,28 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import build_from_crawler
 
 if TYPE_CHECKING:
-    from twisted.internet.defer import Deferred
-
-    # typing.Self requires Python 3.11
-    from typing_extensions import Self
-
-    from scrapy import Request, Spider
+    from scrapy import Request
     from scrapy.crawler import Crawler
     from scrapy.http import Response
-    from scrapy.settings import BaseSettings
 
 
-class S3DownloadHandler:
-    def __init__(
-        self,
-        settings: BaseSettings,
-        *,
-        crawler: Crawler,
-        aws_access_key_id: str | None = None,
-        aws_secret_access_key: str | None = None,
-        aws_session_token: str | None = None,
-        httpdownloadhandler: type[HTTP11DownloadHandler] = HTTP11DownloadHandler,
-        **kw: Any,
-    ):
+class S3DownloadHandler(BaseDownloadHandler):
+    lazy = True
+
+    def __init__(self, crawler: Crawler):
         if not is_botocore_available():
             raise NotConfigured("missing botocore library")
 
-        if not aws_access_key_id:
-            aws_access_key_id = settings["AWS_ACCESS_KEY_ID"]
-        if not aws_secret_access_key:
-            aws_secret_access_key = settings["AWS_SECRET_ACCESS_KEY"]
-        if not aws_session_token:
-            aws_session_token = settings["AWS_SESSION_TOKEN"]
-
-        # If no credentials could be found anywhere,
-        # consider this an anonymous connection request by default;
-        # unless 'anon' was set explicitly (True/False).
-        anon = kw.get("anon")
-        if anon is None and not aws_access_key_id and not aws_secret_access_key:
-            kw["anon"] = True
-        self.anon = kw.get("anon")
-
+        super().__init__(crawler)
+        aws_access_key_id = crawler.settings["AWS_ACCESS_KEY_ID"]
+        aws_secret_access_key = crawler.settings["AWS_SECRET_ACCESS_KEY"]
+        aws_session_token = crawler.settings["AWS_SESSION_TOKEN"]
+        self.anon = not aws_access_key_id and not aws_secret_access_key
         self._signer = None
-        import botocore.auth  # noqa: PLC0415
-        import botocore.credentials  # noqa: PLC0415
-
-        kw.pop("anon", None)
-        if kw:
-            raise TypeError(f"Unexpected keyword arguments: {kw}")
         if not self.anon:
-            assert aws_access_key_id is not None
-            assert aws_secret_access_key is not None
+            import botocore.auth  # noqa: PLC0415
+            import botocore.credentials  # noqa: PLC0415
+
             SignerCls = botocore.auth.AUTH_TYPE_MAPS["s3"]
             # botocore.auth.BaseSigner doesn't have an __init__() with args, only subclasses do
             self._signer = SignerCls(  # type: ignore[call-arg]
@@ -68,17 +40,10 @@ class S3DownloadHandler:
                 )
             )
 
-        _http_handler = build_from_crawler(
-            httpdownloadhandler,
-            crawler,
-        )
+        _http_handler = build_from_crawler(HTTP11DownloadHandler, crawler)
         self._download_http = _http_handler.download_request
 
-    @classmethod
-    def from_crawler(cls, crawler: Crawler, **kwargs: Any) -> Self:
-        return cls(crawler.settings, crawler=crawler, **kwargs)
-
-    def download_request(self, request: Request, spider: Spider) -> Deferred[Response]:
+    async def download_request(self, request: Request) -> Response:
         p = urlparse_cached(request)
         scheme = "https" if request.meta.get("is_secure") else "http"
         bucket = p.hostname
@@ -98,4 +63,4 @@ class S3DownloadHandler:
             assert self._signer
             self._signer.add_auth(awsrequest)
             request = request.replace(url=url, headers=awsrequest.headers.items())
-        return self._download_http(request, spider)
+        return await self._download_http(request)

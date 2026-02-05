@@ -9,7 +9,7 @@ Installation guide
 Supported Python versions
 =========================
 
-Scrapy requires Python 3.9+, either the CPython implementation (default) or
+Scrapy requires Python 3.10+, either the CPython implementation (default) or
 the PyPy implementation (see :ref:`python:implementations`).
 
 .. _intro-install-scrapy:

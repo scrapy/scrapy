@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 import warnings
 from importlib import import_module
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, TypeAlias
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 from warnings import warn
 
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 
     from scrapy import Spider
 
-UrlT = Union[str, bytes, ParseResult]
+UrlT: TypeAlias = str | bytes | ParseResult
 
 
 def url_is_from_any_domain(url: UrlT, domains: Iterable[str]) -> bool:

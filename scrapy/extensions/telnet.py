@@ -15,10 +15,10 @@ from typing import TYPE_CHECKING, Any
 from twisted.conch import telnet
 from twisted.conch.insults import insults
 from twisted.internet import protocol
+from twisted.internet.defer import fail, succeed
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
-from scrapy.utils.decorators import defers
 from scrapy.utils.engine import print_engine_status
 from scrapy.utils.reactor import listen_tcp
 from scrapy.utils.trackref import print_live_refs
@@ -43,6 +43,12 @@ class TelnetConsole(protocol.ServerFactory):
     def __init__(self, crawler: Crawler):
         if not crawler.settings.getbool("TELNETCONSOLE_ENABLED"):
             raise NotConfigured
+
+        if not crawler.settings.getbool("TWISTED_ENABLED"):
+            raise NotConfigured(
+                "The TelnetConsole extension requires a Twisted reactor."
+                " You can set the TELNETCONSOLE_ENABLED setting to False to remove this warning."
+            )
 
         self.crawler: Crawler = crawler
         self.noisy: bool = False
@@ -80,20 +86,19 @@ class TelnetConsole(protocol.ServerFactory):
         class Portal:
             """An implementation of IPortal"""
 
-            @defers
             def login(self_, credentials, mind, *interfaces):  # pylint: disable=no-self-argument
                 if not (
                     credentials.username == self.username.encode("utf8")
                     and credentials.checkPassword(self.password.encode("utf8"))
                 ):
-                    raise ValueError("Invalid credentials")
+                    return fail(ValueError("Invalid credentials"))
 
                 from twisted.conch import manhole
 
                 protocol = telnet.TelnetBootstrapProtocol(
                     insults.ServerProtocol, manhole.Manhole, self._get_telnet_vars()
                 )
-                return (interfaces[0], protocol, lambda: None)
+                return succeed((interfaces[0], protocol, lambda: None))
 
         return telnet.TelnetTransport(telnet.AuthenticatingTelnetProtocol, Portal())
 

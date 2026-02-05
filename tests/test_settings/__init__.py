@@ -311,7 +311,7 @@ class TestBaseSettings:
         assert settings.getdict("TEST_DICT3", {"key1": 5}) == {"key1": 5}
         with pytest.raises(
             ValueError,
-            match="dictionary update sequence element #0 has length 3; 2 is required|sequence of pairs expected",
+            match=r"dictionary update sequence element #0 has length 3; 2 is required|sequence of pairs expected",
         ):
             settings.getdict("TEST_LIST1")
         with pytest.raises(

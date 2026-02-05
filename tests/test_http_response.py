@@ -333,7 +333,7 @@ class TestResponseBase:
         if response is None:
             response = self._links_response()
         followed = response.follow_all(follow_obj)
-        for req, target in zip(followed, target_urls):
+        for req, target in zip(followed, target_urls, strict=False):
             assert req.url == target
             yield req
 
@@ -647,7 +647,7 @@ class TestTextResponse(TestResponseBase):
 
         # select <a> elements
         for sellist in [resp.css("a"), resp.xpath("//a")]:
-            for sel, url in zip(sellist, urls):
+            for sel, url in zip(sellist, urls, strict=False):
                 self._assert_followed_url(sel, url, response=resp)
 
         # select <link> elements
@@ -659,7 +659,7 @@ class TestTextResponse(TestResponseBase):
 
         # href attributes should work
         for sellist in [resp.css("a::attr(href)"), resp.xpath("//a/@href")]:
-            for sel, url in zip(sellist, urls):
+            for sel, url in zip(sellist, urls, strict=False):
                 self._assert_followed_url(sel, url, response=resp)
 
         # non-a elements are not supported
@@ -813,7 +813,7 @@ class TestTextResponse(TestResponseBase):
         text_body = b"""<html><body>text</body></html>"""
         text_response = self.response_class("http://www.example.com", body=text_body)
         with pytest.raises(
-            ValueError, match="(Expecting value|Unexpected '<'): line 1"
+            ValueError, match=r"(Expecting value|Unexpected '<'): line 1"
         ):
             text_response.json()
 

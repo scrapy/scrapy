@@ -284,9 +284,9 @@ class TestItemMeta:
 
         (first_call, second_call) = new_mock.call_args_list[-2:]
 
-        mcs, class_name, bases, attrs = first_call[0]
+        *_, attrs = first_call[0]
         assert "__classcell__" not in attrs
-        mcs, class_name, bases, attrs = second_call[0]
+        *_, attrs = second_call[0]
         assert "__classcell__" in attrs
 
 

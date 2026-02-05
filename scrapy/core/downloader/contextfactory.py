@@ -72,21 +72,6 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             )
 
     @classmethod
-    def from_settings(
-        cls,
-        settings: BaseSettings,
-        method: int = SSL.SSLv23_METHOD,
-        *args: Any,
-        **kwargs: Any,
-    ) -> Self:
-        warnings.warn(
-            f"{cls.__name__}.from_settings() is deprecated, use from_crawler() instead.",
-            category=ScrapyDeprecationWarning,
-            stacklevel=2,
-        )
-        return cls._from_settings(settings, method, *args, **kwargs)
-
-    @classmethod
     def from_crawler(
         cls,
         crawler: Crawler,
@@ -94,20 +79,10 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         *args: Any,
         **kwargs: Any,
     ) -> Self:
-        return cls._from_settings(crawler.settings, method, *args, **kwargs)
-
-    @classmethod
-    def _from_settings(
-        cls,
-        settings: BaseSettings,
-        method: int = SSL.SSLv23_METHOD,
-        *args: Any,
-        **kwargs: Any,
-    ) -> Self:
-        tls_verbose_logging: bool = settings.getbool(
+        tls_verbose_logging: bool = crawler.settings.getbool(
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
-        tls_ciphers: str | None = settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
+        tls_ciphers: str | None = crawler.settings["DOWNLOADER_CLIENT_TLS_CIPHERS"]
         return cls(  # type: ignore[misc]
             method=method,
             tls_verbose_logging=tls_verbose_logging,

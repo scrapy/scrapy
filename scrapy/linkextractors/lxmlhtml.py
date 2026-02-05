@@ -9,7 +9,7 @@ import operator
 import re
 from collections.abc import Callable, Iterable
 from functools import partial
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 from urllib.parse import urljoin, urlparse
 
 from lxml import etree
@@ -157,8 +157,8 @@ class LxmlParserLinkExtractor:
         return links
 
 
-_RegexT = Union[str, re.Pattern[str]]
-_RegexOrSeveralT = Union[_RegexT, Iterable[_RegexT]]
+_Regex: TypeAlias = str | re.Pattern[str]
+_RegexOrSeveral: TypeAlias = _Regex | Iterable[_Regex]
 
 
 class LxmlLinkExtractor:
@@ -166,8 +166,8 @@ class LxmlLinkExtractor:
 
     def __init__(
         self,
-        allow: _RegexOrSeveralT = (),
-        deny: _RegexOrSeveralT = (),
+        allow: _RegexOrSeveral = (),
+        deny: _RegexOrSeveral = (),
         allow_domains: str | Iterable[str] = (),
         deny_domains: str | Iterable[str] = (),
         restrict_xpaths: str | Iterable[str] = (),
@@ -179,7 +179,7 @@ class LxmlLinkExtractor:
         deny_extensions: str | Iterable[str] | None = None,
         restrict_css: str | Iterable[str] = (),
         strip: bool = True,
-        restrict_text: _RegexOrSeveralT | None = None,
+        restrict_text: _RegexOrSeveral | None = None,
     ):
         tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
         self.link_extractor = LxmlParserLinkExtractor(
@@ -208,7 +208,7 @@ class LxmlLinkExtractor:
         self.restrict_text: list[re.Pattern[str]] = self._compile_regexes(restrict_text)
 
     @staticmethod
-    def _compile_regexes(value: _RegexOrSeveralT | None) -> list[re.Pattern[str]]:
+    def _compile_regexes(value: _RegexOrSeveral | None) -> list[re.Pattern[str]]:
         return [
             x if isinstance(x, re.Pattern) else re.compile(x)
             for x in arg_to_iter(value)

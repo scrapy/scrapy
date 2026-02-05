@@ -1,10 +1,11 @@
+import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.http import Request
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import MockServerSpider
+from tests.utils.decorators import inline_callbacks_test
 
 
 class InjectArgumentsDownloaderMiddleware:
@@ -148,6 +149,7 @@ class KeywordArgumentsSpider(MockServerSpider):
         self.crawler.stats.inc_value("boolean_checks", 1)
 
 
+@pytest.mark.requires_http_handler
 class TestCallbackKeywordArguments:
     @classmethod
     def setup_class(cls):
@@ -158,7 +160,7 @@ class TestCallbackKeywordArguments:
     def teardown_class(cls):
         cls.mockserver.__exit__(None, None, None)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_callback_kwargs(self):
         crawler = get_crawler(KeywordArgumentsSpider)
         with LogCapture() as log:

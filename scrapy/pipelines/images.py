@@ -19,11 +19,10 @@ from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException, FilesPipeline, _md5sum
-from scrapy.settings import Settings
-from scrapy.utils.python import get_func_args, global_object_name, to_bytes
+from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Iterable
     from os import PathLike
 
     from PIL import Image
@@ -31,7 +30,6 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.pipelines.media import FileInfoOrError, MediaPipeline
 
@@ -57,40 +55,31 @@ class ImagesPipeline(FilesPipeline):
     def __init__(
         self,
         store_uri: str | PathLike[str],
-        download_func: Callable[[Request, Spider], Response] | None = None,
-        settings: Settings | dict[str, Any] | None = None,
+        download_func: None = None,
         *,
-        crawler: Crawler | None = None,
+        crawler: Crawler,
     ):
-        try:
-            from PIL import Image  # noqa: PLC0415
-
-            self._Image = Image
-        except ImportError:
-            raise NotConfigured(
-                "ImagesPipeline requires installing Pillow 8.0.0 or later"
+        if download_func is not None:  # pragma: no cover
+            warnings.warn(
+                "The download_func argument of ImagesPipeline.__init__() is ignored"
+                " and will be removed in a future Scrapy version.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
             )
 
-        super().__init__(
-            store_uri,
-            settings=settings if not crawler else None,
-            download_func=download_func,
-            crawler=crawler,
-        )
+        try:
+            from PIL import Image, ImageOps  # noqa: PLC0415
 
-        if crawler is not None:
-            if settings is not None:
-                warnings.warn(
-                    f"ImagesPipeline.__init__() was called with a crawler instance and a settings instance"
-                    f" when creating {global_object_name(self.__class__)}. The settings instance will be ignored"
-                    f" and crawler.settings will be used. The settings argument will be removed in a future Scrapy version.",
-                    category=ScrapyDeprecationWarning,
-                    stacklevel=2,
-                )
-            settings = crawler.settings
-        elif isinstance(settings, dict) or settings is None:
-            settings = Settings(settings)
+            self._Image = Image
+            self._ImageOps = ImageOps
+        except ImportError:
+            raise NotConfigured(
+                "ImagesPipeline requires installing Pillow 8.3.2 or later"
+            )
 
+        super().__init__(store_uri, crawler=crawler)
+
+        settings = crawler.settings
         resolve = functools.partial(
             self._key_for_pipe,
             base_class_name="ImagesPipeline",
@@ -120,21 +109,11 @@ class ImagesPipeline(FilesPipeline):
         )
 
     @classmethod
-    def _from_settings(cls, settings: Settings, crawler: Crawler | None) -> Self:
+    def from_crawler(cls, crawler: Crawler) -> Self:
+        settings = crawler.settings
         cls._update_stores(settings)
         store_uri = settings["IMAGES_STORE"]
-        if "crawler" in get_func_args(cls.__init__):
-            o = cls(store_uri, crawler=crawler)
-        else:
-            o = cls(store_uri, settings=settings)
-            if crawler:
-                o._finish_init(crawler)
-            warnings.warn(
-                f"{global_object_name(cls)}.__init__() doesn't take a crawler argument."
-                " This is deprecated and the argument will be required in future Scrapy versions.",
-                category=ScrapyDeprecationWarning,
-            )
-        return o
+        return cls(store_uri, crawler=crawler)
 
     def file_downloaded(
         self,
@@ -180,8 +159,9 @@ class ImagesPipeline(FilesPipeline):
     ) -> Iterable[tuple[str, Image.Image, BytesIO]]:
         path = self.file_path(request, response=response, info=info, item=item)
         orig_image = self._Image.open(BytesIO(response.body))
+        transposed_image = self._ImageOps.exif_transpose(orig_image)
 
-        width, height = orig_image.size
+        width, height = transposed_image.size
         if width < self.min_width or height < self.min_height:
             raise ImageException(
                 "Image too small "
@@ -190,7 +170,7 @@ class ImagesPipeline(FilesPipeline):
             )
 
         image, buf = self.convert_image(
-            orig_image, response_body=BytesIO(response.body)
+            transposed_image, response_body=BytesIO(response.body)
         )
         yield path, image, buf
 

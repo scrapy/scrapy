@@ -8,7 +8,6 @@ from urllib.parse import urlsplit, urlunsplit
 
 import pytest
 from testfixtures import LogCapture
-from twisted.internet.defer import inlineCallbacks
 
 from scrapy.core.downloader.handlers import http11
 from scrapy.http import Request
@@ -16,6 +15,7 @@ from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
 from tests.spiders import SimpleSpider, SingleRequestSpider
 from tests.utils import ipv6_loopback_available
+from tests.utils.decorators import inline_callbacks_test
 
 
 class MitmProxy:
@@ -81,11 +81,6 @@ class BaseTestProxyConnect:
         cls.mockserver.__exit__(None, None, None)
 
     def setup_method(self):
-        try:
-            import mitmproxy  # noqa: F401,PLC0415
-        except ImportError:
-            pytest.skip("mitmproxy is not installed")
-
         self._oldenv = os.environ.copy()
         self._proxy = MitmProxy()
         proxy_url = self._proxy.start(listen_host=self.proxy_host)
@@ -96,14 +91,14 @@ class BaseTestProxyConnect:
         self._proxy.stop()
         os.environ = self._oldenv
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_https_connect_tunnel(self):
         crawler = get_crawler(SimpleSpider)
         with LogCapture() as log:
             yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
         self._assert_got_response_code(200, log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_https_tunnel_auth_error(self):
         os.environ["https_proxy"] = _wrong_credentials(os.environ["https_proxy"])
         crawler = get_crawler(SimpleSpider)
@@ -111,7 +106,7 @@ class BaseTestProxyConnect:
             yield crawler.crawl(self.mockserver.url("/status?n=200", is_secure=True))
         self._assert_got_tunnel_error(log)
 
-    @inlineCallbacks
+    @inline_callbacks_test
     def test_https_tunnel_without_leak_proxy_authorization_header(self):
         request = Request(self.mockserver.url("/echo", is_secure=True))
         crawler = get_crawler(SingleRequestSpider)
@@ -128,6 +123,8 @@ class BaseTestProxyConnect:
         assert "TunnelError" in str(log)
 
 
+@pytest.mark.requires_http_handler
+@pytest.mark.requires_mitmproxy
 class TestProxyConnect(BaseTestProxyConnect):
     proxy_host = "127.0.0.1"
 
@@ -135,6 +132,8 @@ class TestProxyConnect(BaseTestProxyConnect):
 @pytest.mark.skipif(
     not ipv6_loopback_available(), reason="IPv6 loopback is not available"
 )
+@pytest.mark.requires_http_handler
+@pytest.mark.requires_mitmproxy
 class TestProxyConnectIPv6(BaseTestProxyConnect):
     proxy_host = "::1"
 

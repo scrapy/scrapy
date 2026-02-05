@@ -21,7 +21,6 @@ from h2.events import (
     WindowUpdated,
 )
 from h2.exceptions import FrameTooLargeError, H2Error
-from twisted.internet.error import TimeoutError as TxTimeoutError
 from twisted.internet.interfaces import (
     IAddress,
     IHandshakeListener,
@@ -33,7 +32,9 @@ from twisted.protocols.policies import TimeoutMixin
 from zope.interface import implementer
 
 from scrapy.core.http2.stream import Stream, StreamCloseReason
+from scrapy.exceptions import DownloadTimeoutError
 from scrapy.http import Request, Response
+from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
 
 if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
@@ -191,6 +192,13 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
     def _new_stream(self, request: Request, spider: Spider) -> Stream:
         """Instantiates a new Stream object"""
+        if hasattr(spider, "download_maxsize"):  # pragma: no cover
+            warn_on_deprecated_spider_attribute("download_maxsize", "DOWNLOAD_MAXSIZE")
+        if hasattr(spider, "download_warnsize"):  # pragma: no cover
+            warn_on_deprecated_spider_attribute(
+                "download_warnsize", "DOWNLOAD_WARNSIZE"
+            )
+
         stream = Stream(
             stream_id=next(self._stream_id_generator),
             request=request,
@@ -305,7 +313,7 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
 
     def timeoutConnection(self) -> None:
         """Called when the connection times out.
-        We lose the connection with TimeoutError"""
+        We lose the connection with DownloadTimeoutError"""
 
         # Check whether there are open streams. If there are, we're going to
         # want to use the error code PROTOCOL_ERROR. If there aren't, use
@@ -322,7 +330,11 @@ class H2ClientProtocol(Protocol, TimeoutMixin):
         self._write_to_transport()
 
         self._lose_connection_with_error(
-            [TxTimeoutError(f"Connection was IDLE for more than {self.IDLE_TIMEOUT}s")]
+            [
+                DownloadTimeoutError(
+                    f"Connection was IDLE for more than {self.IDLE_TIMEOUT}s"
+                )
+            ]
         )
 
     def connectionLost(self, reason: Failure = connectionDone) -> None:

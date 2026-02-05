@@ -236,8 +236,6 @@ This storage backend uses :ref:`delayed file delivery <delayed-file-delivery>`.
 Google Cloud Storage (GCS)
 --------------------------
 
-.. versionadded:: 2.3
-
 The feeds are stored on `Google Cloud Storage`_.
 
 -   URI scheme: ``gs``
@@ -303,8 +301,6 @@ feed URI, allowing item delivery to start way before the end of the crawl.
 Item filtering
 ==============
 
-.. versionadded:: 2.6.0
-
 You can filter items that you want to allow for a particular feed by using the
 ``item_classes`` option in :ref:`feeds options <feed-options>`. Only items of
 the specified types will be added to the feed.
@@ -343,8 +339,6 @@ ItemFilter
 
 Post-Processing
 ===============
-
-.. versionadded:: 2.6.0
 
 Scrapy provides an option to activate plugins to post-process feeds before they are exported
 to feed storages. In addition to using :ref:`builtin plugins <builtin-plugins>`, you
@@ -425,8 +419,6 @@ These are the settings used for configuring the feed exports:
 FEEDS
 -----
 
-.. versionadded:: 2.1
-
 Default: ``{}``
 
 A dictionary in which every key is a feed URI (or a :class:`pathlib.Path`
@@ -479,8 +471,6 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``batch_item_count``: falls back to
     :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
 
-    .. versionadded:: 2.3.0
-
 -   ``encoding``: falls back to :setting:`FEED_EXPORT_ENCODING`.
 
 -   ``fields``: falls back to :setting:`FEED_EXPORT_FIELDS`.
@@ -489,19 +479,13 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     If undefined or empty, all items are exported.
 
-    .. versionadded:: 2.6.0
-
 -   ``item_filter``: a :ref:`filter class <item-filter>` to filter items to export.
 
     :class:`~scrapy.extensions.feedexport.ItemFilter` is used be default.
 
-    .. versionadded:: 2.6.0
-
 -   ``indent``: falls back to :setting:`FEED_EXPORT_INDENT`.
 
 -   ``item_export_kwargs``: :class:`dict` with keyword arguments for the corresponding :ref:`item exporter class <topics-exporters>`.
-
-    .. versionadded:: 2.4.0
 
 -   ``overwrite``: whether to overwrite the file if it already exists
     (``True``) or append to its content (``False``).
@@ -522,8 +506,6 @@ as a fallback value if that key is not provided for a specific feed definition:
 
     -   :ref:`topics-feed-storage-stdout`: ``False`` (overwriting is not supported)
 
-    .. versionadded:: 2.4.0
-
 -   ``store_empty``: falls back to :setting:`FEED_STORE_EMPTY`.
 
 -   ``uri_params``: falls back to :setting:`FEED_URI_PARAMS`.
@@ -531,8 +513,6 @@ as a fallback value if that key is not provided for a specific feed definition:
 -   ``postprocessing``: list of :ref:`plugins <post-processing>` to use for post-processing.
 
     The plugins will be used in the order of the list passed.
-
-    .. versionadded:: 2.6.0
 
 .. setting:: FEED_EXPORT_ENCODING
 
@@ -700,8 +680,6 @@ format in :setting:`FEED_EXPORTERS`. E.g., to disable the built-in CSV exporter
 FEED_EXPORT_BATCH_ITEM_COUNT
 ----------------------------
 
-.. versionadded:: 2.3.0
-
 Default: ``0``
 
 If assigned an integer number higher than ``0``, Scrapy generates multiple output files
@@ -771,14 +749,10 @@ The function signature should be as follows:
             If :setting:`FEED_EXPORT_BATCH_ITEM_COUNT` is ``0``, ``batch_id``
             is always ``1``.
 
-            .. versionadded:: 2.3.0
-
         -   ``batch_time``: UTC date and time, in ISO format with ``:``
             replaced with ``-``.
 
             See :setting:`FEED_EXPORT_BATCH_ITEM_COUNT`.
-
-            .. versionadded:: 2.3.0
 
         -   ``time``: ``batch_time``, with microseconds set to ``0``.
    :type params: dict

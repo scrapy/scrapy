@@ -6,7 +6,7 @@ import asyncio
 import logging
 import time
 from collections.abc import AsyncIterator, Callable, Coroutine, Iterable
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
 from twisted.internet.defer import Deferred
 from twisted.internet.task import LoopingCall
@@ -17,15 +17,14 @@ from scrapy.utils.reactor import is_asyncio_reactor_installed, is_reactor_instal
 if TYPE_CHECKING:
     from twisted.internet.base import DelayedCall
 
-    # typing.Concatenate and typing.ParamSpec require Python 3.10
     # typing.Self, typing.TypeVarTuple and typing.Unpack require Python 3.11
-    from typing_extensions import Concatenate, ParamSpec, Self, TypeVarTuple, Unpack
+    from typing_extensions import Self, TypeVarTuple, Unpack
 
-    _P = ParamSpec("_P")
     _Ts = TypeVarTuple("_Ts")
 
 
 _T = TypeVar("_T")
+_P = ParamSpec("_P")
 
 
 logger = logging.getLogger(__name__)
@@ -34,17 +33,18 @@ logger = logging.getLogger(__name__)
 def is_asyncio_available() -> bool:
     """Check if it's possible to call asyncio code that relies on the asyncio event loop.
 
-    .. versionadded:: VERSION
+    .. versionadded:: 2.14
 
-    Currently this function is identical to
-    :func:`scrapy.utils.reactor.is_asyncio_reactor_installed`: it returns
-    ``True`` if the Twisted reactor that is installed is
+    This function returns ``True`` if there is a running asyncio event loop. If
+    there is no such loop, it returns ``True`` if the Twisted reactor that is
+    installed is
     :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor`, returns
     ``False`` if a different reactor is installed, and raises a
-    :exc:`RuntimeError` if no reactor is installed. In a future Scrapy version,
-    when Scrapy supports running without a Twisted reactor, this function will
-    also return ``True`` when running in that mode, so code that doesn't
-    directly require a Twisted reactor should use this function instead of
+    :exc:`RuntimeError` if no reactor is installed.
+
+    Code that doesn't directly require a Twisted reactor should use this
+    function while code that requires
+    :class:`~twisted.internet.asyncioreactor.AsyncioSelectorReactor` should use
     :func:`~scrapy.utils.reactor.is_asyncio_reactor_installed`.
 
     When this returns ``True``, an asyncio loop is installed and used by
@@ -57,10 +57,35 @@ def is_asyncio_available() -> bool:
     loop or await on :class:`asyncio.Future` objects in Scrapy-related code,
     but it's possible to await on :class:`~twisted.internet.defer.Deferred`
     objects.
+
+    .. note:: As this function uses :func:`asyncio.get_running_loop()`, it will
+        only detect the event loop if called in the same thread and from the
+        code that runs inside that loop (this shouldn't be a problem when
+        calling it from code such as spiders and Scrapy components, if Scrapy
+        is run using one of the supported ways).
+
+    .. versionchanged:: VERSION
+        This function now also returns ``True`` if there is a running asyncio
+        loop, even if no Twisted reactor is installed.
     """
+
+    # Check if there is a running asyncio loop.
+    # Can't easily check for an installed but not running one, and if we
+    # checked that there could be false positives due to some 3rd-party code
+    # installing it as a side effect (e.g. by calling get_event_loop()).
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        pass
+    else:
+        return True
+
+    # Check if there is an installed asyncio reactor (it doesn't need to be
+    # running).
     if not is_reactor_installed():
         raise RuntimeError(
-            "is_asyncio_available() called without an installed reactor."
+            "is_asyncio_available() called without an installed reactor"
+            " or running asyncio loop."
         )
 
     return is_asyncio_reactor_installed()
@@ -81,7 +106,7 @@ async def _parallel_asyncio(
     assumes that neither *callable* nor iterating *iterable* will raise an
     exception.
     """
-    queue: asyncio.Queue[_T | None] = asyncio.Queue()
+    queue: asyncio.Queue[_T | None] = asyncio.Queue(count * 2)
 
     async def worker() -> None:
         while True:

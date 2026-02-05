@@ -205,9 +205,6 @@ class Response(object_ref):
         :class:`~.TextResponse` provides a :meth:`~.TextResponse.follow`
         method which supports selectors in addition to absolute/relative URLs
         and Link objects.
-
-        .. versionadded:: 2.0
-           The *flags* parameter.
         """
         if encoding is None:
             raise ValueError("encoding can't be None")
@@ -250,8 +247,6 @@ class Response(object_ref):
         flags: list[str] | None = None,
     ) -> Iterable[Request]:
         """
-        .. versionadded:: 2.0
-
         Return an iterable of :class:`~.Request` instances to follow all links
         in ``urls``. It accepts the same arguments as ``Request.__init__()`` method,
         but elements of ``urls`` can be relative URLs or :class:`~scrapy.link.Link` objects,

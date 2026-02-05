@@ -3,7 +3,7 @@ from __future__ import annotations
 import inspect
 import warnings
 from functools import wraps
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar, overload
 
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.internet.threads import deferToThread
@@ -13,13 +13,9 @@ from scrapy.exceptions import ScrapyDeprecationWarning
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Coroutine
 
-    # typing.ParamSpec requires Python 3.10
-    from typing_extensions import ParamSpec
-
-    _P = ParamSpec("_P")
-
 
 _T = TypeVar("_T")
+_P = ParamSpec("_P")
 
 
 def deprecated(
@@ -46,8 +42,13 @@ def deprecated(
     return deco
 
 
-def defers(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:
+def defers(func: Callable[_P, _T]) -> Callable[_P, Deferred[_T]]:  # pragma: no cover
     """Decorator to make sure a function always returns a deferred"""
+    warnings.warn(
+        "@defers is deprecated, you can use maybeDeferred() directly if needed.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
 
     @wraps(func)
     def wrapped(*a: _P.args, **kw: _P.kwargs) -> Deferred[_T]:

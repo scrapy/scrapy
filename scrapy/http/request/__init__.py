@@ -12,10 +12,11 @@ from typing import (
     TYPE_CHECKING,
     Any,
     AnyStr,
+    Concatenate,
     NoReturn,
+    TypeAlias,
     TypedDict,
     TypeVar,
-    Union,
     overload,
 )
 
@@ -33,13 +34,13 @@ if TYPE_CHECKING:
 
     from twisted.python.failure import Failure
 
-    # typing.Concatenate requires Python 3.10
     # typing.NotRequired and typing.Self require Python 3.11
-    from typing_extensions import Concatenate, NotRequired, Self
+    from typing_extensions import NotRequired, Self
 
+    # circular import
     from scrapy.http import Response
 
-    CallbackT = Callable[Concatenate[Response, ...], Any]
+    CallbackT: TypeAlias = Callable[Concatenate[Response, ...], Any]
 
 
 class VerboseCookie(TypedDict):
@@ -50,7 +51,7 @@ class VerboseCookie(TypedDict):
     secure: NotRequired[bool]
 
 
-CookiesT = Union[dict[str, str], list[VerboseCookie]]
+CookiesT: TypeAlias = dict[str, str] | list[VerboseCookie]
 
 
 RequestTypeVar = TypeVar("RequestTypeVar", bound="Request")

@@ -881,7 +881,7 @@ class TestFormRequest(TestRequest):
         )
         with pytest.raises(
             ValueError,
-            match="Multiple elements found .* matching the criteria in clickdata",
+            match=r"Multiple elements found .* matching the criteria in clickdata",
         ):
             self.request_class.from_response(response, clickdata={"type": "submit"})
 

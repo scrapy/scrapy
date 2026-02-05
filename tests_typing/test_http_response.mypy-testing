@@ -7,7 +7,7 @@ from scrapy.http import HtmlResponse, Response, TextResponse
 
 @pytest.mark.mypy_testing
 def mypy_test_headers():
-    Response("data:,", headers=1)  # E: Argument "headers" to "Response" has incompatible type "int"; expected "Union[Mapping[str, Any], Iterable[tuple[str, Any]], None]"
+    Response("data:,", headers=1)  # E: Argument "headers" to "Response" has incompatible type "int"; expected "Mapping[str, Any] | Iterable[tuple[str, Any]] | None"
     Response("data:,", headers=None)
     Response("data:,", headers={})
     Response("data:,", headers=[])

@@ -33,13 +33,13 @@ def nonserializable_object_test(self):
     q = self.queue()
     with pytest.raises(
         ValueError,
-        match="unmarshallable object|Can't (get|pickle) local object|Can't pickle .*: it's not found as",
+        match=r"unmarshallable object|Can't (get|pickle) local object|Can't pickle .*: it's not found as",
     ):
         q.push(lambda x: x)
     # Selectors should fail (lxml.html.HtmlElement objects can't be pickled)
     sel = Selector(text="<html><body><p>some text</p></body></html>")
     with pytest.raises(
-        ValueError, match="unmarshallable object|can't pickle Selector objects"
+        ValueError, match=r"unmarshallable object|can't pickle Selector objects"
     ):
         q.push(sel)
 
@@ -117,7 +117,7 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
         q = self.queue()
         with pytest.raises(
             ValueError,
-            match="Can't (get|pickle) local object|Can't pickle .*: it's not found as",
+            match=r"Can't (get|pickle) local object|Can't pickle .*: it's not found as",
         ) as exc_info:
             q.push(lambda x: x)
         if hasattr(sys, "pypy_version_info"):

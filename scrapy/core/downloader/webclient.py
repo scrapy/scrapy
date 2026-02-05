@@ -11,7 +11,7 @@ from twisted.internet import defer
 from twisted.internet.protocol import ClientFactory
 from twisted.web.http import HTTPClient
 
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import DownloadTimeoutError, ScrapyDeprecationWarning
 from scrapy.http import Headers, Response
 from scrapy.responsetypes import responsetypes
 from scrapy.utils.httpobj import urlparse_cached
@@ -80,7 +80,7 @@ class ScrapyHTTPPageGetter(HTTPClient):
             self.transport.stopProducing()
 
         self.factory.noPage(
-            defer.TimeoutError(
+            DownloadTimeoutError(
                 f"Getting {self.factory.url} took longer "
                 f"than {self.factory.timeout} seconds."
             )

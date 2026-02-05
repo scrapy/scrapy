@@ -74,7 +74,7 @@ def test_spider_closed_sends_email(dummy_stats):
     spider = DefaultSpider(name="dummy")
     ext.spider_closed(spider)
 
-    args, kwargs = mail.send.call_args
+    args, _ = mail.send.call_args
     to, subject, body = args
     assert to == recipients
     assert "Scrapy stats for: dummy" in subject

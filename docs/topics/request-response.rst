@@ -32,10 +32,6 @@ Request objects
     :type url: str
 
     :param callback: sets :attr:`callback`, defaults to ``None``.
-
-        .. versionchanged:: 2.0
-            The *callback* parameter is no longer required when the *errback*
-            parameter is specified.
     :type callback: Callable[Concatenate[Response, ...], Any] | None
 
     :param method: the HTTP method of this request. Defaults to ``'GET'``.
@@ -116,10 +112,6 @@ Request objects
             :class:`scrapy.Request.cookies <scrapy.Request>` parameter. This is a known
             current limitation that is being worked on.
 
-        .. versionadded:: 2.6.0
-           Cookie values that are :class:`bool`, :class:`float` or :class:`int`
-           are casted to :class:`str`.
-
     :type cookies: dict or list
 
     :param encoding: the encoding of this request (defaults to ``'utf-8'``).
@@ -134,10 +126,6 @@ Request objects
     :type dont_filter: bool
 
     :param errback: sets :attr:`errback`, defaults to ``None``.
-
-        .. versionchanged:: 2.0
-            The *callback* parameter is no longer required when the *errback*
-            parameter is specified.
     :type errback: Callable[[Failure], Any] | None
 
     :param flags:  Flags sent to the request, can be used for logging or similar purposes.
@@ -447,8 +435,6 @@ To change how request fingerprints are built for your requests, use the
 
 REQUEST_FINGERPRINTER_CLASS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 2.7
 
 Default: :class:`scrapy.utils.request.RequestFingerprinter`
 
@@ -988,15 +974,6 @@ Response objects
         For instance: "HTTP/1.0", "HTTP/1.1", "h2"
     :type protocol: :class:`str`
 
-    .. versionadded:: 2.0.0
-       The ``certificate`` parameter.
-
-    .. versionadded:: 2.1.0
-       The ``ip_address`` parameter.
-
-    .. versionadded:: 2.5.0
-       The ``protocol`` parameter.
-
     .. attribute:: Response.url
 
         A string containing the URL of the response.
@@ -1062,8 +1039,6 @@ Response objects
 
     .. attribute:: Response.cb_kwargs
 
-        .. versionadded:: 2.0
-
         A shortcut to the :attr:`~scrapy.Request.cb_kwargs` attribute of the
         :attr:`Response.request` object (i.e. ``self.request.cb_kwargs``).
 
@@ -1082,16 +1057,12 @@ Response objects
 
     .. attribute:: Response.certificate
 
-        .. versionadded:: 2.0.0
-
         A :class:`twisted.internet.ssl.Certificate` object representing
         the server's SSL certificate.
 
         Only populated for ``https`` responses, ``None`` otherwise.
 
     .. attribute:: Response.ip_address
-
-        .. versionadded:: 2.1.0
 
         The IP address of the server from which the Response originated.
 
@@ -1100,8 +1071,6 @@ Response objects
         :attr:`ip_address` is always ``None``.
 
     .. attribute:: Response.protocol
-
-        .. versionadded:: 2.5.0
 
         The protocol that was used to download the response.
         For instance: "HTTP/1.0", "HTTP/1.1"
