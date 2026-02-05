@@ -2,29 +2,30 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import sys
 import tempfile
-import os
-from io import StringIO
-from typing import TYPE_CHECKING, Any
-from unittest.mock import MagicMock, patch
-from unittest import mock
 import unittest
+from io import StringIO
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+from unittest import mock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from testfixtures import LogCapture
 from twisted.python.failure import Failure
 
+from scrapy.settings import Settings
 from scrapy.utils.log import (
     LogCounterHandler,
     SpiderLoggerAdapter,
     StreamLogger,
     TopLevelFormatter,
-    failure_to_exc_info,
     configure_logging,
+    failure_to_exc_info,
 )
-from scrapy.settings import Settings
 from scrapy.utils.test import get_crawler
 from tests.spiders import LogSpider
 
@@ -369,6 +370,7 @@ class TestSystemdLogging:
 
     def test_systemd_enabled_with_module_available(self) -> None:
         """Test systemd logging when LOG_SYSTEMD=True and systemd module is available"""
+
         # Create a handler class that properly inherits from logging.Handler
         class MockJournalHandler(logging.Handler):
             instances = []
@@ -468,8 +470,8 @@ class TestSystemdLogging:
             assert "JournalHandler" not in handler_types
         finally:
             # Clean up
-            if os.path.exists(log_file):
-                os.remove(log_file)
+            if Path(log_file).exists():
+                Path(log_file).unlink()
 
     def test_systemd_logging_disabled_when_log_disabled(self) -> None:
         """Test that systemd logging is not used when LOG_ENABLED=False"""
@@ -635,48 +637,46 @@ class TestSystemdJournalLogging(unittest.TestCase):
         for handler in root_logger.handlers[:]:
             root_logger.removeHandler(handler)
 
-    @mock.patch('systemd.journal.JournalHandler')
+    @mock.patch("systemd.journal.JournalHandler")
     def test_systemd_handler_used_when_enabled(self, mock_journal_handler_class):
         """Test that JournalHandler is instantiated when LOG_SYSTEMD is True"""
         mock_handler_instance = mock.MagicMock()
         mock_journal_handler_class.return_value = mock_handler_instance
-        
+
         settings = Settings()
-        settings.set('LOG_ENABLED', True)
-        settings.set('LOG_SYSTEMD', True)
-        
+        settings.set("LOG_ENABLED", True)
+        settings.set("LOG_SYSTEMD", True)
+
         configure_logging(settings)
-        
+
         mock_journal_handler_class.assert_called_once()
         mock_handler_instance.setFormatter.assert_called_once()
 
-    @mock.patch('systemd.journal.JournalHandler')
+    @mock.patch("systemd.journal.JournalHandler")
     def test_log_messages_reach_journal_handler(self, mock_journal_handler_class):
         """Test that logging actually calls the JournalHandler"""
         mock_handler_instance = mock.MagicMock()
         mock_handler_instance.level = 0
         mock_journal_handler_class.return_value = mock_handler_instance
-        
+
         settings = Settings()
-        settings.set('LOG_ENABLED', True)
-        settings.set('LOG_SYSTEMD', True)
-        
+        settings.set("LOG_ENABLED", True)
+        settings.set("LOG_SYSTEMD", True)
+
         configure_logging(settings)
-        
-        logger = logging.getLogger('scrapy.test')
-        logger.info('Test message')
-        
-        self.assertTrue(
-            mock_handler_instance.handle.called or mock_handler_instance.emit.called,
-            "JournalHandler should process log messages"
-        )
+
+        logger = logging.getLogger("scrapy.test")
+        logger.info("Test message")
+
+        assert (
+            mock_handler_instance.handle.called or mock_handler_instance.emit.called
+        ), "JournalHandler should process log messages"
 
     def test_systemd_not_used_by_default(self):
         """Test that systemd is not used when LOG_SYSTEMD is not set"""
         settings = Settings()
-        settings.set('LOG_ENABLED', True)
-        
-        with mock.patch('systemd.journal.JournalHandler') as mock_handler:
+        settings.set("LOG_ENABLED", True)
+
+        with mock.patch("systemd.journal.JournalHandler") as mock_handler:
             configure_logging(settings)
             mock_handler.assert_not_called()
-
