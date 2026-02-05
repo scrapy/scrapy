@@ -426,7 +426,7 @@ class Scheduler(BaseScheduler):
                 key="",
                 start_queue_cls=self._smqclass,
             )
-        except TypeError:
+        except TypeError:  # pragma: no cover
             warn(
                 f"The __init__ method of {global_object_name(self.pqclass)} "
                 f"does not support a `start_queue_cls` keyword-only "
@@ -455,7 +455,7 @@ class Scheduler(BaseScheduler):
                 startprios=state,
                 start_queue_cls=self._sdqclass,
             )
-        except TypeError:
+        except TypeError:  # pragma: no cover
             warn(
                 f"The __init__ method of {global_object_name(self.pqclass)} "
                 f"does not support a `start_queue_cls` keyword-only "

@@ -147,8 +147,8 @@ source = [
 
 [tool.coverage.report]
 exclude_also = [
-    "if TYPE_CHECKING:",
     "@(abc\\.)?abstractmethod",
+    '\A(?s:.*# pragma: no file cover.*)\Z',
 ]
 
 [tool.pylint.MASTER]

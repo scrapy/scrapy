@@ -1,3 +1,4 @@
+# pragma: no file cover
 import warnings
 from urllib.parse import urljoin
 
