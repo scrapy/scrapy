@@ -71,13 +71,20 @@ Persistence gotchas
 There are a few things to keep in mind if you want to be able to use the Scrapy
 persistence support:
 
+Pause limitations
+-----------------
+
+Job pausing and resuming is only supported when the spider is paused by
+stopping it cleanly. Forced, sudden or otherwise unclean shutdown can lead to
+data corruption in the job directory, which may prevent the spider from
+resuming correctly.
+
 Cookies expiration
 ------------------
 
 Cookies may expire. So, if you don't resume your spider quickly the requests
 scheduled may no longer work. This won't be an issue if your spider doesn't rely
 on cookies.
-
 
 .. _request-serialization:
 

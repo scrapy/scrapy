@@ -232,7 +232,8 @@ class Scheduler(BaseScheduler):
     When using :setting:`JOBDIR`, this scheduler class:
 
     -   Creates a directory named ``requests.queue`` inside the :ref:`job
-        directory <job-dir>`.
+        directory <job-dir>`, meant to keep track of all requests stored in
+        the scheduler (i.e. not downloaded yet).
 
     -   Generates inside that directory an ``active.json`` file with a JSON
         representation of the state (``startprios``) of
@@ -245,7 +246,8 @@ class Scheduler(BaseScheduler):
         ``requests.queue/`` as persistence directory (*key*) and
         :setting:`SCHEDULER_DISK_QUEUE` as *downstream_queue_cls*. The priority
         queue may create additional files and directories inside that
-        directory.
+        directory, directly or though instances of
+        :setting:`SCHEDULER_DISK_QUEUE`.
 
     This scheduler class also uses the configured :setting:`DUPEFILTER_CLASS`,
     which may also write data inside the job directory.
