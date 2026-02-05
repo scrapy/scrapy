@@ -157,9 +157,7 @@ class Downloader:
         if key not in self.slots:
             assert self.crawler.spider
             slot_settings = self.per_slot_settings.get(key, {})
-            conc = (
-                self.ip_concurrency if self.ip_concurrency else self.domain_concurrency
-            )
+            conc = self.ip_concurrency or self.domain_concurrency
             conc, delay = _get_concurrency_delay(
                 conc, self.crawler.spider, self.settings
             )
