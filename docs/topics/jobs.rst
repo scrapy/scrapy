@@ -17,17 +17,21 @@ facilities:
 * an extension that keeps some spider state (key/value pairs) persistent
   between batches
 
+.. _job-dir:
+
 Job directory
 =============
 
-To enable persistence support you just need to define a *job directory* through
-the ``JOBDIR`` setting. This directory will be for storing all required data to
-keep the state of a single job (i.e. a spider run).  It's important to note that
-this directory must not be shared by different spiders, or even different
-jobs/runs of the same spider, as it's meant to be used for storing the state of
-a *single* job.
+To enable persistence support, define a *job directory* through the
+:setting:`JOBDIR` setting.
 
-For mode details about the layout of ``JOBDIR`` see :ref:`jobdir-details`.
+The job directory will store all required data to keep the state of a *single*
+job (i.e. a spider run), so that if stopped cleanly, it can be resumed later.
+
+.. warning:: This directory must *not* be shared by different spiders, or even
+    different jobs of the same spider.
+
+See also :ref:`job-dir-contents`.
 
 How to use it
 =============
@@ -89,88 +93,51 @@ If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
 It is ``False`` by default.
 
-.. _jobdir-details:
+.. _job-dir-contents:
 
-Job directory details
-=====================
+Job directory contents
+======================
 
-Directory layout within ``JOBDIR``::
+The contents of a job directory depend on the components used during the job.
+Components known to write in the job directory include the :ref:`scheduler
+<topics-scheduler>` and the :class:`~scrapy.extensions.spiderstate.SpiderState`
+extension. See the reference documentation of the corresponding components for
+details.
 
-  {crawlname}
-    requests.queue
-      active.json
-      {hostname}-{hash}
-        {priority}
-          q{00000}
-          info.json
-    requests.seen
-    spider.state
+For example, with default settings, the job directory may look like this:
 
+.. code-block:: none
 
-requests.queue
---------------
-This directory contains requests that have been queued by the crawler but haven't been downloaded yet.
+    ├── requests.queue
+    |   ├── active.json
+    |   └── {hostname}-{hash}
+    |       └── {priority}{s?}
+    |           ├── q{00000}
+    |           └── info.json
+    ├── requests.seen
+    └── spider.state
 
-active.json
------------
-This file contains a dump of the scheduler's on-disk priority queue metadata. By default, this is provided by the `scrapy.pqueues.ScrapyPriorityQueue <https://docs.scrapy.org/en/latest/topics/settings.html?highlight=SCHEDULER_PRIORITY_QUEUE#scheduler-priority-queue>`_  class.
+Where:
 
-Scrapy implements priority queues by keeping a list of functionally separate FIFO queues that each have a priority number assigned to them. The scheduler needs to keep track of these queue/priority mappings in order to load the queues from disk and pick up where it left off.
+-   :class:`~scrapy.core.scheduler.Scheduler` creates the ``requests.queue/``
+    directory and the ``active.json`` file, the latter containing the state
+    data returned by :meth:`DownloaderAwarePriorityQueue.close()
+    <scrapy.pqueues.DownloaderAwarePriorityQueue.close>` the last time the job
+    was paused.
 
-This file is only written to disk when the crawler is closed cleanly. If the crawler resumes but cannot access this file, it will not be able to load the requests.queue or recover any of the pending requests.
+-   :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` creates the
+    ``{hostname}-{hash}`` directories.
 
-Example::
+-   :class:`~scrapy.pqueues.ScrapyPriorityQueue` creates the ``{priority}{s?}``
+    directories.
 
-    {"www.scrapy.org": [6, 7], "www.github.com": [7]}
+-   :class:`scrapy.squeues.PickleLifoDiskQueue`, a subclass of
+    :class:`queuelib.LifoDiskQueue` that uses :mod:`pickle` to serialize
+    :class:`dict` representations of :class:`scrapy.Request` objects, creates
+    the ``info.json`` and ``q{00000}`` files.
 
-{hostname}-{hash}
------------------
+-   :class:`~scrapy.dupefilters.RFPDupeFilter` creates the ``requests.seen``
+    file.
 
-A sub-directory for a single slot in the crawler. The name is a filesystem-safe encoding of the hostname, along with the hostname's md5-hash to prevent rare collisions between hostnames.
-
-{priority}
-----------
-As already mentioned above, the scheduler uses a priority queue by default. Each priority level will be represented by a seperate sub-directory on disk.
-
-qXXXXXX
--------
-The file structure of the disk-backed queues are implemented by the `queuelib <https://github.com/scrapy/queuelib>`_ library. Request objects that are pushed to the queue are serialized (using pickle by default) and packed into a binary file format that's chunked across multiple files. The general format of the q000000, q000001, etc. files looks like this::
-
-  [size header][pickled request][size header][pickled request]...
-
-The queue files are updated in real-time as requests are pushed to and popped from the python queues. This is optimized using some fancy read/write filesystem operations.
-
-info.json
----------
-
-The info.json file is written by `queuelib <https://github.com/scrapy/queuelib>`_ and contains some metadata about the queue files in that directory. This file is only written if the queue is closed cleanly.
-
-Example::
-
-   {"chunksize": 100000, "size": 28, "tail": [0, 18, 4986], "head": [0, 46]}
-
-requests.seen
--------------
-This file contains a list of SHA1 fingerprints for URLs that have been crawled. It's used by `scrapy.dupefilters.RFPDupeFilter <https://docs.scrapy.org/en/latest/topics/settings.html?highlight=request_fingerprint#dupefilter-class>`_ to avoid crawling the same URL twice.
-
-Scrapy opens the file in a+ mode and appends a new line after each request is downloaded with the hash of the request URL. The file is never flushed, but will be closed cleanly if scrapy is shut down safely.
-
-Scrapy also stores a copy of the fingerprints in-memory using a set() structure for efficient comparison. When scrapy resumes a crawl, it will re-populate the internal list of fingerprints from the file.
-
-Example::
-
-  198e506499442eaaaa6027b27f648b1fa2d4b636
-  8c78883bc76ebe66d1cf7e05306ff9438d340785
-  694b550106be20910b0ede19fcdcdb5d9fea8542
-  6a83389c45ba0423d51c9295988ec954f2ecfffe
-
-spider.state
-------------
-
-This file contains the pickled value of spider.state. This is a dictionary that is available for spider implementations to store custom data. By default, scrapy spiders do not use state and this value will be an empty dictionary.
-
-Scrapy will attempt to read from this file when opening a spider, and will dump the contents of the state to the file when the spider is closed cleanly.
-
-Example::
-
-  \x80\x04}\x94.
+-   :class:`~scrapy.extensions.spiderstate.SpiderState` creates the
+    ``spider.state`` file.
