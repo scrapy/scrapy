@@ -136,6 +136,45 @@ Example:
         another_field = attr.ib()
 
 
+.. _pydantic-items:
+
+Pydantic models
+---------------
+
+`Pydantic <https://docs.pydantic.dev/>`_ models allow the defining of item
+classes with field names, so that :ref:`item exporters <topics-exporters>` can
+export all fields by default even if the first scraped object does not have
+values for all of them.
+
+Additionally, ``pydantic`` items also allow you to:
+
+* define the type and default value of each defined field with run-time type
+  validation.
+
+* define custom field metadata through `pydantic.Field
+  <https://docs.pydantic.dev/latest/concepts/fields/>`_, which can be used to
+  :ref:`customize serialization <topics-exporters-field-serialization>`.
+
+* benefit from automatic data validation and conversion based on type
+  annotations.
+
+In order to use this type, the `pydantic package <https://docs.pydantic.dev/>`_
+needs to be installed.
+
+Example:
+
+.. code-block:: python
+
+    from pydantic import BaseModel, Field
+
+
+    class CustomItem(BaseModel):
+        one_field: str = Field(default="", description="First field")
+        another_field: int = Field(default=0, description="Second field")
+
+.. note:: Unlike other item types, Pydantic models enforce field types at
+    run time and will raise validation errors for invalid data types.
+
 Working with Item objects
 =========================
 
