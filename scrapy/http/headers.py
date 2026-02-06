@@ -125,7 +125,7 @@ class Headers(CaselessDict):
         )
 
     def to_tuple_list(self) -> list[tuple[str, str]]:
-        """Return headers as a list of (key, value) tuples.
+        """Return headers as a list of ``(key, value)`` tuples.
 
         Multiple values are represented as multiple tuples with the same key.
         """
