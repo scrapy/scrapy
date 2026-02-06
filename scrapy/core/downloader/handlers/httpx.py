@@ -28,7 +28,7 @@ from scrapy.utils._download_handlers import (
     make_response,
 )
 from scrapy.utils.asyncio import is_asyncio_available
-from scrapy.utils.ssl import log_sslobj_debug_info, make_ssl_context
+from scrapy.utils.ssl import _log_sslobj_debug_info, _make_ssl_context
 
 if TYPE_CHECKING:
     from ipaddress import IPv4Address, IPv6Address
@@ -77,12 +77,12 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         self._tls_verbose_logging: bool = self.crawler.settings.getbool(
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
-        self._client = httpx.AsyncClient(verify=make_ssl_context(crawler.settings))
+        self._client = httpx.AsyncClient(verify=_make_ssl_context(crawler.settings))
         # # the following AsyncClient args need to be passed to the transport instead:
         # # verify, cert, trust_env, http1, http2, limits
         # self._client = httpx.AsyncClient(
         #     transport=_AsyncDisableCookiesTransport(
-        #         httpx.AsyncHTTPTransport(verify=make_ssl_context(crawler.settings))
+        #         httpx.AsyncHTTPTransport(verify=_make_ssl_context(crawler.settings))
         #     ),
         # )
 
@@ -147,7 +147,7 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
                 if self._tls_verbose_logging:
                     extra_ssl_object = network_stream.get_extra_info("ssl_object")
                     if isinstance(extra_ssl_object, ssl.SSLObject):
-                        log_sslobj_debug_info(extra_ssl_object)
+                        _log_sslobj_debug_info(extra_ssl_object)
 
                 make_response_base_args: _BaseResponseArgs = {
                     "status": status,

@@ -29,7 +29,7 @@ _STDLIB_PROTOCOL_MAP = {
 }
 
 
-def make_ssl_context(settings: BaseSettings) -> ssl.SSLContext:
+def _make_ssl_context(settings: BaseSettings) -> ssl.SSLContext:
     """Create an :class:`ssl.SSLContext` instance according to the settings.
 
     It's intended to be used in an HTTPS download handler.
@@ -48,7 +48,7 @@ def make_ssl_context(settings: BaseSettings) -> ssl.SSLContext:
     return ctx
 
 
-def log_sslobj_debug_info(sslobj: ssl.SSLObject) -> None:
+def _log_sslobj_debug_info(sslobj: ssl.SSLObject) -> None:
     cipher = sslobj.cipher()
     logger.debug(
         f"SSL connection to {sslobj.server_hostname}"
