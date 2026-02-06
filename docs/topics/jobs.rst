@@ -59,6 +59,80 @@ is omitted for brevity):
         # parse item here
         self.state["items_count"] = self.state.get("items_count", 0) + 1
 
+.. _topics-jobdir-structure:
+
+JOBDIR file structure
+======================
+
+When you enable job persistence by setting :setting:`JOBDIR`, Scrapy creates
+several files and directories inside the specified job directory to maintain
+the crawl state. Understanding these files can help you troubleshoot issues
+and manage your crawls more effectively.
+
+The following files and directories are created inside the ``JOBDIR``:
+
+``requests.seen``
+-----------------
+
+A text file that stores fingerprints of all requests that have been processed
+by the duplicate filter. Each line contains a hexadecimal fingerprint of a
+request.
+
+This file is used by the :class:`~scrapy.dupefilters.RFPDupeFilter` to prevent
+processing the same request multiple times when a crawl is resumed. The
+fingerprint is calculated based on the request's URL, method, and body.
+
+The file is written line-by-line as requests are processed, and loaded back
+into memory when the crawl is resumed.
+
+``requests.queue/``
+-------------------
+
+A directory containing the disk-based priority queue for pending requests.
+This directory is only created when :setting:`JOBDIR` is set, allowing Scrapy
+to persist requests that haven't been processed yet.
+
+The scheduler stores serialized requests in this directory, organized by
+priority. When a crawl is resumed, these requests are loaded back into the
+scheduler and processed.
+
+Files inside this directory:
+
+* ``active.json``: A JSON file tracking which priority queues are active
+* ``p<priority>/``: Directories for each priority level containing queued requests
+
+Requests that cannot be serialized (e.g., those with lambda callbacks) are
+kept in memory only and will be lost if the crawl is interrupted.
+
+``spider.state``
+----------------
+
+A pickle file that stores the spider's persistent state dictionary
+(``spider.state``). This file is managed by the
+:ref:`SpiderState extension <topics-extensions-ref-spiderstate>`.
+
+You can use this to store custom data that should persist between crawl
+runs, such as counters, timestamps, or other spider-specific information.
+
+Example files
+-------------
+
+Here's what a typical ``JOBDIR`` might look like after running a crawl::
+
+    crawls/somespider-1/
+    ├── requests.seen          # Duplicate filter data
+    ├── requests.queue/        # Pending requests
+    │   ├── active.json        # Active priority queues
+    │   ├── p0/                # Priority 0 requests
+    │   └── p1/                # Priority 1 requests
+    └── spider.state           # Spider state data
+
+.. note::
+
+   The ``JOBDIR`` should be unique for each spider run. Don't reuse the same
+   directory for different spiders or different runs of the same spider unless
+   you want to resume that specific crawl.
+
 Persistence gotchas
 ===================
 
