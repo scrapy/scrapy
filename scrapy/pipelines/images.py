@@ -19,6 +19,7 @@ from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException, FilesPipeline, _md5sum
+from scrapy.utils.defer import ensure_awaitable
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
@@ -115,7 +116,7 @@ class ImagesPipeline(FilesPipeline):
         store_uri = settings["IMAGES_STORE"]
         return cls(store_uri, crawler=crawler)
 
-    def file_downloaded(
+    async def file_downloaded(
         self,
         response: Response,
         request: Request,
@@ -123,9 +124,9 @@ class ImagesPipeline(FilesPipeline):
         *,
         item: Any = None,
     ) -> str:
-        return self.image_downloaded(response, request, info, item=item)
+        return await self.image_downloaded(response, request, info, item=item)
 
-    def image_downloaded(
+    async def image_downloaded(
         self,
         response: Response,
         request: Request,
@@ -139,12 +140,14 @@ class ImagesPipeline(FilesPipeline):
                 buf.seek(0)
                 checksum = _md5sum(buf)
             width, height = image.size
-            self.store.persist_file(
-                path,
-                buf,
-                info,
-                meta={"width": width, "height": height},
-                headers={"Content-Type": "image/jpeg"},
+            await ensure_awaitable(
+                self.store.persist_file(
+                    path,
+                    buf,
+                    info,
+                    meta={"width": width, "height": height},
+                    headers={"Content-Type": "image/jpeg"},
+                )
             )
         assert checksum is not None
         return checksum
