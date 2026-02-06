@@ -70,6 +70,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
+        self._cached_context: SSL.Context | None = None
 
     @classmethod
     def from_crawler(
@@ -104,9 +105,13 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     # kept for old-style HTTP/1.0 downloader context twisted calls,
     # e.g. connectSSL()
     def getContext(self, hostname: Any = None, port: Any = None) -> SSL.Context:
-        ctx: SSL.Context = self.getCertificateOptions().getContext()
-        ctx.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
-        return ctx
+        # Cache the context to avoid mutating it after a connection has been
+        # created, which triggers a DeprecationWarning in pyOpenSSL 25.1.0+
+        # See https://github.com/scrapy/scrapy/issues/6859
+        if self._cached_context is None:
+            self._cached_context = self.getCertificateOptions().getContext()
+            self._cached_context.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
+        return self._cached_context
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
         return ScrapyClientTLSOptions(
