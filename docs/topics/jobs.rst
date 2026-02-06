@@ -17,15 +17,21 @@ facilities:
 * an extension that keeps some spider state (key/value pairs) persistent
   between batches
 
+.. _job-dir:
+
 Job directory
 =============
 
-To enable persistence support you just need to define a *job directory* through
-the ``JOBDIR`` setting. This directory will be for storing all required data to
-keep the state of a single job (i.e. a spider run).  It's important to note that
-this directory must not be shared by different spiders, or even different
-jobs/runs of the same spider, as it's meant to be used for storing the state of
-a *single* job.
+To enable persistence support, define a *job directory* through the
+:setting:`JOBDIR` setting.
+
+The job directory will store all required data to keep the state of a *single*
+job (i.e. a spider run), so that if stopped cleanly, it can be resumed later.
+
+.. warning:: This directory must *not* be shared by different spiders, or even
+    different jobs of the same spider.
+
+See also :ref:`job-dir-contents`.
 
 How to use it
 =============
@@ -65,13 +71,20 @@ Persistence gotchas
 There are a few things to keep in mind if you want to be able to use the Scrapy
 persistence support:
 
+Pause limitations
+-----------------
+
+Job pausing and resuming is only supported when the spider is paused by
+stopping it cleanly. Forced, sudden or otherwise unclean shutdown can lead to
+data corruption in the job directory, which may prevent the spider from
+resuming correctly.
+
 Cookies expiration
 ------------------
 
 Cookies may expire. So, if you don't resume your spider quickly the requests
 scheduled may no longer work. This won't be an issue if your spider doesn't rely
 on cookies.
-
 
 .. _request-serialization:
 
@@ -86,3 +99,52 @@ running :class:`~scrapy.Spider` class.
 If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
 It is ``False`` by default.
+
+.. _job-dir-contents:
+
+Job directory contents
+======================
+
+The contents of a job directory depend on the components used during the job.
+Components known to write in the job directory include the :ref:`scheduler
+<topics-scheduler>` and the :class:`~scrapy.extensions.spiderstate.SpiderState`
+extension. See the reference documentation of the corresponding components for
+details.
+
+For example, with default settings, the job directory may look like this:
+
+.. code-block:: none
+
+    ├── requests.queue
+    |   ├── active.json
+    |   └── {hostname}-{hash}
+    |       └── {priority}{s?}
+    |           ├── q{00000}
+    |           └── info.json
+    ├── requests.seen
+    └── spider.state
+
+Where:
+
+-   :class:`~scrapy.core.scheduler.Scheduler` creates the ``requests.queue/``
+    directory and the ``active.json`` file, the latter containing the state
+    data returned by :meth:`DownloaderAwarePriorityQueue.close()
+    <scrapy.pqueues.DownloaderAwarePriorityQueue.close>` the last time the job
+    was paused.
+
+-   :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` creates the
+    ``{hostname}-{hash}`` directories.
+
+-   :class:`~scrapy.pqueues.ScrapyPriorityQueue` creates the ``{priority}{s?}``
+    directories.
+
+-   :class:`scrapy.squeues.PickleLifoDiskQueue`, a subclass of
+    :class:`queuelib.LifoDiskQueue` that uses :mod:`pickle` to serialize
+    :class:`dict` representations of :class:`scrapy.Request` objects, creates
+    the ``info.json`` and ``q{00000}`` files.
+
+-   :class:`~scrapy.dupefilters.RFPDupeFilter` creates the ``requests.seen``
+    file.
+
+-   :class:`~scrapy.extensions.spiderstate.SpiderState` creates the
+    ``spider.state`` file.
