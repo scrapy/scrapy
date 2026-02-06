@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 _T = TypeVar("_T")
 
 
-def assert_gcs_environ() -> None:
+def assert_gcs_environ() -> None:  # pragma: no cover
     warnings.warn(
         "The assert_gcs_environ() function is deprecated and will be removed in a future version of Scrapy."
         " Check GCS_PROJECT_ID directly.",
@@ -48,7 +48,7 @@ def assert_gcs_environ() -> None:
         raise SkipTest("GCS_PROJECT_ID not found")
 
 
-def skip_if_no_boto() -> None:
+def skip_if_no_boto() -> None:  # pragma: no cover
     warnings.warn(
         "The skip_if_no_boto() function is deprecated and will be removed in a future version of Scrapy."
         " Check scrapy.utils.boto.is_botocore_available() directly.",
@@ -61,7 +61,7 @@ def skip_if_no_boto() -> None:
 
 def get_gcs_content_and_delete(
     bucket: Any, path: str
-) -> tuple[bytes, list[dict[str, str]], Any]:
+) -> tuple[bytes, list[dict[str, str]], Any]:  # pragma: no cover
     from google.cloud import storage  # noqa: PLC0415
 
     warnings.warn(
@@ -85,7 +85,7 @@ def get_ftp_content_and_delete(
     username: str,
     password: str,
     use_active_mode: bool = False,
-) -> bytes:
+) -> bytes:  # pragma: no cover
     warnings.warn(
         "The get_ftp_content_and_delete() function is deprecated and will be removed in a future version of Scrapy.",
         category=ScrapyDeprecationWarning,
@@ -185,7 +185,7 @@ def get_from_asyncio_queue(value: _T) -> Awaitable[_T]:
     return getter
 
 
-def mock_google_cloud_storage() -> tuple[Any, Any, Any]:
+def mock_google_cloud_storage() -> tuple[Any, Any, Any]:  # pragma: no cover
     """Creates autospec mocks for google-cloud-storage Client, Bucket and Blob
     classes and set their proper return values.
     """

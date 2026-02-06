@@ -4,7 +4,7 @@ import json
 import logging
 from abc import abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 from warnings import warn
 
 # working around https://github.com/sphinx-doc/sphinx/issues/10400
@@ -128,7 +128,7 @@ class BaseScheduler(metaclass=BaseSchedulerMeta):
 
 
 class Scheduler(BaseScheduler):
-    """Default scheduler.
+    r"""Default scheduler.
 
     Requests are stored into priority queues
     (:setting:`SCHEDULER_PRIORITY_QUEUE`) that sort requests by
@@ -190,7 +190,8 @@ class Scheduler(BaseScheduler):
     following :ref:`settings <topics-settings>`:
 
     | :setting:`DEPTH_PRIORITY` = ``1``
-    | :setting:`SCHEDULER_DISK_QUEUE` = ``"scrapy.squeues.PickleFifoDiskQueue"``
+    | :setting:`SCHEDULER_DISK_QUEUE` =
+      ``"scrapy.squeues.PickleFifoDiskQueue"``
     | :setting:`SCHEDULER_MEMORY_QUEUE` = ``"scrapy.squeues.FifoMemoryQueue"``
 
     .. _BFO order: https://en.wikipedia.org/wiki/Breadth-first_search
@@ -219,6 +220,37 @@ class Scheduler(BaseScheduler):
     order. Lowering those settings to ``1`` enforces the desired order except
     for the very first request, but it significantly slows down the crawl as a
     whole.
+
+    Job directory contents
+    ======================
+
+    .. warning:: The files that this class generates in the :ref:`job directory
+        <job-dir>` are an implementation detail, and may change without a
+        warning in a future version of Scrapy. Do not rely on the following
+        information for anything other than debugging purposes.
+
+    When using :setting:`JOBDIR`, this scheduler class:
+
+    -   Creates a directory named ``requests.queue`` inside the :ref:`job
+        directory <job-dir>`, meant to keep track of all requests stored in
+        the scheduler (i.e. not downloaded yet).
+
+    -   Generates inside that directory an ``active.json`` file with a JSON
+        representation of the state (``startprios``) of
+        :setting:`SCHEDULER_PRIORITY_QUEUE`.
+
+        The file is generated whenever the job stops (cleanly) and is loaded
+        when resuming the job.
+
+    -   Instantiates the configured :setting:`SCHEDULER_PRIORITY_QUEUE` with
+        ``requests.queue/`` as persistence directory (*key*) and
+        :setting:`SCHEDULER_DISK_QUEUE` as *downstream_queue_cls*. The priority
+        queue may create additional files and directories inside that
+        directory, directly or though instances of
+        :setting:`SCHEDULER_DISK_QUEUE`.
+
+    This scheduler class also uses the configured :setting:`DUPEFILTER_CLASS`,
+    which may also write data inside the job directory.
     """
 
     @classmethod
@@ -426,7 +458,7 @@ class Scheduler(BaseScheduler):
                 key="",
                 start_queue_cls=self._smqclass,
             )
-        except TypeError:
+        except TypeError:  # pragma: no cover
             warn(
                 f"The __init__ method of {global_object_name(self.pqclass)} "
                 f"does not support a `start_queue_cls` keyword-only "
@@ -455,7 +487,7 @@ class Scheduler(BaseScheduler):
                 startprios=state,
                 start_queue_cls=self._sdqclass,
             )
-        except TypeError:
+        except TypeError:  # pragma: no cover
             warn(
                 f"The __init__ method of {global_object_name(self.pqclass)} "
                 f"does not support a `start_queue_cls` keyword-only "
@@ -486,13 +518,13 @@ class Scheduler(BaseScheduler):
             return str(dqdir)
         return None
 
-    def _read_dqs_state(self, dqdir: str) -> list[int]:
+    def _read_dqs_state(self, dqdir: str) -> Any:
         path = Path(dqdir, "active.json")
         if not path.exists():
             return []
         with path.open(encoding="utf-8") as f:
-            return cast("list[int]", json.load(f))
+            return json.load(f)
 
-    def _write_dqs_state(self, dqdir: str, state: list[int]) -> None:
+    def _write_dqs_state(self, dqdir: str, state: Any) -> None:
         with Path(dqdir, "active.json").open("w", encoding="utf-8") as f:
             json.dump(state, f)

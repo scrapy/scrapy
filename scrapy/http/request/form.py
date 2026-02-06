@@ -37,6 +37,8 @@ FormdataType: TypeAlias = dict[str, FormdataVType] | list[FormdataKVType] | None
 
 
 class FormRequest(Request):
+    __slots__ = ()
+
     valid_form_methods = ["GET", "POST"]
 
     def __init__(

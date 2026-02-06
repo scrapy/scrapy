@@ -1702,10 +1702,10 @@ the user agent to use in the robots.txt file.
 SCHEDULER
 ---------
 
-Default: ``'scrapy.core.scheduler.Scheduler'``
+Default: :class:`~scrapy.core.scheduler.Scheduler`
 
-The scheduler class to be used for crawling.
-See the :ref:`topics-scheduler` topic for details.
+The scheduler class to be used for crawling. See :ref:`topics-scheduler` for
+details.
 
 .. setting:: SCHEDULER_DEBUG
 
@@ -1755,12 +1755,14 @@ Type of in-memory queue used by the scheduler. Other available type is:
 SCHEDULER_PRIORITY_QUEUE
 ------------------------
 
-Default: ``'scrapy.pqueues.DownloaderAwarePriorityQueue'``
+Default: :class:`~scrapy.pqueues.DownloaderAwarePriorityQueue`
 
-Type of priority queue used by the scheduler. Another available type is
-``scrapy.pqueues.ScrapyPriorityQueue``.
-``scrapy.pqueues.DownloaderAwarePriorityQueue`` works better than
-``scrapy.pqueues.ScrapyPriorityQueue`` when you crawl many different
+Type of priority queue used by the scheduler.
+
+Another available type is :class:`~scrapy.pqueues.ScrapyPriorityQueue`.
+
+:class:`~scrapy.pqueues.DownloaderAwarePriorityQueue` works better than
+:class:`~scrapy.pqueues.ScrapyPriorityQueue` when you crawl many different
 domains in parallel.
 
 
