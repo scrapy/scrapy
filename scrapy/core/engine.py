@@ -159,7 +159,9 @@ class ExecutionEngine:
             )
         return scheduler_cls
 
-    def start(self, _start_request_processing=True) -> Deferred[None]:
+    def start(
+        self, _start_request_processing=True
+    ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.start() is deprecated, use start_async() instead",
             ScrapyDeprecationWarning,
@@ -197,7 +199,7 @@ class ExecutionEngine:
                 self._start_request_processing_awaitable = Deferred.fromCoroutine(coro)
         await maybe_deferred_to_future(self._closewait)
 
-    def stop(self) -> Deferred[None]:
+    def stop(self) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.stop() is deprecated, use stop_async() instead",
             ScrapyDeprecationWarning,
@@ -233,7 +235,7 @@ class ExecutionEngine:
         if self._closewait:
             self._closewait.callback(None)
 
-    def close(self) -> Deferred[None]:
+    def close(self) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.close() is deprecated, use close_async() instead",
             ScrapyDeprecationWarning,
@@ -510,7 +512,9 @@ class ExecutionEngine:
         finally:
             self._slot.nextcall.schedule()
 
-    def open_spider(self, spider: Spider, close_if_idle: bool = True) -> Deferred[None]:
+    def open_spider(
+        self, spider: Spider, close_if_idle: bool = True
+    ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.open_spider() is deprecated, use open_spider_async() instead",
             ScrapyDeprecationWarning,
@@ -573,7 +577,9 @@ class ExecutionEngine:
             assert isinstance(ex, CloseSpider)  # typing
             _schedule_coro(self.close_spider_async(reason=ex.reason))
 
-    def close_spider(self, spider: Spider, reason: str = "cancelled") -> Deferred[None]:
+    def close_spider(
+        self, spider: Spider, reason: str = "cancelled"
+    ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.close_spider() is deprecated, use close_spider_async() instead",
             ScrapyDeprecationWarning,

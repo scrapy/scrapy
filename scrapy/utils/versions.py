@@ -34,7 +34,7 @@ def get_versions(
     return [(item, _version(item)) for item in software]
 
 
-def scrapy_components_versions() -> list[tuple[str, str]]:
+def scrapy_components_versions() -> list[tuple[str, str]]:  # pragma: no cover
     warn(
         (
             "scrapy.utils.versions.scrapy_components_versions() is deprecated, "

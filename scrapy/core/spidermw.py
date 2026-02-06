@@ -383,7 +383,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
         response: Response,
         request: Request,
         spider: Spider,
-    ) -> Deferred[MutableChain[_T] | MutableAsyncChain[_T]]:
+    ) -> Deferred[MutableChain[_T] | MutableAsyncChain[_T]]:  # pragma: no cover
         warn(
             "SpiderMiddlewareManager.scrape_response() is deprecated, use scrape_response_async() instead",
             ScrapyDeprecationWarning,
