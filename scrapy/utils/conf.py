@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, cast
 from scrapy.exceptions import UsageError
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
-from scrapy.utils.python import without_none_values
+from scrapy.utils.python import global_object_name, without_none_values
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Mapping, MutableMapping
@@ -33,21 +33,26 @@ def build_component_list(
             )
 
     def _map_keys(compdict: Mapping[Any, Any]) -> BaseSettings | dict[Any, Any]:
+        def _get_key(k: Any) -> Any:
+            if not isinstance(k, str) and callable(k):
+                k = global_object_name(k)
+            return convert(k)
+
         if isinstance(compdict, BaseSettings):
             compbs = BaseSettings()
             for k, v in compdict.items():
                 prio = compdict.getpriority(k)
                 assert prio is not None
-                if compbs.getpriority(convert(k)) == prio:
+                if compbs.getpriority(_get_key(k)) == prio:
                     raise ValueError(
                         f"Some paths in {list(compdict.keys())!r} "
                         "convert to the same "
                         "object, please update your settings"
                     )
-                compbs.set(convert(k), v, priority=prio)
+                compbs.set(_get_key(k), v, priority=prio)
             return compbs
         _check_components(compdict)
-        return {convert(k): v for k, v in compdict.items()}
+        return {_get_key(k): v for k, v in compdict.items()}
 
     def _validate_values(compdict: Mapping[Any, Any]) -> None:
         """Fail if a value in the components dict is not a real number or None."""

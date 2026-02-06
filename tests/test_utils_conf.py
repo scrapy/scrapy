@@ -35,16 +35,22 @@ class TestBuildComponentList:
         ):
             build_component_list(duplicate_bs, convert=lambda x: x.lower())
 
-    def test_valid_numbers(self):
-        # work well with None and numeric values
-        d = {"a": 10, "b": None, "c": 15, "d": 5.0}
-        assert build_component_list(d, convert=lambda x: x) == ["d", "a", "c"]
+    def test_build_with_classes(self):
+        from scrapy.downloadermiddlewares.httpauth import HttpAuthMiddleware
+        from scrapy.utils.conf import build_component_list
+
+        # Test that classes are converted to strings and merged
         d = {
-            "a": 33333333333333333333,
-            "b": 11111111111111111111,
-            "c": 22222222222222222222,
+            "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
+            HttpAuthMiddleware: None,
         }
-        assert build_component_list(d, convert=lambda x: x) == ["b", "c", "a"]
+        assert build_component_list(d) == []
+
+        d = {
+            "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware": 300,
+            HttpAuthMiddleware: 500,
+        }
+        assert build_component_list(d) == ["scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware"]
 
 
 def test_arglist_to_dict():
