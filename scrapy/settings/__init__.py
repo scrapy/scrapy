@@ -5,12 +5,16 @@ import json
 import warnings
 from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 from importlib import import_module
+from logging import getLogger
 from pprint import pformat
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.settings import default_settings
 from scrapy.utils.misc import load_object
+from scrapy.utils.python import global_object_name
+
+logger = getLogger(__name__)
 
 # The key types are restricted in BaseSettings._get_key() to ones supported by JSON,
 # see https://github.com/scrapy/scrapy/issues/5383.
@@ -319,10 +323,41 @@ class BaseSettings(MutableMapping[_SettingsKey, Any]):
         """
         if not isinstance(name, str):
             raise ValueError(f"Base setting key must be a string, got {name}")
-        compbs = BaseSettings()
-        compbs.update(self[name + "_BASE"])
-        compbs.update(self[name])
-        return compbs
+
+        normalized_keys = {}
+        obj_keys = set()
+
+        def track_loaded_key(k: Any) -> None:
+            if k not in obj_keys:
+                obj_keys.add(k)
+                return
+            logger.warning(
+                f"Setting {name} contains multiple keys that refer to the "
+                f"same object: {global_object_name(k)}. Only the last one will "
+                f"be kept."
+            )
+
+        def normalize_key(key: Any) -> str:
+            try:
+                loaded_key = load_object(key)
+            except (AttributeError, TypeError, ValueError):
+                loaded_key = key
+            else:
+                import_path = global_object_name(loaded_key)
+                normalized_keys[import_path] = key
+                key = import_path
+            track_loaded_key(loaded_key)
+            return key
+
+        def restore_key(k: str) -> Any:
+            return normalized_keys.get(k, k)
+
+        result = dict(self[name + "_BASE"] or {})
+        override = {normalize_key(k): v for k, v in (self[name] or {}).items()}
+        result.update(override)
+        return BaseSettings(
+            {restore_key(k): v for k, v in result.items() if v is not None}
+        )
 
     def getpriority(self, name: _SettingsKey) -> int | None:
         """
