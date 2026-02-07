@@ -189,6 +189,18 @@ class TestHttp2WithCrawler(TestHttpWithCrawlerBase):
 
     is_secure = True
 
+    def test_bytes_received_stop_download_callback(self) -> None:  # type: ignore[override]
+        pytest.skip("bytes_received support is not implemented")
+
+    def test_bytes_received_stop_download_errback(self) -> None:  # type: ignore[override]
+        pytest.skip("bytes_received support is not implemented")
+
+    def test_headers_received_stop_download_callback(self) -> None:  # type: ignore[override]
+        pytest.skip("headers_received support is not implemented")
+
+    def test_headers_received_stop_download_errback(self) -> None:  # type: ignore[override]
+        pytest.skip("headers_received support is not implemented")
+
 
 class TestHttps2Proxy(H2DownloadHandlerMixin, TestHttpProxyBase):
     is_secure = True

@@ -22,9 +22,10 @@ from scrapy.utils.test import get_from_asyncio_queue, get_web_client_agent_req
 
 
 class MockServerSpider(Spider):
-    def __init__(self, mockserver=None, *args, **kwargs):
+    def __init__(self, *args, mockserver=None, is_secure=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.mockserver = mockserver
+        self.is_secure = is_secure
 
 
 class MetaSpider(MockServerSpider):
@@ -516,7 +517,7 @@ class BytesReceivedCallbackSpider(MetaSpider):
 
     async def start(self):
         body = b"a" * self.full_response_length
-        url = self.mockserver.url("/alpayload")
+        url = self.mockserver.url("/alpayload", is_secure=self.is_secure)
         yield Request(url, method="POST", body=body, errback=self.errback)
 
     def parse(self, response):
@@ -544,7 +545,10 @@ class HeadersReceivedCallbackSpider(MetaSpider):
         return spider
 
     async def start(self):
-        yield Request(self.mockserver.url("/status"), errback=self.errback)
+        yield Request(
+            self.mockserver.url("/status", is_secure=self.is_secure),
+            errback=self.errback,
+        )
 
     def parse(self, response):
         self.meta["response"] = response

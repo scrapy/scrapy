@@ -72,6 +72,12 @@ DEFAULT_LOGGING = {
         "hpack": {
             "level": "ERROR",
         },
+        "httpcore": {
+            "level": "ERROR",
+        },
+        "httpx": {
+            "level": "WARNING",
+        },
         "scrapy": {
             "level": "DEBUG",
         },
