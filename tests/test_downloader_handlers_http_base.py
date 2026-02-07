@@ -845,8 +845,8 @@ class TestHttpWithCrawlerBase(ABC):
         self, mockserver: MockServer
     ) -> None:
         # copy of TestCrawl.test_bytes_received_stop_download_callback()
-        crawler = get_crawler(BytesReceivedCallbackSpider)
-        await crawler.crawl_async(mockserver=mockserver)
+        crawler = get_crawler(BytesReceivedCallbackSpider, self.settings_dict)
+        await crawler.crawl_async(mockserver=mockserver, is_secure=self.is_secure)
         assert isinstance(crawler.spider, BytesReceivedCallbackSpider)
         assert crawler.spider.meta.get("failure") is None
         assert isinstance(crawler.spider.meta["response"], Response)
@@ -863,8 +863,8 @@ class TestHttpWithCrawlerBase(ABC):
         self, mockserver: MockServer
     ) -> None:
         # copy of TestCrawl.test_bytes_received_stop_download_errback()
-        crawler = get_crawler(BytesReceivedErrbackSpider)
-        await crawler.crawl_async(mockserver=mockserver)
+        crawler = get_crawler(BytesReceivedErrbackSpider, self.settings_dict)
+        await crawler.crawl_async(mockserver=mockserver, is_secure=self.is_secure)
         assert isinstance(crawler.spider, BytesReceivedErrbackSpider)
         assert crawler.spider.meta.get("response") is None
         assert isinstance(crawler.spider.meta["failure"], Failure)
@@ -883,8 +883,8 @@ class TestHttpWithCrawlerBase(ABC):
         self, mockserver: MockServer
     ) -> None:
         # copy of TestCrawl.test_headers_received_stop_download_callback()
-        crawler = get_crawler(HeadersReceivedCallbackSpider)
-        await crawler.crawl_async(mockserver=mockserver)
+        crawler = get_crawler(HeadersReceivedCallbackSpider, self.settings_dict)
+        await crawler.crawl_async(mockserver=mockserver, is_secure=self.is_secure)
         assert isinstance(crawler.spider, HeadersReceivedCallbackSpider)
         assert crawler.spider.meta.get("failure") is None
         assert isinstance(crawler.spider.meta["response"], Response)
@@ -897,8 +897,8 @@ class TestHttpWithCrawlerBase(ABC):
         self, mockserver: MockServer
     ) -> None:
         # copy of TestCrawl.test_headers_received_stop_download_errback()
-        crawler = get_crawler(HeadersReceivedErrbackSpider)
-        await crawler.crawl_async(mockserver=mockserver)
+        crawler = get_crawler(HeadersReceivedErrbackSpider, self.settings_dict)
+        await crawler.crawl_async(mockserver=mockserver, is_secure=self.is_secure)
         assert isinstance(crawler.spider, HeadersReceivedErrbackSpider)
         assert crawler.spider.meta.get("response") is None
         assert isinstance(crawler.spider.meta["failure"], Failure)
