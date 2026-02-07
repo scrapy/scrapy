@@ -22,9 +22,10 @@ from scrapy.utils.test import get_from_asyncio_queue, get_web_client_agent_req
 
 
 class MockServerSpider(Spider):
-    def __init__(self, mockserver=None, *args, **kwargs):
+    def __init__(self, *args, mockserver=None, is_secure=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.mockserver = mockserver
+        self.is_secure = is_secure
 
 
 class MetaSpider(MockServerSpider):
