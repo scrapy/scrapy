@@ -30,6 +30,7 @@ class SitemapSpider(Spider):
     ]
     sitemap_follow: Sequence[re.Pattern[str] | str] = [""]
     sitemap_alternate_links: bool = False
+    sitemap_meta: dict[str, Any] | None = None
     _max_size: int
     _warn_size: int
 
@@ -59,7 +60,7 @@ class SitemapSpider(Spider):
 
     def start_requests(self) -> Iterable[Request]:
         for url in self.sitemap_urls:
-            yield Request(url, self._parse_sitemap)
+            yield Request(url, self._parse_sitemap, meta=self.sitemap_meta)
 
     def sitemap_filter(
         self, entries: Iterable[dict[str, Any]]
@@ -73,7 +74,7 @@ class SitemapSpider(Spider):
     def _parse_sitemap(self, response: Response) -> Iterable[Request]:
         if response.url.endswith("/robots.txt"):
             for url in sitemap_urls_from_robots(response.text, base_url=response.url):
-                yield Request(url, callback=self._parse_sitemap)
+                yield Request(url, callback=self._parse_sitemap, meta=self.sitemap_meta)
         else:
             body = self._get_sitemap_body(response)
             if body is None:
@@ -90,12 +91,12 @@ class SitemapSpider(Spider):
             if s.type == "sitemapindex":
                 for loc in iterloc(it, self.sitemap_alternate_links):
                     if any(x.search(loc) for x in self._follow):
-                        yield Request(loc, callback=self._parse_sitemap)
+                        yield Request(loc, callback=self._parse_sitemap, meta=self.sitemap_meta)
             elif s.type == "urlset":
                 for loc in iterloc(it, self.sitemap_alternate_links):
                     for r, c in self._cbs:
                         if r.search(loc):
-                            yield Request(loc, callback=c)
+                            yield Request(loc, callback=c, meta=self.sitemap_meta)
                             break
 
     def _get_sitemap_body(self, response: Response) -> bytes | None:
