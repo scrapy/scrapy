@@ -210,8 +210,21 @@ class Request(object_ref):
         #: default), or those components should not filter out this request
         #: (``True``).
         #:
-        #: This attribute is commonly set to ``True`` to prevent duplicate
-        #: requests from being filtered out.
+        #: The following built-in components check this attribute:
+        #:
+        #: -   The :ref:`scheduler <topics-scheduler>` uses it to skip
+        #:     duplicate request filtering (see :setting:`DUPEFILTER_CLASS`). When set to ``True``,
+        #:     the request is not checked against the duplicate filter, allowing
+        #:     the same URL to be requested multiple times.
+        #:
+        #: -   :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware`
+        #:     uses it to allow requests to domains not in
+        #:     :attr:`~scrapy.Spider.allowed_domains`. To skip only the offsite
+        #:     filter without affecting other components, consider using the
+        #:     :reqmeta:`allow_offsite` request meta key instead.
+        #:
+        #: Third-party components may also use this attribute to decide whether
+        #: to filter out a request.
         #:
         #: When defining the start URLs of a spider through
         #: :attr:`~scrapy.Spider.start_urls`, this attribute is enabled by
