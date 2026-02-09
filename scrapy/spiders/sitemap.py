@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import logging
 import re
-from urllib.parse import urlparse
 
 # Iterable is needed at the run time for the SitemapSpider._parse_sitemap() annotation
 from collections.abc import AsyncIterator, Iterable, Sequence  # noqa: TC003
 from typing import TYPE_CHECKING, Any, cast
+from urllib.parse import urlparse
 
 from scrapy.http import Request, Response, XmlResponse
 from scrapy.spiders import Spider
@@ -129,7 +129,7 @@ class SitemapSpider(Spider):
         # merely XML gzip-compressed on the fly,
         # in other word, here, we have plain XML
         url_path = urlparse(response.url).path
-        if url_path.endswith(".xml") or url_path.endswith(".xml.gz"):
+        if url_path.endswith((".xml", ".xml.gz")):
             return response.body
         return None
 
