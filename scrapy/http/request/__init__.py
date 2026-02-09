@@ -213,9 +213,10 @@ class Request(object_ref):
         #: The following built-in components check this attribute:
         #:
         #: -   The :ref:`scheduler <topics-scheduler>` uses it to skip
-        #:     duplicate request filtering (see :setting:`DUPEFILTER_CLASS`). When set to ``True``,
-        #:     the request is not checked against the duplicate filter, allowing
-        #:     the same URL to be requested multiple times.
+        #:     duplicate request filtering (see
+        #:     :setting:`DUPEFILTER_CLASS`). When set to ``True``, the
+        #:     request is not checked against the duplicate filter,
+        #:     allowing the same URL to be requested multiple times.
         #:
         #: -   :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware`
         #:     uses it to allow requests to domains not in
