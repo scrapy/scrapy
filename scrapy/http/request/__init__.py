@@ -216,8 +216,8 @@ class Request(object_ref):
         #:     duplicate request filtering (see
         #:     :setting:`DUPEFILTER_CLASS`). When set to ``True``, the
         #:     request is not checked against the duplicate filter,
-        #:     allowing the same URL to be requested multiple times.
-        #:
+        #:     allowing requests that would otherwise be considered duplicates
+        #:     to be scheduled multiple times.
         #: -   :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware`
         #:     uses it to allow requests to domains not in
         #:     :attr:`~scrapy.Spider.allowed_domains`. To skip only the offsite
