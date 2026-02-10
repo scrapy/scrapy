@@ -39,17 +39,11 @@ class HttpxDownloadHandlerMixin:
 
 
 class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
-    @pytest.mark.xfail(reason="Ignoring cookies is not implemented yet")
-    def test_no_cookie_processing_or_persistence(self, mockserver: MockServer):
-        return super().test_no_cookie_processing_or_persistence(mockserver)
+    pass
 
 
 class TestHttps11(HttpxDownloadHandlerMixin, TestHttps11Base):
     tls_log_message = "SSL connection to 127.0.0.1 using protocol TLSv1.3, cipher"
-
-    @pytest.mark.xfail(reason="Ignoring cookies is not implemented yet")
-    def test_no_cookie_processing_or_persistence(self, mockserver: MockServer):
-        return super().test_no_cookie_processing_or_persistence(mockserver)
 
 
 class TestSimpleHttps(HttpxDownloadHandlerMixin, TestSimpleHttpsBase):

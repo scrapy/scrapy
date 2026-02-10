@@ -3,6 +3,7 @@ from __future__ import annotations
 import ipaddress
 import logging
 import ssl
+from http.cookiejar import Cookie, CookieJar
 from io import BytesIO
 from typing import TYPE_CHECKING, TypedDict
 
@@ -31,7 +32,9 @@ from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.ssl import _log_sslobj_debug_info, _make_ssl_context
 
 if TYPE_CHECKING:
+    from http.client import HTTPResponse
     from ipaddress import IPv4Address, IPv6Address
+    from urllib.request import Request as ULRequest
 
     from scrapy.crawler import Crawler
 
@@ -47,19 +50,15 @@ class _BaseResponseArgs(TypedDict):
     protocol: str
 
 
-# TODO: improve this
-# # workaround for (and from) https://github.com/encode/httpx/issues/2992
-# class _AsyncDisableCookiesTransport(httpx.AsyncBaseTransport):
-#     def __init__(self, transport: httpx.AsyncBaseTransport):
-#         self.transport = transport
-#
-#     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
-#         response = await self.transport.handle_async_request(request)
-#         response.headers.pop("set-cookie", None)
-#         return response
-#
-#     async def aclose(self) -> None:
-#         await self.transport.aclose()
+# workaround for (and from) https://github.com/encode/httpx/issues/2992
+class _NullCookieJar(CookieJar):
+    """A CookieJar that rejects all cookies."""
+
+    def extract_cookies(self, response: HTTPResponse, request: ULRequest) -> None:
+        pass
+
+    def set_cookie(self, cookie: Cookie) -> None:
+        pass
 
 
 class HttpxDownloadHandler(BaseHttpDownloadHandler):
@@ -77,14 +76,9 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         self._tls_verbose_logging: bool = self.crawler.settings.getbool(
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
-        self._client = httpx.AsyncClient(verify=_make_ssl_context(crawler.settings))
-        # # the following AsyncClient args need to be passed to the transport instead:
-        # # verify, cert, trust_env, http1, http2, limits
-        # self._client = httpx.AsyncClient(
-        #     transport=_AsyncDisableCookiesTransport(
-        #         httpx.AsyncHTTPTransport(verify=_make_ssl_context(crawler.settings))
-        #     ),
-        # )
+        self._client = httpx.AsyncClient(
+            verify=_make_ssl_context(crawler.settings), cookies=_NullCookieJar()
+        )
 
     async def download_request(self, request: Request) -> Response:  # pylint: disable=too-many-statements
         maxsize = request.meta.get("download_maxsize", self._default_maxsize)
