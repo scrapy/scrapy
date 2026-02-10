@@ -66,13 +66,14 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
     _DEFAULT_CONNECT_TIMEOUT = 10
 
     def __init__(self, crawler: Crawler):
-        if not is_asyncio_available():
+        # we don't run extra-deps tests with the non-asyncio reactor
+        if not is_asyncio_available():  # pragma: no cover
             raise NotConfigured(
                 f"{type(self).__name__} requires the asyncio support. Make"
                 f" sure that you have either enabled the asyncio Twisted"
                 f" reactor in the TWISTED_REACTOR setting or disabled the"
-                f" TWISTED_ENABLED setting. See the asyncio documentation "
-                "of Scrapy for more information."
+                f" TWISTED_ENABLED setting. See the asyncio documentation"
+                f" of Scrapy for more information."
             )
         super().__init__(crawler)
         logger.warning(
