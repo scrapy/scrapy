@@ -5,7 +5,7 @@ import logging
 import ssl
 from http.cookiejar import Cookie, CookieJar
 from io import BytesIO
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import httpx
 
@@ -87,25 +87,11 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         )
 
     async def download_request(self, request: Request) -> Response:  # pylint: disable=too-many-statements
+        self._warn_unsupported_meta(request.meta)
+
         maxsize = request.meta.get("download_maxsize", self._default_maxsize)
         warnsize = request.meta.get("download_warnsize", self._default_warnsize)
         timeout = request.meta.get("download_timeout", self._DEFAULT_CONNECT_TIMEOUT)
-        bindaddress = request.meta.get("bindaddress")
-        if bindaddress:
-            # configurable only per-client:
-            # https://github.com/encode/httpx/issues/755#issuecomment-2746121794
-            logger.error(
-                f"The 'bindaddress' request meta key is not supported by"
-                f" {type(self).__name__} and will be ignored."
-            )
-        proxy = request.meta.get("proxy")
-        if proxy:
-            # configurable only per-client:
-            # https://github.com/encode/httpx/issues/486
-            logger.error(
-                f"The 'proxy' request meta key is not supported by"
-                f" {type(self).__name__} and will be ignored."
-            )
         fail_on_dataloss = request.meta.get(
             "download_fail_on_dataloss", self._fail_on_dataloss
         )
@@ -239,6 +225,22 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
             raise DownloadFailedError(str(e)) from e
         except httpx.RemoteProtocolError as e:
             raise DownloadFailedError(str(e)) from e
+
+    def _warn_unsupported_meta(self, meta: dict[str, Any]) -> None:
+        if meta.get("bindaddress"):
+            # configurable only per-client:
+            # https://github.com/encode/httpx/issues/755#issuecomment-2746121794
+            logger.error(
+                f"The 'bindaddress' request meta key is not supported by"
+                f" {type(self).__name__} and will be ignored."
+            )
+        if meta.get("proxy"):
+            # configurable only per-client:
+            # https://github.com/encode/httpx/issues/486
+            logger.error(
+                f"The 'proxy' request meta key is not supported by"
+                f" {type(self).__name__} and will be ignored."
+            )
 
     async def close(self):
         await self._client.aclose()
