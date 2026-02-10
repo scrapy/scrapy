@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from scrapy import Request
 from tests.test_downloader_handlers_http_base import (
     TestHttp11Base,
     TestHttpProxyBase,
@@ -39,7 +40,33 @@ class HttpxDownloadHandlerMixin:
 
 
 class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
-    pass
+    @coroutine_test
+    async def test_unsupported_bindaddress(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        meta = {"bindaddress": "127.0.0.2"}
+        request = Request(mockserver.url("/text"), meta=meta)
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
+        assert (
+            "The 'bindaddress' request meta key is not supported by HttpxDownloadHandler"
+            in caplog.text
+        )
+
+    @coroutine_test
+    async def test_unsupported_proxy(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        meta = {"proxy": "127.0.0.2"}
+        request = Request(mockserver.url("/text"), meta=meta)
+        async with self.get_dh() as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"Works"
+        assert (
+            "The 'proxy' request meta key is not supported by HttpxDownloadHandler"
+            in caplog.text
+        )
 
 
 class TestHttps11(HttpxDownloadHandlerMixin, TestHttps11Base):
