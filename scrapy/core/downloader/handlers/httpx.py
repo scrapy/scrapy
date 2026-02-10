@@ -16,6 +16,7 @@ from scrapy.exceptions import (
     DownloadConnectionRefusedError,
     DownloadFailedError,
     DownloadTimeoutError,
+    NotConfigured,
     ResponseDataLossError,
     UnsupportedURLSchemeError,
 )
@@ -51,7 +52,7 @@ class _BaseResponseArgs(TypedDict):
 
 
 # workaround for (and from) https://github.com/encode/httpx/issues/2992
-class _NullCookieJar(CookieJar):
+class _NullCookieJar(CookieJar):  # pragma: no cover
     """A CookieJar that rejects all cookies."""
 
     def extract_cookies(self, response: HTTPResponse, request: ULRequest) -> None:
@@ -66,13 +67,17 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
 
     def __init__(self, crawler: Crawler):
         if not is_asyncio_available():
-            raise ValueError(
-                "HttpxDownloadHandler requires the asyncio Twisted "
-                "reactor. Make sure you have it configured in the "
-                "TWISTED_REACTOR setting. See the asyncio documentation "
+            raise NotConfigured(
+                f"{type(self).__name__} requires the asyncio support. Make"
+                f" sure that you have either enabled the asyncio Twisted"
+                f" reactor in the TWISTED_REACTOR setting or disabled the"
+                f" TWISTED_ENABLED setting. See the asyncio documentation "
                 "of Scrapy for more information."
             )
         super().__init__(crawler)
+        logger.warning(
+            "HttpxDownloadHandler is experimental and is not recommented for production use."
+        )
         self._tls_verbose_logging: bool = self.crawler.settings.getbool(
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
@@ -89,14 +94,16 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
             # configurable only per-client:
             # https://github.com/encode/httpx/issues/755#issuecomment-2746121794
             logger.error(
-                f"The 'bindaddress' request meta key is not supported by {type(self).__name__}."
+                f"The 'bindaddress' request meta key is not supported by"
+                f" {type(self).__name__} and will be ignored."
             )
         proxy = request.meta.get("proxy")
         if proxy:
             # configurable only per-client:
             # https://github.com/encode/httpx/issues/486
             logger.error(
-                f"The 'proxy' request meta key is not supported by {type(self).__name__}."
+                f"The 'proxy' request meta key is not supported by"
+                f" {type(self).__name__} and will be ignored."
             )
         fail_on_dataloss = request.meta.get(
             "download_fail_on_dataloss", self._fail_on_dataloss
