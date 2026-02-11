@@ -55,7 +55,7 @@ if not H2_ENABLED:
 try:
     import httpx  # noqa: F401
 except ImportError:
-    collect_ignore.append("scrapy/core/downloader/handlers/httpx.py")
+    collect_ignore.append("scrapy/core/downloader/handlers/_httpx.py")
 
 
 def pytest_addoption(parser, pluginmanager):

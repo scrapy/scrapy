@@ -1,4 +1,4 @@
-"""Tests for scrapy.core.downloader.handlers.httpx.HttpxDownloadHandler."""
+"""Tests for scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ class HttpxDownloadHandlerMixin:
     @property
     def download_handler_cls(self) -> type[DownloadHandlerProtocol]:
         # the import will fail if httpx is not installed
-        from scrapy.core.downloader.handlers.httpx import (  # noqa: PLC0415
+        from scrapy.core.downloader.handlers._httpx import (  # noqa: PLC0415
             HttpxDownloadHandler,
         )
 
@@ -102,8 +102,8 @@ class TestHttp11WithCrawler(TestHttpWithCrawlerBase):
     def settings_dict(self) -> dict[str, Any] | None:
         return {
             "DOWNLOAD_HANDLERS": {
-                "http": "scrapy.core.downloader.handlers.httpx.HttpxDownloadHandler",
-                "https": "scrapy.core.downloader.handlers.httpx.HttpxDownloadHandler",
+                "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+                "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
             }
         }
 
