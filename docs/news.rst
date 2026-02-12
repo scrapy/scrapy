@@ -3,6 +3,17 @@
 Release notes
 =============
 
+Scrapy VERSION (unreleased)
+---------------------------
+
+New features
+~~~~~~~~~~~~
+
+-   Added
+    :meth:`Headers.to_tuple_list() <scrapy.http.headers.Headers.to_tuple_list>`
+    that returns headers as a list of ``(key, value)`` tuples.
+    (:issue:`7239`)
+
 .. _release-2.14.1:
 
 Scrapy 2.14.1 (2026-01-12)
@@ -2997,7 +3008,7 @@ Bug fixes
     that does not match the asyncio event loop actually installed
     (:issue:`5529`).
 
--   Fixed :meth:`Headers.getlist <scrapy.http.headers.Headers.getlist>`
+-   Fixed :meth:`Headers.getlist() <scrapy.http.headers.Headers.getlist>`
     returning only the last header (:issue:`5515`, :issue:`5526`).
 
 -   Fixed :class:`LinkExtractor

@@ -124,6 +124,17 @@ class Headers(CaselessDict):
             for key, value in self.items()
         )
 
+    def to_tuple_list(self) -> list[tuple[str, str]]:
+        """Return headers as a list of ``(key, value)`` tuples.
+
+        Multiple values are represented as multiple tuples with the same key.
+        """
+        return [
+            (key.decode(self.encoding), value.decode(self.encoding))
+            for key, values in self.items()
+            for value in values
+        ]
+
     def __copy__(self) -> Self:
         return self.__class__(self)
 

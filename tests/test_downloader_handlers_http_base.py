@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 
 import pytest
 from twisted.internet.ssl import Certificate
+from twisted.python.failure import Failure
 
 from scrapy.exceptions import (
     CannotResolveHostError,
@@ -24,6 +25,7 @@ from scrapy.exceptions import (
     DownloadFailedError,
     DownloadTimeoutError,
     ResponseDataLossError,
+    StopDownload,
     UnsupportedURLSchemeError,
 )
 from scrapy.http import Headers, HtmlResponse, Request, Response, TextResponse
@@ -34,7 +36,13 @@ from scrapy.utils.test import get_crawler
 from tests import NON_EXISTING_RESOLVABLE
 from tests.mockserver.proxy_echo import ProxyEchoMockServer
 from tests.mockserver.simple_https import SimpleMockServer
-from tests.spiders import SingleRequestSpider
+from tests.spiders import (
+    BytesReceivedCallbackSpider,
+    BytesReceivedErrbackSpider,
+    HeadersReceivedCallbackSpider,
+    HeadersReceivedErrbackSpider,
+    SingleRequestSpider,
+)
 from tests.utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
@@ -831,6 +839,74 @@ class TestHttpWithCrawlerBase(ABC):
         ip_address = crawler.spider.meta["responses"][0].ip_address
         assert isinstance(ip_address, IPv4Address)
         assert str(ip_address) == gethostbyname(expected_netloc)
+
+    @coroutine_test
+    async def test_bytes_received_stop_download_callback(
+        self, mockserver: MockServer
+    ) -> None:
+        # copy of TestCrawl.test_bytes_received_stop_download_callback()
+        crawler = get_crawler(BytesReceivedCallbackSpider, self.settings_dict)
+        await crawler.crawl_async(mockserver=mockserver, is_secure=self.is_secure)
+        assert isinstance(crawler.spider, BytesReceivedCallbackSpider)
+        assert crawler.spider.meta.get("failure") is None
+        assert isinstance(crawler.spider.meta["response"], Response)
+        assert crawler.spider.meta["response"].body == crawler.spider.meta.get(
+            "bytes_received"
+        )
+        assert (
+            len(crawler.spider.meta["response"].body)
+            < crawler.spider.full_response_length
+        )
+
+    @coroutine_test
+    async def test_bytes_received_stop_download_errback(
+        self, mockserver: MockServer
+    ) -> None:
+        # copy of TestCrawl.test_bytes_received_stop_download_errback()
+        crawler = get_crawler(BytesReceivedErrbackSpider, self.settings_dict)
+        await crawler.crawl_async(mockserver=mockserver, is_secure=self.is_secure)
+        assert isinstance(crawler.spider, BytesReceivedErrbackSpider)
+        assert crawler.spider.meta.get("response") is None
+        assert isinstance(crawler.spider.meta["failure"], Failure)
+        assert isinstance(crawler.spider.meta["failure"].value, StopDownload)
+        assert isinstance(crawler.spider.meta["failure"].value.response, Response)
+        assert crawler.spider.meta[
+            "failure"
+        ].value.response.body == crawler.spider.meta.get("bytes_received")
+        assert (
+            len(crawler.spider.meta["failure"].value.response.body)
+            < crawler.spider.full_response_length
+        )
+
+    @coroutine_test
+    async def test_headers_received_stop_download_callback(
+        self, mockserver: MockServer
+    ) -> None:
+        # copy of TestCrawl.test_headers_received_stop_download_callback()
+        crawler = get_crawler(HeadersReceivedCallbackSpider, self.settings_dict)
+        await crawler.crawl_async(mockserver=mockserver, is_secure=self.is_secure)
+        assert isinstance(crawler.spider, HeadersReceivedCallbackSpider)
+        assert crawler.spider.meta.get("failure") is None
+        assert isinstance(crawler.spider.meta["response"], Response)
+        assert crawler.spider.meta["response"].headers == crawler.spider.meta.get(
+            "headers_received"
+        )
+
+    @coroutine_test
+    async def test_headers_received_stop_download_errback(
+        self, mockserver: MockServer
+    ) -> None:
+        # copy of TestCrawl.test_headers_received_stop_download_errback()
+        crawler = get_crawler(HeadersReceivedErrbackSpider, self.settings_dict)
+        await crawler.crawl_async(mockserver=mockserver, is_secure=self.is_secure)
+        assert isinstance(crawler.spider, HeadersReceivedErrbackSpider)
+        assert crawler.spider.meta.get("response") is None
+        assert isinstance(crawler.spider.meta["failure"], Failure)
+        assert isinstance(crawler.spider.meta["failure"].value, StopDownload)
+        assert isinstance(crawler.spider.meta["failure"].value.response, Response)
+        assert crawler.spider.meta[
+            "failure"
+        ].value.response.headers == crawler.spider.meta.get("headers_received")
 
 
 class TestHttpProxyBase(ABC):
