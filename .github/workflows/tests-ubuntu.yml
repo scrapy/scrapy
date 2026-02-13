@@ -13,6 +13,8 @@ concurrency:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    env:
+      PYTEST_ADDOPTS: -n auto
     strategy:
       fail-fast: false
       matrix:
