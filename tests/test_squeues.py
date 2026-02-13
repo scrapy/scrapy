@@ -120,7 +120,7 @@ class PickleFifoDiskQueueTest(t.FifoDiskQueueTest, FifoDiskQueueTestMixin):
             match=r"Can't (get|pickle) local object|Can't pickle .*: it's not found as",
         ) as exc_info:
             q.push(lambda x: x)
-        if hasattr(sys, "pypy_version_info"):
+        if sys.version_info >= (3, 14) or hasattr(sys, "pypy_version_info"):
             assert isinstance(exc_info.value.__context__, pickle.PicklingError)
         else:
             assert isinstance(exc_info.value.__context__, AttributeError)

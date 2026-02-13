@@ -4,7 +4,7 @@ import sys
 from io import StringIO
 from typing import TYPE_CHECKING
 from unittest import TestCase
-from unittest.mock import Mock, PropertyMock, call, patch
+from unittest.mock import MagicMock, Mock, PropertyMock, call, patch
 
 from scrapy.commands.check import Command, TextTestResult
 from tests.test_commands import TestProjectBase
@@ -117,7 +117,7 @@ class CheckSpider(scrapy.Spider):
     def test_printSummary_with_unsuccessful_test_result_without_errors_and_without_failures(
         self,
     ) -> None:
-        result = TextTestResult(Mock(), descriptions=False, verbosity=1)
+        result = TextTestResult(MagicMock(), descriptions=False, verbosity=1)
         start_time = 1.0
         stop_time = 2.0
         result.testsRun = 5
@@ -131,7 +131,7 @@ class CheckSpider(scrapy.Spider):
     def test_printSummary_with_unsuccessful_test_result_with_only_failures(
         self,
     ) -> None:
-        result = TextTestResult(Mock(), descriptions=False, verbosity=1)
+        result = TextTestResult(MagicMock(), descriptions=False, verbosity=1)
         start_time = 1.0
         stop_time = 2.0
         result.testsRun = 5
@@ -142,7 +142,7 @@ class CheckSpider(scrapy.Spider):
             mock_write.assert_called_with(" (failures=1)")
 
     def test_printSummary_with_unsuccessful_test_result_with_only_errors(self) -> None:
-        result = TextTestResult(Mock(), descriptions=False, verbosity=1)
+        result = TextTestResult(MagicMock(), descriptions=False, verbosity=1)
         start_time = 1.0
         stop_time = 2.0
         result.testsRun = 5
@@ -155,7 +155,7 @@ class CheckSpider(scrapy.Spider):
     def test_printSummary_with_unsuccessful_test_result_with_both_failures_and_errors(
         self,
     ) -> None:
-        result = TextTestResult(Mock(), descriptions=False, verbosity=1)
+        result = TextTestResult(MagicMock(), descriptions=False, verbosity=1)
         start_time = 1.0
         stop_time = 2.0
         result.testsRun = 5
