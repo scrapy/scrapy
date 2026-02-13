@@ -622,14 +622,12 @@ class TestCrawlSpider:
         _, items, _ = await self._run_spider(AsyncDefDeferredDirectSpider)
         assert items == [{"code": 200}]
 
-    @pytest.mark.requires_reactor  # TODO replace get_web_client_agent_req()
     @pytest.mark.only_asyncio
     @coroutine_test
     async def test_async_def_deferred_wrapped(self):
         _, items, _ = await self._run_spider(AsyncDefDeferredWrappedSpider)
         assert items == [{"code": 200}]
 
-    @pytest.mark.requires_reactor  # TODO replace get_web_client_agent_req()
     @coroutine_test
     async def test_async_def_deferred_maybe_wrapped(self):
         _, items, _ = await self._run_spider(AsyncDefDeferredMaybeWrappedSpider)
