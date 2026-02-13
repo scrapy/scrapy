@@ -439,12 +439,16 @@ class CrawlerRunner(CrawlerRunnerBase):
         self.crawlers.add(crawler)
         d = crawler.crawl(*args, **kwargs)
         self._active.add(d)
+        failed = False
         try:
             yield d
+        except Exception:
+            failed = True
+            raise
         finally:
             self.crawlers.discard(crawler)
             self._active.discard(d)
-            self.bootstrap_failed |= not getattr(crawler, "spider", None)
+            self.bootstrap_failed |= not getattr(crawler, "spider", None) or failed
 
     def stop(self) -> Deferred[Any]:
         """
@@ -541,10 +545,10 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         task = loop.create_task(crawler.crawl_async(*args, **kwargs))
         self._active.add(task)
 
-        def _done(_: asyncio.Task[None]) -> None:
+        def _done(t: asyncio.Task[None]) -> None:
             self.crawlers.discard(crawler)
             self._active.discard(task)
-            self.bootstrap_failed |= not getattr(crawler, "spider", None)
+            self.bootstrap_failed |= not getattr(crawler, "spider", None) or t.exception() is not None
 
         task.add_done_callback(_done)
         return task

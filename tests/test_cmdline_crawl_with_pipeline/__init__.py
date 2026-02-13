@@ -18,10 +18,6 @@ class TestCmdlineCrawlPipeline:
         assert returncode == 0
 
     def test_exception_at_open_spider_in_pipeline(self):
-        returncode, stderr = self._execute("exception")
-        # An unhandled exception in a pipeline should not stop the crawl
-        assert returncode == 0
-        if TWISTED_KEEPS_TRACEBACKS:
-            assert b'RuntimeError("exception")' in stderr
-        else:
-            assert b"RuntimeError: exception" in stderr
+        returncode, _ = self._execute("exception")
+        # An exception in pipeline's open_spider should result in a non-zero exit code
+        assert returncode == 1
