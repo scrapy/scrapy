@@ -332,7 +332,6 @@ class TestRequestSendOrder:
     # Examples from the “Start requests” section of the documentation about
     # spiders.
 
-    @pytest.mark.requires_http_handler
     @coroutine_test
     async def test_lazy(self):
         start_nums = [1, 2, 4]

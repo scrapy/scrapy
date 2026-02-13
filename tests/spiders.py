@@ -18,7 +18,7 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.spiders.crawl import CrawlSpider, Rule
 from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
-from scrapy.utils.test import get_from_asyncio_queue, get_web_client_agent_req
+from scrapy.utils.test import get_from_asyncio_queue
 
 
 class MockServerSpider(Spider):
@@ -199,28 +199,24 @@ class AsyncDefDeferredDirectSpider(SimpleSpider):
     name = "asyncdef_deferred_direct"
 
     async def parse(self, response):
-        resp = await get_web_client_agent_req(self.mockserver.url("/status?n=200"))
-        yield {"code": resp.code}
+        await defer.succeed(None)
+        yield {"code": 200}
 
 
 class AsyncDefDeferredWrappedSpider(SimpleSpider):
     name = "asyncdef_deferred_wrapped"
 
     async def parse(self, response):
-        resp = await deferred_to_future(
-            get_web_client_agent_req(self.mockserver.url("/status?n=200"))
-        )
-        yield {"code": resp.code}
+        await deferred_to_future(defer.succeed(None))
+        yield {"code": 200}
 
 
 class AsyncDefDeferredMaybeWrappedSpider(SimpleSpider):
     name = "asyncdef_deferred_wrapped"
 
     async def parse(self, response):
-        resp = await maybe_deferred_to_future(
-            get_web_client_agent_req(self.mockserver.url("/status?n=200"))
-        )
-        yield {"code": resp.code}
+        await maybe_deferred_to_future(defer.succeed(None))
+        yield {"code": 200}
 
 
 class AsyncDefAsyncioGenSpider(SimpleSpider):

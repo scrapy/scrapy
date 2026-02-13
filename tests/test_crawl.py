@@ -14,11 +14,11 @@ from twisted.internet.ssl import Certificate
 from twisted.python.failure import Failure
 
 from scrapy import Spider, signals
-from scrapy.crawler import CrawlerRunner
+from scrapy.crawler import AsyncCrawlerRunner, CrawlerRunner
 from scrapy.exceptions import CloseSpider, ScrapyDeprecationWarning, StopDownload
 from scrapy.http import Request
 from scrapy.http.response import Response
-from scrapy.utils.defer import maybe_deferred_to_future
+from scrapy.utils.defer import ensure_awaitable, maybe_deferred_to_future
 from scrapy.utils.engine import format_engine_status, get_engine_status
 from scrapy.utils.python import to_unicode
 from scrapy.utils.test import get_crawler, get_reactor_settings
@@ -61,7 +61,6 @@ if TYPE_CHECKING:
     from scrapy.statscollectors import StatsCollector
 
 
-@pytest.mark.requires_http_handler  # easier than marking many individual tests
 class TestCrawl:
     mockserver: MockServer
 
@@ -402,9 +401,15 @@ with multiples lines
             )
         assert "Got response 200" in str(log)
 
-    @inline_callbacks_test
-    def test_crawl_multiple(self, caplog: pytest.LogCaptureFixture):
-        runner = CrawlerRunner(get_reactor_settings())
+    @coroutine_test
+    async def test_crawl_multiple(self, caplog: pytest.LogCaptureFixture) -> None:
+        settings_dict = get_reactor_settings()
+        runner_cls = (
+            CrawlerRunner
+            if settings_dict.get("TWISTED_ENABLED", True)
+            else AsyncCrawlerRunner
+        )
+        runner = runner_cls(settings_dict)
         runner.crawl(
             SimpleSpider,
             self.mockserver.url("/status?n=200"),
@@ -417,7 +422,7 @@ with multiples lines
         )
 
         with caplog.at_level(logging.DEBUG):
-            yield runner.join()
+            await ensure_awaitable(runner.join())
 
         self._assert_retried(caplog.text)
         assert "Got response 200" in caplog.text
@@ -429,7 +434,6 @@ with multiples lines
         assert "NotSupported: Unsupported URL scheme 'foo'" in caplog.text
 
 
-@pytest.mark.requires_http_handler
 class TestCrawlSpider:
     mockserver: MockServer
 
@@ -636,6 +640,11 @@ class TestCrawlSpider:
         yield crawler.crawl(seed=url, mockserver=self.mockserver)
         assert crawler.spider.meta["responses"][0].certificate is None
 
+    @pytest.mark.xfail(
+        'config.getoption("--reactor") == "none"',
+        reason="Not implemented in HttpxDownloadHandler",
+        strict=True,
+    )
     @pytest.mark.parametrize(
         "url",
         [
@@ -643,6 +652,7 @@ class TestCrawlSpider:
             pytest.param(
                 "/status?n=200",
                 marks=pytest.mark.xfail(
+                    'config.getoption("--reactor") != "none"',
                     reason="With HTTP11DownloadHandler, responses with no body are returned early and contain no certificate",
                     strict=True,
                 ),
@@ -669,6 +679,7 @@ class TestCrawlSpider:
             pytest.param(
                 "/status?n=200",
                 marks=pytest.mark.xfail(
+                    'config.getoption("--reactor") != "none"',
                     reason="With HTTP11DownloadHandler, responses with no body are returned early and contain no ip_address",
                     strict=True,
                 ),
