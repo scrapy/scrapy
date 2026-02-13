@@ -93,10 +93,11 @@ class TestLoad:
         crawler = get_crawler(settings_dict={"DOWNLOAD_HANDLERS": handlers})
         dh = DownloadHandlers(crawler)
         assert "scheme" not in dh._schemes
-        for scheme in handlers:  # force load handlers
-            dh._get_handler(scheme)
+        assert dh._get_handler("scheme") is None
         assert "scheme" not in dh._handlers
         assert "scheme" in dh._notconfigured
+        # get the handler again to cover the code that gets it from dh._notconfigured
+        assert dh._get_handler("scheme") is None
 
     def test_lazy_handlers(self):
         handlers = {"scheme": DummyLazyDH}
@@ -108,8 +109,8 @@ class TestLoad:
             dh = DownloadHandlers(crawler)
         assert "scheme" in dh._schemes
         assert "scheme" not in dh._handlers
-        for scheme in handlers:  # force load lazy handler
-            dh._get_handler(scheme)
+        handler = dh._get_handler("scheme")  # force load lazy handler
+        assert handler
         assert "scheme" in dh._handlers
         assert "scheme" not in dh._notconfigured
 
