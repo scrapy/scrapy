@@ -6,7 +6,7 @@ from scrapy.extensions.telnet import TelnetConsole
 from scrapy.utils.test import get_crawler
 from tests.utils.decorators import inline_callbacks_test
 
-pytestmark = pytest.mark.requires_reactor
+pytestmark = pytest.mark.requires_reactor  # TelnetConsole requires a reactor
 
 
 class TestTelnetExtension:

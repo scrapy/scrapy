@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 
 pytestmark = [
-    pytest.mark.requires_reactor,
+    pytest.mark.requires_reactor,  # H2ClientProtocol requires a reactor
     pytest.mark.skipif(
         not H2_ENABLED, reason="HTTP/2 support in Twisted is not enabled"
     ),

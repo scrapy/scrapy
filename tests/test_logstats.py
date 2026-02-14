@@ -16,7 +16,7 @@ class TestLogStats:
         self.stats.set_value("response_received_count", 4802)
         self.stats.set_value("item_scraped_count", 3201)
 
-    @pytest.mark.requires_reactor  # needs a reactor or an event loop for LogStats.task
+    @pytest.mark.requires_reactor  # TODO: sync but needs a reactor or an event loop for LogStats.task
     def test_stats_calculations(self):
         logstats = LogStats.from_crawler(self.crawler)
 

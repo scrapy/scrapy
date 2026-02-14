@@ -27,7 +27,7 @@ async def sleep(seconds: float = 0.001) -> None:
 
 
 class TestMain:
-    @pytest.mark.requires_reactor  # TODO
+    @pytest.mark.requires_reactor  # TODO: this uses reactor.callLater()
     @coroutine_test
     async def test_sleep(self):
         """Neither asynchronous sleeps on Spider.start() nor the equivalent on

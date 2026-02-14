@@ -248,7 +248,7 @@ class TestPipeline:
 
 
 class TestCustomPipelineManager:
-    # needs a reactor or an event loop for is_asyncio_available()
+    # TODO: sync but needs a reactor or an event loop for is_asyncio_available()
     # (for ItemPipelineManager.process_item())
     @pytest.mark.requires_reactor
     def test_deprecated_process_item_spider_arg(self) -> None:

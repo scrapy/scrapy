@@ -31,10 +31,11 @@ def test_stderr_log_handler() -> None:
     assert c == 0
 
 
-@pytest.mark.requires_reactor  # needs a running event loop for asyncio.all_tasks()
+@pytest.mark.requires_reactor  # TODO: sync but needs a running event loop for asyncio.all_tasks()
 @pytest.mark.only_asyncio
 def test_pending_asyncio_tasks() -> None:
     """Test that there are no pending asyncio tasks."""
+    # note that pytest-asyncio uses separate loops per function so this isn't as useful there
     assert not asyncio.all_tasks()
 
 

@@ -21,7 +21,8 @@ if TYPE_CHECKING:
 
 
 class TestAsyncio:
-    @pytest.mark.requires_reactor  # needs a reactor or an event loop for is_asyncio_available()
+    # TODO: sync but needs a reactor or an event loop for is_asyncio_available()
+    @pytest.mark.requires_reactor
     def test_is_asyncio_available(self, reactor_pytest: str) -> None:
         # the result should depend only on the pytest --reactor argument
         assert is_asyncio_available() == (reactor_pytest == "asyncio")
@@ -104,7 +105,7 @@ class TestParallelAsyncio:
             assert max_parallel_count[0] <= self.CONCURRENT_ITEMS
 
 
-@pytest.mark.requires_reactor  # needs a running event loop for AsyncioLoopingCall.start()
+@pytest.mark.requires_reactor  # TODO: sync but needs a running event loop for AsyncioLoopingCall.start()
 @pytest.mark.only_asyncio
 class TestAsyncioLoopingCall:
     def test_looping_call(self):

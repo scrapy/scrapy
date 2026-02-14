@@ -88,7 +88,7 @@ class TestPeriodicLog:
         assert extension({"PERIODIC_LOG_DELTA": True, "LOGSTATS_INTERVAL": 60})
         assert extension({"PERIODIC_LOG_DELTA": "True", "LOGSTATS_INTERVAL": 60})
 
-    @pytest.mark.requires_reactor  # needs a reactor or an event loop for PeriodicLog.task
+    @pytest.mark.requires_reactor  # TODO: sync but needs a reactor or an event loop for PeriodicLog.task
     def test_log_delta(self):
         def emulate(settings=None):
             spider = MetaSpider()
@@ -146,7 +146,7 @@ class TestPeriodicLog:
             and ("downloader/" in k and "bytes" not in k),
         )
 
-    @pytest.mark.requires_reactor  # needs a reactor or an event loop for PeriodicLog.task
+    @pytest.mark.requires_reactor  # TODO: sync but needs a reactor or an event loop for PeriodicLog.task
     def test_log_stats(self):
         def emulate(settings=None):
             spider = MetaSpider()

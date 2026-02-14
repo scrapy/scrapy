@@ -561,7 +561,7 @@ class TestFilesPipelineCustomSettings:
         assert fs_store.basedir == str(tmp_path)
 
 
-@pytest.mark.requires_reactor  # needs a reactor for S3FilesStore
+@pytest.mark.requires_reactor  # TODO: needs a reactor for S3FilesStore
 @pytest.mark.requires_botocore
 class TestS3FilesStore:
     @inline_callbacks_test
@@ -692,7 +692,7 @@ class TestGCSFilesStore:
             store.bucket.get_blob.assert_called_with(expected_blob_path)
 
 
-@pytest.mark.requires_reactor  # needs a reactor for FTPFilesStore
+@pytest.mark.requires_reactor  # TODO: needs a reactor for FTPFilesStore
 class TestFTPFileStore:
     @inline_callbacks_test
     def test_persist(self):

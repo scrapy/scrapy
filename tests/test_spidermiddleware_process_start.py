@@ -341,12 +341,12 @@ class TestMain:
             [NoOpSpiderMiddleware, AsyncioSleepSpiderMiddleware, NoOpSpiderMiddleware]
         )
 
-    @pytest.mark.requires_reactor
+    @pytest.mark.requires_reactor  # needs a reactor for twisted_sleep()
     @coroutine_test
     async def test_twisted_sleep_single(self):
         await self._test_sleep([TwistedSleepSpiderMiddleware])
 
-    @pytest.mark.requires_reactor
+    @pytest.mark.requires_reactor  # needs a reactor for twisted_sleep()
     @coroutine_test
     async def test_twisted_sleep_multiple(self):
         await self._test_sleep(

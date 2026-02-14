@@ -84,7 +84,7 @@ class TestCrawl:
         assert max(list(error_delta.values())) < tolerance
 
 
-@pytest.mark.requires_reactor  # needs a reactor or an event loop for Downloader._slot_gc_loop
+@pytest.mark.requires_reactor  # TODO: sync but needs a reactor or an event loop for Downloader._slot_gc_loop
 def test_params():
     params = {
         "concurrency": 1,
@@ -109,7 +109,7 @@ def test_params():
         )
 
 
-@pytest.mark.requires_reactor  # needs a reactor or an event loop for Downloader._slot_gc_loop
+@pytest.mark.requires_reactor  # TODO: sync but needs a reactor or an event loop for Downloader._slot_gc_loop
 def test_get_slot_deprecated_spider_arg():
     crawler = get_crawler(DefaultSpider)
     crawler.spider = crawler._create_spider()
