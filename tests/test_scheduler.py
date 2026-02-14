@@ -19,7 +19,7 @@ from scrapy.utils.httpobj import urlparse_cached
 from scrapy.utils.misc import load_object
 from scrapy.utils.test import get_crawler
 from tests.mockserver.http import MockServer
-from tests.utils.decorators import inline_callbacks_test
+from tests.utils.decorators import coroutine_test, inline_callbacks_test
 
 
 class MemoryScheduler(BaseScheduler):
@@ -99,8 +99,7 @@ class MockCrawler(Crawler):
         self.stats = load_object(self.settings["STATS_CLASS"])(self)
 
 
-# TODO: sync but needs a reactor or an event loop for is_asyncio_available()
-# (for _schedule_coro())
+# TODO: needs refactoring to make scheduler management async
 @pytest.mark.requires_reactor
 class SchedulerHandler(ABC):
     jobdir = None
@@ -246,10 +245,8 @@ _URLS_WITH_SLOTS = [
 
 
 class TestMigration:
-    # TODO: sync but needs a reactor or an event loop for is_asyncio_available()
-    # (for _schedule_coro())
-    @pytest.mark.requires_reactor
-    def test_migration(self, tmpdir):
+    @coroutine_test
+    async def test_migration(self, tmpdir):
         class PrevSchedulerHandler(SchedulerHandler):
             jobdir = tmpdir
 
@@ -310,7 +307,8 @@ class DownloaderAwareSchedulerTestMixin:
     def priority_queue_cls(self) -> str:
         return "scrapy.pqueues.DownloaderAwarePriorityQueue"
 
-    def test_logic(self):
+    @coroutine_test
+    async def test_logic(self):
         for url, slot in _URLS_WITH_SLOTS:
             request = Request(url)
             request.meta[Downloader.DOWNLOAD_SLOT] = slot

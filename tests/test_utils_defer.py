@@ -411,11 +411,9 @@ class TestMaybeDeferredToFutureAsyncio:
 
 
 @pytest.mark.only_not_asyncio
-# TODO: sync but needs a reactor or an event loop for is_asyncio_available()
-# (for maybe_deferred_to_future())
-@pytest.mark.requires_reactor
 class TestMaybeDeferredToFutureNotAsyncio:
-    def test_deferred(self):
+    @coroutine_test
+    async def test_deferred(self):
         d = Deferred()
         result = maybe_deferred_to_future(d)
         assert isinstance(result, Deferred)
