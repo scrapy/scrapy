@@ -561,6 +561,7 @@ class TestFilesPipelineCustomSettings:
         assert fs_store.basedir == str(tmp_path)
 
 
+@pytest.mark.requires_reactor  # needs a reactor for S3FilesStore
 @pytest.mark.requires_botocore
 class TestS3FilesStore:
     @inline_callbacks_test

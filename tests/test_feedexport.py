@@ -2697,6 +2697,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 12
 
+    @pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
     @pytest.mark.requires_boto3
     @inline_callbacks_test
     def test_s3_export(self):
