@@ -513,3 +513,19 @@ ITEM_PIPELINES = {{'{self.project_name}.pipelines.MyPipeline': 1}}
         assert namespace.depth == 2
         assert namespace.spider == self.spider_name
         assert namespace.verbose
+
+    def test_no_reactor(self, proj_path: Path, mockserver: MockServer) -> None:
+        _, out, stderr = proc(
+            "parse",
+            "--spider",
+            "asyncdef_asyncio_return",
+            "-c",
+            "parse",
+            mockserver.url("/html"),
+            "-s",
+            "TWISTED_ENABLED=False",
+            cwd=proj_path,
+        )
+        assert "INFO: Got response 200" in stderr
+        assert "{'id': 1}" in out
+        assert "{'id': 2}" in out
