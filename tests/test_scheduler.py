@@ -143,6 +143,8 @@ class TestSchedulerBase(ABC):
     ) -> AbstractAsyncContextManager[Scheduler]:
         return create_scheduler(self.priority_queue_cls, jobdir)
 
+    # TODO: unify test methods using "reopen" like in DownloaderAwareSchedulerTestMixin
+
 
 class TestSchedulerInMemoryBase(TestSchedulerBase):
     @coroutine_test
@@ -294,22 +296,19 @@ def _is_scheduling_fair(enqueued_slots, dequeued_slots):
     return True
 
 
-class DownloaderAwareSchedulerTestMixin:
+class DownloaderAwareSchedulerTestMixin(TestSchedulerBase):
     reopen = False
     priority_queue_cls = "scrapy.pqueues.DownloaderAwarePriorityQueue"
 
     @coroutine_test
     async def test_logic(self, jobdir: Path | None) -> None:
-        request: Request | None
-        async with self.create_scheduler(jobdir) as scheduler:  # type: ignore[attr-defined]
+        def _setup(scheduler: Scheduler) -> None:
             for url, slot in _URLS_WITH_SLOTS:
                 request = Request(url)
                 request.meta[Downloader.DOWNLOAD_SLOT] = slot
                 scheduler.enqueue_request(request)
 
-            if self.reopen:
-                raise NotImplementedError
-
+        def _assert(scheduler: Scheduler) -> None:
             dequeued_slots = []
             requests = []
             assert scheduler.crawler
@@ -330,6 +329,16 @@ class DownloaderAwareSchedulerTestMixin:
 
             assert _is_scheduling_fair([s for u, s in _URLS_WITH_SLOTS], dequeued_slots)
             assert sum(len(s.active) for s in downloader.slots.values()) == 0
+
+        if self.reopen:
+            async with self.create_scheduler(jobdir) as scheduler:
+                _setup(scheduler)
+            async with self.create_scheduler(jobdir) as scheduler:
+                _assert(scheduler)
+        else:
+            async with self.create_scheduler(jobdir) as scheduler:
+                _setup(scheduler)
+                _assert(scheduler)
 
 
 class TestSchedulerWithDownloaderAwareInMemory(
