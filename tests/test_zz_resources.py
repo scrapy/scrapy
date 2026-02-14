@@ -37,11 +37,14 @@ def test_stderr_log_handler() -> None:
 async def test_pending_asyncio_tasks() -> None:
     """Test that there are no pending asyncio tasks."""
     # note that pytest-asyncio uses separate loops per function so this isn't as useful there
-    tasks = [
-        t
-        for t in asyncio.all_tasks()
-        if t.get_coro().__name__ != "test_pending_asyncio_tasks"
-    ]
+    tasks = []
+    for t in asyncio.all_tasks():
+        coro = t.get_coro()
+        if (
+            coro is not None
+            and getattr(coro, "__name__", None) != "test_pending_asyncio_tasks"
+        ):
+            tasks.append(t)
     assert not tasks
 
 
