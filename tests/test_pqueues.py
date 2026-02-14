@@ -1,4 +1,5 @@
 import tempfile
+from unittest.mock import Mock
 
 import pytest
 import queuelib
@@ -9,7 +10,7 @@ from scrapy.spiders import Spider
 from scrapy.squeues import FifoMemoryQueue
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.test import get_crawler
-from tests.test_scheduler import MockDownloader, MockEngine
+from tests.test_scheduler import MockDownloader
 
 
 class TestPriorityQueue:
@@ -98,7 +99,7 @@ class TestPriorityQueue:
 class TestDownloaderAwarePriorityQueue:
     def setup_method(self):
         crawler = get_crawler(Spider)
-        crawler.engine = MockEngine(downloader=MockDownloader())
+        crawler.engine = Mock(downloader=MockDownloader())
         self.queue = DownloaderAwarePriorityQueue.from_crawler(
             crawler=crawler,
             downstream_queue_cls=FifoMemoryQueue,
