@@ -108,7 +108,11 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         except httpx.UnsupportedProtocol as e:
             raise UnsupportedURLSchemeError(str(e)) from e
         except httpx.ConnectError as e:
-            if "Name or service not known" in str(e) or "getaddrinfo failed" in str(e):
+            if (
+                "Name or service not known" in str(e)
+                or "getaddrinfo failed" in str(e)
+                or "nodename nor servname provided, or not known" in str(e)
+            ):
                 raise CannotResolveHostError(str(e)) from e
             raise DownloadConnectionRefusedError(str(e)) from e
         except httpx.NetworkError as e:
