@@ -248,10 +248,8 @@ class TestPipeline:
 
 
 class TestCustomPipelineManager:
-    # needs a reactor or an event loop for is_asyncio_available()
-    # (for ItemPipelineManager.process_item())
-    @pytest.mark.requires_reactor
-    def test_deprecated_process_item_spider_arg(self) -> None:
+    @coroutine_test
+    async def test_deprecated_process_item_spider_arg(self) -> None:
         class CustomPipelineManager(ItemPipelineManager):
             def process_item(self, item, spider):  # pylint: disable=useless-parent-delegation
                 return super().process_item(item, spider)

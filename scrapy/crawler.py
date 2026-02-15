@@ -143,6 +143,10 @@ class Crawler:
         change them here when the reactor is not used.
         """
         self.settings.set("TELNETCONSOLE_ENABLED", False, priority="default")
+        for scheme in ("http", "https"):
+            self.settings["DOWNLOAD_HANDLERS_BASE"][scheme] = (
+                "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler"
+            )
 
     # Cannot use @deferred_f_from_coro_f because that relies on the reactor
     # being installed already, which is done within _apply_settings(), inside
