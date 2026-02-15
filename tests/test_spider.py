@@ -860,10 +860,10 @@ Sitemap: /sitemap-relative-url.xml
     </urlset>"""
         r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
 
-        class RuleSpider(self.spider_class):  # type: ignore[name-defined]
+        class _RuleSpider(self.spider_class):  # type: ignore[name-defined]
             sitemap_rules = [(rule, "parse")]
 
-        spider = RuleSpider("example.com")
+        spider = _RuleSpider("example.com")
         urls = [req.url for req in spider._parse_sitemap(r)]
         assert urls == result
 
@@ -914,12 +914,38 @@ Sitemap: /sitemap-relative-url.xml
     </sitemapindex>"""
         r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
 
-        class FollowSpider(self.spider_class):  # type: ignore[name-defined]
+        class _FollowSpider(self.spider_class):
             sitemap_follow = [follow]
 
-        spider = FollowSpider("example.com")
+        spider = _FollowSpider("example.com")
         urls = [req.url for req in spider._parse_sitemap(r)]
         assert urls == result
+
+    @pytest.mark.parametrize(
+        "urls_n",
+        [50_000, 536_121],
+    )
+    def test_large_sitemaps(self, urls_n):
+        sitemap = self._generate_sitemap(urls_n)
+        r = XmlResponse(url="http://www.example.com/random.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+
+        urls = [req.url for req in spider._parse_sitemap(r)]
+        assert urls == [f"https://example.com/page-{i}" for i in range(urls_n)]
+
+    def _generate_sitemap(self, urls_n: int) -> bytes:
+        b = bytearray(
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        )
+        for i in range(urls_n):
+            b += (
+                b"<url><loc>https://example.com/page-"
+                + str(i).encode()
+                + b"</loc><lastmod>2026-01-01</lastmod></url>"
+            )
+        b += b"</urlset>\n"
+        return bytes(b)
 
 
 class TestDeprecation:
