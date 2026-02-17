@@ -3,6 +3,9 @@
 ==============
 Sending e-mail
 ==============
+.. deprecated:: VERSION
+    The :mod:`scrapy.mail` module is deprecated and will be removed in a future
+    release. Please use a dedicated Python library for sending emails.
 
 .. module:: scrapy.mail
    :synopsis: Email sending facility
