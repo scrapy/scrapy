@@ -548,9 +548,16 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         def _done(t: asyncio.Task[None]) -> None:
             self.crawlers.discard(crawler)
             self._active.discard(task)
+            exc = t.exception() if not t.cancelled() else None
             self.bootstrap_failed |= (
-                not getattr(crawler, "spider", None) or t.exception() is not None
+                not getattr(crawler, "spider", None) or exc is not None
             )
+            if exc is not None:
+                logger.error(
+                    "Error while crawling %(spider)s",
+                    {"spider": crawler.spidercls.name},
+                    exc_info=exc,
+                )
 
         task.add_done_callback(_done)
         return task
