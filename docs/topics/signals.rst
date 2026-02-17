@@ -134,6 +134,28 @@ engine_stopped
 
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
 
+memusage_reached
+~~~~~~~~~~~~~~~~
+
+.. signal:: memusage_reached
+.. function:: memusage_reached()
+
+    Sent by the :class:`~scrapy.extensions.memusage.MemoryUsage` extension when the
+    memory usage reaches the warning threshold (:setting:`MEMUSAGE_WARNING_MB`).
+
+    This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
+
+memusage_exceeded
+~~~~~~~~~~~~~~~~~
+
+.. signal:: memusage_exceeded
+.. function:: memusage_exceeded()
+
+    Sent by the :class:`~scrapy.extensions.memusage.MemoryUsage` extension when the
+    memory usage exceeds the limit (:setting:`MEMUSAGE_LIMIT_MB`).
+
+    This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
+
 scheduler_empty
 ~~~~~~~~~~~~~~~
 
