@@ -2,9 +2,6 @@ import sys
 from pathlib import Path
 from subprocess import PIPE, Popen
 
-from tests import TWISTED_KEEPS_TRACEBACKS
-
-
 class TestCmdlineCrawlPipeline:
     def _execute(self, spname):
         args = (sys.executable, "-m", "scrapy.cmdline", "crawl", spname)
