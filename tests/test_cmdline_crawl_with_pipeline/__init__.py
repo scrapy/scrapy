@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 from subprocess import PIPE, Popen
 
+
 class TestCmdlineCrawlPipeline:
     def _execute(self, spname):
         args = (sys.executable, "-m", "scrapy.cmdline", "crawl", spname)
