@@ -50,7 +50,6 @@ class TestMain:
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_spider(TestSpider, [ITEM_A])
 
     @coroutine_test
@@ -63,7 +62,6 @@ class TestMain:
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_spider(TestSpider, [ITEM_A])
 
     @coroutine_test
@@ -77,7 +75,6 @@ class TestMain:
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_spider(TestSpider, [ITEM_A])
 
     @coroutine_test
@@ -117,7 +114,6 @@ class TestMain:
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_spider(TestSpider, [ITEM_A])
 
     @coroutine_test
@@ -134,7 +130,6 @@ class TestMain:
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_spider(TestSpider, [ITEM_A])
 
     @coroutine_test

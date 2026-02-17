@@ -134,14 +134,12 @@ class TestMain:
     async def test_modern_mw_modern_spider(self):
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_wrap(ModernWrapSpiderMiddleware, ModernWrapSpider)
 
     @coroutine_test
     async def test_modern_mw_universal_spider(self):
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_wrap(ModernWrapSpiderMiddleware, UniversalWrapSpider)
 
     @coroutine_test
@@ -155,14 +153,12 @@ class TestMain:
     async def test_universal_mw_modern_spider(self):
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_wrap(UniversalWrapSpiderMiddleware, ModernWrapSpider)
 
     @coroutine_test
     async def test_universal_mw_universal_spider(self):
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_wrap(UniversalWrapSpiderMiddleware, UniversalWrapSpider)
 
     @coroutine_test
@@ -226,7 +222,6 @@ class TestMain:
     async def test_modern_mw_universal_mw_modern_spider(self):
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_douple_wrap(
                 ModernWrapSpiderMiddleware,
                 UniversalWrapSpiderMiddleware,
@@ -262,7 +257,6 @@ class TestMain:
     async def test_modern_mw_universal_mw_universal_spider(self):
         with warnings.catch_warnings():
             warnings.simplefilter("error")
-            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_douple_wrap(
                 ModernWrapSpiderMiddleware,
                 UniversalWrapSpiderMiddleware,
