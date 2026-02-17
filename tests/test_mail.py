@@ -5,9 +5,9 @@ import pytest
 from twisted.internet import defer
 from twisted.internet._sslverify import ClientTLSOptions
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.mail import MailSender
 
-from scrapy.exceptions import ScrapyDeprecationWarning
 
 @pytest.mark.requires_reactor
 class TestMailSender:

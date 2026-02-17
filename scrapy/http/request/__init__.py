@@ -200,7 +200,7 @@ class Request(object_ref):
         #: .. seealso:: :ref:`topics-request-response-ref-errbacks`
         self.errback: Callable[[Failure], Any] | None = errback
 
-        self._cookies: CookiesT | None = cookies or None
+        self._cookies: CookiesT | None = cookies if cookies else None
         self._headers: Headers | None = (
             Headers(headers, encoding=encoding) if headers else None
         )
@@ -230,7 +230,7 @@ class Request(object_ref):
 
     @cb_kwargs.setter
     def cb_kwargs(self, value: dict[str, Any] | None) -> None:
-        self._cb_kwargs = value or None
+        self._cb_kwargs = value if value else None
 
     @property
     def meta(self) -> dict[str, Any]:
@@ -240,7 +240,7 @@ class Request(object_ref):
 
     @meta.setter
     def meta(self, value: dict[str, Any] | None) -> None:
-        self._meta = value or None
+        self._meta = value if value else None
 
     @property
     def url(self) -> str:
@@ -278,7 +278,7 @@ class Request(object_ref):
 
     @flags.setter
     def flags(self, value: list[str] | None) -> None:
-        self._flags = value or None
+        self._flags = value if value else None
 
     @property
     def cookies(self) -> CookiesT:
@@ -288,7 +288,7 @@ class Request(object_ref):
 
     @cookies.setter
     def cookies(self, value: CookiesT | None) -> None:
-        self._cookies = value or None
+        self._cookies = value if value else None
 
     @property
     def headers(self) -> Headers:

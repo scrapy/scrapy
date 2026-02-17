@@ -14,7 +14,6 @@ from scrapy.utils.test import get_crawler
 
 from .utils import twisted_sleep
 from .utils.decorators import coroutine_test
-from scrapy.exceptions import ScrapyDeprecationWarning
 
 SLEEP_SECONDS = 0.1
 
@@ -146,8 +145,7 @@ class TestMain:
         ) as messages:
             await self._test_spider(TestSpider, [])
         target_messages = [
-            m for m in messages
-            if "use Spider.start() instead" in str(m.message)
+            m for m in messages if "use Spider.start() instead" in str(m.message)
         ]
         assert len(target_messages) > 0
         assert target_messages[0].filename.endswith("test_spider_start.py")

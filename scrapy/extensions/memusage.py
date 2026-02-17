@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 
 from scrapy import signals
 from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+from scrapy.mail import MailSender
 from scrapy.utils.asyncio import AsyncioLoopingCall, create_looping_call
 from scrapy.utils.defer import _schedule_coro
 from scrapy.utils.engine import get_engine_status
@@ -53,8 +54,7 @@ class MemoryUsage:
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
-            from scrapy.mail import MailSender  # noqa: PLC0415
-            self.mail: MailSender = MailSender.from_crawler(crawler)
+            self.mail = MailSender.from_crawler(crawler)
 
         self.limit: int = crawler.settings.getint("MEMUSAGE_LIMIT_MB") * 1024 * 1024
         self.warning: int = crawler.settings.getint("MEMUSAGE_WARNING_MB") * 1024 * 1024

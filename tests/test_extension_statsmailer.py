@@ -3,13 +3,13 @@ from unittest.mock import MagicMock
 import pytest
 
 from scrapy import signals
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.extensions import statsmailer
 from scrapy.mail import MailSender
 from scrapy.signalmanager import SignalManager
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.spider import DefaultSpider
-from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
+
 
 @pytest.fixture
 def dummy_stats():
@@ -30,7 +30,7 @@ def test_from_crawler_without_recipients_raises_notconfigured():
     crawler.stats = MagicMock()
 
     with pytest.raises(NotConfigured):
-            statsmailer.StatsMailer.from_crawler(crawler)
+        statsmailer.StatsMailer.from_crawler(crawler)
 
 
 def test_from_crawler_with_recipients_initializes_extension(dummy_stats, monkeypatch):
