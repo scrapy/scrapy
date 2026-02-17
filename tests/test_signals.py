@@ -50,7 +50,6 @@ class TestMockServer:
         item = await get_from_asyncio_queue(item)
         self.items.append(item)
 
-    @pytest.mark.requires_http_handler
     @pytest.mark.only_asyncio
     @inline_callbacks_test
     def test_simple_pipeline(self):

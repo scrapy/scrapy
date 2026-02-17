@@ -127,7 +127,6 @@ class ItemSpider(Spider):
         return {"field": 42}
 
 
-@pytest.mark.requires_http_handler
 class TestPipeline:
     def _on_item_scraped(self, item):
         assert isinstance(item, dict)
@@ -266,7 +265,6 @@ class TestCustomPipelineManager:
         ):
             itemproc.process_item({}, crawler.spider)
 
-    @pytest.mark.requires_http_handler
     @coroutine_test
     async def test_integration_recommended(self, mockserver: MockServer) -> None:
         class CustomPipelineManager(ItemPipelineManager):
@@ -293,7 +291,6 @@ class TestCustomPipelineManager:
 
         assert len(items) == 1
 
-    @pytest.mark.requires_http_handler
     @coroutine_test
     async def test_integration_no_async_subclass(self, mockserver: MockServer) -> None:
         class CustomPipelineManager(ItemPipelineManager):
@@ -352,7 +349,6 @@ class TestCustomPipelineManager:
 
         assert len(items) == 1
 
-    @pytest.mark.requires_http_handler
     @coroutine_test
     async def test_integration_no_async_not_subclass(
         self, mockserver: MockServer

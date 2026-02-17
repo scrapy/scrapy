@@ -849,7 +849,6 @@ class ExceptionJsonItemExporter(JsonItemExporter):
         raise RuntimeError("foo")
 
 
-@pytest.mark.requires_http_handler
 class TestFeedExport(TestFeedExportBase):
     async def run_and_export(
         self, spider_cls: type[Spider], settings: dict[str, Any]
@@ -1703,6 +1702,7 @@ class TestFeedExport(TestFeedExportBase):
         data = await self.exported_no_data(settings)
         assert data["csv"] == b""
 
+    @pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
     @coroutine_test
     async def test_multiple_feeds_success_logs_blocking_feed_storage(self):
         settings = {
@@ -1834,7 +1834,6 @@ class TestFeedExport(TestFeedExportBase):
         assert not Storage.file_was_closed
 
 
-@pytest.mark.requires_http_handler
 class TestFeedPostProcessedExports(TestFeedExportBase):
     items = [{"foo": "bar"}]
     expected = b"foo\r\nbar\r\n"
@@ -2353,7 +2352,6 @@ class TestFeedPostProcessedExports(TestFeedExportBase):
             assert result == expected
 
 
-@pytest.mark.requires_http_handler
 class TestBatchDeliveries(TestFeedExportBase):
     _file_mark = "_%(batch_time)s_#%(batch_id)02d_"
 

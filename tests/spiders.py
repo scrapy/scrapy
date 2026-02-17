@@ -18,13 +18,14 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
 from scrapy.spiders.crawl import CrawlSpider, Rule
 from scrapy.utils.defer import deferred_to_future, maybe_deferred_to_future
-from scrapy.utils.test import get_from_asyncio_queue, get_web_client_agent_req
+from scrapy.utils.test import get_from_asyncio_queue
 
 
 class MockServerSpider(Spider):
-    def __init__(self, mockserver=None, *args, **kwargs):
+    def __init__(self, *args, mockserver=None, is_secure=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.mockserver = mockserver
+        self.is_secure = is_secure
 
 
 class MetaSpider(MockServerSpider):
@@ -198,28 +199,24 @@ class AsyncDefDeferredDirectSpider(SimpleSpider):
     name = "asyncdef_deferred_direct"
 
     async def parse(self, response):
-        resp = await get_web_client_agent_req(self.mockserver.url("/status?n=200"))
-        yield {"code": resp.code}
+        await defer.succeed(None)
+        yield {"code": 200}
 
 
 class AsyncDefDeferredWrappedSpider(SimpleSpider):
     name = "asyncdef_deferred_wrapped"
 
     async def parse(self, response):
-        resp = await deferred_to_future(
-            get_web_client_agent_req(self.mockserver.url("/status?n=200"))
-        )
-        yield {"code": resp.code}
+        await deferred_to_future(defer.succeed(None))
+        yield {"code": 200}
 
 
 class AsyncDefDeferredMaybeWrappedSpider(SimpleSpider):
     name = "asyncdef_deferred_wrapped"
 
     async def parse(self, response):
-        resp = await maybe_deferred_to_future(
-            get_web_client_agent_req(self.mockserver.url("/status?n=200"))
-        )
-        yield {"code": resp.code}
+        await maybe_deferred_to_future(defer.succeed(None))
+        yield {"code": 200}
 
 
 class AsyncDefAsyncioGenSpider(SimpleSpider):
@@ -516,7 +513,7 @@ class BytesReceivedCallbackSpider(MetaSpider):
 
     async def start(self):
         body = b"a" * self.full_response_length
-        url = self.mockserver.url("/alpayload")
+        url = self.mockserver.url("/alpayload", is_secure=self.is_secure)
         yield Request(url, method="POST", body=body, errback=self.errback)
 
     def parse(self, response):
@@ -544,7 +541,10 @@ class HeadersReceivedCallbackSpider(MetaSpider):
         return spider
 
     async def start(self):
-        yield Request(self.mockserver.url("/status"), errback=self.errback)
+        yield Request(
+            self.mockserver.url("/status", is_secure=self.is_secure),
+            errback=self.errback,
+        )
 
     def parse(self, response):
         self.meta["response"] = response

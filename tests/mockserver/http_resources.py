@@ -308,7 +308,8 @@ class UriResource(resource.Resource):
         # ToDo: implement proper HTTPS proxy tests, not faking them.
         if request.method != b"CONNECT":
             return request.uri
-        return b""
+        request.transport.write(b"HTTP/1.1 200 Connection established\r\n\r\n")
+        return NOT_DONE_YET
 
 
 class ResponseHeadersResource(resource.Resource):

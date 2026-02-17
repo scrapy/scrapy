@@ -57,7 +57,6 @@ class RedirectedMediaDownloadSpider(MediaDownloadSpider):
         )
 
 
-@pytest.mark.requires_http_handler
 class TestFileDownloadCrawl:
     pipeline_class = "scrapy.pipelines.files.FilesPipeline"
     store_setting_key = "FILES_STORE"

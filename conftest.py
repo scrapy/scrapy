@@ -52,6 +52,11 @@ if not H2_ENABLED:
         )
     )
 
+try:
+    import httpx  # noqa: F401
+except ImportError:
+    collect_ignore.append("scrapy/core/downloader/handlers/_httpx.py")
+
 
 def pytest_addoption(parser, pluginmanager):
     if pluginmanager.hasplugin("twisted"):
@@ -88,10 +93,7 @@ def pytest_runtest_setup(item):
     # Skip tests based on reactor markers
     reactor = item.config.getoption("--reactor")
 
-    if (
-        item.get_closest_marker("requires_reactor")
-        or item.get_closest_marker("requires_http_handler")
-    ) and reactor == "none":
+    if item.get_closest_marker("requires_reactor") and reactor == "none":
         pytest.skip('This test is only run when the --reactor value is not "none"')
 
     if item.get_closest_marker("only_asyncio") and reactor not in {"asyncio", "none"}:

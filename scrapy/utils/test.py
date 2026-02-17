@@ -131,8 +131,8 @@ def get_reactor_settings() -> dict[str, Any]:
         settings["TWISTED_ENABLED"] = False
         settings["DOWNLOAD_HANDLERS"] = {
             "ftp": None,
-            "http": None,
-            "https": None,
+            "http": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
+            "https": "scrapy.core.downloader.handlers._httpx.HttpxDownloadHandler",
         }
     return settings
 
@@ -208,7 +208,14 @@ def mock_google_cloud_storage() -> tuple[Any, Any, Any]:  # pragma: no cover
     return (client_mock, bucket_mock, blob_mock)
 
 
-def get_web_client_agent_req(url: str) -> Deferred[TxResponse]:
+def get_web_client_agent_req(url: str) -> Deferred[TxResponse]:  # pragma: no cover
+    warnings.warn(
+        "The get_web_client_agent_req() function is deprecated"
+        " and will be removed in a future version of Scrapy.",
+        category=ScrapyDeprecationWarning,
+        stacklevel=2,
+    )
+
     from twisted.internet import reactor
 
     agent = Agent(reactor)

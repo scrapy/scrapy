@@ -61,20 +61,20 @@ def get_ftp_content_and_delete(
     password: str,
     use_active_mode: bool = False,
 ) -> bytes:
-    ftp = FTP()
-    ftp.connect(host, port)
-    ftp.login(username, password)
-    if use_active_mode:
-        ftp.set_pasv(False)
-    ftp_data: list[bytes] = []
+    with FTP() as ftp:
+        ftp.connect(host, port)
+        ftp.login(username, password)
+        if use_active_mode:
+            ftp.set_pasv(False)
+        ftp_data: list[bytes] = []
 
-    def buffer_data(data: bytes) -> None:
-        ftp_data.append(data)
+        def buffer_data(data: bytes) -> None:
+            ftp_data.append(data)
 
-    ftp.retrbinary(f"RETR {path}", buffer_data)
-    dirname, filename = split(path)
-    ftp.cwd(dirname)
-    ftp.delete(filename)
+        ftp.retrbinary(f"RETR {path}", buffer_data)
+        dirname, filename = split(path)
+        ftp.cwd(dirname)
+        ftp.delete(filename)
     return b"".join(ftp_data)
 
 
@@ -700,6 +700,10 @@ class TestFTPFileStore:
         meta = {"foo": "bar"}
         path = "full/filename"
         with MockFTPServer() as ftp_server:
+            # normally set via FilesPipeline.from_crawler()
+            FTPFilesStore.FTP_USERNAME = "anonymous"
+            FTPFilesStore.FTP_PASSWORD = "guest"
+
             store = FTPFilesStore(ftp_server.url("/"))
             empty_dict = yield store.stat_file(path, info=None)
             assert empty_dict == {}

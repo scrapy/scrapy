@@ -191,7 +191,6 @@ class TestHttpErrorMiddlewareHandleAll:
         mw.process_spider_input(res402)
 
 
-@pytest.mark.requires_http_handler
 class TestHttpErrorMiddlewareIntegrational:
     @classmethod
     def setup_class(cls):
