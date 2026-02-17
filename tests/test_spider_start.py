@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import warnings
 from asyncio import sleep
 from typing import Any
@@ -141,16 +140,15 @@ class TestMain:
                 for item_or_request in super().start_requests():
                     yield item_or_request
 
-        msg = "use Spider.start() instead"
-        with pytest.warns(ScrapyDeprecationWarning, match=re.escape(msg)) as ws:
+        with pytest.warns(
+            ScrapyDeprecationWarning, match=r"use Spider\.start\(\) instead"
+        ) as messages:
             await self._test_spider(TestSpider, [])
-
-        for w in ws:
-            if isinstance(w.message, ScrapyDeprecationWarning) and msg in str(
-                w.message
-            ):
-                assert w.filename.endswith("test_spider_start.py")
-                break
+        target_messages = [
+            m for m in messages if "use Spider.start() instead" in str(m.message)
+        ]
+        assert len(target_messages) > 0
+        assert target_messages[0].filename.endswith("test_spider_start.py")
 
     async def _test_start(self, start_, expected_items=None):
         class TestSpider(Spider):
