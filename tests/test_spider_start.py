@@ -144,13 +144,6 @@ class TestMain:
         msg = "use Spider.start() instead"
         with pytest.warns(ScrapyDeprecationWarning, match=re.escape(msg)) as ws:
             await self._test_spider(TestSpider, [])
-<<<<<<< fix/7249-deprecate-mail
-        target_messages = [
-            m for m in messages if "use Spider.start() instead" in str(m.message)
-        ]
-        assert len(target_messages) > 0
-        assert target_messages[0].filename.endswith("test_spider_start.py")
-=======
 
         for w in ws:
             if isinstance(w.message, ScrapyDeprecationWarning) and msg in str(
@@ -158,7 +151,6 @@ class TestMain:
             ):
                 assert w.filename.endswith("test_spider_start.py")
                 break
->>>>>>> master
 
     async def _test_start(self, start_, expected_items=None):
         class TestSpider(Spider):
