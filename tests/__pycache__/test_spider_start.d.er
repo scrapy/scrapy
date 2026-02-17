@@ -1,0 +1,50 @@
+##[pylyzer] failed /home/kailesh/work/scrapy/tests/test_spider_start.py 1771341825 6422
+.___v_desugar_1: Never
+.annotations: Never
+.warnings: Never
+
+.___v_desugar_2: Never
+.sleep: Never
+.___v_desugar_3: Never
+.Any: Never
+.pytest = pyimport "pytest"
+
+.___v_desugar_4 = pyimport "testfixtures"
+.testfixtures = pyimport "testfixtures"
+.LogCapture: {logcapture.LogCapture}
+.___v_desugar_5: Never
+.Spider: Never
+.signals: Never
+.___v_desugar_6: Never
+.ScrapyDeprecationWarning: Never
+.___v_desugar_7: Never
+.maybe_deferred_to_future: Never
+.___v_desugar_8: Never
+.get_crawler: Never
+.___v_desugar_9 = pyimport "utils"
+.utils = pyimport "utils"
+.twisted_sleep: (seconds: Obj) -> Never
+.___v_desugar_10 = pyimport "decorators"
+.decorators = pyimport "decorators"
+.coroutine_test: (coro_f: () -> Never) -> () -> Never
+.___v_desugar_11: Never
+.ScrapyDeprecationWarning: Never
+.SLEEP_SECONDS: {0.1}
+.ITEM_A: Never
+.ITEM_B: Never
+.TestMain: ClassType
+.TestMain.__call__: () -> test_spider_start.TestMain
+.TestMain._test_spider: Never
+.TestMain.test_start_urls: (self: test_spider_start.TestMain) -> NoneType
+.TestMain.test_start: (self: test_spider_start.TestMain) -> NoneType
+.TestMain.test_start_subclass: (self: test_spider_start.TestMain) -> NoneType
+.TestMain.test_deprecated: (self: test_spider_start.TestMain) -> NoneType
+.TestMain.test_deprecated_subclass: (self: test_spider_start.TestMain) -> NoneType
+.TestMain.test_universal: (self: test_spider_start.TestMain) -> NoneType
+.TestMain.test_universal_subclass: (self: test_spider_start.TestMain) -> NoneType
+.TestMain.test_start_deprecated_super: (self: test_spider_start.TestMain) -> NoneType
+.TestMain._test_start: (self: test_spider_start.TestMain, start_: Obj, expected_items: Obj := Obj) -> NoneType
+.TestMain.test_asyncio_delayed: (self: test_spider_start.TestMain) -> NoneType
+.TestMain.test_twisted_delayed: (self: test_spider_start.TestMain) -> NoneType
+.TestMain.test_deprecated_non_generator_exception: (self: test_spider_start.TestMain) -> NoneType
+

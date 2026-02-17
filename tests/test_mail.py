@@ -7,11 +7,13 @@ from twisted.internet._sslverify import ClientTLSOptions
 
 from scrapy.mail import MailSender
 
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 @pytest.mark.requires_reactor
 class TestMailSender:
     def test_send(self):
-        mailsender = MailSender(debug=True)
+        with pytest.warns(ScrapyDeprecationWarning, match="MailSender is deprecated"):
+            mailsender = MailSender(debug=True)
         mailsender.send(
             to=["test@scrapy.org"],
             subject="subject",
@@ -32,7 +34,8 @@ class TestMailSender:
         assert msg.get("Content-Type") == "text/plain"
 
     def test_send_single_values_to_and_cc(self):
-        mailsender = MailSender(debug=True)
+        with pytest.warns(ScrapyDeprecationWarning, match="MailSender is deprecated"):
+            mailsender = MailSender(debug=True)
         mailsender.send(
             to="test@scrapy.org",
             subject="subject",
@@ -42,7 +45,8 @@ class TestMailSender:
         )
 
     def test_send_html(self):
-        mailsender = MailSender(debug=True)
+        with pytest.warns(ScrapyDeprecationWarning, match="MailSender is deprecated"):
+            mailsender = MailSender(debug=True)
         mailsender.send(
             to=["test@scrapy.org"],
             subject="subject",
@@ -61,7 +65,8 @@ class TestMailSender:
         attach.seek(0)
         attachs = [("attachment", "text/plain", attach)]
 
-        mailsender = MailSender(debug=True)
+        with pytest.warns(ScrapyDeprecationWarning, match="MailSender is deprecated"):
+            mailsender = MailSender(debug=True)
         mailsender.send(
             to=["test@scrapy.org"],
             subject="subject",
@@ -94,7 +99,8 @@ class TestMailSender:
     def test_send_utf8(self):
         subject = "sübjèçt"
         body = "bödÿ-àéïöñß"
-        mailsender = MailSender(debug=True)
+        with pytest.warns(ScrapyDeprecationWarning, match="MailSender is deprecated"):
+            mailsender = MailSender(debug=True)
         mailsender.send(
             to=["test@scrapy.org"],
             subject=subject,
@@ -121,7 +127,8 @@ class TestMailSender:
         attach.seek(0)
         attachs = [("attachment", "text/plain", attach)]
 
-        mailsender = MailSender(debug=True)
+        with pytest.warns(ScrapyDeprecationWarning, match="MailSender is deprecated"):
+            mailsender = MailSender(debug=True)
         mailsender.send(
             to=["test@scrapy.org"],
             subject=subject,
@@ -150,7 +157,8 @@ class TestMailSender:
         assert attach.get_payload(decode=True).decode("utf-8") == body
 
     def test_create_sender_factory_with_host(self):
-        mailsender = MailSender(debug=False, smtphost="smtp.testhost.com")
+        with pytest.warns(ScrapyDeprecationWarning, match="MailSender is deprecated"):
+            mailsender = MailSender(debug=False, smtphost="smtp.testhost.com")
 
         factory = mailsender._create_sender_factory(
             to_addrs=["test@scrapy.org"], msg="test", d=defer.Deferred()

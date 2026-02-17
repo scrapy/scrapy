@@ -49,8 +49,8 @@ class MemoryUsage:
         if self.notify_mails:
             warnings.warn(
                 "The 'MEMUSAGE_NOTIFY_MAIL' setting is deprecated and will be removed "
-                "in a future release. Please use the 'memusage_reached' and "
-                "'memusage_exceeded' signals to implement custom notifications.",
+                "in a future release. Please use the 'memusage_warning_reached' "
+                "signal to implement custom notifications.",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
@@ -106,7 +106,6 @@ class MemoryUsage:
         peak_mem_usage = self.get_virtual_size()
         if peak_mem_usage > self.limit:
             self.crawler.stats.set_value("memusage/limit_reached", 1)
-            self.crawler.signals.send_catch_log(signal=signals.memusage_exceeded)
             mem = self.limit / 1024 / 1024
             logger.error(
                 "Memory usage exceeded %(memusage)dMiB. Shutting down Scrapy...",
@@ -139,7 +138,7 @@ class MemoryUsage:
         assert self.crawler.stats
         if self.get_virtual_size() > self.warning:
             self.crawler.stats.set_value("memusage/warning_reached", 1)
-            self.crawler.signals.send_catch_log(signal=signals.memusage_reached)
+            self.crawler.signals.send_catch_log(signal=signals.memusage_warning_reached)
             mem = self.warning / 1024 / 1024
             logger.warning(
                 "Memory usage reached %(memusage)dMiB",

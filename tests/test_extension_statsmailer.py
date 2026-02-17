@@ -9,7 +9,7 @@ from scrapy.mail import MailSender
 from scrapy.signalmanager import SignalManager
 from scrapy.statscollectors import StatsCollector
 from scrapy.utils.spider import DefaultSpider
-
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 
 @pytest.fixture
 def dummy_stats():
@@ -30,7 +30,7 @@ def test_from_crawler_without_recipients_raises_notconfigured():
     crawler.stats = MagicMock()
 
     with pytest.raises(NotConfigured):
-        statsmailer.StatsMailer.from_crawler(crawler)
+            statsmailer.StatsMailer.from_crawler(crawler)
 
 
 def test_from_crawler_with_recipients_initializes_extension(dummy_stats, monkeypatch):
@@ -42,7 +42,8 @@ def test_from_crawler_with_recipients_initializes_extension(dummy_stats, monkeyp
     mailer = MagicMock(spec=MailSender)
     monkeypatch.setattr(statsmailer.MailSender, "from_crawler", lambda _: mailer)
 
-    ext = statsmailer.StatsMailer.from_crawler(crawler)
+    with pytest.warns(ScrapyDeprecationWarning, match="StatsMailer is deprecated"):
+        ext = statsmailer.StatsMailer.from_crawler(crawler)
 
     assert isinstance(ext, statsmailer.StatsMailer)
     assert ext.recipients == ["test@example.com"]
@@ -58,7 +59,8 @@ def test_from_crawler_connects_spider_closed_signal(dummy_stats, monkeypatch):
     mailer = MagicMock(spec=MailSender)
     monkeypatch.setattr(statsmailer.MailSender, "from_crawler", lambda _: mailer)
 
-    statsmailer.StatsMailer.from_crawler(crawler)
+    with pytest.warns(ScrapyDeprecationWarning, match="StatsMailer is deprecated"):
+        statsmailer.StatsMailer.from_crawler(crawler)
 
     connected = crawler.signals.send_catch_log(
         signals.spider_closed, spider=DefaultSpider(name="dummy")
@@ -69,7 +71,8 @@ def test_from_crawler_connects_spider_closed_signal(dummy_stats, monkeypatch):
 def test_spider_closed_sends_email(dummy_stats):
     recipients = ["test@example.com"]
     mail = MagicMock(spec=MailSender)
-    ext = statsmailer.StatsMailer(dummy_stats, recipients, mail)
+    with pytest.warns(ScrapyDeprecationWarning, match="StatsMailer is deprecated"):
+        ext = statsmailer.StatsMailer(dummy_stats, recipients, mail)
 
     spider = DefaultSpider(name="dummy")
     ext.spider_closed(spider)

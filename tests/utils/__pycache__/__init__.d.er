@@ -1,0 +1,10 @@
+##[pylyzer] failed /home/kailesh/work/scrapy/tests/utils/__init__.py 1771325560 568
+.os: Never
+
+.___v_desugar_1: Never
+.Path: Never
+.___v_desugar_2 = pyimport "defer"
+.defer = pyimport "defer"
+.Deferred: {defer.Deferred}
+.twisted_sleep: (seconds: Obj) -> Never
+.get_script_run_env: () -> global::Dict!({Str: Str})

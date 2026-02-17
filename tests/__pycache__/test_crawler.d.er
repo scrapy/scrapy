@@ -1,0 +1,260 @@
+##[pylyzer] failed /home/kailesh/work/scrapy/tests/test_crawler.py 1771341666 46580
+.asyncio: Never
+
+.logging: Never
+
+.platform: Never
+
+.re: Never
+
+.signal: Never
+
+.subprocess: Never
+
+.sys: Never
+
+.warnings: Never
+
+.___v_desugar_1: Never
+.ABC: Never
+.abstractmethod: Never
+.___v_desugar_2: Never
+.Generator: Never
+.___v_desugar_3: Never
+.Path: Never
+.___v_desugar_4: Never
+.Any: Never
+.pytest = pyimport "pytest"
+
+.___v_desugar_5 = pyimport "version"
+.version = pyimport "version"
+.parse_version: (version: Str) -> Never
+.___v_desugar_6 = pyimport "popen_spawn"
+.popen_spawn = pyimport "popen_spawn"
+.PopenSpawn: {popen_spawn.PopenSpawn}
+.___v_desugar_7 = pyimport "defer"
+.defer = pyimport "defer"
+.Deferred: {defer.Deferred}
+.___v_desugar_8 = pyimport "w3lib"
+.w3lib = pyimport "w3lib"
+.w3lib_version: {"2.4.0"}
+.___v_desugar_9 = pyimport "exceptions"
+.exceptions = pyimport "exceptions"
+.MultipleInvalid: {exceptions.MultipleInvalid}
+.scrapy: Never
+
+.___v_desugar_10: Never
+.Spider: Never
+.___v_desugar_11: Never
+.AsyncCrawlerProcess: Never
+.AsyncCrawlerRunner: Never
+.Crawler: Never
+.CrawlerProcess: Never
+.CrawlerRunner: Never
+.___v_desugar_12: Never
+.ScrapyDeprecationWarning: Never
+.___v_desugar_13: Never
+.AutoThrottle: Never
+.___v_desugar_14: Never
+.Settings: Never
+.default_settings: Never
+.___v_desugar_15: Never
+.call_later: Never
+.___v_desugar_16: Never
+.deferred_from_coro: Never
+.maybe_deferred_to_future: Never
+.___v_desugar_17: Never
+._uninstall_scrapy_root_handler: Never
+.configure_logging: Never
+.get_scrapy_root_handler: Never
+.___v_desugar_18: Never
+.DefaultSpider: Never
+.___v_desugar_19: Never
+.get_crawler: Never
+.get_reactor_settings: Never
+.___v_desugar_20: Never
+.MockServer: Never
+.___v_desugar_21: Never
+.get_script_run_env: Never
+.___v_desugar_22: Never
+.coroutine_test: Never
+.inline_callbacks_test: Never
+.BASE_SETTINGS: Never
+.get_raw_crawler: |Type_40577: Type, R :> global::Dict!({?40577: ?40578}), R :> {<failure>}, O: Type, Type_40578: Type|(spidercls: Structural({.__or__ = (self: Never, R) -> O}) := {None} and Structural({.__or__ = (self: Never, R) -> O}), settings_dict: Structural({.__or__ = (self: Never, R) -> O}) := {None} and Structural({.__or__ = (self: Never, R) -> O})) -> Never
+.TestBaseCrawler: ClassType
+.TestBaseCrawler.__call__: () -> test_crawler.TestBaseCrawler
+.TestBaseCrawler.assertOptionIsDefault: |K <: Str|(self: test_crawler.TestBaseCrawler, settings: global::Indexable(K, Obj), key: K) -> NoneType
+
+.TestCrawler: ClassType
+test_crawler = pyimport "test_crawler"
+.TestCrawler <: .TestBaseCrawler
+.TestCrawler.test_populate_spidercls_settings: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_crawler_accepts_dict: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_crawler_accepts_None: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_crawler_rejects_spider_objects: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_crawler_crawl_twice_seq_unsupported: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_crawler_crawl_async_twice_seq_unsupported: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_crawler_crawl_twice_parallel_unsupported: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_crawler_crawl_async_twice_parallel_unsupported: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_get_addon: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_get_downloader_middleware: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_get_downloader_middleware_not_crawling: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_get_downloader_middleware_no_engine: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_get_extension: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_get_extension_not_crawling: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_get_extension_no_engine: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_get_item_pipeline: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_get_item_pipeline_not_crawling: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_get_item_pipeline_no_engine: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_get_spider_middleware: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_get_spider_middleware_not_crawling: (self: test_crawler.TestCrawler) -> NoneType
+.TestCrawler.test_get_spider_middleware_no_engine: (self: test_crawler.TestCrawler) -> NoneType
+
+.TestSpiderSettings: ClassType
+.TestSpiderSettings.__call__: () -> test_crawler.TestSpiderSettings
+.TestSpiderSettings.test_spider_custom_settings: (self: test_crawler.TestSpiderSettings) -> NoneType
+
+.TestCrawlerLogging: ClassType
+.TestCrawlerLogging.__call__: () -> test_crawler.TestCrawlerLogging
+.TestCrawlerLogging.test_no_root_handler_installed: (self: test_crawler.TestCrawlerLogging) -> NoneType
+.TestCrawlerLogging.test_spider_custom_settings_log_level: (self: test_crawler.TestCrawlerLogging, tmp_path: Obj) -> NoneType
+.TestCrawlerLogging.test_spider_custom_settings_log_append: (self: test_crawler.TestCrawlerLogging, tmp_path: Obj) -> NoneType
+
+.SpiderLoaderWithWrongInterface: ClassType
+.SpiderLoaderWithWrongInterface.__call__: () -> test_crawler.SpiderLoaderWithWrongInterface
+.SpiderLoaderWithWrongInterface.unneeded_method: (self: test_crawler.SpiderLoaderWithWrongInterface) -> NoneType
+
+.TestCrawlerRunner: ClassType
+.TestCrawlerRunner <: .TestBaseCrawler
+.TestCrawlerRunner.test_spider_manager_verify_interface: (self: test_crawler.TestCrawlerRunner) -> NoneType
+.TestCrawlerRunner.test_crawler_runner_accepts_dict: (self: test_crawler.TestCrawlerRunner) -> NoneType
+.TestCrawlerRunner.test_crawler_runner_accepts_None: (self: test_crawler.TestCrawlerRunner) -> NoneType
+
+.TestAsyncCrawlerRunner: ClassType
+.TestAsyncCrawlerRunner <: .TestBaseCrawler
+.TestAsyncCrawlerRunner.test_spider_manager_verify_interface: (self: test_crawler.TestAsyncCrawlerRunner) -> NoneType
+.TestAsyncCrawlerRunner.test_crawler_runner_accepts_dict: (self: test_crawler.TestAsyncCrawlerRunner) -> NoneType
+.TestAsyncCrawlerRunner.test_crawler_runner_accepts_None: (self: test_crawler.TestAsyncCrawlerRunner) -> NoneType
+
+.TestCrawlerProcess: ClassType
+.TestCrawlerProcess <: .TestBaseCrawler
+.TestCrawlerProcess.test_crawler_process_accepts_dict: (self: test_crawler.TestCrawlerProcess) -> NoneType
+.TestCrawlerProcess.test_crawler_process_accepts_None: (self: test_crawler.TestCrawlerProcess) -> NoneType
+
+.TestAsyncCrawlerProcess: ClassType
+.TestAsyncCrawlerProcess <: .TestBaseCrawler
+.TestAsyncCrawlerProcess.test_crawler_process_accepts_dict: (self: test_crawler.TestAsyncCrawlerProcess, reactor_pytest: Str) -> NoneType
+.TestAsyncCrawlerProcess.test_crawler_process_accepts_None: (self: test_crawler.TestAsyncCrawlerProcess) -> NoneType
+
+.ExceptionSpider: ClassType
+.ExceptionSpider <: Never
+.ExceptionSpider.name: {"exception"}
+.ExceptionSpider.from_crawler: (cls: Obj, crawler: Obj, *args: Obj, **kwargs := Obj) -> NoneType
+
+.NoRequestsSpider: ClassType
+.NoRequestsSpider <: Never
+.NoRequestsSpider.name: {"no_request"}
+.NoRequestsSpider.start: (self: test_crawler.NoRequestsSpider) -> Never
+
+.TestCrawlerRunnerHasSpider: ClassType
+.TestCrawlerRunnerHasSpider.__call__: () -> test_crawler.TestCrawlerRunnerHasSpider
+.TestCrawlerRunnerHasSpider._runner: () -> Never
+.TestCrawlerRunnerHasSpider._crawl: |Type_40426 <: Structural({.crawl = (self: Obj, ?40427) -> ?41539}), Type_40427: Type, Type_41539: Type|(runner: Type_40426, spider: Type_40427) -> Type_41539
+.TestCrawlerRunnerHasSpider.test_crawler_runner_bootstrap_successful: (self: test_crawler.TestCrawlerRunnerHasSpider) -> NoneType
+.TestCrawlerRunnerHasSpider.test_crawler_runner_bootstrap_successful_for_several: (self: test_crawler.TestCrawlerRunnerHasSpider) -> NoneType
+.TestCrawlerRunnerHasSpider.test_crawler_runner_bootstrap_failed: (self: test_crawler.TestCrawlerRunnerHasSpider) -> NoneType
+.TestCrawlerRunnerHasSpider.test_crawler_runner_bootstrap_failed_for_several: (self: test_crawler.TestCrawlerRunnerHasSpider) -> NoneType
+.TestCrawlerRunnerHasSpider.test_crawler_runner_asyncio_enabled_true: (self: test_crawler.TestCrawlerRunnerHasSpider, reactor_pytest: Str) -> NoneType
+
+.TestAsyncCrawlerRunnerHasSpider: ClassType
+.TestAsyncCrawlerRunnerHasSpider <: .TestCrawlerRunnerHasSpider
+.TestAsyncCrawlerRunnerHasSpider._runner: () -> Never
+.TestAsyncCrawlerRunnerHasSpider._crawl: |Type_40440 <: Structural({.crawl = (self: Obj, ?40441) -> ?41589}), Type_41589: Type, Type_40441: Type|(runner: Type_40440, spider: Type_40441) -> Never
+.TestAsyncCrawlerRunnerHasSpider.test_crawler_runner_asyncio_enabled_true: (self: test_crawler.TestAsyncCrawlerRunnerHasSpider) -> NoneType
+
+.ScriptRunnerMixin: ClassType
+.ScriptRunnerMixin <: Never
+.ScriptRunnerMixin.script_dir : (self: test_crawler.ScriptRunnerMixin) -> Never
+.ScriptRunnerMixin.script_dir: Never
+.ScriptRunnerMixin.get_script_dir: (name: Str) -> Never
+.ScriptRunnerMixin.get_script_args: (self: test_crawler.ScriptRunnerMixin, script_name: Str, *script_args: Str) -> global::List!(Str, _: Nat)
+.ScriptRunnerMixin.run_script: (self: test_crawler.ScriptRunnerMixin, script_name: Str, *script_args: Str) -> Str
+
+.TestCrawlerProcessSubprocessBase: ClassType
+.TestCrawlerProcessSubprocessBase <: .ScriptRunnerMixin
+.TestCrawlerProcessSubprocessBase.test_simple: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_multi: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_reactor_default: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_asyncio_enabled_no_reactor: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_asyncio_enabled_reactor: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_ipv6_default_name_resolver: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_caching_hostname_resolver_ipv6: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_caching_hostname_resolver_finite_execution: (self: test_crawler.TestCrawlerProcessSubprocessBase, mockserver: Obj) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_twisted_reactor_asyncio: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_twisted_reactor_asyncio_custom_settings: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_twisted_reactor_asyncio_custom_settings_same: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_custom_loop_asyncio: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_custom_loop_asyncio_deferred_signal: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_asyncio_enabled_reactor_same_loop: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_asyncio_enabled_reactor_different_loop: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_default_loop_asyncio_deferred_signal: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_args_change_settings: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_shutdown_graceful: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> NoneType
+.TestCrawlerProcessSubprocessBase.test_shutdown_forced: (self: test_crawler.TestCrawlerProcessSubprocessBase) -> Never
+
+.TestCrawlerProcessSubprocess: ClassType
+.TestCrawlerProcessSubprocess <: Base
+.TestCrawlerProcessSubprocess.script_dir : (self: test_crawler.TestCrawlerProcessSubprocess) -> Never
+.TestCrawlerProcessSubprocess.script_dir: Never
+.TestCrawlerProcessSubprocess.test_reactor_default_twisted_reactor_select: (self: test_crawler.TestCrawlerProcessSubprocess) -> NoneType
+.TestCrawlerProcessSubprocess.test_reactor_select: (self: test_crawler.TestCrawlerProcessSubprocess) -> NoneType
+.TestCrawlerProcessSubprocess.test_reactor_select_twisted_reactor_select: (self: test_crawler.TestCrawlerProcessSubprocess) -> NoneType
+.TestCrawlerProcessSubprocess.test_reactor_select_subclass_twisted_reactor_select: (self: test_crawler.TestCrawlerProcessSubprocess) -> NoneType
+.TestCrawlerProcessSubprocess.test_twisted_reactor_select: (self: test_crawler.TestCrawlerProcessSubprocess) -> NoneType
+.TestCrawlerProcessSubprocess.test_twisted_reactor_poll: (self: test_crawler.TestCrawlerProcessSubprocess) -> NoneType
+.TestCrawlerProcessSubprocess.test_twisted_reactor_asyncio_custom_settings_conflict: (self: test_crawler.TestCrawlerProcessSubprocess) -> NoneType
+.TestCrawlerProcessSubprocess.test_reactorless: (self: test_crawler.TestCrawlerProcessSubprocess) -> NoneType
+
+.TestAsyncCrawlerProcessSubprocess: ClassType
+.TestAsyncCrawlerProcessSubprocess <: .TestCrawlerProcessSubprocessBase
+.TestAsyncCrawlerProcessSubprocess.script_dir : (self: test_crawler.TestAsyncCrawlerProcessSubprocess) -> Never
+.TestAsyncCrawlerProcessSubprocess.script_dir: Never
+.TestAsyncCrawlerProcessSubprocess.test_twisted_reactor_custom_settings_select: (self: test_crawler.TestAsyncCrawlerProcessSubprocess) -> NoneType
+.TestAsyncCrawlerProcessSubprocess.test_asyncio_enabled_reactor_same_loop: (self: test_crawler.TestAsyncCrawlerProcessSubprocess) -> NoneType
+.TestAsyncCrawlerProcessSubprocess.test_asyncio_enabled_reactor_different_loop: (self: test_crawler.TestAsyncCrawlerProcessSubprocess) -> NoneType
+.TestAsyncCrawlerProcessSubprocess.test_reactorless_simple: (self: test_crawler.TestAsyncCrawlerProcessSubprocess) -> NoneType
+.TestAsyncCrawlerProcessSubprocess.test_reactorless_datauri: (self: test_crawler.TestAsyncCrawlerProcessSubprocess) -> NoneType
+.TestAsyncCrawlerProcessSubprocess.test_reactorless_import_hook: (self: test_crawler.TestAsyncCrawlerProcessSubprocess) -> NoneType
+.TestAsyncCrawlerProcessSubprocess.test_reactorless_telnetconsole_default: (self: test_crawler.TestAsyncCrawlerProcessSubprocess) -> NoneType
+.TestAsyncCrawlerProcessSubprocess.test_reactorless_telnetconsole_disabled: (self: test_crawler.TestAsyncCrawlerProcessSubprocess) -> NoneType
+.TestAsyncCrawlerProcessSubprocess.test_reactorless_telnetconsole_enabled: (self: test_crawler.TestAsyncCrawlerProcessSubprocess) -> NoneType
+.TestAsyncCrawlerProcessSubprocess.test_reactorless_reactor: (self: test_crawler.TestAsyncCrawlerProcessSubprocess) -> NoneType
+
+.TestCrawlerRunnerSubprocessBase: ClassType
+.TestCrawlerRunnerSubprocessBase <: .ScriptRunnerMixin
+.TestCrawlerRunnerSubprocessBase.test_simple: (self: test_crawler.TestCrawlerRunnerSubprocessBase) -> NoneType
+.TestCrawlerRunnerSubprocessBase.test_multi_parallel: (self: test_crawler.TestCrawlerRunnerSubprocessBase) -> NoneType
+.TestCrawlerRunnerSubprocessBase.test_multi_seq: (self: test_crawler.TestCrawlerRunnerSubprocessBase) -> NoneType
+.TestCrawlerRunnerSubprocessBase.test_custom_loop_same: (self: test_crawler.TestCrawlerRunnerSubprocessBase) -> NoneType
+.TestCrawlerRunnerSubprocessBase.test_custom_loop_different: (self: test_crawler.TestCrawlerRunnerSubprocessBase) -> NoneType
+
+.TestCrawlerRunnerSubprocess: ClassType
+.TestCrawlerRunnerSubprocess <: Base
+.TestCrawlerRunnerSubprocess.script_dir : (self: test_crawler.TestCrawlerRunnerSubprocess) -> Never
+.TestCrawlerRunnerSubprocess.script_dir: Never
+.TestCrawlerRunnerSubprocess.test_explicit_default_reactor: (self: test_crawler.TestCrawlerRunnerSubprocess) -> NoneType
+.TestCrawlerRunnerSubprocess.test_response_ip_address: (self: test_crawler.TestCrawlerRunnerSubprocess) -> NoneType
+.TestCrawlerRunnerSubprocess.test_change_default_reactor: (self: test_crawler.TestCrawlerRunnerSubprocess) -> NoneType
+.TestCrawlerRunnerSubprocess.test_reactorless: (self: test_crawler.TestCrawlerRunnerSubprocess) -> NoneType
+
+.TestAsyncCrawlerRunnerSubprocess: ClassType
+.TestAsyncCrawlerRunnerSubprocess <: .TestCrawlerRunnerSubprocessBase
+.TestAsyncCrawlerRunnerSubprocess.script_dir : (self: test_crawler.TestAsyncCrawlerRunnerSubprocess) -> Never
+.TestAsyncCrawlerRunnerSubprocess.script_dir: Never
+.TestAsyncCrawlerRunnerSubprocess.test_simple_default_reactor: (self: test_crawler.TestAsyncCrawlerRunnerSubprocess) -> NoneType
+.TestAsyncCrawlerRunnerSubprocess.test_reactorless_simple: (self: test_crawler.TestAsyncCrawlerRunnerSubprocess) -> NoneType
+.TestAsyncCrawlerRunnerSubprocess.test_reactorless_datauri: (self: test_crawler.TestAsyncCrawlerRunnerSubprocess) -> NoneType
+.TestAsyncCrawlerRunnerSubprocess.test_reactorless_reactor: (self: test_crawler.TestAsyncCrawlerRunnerSubprocess) -> NoneType
+
+.test_log_scrapy_info: |K: Type, Type_42401: Type, Type_40504 <: Structural({.at_level = (self: Obj, ?42400) -> ?42401; .records = ?Self}), Type_42400: Type, V: Type, Self <: global::Indexable(?K, ?V)|(settings: Obj, items: Bool, caplog: Type_40504) -> NoneType
+.test_deprecated_crawler_stop: () -> NoneType

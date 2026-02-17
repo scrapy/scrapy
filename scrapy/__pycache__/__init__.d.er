@@ -1,0 +1,25 @@
+##[pylyzer] failed /home/kailesh/work/scrapy/scrapy/__init__.py 1771325560 812
+
+.pkgutil: Never
+
+.sys: Never
+
+.warnings: Never
+
+.___v_desugar_1: Never
+.FormRequest: Never
+.Request: Never
+.___v_desugar_2: Never
+.Field: Never
+.Item: Never
+.___v_desugar_3: Never
+.Selector: Never
+.___v_desugar_4: Never
+.Spider: Never
+.__all__: global::List!({"__version__", "version_info", "Request", "Spider", "Field", "Item", "FormRequest", "Selector"}, 8)
+.__version__: Never
+.version_info: global::Tuple([Never])
+
+
+
+

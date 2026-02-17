@@ -14,6 +14,7 @@ from scrapy.utils.test import get_crawler
 
 from .utils import twisted_sleep
 from .utils.decorators import coroutine_test
+from scrapy.exceptions import ScrapyDeprecationWarning
 
 SLEEP_SECONDS = 0.1
 
@@ -49,6 +50,7 @@ class TestMain:
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")
+            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_spider(TestSpider, [ITEM_A])
 
     @coroutine_test
@@ -61,6 +63,7 @@ class TestMain:
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")
+            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_spider(TestSpider, [ITEM_A])
 
     @coroutine_test
@@ -74,6 +77,7 @@ class TestMain:
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")
+            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_spider(TestSpider, [ITEM_A])
 
     @coroutine_test
@@ -113,6 +117,7 @@ class TestMain:
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")
+            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_spider(TestSpider, [ITEM_A])
 
     @coroutine_test
@@ -129,6 +134,7 @@ class TestMain:
 
         with warnings.catch_warnings():
             warnings.simplefilter("error")
+            warnings.filterwarnings("ignore", category=ScrapyDeprecationWarning, message=".*(MailSender|StatsMailer).*")
             await self._test_spider(TestSpider, [ITEM_A])
 
     @coroutine_test
@@ -144,7 +150,12 @@ class TestMain:
             ScrapyDeprecationWarning, match=r"use Spider\.start\(\) instead"
         ) as messages:
             await self._test_spider(TestSpider, [])
-        assert messages[0].filename.endswith("test_spider_start.py")
+        target_messages = [
+            m for m in messages
+            if "use Spider.start() instead" in str(m.message)
+        ]
+        assert len(target_messages) > 0
+        assert target_messages[0].filename.endswith("test_spider_start.py")
 
     async def _test_start(self, start_, expected_items=None):
         class TestSpider(Spider):

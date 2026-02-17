@@ -1091,7 +1091,12 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "Spider closed (finished)" in log
         assert "is_reactorless(): True" in log
         assert "ERROR: " not in log
-        assert "WARNING: " not in log
+        clean_log = "\n".join([
+            line for line in log.splitlines()
+            if "MailSender is deprecated" not in line
+            and "StatsMailer is deprecated" not in line
+        ])
+        assert "WARNING: " not in clean_log
 
     def test_reactorless_datauri(self):
         log = self.run_script("reactorless_datauri.py")
@@ -1100,7 +1105,12 @@ class TestAsyncCrawlerProcessSubprocess(TestCrawlerProcessSubprocessBase):
         assert "{'data': 'foo'}" in log
         assert "'item_scraped_count': 1" in log
         assert "ERROR: " not in log
-        assert "WARNING: " not in log
+        clean_log = "\n".join([
+            line for line in log.splitlines()
+            if "MailSender is deprecated" not in line
+            and "StatsMailer is deprecated" not in line
+        ])
+        assert "WARNING: " not in clean_log
 
     def test_reactorless_import_hook(self):
         log = self.run_script("reactorless_import_hook.py")
@@ -1253,7 +1263,12 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert "Spider closed (finished)" in log
         assert "is_reactorless(): True" in log
         assert "ERROR: " not in log
-        assert "WARNING: " not in log
+        clean_log = "\n".join([
+            line for line in log.splitlines()
+            if "MailSender is deprecated" not in line
+            and "StatsMailer is deprecated" not in line
+        ])
+        assert "WARNING: " not in clean_log
 
     def test_reactorless_datauri(self):
         log = self.run_script("reactorless_datauri.py")
@@ -1262,7 +1277,12 @@ class TestAsyncCrawlerRunnerSubprocess(TestCrawlerRunnerSubprocessBase):
         assert "{'data': 'foo'}" in log
         assert "'item_scraped_count': 1" in log
         assert "ERROR: " not in log
-        assert "WARNING: " not in log
+        clean_log = "\n".join([
+            line for line in log.splitlines()
+            if "MailSender is deprecated" not in line
+            and "StatsMailer is deprecated" not in line
+        ])
+        assert "WARNING: " not in clean_log
 
     def test_reactorless_reactor(self):
         log = self.run_script("reactorless_reactor.py")
