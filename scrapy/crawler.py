@@ -553,7 +553,7 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         task = loop.create_task(_crawl_and_track())
         self._active.add(task)
 
-        def _done(t: asyncio.Task[None]) -> None:
+        def _done(_: asyncio.Task[None]) -> None:
             self.crawlers.discard(crawler)
             self._active.discard(task)
             self.bootstrap_failed |= not getattr(crawler, "spider", None)
