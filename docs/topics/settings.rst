@@ -1534,8 +1534,7 @@ Scope: ``scrapy.extensions.memusage``
 Whether to enable the memory usage extension. This extension keeps track of
 a peak memory used by the process (it writes it to stats). It can also
 optionally shutdown the Scrapy process when it exceeds a memory limit
-(see :setting:`MEMUSAGE_LIMIT_MB`), and notify by email when that happened
-(see :setting:`MEMUSAGE_NOTIFY_MAIL`).
+(see :setting:`MEMUSAGE_LIMIT_MB`).
 
 See :ref:`topics-extensions-ref-memusage`.
 
@@ -1571,24 +1570,6 @@ This sets the length of these intervals, in seconds.
 
 See :ref:`topics-extensions-ref-memusage`.
 
-.. setting:: MEMUSAGE_NOTIFY_MAIL
-
-MEMUSAGE_NOTIFY_MAIL
---------------------
-
-Default: ``False``
-
-Scope: ``scrapy.extensions.memusage``
-
-A list of emails to notify if the memory limit has been reached.
-
-Example::
-
-    MEMUSAGE_NOTIFY_MAIL = ['user@example.com']
-
-See :ref:`topics-extensions-ref-memusage`.
-
-.. setting:: MEMUSAGE_WARNING_MB
 
 MEMUSAGE_WARNING_MB
 -------------------
@@ -1949,16 +1930,6 @@ Dump the :ref:`Scrapy stats <topics-stats>` (to the Scrapy log) once the spider
 finishes.
 
 For more info see: :ref:`topics-stats`.
-
-.. setting:: STATSMAILER_RCPTS
-
-STATSMAILER_RCPTS
------------------
-
-Default: ``[]`` (empty list)
-
-Send Scrapy stats after spiders finish scraping. See
-:class:`~scrapy.extensions.statsmailer.StatsMailer` for more info.
 
 .. setting:: TELNETCONSOLE_ENABLED
 
