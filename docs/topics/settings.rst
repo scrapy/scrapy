@@ -1529,7 +1529,7 @@ MEMUSAGE_ENABLED
 
 Default: ``True``
 
-Scope: ``scrapy.extensions.memusage``
+Scope: ``scrapy.extensions.memusage.MemoryUsage``
 
 Whether to enable the memory usage extension. This extension keeps track of
 a peak memory used by the process (it writes it to stats). It can also
@@ -1545,10 +1545,11 @@ MEMUSAGE_LIMIT_MB
 
 Default: ``0``
 
-Scope: ``scrapy.extensions.memusage``
+Scope: ``scrapy.extensions.memusage.MemoryUsage``
 
 The maximum amount of memory to allow (in megabytes) before shutting down
-Scrapy  (if MEMUSAGE_ENABLED is True). If zero, no check will be performed.
+Scrapy (if :setting:`MEMUSAGE_ENABLED` is ``True``). If zero, no check will be
+performed.
 
 See :ref:`topics-extensions-ref-memusage`.
 
@@ -1559,7 +1560,7 @@ MEMUSAGE_CHECK_INTERVAL_SECONDS
 
 Default: ``60.0``
 
-Scope: ``scrapy.extensions.memusage``
+Scope: ``scrapy.extensions.memusage.MemoryUsage``
 
 The :ref:`Memory usage extension <topics-extensions-ref-memusage>`
 checks the current memory usage, versus the limits set by
@@ -1570,16 +1571,20 @@ This sets the length of these intervals, in seconds.
 
 See :ref:`topics-extensions-ref-memusage`.
 
+.. setting:: MEMUSAGE_WARNING_MB
 
 MEMUSAGE_WARNING_MB
 -------------------
 
 Default: ``0``
 
-Scope: ``scrapy.extensions.memusage``
+Scope: ``scrapy.extensions.memusage.MemoryUsage``
 
-The maximum amount of memory to allow (in megabytes) before sending a warning
-email notifying about it. If zero, no warning will be produced.
+The maximum amount of memory to allow (in megabytes) before sending a
+:signal:`memusage_warning_reached` signal (if :setting:`MEMUSAGE_ENABLED` is
+``True``). If zero, no signal will be sent.
+
+See :ref:`topics-extensions-ref-memusage`.
 
 .. setting:: NEWSPIDER_MODULE
 

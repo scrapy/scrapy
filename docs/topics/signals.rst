@@ -134,22 +134,6 @@ engine_stopped
 
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
 
-memusage_warning_reached
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. signal:: memusage_warning_reached
-
-.. function:: memusage_warning_reached()
-
-    Sent by the :class:`~scrapy.extensions.memusage.MemoryUsage` extension when the
-    memory usage reaches the warning threshold (:setting:`MEMUSAGE_WARNING_MB`).
-
-    To handle memory limit exceeded events, connect to :signal:`spider_closed` and
-    check that the reason is ``"memusage_exceeded"``.
-
-    This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
-
-
 scheduler_empty
 ~~~~~~~~~~~~~~~
 
@@ -371,6 +355,18 @@ feed_exporter_closed
     after all feed exporting has been handled.
 
     This signal supports :ref:`asynchronous handlers <signal-deferred>`.
+
+memusage_warning_reached
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. signal:: memusage_warning_reached
+
+.. function:: memusage_warning_reached()
+
+    Sent by the :class:`~scrapy.extensions.memusage.MemoryUsage` extension when the
+    memory usage reaches the warning threshold (:setting:`MEMUSAGE_WARNING_MB`).
+
+    This signal does not support :ref:`asynchronous handlers <signal-deferred>`.
 
 
 Request signals

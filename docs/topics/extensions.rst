@@ -175,13 +175,10 @@ Memory usage extension
 
 Monitors the memory used by the Scrapy process that runs the spider and:
 
-1. sends a notification e-mail when it exceeds a certain value
-2. closes the spider when it exceeds a certain value
-
-The notification e-mails can be triggered when a certain warning value is
-reached (:setting:`MEMUSAGE_WARNING_MB`) and when the maximum value is reached
-(:setting:`MEMUSAGE_LIMIT_MB`) which will also cause the spider to be closed
-and the Scrapy process to be terminated.
+1. sends a :signal:`memusage_warning_reached` signal when it exceeds
+   :setting:`MEMUSAGE_WARNING_MB`
+2. closes the spider with the `"memusage_exceeded"` reason when it exceeds
+   :setting:`MEMUSAGE_LIMIT_MB`
 
 This extension is enabled by the :setting:`MEMUSAGE_ENABLED` setting and
 can be configured with the following settings:
