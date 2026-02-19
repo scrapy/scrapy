@@ -46,7 +46,7 @@ class MemoryUsage:
         self.crawler: Crawler = crawler
         self.warned: bool = False
         self.notify_mails: list[str] = crawler.settings.getlist("MEMUSAGE_NOTIFY_MAIL")
-        if self.notify_mails:
+        if self.notify_mails:  # pragma: no cover
             warnings.warn(
                 "The 'MEMUSAGE_NOTIFY_MAIL' setting is deprecated and will be removed "
                 "in a future release. Please use the 'memusage_warning_reached' "

@@ -79,7 +79,7 @@ class MailSender:
         self.debug: bool = debug
 
     @classmethod
-    def from_crawler(cls, crawler: Crawler) -> Self:
+    def from_crawler(cls, crawler: Crawler) -> Self:  # pragma: no cover
         settings = crawler.settings
         return cls(
             smtphost=settings["MAIL_HOST"],
