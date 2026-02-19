@@ -171,8 +171,10 @@ class LxmlLinkExtractor:
         allow_domains: str | Iterable[str] = (),
         deny_domains: str | Iterable[str] = (),
         restrict_xpaths: str | Iterable[str] = (),
-        tags: str | Iterable[str] = ("a", "area"),
-        attrs: str | Iterable[str] = ("href",),
+        tags: str | Iterable[str] | bool = ("a", "area"),
+        attrs: str | Iterable[str] | bool = ("href",),
+        deny_tags: str | Iterable[str] = (),
+        deny_attrs: str | Iterable[str] = (),
         canonicalize: bool = False,
         unique: bool = True,
         process_value: Callable[[Any], Any] | None = None,
@@ -181,10 +183,29 @@ class LxmlLinkExtractor:
         strip: bool = True,
         restrict_text: _RegexOrSeveral | None = None,
     ):
-        tags, attrs = set(arg_to_iter(tags)), set(arg_to_iter(attrs))
+        use_all_tags = tags is True
+        use_all_attrs = attrs is True
+
+        tags_set = set(arg_to_iter(tags)) if not use_all_tags else True
+        attrs_set = set(arg_to_iter(attrs)) if not use_all_attrs else True
+        deny_tags_set = set(arg_to_iter(deny_tags))
+        deny_attrs_set = set(arg_to_iter(deny_attrs))
+
+        def create_checker(allowed, denied):
+            if allowed is True:
+                return lambda x: x not in denied
+
+            if denied:
+                return lambda x: x in allowed
+
+            return partial(operator.contains, allowed)
+
+        tag_checker = create_checker(tags_set, deny_tags_set)
+        attr_checker = create_checker(attrs_set, deny_attrs_set)
+
         self.link_extractor = LxmlParserLinkExtractor(
-            tag=partial(operator.contains, tags),
-            attr=partial(operator.contains, attrs),
+            tag=tag_checker,
+            attr=attr_checker,
             unique=unique,
             process=process_value,
             strip=strip,
