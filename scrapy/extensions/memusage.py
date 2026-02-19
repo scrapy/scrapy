@@ -49,8 +49,8 @@ class MemoryUsage:
         if self.notify_mails:  # pragma: no cover
             warnings.warn(
                 "The 'MEMUSAGE_NOTIFY_MAIL' setting is deprecated and will be removed "
-                "in a future release. Please use the 'memusage_warning_reached' "
-                "signal to implement custom notifications.",
+                "in a future release. Please use the 'memusage_warning_reached' and 'spider_closed' "
+                "signals to implement custom notifications.",
                 category=ScrapyDeprecationWarning,
                 stacklevel=2,
             )
