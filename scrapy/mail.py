@@ -23,6 +23,7 @@ from twisted.internet.defer import Deferred
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.utils.misc import arg_to_iter
 from scrapy.utils.python import to_bytes
+from scrapy.utils.reactorless import is_reactorless
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -70,6 +71,8 @@ class MailSender:
         smtpssl: bool = False,
         debug: bool = False,
     ):
+        if is_reactorless():
+            raise RuntimeError(f"{type(self).__name__} requires a Twisted reactor.")
         self.smtphost: str = smtphost
         self.smtpport: int = smtpport
         self.smtpuser: bytes | None = _to_bytes_or_none(smtpuser)
