@@ -5,7 +5,7 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING
 
-from scrapy.exceptions import ScrapyDeprecationWarning
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.utils.defer import maybe_deferred_to_future
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import to_unicode
@@ -33,6 +33,8 @@ class HTTP10DownloadHandler:
             category=ScrapyDeprecationWarning,
             stacklevel=2,
         )
+        if not crawler.settings.getbool("TWISTED_ENABLED"):
+            raise NotConfigured(f"{type(self).__name__} requires a Twisted reactor.")
         self.HTTPClientFactory: type[ScrapyHTTPClientFactory] = load_object(
             settings["DOWNLOADER_HTTPCLIENTFACTORY"]
         )
