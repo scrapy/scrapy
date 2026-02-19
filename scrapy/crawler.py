@@ -439,12 +439,16 @@ class CrawlerRunner(CrawlerRunnerBase):
         self.crawlers.add(crawler)
         d = crawler.crawl(*args, **kwargs)
         self._active.add(d)
+        failed = False
         try:
             yield d
+        except Exception:
+            failed = True
+            raise
         finally:
             self.crawlers.discard(crawler)
             self._active.discard(d)
-            self.bootstrap_failed |= not getattr(crawler, "spider", None)
+            self.bootstrap_failed |= not getattr(crawler, "spider", None) or failed
 
     def stop(self) -> Deferred[Any]:
         """
@@ -538,7 +542,15 @@ class AsyncCrawlerRunner(CrawlerRunnerBase):
         # or by AsyncCrawlerProcess (but it isn't running yet, so no asyncio.create_task()).
         loop = asyncio.get_event_loop()
         self.crawlers.add(crawler)
-        task = loop.create_task(crawler.crawl_async(*args, **kwargs))
+
+        async def _crawl_and_track() -> None:
+            try:
+                await crawler.crawl_async(*args, **kwargs)
+            except Exception:
+                self.bootstrap_failed = True
+                raise  # re-raise so asyncio still logs it to stderr naturally
+
+        task = loop.create_task(_crawl_and_track())
         self._active.add(task)
 
         def _done(_: asyncio.Task[None]) -> None:
