@@ -507,6 +507,19 @@ class TestS3FeedStorage:
             )
         assert "S3 does not support appending to files" in str(log)
 
+    def test_file_closed_on_upload_error(self):
+        storage = S3FeedStorage(
+            "s3://mybucket/export.csv", "access_key", "secret_key"
+        )
+        storage.s3_client = mock.MagicMock()
+        storage.s3_client.upload_fileobj.side_effect = Exception("upload failed")
+
+        file = mock.MagicMock()
+        with pytest.raises(Exception, match="upload failed"):
+            storage._store_in_thread(file)
+
+        file.close.assert_called_once()
+
 
 @pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
 class TestGCSFeedStorage:
