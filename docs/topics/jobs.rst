@@ -31,10 +31,9 @@ job (i.e. a spider run), so that if stopped cleanly, it can be resumed later.
 .. warning:: This directory must *not* be shared by different spiders, or even
     different jobs of the same spider.
 
-.. warning:: The job directory contains files serialized with :mod:`pickle`,
-    which can execute arbitrary code when loaded. Treat the job directory with
-    the same level of trust as your Scrapy project code: do not point
-    ``JOBDIR`` to a directory that others can write to.
+.. warning:: Treat the job directory with the same security care as your
+    Scrapy project source code. Do not point ``JOBDIR`` to a path that
+    untrusted parties can write to.
 
 See also :ref:`job-dir-contents`.
 
