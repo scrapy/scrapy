@@ -229,10 +229,14 @@ class ScrapyPriorityQueue:
         """
         if self.curprio is None:
             return None
+        # Check regular queues first, matching pop() priority order
         try:
-            queue = self._start_queues[self.curprio]
-        except KeyError:
             queue = self.queues[self.curprio]
+        except KeyError:
+            try:
+                queue = self._start_queues[self.curprio]
+            except KeyError:
+                return None
         # Protocols can't declare optional members
         return cast("Request", queue.peek())  # type: ignore[attr-defined]
 
