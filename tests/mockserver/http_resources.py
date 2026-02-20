@@ -282,7 +282,7 @@ class LargeChunkedFileResource(resource.Resource):
         from twisted.internet import reactor
 
         def response():
-            for i in range(1024):
+            for _ in range(1024):
                 request.write(b"x" * 1024)
             request.finish()
 

@@ -379,28 +379,16 @@ ignore = [
     "B003",
     # Do not use mutable data structures for argument defaults.
     "B006",
-    # Loop control variable not used within the loop body.
-    "B007",
-    # Do not perform function calls in argument defaults.
-    "B008",
     # Found useless expression.
     "B018",
-    # Star-arg unpacking after a keyword argument is strongly discouraged.
-    "B026",
     # No explicit stacklevel argument found.
     "B028",
     # Within an `except` clause, raise exceptions with `raise ... from`
     "B904",
-    # Too many branches
-    "PLR0912",
-    # Too many statements
-    "PLR0915",
     # `for` loop variable overwritten by assignment target
     "PLW2901",
     # Mutable class attributes should be annotated with `typing.ClassVar`
     "RUF012",
-    # Argument default set to insecure SSL protocol
-    "S503",
     # Use capitalized environment variable
     "SIM112",
 ]
