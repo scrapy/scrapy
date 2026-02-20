@@ -413,27 +413,40 @@ class TestRequest:
         assert request.headers is not original_headers
 
     def test_setters_preserve_empty_containers(self):
-        """Setting empty containers ({}, []) should keep the value, not treat
-        it as None.  The old code used ``if value`` which is falsy for empty
-        containers and silently discarded the assignment."""
+        """Setting empty containers ({}, []) should preserve the reference,
+        not silently discard it.  The old code used ``if value`` which is
+        falsy for empty containers, so mutations through the original
+        reference were lost (see PR description MRE)."""
 
         request = self.request_class("http://example.com")
 
-        request.cb_kwargs = {}
-        assert request._cb_kwargs == {}
-        assert request._cb_kwargs is not None
+        # cb_kwargs: assign empty dict, mutate via original ref
+        d = {}
+        request.cb_kwargs = d
+        d["key"] = "value"
+        assert request.cb_kwargs is d
+        assert request.cb_kwargs == {"key": "value"}
 
-        request.meta = {}
-        assert request._meta == {}
-        assert request._meta is not None
+        # meta: same pattern
+        m = {}
+        request.meta = m
+        m["key"] = "value"
+        assert request.meta is m
+        assert request.meta == {"key": "value"}
 
-        request.flags = []
-        assert request._flags == []
-        assert request._flags is not None
+        # flags: assign empty list, mutate via original ref
+        f = []
+        request.flags = f
+        f.append("flag")
+        assert request.flags is f
+        assert request.flags == ["flag"]
 
-        request.cookies = {}
-        assert request._cookies == {}
-        assert request._cookies is not None
+        # cookies: assign empty dict, mutate via original ref
+        c = {}
+        request.cookies = c
+        c["session"] = "abc"
+        assert request.cookies is c
+        assert request.cookies == {"session": "abc"}
 
     def test_no_callback(self):
         with pytest.raises(RuntimeError):
