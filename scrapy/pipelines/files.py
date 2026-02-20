@@ -19,7 +19,7 @@ from ftplib import FTP
 from io import BytesIO
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Any, NoReturn, Protocol, TypedDict, cast
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
@@ -601,7 +601,7 @@ class FilesPipeline(MediaPipeline):
     ) -> FileInfo:
         referer = referer_str(request)
 
-        if response.status != 200:
+        if response.status not in (200, 201):
             logger.warning(
                 "File (code: %(status)s): Error downloading file from "
                 "%(request)s referred in <%(referer)s>",
@@ -656,6 +656,27 @@ class FilesPipeline(MediaPipeline):
             "checksum": checksum,
             "status": status,
         }
+
+
+    async def _check_media_to_download(
+        self, request: Request, info: MediaPipeline.SpiderInfo, item: Any
+    ) -> FileInfo:
+        self._modify_media_request(request)
+        assert self.crawler.engine
+        response = await self.crawler.engine.download_async(request)
+
+        if (
+            response.status == 201
+            and not response.body
+            and response.headers.get(b"Location")
+        ):
+            location = response.headers[b"Location"].decode("utf-8")
+            location = urljoin(response.url, location)
+            location_request = request.replace(url=location)
+            self._modify_media_request(location_request)
+            response = await self.crawler.engine.download_async(location_request)
+
+        return self.media_downloaded(response, request, info, item=item)
 
     def inc_stats(self, status: str) -> None:
         assert self.crawler.stats
