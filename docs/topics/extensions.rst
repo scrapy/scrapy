@@ -175,20 +175,16 @@ Memory usage extension
 
 Monitors the memory used by the Scrapy process that runs the spider and:
 
-1. sends a notification e-mail when it exceeds a certain value
-2. closes the spider when it exceeds a certain value
-
-The notification e-mails can be triggered when a certain warning value is
-reached (:setting:`MEMUSAGE_WARNING_MB`) and when the maximum value is reached
-(:setting:`MEMUSAGE_LIMIT_MB`) which will also cause the spider to be closed
-and the Scrapy process to be terminated.
+1. sends a :signal:`memusage_warning_reached` signal when it exceeds
+   :setting:`MEMUSAGE_WARNING_MB`
+2. closes the spider with the `"memusage_exceeded"` reason when it exceeds
+   :setting:`MEMUSAGE_LIMIT_MB`
 
 This extension is enabled by the :setting:`MEMUSAGE_ENABLED` setting and
 can be configured with the following settings:
 
 * :setting:`MEMUSAGE_LIMIT_MB`
 * :setting:`MEMUSAGE_WARNING_MB`
-* :setting:`MEMUSAGE_NOTIFY_MAIL`
 * :setting:`MEMUSAGE_CHECK_INTERVAL_SECONDS`
 
 Memory debugger extension
@@ -331,24 +327,6 @@ An integer which specifies the maximum number of errors to receive before
 closing the spider. If the spider generates more than that number of errors,
 it will be closed with the reason ``closespider_errorcount``. If zero (or non
 set), spiders won't be closed by number of errors.
-
-StatsMailer extension
-~~~~~~~~~~~~~~~~~~~~~
-
-.. module:: scrapy.extensions.statsmailer
-   :synopsis: StatsMailer extension
-
-.. class:: StatsMailer
-
-This simple extension can be used to send a notification e-mail every time a
-domain has finished scraping, including the Scrapy stats collected. The email
-will be sent to all recipients specified in the :setting:`STATSMAILER_RCPTS`
-setting.
-
-Emails can be sent using the :class:`~scrapy.mail.MailSender` class. To see a
-full list of parameters, including examples on how to instantiate
-:class:`~scrapy.mail.MailSender` and use mail settings, see
-:ref:`topics-email`.
 
 .. module:: scrapy.extensions.debug
    :synopsis: Extensions for debugging Scrapy

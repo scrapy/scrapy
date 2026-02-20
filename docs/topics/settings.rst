@@ -1529,13 +1529,12 @@ MEMUSAGE_ENABLED
 
 Default: ``True``
 
-Scope: ``scrapy.extensions.memusage``
+Scope: ``scrapy.extensions.memusage.MemoryUsage``
 
 Whether to enable the memory usage extension. This extension keeps track of
 a peak memory used by the process (it writes it to stats). It can also
 optionally shutdown the Scrapy process when it exceeds a memory limit
-(see :setting:`MEMUSAGE_LIMIT_MB`), and notify by email when that happened
-(see :setting:`MEMUSAGE_NOTIFY_MAIL`).
+(see :setting:`MEMUSAGE_LIMIT_MB`).
 
 See :ref:`topics-extensions-ref-memusage`.
 
@@ -1546,10 +1545,11 @@ MEMUSAGE_LIMIT_MB
 
 Default: ``0``
 
-Scope: ``scrapy.extensions.memusage``
+Scope: ``scrapy.extensions.memusage.MemoryUsage``
 
 The maximum amount of memory to allow (in megabytes) before shutting down
-Scrapy  (if MEMUSAGE_ENABLED is True). If zero, no check will be performed.
+Scrapy (if :setting:`MEMUSAGE_ENABLED` is ``True``). If zero, no check will be
+performed.
 
 See :ref:`topics-extensions-ref-memusage`.
 
@@ -1560,7 +1560,7 @@ MEMUSAGE_CHECK_INTERVAL_SECONDS
 
 Default: ``60.0``
 
-Scope: ``scrapy.extensions.memusage``
+Scope: ``scrapy.extensions.memusage.MemoryUsage``
 
 The :ref:`Memory usage extension <topics-extensions-ref-memusage>`
 checks the current memory usage, versus the limits set by
@@ -1571,23 +1571,6 @@ This sets the length of these intervals, in seconds.
 
 See :ref:`topics-extensions-ref-memusage`.
 
-.. setting:: MEMUSAGE_NOTIFY_MAIL
-
-MEMUSAGE_NOTIFY_MAIL
---------------------
-
-Default: ``False``
-
-Scope: ``scrapy.extensions.memusage``
-
-A list of emails to notify if the memory limit has been reached.
-
-Example::
-
-    MEMUSAGE_NOTIFY_MAIL = ['user@example.com']
-
-See :ref:`topics-extensions-ref-memusage`.
-
 .. setting:: MEMUSAGE_WARNING_MB
 
 MEMUSAGE_WARNING_MB
@@ -1595,10 +1578,13 @@ MEMUSAGE_WARNING_MB
 
 Default: ``0``
 
-Scope: ``scrapy.extensions.memusage``
+Scope: ``scrapy.extensions.memusage.MemoryUsage``
 
-The maximum amount of memory to allow (in megabytes) before sending a warning
-email notifying about it. If zero, no warning will be produced.
+The maximum amount of memory to allow (in megabytes) before sending a
+:signal:`memusage_warning_reached` signal (if :setting:`MEMUSAGE_ENABLED` is
+``True``). If zero, no signal will be sent.
+
+See :ref:`topics-extensions-ref-memusage`.
 
 .. setting:: NEWSPIDER_MODULE
 
@@ -1949,16 +1935,6 @@ Dump the :ref:`Scrapy stats <topics-stats>` (to the Scrapy log) once the spider
 finishes.
 
 For more info see: :ref:`topics-stats`.
-
-.. setting:: STATSMAILER_RCPTS
-
-STATSMAILER_RCPTS
------------------
-
-Default: ``[]`` (empty list)
-
-Send Scrapy stats after spiders finish scraping. See
-:class:`~scrapy.extensions.statsmailer.StatsMailer` for more info.
 
 .. setting:: TELNETCONSOLE_ENABLED
 
