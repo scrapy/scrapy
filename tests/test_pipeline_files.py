@@ -250,6 +250,77 @@ class TestFilesPipeline:
         for p in patchers:
             p.stop()
 
+    @coroutine_test
+    async def test_file_download_status_201(self):
+        """HTTP 201 (Created) is a valid success response and files should be
+        downloaded when the server returns this status code (see #1615)."""
+        item_url = "http://example.com/file_201.pdf"
+        item = _create_item_with_files(item_url)
+        patchers = [
+            mock.patch.object(
+                FSFilesStore,
+                "stat_file",
+                return_value={},
+            ),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[
+                    Request(
+                        item_url,
+                        meta={"response": Response(item_url, status=201, body=b"data")},
+                    )
+                ],
+            ),
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+        ]
+        for p in patchers:
+            p.start()
+
+        result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+        assert result["files"][0]["checksum"] is not None
+
+        for p in patchers:
+            p.stop()
+
+    @coroutine_test
+    async def test_file_download_non_2xx_rejected(self):
+        """Non-2xx responses (e.g. 404, 500) should still be rejected."""
+        item_url = "http://example.com/file_404.pdf"
+        item = _create_item_with_files(item_url)
+        patchers = [
+            mock.patch.object(
+                FSFilesStore,
+                "stat_file",
+                return_value={},
+            ),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[
+                    Request(
+                        item_url,
+                        meta={
+                            "response": Response(
+                                item_url, status=404, body=b"not found"
+                            )
+                        },
+                    )
+                ],
+            ),
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+        ]
+        for p in patchers:
+            p.start()
+
+        result = await self.pipeline.process_item(item)
+        # The file should not have been downloaded successfully
+        assert len(result["files"]) == 0
+
+        for p in patchers:
+            p.stop()
+
     def test_file_path_from_item(self):
         """
         Custom file path based on item data, overriding default implementation
