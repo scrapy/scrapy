@@ -66,7 +66,7 @@ class Slot:
         self.queue: deque[QueueTuple] = deque()
         self.active: set[Request] = set()
         self.active_size: int = 0
-        self.itemproc_size: int = 0
+        self.itemproc_size: int = 0  # just for scrapy.utils.engine.get_engine_status()
         self.closing: Deferred[Spider] | None = None
 
     def add_response_request(

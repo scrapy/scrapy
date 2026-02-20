@@ -839,7 +839,7 @@ class IsExportingListener:
             if self.start_without_finish:
                 self.start_without_finish = False
             else:
-                self.finish_before_start = True
+                self.finish_without_start = True
 
 
 class ExceptionJsonItemExporter(JsonItemExporter):

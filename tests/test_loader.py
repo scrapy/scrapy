@@ -55,17 +55,6 @@ class ProcessorItemLoader(NameItemLoader):
     name_in = MapCompose(lambda v: v.title())
 
 
-class DefaultedItemLoader(NameItemLoader):
-    default_input_processor = MapCompose(lambda v: v[:-1])
-
-
-# test processors
-def processor_with_args(value, other=None, loader_context=None):
-    if "key" in loader_context:
-        return loader_context["key"]
-    return value
-
-
 class TestBasicItemLoader:
     def test_add_value_on_unknown_field(self):
         il = ProcessorItemLoader()

@@ -96,7 +96,7 @@ class TestPeriodicLog:
             ext.spider_opened(spider)
             ext.set_a()
             a = ext.log_delta()
-            ext.set_a()
+            ext.set_b()
             b = ext.log_delta()
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
@@ -154,7 +154,7 @@ class TestPeriodicLog:
             ext.spider_opened(spider)
             ext.set_a()
             a = ext.log_crawler_stats()
-            ext.set_a()
+            ext.set_b()
             b = ext.log_crawler_stats()
             ext.spider_closed(spider, reason="finished")
             return ext, a, b
