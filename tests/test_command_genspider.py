@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import argparse
 import re
+import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
+from scrapy.commands.genspider import Command
+from scrapy.settings import Settings
 from tests.test_commands import TestProjectBase
 from tests.utils.cmdline import call, proc
 
@@ -29,6 +34,43 @@ class TestGenspiderCommand(TestProjectBase):
         # pass two arguments <name> <domain>. spider script should be created
         assert call("genspider", "test_name", "test.com", cwd=proj_path) == 0
         assert spider.exists()
+
+    def test_edit(self, proj_path: Path) -> None:
+        spname = "test_edit_spider"
+        spider_file = proj_path / self.project_name / "spiders" / f"{spname}.py"
+
+        # Add the project path to sys.path so the project module is importable
+        sys_path_entry = str(proj_path)
+        sys.path.insert(0, sys_path_entry)
+        try:
+            settings = Settings()
+            settings.setmodule(f"{self.project_name}.settings", priority="project")
+
+            cmd = Command()
+            cmd.settings = settings
+
+            opts = argparse.Namespace(
+                template="basic",
+                edit=True,
+                force=False,
+                list=False,
+                dump=None,
+            )
+
+            with patch("scrapy.commands.genspider.os.system", return_value=0) as mock_system:
+                cmd.run([spname, "test.com"], opts)
+
+            assert spider_file.exists()
+            editor = settings.get("EDITOR")
+            mock_system.assert_called_once_with(f'{editor} "{spider_file}"')
+        finally:
+            sys.path.remove(sys_path_entry)
+            # Clean up imported project modules to avoid interference with other tests
+            modules_to_remove = [
+                key for key in sys.modules if key.startswith(self.project_name)
+            ]
+            for key in modules_to_remove:
+                del sys.modules[key]
 
     @pytest.mark.parametrize(
         "tplname",
