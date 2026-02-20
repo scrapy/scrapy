@@ -792,3 +792,174 @@ def test_files_pipeline_raises_notconfigured_when_files_store_invalid(store):
 
     with pytest.raises(NotConfigured):
         FilesPipeline.from_crawler(crawler)
+
+
+class TestFilesPipeline201Response:
+    """Tests for FilesPipeline handling of HTTP 201 responses."""
+
+    def setup_method(self):
+        self.tempdir = mkdtemp()
+        settings_dict = {"FILES_STORE": self.tempdir}
+        crawler = get_crawler(DefaultSpider, settings_dict=settings_dict)
+        crawler.spider = crawler._create_spider()
+        crawler.engine = MagicMock(download_async=_mocked_download_func)
+        self.pipeline = FilesPipeline.from_crawler(crawler)
+        self.pipeline.open_spider()
+
+    def teardown_method(self):
+        rmtree(self.tempdir)
+
+    @coroutine_test
+    async def test_201_with_body(self):
+        """A 201 response with a body should save the file normally."""
+        item_url = "http://example.com/upload"
+        item = _create_item_with_files(item_url)
+        patchers = [
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FSFilesStore,
+                "stat_file",
+                return_value={},
+            ),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[
+                    Request(
+                        item_url,
+                        meta={
+                            "response": Response(
+                                item_url, status=201, body=b"file content"
+                            )
+                        },
+                    )
+                ],
+            ),
+        ]
+        for p in patchers:
+            p.start()
+
+        result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+        assert result["files"][0]["checksum"] is not None
+
+        for p in patchers:
+            p.stop()
+
+    @coroutine_test
+    async def test_201_no_body_with_location(self):
+        """A 201 with no body but a Location header should follow the URL."""
+        item_url = "http://example.com/upload"
+        location_url = "http://example.com/files/result.pdf"
+        item = _create_item_with_files(item_url)
+
+        call_count = 0
+
+        async def mock_download(request):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return Response(
+                    item_url,
+                    status=201,
+                    headers={b"Location": location_url.encode()},
+                    body=b"",
+                )
+            else:
+                return Response(location_url, status=200, body=b"file content")
+
+        self.pipeline.crawler.engine = MagicMock(download_async=mock_download)
+
+        patchers = [
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FSFilesStore,
+                "stat_file",
+                return_value={},
+            ),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[Request(item_url)],
+            ),
+        ]
+        for p in patchers:
+            p.start()
+
+        result = await self.pipeline.process_item(item)
+        assert result["files"][0]["status"] == "downloaded"
+        assert result["files"][0]["checksum"] is not None
+        assert call_count == 2
+
+        for p in patchers:
+            p.stop()
+
+    @coroutine_test
+    async def test_201_no_body_no_location(self):
+        """A 201 with no body and no Location header should raise empty-content."""
+        item_url = "http://example.com/upload"
+        item = _create_item_with_files(item_url)
+        patchers = [
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FSFilesStore,
+                "stat_file",
+                return_value={},
+            ),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[
+                    Request(
+                        item_url,
+                        meta={
+                            "response": Response(item_url, status=201, body=b"")
+                        },
+                    )
+                ],
+            ),
+        ]
+        for p in patchers:
+            p.start()
+
+        result = await self.pipeline.process_item(item)
+        assert len(result["files"]) == 0  # failed, so no files
+
+        for p in patchers:
+            p.stop()
+
+    @coroutine_test
+    async def test_non_2xx_still_rejected(self):
+        """Non-2xx responses should still be rejected."""
+        item_url = "http://example.com/upload"
+        item = _create_item_with_files(item_url)
+        patchers = [
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(
+                FSFilesStore,
+                "stat_file",
+                return_value={},
+            ),
+            mock.patch.object(
+                FilesPipeline,
+                "get_media_requests",
+                return_value=[
+                    Request(
+                        item_url,
+                        meta={
+                            "response": Response(
+                                item_url, status=403, body=b"forbidden"
+                            )
+                        },
+                    )
+                ],
+            ),
+        ]
+        for p in patchers:
+            p.start()
+
+        result = await self.pipeline.process_item(item)
+        assert len(result["files"]) == 0  # failed, so no files
+
+        for p in patchers:
+            p.stop()
