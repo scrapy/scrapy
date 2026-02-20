@@ -412,6 +412,29 @@ class TestRequest:
         assert request.headers == {}
         assert request.headers is not original_headers
 
+    def test_setters_preserve_empty_containers(self):
+        """Setting empty containers ({}, []) should keep the value, not treat
+        it as None.  The old code used ``if value`` which is falsy for empty
+        containers and silently discarded the assignment."""
+
+        request = self.request_class("http://example.com")
+
+        request.cb_kwargs = {}
+        assert request._cb_kwargs == {}
+        assert request._cb_kwargs is not None
+
+        request.meta = {}
+        assert request._meta == {}
+        assert request._meta is not None
+
+        request.flags = []
+        assert request._flags == []
+        assert request._flags is not None
+
+        request.cookies = {}
+        assert request._cookies == {}
+        assert request._cookies is not None
+
     def test_no_callback(self):
         with pytest.raises(RuntimeError):
             NO_CALLBACK()
