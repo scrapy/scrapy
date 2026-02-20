@@ -16,6 +16,6 @@ if TYPE_CHECKING:
 class FileDownloadHandler(BaseDownloadHandler):
     async def download_request(self, request: Request) -> Response:
         filepath = file_uri_to_path(request.url)
-        body = Path(filepath).read_bytes()
+        body = Path(filepath).read_bytes()  # noqa: ASYNC240
         respcls = responsetypes.from_args(filename=filepath, body=body)
         return respcls(url=request.url, body=body)

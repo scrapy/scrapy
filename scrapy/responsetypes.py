@@ -54,7 +54,7 @@ class ResponseTypes:
             return Response
         if mimetype in self.classes:
             return self.classes[mimetype]
-        basetype = f"{mimetype.split('/')[0]}/*"
+        basetype = f"{mimetype.split('/', maxsplit=1)[0]}/*"
         return self.classes.get(basetype, Response)
 
     def from_content_type(

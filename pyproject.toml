@@ -417,8 +417,8 @@ split-on-trailing-comma = false
 "scrapy/linkextractors/__init__.py" = ["E402"]
 "scrapy/spiders/__init__.py" = ["E402"]
 
-# Skip bandit in tests
-"tests/**" = ["S"]
+# Skip bandit and allow blocking file I/O in tests
+"tests/**" = ["ASYNC240", "S"]
 
 # Issues pending a review:
 "docs/conf.py" = ["E402"]
