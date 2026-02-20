@@ -439,7 +439,7 @@ class ExecutionEngine:
             spider=self.spider,
             dont_log=IgnoreRequest,
         )
-        for handler, result in request_scheduled_result:
+        for _, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
         if not self._slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
@@ -587,7 +587,7 @@ class ExecutionEngine:
         )
         return deferred_from_coro(self.close_spider_async(reason=reason))
 
-    async def close_spider_async(self, *, reason: str = "cancelled") -> None:
+    async def close_spider_async(self, *, reason: str = "cancelled") -> None:  # noqa: PLR0912
         """Close (cancel) spider and clear all its outstanding requests.
 
         .. versionadded:: 2.14

@@ -389,7 +389,7 @@ class DuplicateStartSpider(MockServerSpider):
 
     async def start(self):
         for i in range(self.distinct_urls):
-            for j in range(self.dupe_factor):
+            for _ in range(self.dupe_factor):
                 url = self.mockserver.url(f"/echo?headers=1&body=test{i}")
                 yield Request(url, dont_filter=self.dont_filter)
 

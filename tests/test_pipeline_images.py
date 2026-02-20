@@ -435,7 +435,7 @@ class TestImagesPipelineCustomSettings:
         pipeline = pipeline_cls.from_crawler(
             get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
-        for pipe_attr, settings_attr in self.img_cls_attribute_names:
+        for pipe_attr, _ in self.img_cls_attribute_names:
             # Instance attribute (lowercase) must be equal to class attribute (uppercase).
             attr_value = getattr(pipeline, pipe_attr.lower())
             assert attr_value != self.default_pipeline_settings[pipe_attr]
@@ -469,7 +469,7 @@ class TestImagesPipelineCustomSettings:
         user_pipeline = UserDefinedImagePipeline.from_crawler(
             get_crawler(None, {"IMAGES_STORE": tmp_path})
         )
-        for pipe_attr, settings_attr in self.img_cls_attribute_names:
+        for pipe_attr, _ in self.img_cls_attribute_names:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = self.default_pipeline_settings.get(pipe_attr.upper())
             assert getattr(user_pipeline, pipe_attr.lower()) == custom_value

@@ -174,7 +174,6 @@ disable = [
     "disallowed-name",
     "duplicate-code",  # https://github.com/pylint-dev/pylint/issues/214
     "fixme",
-    "import-outside-toplevel",
     "inherit-non-class",  # false positives with create_deprecated_class()
     "invalid-name",
     "invalid-overridden-method",
@@ -188,12 +187,10 @@ disable = [
     "no-value-for-parameter",  # https://github.com/pylint-dev/pylint/issues/3268
     "not-callable",
     "protected-access",
-    "redefined-builtin",
     "redefined-outer-name",
     "too-few-public-methods",
     "too-many-ancestors",
     "too-many-arguments",
-    "too-many-branches",
     "too-many-function-args",
     "too-many-instance-attributes",
     "too-many-lines",
@@ -202,11 +199,21 @@ disable = [
     "too-many-public-methods",
     "too-many-return-statements",
     "unused-argument",
-    "unused-import",
     "unused-variable",
     "useless-import-alias",  # used as a hint to mypy
     "useless-return",  # https://github.com/pylint-dev/pylint/issues/6530
     "wrong-import-position",
+
+    # Ones that are implemented in ruff and need to be disabled for some lines (listed here to avoid two disable comments)
+    "bare-except",
+    "eval-used",
+    "global-statement",
+    "import-outside-toplevel",
+    "import-self",
+    "inconsistent-return-statements",
+    "redefined-builtin",
+    "too-many-branches",
+    "unused-import",
 
     # Ones that we may want to address (fix, ignore per-line or move to "don't want to fix")
     "abstract-method",
@@ -345,34 +352,22 @@ ignore = [
     "D403",
     # `try`-`except` within a loop incurs performance overhead
     "PERF203",
-    # Import alias does not rename original package
-    "PLC0414",
     # Too many return statements
     "PLR0911",
-    # Too many branches
-    "PLR0912",
     # Too many arguments in function definition
     "PLR0913",
-    # Too many statements
-    "PLR0915",
     # Magic value used in comparison
     "PLR2004",
-    # `for` loop variable overwritten by assignment target
-    "PLW2901",
     # String contains ambiguous {}.
     "RUF001",
     # Docstring contains ambiguous {}.
     "RUF002",
     # Comment contains ambiguous {}.
     "RUF003",
-    # Mutable class attributes should be annotated with `typing.ClassVar`
-    "RUF012",
     # Use of `assert` detected; needed for mypy
     "S101",
     # FTP-related functions are being called; https://github.com/scrapy/scrapy/issues/4180
     "S321",
-    # Argument default set to insecure SSL protocol
-    "S503",
     # Use a context manager for opening files
     "SIM115",
     # Yoda condition detected
@@ -384,18 +379,16 @@ ignore = [
     "B003",
     # Do not use mutable data structures for argument defaults.
     "B006",
-    # Loop control variable not used within the loop body.
-    "B007",
-    # Do not perform function calls in argument defaults.
-    "B008",
     # Found useless expression.
     "B018",
-    # Star-arg unpacking after a keyword argument is strongly discouraged.
-    "B026",
     # No explicit stacklevel argument found.
     "B028",
     # Within an `except` clause, raise exceptions with `raise ... from`
     "B904",
+    # `for` loop variable overwritten by assignment target
+    "PLW2901",
+    # Mutable class attributes should be annotated with `typing.ClassVar`
+    "RUF012",
     # Use capitalized environment variable
     "SIM112",
 ]
@@ -417,8 +410,8 @@ split-on-trailing-comma = false
 "scrapy/linkextractors/__init__.py" = ["E402"]
 "scrapy/spiders/__init__.py" = ["E402"]
 
-# Skip bandit in tests
-"tests/**" = ["S"]
+# Skip bandit and allow blocking file I/O in tests
+"tests/**" = ["ASYNC240", "S"]
 
 # Issues pending a review:
 "docs/conf.py" = ["E402"]

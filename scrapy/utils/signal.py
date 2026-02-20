@@ -50,7 +50,7 @@ def send_catch_log(
         result: TypingAny
         try:
             response = robustApply(
-                receiver, signal=signal, sender=sender, *arguments, **named
+                receiver, *arguments, signal=signal, sender=sender, **named
             )
             if isinstance(response, Deferred):
                 logger.error(
@@ -118,9 +118,9 @@ def _send_catch_log_deferred(
             robustApply,
             True,
             receiver,
+            *arguments,
             signal=signal,
             sender=sender,
-            *arguments,
             **named,
         )
         d.addErrback(logerror, receiver)
@@ -190,7 +190,7 @@ async def _send_catch_log_asyncio(
             try:
                 result = await ensure_awaitable(
                     robustApply(
-                        receiver, signal=signal, sender=sender, *arguments, **named
+                        receiver, *arguments, signal=signal, sender=sender, **named
                     ),
                     _warn=global_object_name(receiver),
                 )

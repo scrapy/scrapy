@@ -97,7 +97,7 @@ class ReferrerPolicy(ABC):
     def potentially_trustworthy(self, url: str) -> bool:
         # Note: this does not follow https://w3c.github.io/webappsec-secure-contexts/#is-url-trustworthy
         parsed_url = urlparse(url)
-        if parsed_url.scheme in ("data",):
+        if parsed_url.scheme == "data":
             return False
         return self.tls_protected(url)
 
