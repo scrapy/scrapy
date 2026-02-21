@@ -215,6 +215,91 @@ def test_open_in_browser_redos_head():
     assert end_time - start_time < MAX_CPU_TIME
 
 
+class TestOpenInBrowserWithoutHead:
+    def setup_method(self):
+        self.url = "http://example.com"
+
+    def assertBaseTagAdded(self, body):
+        expected_base = f'<base href="{self.url}">'.encode()
+        assert expected_base in body, f"Expected {expected_base} not found in {body}"
+
+    def test_without_head_tag(self):
+        """Test with HTML that doesn't have a head tag"""
+        body = b"""<html>
+            <body><p>Hello world.</p></body>
+        </html>"""
+        response = HtmlResponse(self.url, body=body)
+
+        # Mock _openfunc to capture the written content
+        written_content = []
+
+        def mock_open(url):
+            # Extract filename from file:// URL and read content
+            filename = url.replace("file://", "")
+            path = Path(filename)
+            written_content.append(path.read_bytes())
+            path.unlink()  # Clean up
+            return True
+
+        open_in_browser(response, mock_open)
+        self.assertBaseTagAdded(written_content[0])
+
+    def test_only_body_tag(self):
+        """Test with HTML that only has body tag"""
+        body = b"""<body>
+            <p>Hello world.</p>
+        </body>"""
+        response = HtmlResponse(self.url, body=body)
+
+        written_content = []
+
+        def mock_open(url):
+            filename = url.replace("file://", "")
+            path = Path(filename)
+            written_content.append(path.read_bytes())
+            path.unlink()
+            return True
+
+        open_in_browser(response, mock_open)
+        self.assertBaseTagAdded(written_content[0])
+
+    def test_only_html_tag(self):
+        """Test with HTML that only has html tag"""
+        body = b"""<html>
+            <p>Hello world.</p>
+        </html>"""
+        response = HtmlResponse(self.url, body=body)
+
+        written_content = []
+
+        def mock_open(url):
+            filename = url.replace("file://", "")
+            path = Path(filename)
+            written_content.append(path.read_bytes())
+            path.unlink()
+            return True
+
+        open_in_browser(response, mock_open)
+        self.assertBaseTagAdded(written_content[0])
+
+    def test_minimal_html(self):
+        """Test with minimal HTML that doesn't have html, head, or body tags"""
+        body = b"""<p>Hello world.</p>"""
+        response = HtmlResponse(self.url, body=body)
+
+        written_content = []
+
+        def mock_open(url):
+            filename = url.replace("file://", "")
+            path = Path(filename)
+            written_content.append(path.read_bytes())
+            path.unlink()
+            return True
+
+        open_in_browser(response, mock_open)
+        self.assertBaseTagAdded(written_content[0])
+
+
 @pytest.mark.parametrize(
     ("input_body", "output_body"),
     [
