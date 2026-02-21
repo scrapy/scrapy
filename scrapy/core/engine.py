@@ -8,6 +8,7 @@ For more information see docs/topics/architecture.rst
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import warnings
 from time import time
@@ -197,7 +198,8 @@ class ExecutionEngine:
                 self._start_request_processing_awaitable = asyncio.ensure_future(coro)
             else:
                 self._start_request_processing_awaitable = Deferred.fromCoroutine(coro)
-        await maybe_deferred_to_future(self._closewait)
+        with contextlib.suppress(asyncio.exceptions.CancelledError):
+            await maybe_deferred_to_future(self._closewait)
 
     def stop(self) -> Deferred[None]:  # pragma: no cover
         warnings.warn(

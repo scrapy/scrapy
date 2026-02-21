@@ -71,7 +71,7 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
     _DEFAULT_CONNECT_TIMEOUT = 10
 
     def __init__(self, crawler: Crawler):
-        # we don't run extra-deps tests with the non-asyncio reactor
+        # we skip HttpxDownloadHandler tests with the non-asyncio reactor
         if not is_asyncio_available():  # pragma: no cover
             raise NotConfigured(
                 f"{type(self).__name__} requires the asyncio support. Make"
@@ -108,7 +108,11 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         except httpx.UnsupportedProtocol as e:
             raise UnsupportedURLSchemeError(str(e)) from e
         except httpx.ConnectError as e:
-            if "Name or service not known" in str(e) or "getaddrinfo failed" in str(e):
+            if (
+                "Name or service not known" in str(e)
+                or "getaddrinfo failed" in str(e)
+                or "nodename nor servname provided, or not known" in str(e)
+            ):
                 raise CannotResolveHostError(str(e)) from e
             raise DownloadConnectionRefusedError(str(e)) from e
         except httpx.NetworkError as e:
