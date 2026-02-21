@@ -540,6 +540,9 @@ class TestSitemapSpider(TestSpider):
         r = Response(url="http://www.example.com/favicon.ico", body=self.BODY)
         self.assertSitemapBody(r, None)
 
+        r = XmlResponse(url="http://www.example.com/", body=b"")
+        self.assertSitemapBody(r, b"")
+
     def test_get_sitemap_body_gzip_headers(self):
         r = Response(
             url="http://www.example.com/sitemap",
@@ -844,6 +847,105 @@ Sitemap: /sitemap-relative-url.xml
         assert request.url == "https://toscrape.com/sitemap.xml"
         assert request.dont_filter is False
         assert request.callback == spider._parse_sitemap
+
+    @pytest.mark.parametrize(
+        ("rule", "result"),
+        [(r"english", ["http://www.example.com/english/"]), (r"nonexistent", [])],
+    )
+    def test_sitemap_filter_with_rule(self, rule: str, result: list[str]):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <url><loc>http://www.example.com/english/</loc></url>
+        <url><loc>http://www.example.com/portuguese/</loc></url>
+    </urlset>"""
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+
+        class _RuleSpider(self.spider_class):  # type: ignore[name-defined]
+            sitemap_rules = [(rule, "parse")]
+
+        spider = _RuleSpider("example.com")
+        urls = [req.url for req in spider._parse_sitemap(r)]
+        assert urls == result
+
+    def test_parse_sitemap_empty_body(self):
+        r = XmlResponse(url="http://www.example.com/sitemap.xml", body=b"")
+        spider = self.spider_class("example.com")
+
+        with LogCapture() as lc:
+            results = list(spider._parse_sitemap(r))
+
+        assert not results
+
+        lc.check(
+            (
+                "scrapy.spiders.sitemap",
+                "WARNING",
+                "Ignoring invalid sitemap: <200 http://www.example.com/sitemap.xml>",
+            )
+        )
+
+    def test_parse_sitemap_not_sitemap(self):
+        body = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <some attr="string">
+        <tag><tag3>sometext</tag3></tag>
+        <tag2><tag4>sometext2</tag4></tag2>
+    </some>"""
+        r = XmlResponse(url="http://www.example.com/random.xml", body=body)
+        spider = self.spider_class("example.com")
+
+        results = list(spider._parse_sitemap(r))
+
+        assert not results
+
+    @pytest.mark.parametrize(
+        ("follow", "result"),
+        [
+            (r"1.xml", ["http://www.example.com/sitemap1.xml"]),
+            (re.compile(r"sitemap\d"), ["http://www.example.com/sitemap1.xml"]),
+            (r"nonexistent", []),
+        ],
+    )
+    def test_sitemap_follow(self, follow, result):
+        sitemap = b"""<?xml version="1.0" encoding="UTF-8"?>
+    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <sitemap>
+            <loc>http://www.example.com/sitemap1.xml</loc>
+        </sitemap>
+    </sitemapindex>"""
+        r = TextResponse(url="http://www.example.com/sitemap.xml", body=sitemap)
+
+        class _FollowSpider(self.spider_class):
+            sitemap_follow = [follow]
+
+        spider = _FollowSpider("example.com")
+        urls = [req.url for req in spider._parse_sitemap(r)]
+        assert urls == result
+
+    @pytest.mark.parametrize(
+        "urls_n",
+        [50_000, 536_121],
+    )
+    def test_large_sitemaps(self, urls_n):
+        sitemap = self._generate_sitemap(urls_n)
+        r = XmlResponse(url="http://www.example.com/random.xml", body=sitemap)
+        spider = self.spider_class("example.com")
+
+        urls = [req.url for req in spider._parse_sitemap(r)]
+        assert urls == [f"https://example.com/page-{i}" for i in range(urls_n)]
+
+    def _generate_sitemap(self, urls_n: int) -> bytes:
+        b = bytearray(
+            b'<?xml version="1.0" encoding="UTF-8"?>'
+            b'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        )
+        for i in range(urls_n):
+            b += (
+                b"<url><loc>https://example.com/page-"
+                + str(i).encode()
+                + b"</loc><lastmod>2026-01-01</lastmod></url>"
+            )
+        b += b"</urlset>\n"
+        return bytes(b)
 
 
 class TestDeprecation:
