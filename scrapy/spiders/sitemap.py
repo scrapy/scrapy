@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
+from urllib.parse import urlparse
 
 # Iterable is needed at the run time for the SitemapSpider._parse_sitemap() annotation
 from collections.abc import AsyncIterator, Iterable, Sequence  # noqa: TC003
@@ -127,7 +128,8 @@ class SitemapSpider(Spider):
         # without actually being a .xml.gz file in the first place,
         # merely XML gzip-compressed on the fly,
         # in other word, here, we have plain XML
-        if response.url.endswith(".xml") or response.url.endswith(".xml.gz"):
+        url_path = urlparse(response.url).path
+        if url_path.endswith(".xml") or url_path.endswith(".xml.gz"):
             return response.body
         return None
 

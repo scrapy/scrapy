@@ -566,6 +566,20 @@ class TestSitemapSpider(TestSpider):
         r = Response(url="http://www.example.com/sitemap.xml.gz", body=self.BODY)
         self.assertSitemapBody(r, self.BODY)
 
+    def test_get_sitemap_body_xml_url_with_query_params(self):
+        # Test URLs with query parameters (issue #6293)
+        r = TextResponse(
+            url="http://www.example.com/sitemap.xml?from=123&to=456",
+            body=self.BODY,
+        )
+        self.assertSitemapBody(r, self.BODY)
+
+        r = TextResponse(
+            url="http://www.example.com/sitemap.xml.gz?context=abc",
+            body=self.BODY,
+        )
+        self.assertSitemapBody(r, self.BODY)
+
     def test_get_sitemap_urls_from_robotstxt(self):
         robots = b"""# Sitemap files
 Sitemap: http://example.com/sitemap.xml
