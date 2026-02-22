@@ -163,6 +163,33 @@ class TestGenspiderCommand(TestProjectBase):
         assert m.group(1) == expected
 
 
+    def test_edit(self, proj_path: Path) -> None:
+        """Regression test: --edit should not fail with ModuleNotFoundError
+        when SCRAPY_SETTINGS_MODULE is inherited by the subprocess (#7260).
+
+        We set EDITOR=true (a no-op) to avoid opening an actual editor."""
+        import subprocess
+        import sys
+
+        from scrapy.utils.test import get_testenv
+
+        spider_name = "test_edit_regression"
+        env = get_testenv()
+        env["EDITOR"] = "true"
+        p = subprocess.run(
+            [sys.executable, "-m", "scrapy.cmdline", "genspider", "--edit",
+             spider_name, "test.com"],
+            capture_output=True,
+            encoding="utf-8",
+            timeout=15,
+            cwd=proj_path,
+            env=env,
+        )
+        assert p.returncode == 0, f"stderr: {p.stderr}"
+        assert f"Created spider {spider_name!r}" in p.stdout
+        assert "ModuleNotFoundError" not in p.stderr
+
+
 class TestGenspiderStandaloneCommand:
     def test_generate_standalone_spider(self, tmp_path: Path) -> None:
         call("genspider", "example", "example.com", cwd=tmp_path)
