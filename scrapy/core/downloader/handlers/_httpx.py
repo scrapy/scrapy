@@ -87,8 +87,17 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         self._tls_verbose_logging: bool = self.crawler.settings.getbool(
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
+        bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
+        if isinstance(bind_address, tuple):
+            self._bind_address = bind_address[0]
+        else:
+            self._bind_address = bind_address
         self._client = httpx.AsyncClient(
-            verify=_make_ssl_context(crawler.settings), cookies=_NullCookieJar()
+            cookies=_NullCookieJar(),
+            transport=httpx.AsyncHTTPTransport(
+                verify=_make_ssl_context(crawler.settings),
+                local_address=self._bind_address,
+            ),
         )
 
     async def download_request(self, request: Request) -> Response:

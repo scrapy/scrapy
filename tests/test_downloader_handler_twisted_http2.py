@@ -7,11 +7,15 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 from testfixtures import LogCapture
+from twisted.internet.defer import succeed
 from twisted.web.http import H2_ENABLED
 
 from scrapy.exceptions import UnsupportedURLSchemeError
-from scrapy.http import Request
+from scrapy.http import Request, Response
 from scrapy.utils.defer import deferred_f_from_coro_f, maybe_deferred_to_future
+from scrapy.utils.misc import build_from_crawler
+from scrapy.utils.spider import DefaultSpider
+from scrapy.utils.test import get_crawler
 from tests.test_downloader_handlers_http_base import (
     TestHttpProxyBase,
     TestHttps11Base,
@@ -155,6 +159,39 @@ class TestHttps2(H2DownloadHandlerMixin, TestHttps11Base):
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
         assert json.loads(response.text)["headers"][header] == [value1, value2]
+
+    @deferred_f_from_coro_f
+    async def test_download_bind_address_setting(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        captured_kwargs = {}
+
+        class DummyAgent:
+            def __init__(self, **kwargs) -> None:
+                captured_kwargs.update(kwargs)
+
+            def download_request(self, request: Request, spider):
+                return succeed(Response(request.url))
+
+        monkeypatch.setattr(
+            "scrapy.core.downloader.handlers.http2.ScrapyH2Agent", DummyAgent
+        )
+        crawler = get_crawler(
+            DefaultSpider, {"DOWNLOAD_BIND_ADDRESS": ("127.0.0.2", 0)}
+        )
+        crawler.spider = crawler._create_spider()
+        # import can fail when H2_ENABLED is False
+        from scrapy.core.downloader.handlers.http2 import (  # noqa: PLC0415
+            H2DownloadHandler,
+        )
+
+        download_handler = build_from_crawler(H2DownloadHandler, crawler)
+        try:
+            await download_handler.download_request(Request("https://example.com"))
+        finally:
+            await download_handler.close()
+
+        assert captured_kwargs["bind_address"] == ("127.0.0.2", 0)
 
 
 class TestHttps2WrongHostname(H2DownloadHandlerMixin, TestHttpsWrongHostnameBase):

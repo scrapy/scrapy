@@ -93,6 +93,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
         self._contextFactory: IPolicyForHTTPS = load_context_factory_from_settings(
             crawler.settings, crawler
         )
+        self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
         self._disconnect_timeout: int = 1
 
     async def download_request(self, request: Request) -> Response:
@@ -106,6 +107,7 @@ class HTTP11DownloadHandler(BaseHttpDownloadHandler):
 
         agent = ScrapyAgent(
             contextFactory=self._contextFactory,
+            bindAddress=self._bind_address,
             pool=self._pool,
             maxsize=getattr(
                 self._crawler.spider, "download_maxsize", self._default_maxsize

@@ -38,11 +38,13 @@ class H2DownloadHandler(BaseDownloadHandler):
         self._context_factory = load_context_factory_from_settings(
             crawler.settings, crawler
         )
+        self._bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
 
     async def download_request(self, request: Request) -> Response:
         agent = ScrapyH2Agent(
             context_factory=self._context_factory,
             pool=self._pool,
+            bind_address=self._bind_address,
             crawler=self._crawler,
         )
         assert self._crawler.spider

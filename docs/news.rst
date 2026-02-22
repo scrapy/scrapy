@@ -14,6 +14,9 @@ New features
     that returns headers as a list of ``(key, value)`` tuples.
     (:issue:`7239`)
 
+-   Added a :setting:`DOWNLOAD_BIND_ADDRESS` setting to set the default local
+    bind address for outgoing download-handler connections.
+
 .. _release-2.14.1:
 
 Scrapy 2.14.1 (2026-01-12)

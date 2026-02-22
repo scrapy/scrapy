@@ -644,7 +644,22 @@ Those are:
 bindaddress
 -----------
 
-The IP of the outgoing IP address to use for the performing the request.
+The local outgoing address for the request, as a ``(ip, port)`` tuple.
+The port is usually ``0``.
+
+For example:
+
+.. code-block:: python
+
+    Request(
+        "https://example.org",
+        meta={"bindaddress": ("127.0.0.2", 0)},
+    )
+
+If not set, built-in HTTP download handlers use the value of
+:setting:`DOWNLOAD_BIND_ADDRESS` as the default bind address.
+Set the :reqmeta:`bindaddress` request meta key to override it for a
+specific request.
 
 .. reqmeta:: download_timeout
 

@@ -897,6 +897,26 @@ It is also possible to change this setting per domain, although it requires
 non-trivial code. See the implementation of the :ref:`AutoThrottle
 <topics-autothrottle>` extension for an example.
 
+.. setting:: DOWNLOAD_BIND_ADDRESS
+
+DOWNLOAD_BIND_ADDRESS
+---------------------
+
+Default: ``None``
+
+The default local outgoing address for download-handler connections, as a
+``(ip, port)`` tuple. The port is usually ``0``.
+
+For example:
+
+.. code-block:: python
+
+    DOWNLOAD_BIND_ADDRESS = ("127.0.0.2", 0)
+
+If set, built-in HTTP download handlers use this value by default.
+Set the :reqmeta:`bindaddress` request meta key to override it for a specific
+request.
+
 .. setting:: DOWNLOAD_HANDLERS
 
 DOWNLOAD_HANDLERS
