@@ -951,7 +951,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     def test_shutdown_graceful(self):
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
         args = self.get_script_args("sleeping.py", "3")
-        p = PopenSpawn(args, timeout=5)
+        p = PopenSpawn(args, timeout=5, env=get_script_run_env())
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
         p.kill(sig)
@@ -963,7 +963,7 @@ class TestCrawlerProcessSubprocessBase(ScriptRunnerMixin):
     def test_shutdown_forced(self):
         sig = signal.SIGINT if sys.platform != "win32" else signal.SIGBREAK
         args = self.get_script_args("sleeping.py", "10")
-        p = PopenSpawn(args, timeout=5)
+        p = PopenSpawn(args, timeout=5, env=get_script_run_env())
         p.expect_exact("Spider opened")
         p.expect_exact("Crawled (200)")
         p.kill(sig)
