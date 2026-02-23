@@ -435,7 +435,7 @@ def _maybeDeferred_coro(
     """Copy of defer.maybeDeferred that also converts coroutines to Deferreds."""
     try:
         result = f(*args, **kw)
-    except:  # noqa: E722  # pylint: disable=bare-except
+    except:  # noqa: E722
         return fail(failure.Failure(captureVars=Deferred.debug))
 
     # when the deprecation period has ended we need to make sure the behavior

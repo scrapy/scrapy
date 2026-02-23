@@ -48,8 +48,8 @@ def getPage(url, contextFactory=None, response_transform=None, *args, **kwargs):
     return _makeGetterFactory(
         to_bytes(url),
         _clientfactory,
-        contextFactory=contextFactory,
         *args,
+        contextFactory=contextFactory,
         **kwargs,
     ).deferred
 

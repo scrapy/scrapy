@@ -73,7 +73,6 @@ class Shell:
         else:
             self.populate_vars()
         if self.code:
-            # pylint: disable-next=eval-used
             print(eval(self.code, globals(), self.vars))  # noqa: S307
         else:
             # Detect interactive shell setting in scrapy.cfg
