@@ -644,8 +644,14 @@ Those are:
 bindaddress
 -----------
 
-The local outgoing address for the request, as a ``(ip, port)`` tuple.
-The port is usually ``0``.
+The default local outgoing address for download-handler connections.
+
+This setting can be either:
+
+- a host address as a string (e.g. ``"127.0.0.2"``), in which case the local port is chosen automatically, or
+- a ``(host, port)`` tuple (e.g. ``("127.0.0.2", 50000)``) to bind to both a specific local interface and a specific local port.
+
+In most use cases, specifying a port number is not necessary.
 
 For example:
 
@@ -653,7 +659,14 @@ For example:
 
     Request(
         "https://example.org",
-        meta={"bindaddress": ("127.0.0.2", 0)},
+        meta={"bindaddress": "127.0.0.2"},
+    )
+
+.. code-block:: python
+
+    Request(
+        "https://example.org",
+        meta={"bindaddress": ("127.0.0.2", 50000)},
     )
 
 If not set, built-in HTTP download handlers use the value of

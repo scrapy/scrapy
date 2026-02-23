@@ -904,14 +904,26 @@ DOWNLOAD_BIND_ADDRESS
 
 Default: ``None``
 
-The default local outgoing address for download-handler connections, as a
-``(ip, port)`` tuple. The port is usually ``0``.
+The default local outgoing address for download-handler connections.
+
+This setting can be either:
+
+- a host address as a string (e.g. ``"127.0.0.2"``), in which case the local port is chosen automatically, or
+- a ``(host, port)`` tuple (e.g. ``("127.0.0.2", 50000)``) to bind to both a specific local interface and a specific local port.
+
+In most use cases, specifying a port number is not necessary.
 
 For example:
 
 .. code-block:: python
 
-    DOWNLOAD_BIND_ADDRESS = ("127.0.0.2", 0)
+    # Bind to this local address
+    DOWNLOAD_BIND_ADDRESS = "127.0.0.2"
+
+.. code-block:: python
+
+    # Bind to this local address and local port
+    DOWNLOAD_BIND_ADDRESS = ("127.0.0.2", 5000)
 
 If set, built-in HTTP download handlers use this value by default.
 Set the :reqmeta:`bindaddress` request meta key to override it for a specific
