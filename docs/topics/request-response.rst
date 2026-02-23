@@ -24,6 +24,11 @@ below in :ref:`topics-request-response-ref-request-subclasses` and
 Request objects
 ===============
 
+
+.. note::
+    While you can import the request object using :class:`scrapy.http.Request`, it is highly recommended to use the standard shortcut :class:`scrapy.Request` instead.
+
+
 .. autoclass:: scrapy.Request
 
     :param url: the URL of this request
