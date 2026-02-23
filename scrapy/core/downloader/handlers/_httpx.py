@@ -30,6 +30,7 @@ from scrapy.utils._download_handlers import (
     get_maxsize_msg,
     get_warnsize_msg,
     make_response,
+    normalize_bind_address,
 )
 from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.ssl import _log_sslobj_debug_info, _make_ssl_context
@@ -88,10 +89,23 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
             "DOWNLOADER_CLIENT_TLS_VERBOSE_LOGGING"
         )
         bind_address = crawler.settings.get("DOWNLOAD_BIND_ADDRESS")
-        if isinstance(bind_address, tuple):
-            self._bind_address = bind_address[0]
-        else:
-            self._bind_address = bind_address
+        bind_address = normalize_bind_address(bind_address)
+
+        self._bind_address: str | None = None
+
+        if bind_address is not None:
+            host, port = bind_address
+            if port != 0:
+                logger.warning(
+                    "DOWNLOAD_BIND_ADDRESS specifies a port (%s), but %s does not "
+                    "support binding to a specific local port. Ignoring the port "
+                    "and binding only to %r.",
+                    port,
+                    type(self).__name__,
+                    host,
+                )
+            self._bind_address = host
+
         self._client = httpx.AsyncClient(
             cookies=_NullCookieJar(),
             transport=httpx.AsyncHTTPTransport(

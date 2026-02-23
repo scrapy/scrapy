@@ -62,8 +62,9 @@ class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
             async def aclose(self) -> None:
                 return None
 
-        monkeypatch.setattr(_httpx.httpx, "AsyncHTTPTransport", DummyTransport)
-        monkeypatch.setattr(_httpx.httpx, "AsyncClient", DummyClient)
+        # Patch httpx classes so we can inspect transport kwargs
+        monkeypatch.setattr(_httpx, "AsyncHTTPTransport", DummyTransport)
+        monkeypatch.setattr(_httpx, "AsyncClient", DummyClient)
         crawler = get_crawler(
             DefaultSpider, {"DOWNLOAD_BIND_ADDRESS": ("127.0.0.2", 0)}
         )
