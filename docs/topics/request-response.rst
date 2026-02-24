@@ -23,12 +23,6 @@ below in :ref:`topics-request-response-ref-request-subclasses` and
 
 Request objects
 ===============
-
-
-.. note::
-    While you can import the request object using :class:`scrapy.http.Request`, it is highly recommended to use the standard shortcut :class:`scrapy.Request` instead.
-
-
 .. autoclass:: scrapy.Request
 
     :param url: the URL of this request
@@ -68,13 +62,13 @@ Request objects
 
         .. invisible-code-block: python
 
-            from scrapy.http import Request
+            import scrapy
 
         1. Using a dict:
 
         .. code-block:: python
 
-            request_with_cookies = Request(
+            request_with_cookies = scrapy.Request(
                 url="http://www.example.com",
                 cookies={"currency": "USD", "country": "UY"},
             )
@@ -83,7 +77,7 @@ Request objects
 
         .. code-block:: python
 
-            request_with_cookies = Request(
+            request_with_cookies = scrapy.Request(
                 url="https://www.example.com",
                 cookies=[
                     {
