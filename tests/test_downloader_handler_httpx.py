@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from scrapy import Request
-from scrapy.utils.misc import build_from_crawler
-from scrapy.utils.spider import DefaultSpider
-from scrapy.utils.test import get_crawler
 from tests.test_downloader_handlers_http_base import (
     TestHttp11Base,
     TestHttpProxyBase,
@@ -45,34 +43,43 @@ class HttpxDownloadHandlerMixin:
 class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
     @coroutine_test
     async def test_download_bind_address_setting(
-        self, monkeypatch: pytest.MonkeyPatch
+        self,
     ) -> None:
-        from scrapy.core.downloader.handlers import _httpx  # noqa: PLC0415
+        peer_addresses: list[str] = []
 
-        transport_kwargs = {}
+        async def handle(
+            reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+        ) -> None:
+            peername = writer.get_extra_info("peername")
+            if peername:
+                peer_addresses.append(peername[0])
+            await reader.read(65536)
+            writer.write(
+                b"HTTP/1.1 200 OK\r\n"
+                b"Content-Length: 5\r\n"
+                b"Content-Type: text/plain\r\n"
+                b"Connection: close\r\n"
+                b"\r\n"
+                b"Works"
+            )
+            await writer.drain()
+            writer.close()
+            await writer.wait_closed()
 
-        class DummyTransport:
-            def __init__(self, **kwargs) -> None:
-                transport_kwargs.update(kwargs)
-
-        class DummyClient:
-            def __init__(self, **kwargs) -> None:
-                self.transport = kwargs.get("transport")
-
-            async def aclose(self) -> None:
-                return None
-
-        # Patch httpx classes so we can inspect transport kwargs
-        monkeypatch.setattr(_httpx, "AsyncHTTPTransport", DummyTransport)
-        monkeypatch.setattr(_httpx, "AsyncClient", DummyClient)
-        crawler = get_crawler(
-            DefaultSpider, {"DOWNLOAD_BIND_ADDRESS": ("127.0.0.2", 0)}
-        )
-        crawler.spider = crawler._create_spider()
-        download_handler = build_from_crawler(self.download_handler_cls, crawler)
-        await download_handler.close()
-
-        assert transport_kwargs["local_address"] == "127.0.0.2"
+        server = await asyncio.start_server(handle, host="127.0.0.1", port=0)
+        try:
+            assert server.sockets is not None
+            port = server.sockets[0].getsockname()[1]
+            request = Request(f"http://127.0.0.1:{port}/text")
+            async with self.get_dh(
+                {"DOWNLOAD_BIND_ADDRESS": ("127.0.0.2", 0)}
+            ) as download_handler:
+                response = await download_handler.download_request(request)
+            assert response.body == b"Works"
+            assert peer_addresses == ["127.0.0.2"]
+        finally:
+            server.close()
+            await server.wait_closed()
 
     @coroutine_test
     async def test_unsupported_bindaddress(
