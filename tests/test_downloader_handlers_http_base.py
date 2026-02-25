@@ -673,7 +673,7 @@ class TestHttp11Base(TestHttpBase):
 
     @coroutine_test
     async def test_download_bind_address_setting(self, mockserver: MockServer) -> None:
-        request = Request(mockserver.url("/client-ip"))
+        request = Request(mockserver.url("/client-ip", is_secure=self.is_secure))
         async with self.get_dh(
             {"DOWNLOAD_BIND_ADDRESS": ("127.0.0.2", 0)}
         ) as download_handler:
