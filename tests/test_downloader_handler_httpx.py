@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -42,44 +41,13 @@ class HttpxDownloadHandlerMixin:
 
 class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
     @coroutine_test
-    async def test_download_bind_address_setting(
-        self,
-    ) -> None:
-        peer_addresses: list[str] = []
-
-        async def handle(
-            reader: asyncio.StreamReader, writer: asyncio.StreamWriter
-        ) -> None:
-            peername = writer.get_extra_info("peername")
-            if peername:
-                peer_addresses.append(peername[0])
-            await reader.read(65536)
-            writer.write(
-                b"HTTP/1.1 200 OK\r\n"
-                b"Content-Length: 5\r\n"
-                b"Content-Type: text/plain\r\n"
-                b"Connection: close\r\n"
-                b"\r\n"
-                b"Works"
-            )
-            await writer.drain()
-            writer.close()
-            await writer.wait_closed()
-
-        server = await asyncio.start_server(handle, host="127.0.0.1", port=0)
-        try:
-            assert server.sockets is not None
-            port = server.sockets[0].getsockname()[1]
-            request = Request(f"http://127.0.0.1:{port}/text")
-            async with self.get_dh(
-                {"DOWNLOAD_BIND_ADDRESS": ("127.0.0.2", 0)}
-            ) as download_handler:
-                response = await download_handler.download_request(request)
-            assert response.body == b"Works"
-            assert peer_addresses == ["127.0.0.2"]
-        finally:
-            server.close()
-            await server.wait_closed()
+    async def test_download_bind_address_setting(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/client-ip"))
+        async with self.get_dh(
+            {"DOWNLOAD_BIND_ADDRESS": ("127.0.0.2", 0)}
+        ) as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"127.0.0.2"
 
     @coroutine_test
     async def test_unsupported_bindaddress(
