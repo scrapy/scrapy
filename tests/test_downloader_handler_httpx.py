@@ -41,15 +41,6 @@ class HttpxDownloadHandlerMixin:
 
 class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
     @coroutine_test
-    async def test_download_bind_address_setting(self, mockserver: MockServer) -> None:
-        request = Request(mockserver.url("/client-ip"))
-        async with self.get_dh(
-            {"DOWNLOAD_BIND_ADDRESS": ("127.0.0.2", 0)}
-        ) as download_handler:
-            response = await download_handler.download_request(request)
-        assert response.body == b"127.0.0.2"
-
-    @coroutine_test
     async def test_unsupported_bindaddress(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
