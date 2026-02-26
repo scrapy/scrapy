@@ -32,7 +32,7 @@ def get_engine_status(engine: ExecutionEngine) -> list[tuple[str, Any]]:
     checks: list[tuple[str, Any]] = []
     for test in tests:
         try:
-            checks += [(test, eval(test))]  # noqa: S307
+            checks += [(test, eval(test))]  # noqa: S307  # pylint: disable=eval-used
         except Exception as e:
             checks += [(test, f"{type(e).__name__} (exception)")]
 

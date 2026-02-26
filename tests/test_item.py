@@ -60,7 +60,7 @@ class TestItem:
 
         assert itemrepr == "{'name': 'John Doe', 'number': 123}"
 
-        i2 = eval(itemrepr)
+        i2 = eval(itemrepr)  # pylint: disable=eval-used
         assert i2["name"] == "John Doe"
         assert i2["number"] == 123
 
