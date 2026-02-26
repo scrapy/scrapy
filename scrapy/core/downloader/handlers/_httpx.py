@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import ipaddress
 import logging
-import socket
 import ssl
 from http.cookiejar import Cookie, CookieJar
 from io import BytesIO
@@ -48,49 +47,6 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
-
-
-def _is_dns_error(exc: BaseException) -> bool:
-    to_visit: list[BaseException] = [exc]
-    seen: set[int] = set()
-
-    while to_visit:
-        cur = to_visit.pop()
-        if id(cur) in seen:
-            continue
-        seen.add(id(cur))
-
-        # Best signal across platforms
-        if isinstance(cur, socket.gaierror):
-            return True
-
-        errno_val = getattr(cur, "errno", None)
-        if errno_val is not None and errno_val in {
-            getattr(socket, "EAI_NONAME", -99999),
-            getattr(socket, "EAI_NODATA", -99999),
-            getattr(socket, "EAI_AGAIN", -99999),
-            getattr(socket, "EAI_FAIL", -99999),
-            getattr(socket, "EAI_SERVICE", -99999),
-        }:
-            return True
-
-        msg = str(cur).lower()
-        if (
-            "nodename nor servname provided" in msg
-            or "name or service not known" in msg
-            or "getaddrinfo failed" in msg
-            or "temporary failure in name resolution" in msg
-        ):
-            return True
-
-        cause = getattr(cur, "__cause__", None)
-        if isinstance(cause, BaseException):
-            to_visit.append(cause)
-        context = getattr(cur, "__context__", None)
-        if isinstance(context, BaseException):
-            to_visit.append(context)
-
-    return False
 
 
 class _BaseResponseArgs(TypedDict):
@@ -175,7 +131,11 @@ class HttpxDownloadHandler(BaseHttpDownloadHandler):
         except httpx.UnsupportedProtocol as e:
             raise UnsupportedURLSchemeError(str(e)) from e
         except httpx.ConnectError as e:
-            if _is_dns_error(e):
+            if (
+                "Name or service not known" in str(e)
+                or "getaddrinfo failed" in str(e)
+                or "nodename nor servname" in str(e)
+            ):
                 raise CannotResolveHostError(str(e)) from e
             raise DownloadConnectionRefusedError(str(e)) from e
         except httpx.NetworkError as e:
