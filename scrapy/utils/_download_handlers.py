@@ -151,8 +151,6 @@ def get_dataloss_msg(url: str) -> str:
 def normalize_bind_address(
     value: str | tuple[str, int] | None,
 ) -> tuple[str, int] | None:
-    if value is None:
-        return None
     if isinstance(value, str):
         return (value, 0)
     return value
