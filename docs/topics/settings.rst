@@ -906,6 +906,13 @@ Default: ``None``
 
 The default local outgoing address for download-handler connections.
 
+This setting can be either:
+
+- a host address as a string (e.g. ``"127.0.0.2"``), in which case the local port is chosen automatically, or
+- a ``(host, port)`` tuple (e.g. ``("127.0.0.2", 50000)``) to bind to both a specific local interface and a specific local port.
+
+In most use cases, specifying a port number is not necessary.
+
 For example:
 
 .. code-block:: python
