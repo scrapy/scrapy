@@ -104,6 +104,13 @@ If you wish to log the requests that couldn't be serialized, you can set the
 :setting:`SCHEDULER_DEBUG` setting to ``True`` in the project's settings page.
 It is ``False`` by default.
 
+.. note:: Deserialization of persisted requests creates deep copies of the
+    objects in :attr:`~scrapy.Request.cb_kwargs`. This means any mutable
+    object (e.g. :class:`list`, :class:`dict`, :class:`set`) inside
+    ``cb_kwargs`` will not be the same object in the callback after a
+    pause/resume cycle — it will be an independent copy. Changes made to the
+    copy will not affect the original object.
+
 .. _job-dir-contents:
 
 Job directory contents

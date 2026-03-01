@@ -181,6 +181,12 @@ Request objects
         ``failure.request.cb_kwargs`` in the request's errback. For more information,
         see :ref:`errback-cb_kwargs`.
 
+        .. caution:: When :setting:`JOBDIR` is set, request serialization creates
+            deep copies of ``cb_kwargs`` values. Mutable objects (e.g.
+            :class:`list`, :class:`dict`, :class:`set`) will not be the same
+            object after a pause/resume cycle. See :ref:`topics-jobs` for
+            details.
+
     .. attribute:: Request.meta
        :value: {}
 
