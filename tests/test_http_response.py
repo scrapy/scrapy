@@ -491,9 +491,10 @@ class TestTextResponse(TestResponseBase):
 
     def test_utf16(self):
         """Test utf-16 because UnicodeDammit is known to have problems with"""
+        body = "hi".encode("utf-16")
         r = self.response_class(
             "http://www.example.com",
-            body=b"\xff\xfeh\x00i\x00",
+            body=body,
             encoding="utf-16",
         )
         self._assert_response_values(r, "utf-16", "hi")
