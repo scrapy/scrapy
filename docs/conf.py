@@ -34,7 +34,16 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
     "sphinx_rtd_dark_mode",
+    "sphinx_copybutton",
+    "sphinx_llm.txt",
 ]
+
+# -- Options for sphinx-copybutton ------------------------------------------
+copybutton_prompt_text = r">>> |\.\.\. |\$ "
+copybutton_prompt_is_regexp = True
+
+# -- Options for sphinx-llm ------------------------------------------------
+llms_txt_description = "Scrapy is a fast high-level web crawling and web scraping framework for Python."
 
 templates_path = ["_templates"]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
@@ -66,6 +75,10 @@ html_last_updated_fmt = "%b %d, %Y"
 
 html_css_files = [
     "custom.css",
+]
+
+html_js_files = [
+    "copy_as_markdown.js",
 ]
 
 html_context = {
