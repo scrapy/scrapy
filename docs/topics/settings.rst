@@ -651,6 +651,9 @@ Default: ``True``
 
 Whether to enable DNS in-memory cache.
 
+.. note::
+    This setting only applies to Twisted-based DNS resolvers.
+
 .. setting:: DNSCACHE_SIZE
 
 DNSCACHE_SIZE
@@ -659,6 +662,9 @@ DNSCACHE_SIZE
 Default: ``10000``
 
 DNS in-memory cache size.
+
+.. note::
+    This setting only applies to Twisted-based DNS resolvers.
 
 .. setting:: DNS_RESOLVER
 
@@ -673,6 +679,9 @@ but works only with IPv4 addresses. Scrapy provides an alternative resolver,
 ``scrapy.resolver.CachingHostnameResolver``, which supports IPv4/IPv6 addresses but does not
 take the :setting:`DNS_TIMEOUT` setting into account.
 
+.. note::
+    This setting only applies to Twisted-based DNS resolvers.
+
 .. setting:: DNS_TIMEOUT
 
 DNS_TIMEOUT
@@ -681,6 +690,9 @@ DNS_TIMEOUT
 Default: ``60``
 
 Timeout for processing of DNS queries in seconds. Float is supported.
+
+.. note::
+    This setting only applies to Twisted-based DNS resolvers.
 
 .. setting:: DOWNLOADER
 
@@ -1644,6 +1656,9 @@ The maximum limit for Twisted Reactor thread pool size. This is common
 multi-purpose thread pool used by various Scrapy components. Threaded
 DNS Resolver, BlockingFeedStorage, S3FilesStore just to name a few. Increase
 this value if you're experiencing problems with insufficient blocking IO.
+
+.. note::
+    This setting only applies when using the Twisted reactor.
 
 .. setting:: REDIRECT_PRIORITY_ADJUST
 
