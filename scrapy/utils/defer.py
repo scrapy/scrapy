@@ -21,7 +21,7 @@ from typing import (
     overload,
 )
 
-from twisted.internet.defer import Deferred, DeferredList, fail, succeed
+from twisted.internet.defer import Deferred, DeferredList, FirstError, fail, succeed
 from twisted.internet.task import Cooperator
 from twisted.python import failure
 
@@ -334,6 +334,7 @@ def process_parallel(
     d2: Deferred[list[_T2]] = d.addCallback(lambda r: [x[1] for x in r])
 
     def eb(failure: Failure) -> Failure:
+        assert isinstance(failure.value, FirstError)
         return failure.value.subFailure
 
     d2.addErrback(eb)

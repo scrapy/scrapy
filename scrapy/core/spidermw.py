@@ -460,7 +460,7 @@ class SpiderMiddlewareManager(MiddlewareManager):
             start = await self._process_chain("process_start", start)
         return start
 
-    def _check_deprecated_start_requests_use(self):
+    def _check_deprecated_start_requests_use(self) -> None:
         start_requests_cls = None
         start_cls = None
         spidercls = self._spider.__class__

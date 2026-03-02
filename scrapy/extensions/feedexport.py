@@ -89,20 +89,20 @@ class ItemFilter:
         return True  # accept all items by default
 
 
-class IFeedStorage(Interface):
+class IFeedStorage(Interface):  # type: ignore[misc]
     """Interface that all Feed Storages must implement"""
 
     # pylint: disable=no-self-argument
 
-    def __init__(uri, *, feed_options=None):  # pylint: disable=super-init-not-called
+    def __init__(uri, *, feed_options=None):  # type: ignore[no-untyped-def]  # pylint: disable=super-init-not-called
         """Initialize the storage with the parameters given in the URI and the
         feed-specific options (see :setting:`FEEDS`)"""
 
-    def open(spider):
+    def open(spider):  # type: ignore[no-untyped-def]
         """Open the storage for the given spider. It must return a file-like
         object that will be used for the exporters"""
 
-    def store(file):
+    def store(file):  # type: ignore[no-untyped-def]
         """Store the given file stream"""
 
 

@@ -80,11 +80,11 @@ class CallLaterOnce(Generic[_T]):
 
         return result
 
-    async def wait(self):
+    async def wait(self) -> None:
         # circular import
         from scrapy.utils.defer import maybe_deferred_to_future  # noqa: PLC0415
 
-        d = Deferred()
+        d: Deferred[None] = Deferred()
         self._deferreds.append(d)
         await maybe_deferred_to_future(d)
 

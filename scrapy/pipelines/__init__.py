@@ -10,7 +10,7 @@ import asyncio
 import warnings
 from typing import TYPE_CHECKING, Any, cast
 
-from twisted.internet.defer import Deferred, DeferredList
+from twisted.internet.defer import Deferred, DeferredList, FirstError
 
 from scrapy.exceptions import ScrapyDeprecationWarning
 from scrapy.middleware import MiddlewareManager
@@ -80,6 +80,7 @@ class ItemPipelineManager(MiddlewareManager):
         d2: Deferred[list[None]] = d.addCallback(lambda r: [x[1] for x in r])
 
         def eb(failure: Failure) -> Failure:
+            assert isinstance(failure.value, FirstError)
             return failure.value.subFailure
 
         d2.addErrback(eb)

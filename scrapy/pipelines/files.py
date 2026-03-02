@@ -305,7 +305,7 @@ class GCSFilesStore:
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
     ) -> Deferred[StatInfo]:
-        def _onsuccess(blob) -> StatInfo:
+        def _onsuccess(blob: Any) -> StatInfo:
             if blob:
                 checksum = base64.b64decode(blob.md5_hash).hex()
                 last_modified = time.mktime(blob.updated.timetuple())
