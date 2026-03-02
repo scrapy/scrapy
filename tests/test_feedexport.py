@@ -163,7 +163,7 @@ class TestFileFeedStorage:
         assert storage.path == path
 
 
-@pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
+@pytest.mark.requires_reactor  # TODO: needs a reactor for BlockingFeedStorage
 class TestFTPFeedStorage:
     def get_test_spider(self, settings=None):
         class TestSpider(scrapy.Spider):
@@ -278,7 +278,7 @@ class TestBlockingFeedStorage:
 
 
 @pytest.mark.requires_boto3
-@pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
+@pytest.mark.requires_reactor  # TODO: needs a reactor for BlockingFeedStorage
 class TestS3FeedStorage:
     def test_parse_credentials(self):
         aws_credentials = {
@@ -508,7 +508,7 @@ class TestS3FeedStorage:
         assert "S3 does not support appending to files" in str(log)
 
 
-@pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
+@pytest.mark.requires_reactor  # TODO: needs a reactor for BlockingFeedStorage
 class TestGCSFeedStorage:
     def test_parse_settings(self):
         try:
@@ -1702,7 +1702,7 @@ class TestFeedExport(TestFeedExportBase):
         data = await self.exported_no_data(settings)
         assert data["csv"] == b""
 
-    @pytest.mark.requires_reactor  # needs a reactor for BlockingFeedStorage
+    @pytest.mark.requires_reactor  # TODO: needs a reactor for BlockingFeedStorage
     @coroutine_test
     async def test_multiple_feeds_success_logs_blocking_feed_storage(self):
         settings = {
@@ -2697,6 +2697,7 @@ class TestBatchDeliveries(TestFeedExportBase):
         assert "feedexport/success_count/FileFeedStorage" in crawler.stats.get_stats()
         assert crawler.stats.get_value("feedexport/success_count/FileFeedStorage") == 12
 
+    @pytest.mark.requires_reactor  # TODO: needs a reactor for BlockingFeedStorage
     @pytest.mark.requires_boto3
     @inline_callbacks_test
     def test_s3_export(self):

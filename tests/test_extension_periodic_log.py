@@ -3,12 +3,11 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Any
 
-import pytest
-
 from scrapy.extensions.periodic_log import PeriodicLog
 from scrapy.utils.test import get_crawler
 
 from .spiders import MetaSpider
+from .utils.decorators import coroutine_test
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -88,8 +87,8 @@ class TestPeriodicLog:
         assert extension({"PERIODIC_LOG_DELTA": True, "LOGSTATS_INTERVAL": 60})
         assert extension({"PERIODIC_LOG_DELTA": "True", "LOGSTATS_INTERVAL": 60})
 
-    @pytest.mark.requires_reactor  # needs a reactor or an event loop for PeriodicLog.task
-    def test_log_delta(self):
+    @coroutine_test
+    async def test_log_delta(self):
         def emulate(settings=None):
             spider = MetaSpider()
             ext = extension(settings)
@@ -152,8 +151,8 @@ class TestPeriodicLog:
             ),
         )
 
-    @pytest.mark.requires_reactor  # needs a reactor or an event loop for PeriodicLog.task
-    def test_log_stats(self):
+    @coroutine_test
+    async def test_log_stats(self):
         def emulate(settings=None):
             spider = MetaSpider()
             ext = extension(settings)

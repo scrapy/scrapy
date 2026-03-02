@@ -8,7 +8,7 @@ from twisted.internet._sslverify import ClientTLSOptions
 from scrapy.mail import MailSender
 
 
-@pytest.mark.requires_reactor
+@pytest.mark.requires_reactor  # MailSender requires a reactor
 class TestMailSender:
     def test_send(self):
         mailsender = MailSender(debug=True)

@@ -345,14 +345,18 @@ Unknown command: abc
 
 
 class TestBenchCommand:
-    def test_run(self) -> None:
-        _, _, err = proc(
+    @pytest.mark.parametrize("use_reactor", [True, False])
+    def test_run(self, use_reactor: bool) -> None:
+        args: list[str] = [
             "bench",
             "-s",
             "LOGSTATS_INTERVAL=0.001",
             "-s",
             "CLOSESPIDER_TIMEOUT=0.01",
-        )
+        ]
+        if not use_reactor:
+            args += ["-s", "TWISTED_ENABLED=False"]
+        _, _, err = proc(*args)
         assert "INFO: Crawled" in err
         assert "Unhandled Error" not in err
         assert "log_count/ERROR" not in err

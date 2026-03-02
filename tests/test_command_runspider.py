@@ -213,6 +213,17 @@ class MySpider(scrapy.Spider):
             in log
         )
 
+    def test_no_reactor(self, tmp_path: Path) -> None:
+        log = self.get_log(
+            tmp_path,
+            self.debug_log_spider,
+            args=[
+                "-s",
+                "TWISTED_ENABLED=False",
+            ],
+        )
+        assert "Not using a Twisted reactor" in log
+
     def test_output(self, tmp_path: Path) -> None:
         spider_code = """
 import scrapy
