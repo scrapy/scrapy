@@ -44,6 +44,52 @@ html[data-theme="dark"] .sig.sig-object {
     background-color: #202325 !important
 }
 
+/* Copy as Markdown button */
+.copy-as-markdown-btn {
+    position: sticky;
+    top: 0;
+    float: right;
+    z-index: 100;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    margin: 0 0 8px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #f9fafb;
+    color: #374151;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.copy-as-markdown-btn:hover {
+    border-color: #9ca3af;
+}
+
+.copy-as-markdown-btn.copied {
+    background: #ecfdf5;
+    border-color: #6ee7b7;
+    color: #065f46;
+}
+
+html[data-theme="dark"] .copy-as-markdown-btn {
+    background: #2d3239;
+    border-color: #4b5563;
+    color: #d1d5db;
+}
+
+html[data-theme="dark"] .copy-as-markdown-btn.copied {
+    background: #064e3b;
+    border-color: #6ee7b7;
+    color: #a7f3d0;
+}
+
+@media (max-width: 768px) {
+    .copy-as-markdown-label { display: none; }
+    .copy-as-markdown-btn { padding: 8px; }
+}
+
 html[data-theme="dark"] .sig-name,
 html[data-theme="dark"] .sig-prename,
 html[data-theme="dark"] .property,
