@@ -130,6 +130,12 @@ To install Scrapy on Windows using ``pip``:
 
 Now, you should be able to :ref:`install Scrapy <intro-install-scrapy>` using ``pip``.
 
+.. note::
+    **Windows users:** If you see a message like ``'scrapy' is not recognized
+    as an internal or external command`` after installation, you can run
+    ``python -m scrapy <arguments>`` instead (e.g.,
+    ``python -m scrapy startproject myproject``).
+
 .. _intro-install-ubuntu:
 
 Ubuntu 14.04 or above
