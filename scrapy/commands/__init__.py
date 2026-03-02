@@ -7,13 +7,14 @@ from __future__ import annotations
 import argparse
 import builtins
 import os
+import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from twisted.python import failure
 
-from scrapy.exceptions import UsageError
+from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
 from scrapy.utils.conf import arglist_to_dict, feed_process_params_from_cli
 
 if TYPE_CHECKING:
@@ -36,7 +37,12 @@ class ScrapyCommand(ABC):
     def __init__(self) -> None:
         self.settings: Settings | None = None  # set in scrapy.cmdline
 
-    def set_crawler(self, crawler: Crawler) -> None:
+    def set_crawler(self, crawler: Crawler) -> None:  # pragma: no cover
+        warnings.warn(
+            "ScrapyCommand.set_crawler() is deprecated",
+            ScrapyDeprecationWarning,
+            stacklevel=2,
+        )
         if hasattr(self, "_crawler"):
             raise RuntimeError("crawler already set")
         self._crawler: Crawler = crawler

@@ -38,15 +38,6 @@ class TwistedSleepSpiderMiddleware:
             yield item_or_request
 
 
-class UniversalSpiderMiddleware:
-    async def process_start(self, start):
-        async for item_or_request in start:
-            yield item_or_request
-
-    def process_start_requests(self, start_requests, spider):
-        raise NotImplementedError
-
-
 # Spiders and spider middlewares for TestMain._test_wrap
 
 

@@ -26,6 +26,7 @@ from scrapy.http import Request, Response
 from scrapy.item import Field, Item
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Spider
+from scrapy.statscollectors import MemoryStatsCollector
 from scrapy.utils.defer import (
     _schedule_coro,
     deferred_from_coro,
@@ -40,7 +41,6 @@ from tests.utils.decorators import coroutine_test, inline_callbacks_test
 if TYPE_CHECKING:
     from scrapy.core.scheduler import Scheduler
     from scrapy.crawler import Crawler
-    from scrapy.statscollectors import MemoryStatsCollector
     from tests.mockserver.http import MockServer
 
 
@@ -734,7 +734,8 @@ class TestEngineCloseSpider:
         engine = ExecutionEngine(crawler, lambda _: None)
         crawler.engine = engine
         await engine.open_spider_async()
-        del cast("MemoryStatsCollector", crawler.stats).spider_stats
+        assert isinstance(crawler.stats, MemoryStatsCollector)
+        del crawler.stats.spider_stats
         await engine.close_spider_async()
         assert "Stats close failure" in caplog.text
 
