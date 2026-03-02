@@ -56,6 +56,18 @@ class HostHeaderResource(resource.Resource):
         return request.requestHeaders.getRawHeaders(b"host")[0]
 
 
+class ClientIPResource(resource.Resource):
+    """
+    A testing resource which renders itself as the request client IP address.
+    """
+
+    def render(self, request):
+        client_address = request.getClientAddress()
+        if client_address is None or client_address.host is None:
+            return b""
+        return to_bytes(client_address.host)
+
+
 class PayloadResource(resource.Resource):
     """
     A testing resource which renders itself as the contents of the request body

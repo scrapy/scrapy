@@ -122,7 +122,7 @@ class H2Agent:
         pool: H2ConnectionPool,
         context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),  # noqa: B008
         connect_timeout: float | None = None,
-        bind_address: bytes | None = None,
+        bind_address: tuple[str, int] | None = None,
     ) -> None:
         self._reactor = reactor
         self._pool = pool
@@ -166,7 +166,7 @@ class ScrapyProxyH2Agent(H2Agent):
         pool: H2ConnectionPool,
         context_factory: BrowserLikePolicyForHTTPS = BrowserLikePolicyForHTTPS(),  # noqa: B008
         connect_timeout: float | None = None,
-        bind_address: bytes | None = None,
+        bind_address: tuple[str, int] | None = None,
     ) -> None:
         super().__init__(
             reactor=reactor,

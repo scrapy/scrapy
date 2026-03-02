@@ -44,7 +44,7 @@ class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
     async def test_unsupported_bindaddress(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
     ) -> None:
-        meta = {"bindaddress": "127.0.0.2"}
+        meta = {"bindaddress": ("127.0.0.2", 0)}
         request = Request(mockserver.url("/text"), meta=meta)
         async with self.get_dh() as download_handler:
             response = await download_handler.download_request(request)
@@ -53,6 +53,19 @@ class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
             "The 'bindaddress' request meta key is not supported by HttpxDownloadHandler"
             in caplog.text
         )
+
+    @coroutine_test
+    async def test_bind_address_port_warning(
+        self, caplog: pytest.LogCaptureFixture, mockserver: MockServer
+    ) -> None:
+        request = Request(mockserver.url("/client-ip"))
+        async with self.get_dh(
+            {"DOWNLOAD_BIND_ADDRESS": ("127.0.0.2", 12345)}
+        ) as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"127.0.0.2"
+        assert "DOWNLOAD_BIND_ADDRESS specifies a port (12345)" in caplog.text
+        assert "Ignoring the port" in caplog.text
 
     @coroutine_test
     async def test_unsupported_proxy(

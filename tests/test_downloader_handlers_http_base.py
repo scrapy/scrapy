@@ -671,6 +671,26 @@ class TestHttp11Base(TestHttpBase):
             response = await download_handler.download_request(request)
         assert response.protocol == "HTTP/1.1"
 
+    @coroutine_test
+    async def test_download_bind_address_setting(self, mockserver: MockServer) -> None:
+        request = Request(mockserver.url("/client-ip", is_secure=self.is_secure))
+        async with self.get_dh(
+            {"DOWNLOAD_BIND_ADDRESS": ("127.0.0.2", 0)}
+        ) as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"127.0.0.2"
+
+    @coroutine_test
+    async def test_download_bind_address_setting_string(
+        self, mockserver: MockServer
+    ) -> None:
+        request = Request(mockserver.url("/client-ip", is_secure=self.is_secure))
+        async with self.get_dh(
+            {"DOWNLOAD_BIND_ADDRESS": "127.0.0.2"}
+        ) as download_handler:
+            response = await download_handler.download_request(request)
+        assert response.body == b"127.0.0.2"
+
 
 class TestHttps11Base(TestHttp11Base):
     is_secure = True
