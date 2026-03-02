@@ -53,17 +53,7 @@ directory where you'd like to store your code and run::
 
     scrapy startproject tutorial
 
-.. note::
-
-   If you see a message like ``'scrapy' is not recognized as an internal or external command``
-   when trying to run the ``scrapy`` command-line tool, it usually means that the
-   Python ``Scripts`` directory is not in your ``PATH``.
-
-   To make the ``scrapy`` command available, add the ``Scripts`` directory of
-   your Python installation to your ``PATH`` environment variable.
-
-   As a workaround, you can run ``python -m scrapy <arguments>`` instead
-   (for example, ``python -m scrapy startproject tutorial``).
+.. include:: windows-path-env-var-note.rst
 
 This will create a ``tutorial`` directory with the following contents::
 
