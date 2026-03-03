@@ -219,3 +219,128 @@ def test_request_scheduled_invalid_domains():
         request = Request(f"https://{letter}.example")
         with pytest.raises(IgnoreRequest):
             mw.request_scheduled(request, crawler.spider)
+
+
+@pytest.mark.parametrize(
+    ("value", "filtered"),
+    [
+        (UNSET, True),
+        (None, True),
+        (False, True),
+        (True, False),
+    ],
+)
+def test_process_request_disallowed_dont_filter(value, filtered):
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider(name="a", disallowed_domains=["a.example"])
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw.spider_opened(crawler.spider)
+
+    kwargs = {}
+    if value is not UNSET:
+        kwargs["dont_filter"] = value
+    request = Request("https://a.example", **kwargs)
+
+    if filtered:
+        with pytest.raises(IgnoreRequest):
+            mw.process_request(request)
+    else:
+        assert mw.process_request(request) is None
+
+    request2 = Request("https://b.example")
+    assert mw.process_request(request2) is None
+
+
+@pytest.mark.parametrize(
+    ("allow_offsite", "dont_filter", "filtered"),
+    [
+        (True, UNSET, False),
+        (True, None, False),
+        (True, False, False),
+        (True, True, False),
+        (False, UNSET, True),
+        (False, None, True),
+        (False, False, True),
+        (False, True, False),
+    ],
+)
+def test_process_request_disallowed_allow_offsite(allow_offsite, dont_filter, filtered):
+    crawler = get_crawler(Spider)
+    crawler.spider = crawler._create_spider(name="a", disallowed_domains=["a.example"])
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw.spider_opened(crawler.spider)
+
+    kwargs = {"meta": {}}
+    if allow_offsite is not UNSET:
+        kwargs["meta"]["allow_offsite"] = allow_offsite
+    if dont_filter is not UNSET:
+        kwargs["dont_filter"] = dont_filter
+    request = Request("https://a.example", **kwargs)
+
+    if filtered:
+        with pytest.raises(IgnoreRequest):
+            mw.process_request(request)
+    else:
+        assert mw.process_request(request) is None
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        UNSET,
+        None,
+        [],
+    ],
+)
+def test_process_request_no_disallowed_domains(value):
+    crawler = get_crawler(Spider)
+    kwargs = {}
+    if value is not UNSET:
+        kwargs["disallowed_domains"] = value
+    crawler.spider = crawler._create_spider(name="a", **kwargs)
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw.spider_opened(crawler.spider)
+    request = Request("https://example.com")
+    assert mw.process_request(request) is None
+
+
+def test_process_request_invalid_disallowed_domains():
+    crawler = get_crawler(Spider)
+    disallowed_domains = ["a.example", None, "http:////b.example", "//c.example"]
+    crawler.spider = crawler._create_spider(
+        name="a", disallowed_domains=disallowed_domains
+    )
+
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        mw.spider_opened(crawler.spider)
+
+    request = Request("https://a.example")
+    with pytest.raises(IgnoreRequest):
+        mw.process_request(request)
+
+    for letter in ("b", "c"):
+        request = Request(f"https://{letter}.example")
+        with pytest.raises(IgnoreRequest):
+            mw.process_request(request)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        UNSET,
+        None,
+        [],
+    ],
+)
+def test_request_scheduled_no_disallowed_domains(value):
+    crawler = get_crawler(Spider)
+    kwargs = {}
+    if value is not UNSET:
+        kwargs["disallowed_domains"] = value
+    crawler.spider = crawler._create_spider(name="a", **kwargs)
+    mw = OffsiteMiddleware.from_crawler(crawler)
+    mw.spider_opened(crawler.spider)
+    request = Request("https://example.com")
+    assert mw.request_scheduled(request, crawler.spider) is None
