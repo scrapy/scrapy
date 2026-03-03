@@ -98,7 +98,9 @@ class TestPriorityQueue:
 class TestDownloaderAwarePriorityQueue:
     def setup_method(self):
         crawler = get_crawler(Spider)
-        crawler.engine = MockEngine(downloader=MockDownloader())
+        self.downloader = MockDownloader()
+        self.downloader.active = set()
+        crawler.engine = MockEngine(downloader=self.downloader)
         self.queue = DownloaderAwarePriorityQueue.from_crawler(
             crawler=crawler,
             downstream_queue_cls=FifoMemoryQueue,
@@ -156,6 +158,18 @@ class TestDownloaderAwarePriorityQueue:
         assert self.queue.peek().url == req3.url
         assert self.queue.pop().url == req3.url
         assert self.queue.peek() is None
+
+    def test_pop_uses_downloader_active_when_slot_active_is_empty(self):
+        req_books = Request("http://books.toscrape.com/queued")
+        req_quotes = Request("http://quotes.toscrape.com/queued")
+        self.queue.push(req_books)
+        self.queue.push(req_quotes)
+
+        # Simulate a request stalled in downloader middleware. Real downloader
+        # keeps it in downloader.active before it appears in slot.active.
+        self.downloader.active.add(Request("http://books.toscrape.com/inflight"))
+
+        assert self.queue.pop().url == req_quotes.url
 
 
 @pytest.mark.parametrize(
