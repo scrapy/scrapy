@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+from collections import Counter
 from typing import TYPE_CHECKING, Protocol, cast
 
 from scrapy.utils.misc import build_from_crawler
@@ -262,7 +263,11 @@ class DownloaderInterface:
         self.downloader: Downloader = crawler.engine.downloader
 
     def stats(self, possible_slots: Iterable[str]) -> list[tuple[int, str]]:
-        return [(self._active_downloads(slot), slot) for slot in possible_slots]
+        slots = tuple(possible_slots)
+        active_counts = self._active_downloads_by_request(slots)
+        if active_counts:
+            return [(active_counts.get(slot, 0), slot) for slot in slots]
+        return [(self._active_downloads(slot), slot) for slot in slots]
 
     def get_slot_key(self, request: Request) -> str:
         return self.downloader.get_slot_key(request)
@@ -272,6 +277,25 @@ class DownloaderInterface:
         if slot not in self.downloader.slots:
             return 0
         return len(self.downloader.slots[slot].active)
+
+    def _active_downloads_by_request(self, slots: Iterable[str]) -> Counter[str]:
+        """
+        Return active downloads grouped by slot using downloader-level requests.
+
+        This includes requests waiting inside downloader middleware, which are
+        present in downloader.active but not yet in slot.active.
+        """
+        downloader_active = getattr(self.downloader, "active", None)
+        if not downloader_active:
+            return Counter()
+
+        slot_set = set(slots)
+        active_counts: Counter[str] = Counter()
+        for request in downloader_active:
+            slot = self.downloader.get_slot_key(request)
+            if slot in slot_set:
+                active_counts[slot] += 1
+        return active_counts
 
 
 class DownloaderAwarePriorityQueue:
