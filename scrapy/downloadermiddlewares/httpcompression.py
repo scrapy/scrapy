@@ -110,6 +110,11 @@ class HttpCompressionMiddleware:
         if isinstance(response, Response):
             content_encoding = response.headers.getlist("Content-Encoding")
             if content_encoding:
+                # Preserve the original Content-Encoding so spiders can
+                # see what encoding the server used (see #1988).
+                original_encoding = b", ".join(content_encoding).decode(
+                    "ascii", errors="replace"
+                )
                 max_size = request.meta.get("download_maxsize", self._max_size)
                 warn_size = request.meta.get("download_warnsize", self._warn_size)
                 try:
@@ -149,6 +154,9 @@ class HttpCompressionMiddleware:
                 response = response.replace(cls=respcls, **kwargs)
                 if not content_encoding:
                     del response.headers["Content-Encoding"]
+                # Store the original Content-Encoding value so spider
+                # callbacks can access it via response.meta.
+                response.meta["original_content_encoding"] = original_encoding
 
         return response
 
