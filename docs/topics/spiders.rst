@@ -473,12 +473,15 @@ CrawlSpider
 
 .. class:: CrawlSpider
 
-   This is the most commonly used spider for crawling regular websites, as it
-   provides a convenient mechanism for following links by defining a set of rules.
-   It may not be the best suited for your particular web sites or project, but
-   it's generic enough for several cases, so you can start from it and override it
-   as needed for more custom functionality, or just implement your own spider.
+   CrawlSpider provides a rule-based mechanism for following links and extracting
+   data from websites. While it can be convenient for simple crawling scenarios,
+   its control flow and rule system can sometimes be confusing and may limit
+   flexibility for more complex projects.
 
+   For many use cases, implementing a spider using the base :class:`Spider`
+   class may provide clearer and more maintainable code. If you encounter
+   limitations with CrawlSpider, consider switching to :class:`Spider`.
+   
    Apart from the attributes inherited from Spider (that you must
    specify), this class supports a new attribute:
 
