@@ -8,20 +8,21 @@ from __future__ import annotations
 
 import functools
 import hashlib
+import warnings
 from contextlib import suppress
 from io import BytesIO
 from typing import TYPE_CHECKING, Any
 
 from itemadapter import ItemAdapter
 
-from scrapy.exceptions import NotConfigured
+from scrapy.exceptions import NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.files import FileException, FilesPipeline, _md5sum
 from scrapy.utils.python import to_bytes
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Iterable
     from os import PathLike
 
     from PIL import Image
@@ -29,7 +30,6 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.pipelines.media import FileInfoOrError, MediaPipeline
 
@@ -55,10 +55,18 @@ class ImagesPipeline(FilesPipeline):
     def __init__(
         self,
         store_uri: str | PathLike[str],
-        download_func: Callable[[Request, Spider], Response] | None = None,
+        download_func: None = None,
         *,
         crawler: Crawler,
     ):
+        if download_func is not None:  # pragma: no cover
+            warnings.warn(
+                "The download_func argument of ImagesPipeline.__init__() is ignored"
+                " and will be removed in a future Scrapy version.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+
         try:
             from PIL import Image, ImageOps  # noqa: PLC0415
 
@@ -69,7 +77,7 @@ class ImagesPipeline(FilesPipeline):
                 "ImagesPipeline requires installing Pillow 8.3.2 or later"
             )
 
-        super().__init__(store_uri, download_func=download_func, crawler=crawler)
+        super().__init__(store_uri, crawler=crawler)
 
         settings = crawler.settings
         resolve = functools.partial(

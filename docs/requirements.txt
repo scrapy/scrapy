@@ -1,3 +1,4 @@
+h2==4.3.0
 pydantic==2.12.3
 scrapy-spider-metadata==0.2.0
 sphinx==8.1.3

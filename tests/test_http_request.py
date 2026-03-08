@@ -329,6 +329,89 @@ class TestRequest:
                 errback="a_function",
             )
 
+    def test_setters(self):
+        request = self.request_class("http://example.com")
+
+        request.cb_kwargs = {"a": 1}
+        assert request.cb_kwargs == {"a": 1}
+
+        request.meta = {"k": "v"}
+        assert request.meta == {"k": "v"}
+
+        request.flags = ["f1"]
+        assert request.flags == ["f1"]
+
+        request.cookies = {"sid": "1"}
+        assert request.cookies == {"sid": "1"}
+
+        headers = Headers({b"X-Test": b"1"})
+        request.headers = headers
+        assert request._headers is headers
+        request.headers = {b"A": b"b"}
+        assert isinstance(request.headers, Headers)
+        assert request._headers[b"A"] == b"b"
+
+    def test_setter_mutable_lazy_loading(self):
+        """Mutable attributes are set internally to None only until they are
+        read, then they always return the same falsy instance of the
+        corresponding mutable structure.
+
+        Setting them to None causes the next read to return a different object.
+        """
+
+        request = self.request_class("http://example.com")
+
+        assert request._cb_kwargs is None
+        assert request.cb_kwargs == {}
+        assert request.cb_kwargs is request.cb_kwargs
+        assert request._cb_kwargs == {}
+        original_cb_kwargs = request.cb_kwargs
+        request.cb_kwargs = None
+        assert request.cb_kwargs == {}
+        assert request.cb_kwargs is not original_cb_kwargs
+
+        assert request._meta is None
+        assert request.meta == {}
+        assert request.meta is request.meta
+        assert request._meta == {}
+        original_meta = request.meta
+        request.meta = None
+        assert request.meta == {}
+        assert request.meta is not original_meta
+
+        assert request._flags is None
+        assert request.flags == []
+        assert request.flags is request.flags
+        assert request._flags == []
+        original_flags = request.flags
+        request.flags = None
+        assert request.flags == []
+        assert request.flags is not original_flags
+
+        assert request._cookies is None
+        assert request.cookies == {}
+        assert request.cookies is request.cookies
+        assert request._cookies == {}
+        original_cookies = request.cookies
+        request.cookies = None
+        assert request.cookies == {}
+        assert request.cookies is not original_cookies
+
+        if self.default_headers:
+            assert request._headers == self.default_headers
+            assert request._headers is not self.default_headers
+            assert request.headers == self.default_headers
+        else:
+            assert request._headers is None
+            assert request.headers == {}
+        assert request.headers is request.headers
+        assert isinstance(request.headers, Headers)
+        assert isinstance(request._headers, Headers)
+        original_headers = request.headers
+        request.headers = None
+        assert request.headers == {}
+        assert request.headers is not original_headers
+
     def test_no_callback(self):
         with pytest.raises(RuntimeError):
             NO_CALLBACK()

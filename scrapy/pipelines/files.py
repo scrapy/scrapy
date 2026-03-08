@@ -12,6 +12,7 @@ import hashlib
 import logging
 import mimetypes
 import time
+import warnings
 from collections import defaultdict
 from contextlib import suppress
 from ftplib import FTP
@@ -24,7 +25,7 @@ from itemadapter import ItemAdapter
 from twisted.internet.defer import Deferred, maybeDeferred
 from twisted.internet.threads import deferToThread
 
-from scrapy.exceptions import IgnoreRequest, NotConfigured
+from scrapy.exceptions import IgnoreRequest, NotConfigured, ScrapyDeprecationWarning
 from scrapy.http import Request, Response
 from scrapy.http.request import NO_CALLBACK
 from scrapy.pipelines.media import FileInfo, FileInfoOrError, MediaPipeline
@@ -36,7 +37,6 @@ from scrapy.utils.python import to_bytes
 from scrapy.utils.request import referer_str
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
     from os import PathLike
 
     from twisted.python.failure import Failure
@@ -44,7 +44,6 @@ if TYPE_CHECKING:
     # typing.Self requires Python 3.11
     from typing_extensions import Self
 
-    from scrapy import Spider
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
 
@@ -306,7 +305,7 @@ class GCSFilesStore:
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
     ) -> Deferred[StatInfo]:
-        def _onsuccess(blob) -> StatInfo:
+        def _onsuccess(blob: Any) -> StatInfo:
             if blob:
                 checksum = base64.b64decode(blob.md5_hash).hex()
                 last_modified = time.mktime(blob.updated.timetuple())
@@ -392,15 +391,15 @@ class FTPFilesStore:
     ) -> Deferred[StatInfo]:
         def _stat_file(path: str) -> StatInfo:
             try:
-                ftp = FTP()
-                ftp.connect(self.host, self.port)
-                ftp.login(self.username, self.password)
-                if self.USE_ACTIVE_MODE:
-                    ftp.set_pasv(False)
-                file_path = f"{self.basedir}/{path}"
-                last_modified = float(ftp.voidcmd(f"MDTM {file_path}")[4:].strip())
-                m = hashlib.md5()  # noqa: S324
-                ftp.retrbinary(f"RETR {file_path}", m.update)
+                with FTP() as ftp:
+                    ftp.connect(self.host, self.port)
+                    ftp.login(self.username, self.password)
+                    if self.USE_ACTIVE_MODE:
+                        ftp.set_pasv(False)
+                    file_path = f"{self.basedir}/{path}"
+                    last_modified = float(ftp.voidcmd(f"MDTM {file_path}")[4:].strip())
+                    m = hashlib.md5()  # noqa: S324
+                    ftp.retrbinary(f"RETR {file_path}", m.update)
                 return {"last_modified": last_modified, "checksum": m.hexdigest()}
             # The file doesn't exist
             except Exception:
@@ -443,10 +442,18 @@ class FilesPipeline(MediaPipeline):
     def __init__(
         self,
         store_uri: str | PathLike[str],
-        download_func: Callable[[Request, Spider], Response] | None = None,
+        download_func: None = None,
         *,
         crawler: Crawler,
     ):
+        if download_func is not None:  # pragma: no cover
+            warnings.warn(
+                "The download_func argument of FilesPipeline.__init__() is ignored"
+                " and will be removed in a future Scrapy version.",
+                category=ScrapyDeprecationWarning,
+                stacklevel=2,
+            )
+
         if not (store_uri and (store_uri := _to_string(store_uri))):
             from scrapy.pipelines.images import ImagesPipeline  # noqa: PLC0415
 
@@ -476,7 +483,7 @@ class FilesPipeline(MediaPipeline):
             resolve("FILES_RESULT_FIELD"), self.FILES_RESULT_FIELD
         )
 
-        super().__init__(download_func=download_func, crawler=crawler)
+        super().__init__(crawler=crawler)
 
     @classmethod
     def from_crawler(cls, crawler: Crawler) -> Self:

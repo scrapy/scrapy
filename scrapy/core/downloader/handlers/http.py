@@ -1,3 +1,4 @@
+# pragma: no file cover
 import warnings
 
 from scrapy.core.downloader.handlers.http10 import HTTP10DownloadHandler

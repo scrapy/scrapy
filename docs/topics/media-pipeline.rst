@@ -212,8 +212,6 @@ Where:
 FTP server storage
 ------------------
 
-.. versionadded:: 2.0
-
 :setting:`FILES_STORE` and :setting:`IMAGES_STORE` can point to an FTP server.
 Scrapy will automatically upload the files to the server.
 
@@ -547,9 +545,6 @@ See here the methods that you can override in your custom Files Pipeline:
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
 
-      .. versionadded:: 2.4
-         The *item* parameter.
-
    .. method:: FilesPipeline.get_media_requests(item, info)
 
       As seen on the workflow, the pipeline will get the URLs of the images to
@@ -589,8 +584,6 @@ See here the methods that you can override in your custom Files Pipeline:
         * ``checksum`` - a `MD5 hash`_ of the image contents
 
         * ``status`` - the file status indication.
-
-          .. versionadded:: 2.2
 
           It can be one of the following:
 
@@ -704,9 +697,6 @@ See here the methods that you can override in your custom Images Pipeline:
 
       By default the :meth:`file_path` method returns
       ``full/<request URL hash>.<extension>``.
-
-      .. versionadded:: 2.4
-         The *item* parameter.
 
    .. method:: ImagesPipeline.thumb_path(self, request, thumb_id, response=None, info=None, *, item=None)
 

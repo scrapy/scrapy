@@ -86,20 +86,17 @@ class Request(object_ref):
     executed by the Downloader, thus generating a :class:`~scrapy.http.Response`.
     """
 
+    __attrs_and_slots = ("callback", "dont_filter", "errback", "method", "priority")
     attributes: tuple[str, ...] = (
         "url",
-        "callback",
-        "method",
         "headers",
         "body",
         "cookies",
         "meta",
         "encoding",
-        "priority",
-        "dont_filter",
-        "errback",
         "flags",
         "cb_kwargs",
+        *__attrs_and_slots,
     )
     """A tuple of :class:`str` objects containing the name of all public
     attributes of the class that are also keyword parameters of the
@@ -108,6 +105,20 @@ class Request(object_ref):
     Currently used by :meth:`.Request.replace`, :meth:`.Request.to_dict` and
     :func:`~scrapy.utils.request.request_from_dict`.
     """
+
+    __slots__ = (
+        "__weakref__",
+        "_body",
+        "_cb_kwargs",
+        "_cookies",
+        "_encoding",
+        "_flags",
+        "_headers",
+        "_meta",
+        "_url",
+        *__attrs_and_slots,
+    )
+    del __attrs_and_slots
 
     def __init__(
         self,
@@ -189,16 +200,32 @@ class Request(object_ref):
         #: .. seealso:: :ref:`topics-request-response-ref-errbacks`
         self.errback: Callable[[Failure], Any] | None = errback
 
-        self.cookies: CookiesT = cookies or {}
-        self.headers: Headers = Headers(headers or {}, encoding=encoding)
+        self._cookies: CookiesT | None = cookies or None
+        self._headers: Headers | None = (
+            Headers(headers, encoding=encoding) if headers else None
+        )
 
         #: Whether this request may be filtered out by :ref:`components
         #: <topics-components>` that support filtering out requests (``False``,
         #: default), or those components should not filter out this request
         #: (``True``).
         #:
-        #: This attribute is commonly set to ``True`` to prevent duplicate
-        #: requests from being filtered out.
+        #: The following built-in components check this attribute:
+        #:
+        #: -   The :ref:`scheduler <topics-scheduler>` uses it to skip
+        #:     duplicate request filtering (see
+        #:     :setting:`DUPEFILTER_CLASS`). When set to ``True``, the
+        #:     request is not checked against the duplicate filter,
+        #:     allowing requests that would otherwise be considered duplicates
+        #:     to be scheduled multiple times.
+        #: -   :class:`~scrapy.downloadermiddlewares.offsite.OffsiteMiddleware`
+        #:     uses it to allow requests to domains not in
+        #:     :attr:`~scrapy.Spider.allowed_domains`. To skip only the offsite
+        #:     filter without affecting other components, consider using the
+        #:     :reqmeta:`allow_offsite` request meta key instead.
+        #:
+        #: Third-party components may also use this attribute to decide whether
+        #: to filter out a request.
         #:
         #: When defining the start URLs of a spider through
         #: :attr:`~scrapy.Spider.start_urls`, this attribute is enabled by
@@ -207,7 +234,7 @@ class Request(object_ref):
 
         self._meta: dict[str, Any] | None = dict(meta) if meta else None
         self._cb_kwargs: dict[str, Any] | None = dict(cb_kwargs) if cb_kwargs else None
-        self.flags: list[str] = [] if flags is None else list(flags)
+        self._flags: list[str] | None = list(flags) if flags else None
 
     @property
     def cb_kwargs(self) -> dict[str, Any]:
@@ -215,11 +242,19 @@ class Request(object_ref):
             self._cb_kwargs = {}
         return self._cb_kwargs
 
+    @cb_kwargs.setter
+    def cb_kwargs(self, value: dict[str, Any] | None) -> None:
+        self._cb_kwargs = value or None
+
     @property
     def meta(self) -> dict[str, Any]:
         if self._meta is None:
             self._meta = {}
         return self._meta
+
+    @meta.setter
+    def meta(self, value: dict[str, Any] | None) -> None:
+        self._meta = value or None
 
     @property
     def url(self) -> str:
@@ -243,11 +278,46 @@ class Request(object_ref):
         return self._body
 
     def _set_body(self, body: str | bytes | None) -> None:
-        self._body = b"" if body is None else to_bytes(body, self.encoding)
+        self._body = b"" if not body else to_bytes(body, self.encoding)
 
     @property
     def encoding(self) -> str:
         return self._encoding
+
+    @property
+    def flags(self) -> list[str]:
+        if self._flags is None:
+            self._flags = []
+        return self._flags
+
+    @flags.setter
+    def flags(self, value: list[str] | None) -> None:
+        self._flags = value or None
+
+    @property
+    def cookies(self) -> CookiesT:
+        if self._cookies is None:
+            self._cookies = {}
+        return self._cookies
+
+    @cookies.setter
+    def cookies(self, value: CookiesT | None) -> None:
+        self._cookies = value or None
+
+    @property
+    def headers(self) -> Headers:
+        if self._headers is None:
+            self._headers = Headers(encoding=self.encoding)
+        return self._headers
+
+    @headers.setter
+    def headers(
+        self, value: Mapping[AnyStr, Any] | Iterable[tuple[AnyStr, Any]] | None
+    ) -> None:
+        if isinstance(value, Headers):
+            self._headers = value
+        else:
+            self._headers = Headers(value, encoding=self.encoding) if value else None
 
     def __repr__(self) -> str:
         return f"<{self.method} {self.url}>"

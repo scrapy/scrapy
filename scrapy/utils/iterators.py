@@ -177,7 +177,7 @@ def csviter(
     quotechar is the character used to enclosure fields on the given obj.
     """
 
-    if encoding is not None:
+    if encoding is not None:  # pragma: no cover
         warn(
             "The encoding argument of csviter() is ignored and will be removed"
             " in a future Scrapy version.",

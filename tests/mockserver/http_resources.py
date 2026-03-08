@@ -193,10 +193,11 @@ class Drop(Partial):
         request.write(b"this connection will be dropped\n")
         tr = request.channel.transport
         try:
-            if abort and hasattr(tr, "abortConnection"):
-                tr.abortConnection()
-            else:
-                tr.loseConnection()
+            if tr:
+                if abort and hasattr(tr, "abortConnection"):
+                    tr.abortConnection()
+                else:
+                    tr.loseConnection()
         finally:
             request.finish()
 
@@ -281,7 +282,7 @@ class LargeChunkedFileResource(resource.Resource):
         from twisted.internet import reactor
 
         def response():
-            for i in range(1024):
+            for _ in range(1024):
                 request.write(b"x" * 1024)
             request.finish()
 
@@ -307,7 +308,8 @@ class UriResource(resource.Resource):
         # ToDo: implement proper HTTPS proxy tests, not faking them.
         if request.method != b"CONNECT":
             return request.uri
-        return b""
+        request.transport.write(b"HTTP/1.1 200 Connection established\r\n\r\n")
+        return NOT_DONE_YET
 
 
 class ResponseHeadersResource(resource.Resource):

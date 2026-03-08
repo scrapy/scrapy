@@ -119,7 +119,7 @@ class MySpider(scrapy.Spider):
         log = self.get_log(
             tmp_path, dnscache_spider, args=("-s", "DNSCACHE_ENABLED=False")
         )
-        assert "DNSLookupError" not in log
+        assert "CannotResolveHostError" not in log
         assert "INFO: Spider opened" in log
 
     @pytest.mark.parametrize("value", [False, True])

@@ -185,7 +185,7 @@ https://example.org
             warn_on_generator_with_return_value(mock_spider, l2)
             assert len(w) == 0
 
-    def test_generators_return_none_with_decorator(self, mock_spider):
+    def test_generators_return_none_with_decorator(self, mock_spider):  # noqa: PLR0915
         def decorator(func):
             def inner_func():
                 func()

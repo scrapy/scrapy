@@ -51,16 +51,17 @@ class QueueProtocol(Protocol):
 
 class ScrapyPriorityQueue:
     """A priority queue implemented using multiple internal queues (typically,
-    FIFO queues). It uses one internal queue for each priority value. The internal
-    queue must implement the following methods:
+    FIFO queues). It uses one internal queue for each priority value. The
+    internal queue must implement the following methods:
 
         * push(obj)
         * pop()
         * close()
         * __len__()
 
-    Optionally, the queue could provide a ``peek`` method, that should return the
-    next object to be returned by ``pop``, but without removing it from the queue.
+    Optionally, the queue could provide a ``peek`` method, that should return
+    the next object to be returned by ``pop``, but without removing it from the
+    queue.
 
     ``__init__`` method of ScrapyPriorityQueue receives a downstream_queue_cls
     argument, which is a class used to instantiate a new (internal) queue when
@@ -72,6 +73,28 @@ class ScrapyPriorityQueue:
     startprios is a sequence of priorities to start with. If the queue was
     previously closed leaving some priority buckets non-empty, those priorities
     should be passed in startprios.
+
+    Disk persistence
+    ================
+
+    .. warning:: The files that this class generates on disk are an
+        implementation detail, and may change without a warning in a future
+        version of Scrapy. Do not rely on the following information for
+        anything other than debugging purposes.
+
+    When a component instantiates this class with a non-empty *key* argument,
+    *key* is used as a persistence directory.
+
+    For every request enqueued, this class checks:
+
+    -   Whether the request is a :ref:`start request <start-requests>` or not.
+
+    -   The :data:`~scrapy.Request.priority` of the request.
+
+    For each combination of the above seen, this class creates an instance of
+    *downstream_queue_cls* with *key* set to a subdirectory of the persistence
+    directory, named as the request priority (e.g. ``1``), with an ``s`` suffix
+    in case of a start request (e.g. ``1s``).
     """
 
     @classmethod
@@ -255,6 +278,26 @@ class DownloaderAwarePriorityQueue:
     """PriorityQueue which takes Downloader activity into account:
     domains (slots) with the least amount of active downloads are dequeued
     first.
+
+    Disk persistence
+    ================
+
+    .. warning:: The files that this class generates on disk are an
+        implementation detail, and may change without a warning in a future
+        version of Scrapy. Do not rely on the following information for
+        anything other than debugging purposes.
+
+    When a component instantiates this class with a non-empty *key* argument,
+    *key* is used as a persistence directory, and inside that directory this
+    class creates a subdirectory per download slot (domain).
+
+    Those subdirectories are named after the corresponding download slot, with
+    path-unsafe characters replaced by underscores and an MD5 hash suffix to
+    avoid collisions.
+
+    For each download slot, this class creates an instance of
+    :class:`ScrapyPriorityQueue` with the download slot subdirectory as *key*
+    and its own *downstream_queue_cls*.
     """
 
     @classmethod

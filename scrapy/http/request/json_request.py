@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 
 
 class JsonRequest(Request):
+    __slots__ = ("_dumps_kwargs",)
+
     attributes: tuple[str, ...] = (*Request.attributes, "dumps_kwargs")
 
     def __init__(
