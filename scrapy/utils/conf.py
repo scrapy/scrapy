@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, cast
 from scrapy.exceptions import UsageError
 from scrapy.settings import BaseSettings
 from scrapy.utils.deprecate import update_classpath
-from scrapy.utils.python import without_none_values
+from scrapy.utils.python import global_object_name, without_none_values
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Mapping, MutableMapping
@@ -25,8 +25,13 @@ def build_component_list(
     """Compose a component list from a :ref:`component priority dictionary
     <component-priority-dictionaries>`."""
 
+    def _key_to_str(key: Any) -> Any:
+        if isinstance(key, type):
+            return global_object_name(key)
+        return key
+
     def _check_components(complist: Collection[Any]) -> None:
-        if len({convert(c) for c in complist}) != len(complist):
+        if len({convert(_key_to_str(c)) for c in complist}) != len(complist):
             raise ValueError(
                 f"Some paths in {complist!r} convert to the same object, "
                 "please update your settings"
@@ -38,16 +43,17 @@ def build_component_list(
             for k, v in compdict.items():
                 prio = compdict.getpriority(k)
                 assert prio is not None
-                if compbs.getpriority(convert(k)) == prio:
+                converted_key = convert(_key_to_str(k))
+                if compbs.getpriority(converted_key) == prio:
                     raise ValueError(
                         f"Some paths in {list(compdict.keys())!r} "
                         "convert to the same "
                         "object, please update your settings"
                     )
-                compbs.set(convert(k), v, priority=prio)
+                compbs.set(converted_key, v, priority=prio)
             return compbs
         _check_components(compdict)
-        return {convert(k): v for k, v in compdict.items()}
+        return {convert(_key_to_str(k)): v for k, v in compdict.items()}
 
     def _validate_values(compdict: Mapping[Any, Any]) -> None:
         """Fail if a value in the components dict is not a real number or None."""

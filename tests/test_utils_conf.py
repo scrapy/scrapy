@@ -1,5 +1,6 @@
 import pytest
 
+from scrapy.downloadermiddlewares.stats import DownloaderStats
 from scrapy.exceptions import UsageError
 from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.conf import (
@@ -45,6 +46,18 @@ class TestBuildComponentList:
             "c": 22222222222222222222,
         }
         assert build_component_list(d, convert=lambda x: x) == ["b", "c", "a"]
+
+    def test_disable_component_by_class_in_dict(self):
+        d = {
+            "scrapy.downloadermiddlewares.stats.DownloaderStats": 850,
+            DownloaderStats: None,
+        }
+        assert build_component_list(d) == []
+
+    def test_disable_component_by_class_in_basesettings(self):
+        d = BaseSettings({"scrapy.downloadermiddlewares.stats.DownloaderStats": 850})
+        d.set(DownloaderStats, None, priority="cmdline")
+        assert build_component_list(d) == []
 
 
 def test_arglist_to_dict():
