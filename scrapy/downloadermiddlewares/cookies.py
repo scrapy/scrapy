@@ -81,6 +81,10 @@ class CookiesMiddleware:
 
         cookiejarkey = request.meta.get("cookiejar")
         jar = self.jars[cookiejarkey]
+
+        if request.meta.get('cookies_reset', False):
+            jar.clear()
+
         cookies = self._get_request_cookies(jar, request)
         self._process_cookies(cookies, jar=jar, request=request)
 
