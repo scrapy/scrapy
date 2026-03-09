@@ -5,6 +5,7 @@ from unittest import mock
 
 import pytest
 
+from scrapy.extensions import memusage
 from scrapy.item import Field, Item
 from scrapy.utils.misc import (
     arg_to_iter,
@@ -14,6 +15,7 @@ from scrapy.utils.misc import (
     set_environ,
     walk_modules,
 )
+from scrapy.utils.test import get_crawler
 
 
 class TestUtilsMisc:
@@ -126,6 +128,20 @@ class TestUtilsMisc:
         m.from_crawler.return_value = None
         with pytest.raises(TypeError):
             build_from_crawler(m, crawler, *args, **kwargs)
+
+    def test_build_from_crawler_memory_usage_without_from_crawler(self, monkeypatch):
+        crawler = get_crawler(settings_dict={"MEMUSAGE_ENABLED": True})
+
+        fake_resource = mock.MagicMock()
+        fake_resource.RUSAGE_SELF = object()
+        fake_resource.getrusage.return_value = mock.MagicMock(ru_maxrss=0)
+        monkeypatch.setattr(memusage, "import_module", lambda _: fake_resource)
+        monkeypatch.setattr(memusage.MailSender, "from_crawler", mock.MagicMock())
+        monkeypatch.delattr(memusage.MemoryUsage, "from_crawler")
+
+        extension = build_from_crawler(memusage.MemoryUsage, crawler, crawler)
+
+        assert isinstance(extension, memusage.MemoryUsage)
 
     def test_set_environ(self):
         assert os.environ.get("some_test_environ") is None
