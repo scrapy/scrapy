@@ -4,7 +4,7 @@ import warnings
 from typing import TYPE_CHECKING
 
 from scrapy.commands import BaseRunSpiderCommand
-from scrapy.exceptions import ScrapyDeprecationWarning, UsageError
+from scrapy.exceptions import UsageError
 
 if TYPE_CHECKING:
     import argparse
@@ -32,20 +32,24 @@ class Command(BaseRunSpiderCommand):
         assert self.settings
 
         spidercls = self.crawler_process.spider_loader.load(spname)
-        custom = getattr(spidercls, "custom_settings", None)
+        spider_settings = self.settings.copy()
+        spidercls.update_settings(spider_settings)
+
+        spider_reactor = spider_settings.get("TWISTED_REACTOR")
+        project_reactor = self.settings.get("TWISTED_REACTOR")
+
         if (
-            custom
-            and custom.get("TWISTED_REACTOR")
+            spider_reactor
+            and spider_reactor != project_reactor
             and not self.settings.getbool("FORCE_CRAWLER_PROCESS")
         ):
             warnings.warn(
-                f"The spider {spname!r} sets TWISTED_REACTOR to "
-                f"{custom['TWISTED_REACTOR']!r}, but this "
-                "setting is ignored when running 'scrapy crawl'. To use the "
-                "spider's reactor, either set FORCE_CRAWLER_PROCESS=True in "
-                "your project settings, or use CrawlerRunner instead of "
+                f"The spider {spname!r} sets TWISTED_REACTOR to {spider_reactor!r}, "
+                "but this setting is ignored when running 'scrapy crawl'. "
+                "To use the spider's reactor, either set FORCE_CRAWLER_PROCESS=True "
+                "in your project settings or use CrawlerRunner instead of "
                 "CrawlerProcess.",
-                ScrapyDeprecationWarning,
+                UserWarning,
                 stacklevel=2,
             )
 
