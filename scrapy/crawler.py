@@ -116,24 +116,6 @@ class Crawler:
                     install_reactor(reactor_class, event_loop)
                 else:
                     from twisted.internet import reactor  # noqa: F401
-
-            elif (
-                reactor_class
-                and is_reactor_installed()
-                and not self.settings.getbool("FORCE_CRAWLER_PROCESS")
-            ):
-                from twisted.internet import reactor as _reactor
-
-                if load_object(reactor_class) is not type(_reactor):
-                    warnings.warn(
-                        f"The spider {getattr(self.spidercls, 'name', self.spidercls.__name__)!r} sets TWISTED_REACTOR to "
-                        f"{reactor_class!r}, but this setting is ignored when running "
-                        "'scrapy crawl' (or any command using CrawlerProcess). "
-                        "To use the spider's reactor, either set FORCE_CRAWLER_PROCESS=True in your "
-                        "project settings, or use CrawlerRunner instead of CrawlerProcess.",
-                        ScrapyDeprecationWarning,
-                        stacklevel=2,
-                    )
             if reactor_class:
                 verify_installed_reactor(reactor_class)
                 if is_asyncio_reactor_installed() and event_loop:

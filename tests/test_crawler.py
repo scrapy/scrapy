@@ -1,5 +1,4 @@
 import asyncio
-import contextlib
 import logging
 import platform
 import re
@@ -503,24 +502,6 @@ class TestSpiderSettings:
         crawler = get_crawler(MySpider)
         enabled_exts = [e.__class__ for e in crawler.extensions.middlewares]
         assert AutoThrottle in enabled_exts
-
-    def test_warn_twisted_reactor_ignored_without_force_crawler_process(self):
-        class MySpider(scrapy.Spider):
-            name = "spider"
-            custom_settings = {
-                "TWISTED_REACTOR": "twisted.internet.selectreactor.SelectReactor",
-            }
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            with contextlib.suppress(RuntimeError):
-                get_crawler(MySpider, prevent_warnings=False)
-
-        messages = [str(warning.message) for warning in w]
-        assert any(
-            "TWISTED_REACTOR" in msg and "FORCE_CRAWLER_PROCESS" in msg
-            for msg in messages
-        )
 
 
 class TestCrawlerLogging:
