@@ -55,7 +55,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
         *args: Any,
         **kwargs: Any,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)  # type: ignore[no-untyped-call]
         self._ssl_method: int = method
         self.tls_verbose_logging: bool = tls_verbose_logging
         self.tls_ciphers: AcceptableCiphers
