@@ -30,9 +30,9 @@ from scrapy.spidermiddlewares.referer import (
     StrictOriginWhenCrossOriginPolicy,
     UnsafeUrlPolicy,
 )
-from scrapy.utils.defer import deferred_f_from_coro_f
 from scrapy.utils.misc import build_from_crawler
 from scrapy.utils.test import get_crawler
+from tests.utils.decorators import coroutine_test
 
 
 class TestRefererMiddleware:
@@ -1026,7 +1026,7 @@ class TestPolicyMethodResponseParamRename:
             )
 
 
-@deferred_f_from_coro_f
+@coroutine_test
 async def test_response_policy_only_supports_policy_names():
     crawler = get_crawler(settings_dict={"REFERRER_POLICY": "no-referrer"})
     mw = build_from_crawler(RefererMiddleware, crawler)
@@ -1065,7 +1065,7 @@ async def test_response_policy_only_supports_policy_names():
     assert output[0].headers == {b"Referer": [b"https://example.com/"]}
 
 
-@deferred_f_from_coro_f
+@coroutine_test
 async def test_referer_policies_setting():
     crawler = get_crawler(
         settings_dict={
