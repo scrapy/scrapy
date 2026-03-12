@@ -1197,7 +1197,9 @@ class TestRedirectMiddleware(Base.Test):
     def test_redirect_strips_referer_no_middleware(self):
         source_url = "http://www.example.com/302"
         redirect_url = "http://www.example.com/redirected"
-        source_request = Request(source_url, headers={"Referer": "http://example.com/old"})
+        source_request = Request(
+            source_url, headers={"Referer": "http://example.com/old"}
+        )
         response = Response(source_url, headers={"Location": redirect_url}, status=302)
         redirect_mw = self.mwcls.from_crawler(get_crawler())
         redirect_mw._referer_spider_middleware = None
@@ -1213,9 +1215,14 @@ class TestRedirectMiddleware(Base.Test):
             source_url,
             method="POST",
             body=body,
-            headers={"Content-Type": "application/json", "Content-Length": str(len(body))},
+            headers={
+                "Content-Type": "application/json",
+                "Content-Length": str(len(body)),
+            },
         )
-        response1 = Response(source_url, headers={"Location": target_url}, status=status)
+        response1 = Response(
+            source_url, headers={"Location": target_url}, status=status
+        )
         redirect_request = self.mw.process_response(request, response1)
         assert isinstance(redirect_request, Request)
         assert redirect_request.url == target_url
@@ -1480,6 +1487,7 @@ def test_meta_refresh_schemes(url, location, target):
     else:
         assert isinstance(redirect, Request)
 
+
 @pytest.mark.parametrize(
     ("policy", "source_url", "target_url", "expected_referrer"),
     [
@@ -1507,9 +1515,7 @@ def test_meta_refresh_schemes(url, location, target):
         ),
     ],
 )
-def test_response_referrer_policy(
-    policy, source_url, target_url, expected_referrer
-):
+def test_response_referrer_policy(policy, source_url, target_url, expected_referrer):
     crawler = get_crawler()
     referrer_mw = build_from_crawler(RefererMiddleware, crawler)
     redirect_mw = build_from_crawler(RedirectMiddleware, crawler)
@@ -1519,11 +1525,11 @@ def test_response_referrer_policy(
     if policy:
         extra_headers["Referrer-Policy"] = policy
     response_redirect = Response(
-        source_request.url, status=301, headers={"Location": target_url, **extra_headers}
+        source_request.url,
+        status=301,
+        headers={"Location": target_url, **extra_headers},
     )
-    source_request = redirect_mw.process_response(
-        source_request, response_redirect
-    )
+    source_request = redirect_mw.process_response(source_request, response_redirect)
     assert isinstance(source_request, Request)
 
     assert source_request.headers.get("Referer") == expected_referrer
@@ -1547,7 +1553,10 @@ def test_warning_redirect_middleware(caplog):
         "scrapy.downloadermiddlewares.redirect.RedirectMiddleware found no "
         "scrapy.spidermiddlewares.referer.RefererMiddleware"
     ) in caplog.text
-    assert "enable scrapy.spidermiddlewares.referer.RefererMiddleware (or a subclass)" in caplog.text
+    assert (
+        "enable scrapy.spidermiddlewares.referer.RefererMiddleware (or a subclass)"
+        in caplog.text
+    )
     assert (
         "replace scrapy.downloadermiddlewares.redirect.RedirectMiddleware "
         "with a subclass that overrides the handle_referer() method"
@@ -1564,7 +1573,10 @@ def test_warning_meta_refresh_middleware(caplog):
         "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware found no "
         "scrapy.spidermiddlewares.referer.RefererMiddleware"
     ) in caplog.text
-    assert "enable scrapy.spidermiddlewares.referer.RefererMiddleware (or a subclass)" in caplog.text
+    assert (
+        "enable scrapy.spidermiddlewares.referer.RefererMiddleware (or a subclass)"
+        in caplog.text
+    )
     assert (
         "replace scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware "
         "with a subclass that overrides the handle_referer() method"
@@ -1584,7 +1596,10 @@ def test_warning_subclass(caplog):
         "test_warning_subclass.<locals>.MyRedirectMiddleware found no "
         "scrapy.spidermiddlewares.referer.RefererMiddleware"
     ) in caplog.text
-    assert "enable scrapy.spidermiddlewares.referer.RefererMiddleware (or a subclass)" in caplog.text
+    assert (
+        "enable scrapy.spidermiddlewares.referer.RefererMiddleware (or a subclass)"
+        in caplog.text
+    )
     assert "edit " in caplog.text
     assert "test_warning_subclass.<locals>.MyRedirectMiddleware" in caplog.text
     assert (

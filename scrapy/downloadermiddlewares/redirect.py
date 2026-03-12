@@ -61,12 +61,12 @@ class BaseRedirectMiddleware:
         request.headers.pop("Referer", None)
         if not self._referer_spider_middleware:
             return
-        self._referer_spider_middleware.get_processed_request(
-            request, response
-        )
+        self._referer_spider_middleware.get_processed_request(request, response)
 
     def _engine_started(self) -> None:
-        self._referer_spider_middleware = self.crawler.get_spider_middleware(RefererMiddleware)
+        self._referer_spider_middleware = self.crawler.get_spider_middleware(
+            RefererMiddleware
+        )
         if self._referer_spider_middleware:
             return
         redirect_cls = global_object_name(self.__class__)
@@ -119,7 +119,6 @@ class BaseRedirectMiddleware:
             extra={"spider": self.crawler.spider},
         )
         raise IgnoreRequest("max redirections reached")
-
 
     def _build_redirect_request(
         self, source_request: Request, response: Response, *, url: str, **kwargs: Any
@@ -236,11 +235,12 @@ class RedirectMiddleware(BaseRedirectMiddleware):
         if urlparse_cached(redirected).scheme not in {"http", "https"}:
             return response
 
-        if (
-            (response.status in (301, 302) and request.method == "POST")
-            or (response.status == 303 and request.method not in ("GET", "HEAD"))
+        if (response.status in (301, 302) and request.method == "POST") or (
+            response.status == 303 and request.method not in ("GET", "HEAD")
         ):
-            redirected = self._redirect_request_using_get(request, response, redirected_url)
+            redirected = self._redirect_request_using_get(
+                request, response, redirected_url
+            )
 
         return self._redirect(redirected, request, response.status)
 
