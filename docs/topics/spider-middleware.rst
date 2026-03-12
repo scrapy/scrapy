@@ -403,6 +403,25 @@ String value                             Class name (as a string)
 .. _"strict-origin-when-cross-origin": https://www.w3.org/TR/referrer-policy/#referrer-policy-strict-origin-when-cross-origin
 .. _"unsafe-url": https://www.w3.org/TR/referrer-policy/#referrer-policy-unsafe-url
 
+.. setting:: REFERRER_POLICIES
+
+REFERRER_POLICIES
+^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.14.2
+
+Default: ``{}``
+
+A dictionary mapping policy names to import paths of
+:class:`scrapy.spidermiddlewares.referer.ReferrerPolicy` subclasses, or
+``None`` to disable support for a given policy name.
+
+This allows overriding the policies triggered by the ``Referrer-Policy``
+response header.
+
+Use ``""`` to override the policy for responses with `no referrer policy
+<https://www.w3.org/TR/referrer-policy/#referrer-policy-empty-string>`__.
+
 
 StartSpiderMiddleware
 ---------------------

@@ -1,4 +1,6 @@
+import logging
 from itertools import chain, product
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -9,8 +11,14 @@ from scrapy.downloadermiddlewares.redirect import (
 )
 from scrapy.exceptions import IgnoreRequest
 from scrapy.http import HtmlResponse, Request, Response
+from scrapy.spidermiddlewares.referer import (
+    POLICY_NO_REFERRER,
+    POLICY_ORIGIN,
+    POLICY_UNSAFE_URL,
+    RefererMiddleware,
+)
 from scrapy.spiders import Spider
-from scrapy.utils.misc import set_environ
+from scrapy.utils.misc import build_from_crawler, set_environ
 from scrapy.utils.spider import DefaultSpider
 from scrapy.utils.test import get_crawler
 
@@ -18,8 +26,8 @@ from scrapy.utils.test import get_crawler
 class Base:
     class Test:
         def test_priority_adjust(self):
-            req = Request("http://a.com")
-            rsp = self.get_response(req, "http://a.com/redirected")
+            req = Request("http://a.example")
+            rsp = self.get_response(req, "http://a.example/redirected")
             req2 = self.mw.process_response(req, rsp)
             assert req2.priority > req.priority
 
@@ -65,7 +73,7 @@ class Base:
 
         def test_max_redirect_times(self):
             self.mw.max_redirect_times = 1
-            req = Request("http://scrapytest.org/302")
+            req = Request("http://a.example/302")
             rsp = self.get_response(req, "/redirected")
 
             req = self.mw.process_response(req, rsp)
@@ -77,7 +85,7 @@ class Base:
 
         def test_ttl(self):
             self.mw.max_redirect_times = 100
-            req = Request("http://scrapytest.org/302", meta={"redirect_ttl": 1})
+            req = Request("http://a.example/302", meta={"redirect_ttl": 1})
             rsp = self.get_response(req, "/a")
 
             req = self.mw.process_response(req, rsp)
@@ -86,22 +94,22 @@ class Base:
                 self.mw.process_response(req, rsp)
 
         def test_redirect_urls(self):
-            req1 = Request("http://scrapytest.org/first")
+            req1 = Request("http://a.example/first")
             rsp1 = self.get_response(req1, "/redirected")
             req2 = self.mw.process_response(req1, rsp1)
             rsp2 = self.get_response(req1, "/redirected2")
             req3 = self.mw.process_response(req2, rsp2)
 
-            assert req2.url == "http://scrapytest.org/redirected"
-            assert req2.meta["redirect_urls"] == ["http://scrapytest.org/first"]
-            assert req3.url == "http://scrapytest.org/redirected2"
+            assert req2.url == "http://a.example/redirected"
+            assert req2.meta["redirect_urls"] == ["http://a.example/first"]
+            assert req3.url == "http://a.example/redirected2"
             assert req3.meta["redirect_urls"] == [
-                "http://scrapytest.org/first",
-                "http://scrapytest.org/redirected",
+                "http://a.example/first",
+                "http://a.example/redirected",
             ]
 
         def test_redirect_reasons(self):
-            req1 = Request("http://scrapytest.org/first")
+            req1 = Request("http://a.example/first")
             rsp1 = self.get_response(req1, "/redirected1")
             req2 = self.mw.process_response(req1, rsp1)
             rsp2 = self.get_response(req2, "/redirected2")
@@ -1004,7 +1012,7 @@ class TestRedirectMiddleware(Base.Test):
         return Response(request.url, status=status, headers=headers)
 
     def test_redirect_3xx_permanent(self):
-        def _test(method, status=301):
+        def _test(method, status: int):
             url = f"http://www.example.com/{status}"
             url2 = "http://www.example.com/redirected"
             req = Request(url, method=method)
@@ -1019,10 +1027,6 @@ class TestRedirectMiddleware(Base.Test):
             del rsp.headers["Location"]
             assert self.mw.process_response(req, rsp) is rsp
 
-        _test("GET")
-        _test("POST")
-        _test("HEAD")
-
         _test("GET", status=307)
         _test("POST", status=307)
         _test("HEAD", status=307)
@@ -1030,6 +1034,212 @@ class TestRedirectMiddleware(Base.Test):
         _test("GET", status=308)
         _test("POST", status=308)
         _test("HEAD", status=308)
+
+    @pytest.mark.parametrize("status", [301, 302, 303])
+    def test_method_becomes_get(self, status):
+        source_url = f"http://www.example.com/{status}"
+        target_url = "http://www.example.com/redirected2"
+        request = Request(
+            source_url,
+            method="POST",
+            body="test",
+            headers={"Content-Type": "text/plain", "Content-length": "4"},
+        )
+        response = Response(source_url, headers={"Location": target_url}, status=status)
+        redirect_request = self.mw.process_response(request, response)
+        assert isinstance(redirect_request, Request)
+        assert redirect_request.url == target_url
+        assert redirect_request.method == "GET"
+        assert "Content-Type" not in redirect_request.headers
+        assert "Content-Length" not in redirect_request.headers
+        assert not redirect_request.body
+
+    @pytest.mark.parametrize("status", [301, 302])
+    @pytest.mark.parametrize("method", ["PUT", "DELETE"])
+    def test_method_not_converted_on_301_302(self, status, method):
+        url = f"http://www.example.com/{status}"
+        url2 = "http://www.example.com/redirected"
+        body = b"test-body"
+        req = Request(
+            url,
+            method=method,
+            body=body,
+            headers={"Content-Type": "text/plain", "Content-Length": str(len(body))},
+        )
+        rsp = Response(url, headers={"Location": url2}, status=status)
+
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.url == url2
+        assert req2.method == method
+        assert req2.body == body
+        assert req2.headers[b"Content-Type"] == b"text/plain"
+        assert req2.headers[b"Content-Length"] == str(len(body)).encode()
+
+    @pytest.mark.parametrize("method", ["PUT", "DELETE"])
+    def test_method_converted_on_303(self, method):
+        status = 303
+        url = f"http://www.example.com/{status}"
+        url2 = "http://www.example.com/redirected"
+        req = Request(url, method=method)
+        rsp = Response(url, headers={"Location": url2}, status=status)
+
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.url == url2
+        assert req2.method == "GET"
+
+    def test_get_method_body_preserved_on_303(self):
+        status = 303
+        url = f"http://www.example.com/{status}"
+        url2 = "http://www.example.com/redirected"
+        body = b"test-body"
+        req = Request(
+            url,
+            method="GET",
+            body=body,
+            headers={"Content-Type": "text/plain", "Content-Length": str(len(body))},
+        )
+        rsp = Response(url, headers={"Location": url2}, status=status)
+
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.url == url2
+        assert req2.method == "GET"
+        assert req2.body == body
+        assert req2.headers[b"Content-Type"] == b"text/plain"
+        assert req2.headers[b"Content-Length"] == str(len(body)).encode()
+
+    def test_redirect_strips_content_headers(self):
+        url = "http://www.example.com/303"
+        url2 = "http://www.example.com/redirected"
+        headers = {
+            "Content-Type": "application/json",
+            "Content-Length": "100",
+            "Content-Encoding": "gzip",
+            "Content-Language": "en",
+            "Content-Location": "http://www.example.com/original",
+            "X-Custom": "foo",
+        }
+        req = Request(url, method="POST", headers=headers, body=b"foo")
+        rsp = Response(url, headers={"Location": url2}, status=303)
+
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.url == url2
+        assert req2.method == "GET"
+        assert req2.body == b""
+        assert "Content-Type" not in req2.headers
+        assert "Content-Length" not in req2.headers
+        assert "Content-Encoding" not in req2.headers
+        assert "Content-Language" not in req2.headers
+        assert "Content-Location" not in req2.headers
+        assert req2.headers["X-Custom"] == b"foo"
+
+    @pytest.mark.parametrize(
+        (
+            "referer",
+            "source_url",
+            "target_url",
+            "policy_header",
+            "expected_referer",
+        ),
+        [
+            (
+                None,
+                "http://www.example.com/302",
+                "http://www.example.com/redirected",
+                None,
+                b"http://www.example.com/302",
+            ),
+            (
+                "http://example.com/old",
+                "http://www.example.com/302",
+                "http://www.example.com/redirected",
+                None,
+                b"http://www.example.com/302",
+            ),
+            (
+                "https://example.com/old",
+                "https://www.example.com/302",
+                "http://www.example.com/redirected",
+                None,
+                None,
+            ),
+            (
+                "http://example.com/old",
+                "http://www.example.com/foo/bar",
+                "http://www.example.com/redirected",
+                "origin",
+                b"http://www.example.com/",
+            ),
+        ],
+    )
+    def test_redirect_referer(
+        self, referer, source_url, target_url, policy_header, expected_referer
+    ):
+        headers = {"Referer": referer} if referer else {}
+        source_request = Request(source_url, headers=headers)
+        resp_headers = {"Location": target_url}
+        if policy_header:
+            resp_headers["Referrer-Policy"] = policy_header
+        response = Response(source_url, headers=resp_headers, status=302)
+        crawler = get_crawler()
+        referer_mw = build_from_crawler(RefererMiddleware, crawler)
+        redirect_mw = self.mwcls.from_crawler(crawler)
+        redirect_mw._referer_spider_middleware = referer_mw
+        redirect_request = redirect_mw.process_response(source_request, response)
+        if expected_referer:
+            assert redirect_request.headers.get("Referer") == expected_referer
+        else:
+            assert "Referer" not in redirect_request.headers
+
+    def test_redirect_strips_referer_no_middleware(self):
+        source_url = "http://www.example.com/302"
+        redirect_url = "http://www.example.com/redirected"
+        source_request = Request(
+            source_url, headers={"Referer": "http://example.com/old"}
+        )
+        response = Response(source_url, headers={"Location": redirect_url}, status=302)
+        redirect_mw = self.mwcls.from_crawler(get_crawler())
+        redirect_mw._referer_spider_middleware = None
+        redirect_request = redirect_mw.process_response(source_request, response)
+        assert "Referer" not in redirect_request.headers
+
+    @pytest.mark.parametrize("status", [307, 308])
+    def test_cross_origin_maintain_body(self, status):
+        source_url = "https://example.com"
+        target_url = "https://attacker.example"
+        body = b"secret"
+        request = Request(
+            source_url,
+            method="POST",
+            body=body,
+            headers={
+                "Content-Type": "application/json",
+                "Content-Length": str(len(body)),
+            },
+        )
+        response1 = Response(
+            source_url, headers={"Location": target_url}, status=status
+        )
+        redirect_request = self.mw.process_response(request, response1)
+        assert isinstance(redirect_request, Request)
+        assert redirect_request.url == target_url
+        assert redirect_request.method == "POST"
+        assert redirect_request.body == body
+        assert redirect_request.headers[b"Content-Type"] == b"application/json"
+        assert redirect_request.headers[b"Content-Length"] == str(len(body)).encode()
+
+    def test_redirect_keeps_fragment(self):
+        url = "http://www.example.com/301#frag"
+        url2 = "http://www.example.com/redirected"
+        req = Request(url)
+        rsp = Response(url, headers={"Location": url2}, status=302)
+
+        req2 = self.mw.process_response(req, rsp)
+        assert isinstance(req2, Request)
+        assert req2.url == "http://www.example.com/redirected#frag"
 
     def test_redirect_302_head(self):
         url = "http://www.example.com/302"
@@ -1276,4 +1486,128 @@ def test_meta_refresh_schemes(url, location, target):
         assert redirect == response
     else:
         assert isinstance(redirect, Request)
-        assert redirect.url == target
+
+
+@pytest.mark.parametrize(
+    ("policy", "source_url", "target_url", "expected_referrer"),
+    [
+        # The policy header affects the outcome.
+        # (without it, the https → http switch would drop the referer)
+        (
+            POLICY_UNSAFE_URL,
+            "https://a.example/1",
+            "http://a.example/2",
+            b"https://a.example/1",
+        ),
+        # The policy header can get the Referer header removed.
+        (
+            POLICY_NO_REFERRER,
+            "http://a.example/1",
+            "http://a.example/2",
+            None,
+        ),
+        # The policy header can get the Referer header edited (path stripped).
+        (
+            POLICY_ORIGIN,
+            "http://a.example/1",
+            "http://a.example/2",
+            b"http://a.example/",
+        ),
+    ],
+)
+def test_response_referrer_policy(policy, source_url, target_url, expected_referrer):
+    crawler = get_crawler()
+    referrer_mw = build_from_crawler(RefererMiddleware, crawler)
+    redirect_mw = build_from_crawler(RedirectMiddleware, crawler)
+    redirect_mw._referer_spider_middleware = referrer_mw
+    source_request = Request(source_url)
+    extra_headers = {}
+    if policy:
+        extra_headers["Referrer-Policy"] = policy
+    response_redirect = Response(
+        source_request.url,
+        status=301,
+        headers={"Location": target_url, **extra_headers},
+    )
+    source_request = redirect_mw.process_response(source_request, response_redirect)
+    assert isinstance(source_request, Request)
+
+    assert source_request.headers.get("Referer") == expected_referrer
+
+
+def test_no_warning_when_referer_middleware_present(caplog):
+    crawler = get_crawler()
+    crawler.get_spider_middleware = MagicMock(return_value=MagicMock())
+    mw = build_from_crawler(RedirectMiddleware, crawler)
+    caplog.clear()
+    with caplog.at_level(logging.WARNING):
+        mw._engine_started()
+    assert not [
+        record
+        for record in caplog.records
+        if record.name == "scrapy.downloadermiddlewares.redirect"
+    ]
+
+
+def test_warning_redirect_middleware(caplog):
+    crawler = get_crawler()
+    crawler.get_spider_middleware = MagicMock(return_value=None)
+    mw = build_from_crawler(RedirectMiddleware, crawler)
+    with caplog.at_level(logging.WARNING):
+        mw._engine_started()
+    assert (
+        "scrapy.downloadermiddlewares.redirect.RedirectMiddleware found no "
+        "scrapy.spidermiddlewares.referer.RefererMiddleware"
+    ) in caplog.text
+    assert (
+        "enable scrapy.spidermiddlewares.referer.RefererMiddleware (or a subclass)"
+        in caplog.text
+    )
+    assert (
+        "replace scrapy.downloadermiddlewares.redirect.RedirectMiddleware "
+        "with a subclass that overrides the handle_referer() method"
+    ) in caplog.text
+
+
+def test_warning_meta_refresh_middleware(caplog):
+    crawler = get_crawler()
+    crawler.get_spider_middleware = MagicMock(return_value=None)
+    mw = build_from_crawler(MetaRefreshMiddleware, crawler)
+    with caplog.at_level(logging.WARNING):
+        mw._engine_started()
+    assert (
+        "scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware found no "
+        "scrapy.spidermiddlewares.referer.RefererMiddleware"
+    ) in caplog.text
+    assert (
+        "enable scrapy.spidermiddlewares.referer.RefererMiddleware (or a subclass)"
+        in caplog.text
+    )
+    assert (
+        "replace scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware "
+        "with a subclass that overrides the handle_referer() method"
+    ) in caplog.text
+
+
+def test_warning_subclass(caplog):
+    class MyRedirectMiddleware(RedirectMiddleware):
+        pass
+
+    crawler = get_crawler()
+    crawler.get_spider_middleware = MagicMock(return_value=None)
+    mw = build_from_crawler(MyRedirectMiddleware, crawler)
+    with caplog.at_level(logging.WARNING):
+        mw._engine_started()
+    assert (
+        "test_warning_subclass.<locals>.MyRedirectMiddleware found no "
+        "scrapy.spidermiddlewares.referer.RefererMiddleware"
+    ) in caplog.text
+    assert (
+        "enable scrapy.spidermiddlewares.referer.RefererMiddleware (or a subclass)"
+        in caplog.text
+    )
+    assert "edit " in caplog.text
+    assert "test_warning_subclass.<locals>.MyRedirectMiddleware" in caplog.text
+    assert (
+        "(if defined in your code base) to override the handle_referer() method"
+    ) in caplog.text
