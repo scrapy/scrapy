@@ -1539,8 +1539,14 @@ def test_no_warning_when_referer_middleware_present(caplog):
     crawler = get_crawler()
     crawler.get_spider_middleware = MagicMock(return_value=MagicMock())
     mw = build_from_crawler(RedirectMiddleware, crawler)
-    mw._engine_started()
-    assert not caplog.records
+    caplog.clear()
+    with caplog.at_level(logging.WARNING):
+        mw._engine_started()
+    assert not [
+        record
+        for record in caplog.records
+        if record.name == "scrapy.downloadermiddlewares.redirect"
+    ]
 
 
 def test_warning_redirect_middleware(caplog):
