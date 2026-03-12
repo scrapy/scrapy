@@ -11,6 +11,12 @@ Scrapy 2.14.2 (unreleased)
 Security bug fixes
 ~~~~~~~~~~~~~~~~~~
 
+-   Values from the ``Referrer-Policy`` header of HTTP responses are no longer
+    executed as Python callables. See the `cwxj-rr6w-m6w7`_ security advisory
+    for details.
+
+    .. _cwxj-rr6w-m6w7: https://github.com/scrapy/scrapy/security/advisories/GHSA-cwxj-rr6w-m6w7
+
 -   In line with the `standard
     <https://fetch.spec.whatwg.org/#http-redirect-fetch>`__, 301 redirects of
     ``POST`` requests turn into ``GET`` requests.
@@ -29,6 +35,12 @@ Deprecations
 
     The parameter has also been renamed to ``response`` to reflect this change.
     The old parameter name (``resp_or_url``) is deprecated.
+
+New features
+~~~~~~~~~~~~
+
+-   Added a new setting, :setting:`REFERER_POLICIES`, to allow customizing
+    supported referrer policies.
 
 Bug fixes
 ~~~~~~~~~
