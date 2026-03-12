@@ -19,17 +19,18 @@ Security bug fixes
 
 -   In line with the `standard
     <https://fetch.spec.whatwg.org/#http-redirect-fetch>`__, 301 redirects of
-    ``POST`` requests turn into ``GET`` requests.
+    ``POST`` requests are converted into ``GET`` requests.
 
-    Turning into a ``GET`` request implies not only a method change, but also
+    Converting to a ``GET`` request implies not only a method change, but also
     omitting the body and ``Content-*`` headers in the redirect request. On
-    cross-origin redirects (e.g. cross-domain), this is effectively a security
-    bug fix for scenarios where the body contains secrets.
+    cross-origin redirects (for example, cross-domain redirects), this is
+    effectively a security bug fix for scenarios where the body contains
+    secrets.
 
 Deprecations
 ~~~~~~~~~~~~
 
--   Using a response URL string as the first parameter on calls to
+-   Passing a response URL string as the first positional argument to
     :meth:`scrapy.spidermiddlewares.referer.RefererMiddleware.policy` is
     deprecated. Pass a :class:`~scrapy.http.Response` instead.
 
@@ -48,23 +49,23 @@ Bug fixes
 -   Made additional redirect scenarios convert to ``GET`` in line with the
     `standard <https://fetch.spec.whatwg.org/#http-redirect-fetch>`__:
 
-    -   Only ``POST`` 302 redirects turn into ``GET`` requests, other methods
-        are preserved.
+    -   Only ``POST`` 302 redirects are converted into ``GET`` requests; other
+        methods are preserved.
 
-    -   ``HEAD`` 303 redirects do not turn into ``GET`` requests.
+    -   ``HEAD`` 303 redirects are not converted into ``GET`` requests.
 
-    -   ``GET`` 303 redirects do not get their body or standard ``Content-*``
+    -   ``GET`` 303 redirects do not have their body or standard ``Content-*``
         headers removed.
 
--   Redirects where the original request body is dropped now also get their
+-   Redirects where the original request body is dropped now also have their
     ``Content-Encoding``, ``Content-Language`` and ``Content-Location`` headers
-    removed, in addition to ``Content-Type`` and ``Content-Length`` that were
-    already being removed.
+    removed, in addition to the ``Content-Type`` and ``Content-Length`` headers
+    that were already being removed.
 
--   Redirects now maintain the source URL fragment if the redirect URL doesn't
-    have one. This may be useful when using browser-based download handlers,
-    like those of `scrapy-playwright`_ or `scrapy-zyte-api`_, and letting
-    Scrapy handle redirects.
+-   Redirects now preserve the source URL fragment if the redirect URL does not
+    include one. This is useful when using browser-based download handlers,
+    such as `scrapy-playwright`_ or `scrapy-zyte-api`_, while letting Scrapy
+    handle redirects.
 
     .. _scrapy-playwright: https://github.com/scrapy-plugins/scrapy-playwright
     .. _scrapy-zyte-api: https://scrapy-zyte-api.readthedocs.io/en/latest/
@@ -72,9 +73,8 @@ Bug fixes
 -   The ``Referer`` header is now removed on redirect if
     :class:`~scrapy.spidermiddlewares.referer.RefererMiddleware` is disabled.
 
--   The handling of the ``Referer`` header on redirects now accounts for the
-    ``Referer-Policy`` header of the response that triggers the redirect
-    request.
+-   The handling of the ``Referer`` header on redirects now takes into account
+    the ``Referer-Policy`` header of the response that triggers the redirect.
 
 .. _release-2.14.1:
 
