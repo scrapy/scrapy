@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import pickle
 import re
 import sys
 import warnings
@@ -32,6 +33,7 @@ from scrapy.utils.asyncio import is_asyncio_available
 from scrapy.utils.conf import feed_complete_default_values_from_settings
 from scrapy.utils.defer import deferred_from_coro, ensure_awaitable
 from scrapy.utils.ftp import ftp_store_file
+from scrapy.utils.job import job_dir
 from scrapy.utils.misc import build_from_crawler, load_object
 from scrapy.utils.python import without_none_values
 
@@ -446,6 +448,7 @@ class FeedExporter:
         self.slots: list[FeedSlot] = []
         self.filters: dict[str, ItemFilter] = {}
         self._pending_close_coros: list[Coroutine[Any, Any, None]] = []
+        self._jobdir: str | None = job_dir(self.settings)
 
         if not self.settings["FEEDS"] and not self.settings["FEED_URI"]:
             raise NotConfigured
@@ -492,11 +495,15 @@ class FeedExporter:
                 raise NotConfigured
 
     def open_spider(self, spider: Spider) -> None:
+        persisted_batch_ids = self._load_persisted_batch_ids()
         for uri, feed_options in self.feeds.items():
-            uri_params = self._get_uri_params(spider, feed_options["uri_params"])
+            batch_id = persisted_batch_ids.get(uri, 0) + 1
+            uri_params = self._get_uri_params(
+                spider, feed_options["uri_params"], starting_batch_id=batch_id
+            )
             self.slots.append(
                 self._start_new_batch(
-                    batch_id=1,
+                    batch_id=batch_id,
                     uri=uri % uri_params,
                     feed_options=feed_options,
                     spider=spider,
@@ -505,6 +512,7 @@ class FeedExporter:
             )
 
     async def close_spider(self, spider: Spider) -> None:
+        self._persist_batch_ids(spider)
         self._pending_close_coros.extend(
             self._close_slot(slot, spider) for slot in self.slots
         )
@@ -692,6 +700,8 @@ class FeedExporter:
         spider: Spider,
         uri_params_function: str | UriParamsCallableT | None,
         slot: FeedSlot | None = None,
+        *,
+        starting_batch_id: int | None = None,
     ) -> dict[str, Any]:
         params = {}
         for k in dir(spider):
@@ -699,7 +709,10 @@ class FeedExporter:
         utc_now = datetime.now(tz=timezone.utc)
         params["time"] = utc_now.replace(microsecond=0).isoformat().replace(":", "-")
         params["batch_time"] = utc_now.isoformat().replace(":", "-")
-        params["batch_id"] = slot.batch_id + 1 if slot is not None else 1
+        if starting_batch_id is not None:
+            params["batch_id"] = starting_batch_id
+        else:
+            params["batch_id"] = slot.batch_id + 1 if slot is not None else 1
         uripar_function: UriParamsCallableT = (
             load_object(uri_params_function)
             if uri_params_function
@@ -707,6 +720,32 @@ class FeedExporter:
         )
         new_params = uripar_function(params, spider)
         return new_params if new_params is not None else params
+
+    def _load_persisted_batch_ids(self) -> dict[str, int]:
+        """Load persisted batch_ids from the JOBDIR spider state file.
+
+        Reads the file directly because SpiderState may not have loaded
+        spider.state yet when open_spider runs (signal handler ordering).
+        """
+        if not self._jobdir:
+            return {}
+        state_fn = Path(self._jobdir, "spider.state")
+        if not state_fn.exists():
+            return {}
+        try:
+            with state_fn.open("rb") as f:
+                state = pickle.load(f)  # noqa: S301
+            return state.get("_feed_batch_ids", {})
+        except Exception:
+            return {}
+
+    def _persist_batch_ids(self, spider: Spider) -> None:
+        """Save current batch_ids to spider.state for JOBDIR persistence."""
+        if not hasattr(spider, "state"):
+            return
+        batch_ids = spider.state.setdefault("_feed_batch_ids", {})
+        for slot in self.slots:
+            batch_ids[slot.uri_template] = slot.batch_id
 
     def _load_filter(self, feed_options: dict[str, Any]) -> ItemFilter:
         # load the item filter if declared else load the default filter class

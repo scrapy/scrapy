@@ -3024,3 +3024,99 @@ class TestURIParamsFeedOption(TestURIParams):
                 uri: options,
             },
         }
+
+
+class TestBatchIdPersistence:
+    """Tests for batch_id persistence across JOBDIR restarts (issue #5153)."""
+
+    def setup_method(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.job_dir = os.path.join(self.temp_dir, "crawl-job")
+        os.makedirs(self.job_dir)
+
+    def teardown_method(self):
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def _write_spider_state(self, state):
+        state_fn = os.path.join(self.job_dir, "spider.state")
+        with open(state_fn, "wb") as f:
+            pickle.dump(state, f, protocol=4)
+
+    def test_batch_id_resumes_after_restart(self):
+        """On restart, batch_id should continue from where the previous crawl left off."""
+        uri_template = build_url(
+            os.path.join(self.temp_dir, "output", "%(batch_id)d.jl")
+        )
+        self._write_spider_state({"_feed_batch_ids": {uri_template: 5}})
+
+        settings = {
+            "FEEDS": {uri_template: {"format": "jl"}},
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+            "JOBDIR": self.job_dir,
+        }
+        crawler = get_crawler(settings_dict=settings)
+        exporter = FeedExporter(crawler)
+
+        spider = Spider("testspider")
+        exporter.open_spider(spider)
+
+        assert len(exporter.slots) == 1
+        assert exporter.slots[0].batch_id == 6
+
+    def test_batch_id_starts_at_one_without_jobdir(self):
+        """Without JOBDIR, batch_id should start at 1 as usual."""
+        uri_template = build_url(
+            os.path.join(self.temp_dir, "output", "%(batch_id)d.jl")
+        )
+        settings = {
+            "FEEDS": {uri_template: {"format": "jl"}},
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+        }
+        crawler = get_crawler(settings_dict=settings)
+        exporter = FeedExporter(crawler)
+
+        spider = Spider("testspider")
+        exporter.open_spider(spider)
+
+        assert len(exporter.slots) == 1
+        assert exporter.slots[0].batch_id == 1
+
+    def test_batch_id_starts_at_one_on_first_run(self):
+        """On first run with JOBDIR (no state file), batch_id should start at 1."""
+        uri_template = build_url(
+            os.path.join(self.temp_dir, "output", "%(batch_id)d.jl")
+        )
+        settings = {
+            "FEEDS": {uri_template: {"format": "jl"}},
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+            "JOBDIR": self.job_dir,
+        }
+        crawler = get_crawler(settings_dict=settings)
+        exporter = FeedExporter(crawler)
+
+        spider = Spider("testspider")
+        exporter.open_spider(spider)
+
+        assert len(exporter.slots) == 1
+        assert exporter.slots[0].batch_id == 1
+
+    def test_persist_batch_ids_saves_to_spider_state(self):
+        """Closing the spider should save batch_ids to spider.state."""
+        uri_template = build_url(
+            os.path.join(self.temp_dir, "output", "%(batch_id)d.jl")
+        )
+        settings = {
+            "FEEDS": {uri_template: {"format": "jl"}},
+            "FEED_EXPORT_BATCH_ITEM_COUNT": 1,
+            "JOBDIR": self.job_dir,
+        }
+        crawler = get_crawler(settings_dict=settings)
+        exporter = FeedExporter(crawler)
+
+        spider = Spider("testspider")
+        spider.state = {}
+        exporter.open_spider(spider)
+
+        exporter._persist_batch_ids(spider)
+
+        assert spider.state["_feed_batch_ids"][uri_template] == 1
