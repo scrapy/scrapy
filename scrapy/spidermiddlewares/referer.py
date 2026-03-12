@@ -20,10 +20,13 @@ from scrapy.utils.url import strip_url
 
 if TYPE_CHECKING:
     # typing.Self requires Python 3.11
-    from typing_extensions import Self
+    from typing_extensions import Self, TypedDict, Unpack
 
     from scrapy.crawler import Crawler
     from scrapy.settings import BaseSettings
+
+    class _PolicyKwargs(TypedDict, total=False):
+        resp_or_url: Response | str
 
 
 LOCAL_SCHEMES: tuple[str, ...] = (
@@ -328,7 +331,7 @@ class RefererMiddleware(BaseSpiderMiddleware):
         self,
         response: Response | str | None = None,
         request: Request | None = None,
-        **kwargs,
+        **kwargs: Unpack[_PolicyKwargs],
     ) -> ReferrerPolicy:
         """Return the referrer policy to use for *request* based on *request*
         meta, *response* and settings.
