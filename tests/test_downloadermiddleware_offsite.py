@@ -322,8 +322,7 @@ def test_process_request_invalid_disallowed_domains():
 
     for letter in ("b", "c"):
         request = Request(f"https://{letter}.example")
-        with pytest.raises(IgnoreRequest):
-            mw.process_request(request)
+        assert mw.process_request(request) is None
 
 
 @pytest.mark.parametrize(
