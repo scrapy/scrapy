@@ -252,10 +252,12 @@ class S3FeedStorage(BlockingFeedStorage):
     def _store_in_thread(self, file: IO[bytes]) -> None:
         file.seek(0)
         kwargs: dict[str, Any] = {"ExtraArgs": {"ACL": self.acl}} if self.acl else {}
-        self.s3_client.upload_fileobj(
-            Bucket=self.bucketname, Key=self.keyname, Fileobj=file, **kwargs
-        )
-        file.close()
+        try:
+            self.s3_client.upload_fileobj(
+                Bucket=self.bucketname, Key=self.keyname, Fileobj=file, **kwargs
+            )
+        finally:
+            file.close()
 
 
 class GCSFeedStorage(BlockingFeedStorage):
