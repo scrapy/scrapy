@@ -250,6 +250,7 @@ class MediaPipeline(ABC):
             # the encapsulated exception when it is a StopIteration instance
             context = getattr(result.value, "__context__", None)
             if isinstance(context, StopIteration):
+                assert result.value is not None
                 result.value.__context__ = None
 
         info.downloading.remove(fp)

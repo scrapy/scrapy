@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 import warnings
 from importlib import import_module
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias
 from urllib.parse import ParseResult, urldefrag, urlparse, urlunparse
 from warnings import warn
 
@@ -20,7 +20,7 @@ from w3lib.url import parse_url as _parse_url
 from scrapy.exceptions import ScrapyDeprecationWarning
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> Any:
     if name in ("_unquotepath", "_safe_chars", "parse_url", *_public_w3lib_objects):
         obj_type = "attribute" if name == "_safe_chars" else "function"
         warnings.warn(

@@ -507,7 +507,7 @@ class ScrapyAgent:
             }
 
         # deliverBody hangs for responses without body
-        if txresponse.length == 0:
+        if cast("int", txresponse.length) == 0:
             return {
                 "txresponse": txresponse,
             }
@@ -697,7 +697,8 @@ class _ResponseReader(Protocol):
             return
 
         if reason.check(ResponseFailed) and any(
-            r.check(_DataLoss) for r in reason.value.reasons
+            r.check(_DataLoss)
+            for r in reason.value.reasons  # type: ignore[union-attr]
         ):
             if not self._fail_on_dataloss:
                 self._finish_response(flags=["dataloss"])

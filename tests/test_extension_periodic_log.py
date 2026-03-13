@@ -121,8 +121,10 @@ class TestPeriodicLog:
         # include multiple
         check(
             {"PERIODIC_LOG_DELTA": {"include": ["downloader/", "scheduler/"]}},
-            lambda k, v: isinstance(v, (int, float))
-            and ("downloader/" in k or "scheduler/" in k),
+            lambda k, v: (
+                isinstance(v, (int, float))
+                and ("downloader/" in k or "scheduler/" in k)
+            ),
         )
 
         # exclude
@@ -134,15 +136,19 @@ class TestPeriodicLog:
         # exclude multiple
         check(
             {"PERIODIC_LOG_DELTA": {"exclude": ["downloader/", "scheduler/"]}},
-            lambda k, v: isinstance(v, (int, float))
-            and ("downloader/" not in k and "scheduler/" not in k),
+            lambda k, v: (
+                isinstance(v, (int, float))
+                and ("downloader/" not in k and "scheduler/" not in k)
+            ),
         )
 
         # include exclude combined
         check(
             {"PERIODIC_LOG_DELTA": {"include": ["downloader/"], "exclude": ["bytes"]}},
-            lambda k, v: isinstance(v, (int, float))
-            and ("downloader/" in k and "bytes" not in k),
+            lambda k, v: (
+                isinstance(v, (int, float))
+                and ("downloader/" in k and "bytes" not in k)
+            ),
         )
 
     @coroutine_test

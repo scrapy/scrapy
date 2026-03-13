@@ -438,7 +438,7 @@ class TestFilesPipelineCustomSettings:
         """
         pipe_cls = self._generate_fake_pipeline()
         pipe = pipe_cls.from_crawler(get_crawler(None, {"FILES_STORE": tmp_path}))
-        for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
+        for pipe_attr, _, pipe_ins_attr in self.file_cls_attr_settings_map:
             custom_value = getattr(pipe, pipe_ins_attr)
             assert custom_value != self.default_cls_settings[pipe_attr]
             assert getattr(pipe, pipe_ins_attr) == getattr(pipe, pipe_attr)
@@ -469,7 +469,7 @@ class TestFilesPipelineCustomSettings:
         user_pipeline = UserDefinedFilesPipeline.from_crawler(
             get_crawler(None, {"FILES_STORE": tmp_path})
         )
-        for pipe_attr, settings_attr, pipe_ins_attr in self.file_cls_attr_settings_map:
+        for pipe_attr, _, pipe_ins_attr in self.file_cls_attr_settings_map:
             # Values from settings for custom pipeline should be set on pipeline instance.
             custom_value = self.default_cls_settings.get(pipe_attr.upper())
             assert getattr(user_pipeline, pipe_ins_attr) == custom_value
@@ -541,7 +541,7 @@ class TestFilesPipelineCustomSettings:
 
         pipeline_cls = UserPipe.from_crawler(get_crawler(None, settings))
 
-        for pipe_attr, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
+        for _, settings_attr, pipe_inst_attr in self.file_cls_attr_settings_map:
             expected_value = settings.get(settings_attr)
             assert getattr(pipeline_cls, pipe_inst_attr) == expected_value
 
