@@ -160,7 +160,7 @@ class ExecutionEngine:
         return scheduler_cls
 
     def start(
-        self, _start_request_processing=True
+        self, _start_request_processing: bool = True
     ) -> Deferred[None]:  # pragma: no cover
         warnings.warn(
             "ExecutionEngine.start() is deprecated, use start_async() instead",
@@ -263,12 +263,13 @@ class ExecutionEngine:
     def unpause(self) -> None:
         self.paused = False
 
-    async def _process_start_next(self):
+    async def _process_start_next(self) -> None:
         """Processes the next item or request from Spider.start().
 
         If a request, it is scheduled. If an item, it is sent to item
         pipelines.
         """
+        assert self._start is not None
         try:
             item_or_request = await self._start.__anext__()
         except StopAsyncIteration:
@@ -286,6 +287,7 @@ class ExecutionEngine:
             if isinstance(item_or_request, Request):
                 self.crawl(item_or_request)
             else:
+                assert self._slot is not None
                 _schedule_coro(
                     self.scraper.start_itemproc_async(item_or_request, response=None)
                 )
@@ -439,7 +441,7 @@ class ExecutionEngine:
             spider=self.spider,
             dont_log=IgnoreRequest,
         )
-        for handler, result in request_scheduled_result:
+        for _, result in request_scheduled_result:
             if isinstance(result, Failure) and isinstance(result.value, IgnoreRequest):
                 return
         if not self._slot.scheduler.enqueue_request(request):  # type: ignore[union-attr]
@@ -587,7 +589,7 @@ class ExecutionEngine:
         )
         return deferred_from_coro(self.close_spider_async(reason=reason))
 
-    async def close_spider_async(self, *, reason: str = "cancelled") -> None:
+    async def close_spider_async(self, *, reason: str = "cancelled") -> None:  # noqa: PLR0912
         """Close (cancel) spider and clear all its outstanding requests.
 
         .. versionadded:: 2.14

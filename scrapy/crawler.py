@@ -135,7 +135,7 @@ class Crawler:
             "Overridden settings:\n%(settings)s", {"settings": pprint.pformat(d)}
         )
 
-    def _apply_reactorless_default_settings(self):
+    def _apply_reactorless_default_settings(self) -> None:
         """Change some setting defaults when not using a Twisted reactor.
 
         Some settings need different defaults when using and not using a

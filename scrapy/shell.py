@@ -73,7 +73,6 @@ class Shell:
         else:
             self.populate_vars()
         if self.code:
-            # pylint: disable-next=eval-used
             print(eval(self.code, globals(), self.vars))  # noqa: S307
         else:
             # Detect interactive shell setting in scrapy.cfg
@@ -105,7 +104,7 @@ class Shell:
             event_loop_path = self.crawler.settings["ASYNCIO_EVENT_LOOP"]
             set_asyncio_event_loop(event_loop_path)
 
-        def crawl_request(_):
+        def crawl_request(_: None) -> None:
             assert self.crawler.engine is not None
             self.crawler.engine.crawl(request)
 
