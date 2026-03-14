@@ -250,6 +250,44 @@ class TestFilesPipeline:
         for p in patchers:
             p.stop()
 
+    @coroutine_test
+    async def test_file_2xx_status_codes(self):
+        """Files with 2xx status codes other than 200 should be downloaded."""
+        for status in (201, 202, 204):
+            item_url = f"http://example.com/file_{status}.pdf"
+            item = _create_item_with_files(item_url)
+            request = Request(
+                item_url,
+                meta={
+                    "response": Response(
+                        item_url, status=status, body=b"data", flags=[]
+                    )
+                },
+            )
+            patchers = [
+                mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+                mock.patch.object(
+                    FSFilesStore,
+                    "stat_file",
+                    return_value={},
+                ),
+                mock.patch.object(
+                    FilesPipeline,
+                    "get_media_requests",
+                    return_value=[request],
+                ),
+            ]
+            for p in patchers:
+                p.start()
+
+            result = await self.pipeline.process_item(item)
+            assert result["files"][0]["status"] == "downloaded", (
+                f"Expected downloaded for status {status}"
+            )
+
+            for p in patchers:
+                p.stop()
+
     def test_file_path_from_item(self):
         """
         Custom file path based on item data, overriding default implementation
