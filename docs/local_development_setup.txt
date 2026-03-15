@@ -1,0 +1,7 @@
+### Local Development Setup
+1. Clone your fork: `git clone https://github.com/YOUR_USERNAME/scrapy.git`
+2. Create a virtual environment: `python -m venv venv && source venv/bin/activate` or ' conda create -p venv python=3.13 -y '
+3. Install dev tools: `pip install tox pre-commit`
+4. Install in editable mode: `pip install -e .`
+5. Initialize hooks: `pre-commit install`
+6. Run tests: `tox -e py313`
