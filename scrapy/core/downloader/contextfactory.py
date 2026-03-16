@@ -63,6 +63,7 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
             self.tls_ciphers = AcceptableCiphers.fromOpenSSLCipherString(tls_ciphers)
         else:
             self.tls_ciphers = DEFAULT_CIPHERS
+        self._tls_context: SSL.Context | None = None
         if method_is_overridden(type(self), ScrapyClientContextFactory, "getContext"):
             warnings.warn(
                 "Overriding ScrapyClientContextFactory.getContext() is deprecated and that method"
@@ -104,9 +105,14 @@ class ScrapyClientContextFactory(BrowserLikePolicyForHTTPS):
     # kept for old-style HTTP/1.0 downloader context twisted calls,
     # e.g. connectSSL()
     def getContext(self, hostname: Any = None, port: Any = None) -> SSL.Context:
-        ctx: SSL.Context = self.getCertificateOptions().getContext()
-        ctx.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
-        return ctx
+        if self._tls_context is None:
+            self._tls_context = self.getCertificateOptions().getContext()
+            # Set OP_LEGACY_SERVER_CONNECT flag only once to avoid
+            # DeprecationWarning with pyOpenSSL 25.1.0+ when mutating
+            # a Context that has already been used to create a Connection
+            # https://github.com/scrapy/scrapy/issues/6859
+            self._tls_context.set_options(0x4)  # OP_LEGACY_SERVER_CONNECT
+        return self._tls_context
 
     def creatorForNetloc(self, hostname: bytes, port: int) -> ClientTLSOptions:
         return ScrapyClientTLSOptions(
