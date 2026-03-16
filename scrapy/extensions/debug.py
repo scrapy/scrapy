@@ -34,8 +34,8 @@ class StackTraceDump:
     def __init__(self, crawler: Crawler):
         self.crawler: Crawler = crawler
         try:
-            signal.signal(signal.SIGUSR2, self.dump_stacktrace)  # type: ignore[attr-defined]
-            signal.signal(signal.SIGQUIT, self.dump_stacktrace)  # type: ignore[attr-defined]
+            signal.signal(signal.SIGUSR2, self.dump_stacktrace)  # type: ignore[attr-defined,unused-ignore]
+            signal.signal(signal.SIGQUIT, self.dump_stacktrace)  # type: ignore[attr-defined,unused-ignore]
         except AttributeError:
             # win32 platforms don't support SIGUSR signals
             pass
@@ -72,7 +72,7 @@ class Debugger:
     def __init__(self) -> None:
         # win32 platforms don't support SIGUSR signals
         with contextlib.suppress(AttributeError):
-            signal.signal(signal.SIGUSR2, self._enter_debugger)  # type: ignore[attr-defined]
+            signal.signal(signal.SIGUSR2, self._enter_debugger)  # type: ignore[attr-defined,unused-ignore]
 
     def _enter_debugger(self, signum: int, frame: FrameType | None) -> None:
         assert frame

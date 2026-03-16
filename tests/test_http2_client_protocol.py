@@ -213,7 +213,7 @@ class TestHttps2ClientProtocol:
         r.putChild(b"request-headers", RequestHeaders())
         return Site(r, timeout=None)
 
-    @async_yield_fixture
+    @async_yield_fixture  # type: ignore[untyped-decorator]
     async def server_port(self, site: Site) -> AsyncGenerator[int]:
         from twisted.internet import reactor
 
@@ -236,7 +236,7 @@ class TestHttps2ClientProtocol:
         ) + self.certificate_file.read_text(encoding="utf-8")
         return PrivateCertificate.loadPEM(pem)
 
-    @async_yield_fixture
+    @async_yield_fixture  # type: ignore[untyped-decorator]
     async def client(
         self, server_port: int, client_certificate: PrivateCertificate
     ) -> AsyncGenerator[H2ClientProtocol]:

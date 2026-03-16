@@ -85,8 +85,20 @@ path = "scrapy/VERSION"
 pattern = "^(?P<version>.+)$"
 
 [tool.mypy]
-ignore_missing_imports = true
-implicit_reexport = false
+strict = true
+allow_any_generics = true # 67 errors
+allow_untyped_calls = true  # 58 errors
+extra_checks = false # weird addErrback() errors
+untyped_calls_exclude = [
+    "twisted",
+]
+warn_return_any = false # 37 errors
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+allow_untyped_defs = true
+allow_incomplete_defs = true # 48 errors
+check_untyped_defs = false
 
 # Interface classes are hard to support
 [[tool.mypy.overrides]]
@@ -101,17 +113,49 @@ ignore_errors = true
 module = "twisted.internet.reactor"
 follow_imports = "skip"
 
-# FIXME: remove the following section once the issues are solved
-[[tool.mypy.overrides]]
-module = "scrapy.settings.default_settings"
-ignore_errors = true
-
+# just for twisted.version
 [[tool.mypy.overrides]]
 module = "twisted"
 implicit_reexport = true
 
+# TODO
+[[tool.mypy.overrides]]
+module = "scrapy.settings.default_settings"
+ignore_errors = true
+
+# deprecated modules
+[[tool.mypy.overrides]]
+module = [
+    "scrapy.core.downloader.webclient",
+    "scrapy.spiders.init",
+    "scrapy.utils.testsite",
+    "tests.test_webclient",
+]
+allow_any_generics = true
+allow_untyped_calls = true
+allow_untyped_defs = true
+check_untyped_defs = false
+warn_return_any = false
+
+# usually no type hints
+[[tool.mypy.overrides]]
+module = [
+#    "IPython.*",
+    "bpython",
+    "brotli",
+    "brotlicffi",
+    "google.*",
+    "pydispatch.*",
+    "pyftpdlib.*",
+    "pytest_twisted",
+    "robotexclusionrulesparser",
+    "testfixtures",
+    "zope.interface.*",
+]
+ignore_missing_imports = true
+
 [tool.bumpversion]
-current_version = "2.14.1"
+current_version = "2.14.2"
 commit = true
 tag = true
 tag_name = "{new_version}"
