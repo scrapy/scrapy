@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import warnings
 from functools import wraps
+from functools import partial
 from typing import TYPE_CHECKING, Any, cast
+from weakref import WeakSet, finalize
 
 from scrapy.exceptions import ScrapyDeprecationWarning, _InvalidOutput
 from scrapy.http import Request, Response
@@ -33,6 +35,22 @@ if TYPE_CHECKING:
 
 class DownloaderMiddlewareManager(MiddlewareManager):
     component_name = "downloader middleware"
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.response_active_size = 0
+        self._tracked_responses: WeakSet[Response] = WeakSet()
+
+    def _count_response_size(self, response: Response) -> None:
+        if response in self._tracked_responses:
+            return
+        self._tracked_responses.add(response)
+        size = len(response.body)
+        self.response_active_size += size
+        finalize(response, partial(self._discount_response_size, size))
+
+    def _discount_response_size(self, size: int) -> None:
+        self.response_active_size -= size
 
     @classmethod
     def _get_mwlist_from_settings(cls, settings: BaseSettings) -> list[Any]:
@@ -93,6 +111,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                         f"Request, got {response.__class__.__name__}"
                     )
                 if response:
+                    if isinstance(response, Response):
+                        self._count_response_size(response)
                     return response
             return await download_func(request)
 
@@ -121,6 +141,10 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                     )
                 if isinstance(response, Request):
                     return response
+                if isinstance(response, Response):
+                    self._count_response_size(response)
+            if isinstance(response, Response):
+                self._count_response_size(response)
             return response
 
         async def process_exception(exception: Exception) -> Response | Request:
@@ -146,6 +170,8 @@ class DownloaderMiddlewareManager(MiddlewareManager):
                         f"Request, got {type(response)}"
                     )
                 if response:
+                    if isinstance(response, Response):
+                        self._count_response_size(response)
                     return response
             raise exception
 

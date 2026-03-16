@@ -130,6 +130,10 @@ class Downloader:
         self.per_slot_settings: dict[str, dict[str, Any]] = self.settings.getdict(
             "DOWNLOAD_SLOTS"
         )
+        self._response_max_active_size = self.settings.getint(
+            "RESPONSE_MAX_ACTIVE_SIZE", 5000000
+        )
+        self._response_max_active_size_warned = False
 
     @inlineCallbacks
     @_warn_spider_arg
@@ -147,7 +151,23 @@ class Downloader:
             self.active.remove(request)
 
     def needs_backout(self) -> bool:
-        return len(self.active) >= self.total_concurrency
+        if len(self.active) >= self.total_concurrency:
+            return True
+        if (
+            self._response_max_active_size
+            and self.middleware.response_active_size >= self._response_max_active_size
+        ):
+            if not self._response_max_active_size_warned:
+                from logging import getLogger
+                logger = getLogger(__name__)
+                logger.info(
+                    f"Active response size ({self.middleware.response_active_size} B) "
+                    f"exceeded RESPONSE_MAX_ACTIVE_SIZE ({self._response_max_active_size} B); "
+                    f"pausing downloads."
+                )
+                self._response_max_active_size_warned = True
+            return True
+        return False
 
     @_warn_spider_arg
     def _get_slot(

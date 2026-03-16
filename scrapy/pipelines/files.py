@@ -91,6 +91,7 @@ class FilesStoreProtocol(Protocol):
         info: MediaPipeline.SpiderInfo,
         meta: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
+        response: Response | None = None,
     ) -> Deferred[Any] | None: ...
 
     def stat_file(
@@ -116,6 +117,7 @@ class FSFilesStore:
         info: MediaPipeline.SpiderInfo,
         meta: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
+        response: Response | None = None,
     ) -> None:
         absolute_path = self._get_filesystem_path(path)
         self._mkdir(absolute_path.parent, info)
@@ -212,6 +214,7 @@ class S3FilesStore:
         info: MediaPipeline.SpiderInfo,
         meta: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
+        response: Response | None = None,
     ) -> Deferred[Any]:
         """Upload file to S3 storage"""
         key_name = f"{self.prefix}{path}"
@@ -219,7 +222,7 @@ class S3FilesStore:
         extra = self._headers_to_botocore_kwargs(self.HEADERS)
         if headers:
             extra.update(self._headers_to_botocore_kwargs(headers))
-        return deferToThread(
+        dfd = deferToThread(
             self.s3_client.put_object,  # type: ignore[attr-defined]
             Bucket=self.bucket,
             Key=key_name,
@@ -228,6 +231,9 @@ class S3FilesStore:
             ACL=self.POLICY,
             **extra,
         )
+        if response is not None:
+            dfd.addBoth(lambda x, r=response: x)
+        return dfd
 
     def _headers_to_botocore_kwargs(self, headers: dict[str, Any]) -> dict[str, Any]:
         """Convert headers to botocore keyword arguments."""
@@ -333,17 +339,21 @@ class GCSFilesStore:
         info: MediaPipeline.SpiderInfo,
         meta: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
+        response: Response | None = None,
     ) -> Deferred[Any]:
         blob_path = self._get_blob_path(path)
         blob = self.bucket.blob(blob_path)
         blob.cache_control = self.CACHE_CONTROL
         blob.metadata = {k: str(v) for k, v in (meta or {}).items()}
-        return deferToThread(
+        dfd = deferToThread(
             blob.upload_from_string,
             data=buf.getvalue(),
             content_type=self._get_content_type(headers),
             predefined_acl=self.POLICY,
         )
+        if response is not None:
+            dfd.addBoth(lambda x, r=response: x)
+        return dfd
 
 
 class FTPFilesStore:
@@ -373,9 +383,10 @@ class FTPFilesStore:
         info: MediaPipeline.SpiderInfo,
         meta: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
+        response: Response | None = None,
     ) -> Deferred[Any]:
         path = f"{self.basedir}/{path}"
-        return deferToThread(
+        dfd = deferToThread(
             ftp_store_file,
             path=path,
             file=buf,
@@ -385,6 +396,9 @@ class FTPFilesStore:
             password=self.password,
             use_active_mode=self.USE_ACTIVE_MODE,
         )
+        if response is not None:
+            dfd.addBoth(lambda x, r=response: x)
+        return dfd
 
     def stat_file(
         self, path: str, info: MediaPipeline.SpiderInfo
@@ -685,7 +699,7 @@ class FilesPipeline(MediaPipeline):
         buf = BytesIO(response.body)
         checksum = _md5sum(buf)
         buf.seek(0)
-        self.store.persist_file(path, buf, info)
+        self.store.persist_file(path, buf, info, response=response)
         return checksum
 
     def item_completed(
