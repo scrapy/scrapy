@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import os
 import shutil
 import string
 from importlib import import_module
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlparse
+import shlex
+import subprocess
 
 import scrapy
 from scrapy.commands import ScrapyCommand
@@ -121,10 +122,11 @@ class Command(ScrapyCommand):
             # Capture the absolute path of the created file
             spider_file = self._genspider(module, name, url, opts.template, template_file)
             if opts.edit:
-                # Get the editor from settings (falls back to EDITOR env var)
-                editor = self.settings.get("EDITOR", "nano")
-                # Open the editor DIRECTLY on the file path
-                os.system(f'{editor} "{spider_file}"')
+                editor = self.settings.get("EDITOR", "vi")
+                # Securely split the editor command and add the file path
+                args = shlex.split(editor) + [str(Path(spider_file).resolve())]
+                # Launch the editor without using os.system
+                self.exitcode = subprocess.run(args).returncode
 
     def _generate_template_variables(
         self,
