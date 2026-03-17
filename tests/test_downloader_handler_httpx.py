@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -54,6 +55,11 @@ class TestHttp11(HttpxDownloadHandlerMixin, TestHttp11Base):
             in caplog.text
         )
 
+    # skip macOS tests
+    @pytest.mark.skipif(
+        sys.platform == "darwin",
+        reason="127.0.0.2 is not available on macOS by default",
+    )
     @coroutine_test
     async def test_bind_address_port_warning(
         self, caplog: pytest.LogCaptureFixture, mockserver: MockServer

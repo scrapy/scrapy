@@ -671,6 +671,11 @@ class TestHttp11Base(TestHttpBase):
             response = await download_handler.download_request(request)
         assert response.protocol == "HTTP/1.1"
 
+    # skip macOS tests
+    @pytest.mark.skipif(
+        sys.platform == "darwin",
+        reason="127.0.0.2 is not available on macOS by default",
+    )
     @coroutine_test
     async def test_download_bind_address_setting(self, mockserver: MockServer) -> None:
         request = Request(mockserver.url("/client-ip", is_secure=self.is_secure))
@@ -680,6 +685,11 @@ class TestHttp11Base(TestHttpBase):
             response = await download_handler.download_request(request)
         assert response.body == b"127.0.0.2"
 
+    # skip macOS tests
+    @pytest.mark.skipif(
+        sys.platform == "darwin",
+        reason="127.0.0.2 is not available on macOS by default",
+    )
     @coroutine_test
     async def test_download_bind_address_setting_string(
         self, mockserver: MockServer
