@@ -219,6 +219,24 @@ class TestFilesPipeline:
         for p in patchers:
             p.stop()
 
+    def test_media_downloaded_allows_status_201(self):
+        request = Request("http://example.com/file-201.pdf")
+        response = Response(request.url, status=201, body=b"file-content", request=request)
+
+        with (
+            mock.patch.object(FilesPipeline, "inc_stats", return_value=True),
+            mock.patch.object(FilesPipeline, "file_path", return_value="full/file-201.pdf"),
+            mock.patch.object(FilesPipeline, "file_downloaded", return_value="checksum-201"),
+        ):
+            result = self.pipeline.media_downloaded(
+                response, request, self.pipeline.spiderinfo
+            )
+
+        assert result["url"] == request.url
+        assert result["path"] == "full/file-201.pdf"
+        assert result["checksum"] == "checksum-201"
+        assert result["status"] == "downloaded"
+
     @coroutine_test
     async def test_file_cached(self):
         item_url = "http://example.com/file3.pdf"
