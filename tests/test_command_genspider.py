@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from os import chmod
 from pathlib import Path
 
 import pytest
@@ -62,6 +63,28 @@ class TestGenspiderCommand(TestProjectBase):
     def test_dump(self, proj_path: Path) -> None:
         assert call("genspider", "--dump=basic", cwd=proj_path) == 0
         assert call("genspider", "-d", "basic", cwd=proj_path) == 0
+
+    def test_edit(self, proj_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        spider_name = "example2"
+        spider = proj_path / self.project_name / "spiders" / f"{spider_name}.py"
+        edited_path = proj_path / "edited-path.txt"
+        editor = proj_path / "editor.sh"
+        editor.write_text(
+            "#!/bin/sh\nprintf '%s' \"$2\" > \"$1\"\n",
+            encoding="utf-8",
+        )
+        chmod(editor, 0o755)
+        monkeypatch.setenv("EDITOR", f"{editor} {edited_path}")
+
+        returncode, out, err = proc(
+            "genspider", "--edit", spider_name, "example2.com", cwd=proj_path
+        )
+
+        assert returncode == 0
+        assert spider.exists()
+        assert edited_path.read_text(encoding="utf-8") == str(spider)
+        assert f"Created spider {spider_name!r} using template 'basic' in module" in out
+        assert "ModuleNotFoundError" not in err
 
     def test_same_name_as_project(self, proj_path: Path) -> None:
         assert call("genspider", self.project_name, cwd=proj_path) == 2
