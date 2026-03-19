@@ -25,6 +25,7 @@ class TestCrawlCommand(TestProjectBase):
 
     def test_no_output(self, proj_path: Path) -> None:
         spider_code = """
+
 import scrapy
 
 class MySpider(scrapy.Spider):
@@ -124,3 +125,23 @@ class MySpider(scrapy.Spider):
             not in log
         )
         assert "Spider closed (finished)" in log
+
+    def test_warn_twisted_reactor_without_force_crawler_process(
+        self, proj_path: Path
+    ) -> None:
+        spider_code = """
+import scrapy
+
+class MySpider(scrapy.Spider):
+    name = 'myspider'
+    custom_settings = {
+        'TWISTED_REACTOR': 'twisted.internet.selectreactor.SelectReactor',
+    }
+
+    async def start(self):
+        return
+        yield
+"""
+        log = self.get_log(spider_code, proj_path)
+        assert "TWISTED_REACTOR" in log
+        assert "FORCE_CRAWLER_PROCESS" in log
