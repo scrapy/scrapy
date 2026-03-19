@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from os import chmod
 from pathlib import Path
 
 import pytest
 
+from scrapy.commands.edit import edit_file
 from tests.test_commands import TestProjectBase
 from tests.utils.cmdline import call, proc
 
@@ -184,6 +186,19 @@ class TestGenspiderCommand(TestProjectBase):
         m = find_in_file(spider, r"start_urls\s*=\s*\[['\"](.+)['\"]\]")
         assert m is not None
         assert m.group(1) == expected
+
+
+def test_edit_file_handles_paths_with_double_quotes(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake_call(argv: list[str]) -> int:
+        calls.append(argv)
+        return 0
+
+    monkeypatch.setattr(subprocess, "call", fake_call)
+
+    assert edit_file('editor --flag', 'path/with"quote.py') == 0
+    assert calls == [["editor", "--flag", 'path/with"quote.py']]
 
 
 class TestGenspiderStandaloneCommand:

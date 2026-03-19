@@ -1,5 +1,7 @@
 import argparse
 import os
+import shlex
+import subprocess
 import sys
 from pathlib import Path
 
@@ -9,7 +11,7 @@ from scrapy.spiderloader import get_spider_loader
 
 
 def edit_file(editor: str, file_path: str | Path) -> int:
-    return os.system(f'{editor} "{file_path}"')  # noqa: S605
+    return subprocess.call([*shlex.split(editor), str(file_path)])
 
 
 class Command(ScrapyCommand):
