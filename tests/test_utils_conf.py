@@ -1,3 +1,6 @@
+import os
+import warnings
+
 import pytest
 
 from scrapy.exceptions import UsageError
@@ -5,8 +8,10 @@ from scrapy.settings import BaseSettings, Settings
 from scrapy.utils.conf import (
     arglist_to_dict,
     build_component_list,
+    closest_pyproject_toml,
     feed_complete_default_values_from_settings,
     feed_process_params_from_cli,
+    get_config,
 )
 
 
@@ -52,6 +57,39 @@ def test_arglist_to_dict():
         "arg1": "val1",
         "arg2": "val2",
     }
+
+
+class TestPyprojectToml:
+    def test_pyproject_toml_takes_precedence_over_scrapy_cfg(self, tmp_path):
+        (tmp_path / "scrapy.cfg").write_text("[settings]\ndefault = from_scrapy_cfg\n")
+        (tmp_path / "pyproject.toml").write_text(
+            "[tool.scrapy.settings]\ndefault = 'from_pyproject_toml'\n"
+        )
+        os.chdir(tmp_path)
+        cfg = get_config()
+        assert cfg.get("settings", "default") == "from_pyproject_toml"
+
+    def test_scrapy_cfg_not_read_when_pyproject_toml_present(self, tmp_path):
+        (tmp_path / "scrapy.cfg").write_text(
+            "[settings]\ndefault = from_scrapy_cfg\n"
+            "[deploy]\nproject = from_scrapy_cfg\n"
+        )
+        (tmp_path / "pyproject.toml").write_text(
+            "[tool.scrapy.settings]\ndefault = 'from_pyproject_toml'\n"
+        )
+        os.chdir(tmp_path)
+        cfg = get_config()
+        assert not cfg.has_section("deploy")
+
+    def test_malformed_toml_warns_and_returns_empty(self, tmp_path):
+        (tmp_path / "pyproject.toml").write_text("[tool.scrapy\nnot valid toml")
+        os.chdir(tmp_path)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            result = closest_pyproject_toml()
+        assert result == ""
+        assert len(w) == 1
+        assert "invalid TOML" in str(w[0].message)
 
 
 class TestFeedExportConfig:

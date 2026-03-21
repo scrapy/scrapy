@@ -3,6 +3,7 @@ from __future__ import annotations
 import numbers
 import os
 import sys
+import warnings
 from configparser import ConfigParser
 from operator import itemgetter
 from pathlib import Path
@@ -15,6 +16,14 @@ from scrapy.utils.python import without_none_values
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Iterable, Mapping, MutableMapping
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    try:
+        import tomli as tomllib
+    except ImportError:
+        tomllib = None  # type: ignore[assignment]
 
 
 def build_component_list(
@@ -86,6 +95,31 @@ def closest_scrapy_cfg(
     return closest_scrapy_cfg(path.parent, path)
 
 
+def closest_pyproject_toml(
+    path: str | os.PathLike = ".",
+    prevpath: str | os.PathLike | None = None,
+) -> str:
+    if tomllib is None:
+        return ""
+    if prevpath is not None and str(path) == str(prevpath):
+        return ""
+    path = Path(path).resolve()
+    toml_path = path / "pyproject.toml"
+    if toml_path.exists():
+        try:
+            with toml_path.open("rb") as f:
+                data = tomllib.load(f)
+            if "scrapy" in data.get("tool", {}):
+                return str(toml_path)
+        except tomllib.TOMLDecodeError:
+            warnings.warn(
+                f"Scrapy could not parse {toml_path}: invalid TOML. "
+                "This file will be ignored.",
+                stacklevel=2,
+            )
+    return closest_pyproject_toml(path.parent, path)
+
+
 def init_env(project: str = "default", set_syspath: bool = True) -> None:
     """Initialize environment to use command-line tool from inside a project
     dir. This sets the Scrapy settings module and modifies the Python path to
@@ -94,15 +128,30 @@ def init_env(project: str = "default", set_syspath: bool = True) -> None:
     cfg = get_config()
     if cfg.has_option("settings", project):
         os.environ["SCRAPY_SETTINGS_MODULE"] = cfg.get("settings", project)
-    closest = closest_scrapy_cfg()
+    closest = closest_pyproject_toml() or closest_scrapy_cfg()
     if closest:
         projdir = str(Path(closest).parent)
         if set_syspath and projdir not in sys.path:
             sys.path.append(projdir)
 
 
+def _load_toml_config(toml_path: str) -> ConfigParser:
+    """Load Scrapy config from a TOML file."""
+    with Path(toml_path).open("rb") as f:
+        data = tomllib.load(f)
+    scrapy_data = data.get("tool", {}).get("scrapy", {})
+    cfg = ConfigParser()
+    cfg.read_dict(scrapy_data)
+    return cfg
+
+
 def get_config(use_closest: bool = True) -> ConfigParser:
     """Get Scrapy config file as a ConfigParser"""
+    if use_closest and tomllib is not None:
+        toml_path = closest_pyproject_toml()
+        if toml_path:
+            return _load_toml_config(toml_path)
+
     sources = get_sources(use_closest)
     cfg = ConfigParser()
     cfg.read(sources)
