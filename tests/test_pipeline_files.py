@@ -87,9 +87,7 @@ class DeferredFSFilesStore(FSFilesStore):
         deferred = Deferred()
 
         def cb():
-            super(DeferredFSFilesStore, self).persist_file(
-                path, buf, info, meta=meta, headers=headers
-            )
+            super().persist_file(path, buf, info, meta=meta, headers=headers)
             deferred.callback(None)
 
         call_later(0.5, cb)
